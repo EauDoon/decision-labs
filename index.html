@@ -1,0 +1,138 @@
+<!doctype html>
+<!--
+MIT License
+
+Copyright (c) 2026 EauDoon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A local deliberation workshop for testing the smallest structured agreement that crosses a chosen approval threshold.">
+    <title>The Smallest Agreement</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">Skip to workspace</a>
+    <header class="site-header">
+      <div class="brand-block">
+        <p class="eyebrow">A local deliberation workshop</p>
+        <h1>The Smallest Agreement</h1>
+        <p class="lede">Test structured clause changes, keep the cost visible, and find the lowest-cost combination that crosses your group’s approval threshold.</p>
+      </div>
+      <div class="header-actions" aria-label="Project actions">
+        <label class="select-label">Preset
+          <select id="preset-select">
+            <option value="neighbourhood">Neighbourhood Plan</option>
+            <option value="open-source">Open Source Policy</option>
+            <option value="association-budget">Association Budget</option>
+          </select>
+        </label>
+        <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
+        <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
+        <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
+        <button class="button button-secondary" type="button" id="share-button">Share link</button>
+        <button class="button button-quiet" type="button" id="reset-button">Reset</button>
+        <input id="import-file" type="file" accept="application/json,.json" hidden>
+      </div>
+    </header>
+
+    <main id="workspace" class="workspace">
+      <aside class="control-panel" aria-label="Proposal controls">
+        <div class="margin-note"><span>01</span> Shape the room before you ask it to decide.</div>
+        <section class="panel-section">
+          <label for="proposal-title">Proposal title</label>
+          <input id="proposal-title" type="text" maxlength="120" autocomplete="off">
+        </section>
+        <section class="panel-section threshold-panel">
+          <div class="label-row"><label for="threshold">Approval threshold</label><output id="threshold-output"></output></div>
+          <input id="threshold" type="range" min="0" max="100" step="1">
+          <p>Weighted average support across all clauses and groups.</p>
+        </section>
+        <section class="panel-section">
+          <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" data-action="add-group">Add group</button></div>
+          <div id="groups-editor" class="groups-editor"></div>
+          <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
+        </section>
+      </aside>
+
+      <section class="workbench" aria-label="Clause workshop">
+        <div class="proposal-line">
+          <p class="eyebrow">Working proposal</p>
+          <h2 id="proposal-heading"></h2>
+          <p id="autosave-status" class="autosave-status" role="status"></p>
+        </div>
+
+        <section aria-labelledby="clauses-heading">
+          <div class="section-heading clause-heading">
+            <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading">What can change?</h2></div>
+            <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
+          </div>
+          <div id="clauses-editor" class="clauses-editor"></div>
+        </section>
+
+        <section class="results-section" aria-labelledby="results-heading">
+          <div class="section-heading">
+            <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading">The smallest agreement</h2></div>
+            <p id="search-meta" class="search-meta"></p>
+          </div>
+          <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
+          <div id="result-summary" class="result-summary"></div>
+          <div class="results-grid">
+            <section class="result-card coalition-card" aria-labelledby="coalition-heading">
+              <h3 id="coalition-heading">Coalition view</h3>
+              <canvas id="coalition-canvas" role="img" tabindex="0" aria-label="Approval by participant group"></canvas>
+              <p class="canvas-note">Blue is current support. Brick is the recommended support. The table gives the same values.</p>
+              <div id="coalition-table"></div>
+            </section>
+            <section class="result-card" aria-labelledby="changes-heading">
+              <h3 id="changes-heading">Changed clauses</h3>
+              <div id="changed-clauses"></div>
+              <h3 class="subheading">Support groups gained or lost</h3>
+              <div id="support-shifts"></div>
+            </section>
+          </div>
+          <section class="near-misses" aria-labelledby="near-misses-heading">
+            <div class="section-heading"><div><p class="eyebrow">Alternatives</p><h3 id="near-misses-heading">Near misses</h3></div></div>
+            <div id="near-misses-list"></div>
+          </section>
+        </section>
+
+        <section class="method-grid" aria-label="Method and limits">
+          <article>
+            <p class="eyebrow">Method</p>
+            <h2>Count what changes</h2>
+            <p>For each combination of one option per clause, the workshop computes a weighted average of the group support scores. It selects a passing combination by lowest change cost, then fewest changed clauses, then higher approval, then option ID order.</p>
+            <p>The search is exhaustive only up to 50,000 combinations. Above that, it stops and tells you to reduce the choice set.</p>
+          </article>
+          <article>
+            <p class="eyebrow">Limits</p>
+            <h2>Keep human judgment in the room</h2>
+            <p>Scores, weights, and costs are supplied by people. The workshop makes no semantic judgment about text, fairness, representation, or scope.</p>
+            <p>Small textual edits can have large semantic effects. A passing result is a deliberation prompt, not democratic legitimacy, consent, or authority to adopt a policy.</p>
+          </article>
+        </section>
+      </section>
+    </main>
+    <footer class="site-footer">Local only. Your draft is stored in this browser unless you export or share it.</footer>
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>
