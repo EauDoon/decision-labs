@@ -1,0 +1,277 @@
+<!doctype html>
+<!--
+MIT License
+
+Copyright (c) 2026 EauDoon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A deterministic educational simulator for AUD stablecoin liquidity across a weekend operating gap.">
+    <title>Weekend Gap | AUD liquidity simulator</title>
+    <link rel="stylesheet" href="styles.css">
+  </head>
+  <body>
+    <a class="skip-link" href="#dashboard">Skip to simulator</a>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <div class="brand" aria-label="Weekend Gap">
+          <span class="brand__mark" aria-hidden="true">WG</span>
+          <div>
+            <p class="eyebrow">Market operations study</p>
+            <h1>Weekend Gap</h1>
+          </div>
+        </div>
+        <p class="header-note">Synthetic AUD stablecoin liquidity simulator</p>
+      </div>
+    </header>
+
+    <main id="dashboard" class="page-shell">
+      <section class="intro" aria-labelledby="intro-title">
+        <p class="eyebrow">Friday afternoon to Monday afternoon</p>
+        <h2 id="intro-title">The ledger stays open. The payout chain does not.</h2>
+        <p>Model how issuer redemptions, bank settlement, FX depth and Australian AUD off-ramps can create a visible liquidity gap while onchain transfers remain available.</p>
+        <p class="notice"><strong>Educational simulator only.</strong> Every assumption is synthetic and editable. This is not financial advice, live market data or a statement about any issuer.</p>
+      </section>
+
+      <section class="workspace" aria-label="Weekend liquidity scenario workspace">
+        <aside class="controls card" aria-labelledby="assumptions-title">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Editable assumptions</p>
+              <h2 id="assumptions-title">Scenario</h2>
+            </div>
+            <button class="text-button" id="reset-button" type="button">Reset</button>
+          </div>
+
+          <fieldset class="preset-set" aria-label="Scenario presets">
+            <legend>Preset</legend>
+            <div class="preset-grid">
+              <button type="button" class="preset-button is-selected" data-preset="normal">Normal Friday</button>
+              <button type="button" class="preset-button" data-preset="weekendRush">Weekend Rush</button>
+              <button type="button" class="preset-button" data-preset="marketStress">Market Stress</button>
+            </div>
+          </fieldset>
+
+          <form id="scenario-form" novalidate>
+            <div class="input-group input-group--full">
+              <label for="name">Scenario name</label>
+              <input id="name" name="name" data-field="name" maxlength="80" type="text" autocomplete="off">
+            </div>
+
+            <fieldset>
+              <legend>Liquidity base</legend>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="nominalLiquidityAud">Nominal stablecoin liquidity</label>
+                  <div class="unit-input"><span>A$</span><input id="nominalLiquidityAud" name="nominalLiquidityAud" data-field="nominalLiquidityAud" type="number" min="10000" step="10000" inputmode="decimal"></div>
+                </div>
+                <div class="input-group">
+                  <label for="reserveCashAud">AUD reserve and cash capacity</label>
+                  <div class="unit-input"><span>A$</span><input id="reserveCashAud" name="reserveCashAud" data-field="reserveCashAud" type="number" min="0" step="10000" inputmode="decimal"></div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Issuer redemption</legend>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="issuerThroughputAudPerHour">Throughput per hour</label>
+                  <div class="unit-input"><span>A$</span><input id="issuerThroughputAudPerHour" name="issuerThroughputAudPerHour" data-field="issuerThroughputAudPerHour" type="number" min="0" step="1000" inputmode="decimal"></div>
+                </div>
+                <div class="input-group input-group--hours">
+                  <label>Business-day hours</label>
+                  <div class="hour-inputs">
+                    <input aria-label="Issuer opens at" id="issuerOpenStartHour" name="issuerOpenStartHour" data-field="issuerOpenStartHour" type="number" min="0" max="23" step="1" inputmode="numeric"><span>to</span><input aria-label="Issuer closes at" id="issuerOpenEndHour" name="issuerOpenEndHour" data-field="issuerOpenEndHour" type="number" min="1" max="24" step="1" inputmode="numeric"><span>local</span>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Bank settlement</legend>
+              <div class="input-group input-group--hours">
+                <label>Business-day hours</label>
+                <div class="hour-inputs">
+                  <input aria-label="Bank opens at" id="bankOpenStartHour" name="bankOpenStartHour" data-field="bankOpenStartHour" type="number" min="0" max="23" step="1" inputmode="numeric"><span>to</span><input aria-label="Bank closes at" id="bankOpenEndHour" name="bankOpenEndHour" data-field="bankOpenEndHour" type="number" min="1" max="24" step="1" inputmode="numeric"><span>local</span>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>FX liquidity</legend>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="fxDepthAudPerHour">AUD depth per hour</label>
+                  <div class="unit-input"><span>A$</span><input id="fxDepthAudPerHour" name="fxDepthAudPerHour" data-field="fxDepthAudPerHour" type="number" min="0" step="1000" inputmode="decimal"></div>
+                </div>
+                <div class="input-group">
+                  <label for="fxSpreadBps">Weekday spread</label>
+                  <div class="unit-input unit-input--suffix"><input id="fxSpreadBps" name="fxSpreadBps" data-field="fxSpreadBps" type="number" min="0" step="1" inputmode="decimal"><span>bps</span></div>
+                </div>
+                <div class="input-group input-group--full">
+                  <label for="weekendFxMultiplier">Weekend depth and spread multiplier</label>
+                  <div class="unit-input unit-input--suffix"><input id="weekendFxMultiplier" name="weekendFxMultiplier" data-field="weekendFxMultiplier" type="number" min="1" step="0.1" inputmode="decimal"><span>x</span></div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Australian AUD payout and off-ramp</legend>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="payoutThroughputAudPerHour">Throughput per hour</label>
+                  <div class="unit-input"><span>A$</span><input id="payoutThroughputAudPerHour" name="payoutThroughputAudPerHour" data-field="payoutThroughputAudPerHour" type="number" min="0" step="1000" inputmode="decimal"></div>
+                </div>
+                <div class="input-group input-group--hours">
+                  <label>Business-day hours</label>
+                  <div class="hour-inputs">
+                    <input aria-label="Payout opens at" id="payoutOpenStartHour" name="payoutOpenStartHour" data-field="payoutOpenStartHour" type="number" min="0" max="23" step="1" inputmode="numeric"><span>to</span><input aria-label="Payout closes at" id="payoutOpenEndHour" name="payoutOpenEndHour" data-field="payoutOpenEndHour" type="number" min="1" max="24" step="1" inputmode="numeric"><span>local</span>
+                  </div>
+                </div>
+                <div class="input-group input-group--full">
+                  <label for="redemptionDemandAud">72-hour redemption demand</label>
+                  <div class="unit-input"><span>A$</span><input id="redemptionDemandAud" name="redemptionDemandAud" data-field="redemptionDemandAud" type="number" min="0" step="10000" inputmode="decimal"></div>
+                </div>
+              </div>
+            </fieldset>
+          </form>
+
+          <p id="input-message" class="input-message" role="status" aria-live="polite"></p>
+          <div class="scenario-actions">
+            <button type="button" id="export-button">Export JSON</button>
+            <button type="button" id="import-button">Import JSON</button>
+            <button type="button" id="share-button">Copy share link</button>
+            <input id="import-file" type="file" accept="application/json,.json" hidden>
+          </div>
+        </aside>
+
+        <section class="dashboard-panel" aria-label="Simulation dashboard">
+          <div class="scenario-strip card">
+            <div>
+              <p class="eyebrow">Selected scenario</p>
+              <h2 id="scenario-title">Normal Friday</h2>
+            </div>
+            <div class="timeline-controls" aria-label="Simulation timeline controls">
+              <button id="play-button" type="button" aria-pressed="false">Play</button>
+              <label class="sr-only" for="timeline-range">Simulation hour</label>
+              <input id="timeline-range" type="range" min="0" max="72" value="0" step="1">
+              <output id="timeline-label" for="timeline-range">Fri 15:00</output>
+            </div>
+          </div>
+
+          <div class="metrics" aria-live="polite">
+            <article class="metric-card card metric-card--primary">
+              <p>Immediately redeemable AUD</p>
+              <strong id="immediate-value">A$0</strong>
+              <small id="immediate-detail">Current payout capacity</small>
+            </article>
+            <article class="metric-card card">
+              <p>Queued AUD demand</p>
+              <strong id="queue-value">A$0</strong>
+              <small id="queue-detail">Awaiting the full payout chain</small>
+            </article>
+            <article class="metric-card card">
+              <p>Effective liquidity ratio</p>
+              <strong id="ratio-value">0.0%</strong>
+              <small id="ratio-detail">Immediate capacity / nominal liquidity</small>
+            </article>
+            <article class="metric-card card">
+              <p>Estimated discount / slippage</p>
+              <strong id="discount-value">0.00%</strong>
+              <small id="discount-detail">Synthetic indicator, not a price</small>
+            </article>
+          </div>
+
+          <article class="chart-card card" aria-labelledby="chart-title">
+            <div class="card-heading chart-heading">
+              <div>
+                <p class="eyebrow">72-hour ledger</p>
+                <h2 id="chart-title">Queue and redeemable capacity</h2>
+              </div>
+              <p id="gate-summary" class="gate-summary">Checking gates</p>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="liquidity-chart" role="img" aria-label="Line chart comparing queued AUD demand and immediate redeemable AUD over 72 hours. A data table follows.">Your browser does not support canvas. Use the simulation data table below.</canvas>
+            </div>
+            <div class="chart-legend" aria-label="Chart legend">
+              <span><i class="legend-mark legend-mark--queue" aria-hidden="true"></i>Queued AUD demand</span>
+              <span><i class="legend-mark legend-mark--immediate" aria-hidden="true"></i>Immediate AUD capacity</span>
+            </div>
+          </article>
+
+          <div class="detail-grid">
+            <article class="status-card card" aria-labelledby="payout-title">
+              <p class="eyebrow">Payout outlook</p>
+              <h2 id="payout-title">Next AUD payout window</h2>
+              <strong id="next-payout">Calculating</strong>
+              <p id="payout-explanation">The simulator checks issuer, bank and payout operating windows together.</p>
+            </article>
+            <article class="status-card card" aria-labelledby="chain-title">
+              <p class="eyebrow">Settlement chain</p>
+              <h2 id="chain-title">Current gate state</h2>
+              <dl class="gate-list">
+                <div><dt>Issuer redemption</dt><dd id="issuer-gate">Closed</dd></div>
+                <div><dt>Bank settlement</dt><dd id="bank-gate">Closed</dd></div>
+                <div><dt>Australian payout</dt><dd id="payout-gate">Closed</dd></div>
+                <div><dt>FX condition</dt><dd id="fx-gate">Normal</dd></div>
+              </dl>
+            </article>
+          </div>
+
+          <article class="table-card card" aria-labelledby="table-title">
+            <div class="card-heading">
+              <div>
+                <p class="eyebrow">Text equivalent</p>
+                <h2 id="table-title">Simulation data table</h2>
+              </div>
+              <p>Six-hour snapshots plus selected hour</p>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th></tr></thead>
+                <tbody id="timeline-table"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <section class="method card" aria-labelledby="method-title">
+        <div class="method-intro">
+          <p class="eyebrow">About and method</p>
+          <h2 id="method-title">A constrained operating-window model</h2>
+          <p>At each hour, synthetic redemption demand enters a queue. Settlement can occur only when issuer redemption, bank settlement and Australian AUD payout windows are all open. The hourly capacity is the smallest of issuer throughput, available FX depth, payout throughput and remaining AUD reserve.</p>
+        </div>
+        <div class="method-grid">
+          <div><h3>What it shows</h3><p>How a closed payout chain can create queued AUD demand and lower immediately redeemable capacity even while onchain transfers continue.</p></div>
+          <div><h3>What it does not show</h3><p>It does not model real issuers, legal redemption rights, reserve attestations, counterparties, exchange order books, credit risk, token price discovery or operational incidents.</p></div>
+          <div><h3>How to use it</h3><p>Edit the synthetic fields, choose a preset, scrub the 72-hour timeline, or export a scenario. Shared links contain only the editable scenario in the URL hash.</p></div>
+        </div>
+        <p class="method-link"><a href="MODEL.md">Read the model notes and formulas</a></p>
+      </section>
+    </main>
+    <footer class="site-footer">Weekend Gap uses only synthetic, editable assumptions. AUD values are illustrative.</footer>
+    <script type="module" src="src/app.js"></script>
+  </body>
+</html>

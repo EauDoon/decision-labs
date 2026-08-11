@@ -1,0 +1,107 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import {
+  DEFAULT_SCENARIO,
+  PRESETS,
+  SIMULATION_HOURS,
+  buildDemandSchedule,
+  capacityForHour,
+  getOperationalStatus,
+  nextPayoutTime,
+  runSimulation,
+  sanitizeScenario,
+  scenarioFromHash,
+  scenarioFromJSON,
+  scenarioToHash,
+  scenarioToJSON
+} from "../src/model.js";
+
+test("demand schedule is deterministic and conserves the requested total", () => {
+  const first = buildDemandSchedule(1234567.89);
+  const second = buildDemandSchedule(1234567.89);
+  assert.deepEqual(first, second);
+  assert.equal(first.length, SIMULATION_HOURS);
+  assert.ok(Math.abs(first.reduce((sum, value) => sum + value, 0) - 1234567.89) < 0.000001);
+});
+
+test("weekend closure leaves ledger demand queued while issuer, bank and payout gates close", () => {
+  const result = runSimulation(PRESETS.weekendRush);
+  const saturdayNoon = result.timeline[21]; // Fri 15:00 plus 21 hours.
+  assert.equal(saturdayNoon.timeLabel, "Sat 12:00");
+  assert.equal(saturdayNoon.issuerOpen, false);
+  assert.equal(saturdayNoon.bankOpen, false);
+  assert.equal(saturdayNoon.payoutOpen, false);
+  assert.equal(saturdayNoon.immediateAud, 0);
+  assert.ok(saturdayNoon.queuedAud > 0);
+  assert.ok(saturdayNoon.discountBps > PRESETS.weekendRush.fxSpreadBps);
+});
+
+test("normal scenario permits settlement in the Friday overlap and on Monday", () => {
+  const result = runSimulation(DEFAULT_SCENARIO);
+  assert.ok(result.timeline[1].settledThisHour > 0);
+  assert.equal(result.timeline[60].settledThisHour, 0); // Monday 03:00.
+  assert.ok(result.timeline[66].settledThisHour > 0); // Monday 09:00.
+  assert.ok(result.summary.totalSettledAud > 0);
+  assert.ok(result.summary.totalSettledAud <= result.summary.totalDemandAud);
+});
+
+test("reserve exhaustion is explicit and never allows negative balances", () => {
+  const result = runSimulation({ ...DEFAULT_SCENARIO, reserveCashAud: 10000, redemptionDemandAud: 3000000 });
+  assert.equal(result.summary.finalReserveAud, 0);
+  assert.ok(result.summary.finalQueuedAud > 0);
+  assert.ok(result.timeline.every((point) => point.reserveRemainingAud >= 0 && point.queuedAud >= 0));
+  assert.equal(result.timeline.at(-1).immediateAud, 0);
+});
+
+test("invalid input is clamped to safe operational values", () => {
+  const { scenario, errors } = sanitizeScenario({
+    nominalLiquidityAud: -1,
+    reserveCashAud: Number.POSITIVE_INFINITY,
+    issuerOpenStartHour: 23,
+    issuerOpenEndHour: 2,
+    weekendFxMultiplier: 0,
+    name: "  "
+  });
+  assert.equal(scenario.nominalLiquidityAud, 10000);
+  assert.equal(scenario.reserveCashAud, 10000);
+  assert.equal(scenario.issuerOpenStartHour, 23);
+  assert.equal(scenario.issuerOpenEndHour, 24);
+  assert.equal(scenario.weekendFxMultiplier, 1);
+  assert.equal(scenario.name, DEFAULT_SCENARIO.name);
+  assert.ok(errors.length > 0);
+});
+
+test("current payout capacity is bounded by every operational bottleneck", () => {
+  const input = {
+    ...DEFAULT_SCENARIO,
+    issuerThroughputAudPerHour: 300,
+    fxDepthAudPerHour: 200,
+    payoutThroughputAudPerHour: 100,
+    reserveCashAud: 50
+  };
+  const available = capacityForHour(input, 0, 50);
+  assert.equal(available.capacityAud, 50);
+  assert.equal(available.limitingGate, "AUD reserve");
+  assert.equal(capacityForHour(input, 21, 50).capacityAud, 0);
+});
+
+test("next payout searches through the weekend to Monday business hours", () => {
+  assert.equal(nextPayoutTime(DEFAULT_SCENARIO, 2), 65);
+  assert.equal(getOperationalStatus(DEFAULT_SCENARIO, 65).payoutOpen, true);
+  assert.equal(nextPayoutTime(DEFAULT_SCENARIO, 0, 0), null);
+  assert.equal(nextPayoutTime({ ...DEFAULT_SCENARIO, issuerThroughputAudPerHour: 0 }, 0), null);
+  assert.equal(nextPayoutTime({ ...DEFAULT_SCENARIO, fxDepthAudPerHour: 0 }, 0), null);
+  assert.equal(nextPayoutTime({ ...DEFAULT_SCENARIO, payoutThroughputAudPerHour: 0 }, 0), null);
+});
+
+test("scenario JSON and hash round trips preserve valid editable assumptions", () => {
+  const source = { ...DEFAULT_SCENARIO, name: "Shared stress check", redemptionDemandAud: 987654 };
+  const imported = scenarioFromJSON(scenarioToJSON(source));
+  assert.deepEqual(imported.scenario, sanitizeScenario(source).scenario);
+  const restored = scenarioFromHash(scenarioToHash(source));
+  assert.deepEqual(restored.scenario, sanitizeScenario(source).scenario);
+  assert.equal(scenarioFromJSON("not json").scenario, null);
+  assert.equal(scenarioFromHash("#scenario=%7Bbad").scenario, null);
+  assert.equal(scenarioFromJSON("x".repeat(250001)).scenario, null);
+  assert.equal(scenarioFromHash(`#scenario=${"x".repeat(60000)}`).scenario, null);
+});

@@ -1,0 +1,1235 @@
+<!doctype html>
+<!--
+MIT License
+
+Copyright (c) 2026 EauDoon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<html lang="en" data-weekend-gap-standalone="true">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'none'; font-src 'none'; connect-src 'none'; media-src 'none'; object-src 'none'; base-uri 'none'; form-action 'none'; frame-src 'none'; worker-src 'none'; manifest-src 'none'">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A deterministic educational simulator for AUD stablecoin liquidity across a weekend operating gap.">
+    <title>Weekend Gap | AUD liquidity simulator</title>
+    <style>
+:root {
+  color-scheme: dark;
+  --navy-950: #07131f;
+  --navy-900: #0b1b2c;
+  --navy-800: #10263b;
+  --navy-700: #17344d;
+  --ink: #eef4f5;
+  --muted: #aabac4;
+  --line: rgba(211, 229, 235, 0.18);
+  --amber: #f4b942;
+  --amber-soft: #f8d17a;
+  --green: #64d59b;
+  --red: #ef8d82;
+  --shadow: 0 18px 38px rgba(0, 0, 0, 0.22);
+  font-family: Georgia, "Times New Roman", serif;
+}
+
+* { box-sizing: border-box; }
+
+html { background: var(--navy-950); }
+
+body {
+  margin: 0;
+  min-width: 320px;
+  background: var(--navy-950);
+  color: var(--ink);
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+button, input { font: inherit; }
+
+button {
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: var(--amber);
+  color: #17202a;
+  cursor: pointer;
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.84rem;
+  font-weight: 800;
+  letter-spacing: 0.01em;
+  padding: 0.68rem 0.85rem;
+}
+
+button:hover { background: var(--amber-soft); }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--green); outline-offset: 3px; }
+
+a { color: var(--amber-soft); }
+a:hover { color: var(--ink); }
+
+.skip-link {
+  position: fixed;
+  top: -100px;
+  left: 1rem;
+  z-index: 10;
+  background: var(--amber);
+  color: var(--navy-950);
+  padding: 0.65rem 0.8rem;
+}
+.skip-link:focus { top: 1rem; }
+
+.site-header {
+  border-bottom: 1px solid var(--line);
+  background: rgba(7, 19, 31, 0.96);
+}
+
+.site-header__inner, .page-shell, .site-footer {
+  width: min(1440px, calc(100% - 2.5rem));
+  margin: 0 auto;
+}
+
+.site-header__inner {
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.brand { display: flex; align-items: center; gap: 0.85rem; }
+.brand__mark {
+  display: grid;
+  width: 38px;
+  height: 38px;
+  place-items: center;
+  border: 1px solid var(--amber);
+  border-radius: 50%;
+  color: var(--amber);
+  font-family: Arial, Helvetica, sans-serif;
+  font-size: 0.72rem;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+}
+h1, h2, h3, p { margin-top: 0; }
+h1 { margin-bottom: 0; font-size: 1.22rem; letter-spacing: 0.01em; }
+h2 { margin-bottom: 0.45rem; font-size: 1.38rem; line-height: 1.2; }
+h3 { margin-bottom: 0.3rem; font-size: 1rem; }
+.eyebrow { margin-bottom: 0.22rem; color: var(--amber); font-family: Arial, Helvetica, sans-serif; font-size: 0.68rem; font-weight: 800; letter-spacing: 0.11em; text-transform: uppercase; }
+.header-note { margin: 0; max-width: 22rem; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; text-align: right; }
+
+.page-shell { padding: 3rem 0 2rem; }
+.intro { max-width: 850px; margin: 0 0 2.1rem; }
+.intro h2 { font-size: clamp(1.85rem, 3.8vw, 3.2rem); letter-spacing: -0.025em; }
+.intro > p:not(.eyebrow) { max-width: 760px; color: #d3dfe2; font-size: 1.06rem; }
+.notice { border-left: 3px solid var(--amber); padding: 0.65rem 0 0.65rem 0.9rem; color: var(--muted) !important; font-family: Arial, Helvetica, sans-serif; font-size: 0.83rem !important; }
+
+.workspace { display: grid; grid-template-columns: minmax(320px, 400px) minmax(0, 1fr); gap: 1.25rem; align-items: start; }
+.card { border: 1px solid var(--line); border-radius: 12px; background: var(--navy-900); box-shadow: var(--shadow); }
+.controls { padding: 1.2rem; }
+.card-heading { display: flex; align-items: start; justify-content: space-between; gap: 1rem; }
+.text-button { padding: 0.2rem 0; border: 0; background: transparent; color: var(--amber-soft); }
+.text-button:hover { background: transparent; color: var(--ink); }
+
+fieldset { min-width: 0; margin: 1.12rem 0 0; padding: 1rem 0 0; border: 0; border-top: 1px solid var(--line); }
+legend { padding: 0; color: #d9e5e7; font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; }
+.preset-set { margin-top: 1rem; padding-top: 0.9rem; }
+.preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; margin-top: 0.65rem; }
+.preset-button { min-height: 52px; border-color: var(--line); background: transparent; color: var(--muted); font-size: 0.72rem; line-height: 1.15; padding: 0.45rem; }
+.preset-button:hover { border-color: var(--amber); background: rgba(244, 185, 66, 0.08); color: var(--ink); }
+.preset-button.is-selected { border-color: var(--amber); background: rgba(244, 185, 66, 0.14); color: var(--amber-soft); }
+
+.input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.7rem; margin-top: 0.65rem; }
+.input-group { min-width: 0; }
+.input-group--full { grid-column: 1 / -1; }
+.input-group > label { display: block; min-height: 2.5em; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.72rem; line-height: 1.25; }
+.input-group--hours > label { min-height: auto; margin-bottom: 0.36rem; }
+input[type="text"], input[type="number"] { width: 100%; min-width: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--navy-950); color: var(--ink); font-family: Arial, Helvetica, sans-serif; font-size: 0.86rem; padding: 0.58rem 0.56rem; }
+input[type="number"] { -moz-appearance: textfield; }
+input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-outer-spin-button { opacity: 1; }
+.unit-input { display: grid; grid-template-columns: auto minmax(0, 1fr); align-items: center; overflow: hidden; border: 1px solid var(--line); border-radius: 6px; background: var(--navy-950); }
+.unit-input:focus-within { outline: 3px solid var(--green); outline-offset: 2px; }
+.unit-input > span { padding-left: 0.56rem; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; }
+.unit-input input { border: 0; outline: 0 !important; background: transparent; }
+.unit-input--suffix { grid-template-columns: minmax(0, 1fr) auto; }
+.unit-input--suffix > span { padding-right: 0.56rem; }
+.hour-inputs { display: grid; grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto; align-items: center; gap: 0.28rem; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.72rem; }
+.hour-inputs input { padding: 0.58rem 0.25rem; text-align: center; }
+.input-message { min-height: 1.25rem; margin: 1rem 0 0; color: var(--amber-soft); font-family: Arial, Helvetica, sans-serif; font-size: 0.76rem; }
+.scenario-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.45rem; margin-top: 0.2rem; }
+.scenario-actions button { padding: 0.58rem 0.4rem; font-size: 0.7rem; }
+
+.dashboard-panel { display: grid; gap: 1.25rem; min-width: 0; }
+.scenario-strip { display: flex; align-items: center; justify-content: space-between; gap: 1rem; padding: 1.05rem 1.2rem; }
+.scenario-strip h2 { margin-bottom: 0; }
+.timeline-controls { display: grid; grid-template-columns: auto minmax(180px, 300px) auto; gap: 0.65rem; align-items: center; width: min(100%, 510px); }
+.timeline-controls button { min-width: 64px; }
+#timeline-range { accent-color: var(--amber); cursor: pointer; }
+#timeline-label { min-width: 5.8rem; color: var(--amber-soft); font-family: Arial, Helvetica, sans-serif; font-size: 0.8rem; font-weight: 800; text-align: right; }
+
+.metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 0.8rem; }
+.metric-card { padding: 1rem; min-height: 136px; }
+.metric-card--primary { border-color: rgba(244, 185, 66, 0.52); background: #112a3a; }
+.metric-card p { min-height: 2.5em; margin-bottom: 0.55rem; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.72rem; line-height: 1.25; }
+.metric-card strong { display: block; color: var(--amber-soft); font-family: Arial, Helvetica, sans-serif; font-size: clamp(1.2rem, 2vw, 1.8rem); letter-spacing: -0.03em; line-height: 1.05; }
+.metric-card small { display: block; margin-top: 0.55rem; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.67rem; line-height: 1.25; }
+
+.chart-card, .table-card { padding: 1.2rem; }
+.table-card { min-width: 0; }
+.chart-heading { align-items: end; }
+.gate-summary { margin: 0; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; text-align: right; }
+.chart-wrap { position: relative; height: 300px; margin-top: 1rem; border-top: 1px solid var(--line); border-bottom: 1px solid var(--line); }
+#liquidity-chart { display: block; width: 100%; height: 100%; }
+.chart-legend { display: flex; flex-wrap: wrap; gap: 1rem; margin-top: 0.8rem; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.75rem; }
+.chart-legend span { display: inline-flex; align-items: center; gap: 0.38rem; }
+.legend-mark { width: 18px; height: 3px; display: inline-block; }
+.legend-mark--queue { background: var(--amber); }
+.legend-mark--immediate { background: var(--green); }
+
+.detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; }
+.status-card { padding: 1.2rem; }
+.status-card > strong { display: block; margin: 0.35rem 0 0.7rem; color: var(--amber-soft); font-family: Arial, Helvetica, sans-serif; font-size: 1.4rem; letter-spacing: -0.02em; }
+.status-card > p:last-child { margin-bottom: 0; color: var(--muted); font-size: 0.9rem; }
+.gate-list { display: grid; gap: 0.38rem; margin: 0; }
+.gate-list div { display: flex; justify-content: space-between; gap: 1rem; padding: 0.3rem 0; border-bottom: 1px solid rgba(211, 229, 235, 0.1); font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; }
+.gate-list div:last-child { border-bottom: 0; }
+.gate-list dt { color: var(--muted); }
+.gate-list dd { margin: 0; font-weight: 800; text-align: right; }
+.state-open { color: var(--green); }
+.state-closed { color: var(--red); }
+.state-watch { color: var(--amber-soft); }
+
+.table-card .card-heading > p { margin: 0; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.72rem; text-align: right; }
+.table-scroll { overflow-x: auto; margin-top: 0.85rem; }
+table { width: 100%; min-width: 690px; border-collapse: collapse; font-family: Arial, Helvetica, sans-serif; font-size: 0.76rem; }
+th, td { padding: 0.68rem 0.58rem; border-bottom: 1px solid var(--line); text-align: right; white-space: nowrap; }
+th { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase; }
+th:first-child, td:first-child { text-align: left; }
+tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
+.table-state { font-weight: 800; }
+
+.method { margin-top: 1.25rem; padding: 1.5rem; }
+.method-intro { max-width: 760px; }
+.method-intro > p { color: #d2dfe2; }
+.method-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-top: 1.25rem; }
+.method-grid > div { border-top: 1px solid var(--line); padding-top: 0.8rem; }
+.method-grid p { margin-bottom: 0; color: var(--muted); font-size: 0.88rem; }
+.method-link { margin: 1.25rem 0 0; font-family: Arial, Helvetica, sans-serif; font-size: 0.82rem; }
+.site-footer { padding: 0 0 2.5rem; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.72rem; }
+.sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 1120px) {
+  .workspace { grid-template-columns: minmax(300px, 350px) minmax(0, 1fr); }
+  .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+@media (max-width: 850px) {
+  .site-header__inner { min-height: 70px; }
+  .header-note { display: none; }
+  .page-shell { padding-top: 2rem; }
+  .workspace { grid-template-columns: 1fr; }
+  .controls { order: 2; }
+  .dashboard-panel { order: 1; }
+}
+
+@media (max-width: 620px) {
+  .site-header__inner, .page-shell, .site-footer { width: min(100% - 1.25rem, 1440px); }
+  .page-shell { padding-bottom: 1.2rem; }
+  .intro { margin-bottom: 1.35rem; }
+  .scenario-strip { align-items: start; flex-direction: column; }
+  .timeline-controls { width: 100%; grid-template-columns: auto minmax(0, 1fr); }
+  #timeline-label { grid-column: 2; text-align: left; }
+  .metrics, .detail-grid, .method-grid { grid-template-columns: 1fr; }
+  .input-grid { grid-template-columns: 1fr; }
+  .chart-wrap { height: 250px; }
+  .table-card .card-heading { align-items: start; flex-direction: column; }
+  .table-card .card-heading > p { text-align: left; }
+  .scenario-actions { grid-template-columns: 1fr; }
+}
+
+</style>
+  </head>
+  <body>
+    <a class="skip-link" href="#dashboard">Skip to simulator</a>
+    <header class="site-header">
+      <div class="site-header__inner">
+        <div class="brand" aria-label="Weekend Gap">
+          <span class="brand__mark" aria-hidden="true">WG</span>
+          <div>
+            <p class="eyebrow">Market operations study</p>
+            <h1>Weekend Gap</h1>
+          </div>
+        </div>
+        <p class="header-note">Synthetic AUD stablecoin liquidity simulator</p>
+      </div>
+    </header>
+
+    <main id="dashboard" class="page-shell">
+      <section class="intro" aria-labelledby="intro-title">
+        <p class="eyebrow">Friday afternoon to Monday afternoon</p>
+        <h2 id="intro-title">The ledger stays open. The payout chain does not.</h2>
+        <p>Model how issuer redemptions, bank settlement, FX depth and Australian AUD off-ramps can create a visible liquidity gap while onchain transfers remain available.</p>
+        <p class="notice"><strong>Educational simulator only.</strong> Every assumption is synthetic and editable. This is not financial advice, live market data or a statement about any issuer.</p>
+      </section>
+
+      <section class="workspace" aria-label="Weekend liquidity scenario workspace">
+        <aside class="controls card" aria-labelledby="assumptions-title">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Editable assumptions</p>
+              <h2 id="assumptions-title">Scenario</h2>
+            </div>
+            <button class="text-button" id="reset-button" type="button">Reset</button>
+          </div>
+
+          <fieldset class="preset-set" aria-label="Scenario presets">
+            <legend>Preset</legend>
+            <div class="preset-grid">
+              <button type="button" class="preset-button is-selected" data-preset="normal">Normal Friday</button>
+              <button type="button" class="preset-button" data-preset="weekendRush">Weekend Rush</button>
+              <button type="button" class="preset-button" data-preset="marketStress">Market Stress</button>
+            </div>
+          </fieldset>
+
+          <form id="scenario-form" novalidate>
+            <div class="input-group input-group--full">
+              <label for="name">Scenario name</label>
+              <input id="name" name="name" data-field="name" maxlength="80" type="text" autocomplete="off">
+            </div>
+
+            <fieldset>
+              <legend>Liquidity base</legend>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="nominalLiquidityAud">Nominal stablecoin liquidity</label>
+                  <div class="unit-input"><span>A$</span><input id="nominalLiquidityAud" name="nominalLiquidityAud" data-field="nominalLiquidityAud" type="number" min="10000" step="10000" inputmode="decimal"></div>
+                </div>
+                <div class="input-group">
+                  <label for="reserveCashAud">AUD reserve and cash capacity</label>
+                  <div class="unit-input"><span>A$</span><input id="reserveCashAud" name="reserveCashAud" data-field="reserveCashAud" type="number" min="0" step="10000" inputmode="decimal"></div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Issuer redemption</legend>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="issuerThroughputAudPerHour">Throughput per hour</label>
+                  <div class="unit-input"><span>A$</span><input id="issuerThroughputAudPerHour" name="issuerThroughputAudPerHour" data-field="issuerThroughputAudPerHour" type="number" min="0" step="1000" inputmode="decimal"></div>
+                </div>
+                <div class="input-group input-group--hours">
+                  <label>Business-day hours</label>
+                  <div class="hour-inputs">
+                    <input aria-label="Issuer opens at" id="issuerOpenStartHour" name="issuerOpenStartHour" data-field="issuerOpenStartHour" type="number" min="0" max="23" step="1" inputmode="numeric"><span>to</span><input aria-label="Issuer closes at" id="issuerOpenEndHour" name="issuerOpenEndHour" data-field="issuerOpenEndHour" type="number" min="1" max="24" step="1" inputmode="numeric"><span>local</span>
+                  </div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Bank settlement</legend>
+              <div class="input-group input-group--hours">
+                <label>Business-day hours</label>
+                <div class="hour-inputs">
+                  <input aria-label="Bank opens at" id="bankOpenStartHour" name="bankOpenStartHour" data-field="bankOpenStartHour" type="number" min="0" max="23" step="1" inputmode="numeric"><span>to</span><input aria-label="Bank closes at" id="bankOpenEndHour" name="bankOpenEndHour" data-field="bankOpenEndHour" type="number" min="1" max="24" step="1" inputmode="numeric"><span>local</span>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>FX liquidity</legend>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="fxDepthAudPerHour">AUD depth per hour</label>
+                  <div class="unit-input"><span>A$</span><input id="fxDepthAudPerHour" name="fxDepthAudPerHour" data-field="fxDepthAudPerHour" type="number" min="0" step="1000" inputmode="decimal"></div>
+                </div>
+                <div class="input-group">
+                  <label for="fxSpreadBps">Weekday spread</label>
+                  <div class="unit-input unit-input--suffix"><input id="fxSpreadBps" name="fxSpreadBps" data-field="fxSpreadBps" type="number" min="0" step="1" inputmode="decimal"><span>bps</span></div>
+                </div>
+                <div class="input-group input-group--full">
+                  <label for="weekendFxMultiplier">Weekend depth and spread multiplier</label>
+                  <div class="unit-input unit-input--suffix"><input id="weekendFxMultiplier" name="weekendFxMultiplier" data-field="weekendFxMultiplier" type="number" min="1" step="0.1" inputmode="decimal"><span>x</span></div>
+                </div>
+              </div>
+            </fieldset>
+
+            <fieldset>
+              <legend>Australian AUD payout and off-ramp</legend>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="payoutThroughputAudPerHour">Throughput per hour</label>
+                  <div class="unit-input"><span>A$</span><input id="payoutThroughputAudPerHour" name="payoutThroughputAudPerHour" data-field="payoutThroughputAudPerHour" type="number" min="0" step="1000" inputmode="decimal"></div>
+                </div>
+                <div class="input-group input-group--hours">
+                  <label>Business-day hours</label>
+                  <div class="hour-inputs">
+                    <input aria-label="Payout opens at" id="payoutOpenStartHour" name="payoutOpenStartHour" data-field="payoutOpenStartHour" type="number" min="0" max="23" step="1" inputmode="numeric"><span>to</span><input aria-label="Payout closes at" id="payoutOpenEndHour" name="payoutOpenEndHour" data-field="payoutOpenEndHour" type="number" min="1" max="24" step="1" inputmode="numeric"><span>local</span>
+                  </div>
+                </div>
+                <div class="input-group input-group--full">
+                  <label for="redemptionDemandAud">72-hour redemption demand</label>
+                  <div class="unit-input"><span>A$</span><input id="redemptionDemandAud" name="redemptionDemandAud" data-field="redemptionDemandAud" type="number" min="0" step="10000" inputmode="decimal"></div>
+                </div>
+              </div>
+            </fieldset>
+          </form>
+
+          <p id="input-message" class="input-message" role="status" aria-live="polite"></p>
+          <div class="scenario-actions">
+            <button type="button" id="export-button">Export JSON</button>
+            <button type="button" id="import-button">Import JSON</button>
+            <button type="button" id="share-button">Copy share link</button>
+            <input id="import-file" type="file" accept="application/json,.json" hidden>
+          </div>
+        </aside>
+
+        <section class="dashboard-panel" aria-label="Simulation dashboard">
+          <div class="scenario-strip card">
+            <div>
+              <p class="eyebrow">Selected scenario</p>
+              <h2 id="scenario-title">Normal Friday</h2>
+            </div>
+            <div class="timeline-controls" aria-label="Simulation timeline controls">
+              <button id="play-button" type="button" aria-pressed="false">Play</button>
+              <label class="sr-only" for="timeline-range">Simulation hour</label>
+              <input id="timeline-range" type="range" min="0" max="72" value="0" step="1">
+              <output id="timeline-label" for="timeline-range">Fri 15:00</output>
+            </div>
+          </div>
+
+          <div class="metrics" aria-live="polite">
+            <article class="metric-card card metric-card--primary">
+              <p>Immediately redeemable AUD</p>
+              <strong id="immediate-value">A$0</strong>
+              <small id="immediate-detail">Current payout capacity</small>
+            </article>
+            <article class="metric-card card">
+              <p>Queued AUD demand</p>
+              <strong id="queue-value">A$0</strong>
+              <small id="queue-detail">Awaiting the full payout chain</small>
+            </article>
+            <article class="metric-card card">
+              <p>Effective liquidity ratio</p>
+              <strong id="ratio-value">0.0%</strong>
+              <small id="ratio-detail">Immediate capacity / nominal liquidity</small>
+            </article>
+            <article class="metric-card card">
+              <p>Estimated discount / slippage</p>
+              <strong id="discount-value">0.00%</strong>
+              <small id="discount-detail">Synthetic indicator, not a price</small>
+            </article>
+          </div>
+
+          <article class="chart-card card" aria-labelledby="chart-title">
+            <div class="card-heading chart-heading">
+              <div>
+                <p class="eyebrow">72-hour ledger</p>
+                <h2 id="chart-title">Queue and redeemable capacity</h2>
+              </div>
+              <p id="gate-summary" class="gate-summary">Checking gates</p>
+            </div>
+            <div class="chart-wrap">
+              <canvas id="liquidity-chart" role="img" aria-label="Line chart comparing queued AUD demand and immediate redeemable AUD over 72 hours. A data table follows.">Your browser does not support canvas. Use the simulation data table below.</canvas>
+            </div>
+            <div class="chart-legend" aria-label="Chart legend">
+              <span><i class="legend-mark legend-mark--queue" aria-hidden="true"></i>Queued AUD demand</span>
+              <span><i class="legend-mark legend-mark--immediate" aria-hidden="true"></i>Immediate AUD capacity</span>
+            </div>
+          </article>
+
+          <div class="detail-grid">
+            <article class="status-card card" aria-labelledby="payout-title">
+              <p class="eyebrow">Payout outlook</p>
+              <h2 id="payout-title">Next AUD payout window</h2>
+              <strong id="next-payout">Calculating</strong>
+              <p id="payout-explanation">The simulator checks issuer, bank and payout operating windows together.</p>
+            </article>
+            <article class="status-card card" aria-labelledby="chain-title">
+              <p class="eyebrow">Settlement chain</p>
+              <h2 id="chain-title">Current gate state</h2>
+              <dl class="gate-list">
+                <div><dt>Issuer redemption</dt><dd id="issuer-gate">Closed</dd></div>
+                <div><dt>Bank settlement</dt><dd id="bank-gate">Closed</dd></div>
+                <div><dt>Australian payout</dt><dd id="payout-gate">Closed</dd></div>
+                <div><dt>FX condition</dt><dd id="fx-gate">Normal</dd></div>
+              </dl>
+            </article>
+          </div>
+
+          <article class="table-card card" aria-labelledby="table-title">
+            <div class="card-heading">
+              <div>
+                <p class="eyebrow">Text equivalent</p>
+                <h2 id="table-title">Simulation data table</h2>
+              </div>
+              <p>Six-hour snapshots plus selected hour</p>
+            </div>
+            <div class="table-scroll">
+              <table>
+                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th></tr></thead>
+                <tbody id="timeline-table"></tbody>
+              </table>
+            </div>
+          </article>
+        </section>
+      </section>
+
+      <section class="method card" aria-labelledby="method-title">
+        <div class="method-intro">
+          <p class="eyebrow">About and method</p>
+          <h2 id="method-title">A constrained operating-window model</h2>
+          <p>At each hour, synthetic redemption demand enters a queue. Settlement can occur only when issuer redemption, bank settlement and Australian AUD payout windows are all open. The hourly capacity is the smallest of issuer throughput, available FX depth, payout throughput and remaining AUD reserve.</p>
+        </div>
+        <div class="method-grid">
+          <div><h3>What it shows</h3><p>How a closed payout chain can create queued AUD demand and lower immediately redeemable capacity even while onchain transfers continue.</p></div>
+          <div><h3>What it does not show</h3><p>It does not model real issuers, legal redemption rights, reserve attestations, counterparties, exchange order books, credit risk, token price discovery or operational incidents.</p></div>
+          <div><h3>How to use it</h3><p>Edit the synthetic fields, choose a preset, scrub the 72-hour timeline, or export a scenario. Shared links contain only the editable scenario in the URL hash.</p></div>
+        </div>
+        <p class="method-link">Detailed formulas and limits are included in this standalone simulator.</p>
+      </section>
+    </main>
+    <footer class="site-footer">Weekend Gap uses only synthetic, editable assumptions. AUD values are illustrative.</footer>
+    <script>
+window.__WeekendGapModel = Object.freeze((() => {
+/**
+ * Deterministic model for a Friday afternoon to Monday afternoon AUD payout gap.
+ * All amounts are AUD. All rates are AUD per hour. All time values are local hours.
+ */
+
+const SIMULATION_HOURS = 72;
+const START_DAY_INDEX = 5; // Friday, where Sunday is 0.
+const START_HOUR = 15;
+
+const DEFAULT_SCENARIO = Object.freeze({
+  name: "Normal Friday",
+  nominalLiquidityAud: 10000000,
+  reserveCashAud: 6500000,
+  issuerThroughputAudPerHour: 450000,
+  issuerOpenStartHour: 8,
+  issuerOpenEndHour: 17,
+  bankOpenStartHour: 8,
+  bankOpenEndHour: 17,
+  fxDepthAudPerHour: 700000,
+  fxSpreadBps: 18,
+  weekendFxMultiplier: 2.5,
+  payoutThroughputAudPerHour: 300000,
+  payoutOpenStartHour: 8,
+  payoutOpenEndHour: 17,
+  redemptionDemandAud: 1200000
+});
+
+const PRESETS = Object.freeze({
+  normal: Object.freeze({ ...DEFAULT_SCENARIO, name: "Normal Friday" }),
+  weekendRush: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Weekend Rush",
+    reserveCashAud: 5200000,
+    issuerThroughputAudPerHour: 300000,
+    fxDepthAudPerHour: 380000,
+    fxSpreadBps: 28,
+    weekendFxMultiplier: 3.5,
+    payoutThroughputAudPerHour: 180000,
+    redemptionDemandAud: 3100000
+  }),
+  marketStress: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Market Stress",
+    reserveCashAud: 3400000,
+    issuerThroughputAudPerHour: 150000,
+    issuerOpenEndHour: 16,
+    fxDepthAudPerHour: 170000,
+    fxSpreadBps: 70,
+    weekendFxMultiplier: 6,
+    payoutThroughputAudPerHour: 95000,
+    redemptionDemandAud: 7200000
+  })
+});
+
+const FIELD_RULES = Object.freeze({
+  name: { type: "text", maxLength: 80 },
+  nominalLiquidityAud: { min: 10000, max: 5000000000 },
+  reserveCashAud: { min: 0, max: 5000000000 },
+  issuerThroughputAudPerHour: { min: 0, max: 1000000000 },
+  issuerOpenStartHour: { min: 0, max: 23, integer: true },
+  issuerOpenEndHour: { min: 1, max: 24, integer: true },
+  bankOpenStartHour: { min: 0, max: 23, integer: true },
+  bankOpenEndHour: { min: 1, max: 24, integer: true },
+  fxDepthAudPerHour: { min: 0, max: 1000000000 },
+  fxSpreadBps: { min: 0, max: 10000 },
+  weekendFxMultiplier: { min: 1, max: 100 },
+  payoutThroughputAudPerHour: { min: 0, max: 1000000000 },
+  payoutOpenStartHour: { min: 0, max: 23, integer: true },
+  payoutOpenEndHour: { min: 1, max: 24, integer: true },
+  redemptionDemandAud: { min: 0, max: 5000000000 }
+});
+
+function finiteNumber(value, fallback) {
+  const parsed = typeof value === "number" ? value : Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function clamp(value, min, max) {
+  return Math.min(Math.max(value, min), max);
+}
+
+function normaliseWindow(start, end) {
+  const safeStart = clamp(Math.round(start), 0, 23);
+  const safeEnd = clamp(Math.round(end), 1, 24);
+  return safeEnd <= safeStart ? [safeStart, Math.min(24, safeStart + 1)] : [safeStart, safeEnd];
+}
+
+/**
+ * Coerces an untrusted scenario to bounded values. Clamps are returned so callers
+ * can keep the simulator usable instead of failing on a malformed saved scenario.
+ */
+function sanitizeScenario(raw = {}) {
+  const errors = [];
+  const source = raw && typeof raw === "object" ? raw : {};
+  const scenario = {};
+
+  for (const [field, rule] of Object.entries(FIELD_RULES)) {
+    const fallback = DEFAULT_SCENARIO[field];
+    if (rule.type === "text") {
+      const name = typeof source[field] === "string" ? source[field].trim() : "";
+      scenario[field] = (name || fallback).slice(0, rule.maxLength);
+      if (source[field] !== undefined && scenario[field] !== source[field]) {
+        errors.push(`${field} was normalised.`);
+      }
+      continue;
+    }
+    const numeric = finiteNumber(source[field], fallback);
+    const rounded = rule.integer ? Math.round(numeric) : numeric;
+    const bounded = clamp(rounded, rule.min, rule.max);
+    scenario[field] = bounded;
+    if (source[field] !== undefined && bounded !== numeric) {
+      errors.push(`${field} was clamped to its allowed range.`);
+    }
+  }
+
+  scenario.reserveCashAud = Math.min(scenario.reserveCashAud, scenario.nominalLiquidityAud);
+  if (scenario.reserveCashAud !== finiteNumber(source.reserveCashAud, DEFAULT_SCENARIO.reserveCashAud)) {
+    errors.push("reserveCashAud cannot exceed nominalLiquidityAud.");
+  }
+
+  for (const prefix of ["issuer", "bank", "payout"]) {
+    const startKey = `${prefix}OpenStartHour`;
+    const endKey = `${prefix}OpenEndHour`;
+    const [start, end] = normaliseWindow(scenario[startKey], scenario[endKey]);
+    if (start !== scenario[startKey] || end !== scenario[endKey]) {
+      errors.push(`${prefix} operating hours were adjusted to a one-hour minimum window.`);
+    }
+    scenario[startKey] = start;
+    scenario[endKey] = end;
+  }
+
+  return { scenario, errors: [...new Set(errors)] };
+}
+
+function dayAndHourAt(hourOffset) {
+  const absoluteHour = START_HOUR + Math.max(0, Math.floor(hourOffset));
+  return {
+    dayIndex: (START_DAY_INDEX + Math.floor(absoluteHour / 24)) % 7,
+    localHour: absoluteHour % 24
+  };
+}
+
+function formatTime(hourOffset) {
+  const { dayIndex, localHour } = dayAndHourAt(hourOffset);
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  return `${days[dayIndex]} ${String(localHour).padStart(2, "0")}:00`;
+}
+
+function isBusinessDay(hourOffset) {
+  const { dayIndex } = dayAndHourAt(hourOffset);
+  return dayIndex >= 1 && dayIndex <= 5;
+}
+
+function isWithinHours(hourOffset, startHour, endHour) {
+  const { localHour } = dayAndHourAt(hourOffset);
+  return localHour >= startHour && localHour < endHour;
+}
+
+function isOperational(hourOffset, startHour, endHour) {
+  return isBusinessDay(hourOffset) && isWithinHours(hourOffset, startHour, endHour);
+}
+
+function getOperationalStatus(scenarioInput, hourOffset) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  const weekend = !isBusinessDay(hourOffset);
+  const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour);
+  const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour);
+  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour);
+  const fxMultiplier = weekend ? scenario.weekendFxMultiplier : 1;
+  return {
+    issuerOpen,
+    bankOpen,
+    payoutOpen,
+    weekend,
+    fxDepthAudPerHour: scenario.fxDepthAudPerHour / fxMultiplier,
+    fxSpreadBps: scenario.fxSpreadBps * fxMultiplier
+  };
+}
+
+/** A flat, transparent demand schedule that conserves exactly the requested total. */
+function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS) {
+  const total = Math.max(0, finiteNumber(totalDemandAud, 0));
+  const count = Math.max(1, Math.floor(hours));
+  return Array.from({ length: count }, () => total / count);
+}
+
+function capacityForHour(scenarioInput, hourOffset, reserveRemainingAud) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  const status = getOperationalStatus(scenario, hourOffset);
+  const gatesOpen = status.issuerOpen && status.bankOpen && status.payoutOpen;
+  if (!gatesOpen || reserveRemainingAud <= 0) {
+    return { capacityAud: 0, status, limitingGate: !status.issuerOpen ? "issuer" : !status.bankOpen ? "bank" : !status.payoutOpen ? "payout" : "reserve" };
+  }
+  const capacityAud = Math.max(0, Math.min(
+    scenario.issuerThroughputAudPerHour,
+    status.fxDepthAudPerHour,
+    scenario.payoutThroughputAudPerHour,
+    reserveRemainingAud
+  ));
+  const limits = [
+    [scenario.issuerThroughputAudPerHour, "issuer throughput"],
+    [status.fxDepthAudPerHour, "FX depth"],
+    [scenario.payoutThroughputAudPerHour, "payout throughput"],
+    [reserveRemainingAud, "AUD reserve"]
+  ];
+  const limitingGate = limits.find(([value]) => value === capacityAud)?.[1] || "none";
+  return { capacityAud, status, limitingGate };
+}
+
+function estimateDiscountBps({ immediateAud, nominalLiquidityAud, queuedAud, totalDemandAud, fxSpreadBps }) {
+  const liquidityRatio = nominalLiquidityAud > 0 ? immediateAud / nominalLiquidityAud : 0;
+  const queuePressure = totalDemandAud > 0 ? queuedAud / totalDemandAud : 0;
+  const accessPenalty = (1 - clamp(liquidityRatio, 0, 1)) * 550;
+  const queuePenalty = clamp(queuePressure, 0, 2) * 400;
+  return Math.round(clamp(fxSpreadBps + accessPenalty + queuePenalty, 0, 10000));
+}
+
+function nextPayoutTime(scenarioInput, fromHour, reserveRemainingAud) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  const reserve = reserveRemainingAud === undefined ? scenario.reserveCashAud : Math.max(0, finiteNumber(reserveRemainingAud, 0));
+  for (let offset = Math.max(0, Math.floor(fromHour)); offset <= fromHour + 7 * 24; offset += 1) {
+    if (capacityForHour(scenario, offset, reserve).capacityAud > 0) return offset;
+  }
+  return null;
+}
+
+function createSnapshot(scenario, hour, state, demandThisHour = 0, settledThisHour = 0, limitingGate = "none") {
+  const capacity = capacityForHour(scenario, hour, state.reserveRemainingAud);
+  const immediateAud = capacity.capacityAud;
+  const liquidityRatio = scenario.nominalLiquidityAud > 0 ? immediateAud / scenario.nominalLiquidityAud : 0;
+  const discountBps = estimateDiscountBps({
+    immediateAud,
+    nominalLiquidityAud: scenario.nominalLiquidityAud,
+    queuedAud: state.queuedAud,
+    totalDemandAud: scenario.redemptionDemandAud,
+    fxSpreadBps: capacity.status.fxSpreadBps
+  });
+  return Object.freeze({
+    hour,
+    timeLabel: formatTime(hour),
+    reserveRemainingAud: state.reserveRemainingAud,
+    queuedAud: state.queuedAud,
+    settledAud: state.settledAud,
+    demandArrivedAud: state.demandArrivedAud,
+    immediateAud,
+    liquidityRatio,
+    discountBps,
+    nextPayoutHour: nextPayoutTime(scenario, hour, state.reserveRemainingAud),
+    demandThisHour,
+    settledThisHour,
+    limitingGate: limitingGate === "none" ? capacity.limitingGate : limitingGate,
+    ...capacity.status
+  });
+}
+
+/**
+ * Runs an entirely deterministic discrete-event simulation. Demand joins a queue
+ * each hour; a payout settles only when issuer, bank and payout windows all open.
+ */
+function runSimulation(input = {}) {
+  const { scenario, errors } = sanitizeScenario(input);
+  const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud);
+  const state = { reserveRemainingAud: scenario.reserveCashAud, queuedAud: 0, settledAud: 0, demandArrivedAud: 0 };
+  const timeline = [createSnapshot(scenario, 0, state)];
+
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const demandThisHour = demandSchedule[hour];
+    state.demandArrivedAud += demandThisHour;
+    state.queuedAud += demandThisHour;
+    const capacity = capacityForHour(scenario, hour, state.reserveRemainingAud);
+    const settledThisHour = Math.min(state.queuedAud, capacity.capacityAud);
+    state.queuedAud = Math.max(0, state.queuedAud - settledThisHour);
+    state.reserveRemainingAud = Math.max(0, state.reserveRemainingAud - settledThisHour);
+    state.settledAud += settledThisHour;
+    timeline.push(createSnapshot(scenario, hour + 1, state, demandThisHour, settledThisHour, capacity.limitingGate));
+  }
+
+  return Object.freeze({
+    scenario: Object.freeze({ ...scenario }),
+    errors: Object.freeze(errors),
+    demandSchedule: Object.freeze(demandSchedule),
+    timeline: Object.freeze(timeline),
+    summary: Object.freeze({
+      totalDemandAud: scenario.redemptionDemandAud,
+      totalSettledAud: state.settledAud,
+      finalQueuedAud: state.queuedAud,
+      finalReserveAud: state.reserveRemainingAud
+    })
+  });
+}
+
+function scenarioToHash(scenarioInput) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  return `#scenario=${encodeURIComponent(JSON.stringify(scenario))}`;
+}
+
+function scenarioFromHash(hash) {
+  if (typeof hash !== "string" || !hash.startsWith("#scenario=")) return { scenario: null, errors: [] };
+  if (hash.length > 60_000) return { scenario: null, errors: ["The shared scenario link is too large. Defaults were kept."] };
+  try {
+    const decoded = decodeURIComponent(hash.slice("#scenario=".length));
+    const parsed = JSON.parse(decoded);
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) throw new Error("Scenario must be an object.");
+    return sanitizeScenario(parsed);
+  } catch {
+    return { scenario: null, errors: ["The shared scenario link could not be read. Defaults were kept."] };
+  }
+}
+
+function scenarioToJSON(scenarioInput) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  return JSON.stringify({ format: "weekend-gap-scenario", version: 1, scenario }, null, 2);
+}
+
+function scenarioFromJSON(text) {
+  if (typeof text !== "string" || text.length > 250_000) {
+    return { scenario: null, errors: ["Import failed. Scenario JSON must be 250 KB or smaller."] };
+  }
+  try {
+    const parsed = JSON.parse(text);
+    const candidate = parsed?.scenario ?? parsed;
+    if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) throw new Error("Scenario must be an object.");
+    return sanitizeScenario(candidate);
+  } catch {
+    return { scenario: null, errors: ["Import failed. Choose a valid Weekend Gap scenario JSON file."] };
+  }
+}
+
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON };
+})());
+</script>
+<script>
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON } = window.__WeekendGapModel;
+
+const STORAGE_KEY = "weekend-gap:scenario:v1";
+const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
+const form = document.querySelector("#scenario-form");
+const timelineRange = document.querySelector("#timeline-range");
+const canvas = document.querySelector("#liquidity-chart");
+const chartContext = canvas.getContext("2d");
+const elements = {
+  title: document.querySelector("#scenario-title"),
+  play: document.querySelector("#play-button"),
+  timelineLabel: document.querySelector("#timeline-label"),
+  immediate: document.querySelector("#immediate-value"),
+  immediateDetail: document.querySelector("#immediate-detail"),
+  queue: document.querySelector("#queue-value"),
+  queueDetail: document.querySelector("#queue-detail"),
+  ratio: document.querySelector("#ratio-value"),
+  discount: document.querySelector("#discount-value"),
+  gateSummary: document.querySelector("#gate-summary"),
+  nextPayout: document.querySelector("#next-payout"),
+  payoutExplanation: document.querySelector("#payout-explanation"),
+  issuerGate: document.querySelector("#issuer-gate"),
+  bankGate: document.querySelector("#bank-gate"),
+  payoutGate: document.querySelector("#payout-gate"),
+  fxGate: document.querySelector("#fx-gate"),
+  table: document.querySelector("#timeline-table"),
+  inputMessage: document.querySelector("#input-message")
+};
+
+let scenario = { ...DEFAULT_SCENARIO };
+let simulation = runSimulation(scenario);
+let selectedHour = 0;
+let playing = false;
+let playTimer = null;
+let userEdited = false;
+
+function formatAud(value, compact = true) {
+  const safe = Number.isFinite(value) ? Math.max(0, value) : 0;
+  if (compact && safe >= 1000000) return `A${(safe / 1000000).toFixed(safe >= 10000000 ? 0 : 1)}m`;
+  if (compact && safe >= 1000) return `A${(safe / 1000).toFixed(safe >= 100000 ? 0 : 1)}k`;
+  return `A${Math.round(safe).toLocaleString("en-AU")}`;
+}
+
+function formatPercent(value, decimals = 1) {
+  return `${(Math.max(0, value) * 100).toFixed(decimals)}%`;
+}
+
+function writeForm() {
+  for (const [field, value] of Object.entries(scenario)) {
+    const input = form.elements.namedItem(field);
+    if (input) input.value = String(value);
+  }
+}
+
+function readForm() {
+  const raw = {};
+  for (const field of Object.keys(DEFAULT_SCENARIO)) {
+    const input = form.elements.namedItem(field);
+    raw[field] = input ? input.value : scenario[field];
+  }
+  return raw;
+}
+
+function saveScenario() {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(scenario));
+  } catch {
+    setMessage("Local autosave is unavailable in this browser.");
+  }
+}
+
+function restoreScenario() {
+  const fromHash = scenarioFromHash(window.location.hash);
+  if (fromHash.scenario) {
+    scenario = fromHash.scenario;
+    setMessage("Loaded scenario from the share link.");
+    return;
+  }
+  if (fromHash.errors.length) {
+    setMessage(fromHash.errors[0]);
+    return;
+  }
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (!saved) return;
+    const restored = scenarioFromJSON(saved);
+    if (restored.scenario) {
+      scenario = restored.scenario;
+      setMessage("Restored the last local scenario.");
+    }
+  } catch {
+    setMessage("Saved local data could not be read. Defaults were kept.");
+  }
+}
+
+function setMessage(message = "") {
+  elements.inputMessage.textContent = message;
+}
+
+function setScenario(nextScenario, { normaliseForm = true, message = "" } = {}) {
+  const cleaned = sanitizeScenario(nextScenario);
+  scenario = cleaned.scenario;
+  simulation = runSimulation(scenario);
+  selectedHour = Math.min(selectedHour, SIMULATION_HOURS);
+  if (normaliseForm) writeForm();
+  saveScenario();
+  render();
+  if (message) setMessage(message);
+  else if (cleaned.errors.length) setMessage(cleaned.errors[0]);
+  else setMessage("");
+}
+
+function gateText(open) {
+  return open ? "Open" : "Closed";
+}
+
+function applyGateState(element, open) {
+  element.textContent = gateText(open);
+  element.className = open ? "state-open" : "state-closed";
+}
+
+function noPayoutExplanation(currentScenario, reserveRemainingAud) {
+  if (reserveRemainingAud <= 0) return "No payout is available because the AUD reserve is exhausted.";
+  const zeroThroughput = [
+    [currentScenario.issuerThroughputAudPerHour, "issuer throughput"],
+    [currentScenario.fxDepthAudPerHour, "FX depth"],
+    [currentScenario.payoutThroughputAudPerHour, "payout throughput"]
+  ].find(([capacity]) => capacity <= 0)?.[1];
+  if (zeroThroughput) return `No payout is available because ${zeroThroughput} is zero.`;
+  return "The edited business-hour windows do not overlap within the modelled search period.";
+}
+
+function currentScenarioHashError(error) {
+  return error.replace("Defaults were kept.", "The current scenario was kept.");
+}
+
+function render() {
+  const point = simulation.timeline[selectedHour];
+  elements.title.textContent = scenario.name;
+  timelineRange.value = String(selectedHour);
+  elements.timelineLabel.textContent = point.timeLabel;
+  elements.immediate.textContent = formatAud(point.immediateAud);
+  elements.immediateDetail.textContent = point.immediateAud > 0
+    ? `${point.limitingGate} sets the hourly capacity`
+    : "No complete issuer-to-AUD payout chain";
+  elements.queue.textContent = formatAud(point.queuedAud);
+  elements.queueDetail.textContent = `${formatAud(point.settledAud)} paid so far`;
+  elements.ratio.textContent = formatPercent(point.liquidityRatio);
+  elements.discount.textContent = formatPercent(point.discountBps / 10000, 2);
+  elements.gateSummary.textContent = point.immediateAud > 0
+    ? `Payout chain open · limited by ${point.limitingGate}`
+    : `Payout chain closed · blocked at ${point.limitingGate}`;
+
+  if (point.nextPayoutHour === selectedHour && point.immediateAud > 0) {
+    elements.nextPayout.textContent = "Available now";
+    elements.payoutExplanation.textContent = `A${Math.round(point.immediateAud).toLocaleString("en-AU")} can move through the modelled chain this hour.`;
+  } else if (point.nextPayoutHour === null) {
+    elements.nextPayout.textContent = "Not found in seven days";
+    elements.payoutExplanation.textContent = noPayoutExplanation(scenario, point.reserveRemainingAud);
+  } else {
+    const wait = point.nextPayoutHour - selectedHour;
+    elements.nextPayout.textContent = `${formatTime(point.nextPayoutHour)} local`;
+    elements.payoutExplanation.textContent = `The next complete issuer, bank and Australian AUD payout overlap begins in ${wait} hour${wait === 1 ? "" : "s"}.`;
+  }
+
+  applyGateState(elements.issuerGate, point.issuerOpen);
+  applyGateState(elements.bankGate, point.bankOpen);
+  applyGateState(elements.payoutGate, point.payoutOpen);
+  elements.fxGate.textContent = point.weekend
+    ? `Weekend: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
+    : `${Math.round(point.fxSpreadBps)} bps weekday spread`;
+  elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
+
+  for (const button of document.querySelectorAll("[data-preset]")) {
+    button.classList.toggle("is-selected", PRESETS[button.dataset.preset].name === scenario.name);
+  }
+  renderTable();
+  drawChart();
+}
+
+function renderTable() {
+  const rowIndexes = new Set([0, SIMULATION_HOURS, selectedHour]);
+  for (let hour = 6; hour < SIMULATION_HOURS; hour += 6) rowIndexes.add(hour);
+  const fragment = document.createDocumentFragment();
+  [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
+    const point = simulation.timeline[hour];
+    const row = document.createElement("tr");
+    if (hour === selectedHour) row.className = "is-current";
+    const cells = [
+      point.timeLabel,
+      formatAud(point.immediateAud),
+      formatAud(point.queuedAud),
+      formatPercent(point.liquidityRatio),
+      formatPercent(point.discountBps / 10000, 2),
+      point.immediateAud > 0 ? "Open" : `Blocked: ${point.limitingGate}`
+    ];
+    cells.forEach((value, index) => {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      if (index === 5) cell.className = point.immediateAud > 0 ? "table-state state-open" : "table-state state-closed";
+      row.append(cell);
+    });
+    fragment.append(row);
+  });
+  elements.table.replaceChildren(fragment);
+}
+
+function drawLine(context, points, getValue, color, dimensions, maximum) {
+  const { left, top, width, height } = dimensions;
+  context.beginPath();
+  points.forEach((point, index) => {
+    const x = left + (index / (points.length - 1)) * width;
+    const y = top + height - (getValue(point) / maximum) * height;
+    if (index === 0) context.moveTo(x, y);
+    else context.lineTo(x, y);
+  });
+  context.strokeStyle = color;
+  context.lineWidth = 2.5;
+  context.stroke();
+}
+
+function drawChart() {
+  const bounds = canvas.getBoundingClientRect();
+  const pixelRatio = window.devicePixelRatio || 1;
+  const width = Math.max(1, Math.floor(bounds.width));
+  const height = Math.max(1, Math.floor(bounds.height));
+  if (canvas.width !== width * pixelRatio || canvas.height !== height * pixelRatio) {
+    canvas.width = width * pixelRatio;
+    canvas.height = height * pixelRatio;
+  }
+  chartContext.setTransform(pixelRatio, 0, 0, pixelRatio, 0, 0);
+  chartContext.clearRect(0, 0, width, height);
+
+  const dimensions = { left: 52, top: 18, width: Math.max(1, width - 70), height: Math.max(1, height - 58) };
+  const points = simulation.timeline;
+  const maximum = Math.max(1, ...points.map((point) => Math.max(point.queuedAud, point.immediateAud)));
+  chartContext.font = "11px Arial, Helvetica, sans-serif";
+  chartContext.fillStyle = "#aabac4";
+  chartContext.strokeStyle = "rgba(211, 229, 235, 0.16)";
+  chartContext.lineWidth = 1;
+
+  for (let step = 0; step <= 4; step += 1) {
+    const y = dimensions.top + (dimensions.height / 4) * step;
+    chartContext.beginPath();
+    chartContext.moveTo(dimensions.left, y);
+    chartContext.lineTo(dimensions.left + dimensions.width, y);
+    chartContext.stroke();
+    const value = maximum * (1 - step / 4);
+    chartContext.fillText(formatAud(value), 0, y + 4);
+  }
+
+  [0, 9, 33, 57, 72].forEach((hour) => {
+    const x = dimensions.left + (hour / SIMULATION_HOURS) * dimensions.width;
+    chartContext.fillText(formatTime(hour), Math.min(x, width - 46), height - 14);
+  });
+
+  drawLine(chartContext, points, (point) => point.queuedAud, "#f4b942", dimensions, maximum);
+  drawLine(chartContext, points, (point) => point.immediateAud, "#64d59b", dimensions, maximum);
+  const selectedX = dimensions.left + (selectedHour / SIMULATION_HOURS) * dimensions.width;
+  chartContext.beginPath();
+  chartContext.moveTo(selectedX, dimensions.top);
+  chartContext.lineTo(selectedX, dimensions.top + dimensions.height);
+  chartContext.strokeStyle = "rgba(238, 244, 245, 0.62)";
+  chartContext.lineWidth = 1;
+  chartContext.stroke();
+}
+
+function setPlaying(nextPlaying) {
+  playing = nextPlaying;
+  elements.play.textContent = playing ? "Pause" : "Play";
+  elements.play.setAttribute("aria-pressed", String(playing));
+  if (playTimer) window.clearInterval(playTimer);
+  playTimer = null;
+  if (!playing) return;
+  playTimer = window.setInterval(() => {
+    selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
+    render();
+    if (selectedHour >= SIMULATION_HOURS) setPlaying(false);
+  }, 700);
+}
+
+function downloadScenario() {
+  const blob = new Blob([scenarioToJSON(scenario)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = "weekend-gap-scenario.json";
+  document.body.append(link);
+  link.click();
+  link.remove();
+  URL.revokeObjectURL(url);
+  setMessage("Scenario JSON exported.");
+}
+
+async function copyShareLink() {
+  const hash = scenarioToHash(scenario);
+  const url = `${window.location.origin}${window.location.pathname}${hash}`;
+  history.replaceState(null, "", hash);
+  try {
+    if (!navigator.clipboard?.writeText) throw new Error("Clipboard unavailable");
+    await navigator.clipboard.writeText(url);
+    setMessage("Share link copied. It contains only the editable scenario.");
+  } catch {
+    window.prompt("Copy this scenario link", url);
+    setMessage("Share link is ready to copy.");
+  }
+}
+
+async function importScenario(file) {
+  if (!file) return;
+  if (file.size > 250_000) {
+    setMessage("Import failed. Scenario JSON must be 250 KB or smaller.");
+    return;
+  }
+  try {
+    const imported = scenarioFromJSON(await file.text());
+    if (!imported.scenario) {
+      setMessage(imported.errors[0]);
+      return;
+    }
+    userEdited = true;
+    setScenario(imported.scenario, { message: "Scenario imported and autosaved." });
+  } catch {
+    setMessage("Import failed. Choose a readable JSON file.");
+  }
+}
+
+form.addEventListener("input", () => {
+  userEdited = true;
+  setScenario(readForm(), { normaliseForm: false });
+});
+
+form.addEventListener("change", () => {
+  setScenario(readForm(), { normaliseForm: true });
+});
+
+timelineRange.addEventListener("input", () => {
+  selectedHour = Number(timelineRange.value);
+  setPlaying(false);
+  render();
+});
+
+elements.play.addEventListener("click", () => setPlaying(!playing));
+
+document.querySelector("#reset-button").addEventListener("click", () => {
+  userEdited = true;
+  selectedHour = 0;
+  setPlaying(false);
+  setScenario(DEFAULT_SCENARIO, { message: "Scenario reset to Normal Friday." });
+});
+
+document.querySelectorAll("[data-preset]").forEach((button) => {
+  button.addEventListener("click", () => {
+    userEdited = true;
+    selectedHour = 0;
+    setPlaying(false);
+    setScenario(PRESETS[button.dataset.preset], { message: `${PRESETS[button.dataset.preset].name} applied.` });
+  });
+});
+
+document.querySelector("#export-button").addEventListener("click", downloadScenario);
+document.querySelector("#import-button").addEventListener("click", () => document.querySelector("#import-file").click());
+const shareButton = document.querySelector("#share-button");
+if (standaloneMode) {
+  shareButton.disabled = true;
+  shareButton.title = "Sharing is unavailable in the standalone file. Export JSON instead.";
+  shareButton.textContent = "Sharing unavailable in standalone file";
+} else {
+  shareButton.addEventListener("click", copyShareLink);
+}
+document.querySelector("#import-file").addEventListener("change", (event) => importScenario(event.target.files?.[0]));
+
+if (!standaloneMode) {
+  window.addEventListener("hashchange", () => {
+    const fromHash = scenarioFromHash(window.location.hash);
+    if (!fromHash.scenario) {
+      if (fromHash.errors.length) setMessage(currentScenarioHashError(fromHash.errors[0]));
+      return;
+    }
+    selectedHour = 0;
+    setPlaying(false);
+    setScenario(fromHash.scenario, { message: "Loaded scenario from the share link." });
+  });
+}
+
+window.addEventListener("resize", drawChart);
+
+restoreScenario();
+writeForm();
+render();
+if (!userEdited && !window.location.hash) saveScenario();
+
+</script>
+  </body>
+</html>
