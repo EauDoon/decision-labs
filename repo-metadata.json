@@ -1,0 +1,14 @@
+{
+  "name": "common-cart",
+  "description": "Local-first pooled-purchase simulator matching buyer constraints to synthetic merchant offers.",
+  "homepage": "",
+  "topics": [
+    "collective-buying",
+    "marketplace-simulation",
+    "privacy",
+    "mechanism-design",
+    "local-first",
+    "javascript",
+    "interactive-demo"
+  ]
+}

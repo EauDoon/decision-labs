@@ -1,0 +1,270 @@
+<!doctype html>
+<!--
+MIT License
+
+Copyright (c) 2026 EauDoon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Pool compatible purchase constraints and compare synthetic merchant offers without exposing individual buyer records.">
+  <meta name="theme-color" content="#211f55">
+  <title>Common Cart</title>
+  <link rel="stylesheet" href="./styles.css">
+</head>
+<body>
+  <a class="skip-link" href="#workspace">Skip to workspace</a>
+  <header class="masthead">
+    <div class="brand-lockup">
+      <span class="brand-mark" aria-hidden="true">CC</span>
+      <div>
+        <p class="eyebrow">Pooled purchase simulator</p>
+        <p class="brand-name">Common Cart</p>
+      </div>
+    </div>
+    <nav class="header-actions" aria-label="Scenario actions">
+      <button class="quiet" id="import-button" type="button">Import</button>
+      <input id="import-file" type="file" accept="application/json" hidden>
+      <button class="quiet" id="export-button" type="button">Export</button>
+      <button class="quiet" id="share-button" type="button">Copy share link</button>
+    </nav>
+  </header>
+
+  <main id="workspace">
+    <section class="hero" aria-labelledby="page-title">
+      <div>
+        <p class="kicker">Demand is more useful when buyers can combine it.</p>
+        <h1 id="page-title">Find the offer a group can actually unlock.</h1>
+      </div>
+      <p class="lede">Common Cart matches private buyer constraints to synthetic merchant offers. It reveals only cohort totals, so you can test pooled purchasing without accounts, payments, or individual targeting.</p>
+    </section>
+
+    <section class="preset-bar" aria-label="Example scenarios">
+      <div>
+        <span class="field-label">Start with an example</span>
+        <div class="button-row">
+          <button class="preset active" data-preset="neighbourhood" type="button">Coffee run</button>
+          <button class="preset" data-preset="studio" type="button">Studio chairs</button>
+          <button class="preset" data-preset="pantry" type="button">Pantry staples</button>
+        </div>
+      </div>
+      <label class="title-field">Room name
+        <input id="scenario-title" maxlength="80">
+      </label>
+      <label class="currency-field">Currency
+        <input id="currency" maxlength="3" aria-describedby="currency-help">
+        <small id="currency-help">Three-letter code</small>
+      </label>
+    </section>
+
+    <div class="status-line" id="status" role="status" aria-live="polite"></div>
+
+    <section class="scoreboard" aria-label="Market summary">
+      <article class="metric feature">
+        <span class="metric-label">Best available offer</span>
+        <strong id="metric-winner">Not unlocked</strong>
+        <small id="metric-winner-note">Change the room or an offer to test a match.</small>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Requested units</span>
+        <strong id="metric-units">0</strong>
+        <small id="metric-buyers">0 buyers</small>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Fulfilled</span>
+        <strong id="metric-fulfilled">0%</strong>
+        <small id="metric-delivered">0 buyers included</small>
+      </article>
+      <article class="metric">
+        <span class="metric-label">Group headroom</span>
+        <strong id="metric-savings">A$0</strong>
+        <small>Against included buyers' maximums</small>
+      </article>
+    </section>
+
+    <section class="workbench">
+      <div class="tabs" role="tablist" aria-label="Common Cart views">
+        <button id="buyer-tab" role="tab" aria-selected="true" aria-controls="buyer-panel" tabindex="0">Buyer room</button>
+        <button id="merchant-tab" role="tab" aria-selected="false" aria-controls="merchant-panel" tabindex="-1">Merchant table</button>
+        <button id="method-tab" role="tab" aria-selected="false" aria-controls="method-panel" tabindex="-1">Method and limits</button>
+      </div>
+
+      <div id="buyer-panel" role="tabpanel" aria-labelledby="buyer-tab">
+        <div class="section-heading">
+          <div>
+            <p class="section-number">01 / buyers</p>
+            <h2>Describe acceptable purchases</h2>
+            <p>Labels stay inside this browser. Merchant-facing views use grouped ranges only.</p>
+          </div>
+          <button id="add-buyer" class="primary" type="button">Add buyer</button>
+        </div>
+        <div class="table-shell">
+          <table>
+            <caption class="sr-only">Editable buyer constraints</caption>
+            <thead>
+              <tr>
+                <th scope="col">Private label</th>
+                <th scope="col">Category</th>
+                <th scope="col">Qty</th>
+                <th scope="col">Max each</th>
+                <th scope="col">Delivery by</th>
+                <th scope="col">Variants</th>
+                <th scope="col"><span class="sr-only">Remove</span></th>
+              </tr>
+            </thead>
+            <tbody id="buyer-rows"></tbody>
+          </table>
+        </div>
+
+        <div class="result-grid">
+          <article class="panel chart-panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-number">Offer comparison</p>
+                <h3>Units a cohort can unlock</h3>
+              </div>
+              <span class="legend"><i></i> Qualified units</span>
+            </div>
+            <canvas id="offer-chart" height="280" aria-label="Bar chart comparing fulfilled units for merchant offers"></canvas>
+                <p class="canvas-note">The chart and table report the same fulfilled-unit result.</p>
+          </article>
+          <article class="panel">
+            <div class="panel-heading">
+              <div>
+                <p class="section-number">Ranked result</p>
+                <h3>What the room can choose</h3>
+              </div>
+            </div>
+            <div class="table-shell compact">
+              <table>
+                <caption class="sr-only">Ranked offer outcomes</caption>
+                <thead><tr><th scope="col">Offer</th><th scope="col">Status</th><th scope="col">Units</th><th scope="col">Landed</th><th scope="col">Headroom</th></tr></thead>
+                <tbody id="result-rows"></tbody>
+              </table>
+            </div>
+          </article>
+        </div>
+      </div>
+
+      <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" hidden>
+        <div class="section-heading">
+          <div>
+            <p class="section-number">02 / merchants</p>
+            <h2>Test conditional offers</h2>
+            <p>Each bid is evaluated against the cohort without revealing any buyer's record.</p>
+          </div>
+          <button id="add-offer" class="primary" type="button">Add offer</button>
+        </div>
+        <div class="table-shell">
+          <table>
+            <caption class="sr-only">Editable merchant offers</caption>
+            <thead>
+              <tr>
+                <th scope="col">Merchant</th><th scope="col">Category</th><th scope="col">Variant</th><th scope="col">Unit price</th><th scope="col">Minimum</th><th scope="col">Delivery</th><th scope="col">Capacity</th><th scope="col">Ship / buyer</th><th scope="col"><span class="sr-only">Remove</span></th>
+              </tr>
+            </thead>
+            <tbody id="offer-rows"></tbody>
+          </table>
+        </div>
+
+        <div class="result-grid demand-grid">
+          <article class="panel">
+            <div class="panel-heading"><div><p class="section-number">Aggregate signal</p><h3>Demand merchants may see</h3></div></div>
+            <div id="demand-groups" class="demand-groups"></div>
+          </article>
+          <article class="panel privacy-panel">
+            <p class="section-number">Privacy boundary</p>
+            <h3>Deliberately withheld</h3>
+            <ul>
+              <li>Buyer labels and individual budgets</li>
+              <li>Exact buyer-to-offer matches</li>
+              <li>Contact, payment, location, and identity data</li>
+              <li>Any information outside this local scenario</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+
+      <div id="method-panel" role="tabpanel" aria-labelledby="method-tab" hidden>
+        <div class="method-grid">
+          <article>
+            <p class="section-number">03 / method</p>
+            <h2>One transparent matching rule</h2>
+            <p>An offer is compatible when its category and variant are accepted, its unit price is within the buyer's ceiling, and delivery is no later than the buyer's limit.</p>
+            <p>Whole buyer quantities are selected within merchant capacity. The offer unlocks only if those units meet its minimum. Qualified offers rank by fulfilled units, group headroom, buyers included, landed cost, then offer ID.</p>
+          </article>
+          <article>
+            <p class="section-number">Limits</p>
+            <h2>A simulator, not a marketplace</h2>
+            <ul>
+              <li>No real inventory, checkout, payments, identity, or delivery.</li>
+              <li>Maximum willingness to pay is not the same as realized consumer welfare.</li>
+              <li>The deterministic capacity rule may not find every globally optimal allocation.</li>
+              <li>Aggregates can still reveal information when a cohort is very small.</li>
+              <li>A real service would need merchant verification, buyer consent, dispute handling, and anti-manipulation controls.</li>
+            </ul>
+          </article>
+          <article class="local-note">
+            <p class="section-number">Local by design</p>
+            <h2>Your scenario stays here</h2>
+            <p>Common Cart makes no network requests. Autosave uses this browser's local storage. Export and share actions happen only when you request them.</p>
+            <button id="reset-button" class="danger" type="button">Reset this room</button>
+          </article>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer>
+    <p>Open-source educational simulator. Synthetic examples only.</p>
+    <p><a href="./MODEL.md">Model notes</a> <span aria-hidden="true">·</span> <a href="./SECURITY.md">Security</a></p>
+  </footer>
+
+  <template id="buyer-row-template">
+    <tr>
+      <td data-label="Private label"><input data-field="label" maxlength="60" aria-label="Buyer private label"></td>
+      <td data-label="Category"><input data-field="category" maxlength="60" aria-label="Buyer category"></td>
+      <td data-label="Quantity"><input data-field="quantity" type="number" min="1" max="100000" step="1" aria-label="Buyer quantity"></td>
+      <td data-label="Max each"><input data-field="maxUnitPrice" type="number" min="0" max="1000000" step="0.01" aria-label="Buyer maximum unit price"></td>
+      <td data-label="Delivery by"><span class="unit-input"><input data-field="latestDeliveryDays" type="number" min="0" max="365" step="1" aria-label="Latest delivery in days"><span>days</span></span></td>
+      <td data-label="Variants"><input data-field="allowedVariants" maxlength="300" aria-label="Allowed variants, comma separated"></td>
+      <td><button class="icon-button remove-row" type="button" aria-label="Remove buyer">×</button></td>
+    </tr>
+  </template>
+
+  <template id="offer-row-template">
+    <tr>
+      <td data-label="Merchant"><input data-field="merchant" maxlength="60" aria-label="Merchant name"></td>
+      <td data-label="Category"><input data-field="category" maxlength="60" aria-label="Offer category"></td>
+      <td data-label="Variant"><input data-field="variant" maxlength="60" aria-label="Offer variant"></td>
+      <td data-label="Unit price"><input data-field="unitPrice" type="number" min="0" max="1000000" step="0.01" aria-label="Offer unit price"></td>
+      <td data-label="Minimum"><input data-field="minimumUnits" type="number" min="1" max="1000000" step="1" aria-label="Offer minimum units"></td>
+      <td data-label="Delivery"><span class="unit-input"><input data-field="deliveryDays" type="number" min="0" max="365" step="1" aria-label="Offer delivery in days"><span>days</span></span></td>
+      <td data-label="Capacity"><input data-field="capacity" type="number" min="1" max="1000000" step="1" aria-label="Offer capacity"></td>
+      <td data-label="Ship per buyer"><input data-field="shippingPerBuyer" type="number" min="0" max="1000000" step="0.01" aria-label="Shipping cost per buyer"></td>
+      <td><button class="icon-button remove-row" type="button" aria-label="Remove offer">×</button></td>
+    </tr>
+  </template>
+
+  <script type="module" src="./src/app.js"></script>
+</body>
+</html>
