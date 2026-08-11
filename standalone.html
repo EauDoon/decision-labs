@@ -1,0 +1,934 @@
+<!doctype html>
+<!--
+MIT License
+
+Copyright (c) 2026 EauDoon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="A transparent negotiation workbench for participant-level partnership exit thresholds." />
+    <title>Partnership Breakpoint</title>
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; img-src 'none'; media-src 'none'; object-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'" />
+    <style>
+:root {
+  --paper: #f5f3ed;
+  --paper-deep: #eae7de;
+  --ink: #1f2328;
+  --muted: #5b6269;
+  --line: #b9b7ae;
+  --cobalt: #1558d6;
+  --cobalt-pale: #dce8ff;
+  --coral: #d94f3d;
+  --coral-pale: #ffe0da;
+  --warning: #8a5a05;
+  --radius: 3px;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  color: var(--ink);
+  background: var(--paper);
+}
+
+* { box-sizing: border-box; }
+body { margin: 0; min-width: 320px; }
+button, input { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
+
+.skip-link { position: absolute; left: -999px; top: 0; background: var(--ink); color: white; padding: .7rem 1rem; z-index: 10; }
+.skip-link:focus { left: .75rem; top: .75rem; }
+.site-header, main, .site-footer { width: min(1440px, calc(100% - 2rem)); margin-inline: auto; }
+.site-header { display: flex; justify-content: space-between; gap: 1.5rem; align-items: baseline; padding: 1.5rem 0 1rem; border-bottom: 2px solid var(--ink); }
+.site-header p { color: var(--muted); margin: 0; max-width: 44rem; text-align: right; }
+.wordmark { font-weight: 800; font-size: .84rem; letter-spacing: .11em; white-space: nowrap; }
+.site-footer { display: flex; justify-content: space-between; gap: 1rem; padding: 1.5rem 0 2.5rem; font-size: .85rem; color: var(--muted); border-top: 1px solid var(--line); margin-top: 1.5rem; }
+.site-footer a { color: inherit; }
+
+.app-grid { display: grid; grid-template-columns: minmax(290px, 370px) minmax(0, 1fr); gap: 1rem; padding-top: 1rem; }
+.panel { min-width: 0; border: 1px solid var(--line); background: #fbfaf6; border-radius: var(--radius); }
+.inputs { align-self: start; }
+.panel-heading { display: flex; justify-content: space-between; align-items: center; gap: .75rem; border-bottom: 1px solid var(--line); padding: .8rem 1rem; }
+.panel-heading h1, .panel-heading h2, .panel-heading h3 { margin: 0; font-size: .92rem; letter-spacing: .07em; text-transform: uppercase; }
+.panel-heading h1 { font-size: 1rem; }
+.panel-body { padding: 1rem; }
+.input-section + .input-section { margin-top: 1.25rem; padding-top: 1.15rem; border-top: 1px solid var(--line); }
+.input-section h2 { margin: 0 0 .7rem; font-size: .82rem; letter-spacing: .07em; text-transform: uppercase; }
+.field-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .65rem; }
+.field { display: grid; gap: .25rem; min-width: 0; }
+.field.wide { grid-column: 1 / -1; }
+.field label { font-size: .73rem; color: var(--muted); line-height: 1.2; }
+.field input { width: 100%; min-width: 0; border: 1px solid #8f948f; border-radius: 2px; background: white; color: var(--ink); padding: .42rem .48rem; }
+.field input:invalid { border-color: var(--coral); }
+.optional { color: var(--muted); font-size: .67rem; }
+.participant-form { border: 1px solid var(--line); background: var(--paper); padding: .75rem; margin-top: .7rem; }
+.participant-form:first-of-type { margin-top: 0; }
+.participant-header { display: flex; gap: .5rem; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
+.participant-header strong { font-size: .84rem; }
+.participant-header button { font-size: .75rem; }
+
+.button-row, .preset-row { display: flex; flex-wrap: wrap; gap: .5rem; }
+.button-row { margin-top: 1rem; }
+button { border: 1px solid var(--ink); background: transparent; color: var(--ink); padding: .42rem .65rem; border-radius: 2px; font-weight: 650; font-size: .78rem; }
+button:hover { background: var(--ink); color: white; }
+button.primary { background: var(--cobalt); border-color: var(--cobalt); color: white; }
+button.primary:hover { background: #1044a8; }
+button.danger { color: var(--coral); border-color: var(--coral); }
+button.danger:hover { background: var(--coral); color: white; }
+.preset-row button[aria-pressed="true"] { background: var(--ink); color: white; }
+.file-button { position: relative; overflow: hidden; display: inline-flex; align-items: center; }
+.file-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
+.file-button:focus-within { outline: 3px solid var(--cobalt); outline-offset: 2px; }
+
+.results { display: grid; gap: 1rem; min-width: 0; }
+.status-card { border: 1px solid var(--line); padding: 1rem; background: #fbfaf6; display: grid; grid-template-columns: 1fr auto; gap: 1rem; align-items: center; }
+.status-card.viable { border-left: 6px solid var(--cobalt); }
+.status-card.fragile { border-left: 6px solid var(--coral); }
+.eyebrow { display: block; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; margin-bottom: .35rem; }
+.status-card h1 { font-size: clamp(1.25rem, 2vw, 1.8rem); margin: 0; line-height: 1.05; }
+.status-card p { color: var(--muted); margin: .45rem 0 0; max-width: 50rem; }
+.score { text-align: right; }
+.score strong { display: block; font-size: 1.1rem; }
+.score span { color: var(--muted); font-size: .75rem; }
+
+.metric-strip { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); border: 1px solid var(--line); background: #fbfaf6; }
+.metric { padding: .8rem 1rem; min-width: 0; border-right: 1px solid var(--line); }
+.metric:last-child { border-right: 0; }
+.metric span { display: block; color: var(--muted); font-size: .71rem; text-transform: uppercase; letter-spacing: .06em; }
+.metric strong { display: block; font-size: 1.03rem; margin-top: .22rem; overflow-wrap: anywhere; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: .8rem; min-width: 830px; }
+caption { text-align: left; padding: .85rem 1rem .25rem; font-weight: 750; }
+th, td { padding: .58rem .65rem; text-align: right; vertical-align: top; border-bottom: 1px solid var(--line); white-space: nowrap; }
+th:first-child, td:first-child { text-align: left; }
+thead th { background: var(--paper-deep); color: var(--muted); font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; }
+tbody tr:last-child td { border-bottom: 0; }
+.failure-text { color: var(--coral); white-space: normal; min-width: 13rem; }
+.pass-text { color: #0b5c78; }
+.output-note { color: var(--muted); font-size: .78rem; margin: .5rem 1rem 0; }
+
+.shock-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.shock-card { background: #fbfaf6; padding: .75rem; min-width: 0; }
+.shock-card h3 { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 .45rem; }
+.shock-card strong { font-size: 1.1rem; overflow-wrap: anywhere; }
+.shock-card p { font-size: .74rem; color: var(--muted); line-height: 1.35; margin: .4rem 0 0; }
+.shock-card.alarm { background: var(--coral-pale); }
+.shock-card.safe { background: var(--cobalt-pale); }
+
+.sensitivity-layout { display: grid; grid-template-columns: minmax(250px, 1fr) minmax(330px, 1.3fr); gap: 1rem; padding: 1rem; }
+.legend { display: flex; flex-wrap: wrap; gap: 1rem; font-size: .75rem; color: var(--muted); margin: .65rem 0; }
+.swatch { display: inline-block; width: .8rem; height: .8rem; margin-right: .3rem; vertical-align: -.1rem; border: 1px solid var(--ink); }
+.swatch.viable { background: var(--cobalt); border-color: var(--cobalt); }
+.swatch.fail { background: var(--coral); border-color: var(--coral); }
+canvas { width: 100%; height: auto; display: block; border: 1px solid var(--line); background: white; }
+.sensitivity-table { min-width: 0; font-size: .73rem; }
+.sensitivity-table th, .sensitivity-table td { padding: .35rem; min-width: 2.8rem; }
+.sensitivity-table td { text-align: center; }
+.cell-viable { background: var(--cobalt-pale); color: #083c98; }
+.cell-fail { background: var(--coral-pale); color: #8c291e; }
+
+.disclosure-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+.disclosure-grid .panel-body { color: var(--muted); font-size: .86rem; line-height: 1.5; }
+.disclosure-grid p:first-child { margin-top: 0; }
+.error-box { border: 1px solid var(--coral); background: var(--coral-pale); padding: .75rem 1rem; color: #75251d; }
+.error-box h2 { font-size: .85rem; margin: 0 0 .3rem; }
+.error-box ul { margin: 0; padding-left: 1.1rem; font-size: .82rem; }
+.notice { min-height: 1.25rem; margin: 0; font-size: .78rem; color: var(--muted); }
+
+@media (max-width: 980px) {
+  .app-grid { grid-template-columns: 1fr; }
+  .inputs { order: 2; }
+  .results { order: 1; }
+}
+@media (max-width: 700px) {
+  .site-header { display: block; }
+  .site-header p { text-align: left; margin-top: .5rem; }
+  .metric-strip { grid-template-columns: 1fr 1fr; }
+  .metric:nth-child(2) { border-right: 0; }
+  .metric:nth-child(-n + 2) { border-bottom: 1px solid var(--line); }
+  .shock-grid, .disclosure-grid, .sensitivity-layout { grid-template-columns: 1fr; }
+  .status-card { grid-template-columns: 1fr; }
+  .score { text-align: left; }
+}
+@media (max-width: 440px) {
+  .site-header, main, .site-footer { width: min(100% - 1rem, 1440px); }
+  .field-grid { grid-template-columns: 1fr; }
+  .field.wide { grid-column: auto; }
+  .site-footer { display: block; }
+  .site-footer a { display: inline-block; margin-top: .5rem; }
+}
+
+</style>
+  </head>
+  <body>
+    <a class="skip-link" href="#workbench">Skip to workbench</a>
+    <header class="site-header">
+      <div class="wordmark">PARTNERSHIP / BREAKPOINT</div>
+      <p>Find the first participant that exits, and the smallest economic change that gets you there.</p>
+    </header>
+    <main id="workbench" tabindex="-1"></main>
+    <footer class="site-footer">
+      <span>Static, local, and deterministic.</span>
+      <span>Single-file local workbench. Export JSON to transfer a case.</span>
+    </footer>
+    <script type="module">
+/**
+ * Partnership Breakpoint economic model.
+ * All money values are monthly units in the currency selected by the user.
+ */
+
+const EPSILON = 1e-9;
+const MAX_PARTICIPANTS = 24;
+const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
+const CONFIG_KEYS = new Set(['deal', 'participants']);
+const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct']);
+const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
+
+class ValidationError extends Error {
+  constructor(errors) {
+    super('Invalid partnership configuration.');
+    this.name = 'ValidationError';
+    this.errors = errors;
+  }
+}
+
+const PRESETS = Object.freeze({
+  balanced: {
+    name: 'Balanced',
+    deal: { monthlyVolume: 100000, feePerTransaction: 0.2, addressableVolume: 140000, volumeShockPct: 0 },
+    participants: [
+      { id: 'platform', name: 'Platform', revenueShare: 0.4, variableCostPerTransaction: 0.04, fixedMonthlyCost: 1800, minimumAcceptableProfit: 1200, capacity: 130000, minimumCommitment: 0, riskCost: 300 },
+      { id: 'distributor', name: 'Distributor', revenueShare: 0.35, variableCostPerTransaction: 0.055, fixedMonthlyCost: 500, minimumAcceptableProfit: 500, capacity: 120000, minimumCommitment: 0, riskCost: 100 },
+      { id: 'liquidity-partner', name: 'Liquidity Partner', revenueShare: 0.25, variableCostPerTransaction: 0.03, fixedMonthlyCost: 1400, minimumAcceptableProfit: 100, capacity: 115000, minimumCommitment: 0, riskCost: 300 },
+    ],
+  },
+  thinMargin: {
+    name: 'Thin Margin',
+    deal: { monthlyVolume: 100000, feePerTransaction: 0.16, addressableVolume: 120000, volumeShockPct: 0 },
+    participants: [
+      { id: 'platform', name: 'Platform', revenueShare: 0.4, variableCostPerTransaction: 0.035, fixedMonthlyCost: 1800, minimumAcceptableProfit: 700, capacity: 120000, minimumCommitment: 0, riskCost: 300 },
+      { id: 'distributor', name: 'Distributor', revenueShare: 0.35, variableCostPerTransaction: 0.046, fixedMonthlyCost: 500, minimumAcceptableProfit: 400, capacity: 115000, minimumCommitment: 0, riskCost: 100 },
+      { id: 'liquidity-partner', name: 'Liquidity Partner', revenueShare: 0.25, variableCostPerTransaction: 0.024, fixedMonthlyCost: 1300, minimumAcceptableProfit: 100, capacity: 110000, minimumCommitment: 0, riskCost: 200 },
+    ],
+  },
+  growthAtCost: {
+    name: 'Growth at a Cost',
+    deal: { monthlyVolume: 180000, feePerTransaction: 0.16, addressableVolume: 260000, volumeShockPct: 0 },
+    participants: [
+      { id: 'platform', name: 'Platform', revenueShare: 0.43, variableCostPerTransaction: 0.028, fixedMonthlyCost: 2800, minimumAcceptableProfit: 2500, capacity: 225000, minimumCommitment: 0, riskCost: 600 },
+      { id: 'distributor', name: 'Distributor', revenueShare: 0.33, variableCostPerTransaction: 0.044, fixedMonthlyCost: 750, minimumAcceptableProfit: 500, capacity: 190000, minimumCommitment: 0, riskCost: 250 },
+      { id: 'liquidity-partner', name: 'Liquidity Partner', revenueShare: 0.24, variableCostPerTransaction: 0.024, fixedMonthlyCost: 2000, minimumAcceptableProfit: 0, capacity: 210000, minimumCommitment: 0, riskCost: 500 },
+    ],
+  },
+});
+
+function isFiniteNumber(value) {
+  return typeof value === 'number' && Number.isFinite(value);
+}
+
+function nonNegative(value, field, errors, { optional = false } = {}) {
+  if (optional && (value === null || value === undefined)) return null;
+  if (!isFiniteNumber(value) || value < 0 || value > MAX_NUMERIC_INPUT) {
+    errors.push(`${field} must be a finite number from zero through ${MAX_NUMERIC_INPUT}.`);
+    return null;
+  }
+  return value;
+}
+
+function rejectUnknownKeys(value, allowed, field, errors) {
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) errors.push(`${field} contains an unknown field: ${key}.`);
+  }
+}
+
+function stringValue(value, field, errors, maxLength = 80) {
+  if (typeof value !== 'string' || value.trim() === '' || value.trim().length > maxLength) {
+    errors.push(`${field} must be a non-empty string no longer than ${maxLength} characters.`);
+    return '';
+  }
+  return value.trim();
+}
+
+/** Returns validation errors without throwing, so forms can report all issues at once. */
+function validateConfiguration(config) {
+  const errors = [];
+  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+    return { valid: false, errors: ['Configuration must be an object.'] };
+  }
+  rejectUnknownKeys(config, CONFIG_KEYS, 'Configuration', errors);
+
+  const deal = config.deal;
+  if (!deal || typeof deal !== 'object' || Array.isArray(deal)) {
+    errors.push('Deal must be an object.');
+  } else {
+    rejectUnknownKeys(deal, DEAL_KEYS, 'Deal', errors);
+    nonNegative(deal.monthlyVolume, 'Deal monthly volume', errors);
+    nonNegative(deal.feePerTransaction, 'Deal fee per transaction', errors);
+    nonNegative(deal.addressableVolume, 'Deal addressable volume', errors);
+    const shock = deal.volumeShockPct ?? 0;
+    if (!isFiniteNumber(shock) || shock < 0 || shock > 100) {
+      errors.push('Deal volume shock must be a finite percentage from 0 through 100.');
+    }
+  }
+
+  if (!Array.isArray(config.participants) || config.participants.length < 2 || config.participants.length > MAX_PARTICIPANTS) {
+    errors.push(`Between 2 and ${MAX_PARTICIPANTS} participants are required.`);
+  } else {
+    const ids = new Set();
+    let shareTotal = 0;
+    config.participants.forEach((participant, index) => {
+      const prefix = `Participant ${index + 1}`;
+      if (!participant || typeof participant !== 'object' || Array.isArray(participant)) {
+        errors.push(`${prefix} must be an object.`);
+        return;
+      }
+      rejectUnknownKeys(participant, PARTICIPANT_KEYS, prefix, errors);
+      const id = stringValue(participant.id, `${prefix} id`, errors, 64);
+      if (id && ids.has(id)) errors.push(`${prefix} id must be unique.`);
+      ids.add(id);
+      stringValue(participant.name, `${prefix} name`, errors);
+      const share = nonNegative(participant.revenueShare, `${prefix} revenue share`, errors);
+      if (share !== null) shareTotal += share;
+      nonNegative(participant.variableCostPerTransaction, `${prefix} variable cost per transaction`, errors);
+      nonNegative(participant.fixedMonthlyCost, `${prefix} fixed monthly cost`, errors);
+      nonNegative(participant.minimumAcceptableProfit, `${prefix} minimum acceptable monthly profit`, errors);
+      nonNegative(participant.capacity, `${prefix} capacity`, errors, { optional: true });
+      nonNegative(participant.minimumCommitment, `${prefix} minimum commitment`, errors, { optional: true });
+      nonNegative(participant.riskCost, `${prefix} risk cost`, errors);
+    });
+    if (Math.abs(shareTotal - 1) > EPSILON) {
+      errors.push(`Participant revenue shares must sum to 1. Current total: ${shareTotal.toFixed(6)}.`);
+    }
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+function assertValidConfiguration(config) {
+  const validation = validateConfiguration(config);
+  if (!validation.valid) throw new ValidationError(validation.errors);
+  return config;
+}
+
+/**
+ * Actual monthly transactions are limited by addressable demand after the chosen volume shock.
+ */
+function effectiveVolume(deal) {
+  const shockedVolume = deal.monthlyVolume * (1 - (deal.volumeShockPct ?? 0) / 100);
+  return Math.min(shockedVolume, deal.addressableVolume);
+}
+
+function contributionPerTransaction(participant, feePerTransaction) {
+  return participant.revenueShare * feePerTransaction - participant.variableCostPerTransaction;
+}
+
+/** The transaction volume at which accounting profit equals zero. */
+function breakEvenVolume(participant, feePerTransaction) {
+  const contribution = contributionPerTransaction(participant, feePerTransaction);
+  const monthlyOverhead = participant.fixedMonthlyCost + participant.riskCost;
+  if (contribution <= 0) return monthlyOverhead === 0 ? 0 : null;
+  return monthlyOverhead / contribution;
+}
+
+/** The minimum volume that clears the participant's monthly profit and commitment exit tests. */
+function exitVolume(participant, feePerTransaction) {
+  const contribution = contributionPerTransaction(participant, feePerTransaction);
+  const requiredProfit = participant.minimumAcceptableProfit + participant.fixedMonthlyCost + participant.riskCost;
+  let profitVolume;
+  if (contribution > 0) profitVolume = requiredProfit / contribution;
+  else if (requiredProfit === 0) profitVolume = 0;
+  else return null;
+  return Math.max(profitVolume, participant.minimumCommitment ?? 0);
+}
+
+function shockResult({ kind, breakpoint, current, direction, reason }) {
+  if (breakpoint === null) return { kind, status: 'unbounded', breakpoint: null, change: null, changePct: null, reason };
+  const rawChange = direction === 'decrease' ? current - breakpoint : breakpoint - current;
+  const change = Math.max(0, rawChange);
+  return {
+    kind,
+    status: change <= EPSILON ? 'at-breakpoint' : 'bounded',
+    breakpoint,
+    change,
+    changePct: current === 0 ? null : (change / current) * 100,
+    reason,
+  };
+}
+
+/**
+ * Returns the threshold and required adverse movement. At a threshold, any additional adverse movement fails.
+ */
+function participantShocks(participant, deal, volume = effectiveVolume(deal)) {
+  const currentProfit = participant.revenueShare * deal.feePerTransaction * volume
+    - participant.variableCostPerTransaction * volume
+    - participant.fixedMonthlyCost
+    - participant.riskCost;
+  const currentExit = evaluateParticipant(participant, deal, volume);
+  if (!currentExit.viable) {
+    const immediate = { status: 'already-failing', breakpoint: null, change: 0, changePct: 0, reason: 'The current scenario already fails this participant exit criterion.' };
+    return {
+      volume: { kind: 'volume', ...immediate },
+      fee: { kind: 'fee', ...immediate },
+      variableCost: { kind: 'variableCost', ...immediate },
+    };
+  }
+
+  const targetVolume = exitVolume(participant, deal.feePerTransaction);
+  const volumeShock = targetVolume === null || targetVolume <= 0
+    ? { kind: 'volume', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'Lower volume does not breach the participant exit criterion under these inputs.' }
+    : shockResult({ kind: 'volume', breakpoint: targetVolume, current: volume, direction: 'decrease', reason: 'Volume where the profit or commitment exit threshold is reached.' });
+
+  const revenueUnits = volume * participant.revenueShare;
+  const feeBreakpoint = revenueUnits <= EPSILON
+    ? null
+    : (participant.minimumAcceptableProfit + volume * participant.variableCostPerTransaction + participant.fixedMonthlyCost + participant.riskCost) / revenueUnits;
+  const feeShock = feeBreakpoint === null || feeBreakpoint <= EPSILON
+    ? { kind: 'fee', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'No non-negative fee decrease breaches this participant profit threshold.' }
+    : shockResult({ kind: 'fee', breakpoint: feeBreakpoint, current: deal.feePerTransaction, direction: 'decrease', reason: 'Fee where the monthly-profit exit threshold is reached.' });
+
+  const costBreakpoint = volume <= EPSILON
+    ? null
+    : (participant.revenueShare * deal.feePerTransaction * volume - participant.fixedMonthlyCost - participant.riskCost - participant.minimumAcceptableProfit) / volume;
+  const costShock = costBreakpoint === null
+    ? { kind: 'variableCost', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'A variable-cost increase cannot change this participant profit at zero volume.' }
+    : shockResult({ kind: 'variableCost', breakpoint: costBreakpoint, current: participant.variableCostPerTransaction, direction: 'increase', reason: 'Variable cost where the monthly-profit exit threshold is reached.' });
+
+  return { volume: volumeShock, fee: feeShock, variableCost: costShock, currentProfit };
+}
+
+function evaluateParticipant(participant, deal, volume = effectiveVolume(deal)) {
+  const revenue = volume * deal.feePerTransaction * participant.revenueShare;
+  const variableCost = volume * participant.variableCostPerTransaction;
+  const fixedCost = participant.fixedMonthlyCost;
+  const riskCost = participant.riskCost;
+  const totalCosts = variableCost + fixedCost + riskCost;
+  const monthlyProfit = revenue - totalCosts;
+  const margin = revenue === 0 ? null : monthlyProfit / revenue;
+  const commitment = participant.minimumCommitment ?? 0;
+  const capacity = participant.capacity ?? null;
+  const profitPass = monthlyProfit >= participant.minimumAcceptableProfit - EPSILON;
+  const commitmentPass = volume >= commitment - EPSILON;
+  const capacityPass = capacity === null || volume <= capacity + EPSILON;
+  const exitThreshold = exitVolume(participant, deal.feePerTransaction);
+  const headroomToExit = exitThreshold === null ? null : volume - exitThreshold;
+  const capacityHeadroom = capacity === null ? Infinity : capacity - volume;
+  const fragilityHeadroom = Math.min(headroomToExit ?? -Infinity, capacityHeadroom);
+  const failureReasons = [];
+  if (!profitPass) failureReasons.push('monthly profit is below the minimum acceptable profit');
+  if (!commitmentPass) failureReasons.push('volume is below the minimum commitment');
+  if (!capacityPass) failureReasons.push('volume exceeds capacity');
+  return {
+    ...participant,
+    volume,
+    revenue,
+    variableCost,
+    fixedCost,
+    riskCost,
+    totalCosts,
+    monthlyProfit,
+    margin,
+    contributionPerTransaction: contributionPerTransaction(participant, deal.feePerTransaction),
+    breakEvenVolume: breakEvenVolume(participant, deal.feePerTransaction),
+    exitVolume: exitThreshold,
+    headroomToExit,
+    capacityHeadroom,
+    fragilityHeadroom,
+    profitPass,
+    commitmentPass,
+    capacityPass,
+    viable: profitPass && commitmentPass && capacityPass,
+    failureReasons,
+  };
+}
+
+function calculatePartnership(config) {
+  assertValidConfiguration(config);
+  const volume = effectiveVolume(config.deal);
+  const participants = config.participants.map((participant) => {
+    const result = evaluateParticipant(participant, config.deal, volume);
+    return { ...result, shocks: participantShocks(participant, config.deal, volume) };
+  });
+  const totalRevenue = volume * config.deal.feePerTransaction;
+  const totalProfit = participants.reduce((sum, participant) => sum + participant.monthlyProfit, 0);
+  const viable = participants.every((participant) => participant.viable);
+  const weakestParticipant = [...participants].sort((a, b) => {
+    return a.fragilityHeadroom - b.fragilityHeadroom || a.monthlyProfit - b.monthlyProfit || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
+  })[0];
+  const capacityCeiling = participants.reduce((ceiling, participant) => (
+    participant.capacity === null ? ceiling : Math.min(ceiling, participant.capacity)
+  ), config.deal.addressableVolume);
+  return {
+    deal: { ...config.deal },
+    effectiveVolume: volume,
+    volumeCappedByAddressableDemand: volume < config.deal.monthlyVolume * (1 - (config.deal.volumeShockPct ?? 0) / 100) - EPSILON,
+    totalRevenue,
+    totalProfit,
+    participants,
+    viable,
+    weakestParticipant,
+    capacityCeiling,
+  };
+}
+
+/** Creates a safe immutable copy for UI state or JSON export. */
+function clonePreset(key) {
+  const preset = PRESETS[key];
+  if (!preset) throw new Error(`Unknown preset: ${key}`);
+  return JSON.parse(JSON.stringify({ deal: preset.deal, participants: preset.participants }));
+}
+
+function makeParticipant(id) {
+  return {
+    id,
+    name: 'New participant',
+    revenueShare: 0,
+    variableCostPerTransaction: 0,
+    fixedMonthlyCost: 0,
+    minimumAcceptableProfit: 0,
+    capacity: null,
+    minimumCommitment: null,
+    riskCost: 0,
+  };
+}
+
+const STORAGE_KEY = 'partnership-breakpoint.v1';
+const MAX_HASH_LENGTH = 60_000;
+const app = document.querySelector('#workbench');
+const standaloneFileMode = window.location.protocol === 'file:';
+let participantSequence = 1;
+let activePreset = 'balanced';
+let state = loadInitialState();
+let eventsBound = false;
+
+function clone(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
+function decodeHash(hash) {
+  if (!hash.startsWith('#deal=')) return null;
+  if (hash.length > MAX_HASH_LENGTH) return null;
+  try {
+    const encoded = hash.slice(6).replace(/-/g, '+').replace(/_/g, '/');
+    const padded = encoded + '='.repeat((4 - encoded.length % 4) % 4);
+    const parsed = JSON.parse(decodeURIComponent(Array.from(atob(padded), (character) => `%${character.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')));
+    return validateConfiguration(parsed).valid ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function encodeHash(config) {
+  const bytes = new TextEncoder().encode(JSON.stringify(config));
+  let binary = '';
+  for (const byte of bytes) binary += String.fromCharCode(byte);
+  return `#deal=${btoa(binary).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '')}`;
+}
+
+function loadStoredState() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    return validateConfiguration(parsed).valid ? parsed : null;
+  } catch {
+    return null;
+  }
+}
+
+function loadInitialState() {
+  const fromHash = decodeHash(window.location.hash);
+  if (fromHash) return fromHash;
+  const fromStorage = loadStoredState();
+  return fromStorage ?? clonePreset('balanced');
+}
+
+function saveState() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) return;
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* Storage is optional. */ }
+  if (standaloneFileMode) return;
+  const hash = encodeHash(state);
+  history.replaceState(null, '', hash.length <= MAX_HASH_LENGTH
+    ? `${window.location.pathname}${window.location.search}${hash}`
+    : `${window.location.pathname}${window.location.search}`);
+}
+
+function numberFromInput(value, optional = false) {
+  if (optional && value.trim() === '') return null;
+  if (value.trim() === '') return Number.NaN;
+  return Number(value);
+}
+
+function inputValue(value) {
+  return value === null || value === undefined || Number.isNaN(value) ? '' : String(value);
+}
+
+function field({ label, path, value, optional = false, min = 0, step = 'any', wide = false, type = 'number' }) {
+  const optionalText = optional ? '<span class="optional">optional</span>' : '';
+  const input = type === 'text'
+    ? `<input type="text" data-path="${path}" data-type="text" value="${escapeAttribute(value)}" maxlength="80" required />`
+    : `<input type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'} />`;
+  return `<div class="field ${wide ? 'wide' : ''}"><label>${label} ${optionalText}${input}</label></div>`;
+}
+
+function escapeAttribute(value) {
+  return String(value ?? '').replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function formatNumber(value, digits = 0) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return 'Impossible';
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value);
+}
+
+function formatMoney(value) {
+  if (!Number.isFinite(value)) return 'Impossible';
+  return `${formatNumber(value, 2)} units`;
+}
+
+function formatPct(value) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return 'n/a';
+  return `${formatNumber(value, 1)}%`;
+}
+
+function formatVolume(value) {
+  if (value === null || value === undefined || !Number.isFinite(value)) return 'Impossible';
+  return `${formatNumber(value)} txn`;
+}
+
+function compactShock(shock, units) {
+  if (shock.status === 'already-failing') return 'Already failing';
+  if (shock.status === 'unbounded') return 'No adverse threshold';
+  if (shock.status === 'at-breakpoint') return 'At breakpoint';
+  const percent = shock.changePct === null ? '' : `, ${formatPct(shock.changePct)}`;
+  return `${formatNumber(shock.change, units === 'txn' ? 0 : 4)} ${units}${percent}`;
+}
+
+function inputPanel() {
+  const participantForms = state.participants.map((participant, index) => `
+    <section class="participant-form" aria-labelledby="participant-${index}-title">
+      <div class="participant-header">
+        <strong id="participant-${index}-title">Participant ${index + 1}</strong>
+        <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
+      </div>
+      <div class="field-grid">
+        ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text' })}
+        ${field({ label: 'Revenue share', path: `participants.${index}.revenueShare`, value: participant.revenueShare, min: 0, step: '0.0001' })}
+        ${field({ label: 'Variable cost / txn', path: `participants.${index}.variableCostPerTransaction`, value: participant.variableCostPerTransaction, step: '0.0001' })}
+        ${field({ label: 'Fixed monthly cost', path: `participants.${index}.fixedMonthlyCost`, value: participant.fixedMonthlyCost, step: '0.01' })}
+        ${field({ label: 'Minimum monthly profit', path: `participants.${index}.minimumAcceptableProfit`, value: participant.minimumAcceptableProfit, step: '0.01' })}
+        ${field({ label: 'Capacity / month', path: `participants.${index}.capacity`, value: participant.capacity, optional: true, step: '1' })}
+        ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1' })}
+        ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
+      </div>
+    </section>`).join('');
+
+  return `
+    <aside class="panel inputs" aria-label="Deal inputs">
+      <div class="panel-heading"><h1>Deal ledger</h1><span class="optional">editable</span></div>
+      <div class="panel-body">
+        <section class="input-section" aria-labelledby="deal-inputs-title">
+          <h2 id="deal-inputs-title">Shared deal</h2>
+          <div class="field-grid">
+            ${field({ label: 'Monthly volume', path: 'deal.monthlyVolume', value: state.deal.monthlyVolume, step: '1' })}
+            ${field({ label: 'Fee / transaction', path: 'deal.feePerTransaction', value: state.deal.feePerTransaction, step: '0.0001' })}
+            ${field({ label: 'Addressable volume', path: 'deal.addressableVolume', value: state.deal.addressableVolume, step: '1' })}
+            ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, step: '0.1' })}
+          </div>
+        </section>
+        <section class="input-section" aria-labelledby="presets-title">
+          <h2 id="presets-title">Starting points</h2>
+          <div class="preset-row">
+            ${Object.entries(PRESETS).map(([key, preset]) => `<button type="button" data-action="preset" data-preset="${key}" aria-pressed="${activePreset === key}">${preset.name}</button>`).join('')}
+          </div>
+        </section>
+        <section class="input-section" aria-labelledby="participant-inputs-title">
+          <h2 id="participant-inputs-title">Participants</h2>
+          <p class="notice">Shares must add to exactly 1. Capacity and commitment may be left blank.</p>
+          ${participantForms}
+          <div class="button-row"><button type="button" data-action="add-participant">Add participant</button></div>
+        </section>
+        <section class="input-section" aria-labelledby="data-title">
+          <h2 id="data-title">Data</h2>
+          <div class="button-row">
+            <button type="button" data-action="export">Export JSON</button>
+            <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
+            <button type="button" data-action="reset">Reset</button>
+          </div>
+          <p id="notice" class="notice" aria-live="polite">${standaloneFileMode ? 'Standalone file mode: export JSON to transfer a case. File URLs are not portable.' : ''}</p>
+        </section>
+      </div>
+    </aside>`;
+}
+
+function errorBox(errors) {
+  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
+}
+
+function resultsPanel(result) {
+  if (!result) {
+    const errors = validateConfiguration(state).errors;
+    return `<section class="results">${errorBox(errors)}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+  }
+  const statusClass = result.viable ? 'viable' : 'fragile';
+  const status = result.viable ? 'Operating region holds' : 'A participant exits';
+  const statusDetail = escapeAttribute(result.viable
+    ? `${result.weakestParticipant.name} has the least volume headroom to an economic or capacity limit.`
+    : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
+  return `<section class="results">
+    <section class="status-card ${statusClass}" aria-live="polite">
+      <div><span class="eyebrow">Partnership viability</span><h1>${status}</h1><p>${statusDetail}</p></div>
+      <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
+    </section>
+    <section class="metric-strip" aria-label="Deal summary">
+      <div class="metric"><span>Effective volume</span><strong>${formatVolume(result.effectiveVolume)}</strong></div>
+      <div class="metric"><span>Total revenue</span><strong>${formatMoney(result.totalRevenue)}</strong></div>
+      <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
+      <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
+    </section>
+    ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
+    ${participantTable(result)}
+    ${shockSection(result)}
+    ${sensitivitySection(result)}
+    ${methodAndLimits()}
+  </section>`;
+}
+
+function participantTable(result) {
+  const rows = result.participants.map((participant) => `
+    <tr>
+      <td><strong>${escapeAttribute(participant.name)}</strong></td>
+      <td>${formatMoney(participant.revenue)}</td>
+      <td>${formatMoney(participant.variableCost)}</td>
+      <td>${formatMoney(participant.fixedCost)}</td>
+      <td>${formatMoney(participant.riskCost)}</td>
+      <td>${formatMoney(participant.monthlyProfit)}</td>
+      <td>${participant.margin === null ? 'n/a' : formatPct(participant.margin * 100)}</td>
+      <td>${formatVolume(participant.breakEvenVolume)}</td>
+      <td>${formatVolume(participant.exitVolume)}</td>
+      <td>${participant.headroomToExit === null ? 'Impossible' : formatVolume(participant.headroomToExit)}</td>
+      <td>${participant.capacity === null ? 'Unbounded' : formatVolume(participant.capacity)}</td>
+      <td class="${participant.viable ? 'pass-text' : 'failure-text'}">${participant.viable ? 'Holds' : escapeAttribute(participant.failureReasons.join('; '))}</td>
+    </tr>`).join('');
+  return `<section class="panel"><div class="table-wrap"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Capacity is tested separately.</p></section>`;
+}
+
+function shockCard(label, shock, units) {
+  const alert = shock.status === 'already-failing' ? 'alarm' : shock.status === 'unbounded' ? 'safe' : '';
+  const threshold = shock.breakpoint === null ? '' : `<p>Threshold: ${formatNumber(shock.breakpoint, units === 'txn' ? 0 : 4)} ${units}. Any additional adverse movement fails.</p>`;
+  return `<article class="shock-card ${alert}"><h3>${label}</h3><strong>${compactShock(shock, units)}</strong><p>${escapeAttribute(shock.reason)}</p>${threshold}</article>`;
+}
+
+function shockSection(result) {
+  return `<section class="panel"><div class="panel-heading"><h2>Smallest adverse shock by participant</h2><span class="optional">threshold is not a forecast</span></div><div class="panel-body">${result.participants.map((participant) => `<section class="input-section"><h2>${escapeAttribute(participant.name)}</h2><div class="shock-grid">${shockCard('Volume decrease', participant.shocks.volume, 'txn')}${shockCard('Fee decrease', participant.shocks.fee, 'units / txn')}${shockCard('Variable cost increase', participant.shocks.variableCost, 'units / txn')}</div></section>`).join('')}</div></section>`;
+}
+
+function sensitivityGrid() {
+  const columns = 7;
+  const rows = 7;
+  const maxVolume = Math.max(state.deal.addressableVolume, state.deal.monthlyVolume, 1);
+  const maxFee = Math.max(state.deal.feePerTransaction * 1.5, 0.01);
+  const volumes = Array.from({ length: columns }, (_, index) => maxVolume * index / (columns - 1));
+  const fees = Array.from({ length: rows }, (_, index) => maxFee * (rows - 1 - index) / (rows - 1));
+  const cells = fees.map((fee) => volumes.map((volume) => {
+    const config = clone(state);
+    config.deal.monthlyVolume = volume;
+    config.deal.addressableVolume = Math.max(maxVolume, volume);
+    config.deal.volumeShockPct = 0;
+    config.deal.feePerTransaction = fee;
+    try { return calculatePartnership(config).viable; } catch { return false; }
+  }));
+  return { volumes, fees, cells };
+}
+
+function sensitivitySection() {
+  const grid = sensitivityGrid();
+  const tableRows = grid.fees.map((fee, row) => `<tr><th scope="row">${formatNumber(fee, 3)}</th>${grid.volumes.map((volume, column) => `<td class="${grid.cells[row][column] ? 'cell-viable' : 'cell-fail'}" aria-label="Fee ${formatNumber(fee, 3)}, volume ${formatNumber(volume)}: ${grid.cells[row][column] ? 'viable' : 'not viable'}">${grid.cells[row][column] ? 'Holds' : 'Exit'}</td>`).join('')}</tr>`).join('');
+  return `<section class="panel"><div class="panel-heading"><h2>Operating region</h2><span class="optional">fee and volume sensitivity</span></div><div class="sensitivity-layout"><div><canvas id="sensitivity-canvas" width="560" height="400" role="img" aria-label="Canvas chart of viable and non-viable fee and monthly-volume combinations. The visible table provides the same values.">Canvas chart unavailable. Use the operating region table.</canvas><div class="legend"><span><i class="swatch viable"></i>Every participant holds</span><span><i class="swatch fail"></i>At least one participant exits</span></div></div><div class="table-wrap"><table class="sensitivity-table"><caption>Operating region table. Rows are fee per transaction. Columns are monthly volume.</caption><thead><tr><th>Fee / volume</th>${grid.volumes.map((volume) => `<th>${formatNumber(volume)}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table></div></div></section>`;
+}
+
+function methodAndLimits() {
+  return `<section class="disclosure-grid"><section class="panel"><div class="panel-heading"><h2>Method</h2></div><div class="panel-body"><p>Revenue equals effective monthly volume times fee per transaction times revenue share. Monthly profit equals revenue less variable cost, fixed monthly cost, and risk cost. Effective volume is post-shock monthly volume capped by addressable volume.</p><p>A participant holds only when monthly profit meets its minimum acceptable profit, volume meets any minimum commitment, and volume does not exceed capacity.</p></div></section><section class="panel"><div class="panel-heading"><h2>Limits</h2></div><div class="panel-body"><p>This is a deterministic monthly contribution model, not a forecast or valuation. It does not prove legal enforceability, participant behavior, credit performance, demand response, tax treatment, timing of cash flows, or the completeness of cost inputs.</p><p>Shock thresholds show the boundary under unchanged inputs. They do not assign probability or cause.</p></div></section></section>`;
+}
+
+function render() {
+  let result = null;
+  try { result = calculatePartnership(state); } catch (error) {
+    if (!(error instanceof ValidationError)) throw error;
+  }
+  app.innerHTML = `<div class="app-grid">${inputPanel()}${resultsPanel(result)}</div>`;
+  attachEvents();
+  if (result) drawSensitivityChart(sensitivityGrid());
+}
+
+function getPath(path) {
+  return path.split('.').reduce((object, key) => object[key], state);
+}
+
+function setPath(path, value) {
+  const keys = path.split('.');
+  const last = keys.pop();
+  const parent = keys.reduce((object, key) => object[key], state);
+  parent[last] = value;
+}
+
+function refresh(message = '') {
+  saveState();
+  render();
+  const notice = document.querySelector('#notice');
+  if (notice) notice.textContent = message;
+}
+
+function attachEvents() {
+  if (eventsBound) return;
+  eventsBound = true;
+  app.addEventListener('change', (event) => {
+    const input = event.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    if (input.dataset.path) {
+      setPath(input.dataset.path, input.dataset.type === 'text' ? input.value : numberFromInput(input.value, input.dataset.optional === 'true'));
+      activePreset = '';
+      refresh(standaloneFileMode ? 'Saved locally. Export JSON to transfer this standalone case.' : 'Saved locally and updated the shareable URL.');
+      return;
+    }
+    if (input.dataset.action === 'import' && input.files?.[0]) importFile(input.files[0]);
+  });
+  app.addEventListener('click', (event) => {
+    const button = event.target.closest('button[data-action]');
+    if (!button) return;
+    const action = button.dataset.action;
+    if (action === 'preset') {
+      activePreset = button.dataset.preset;
+      state = clonePreset(activePreset);
+      refresh(`${PRESETS[activePreset].name} loaded.`);
+    }
+    if (action === 'add-participant') {
+      participantSequence += 1;
+      state.participants.push(makeParticipant(nextParticipantId()));
+      activePreset = '';
+      refresh('Participant added. Set shares to reconcile to 1.');
+    }
+    if (action === 'remove-participant' && state.participants.length > 2) {
+      state.participants.splice(Number(button.dataset.index), 1);
+      activePreset = '';
+      refresh('Participant removed.');
+    }
+    if (action === 'export') exportFile();
+    if (action === 'reset') {
+      activePreset = 'balanced';
+      state = clonePreset('balanced');
+      refresh('Reset to Balanced.');
+    }
+  });
+}
+
+function exportFile() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    const notice = document.querySelector('#notice');
+    if (notice) notice.textContent = 'Resolve invalid inputs before exporting.';
+    return;
+  }
+  const blob = new Blob([`${JSON.stringify(state, null, 2)}\n`], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = 'partnership-breakpoint.json';
+  link.click();
+  URL.revokeObjectURL(url);
+  const notice = document.querySelector('#notice');
+  if (notice) notice.textContent = 'JSON exported.';
+}
+
+function importFile(file) {
+  if (file.size > 250_000) {
+    const notice = document.querySelector('#notice');
+    if (notice) notice.textContent = 'Import rejected: files must be 250 KB or smaller.';
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const candidate = JSON.parse(String(reader.result));
+      const validation = validateConfiguration(candidate);
+      if (!validation.valid) throw new ValidationError(validation.errors);
+      state = candidate;
+      activePreset = '';
+      refresh('JSON imported.');
+    } catch (error) {
+      const notice = document.querySelector('#notice');
+      if (notice) notice.textContent = error instanceof ValidationError ? `Import rejected: ${error.errors[0]}` : 'Import rejected: valid JSON is required.';
+    }
+  };
+  reader.readAsText(file);
+}
+
+function nextParticipantId() {
+  while (state.participants.some((participant) => participant.id === `participant-${participantSequence}`)) {
+    participantSequence += 1;
+  }
+  return `participant-${participantSequence}`;
+}
+
+function drawSensitivityChart(grid) {
+  const canvas = document.querySelector('#sensitivity-canvas');
+  const context = canvas?.getContext('2d');
+  if (!canvas || !context) return;
+  const bounds = canvas.getBoundingClientRect();
+  const pixelRatio = Math.min(window.devicePixelRatio || 1, 2);
+  canvas.width = Math.max(320, Math.round(bounds.width * pixelRatio));
+  canvas.height = Math.round(canvas.width * 0.7);
+  context.scale(pixelRatio, pixelRatio);
+  const width = canvas.width / pixelRatio;
+  const height = canvas.height / pixelRatio;
+  const margin = { top: 25, right: 14, bottom: 39, left: 49 };
+  const chartWidth = width - margin.left - margin.right;
+  const chartHeight = height - margin.top - margin.bottom;
+  const cellWidth = chartWidth / grid.volumes.length;
+  const cellHeight = chartHeight / grid.fees.length;
+  context.fillStyle = '#ffffff';
+  context.fillRect(0, 0, width, height);
+  grid.cells.forEach((row, y) => row.forEach((viable, x) => {
+    context.fillStyle = viable ? '#1558d6' : '#d94f3d';
+    context.fillRect(margin.left + x * cellWidth, margin.top + y * cellHeight, cellWidth - 1, cellHeight - 1);
+  }));
+  context.strokeStyle = '#1f2328';
+  context.lineWidth = 1;
+  context.strokeRect(margin.left, margin.top, chartWidth, chartHeight);
+  context.fillStyle = '#1f2328';
+  context.font = '11px ui-sans-serif, system-ui';
+  context.textAlign = 'center';
+  grid.volumes.forEach((volume, index) => context.fillText(formatNumber(volume), margin.left + (index + .5) * cellWidth, height - 16));
+  context.save();
+  context.translate(14, margin.top + chartHeight / 2);
+  context.rotate(-Math.PI / 2);
+  context.fillText('Fee / transaction', 0, 0);
+  context.restore();
+  context.textAlign = 'center';
+  context.fillText('Monthly volume', margin.left + chartWidth / 2, height - 2);
+  context.textAlign = 'right';
+  grid.fees.forEach((fee, index) => context.fillText(formatNumber(fee, 3), margin.left - 6, margin.top + (index + .5) * cellHeight + 4));
+}
+
+window.addEventListener('resize', () => {
+  if (validateConfiguration(state).valid) drawSensitivityChart(sensitivityGrid());
+});
+
+render();
+</script>
+  </body>
+</html>
