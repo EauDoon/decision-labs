@@ -117,6 +117,37 @@ function compactShock(shock, units) {
   return `${formatNumber(shock.change, units === 'txn' ? 0 : 4)} ${units}${percent}`;
 }
 
+function shockLabel(kind) {
+  return { volume: 'volume decrease', fee: 'fee decrease', variableCost: 'variable cost increase' }[kind] ?? kind;
+}
+
+function shockUnits(kind) {
+  return kind === 'volume' ? 'txn' : 'units / txn';
+}
+
+function breakpointSection(result) {
+  const breakpoint = result.firstBreakpoint;
+  if (!breakpoint?.participant) {
+    return `<section class="panel breakpoint-summary"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p></div></section>`;
+  }
+
+  const participantName = escapeAttribute(breakpoint.participant.name);
+  const label = shockLabel(breakpoint.kind);
+  const shock = breakpoint.shock;
+  if (breakpoint.status === 'already-failing') {
+    return `<section class="panel breakpoint-summary alarm"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p></div></section>`;
+  }
+  if (breakpoint.status === 'at-breakpoint') {
+    return `<section class="panel breakpoint-summary alarm"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p></div></section>`;
+  }
+
+  const units = shockUnits(breakpoint.kind);
+  const threshold = breakpoint.kind === 'volume'
+    ? `${formatNumber(shock.breakpoint)} txn`
+    : `${formatNumber(shock.breakpoint, 4)} units / txn`;
+  return `<section class="panel breakpoint-summary"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p></div></section>`;
+}
+
 function inputPanel() {
   const participantForms = state.participants.map((participant, index) => `
     <section class="participant-form" aria-labelledby="participant-${index}-title">
@@ -199,6 +230,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
+    ${breakpointSection(result)}
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
     ${participantTable(result)}
     ${shockSection(result)}

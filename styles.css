@@ -81,6 +81,10 @@ button.danger:hover { background: var(--coral); color: white; }
 .metric:last-child { border-right: 0; }
 .metric span { display: block; color: var(--muted); font-size: .71rem; text-transform: uppercase; letter-spacing: .06em; }
 .metric strong { display: block; font-size: 1.03rem; margin-top: .22rem; overflow-wrap: anywhere; }
+.breakpoint-summary { border-left: 6px solid var(--warning); }
+.breakpoint-summary.alarm { border-left-color: var(--coral); background: var(--coral-pale); }
+.breakpoint-summary .panel-body { display: grid; gap: .45rem; }
+.breakpoint-summary p { margin: 0; line-height: 1.45; }
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .8rem; min-width: 830px; }

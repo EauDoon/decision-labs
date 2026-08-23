@@ -113,6 +113,10 @@ button.danger:hover { background: var(--coral); color: white; }
 .metric:last-child { border-right: 0; }
 .metric span { display: block; color: var(--muted); font-size: .71rem; text-transform: uppercase; letter-spacing: .06em; }
 .metric strong { display: block; font-size: 1.03rem; margin-top: .22rem; overflow-wrap: anywhere; }
+.breakpoint-summary { border-left: 6px solid var(--warning); }
+.breakpoint-summary.alarm { border-left-color: var(--coral); background: var(--coral-pale); }
+.breakpoint-summary .panel-body { display: grid; gap: .45rem; }
+.breakpoint-summary p { margin: 0; line-height: 1.45; }
 
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: .8rem; min-width: 830px; }
@@ -458,6 +462,39 @@ function evaluateParticipant(participant, deal, volume = effectiveVolume(deal)) 
   };
 }
 
+const SHOCK_ORDER = Object.freeze(['volume', 'fee', 'variableCost']);
+
+/**
+ * Identifies the first adverse movement in the current scenario, using the
+ * smallest percentage change from the current value as the comparison unit.
+ * This is a prioritisation aid, not a probability or a claim about behaviour.
+ */
+function firstBreakpoint(result) {
+  const candidates = [];
+  result.participants.forEach((participant, participantIndex) => {
+    SHOCK_ORDER.forEach((kind, kindIndex) => {
+      const shock = participant.shocks?.[kind];
+      if (!shock || shock.status === 'unbounded') return;
+      const priority = shock.status === 'already-failing' || shock.status === 'at-breakpoint'
+        ? 0
+        : shock.changePct === null ? Number.POSITIVE_INFINITY : shock.changePct;
+      candidates.push({ participantIndex, kindIndex, kind, participant, shock, priority });
+    });
+  });
+  candidates.sort((a, b) => a.priority - b.priority || a.participantIndex - b.participantIndex || a.kindIndex - b.kindIndex);
+  const selected = candidates[0];
+  if (!selected) {
+    return { status: 'unbounded', participant: null, kind: null, shock: null, comparison: 'relative-change' };
+  }
+  return {
+    status: selected.shock.status,
+    participant: selected.participant,
+    kind: selected.kind,
+    shock: selected.shock,
+    comparison: 'relative-change',
+  };
+}
+
 function calculatePartnership(config) {
   assertValidConfiguration(config);
   const volume = effectiveVolume(config.deal);
@@ -474,7 +511,7 @@ function calculatePartnership(config) {
   const capacityCeiling = participants.reduce((ceiling, participant) => (
     participant.capacity === null ? ceiling : Math.min(ceiling, participant.capacity)
   ), config.deal.addressableVolume);
-  return {
+  const result = {
     deal: { ...config.deal },
     effectiveVolume: volume,
     volumeCappedByAddressableDemand: volume < config.deal.monthlyVolume * (1 - (config.deal.volumeShockPct ?? 0) / 100) - EPSILON,
@@ -485,6 +522,7 @@ function calculatePartnership(config) {
     weakestParticipant,
     capacityCeiling,
   };
+  return { ...result, firstBreakpoint: firstBreakpoint(result) };
 }
 
 /** Creates a safe immutable copy for UI state or JSON export. */
@@ -618,6 +656,37 @@ function compactShock(shock, units) {
   return `${formatNumber(shock.change, units === 'txn' ? 0 : 4)} ${units}${percent}`;
 }
 
+function shockLabel(kind) {
+  return { volume: 'volume decrease', fee: 'fee decrease', variableCost: 'variable cost increase' }[kind] ?? kind;
+}
+
+function shockUnits(kind) {
+  return kind === 'volume' ? 'txn' : 'units / txn';
+}
+
+function breakpointSection(result) {
+  const breakpoint = result.firstBreakpoint;
+  if (!breakpoint?.participant) {
+    return `<section class="panel breakpoint-summary"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p></div></section>`;
+  }
+
+  const participantName = escapeAttribute(breakpoint.participant.name);
+  const label = shockLabel(breakpoint.kind);
+  const shock = breakpoint.shock;
+  if (breakpoint.status === 'already-failing') {
+    return `<section class="panel breakpoint-summary alarm"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p></div></section>`;
+  }
+  if (breakpoint.status === 'at-breakpoint') {
+    return `<section class="panel breakpoint-summary alarm"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p></div></section>`;
+  }
+
+  const units = shockUnits(breakpoint.kind);
+  const threshold = breakpoint.kind === 'volume'
+    ? `${formatNumber(shock.breakpoint)} txn`
+    : `${formatNumber(shock.breakpoint, 4)} units / txn`;
+  return `<section class="panel breakpoint-summary"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p></div></section>`;
+}
+
 function inputPanel() {
   const participantForms = state.participants.map((participant, index) => `
     <section class="participant-form" aria-labelledby="participant-${index}-title">
@@ -700,6 +769,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
+    ${breakpointSection(result)}
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
     ${participantTable(result)}
     ${shockSection(result)}

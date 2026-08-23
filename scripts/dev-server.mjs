@@ -15,6 +15,11 @@ const mimeTypes = {
 };
 
 createServer((request, response) => {
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    response.writeHead(405, { allow: 'GET, HEAD', 'content-type': 'text/plain; charset=utf-8' });
+    response.end('Method not allowed');
+    return;
+  }
   let requestPath;
   try {
     requestPath = decodeURIComponent(new URL(request.url ?? '/', 'http://localhost').pathname);
@@ -41,6 +46,10 @@ createServer((request, response) => {
     'cache-control': 'no-store',
     'x-content-type-options': 'nosniff',
   });
+  if (request.method === 'HEAD') {
+    response.end();
+    return;
+  }
   createReadStream(target).pipe(response);
 }).listen(port, '127.0.0.1', () => {
   console.log(`Partnership Breakpoint is running at http://127.0.0.1:${port}`);

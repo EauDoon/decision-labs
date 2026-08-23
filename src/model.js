@@ -266,6 +266,39 @@ export function evaluateParticipant(participant, deal, volume = effectiveVolume(
   };
 }
 
+const SHOCK_ORDER = Object.freeze(['volume', 'fee', 'variableCost']);
+
+/**
+ * Identifies the first adverse movement in the current scenario, using the
+ * smallest percentage change from the current value as the comparison unit.
+ * This is a prioritisation aid, not a probability or a claim about behaviour.
+ */
+export function firstBreakpoint(result) {
+  const candidates = [];
+  result.participants.forEach((participant, participantIndex) => {
+    SHOCK_ORDER.forEach((kind, kindIndex) => {
+      const shock = participant.shocks?.[kind];
+      if (!shock || shock.status === 'unbounded') return;
+      const priority = shock.status === 'already-failing' || shock.status === 'at-breakpoint'
+        ? 0
+        : shock.changePct === null ? Number.POSITIVE_INFINITY : shock.changePct;
+      candidates.push({ participantIndex, kindIndex, kind, participant, shock, priority });
+    });
+  });
+  candidates.sort((a, b) => a.priority - b.priority || a.participantIndex - b.participantIndex || a.kindIndex - b.kindIndex);
+  const selected = candidates[0];
+  if (!selected) {
+    return { status: 'unbounded', participant: null, kind: null, shock: null, comparison: 'relative-change' };
+  }
+  return {
+    status: selected.shock.status,
+    participant: selected.participant,
+    kind: selected.kind,
+    shock: selected.shock,
+    comparison: 'relative-change',
+  };
+}
+
 export function calculatePartnership(config) {
   assertValidConfiguration(config);
   const volume = effectiveVolume(config.deal);
@@ -282,7 +315,7 @@ export function calculatePartnership(config) {
   const capacityCeiling = participants.reduce((ceiling, participant) => (
     participant.capacity === null ? ceiling : Math.min(ceiling, participant.capacity)
   ), config.deal.addressableVolume);
-  return {
+  const result = {
     deal: { ...config.deal },
     effectiveVolume: volume,
     volumeCappedByAddressableDemand: volume < config.deal.monthlyVolume * (1 - (config.deal.volumeShockPct ?? 0) / 100) - EPSILON,
@@ -293,6 +326,7 @@ export function calculatePartnership(config) {
     weakestParticipant,
     capacityCeiling,
   };
+  return { ...result, firstBreakpoint: firstBreakpoint(result) };
 }
 
 /** Creates a safe immutable copy for UI state or JSON export. */

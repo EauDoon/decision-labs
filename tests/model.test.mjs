@@ -92,6 +92,24 @@ test('volume, fee, and cost shocks report economically meaningful thresholds', (
   assert.ok(shocks.variableCost.breakpoint > participant.variableCostPerTransaction);
 });
 
+test('first breakpoint ranks the smallest relative adverse movement deterministically', () => {
+  const result = calculatePartnership(clonePreset('balanced'));
+  assert.equal(result.firstBreakpoint.participant.name, 'Liquidity Partner');
+  assert.equal(result.firstBreakpoint.kind, 'fee');
+  assert.equal(result.firstBreakpoint.status, 'bounded');
+  assert.equal(result.firstBreakpoint.comparison, 'relative-change');
+  assert.equal(Math.round(result.firstBreakpoint.shock.changePct * 10) / 10, 4);
+});
+
+test('first breakpoint surfaces an existing failure before ranking future shocks', () => {
+  const config = clonePreset('balanced');
+  config.participants[1].capacity = 90000;
+  const result = calculatePartnership(config);
+  assert.equal(result.firstBreakpoint.participant.name, 'Distributor');
+  assert.equal(result.firstBreakpoint.status, 'already-failing');
+  assert.equal(result.firstBreakpoint.shock.change, 0);
+});
+
 test('a zero fee floor with zero costs has no adverse fee threshold', () => {
   const config = {
     deal: { monthlyVolume: 100, feePerTransaction: 0.2, addressableVolume: 100, volumeShockPct: 0 },
