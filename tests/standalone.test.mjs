@@ -7,6 +7,7 @@ test("standalone build is self-contained, LF-only, and deterministic", async () 
   const second = await buildStandalone();
   assert.equal(first, second);
   assert.equal(isStandaloneCurrent(first, second), true);
+  assert.equal(isStandaloneCurrent(first.replace(/\n/g, "\r\n"), second), true);
   assert.equal(isStandaloneCurrent("stale", second), false);
   assert.match(first, /data-weekend-gap-standalone="true"/);
   assert.match(first, /Sharing unavailable in standalone file/);

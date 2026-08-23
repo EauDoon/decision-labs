@@ -150,7 +150,7 @@ export async function buildStandalone() {
 }
 
 export function isStandaloneCurrent(current, expected) {
-  return current === expected;
+  return typeof current === "string" && normaliseLf(current) === normaliseLf(expected);
 }
 
 export async function main(args = process.argv.slice(2)) {
