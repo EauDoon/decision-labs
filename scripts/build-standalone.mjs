@@ -75,6 +75,10 @@ export async function standaloneBytes() {
   return standalone;
 }
 
+export function isStandaloneCurrent(actual, expected) {
+  return typeof actual === "string" && lf(actual) === lf(expected);
+}
+
 async function main(args) {
   if (args.length > 1 || (args.length === 1 && args[0] !== "--check")) {
     throw new Error("Usage: node scripts/build-standalone.mjs [--check]");
@@ -88,7 +92,7 @@ async function main(args) {
       console.error("standalone.html is missing. Run npm run build:standalone.");
       return 1;
     }
-    if (actual !== expected) {
+    if (!isStandaloneCurrent(actual, expected)) {
       console.error("standalone.html is stale. Run npm run build:standalone.");
       return 1;
     }
