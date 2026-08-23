@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { renderStandalone } from '../scripts/build-standalone.mjs';
+import { isStandaloneCurrent, renderStandalone } from '../scripts/build-standalone.mjs';
 
 const html = '<html><head><title>Partnership Breakpoint</title><link rel="stylesheet" href="styles.css" /></head><body><a href="MODEL.md">Read the full model</a><script type="module" src="src/app.js"></script></body></html>';
 const appImport = `import {
@@ -19,6 +19,8 @@ test('standalone renderer inlines local assets with deterministic LF bytes', () 
   const first = renderStandalone(input);
   const second = renderStandalone(input);
   assert.equal(first, second);
+  assert.equal(isStandaloneCurrent(first.replace(/\n/g, '\r\n'), second), true);
+  assert.equal(isStandaloneCurrent('stale', second), false);
   assert.match(first, /<style>\nbody \{ color: black; \}\n<\/style>/);
   assert.match(first, /http-equiv="Content-Security-Policy"/);
   assert.match(first, /default-src 'none'; base-uri 'none'; connect-src 'none'; form-action 'none'; img-src 'none'; media-src 'none'; object-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'/);

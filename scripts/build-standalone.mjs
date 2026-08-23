@@ -91,6 +91,10 @@ export async function buildStandalone() {
   });
 }
 
+export function isStandaloneCurrent(existing, expected) {
+  return typeof existing === 'string' && normaliseLf(existing) === normaliseLf(expected);
+}
+
 async function main(args) {
   if (args.length > 1 || (args.length === 1 && args[0] !== '--check')) {
     throw new Error('Usage: npm run build:standalone [-- --check]');
@@ -99,7 +103,7 @@ async function main(args) {
   if (args[0] === '--check') {
     let existing = null;
     try { existing = await readFile(outputPath, 'utf8'); } catch { /* Report the missing output below. */ }
-    if (existing !== output) {
+    if (!isStandaloneCurrent(existing, output)) {
       throw new Error('standalone.html is missing or stale. Run npm run build:standalone.');
     }
     console.log('standalone.html is current.');
