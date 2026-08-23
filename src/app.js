@@ -18,6 +18,9 @@ const elements = {
   buyerTemplate: document.querySelector("#buyer-row-template"),
   offerTemplate: document.querySelector("#offer-row-template"),
   resultRows: document.querySelector("#result-rows"),
+  inspector: document.querySelector("#offer-inspector"),
+  inspectorRows: document.querySelector("#inspector-rows"),
+  inspectorSummary: document.querySelector("#inspector-summary"),
   demandGroups: document.querySelector("#demand-groups"),
   chart: document.querySelector("#offer-chart"),
   winner: document.querySelector("#metric-winner"),
@@ -31,6 +34,7 @@ const elements = {
 };
 
 let scenario = loadInitialScenario();
+let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
 refresh();
@@ -56,10 +60,15 @@ function loadInitialScenario() {
 function bindStaticEvents() {
   elements.title.addEventListener("input", (event) => updateRoot("title", event.target.value));
   elements.currency.addEventListener("input", (event) => updateRoot("currency", event.target.value.toUpperCase()));
+  elements.inspector.addEventListener("change", () => {
+    inspectedOfferId = elements.inspector.value;
+    try { renderInspector(evaluateMarket(scenario)); } catch { /* Invalid edits already have a visible message. */ }
+  });
 
   document.querySelectorAll("[data-preset]").forEach((button) => {
     button.addEventListener("click", () => {
       scenario = clonePreset(button.dataset.preset);
+      inspectedOfferId = scenario.offers[0]?.id ?? "";
       document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry === button));
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
       renderEditor();
@@ -97,6 +106,7 @@ function bindStaticEvents() {
       capacity: 20,
       shippingPerBuyer: 0
     });
+    inspectedOfferId = next;
     renderEditor();
     refresh();
     elements.offerRows.lastElementChild?.querySelector("input")?.focus();
@@ -114,6 +124,7 @@ function bindStaticEvents() {
   }
   document.querySelector("#reset-button").addEventListener("click", () => {
     scenario = clonePreset();
+    inspectedOfferId = scenario.offers[0]?.id ?? "";
     localStorage.removeItem(STORAGE_KEY);
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry.dataset.preset === "neighbourhood"));
@@ -222,6 +233,7 @@ function refresh() {
     scenario = market.scenario;
     renderSummary(market);
     renderResults(market);
+    renderInspector(market);
     renderDemand(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
@@ -257,6 +269,65 @@ function renderResults(market) {
     return row;
   });
   elements.resultRows.replaceChildren(...rows);
+}
+
+function renderInspector(market) {
+  if (!market.results.some(({ offer }) => offer.id === inspectedOfferId)) {
+    inspectedOfferId = market.winner?.offer.id ?? market.ranked[0]?.offer.id ?? "";
+  }
+  const options = market.results.map((result) => {
+    const option = document.createElement("option");
+    option.value = result.offer.id;
+    option.textContent = `${result.offer.merchant} / ${result.offer.variant}`;
+    option.selected = result.offer.id === inspectedOfferId;
+    return option;
+  });
+  elements.inspector.replaceChildren(...options);
+
+  const result = market.results.find(({ offer }) => offer.id === inspectedOfferId);
+  if (!result) {
+    elements.inspectorSummary.textContent = "No offer is available to inspect.";
+    elements.inspectorRows.replaceChildren();
+    return;
+  }
+  elements.inspectorSummary.textContent = result.qualifies
+    ? `${result.deliveredBuyers} buyers and ${result.fulfilledUnits} units are included.`
+    : `${result.compatibleUnits} compatible units are available, leaving the offer ${result.unitsShort} units short of its minimum.`;
+  const buyers = new Map(market.scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const rows = result.buyerOutcomes.map((outcome) => {
+    const buyer = buyers.get(outcome.buyerId);
+    const row = document.createElement("tr");
+    addCell(row, buyer?.label ?? outcome.buyerId);
+    addCell(row, String(buyer?.quantity ?? 0));
+    const presentation = outcomePresentation(outcome);
+    addCell(row, presentation.status, presentation.className);
+    addCell(row, presentation.explanation);
+    return row;
+  });
+  elements.inspectorRows.replaceChildren(...rows);
+}
+
+function outcomePresentation(outcome) {
+  if (outcome.status === "included") {
+    return { status: "Included", className: "status-pass", explanation: "All constraints pass and the whole order fits capacity." };
+  }
+  if (outcome.status === "minimum") {
+    return { status: "Offer locked", className: "status-short", explanation: "All constraints pass and the order fits capacity, but the offer misses its minimum." };
+  }
+  if (outcome.status === "capacity") {
+    return { status: "Capacity", className: "status-short", explanation: "All constraints pass, but this whole order is outside the capacity-maximizing cohort." };
+  }
+  const explanations = {
+    category: "category differs",
+    variant: "variant is not accepted",
+    price: "unit price exceeds the ceiling",
+    delivery: "delivery exceeds the limit"
+  };
+  return {
+    status: "Incompatible",
+    className: "status-short",
+    explanation: outcome.reasons.map((reason) => explanations[reason]).join("; ")
+  };
 }
 
 function renderDemand(rawScenario) {
@@ -357,6 +428,7 @@ async function importScenario(event) {
   if (file.size > 250_000) return setStatus("Import files must be smaller than 250 KB.");
   try {
     scenario = validateScenario(JSON.parse(await file.text()));
+    inspectedOfferId = scenario.offers[0]?.id ?? "";
     renderEditor();
     refresh();
     setStatus("Scenario imported.", true);

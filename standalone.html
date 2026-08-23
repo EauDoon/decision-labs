@@ -210,6 +210,12 @@ td input:hover, td input:focus { border-color: var(--line-strong); background: w
 .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 0.3rem; background: var(--orange); }
 canvas { display: block; width: 100%; height: 280px; }
 .canvas-note { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.75rem; }
+.inspector-panel { margin-top: 1rem; }
+.inspector-heading { display: flex; align-items: end; }
+.inspector-heading h3 { margin-bottom: 0.2rem; }
+.inspector-summary { margin: 0; color: var(--muted); }
+.inspector-picker { min-width: min(100%, 270px); color: var(--muted); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
+.inspector-picker select { width: 100%; margin-top: 0.35rem; color: var(--text); letter-spacing: 0; text-transform: none; }
 
 .demand-groups { display: grid; gap: 0.75rem; }
 .demand-card { padding: 0.9rem; border-left: 5px solid var(--orange); background: #f3eee4; }
@@ -257,6 +263,7 @@ footer {
   .preset-bar { grid-template-columns: 1fr 1fr; }
   .preset-bar > :first-child { grid-column: 1 / -1; }
   .scoreboard { grid-template-columns: 1fr 1fr; }
+  .inspector-heading { align-items: stretch; flex-direction: column; }
   .metric:nth-child(3) { border-left: 0; border-top: 1px solid #4b487d; }
   .metric:nth-child(4) { border-top: 1px solid #4b487d; }
 }
@@ -412,6 +419,27 @@ footer {
             </div>
           </article>
         </div>
+
+        <article class="panel inspector-panel" aria-labelledby="inspector-title">
+          <div class="panel-heading inspector-heading">
+            <div>
+              <p class="section-number">Offer inspector</p>
+              <h3 id="inspector-title">Why each order is included or excluded</h3>
+              <p id="inspector-summary" class="inspector-summary"></p>
+            </div>
+            <label class="inspector-picker">Inspect offer
+              <select id="offer-inspector"></select>
+            </label>
+          </div>
+          <div class="table-shell compact">
+            <table>
+              <caption class="sr-only">Buyer outcomes for the inspected offer</caption>
+              <thead><tr><th scope="col">Private label</th><th scope="col">Quantity</th><th scope="col">Outcome</th><th scope="col">Explanation</th></tr></thead>
+              <tbody id="inspector-rows"></tbody>
+            </table>
+          </div>
+          <p class="canvas-note">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
+        </article>
       </div>
 
       <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" hidden>
@@ -677,12 +705,11 @@ function evaluateOffer(rawScenario, rawOffer) {
     : validateOffer(rawOffer, 0);
   if (!offerEntry) throw new ScenarioError("Offer was not found.");
 
-  const compatible = scenario.buyers.filter((entry) =>
-    normalizeText(entry.category) === normalizeText(offerEntry.category)
-    && entry.allowedVariants.some((variant) => normalizeText(variant) === normalizeText(offerEntry.variant))
-    && offerEntry.unitPrice <= entry.maxUnitPrice
-    && offerEntry.deliveryDays <= entry.latestDeliveryDays
-  );
+  const compatibility = scenario.buyers.map((entry) => ({
+    buyer: entry,
+    reasons: incompatibilityReasons(entry, offerEntry)
+  }));
+  const compatible = compatibility.filter(({ reasons }) => reasons.length === 0).map(({ buyer }) => buyer);
 
   const selected = selectWholeBuyers(compatible, offerEntry.capacity);
   const compatibleUnits = compatible.reduce((sum, entry) => sum + entry.quantity, 0);
@@ -696,12 +723,21 @@ function evaluateOffer(rawScenario, rawOffer) {
     : 0;
   const savings = Math.max(0, reservationValue - totalCost);
   const totalRequestedUnits = scenario.buyers.reduce((sum, entry) => sum + entry.quantity, 0);
+  const selectedIds = new Set(selected.map(({ id }) => id));
+  const buyerOutcomes = compatibility.map(({ buyer, reasons }) => {
+    if (reasons.length > 0) return { buyerId: buyer.id, status: "incompatible", reasons };
+    if (!selectedIds.has(buyer.id)) return { buyerId: buyer.id, status: "capacity", reasons: ["capacity"] };
+    return qualifies
+      ? { buyerId: buyer.id, status: "included", reasons: [] }
+      : { buyerId: buyer.id, status: "minimum", reasons: ["minimum"] };
+  });
 
   return {
     offer: offerEntry,
     compatibleBuyerCount: compatible.length,
     compatibleUnits,
     selectedBuyerIds: qualifies ? selected.map(({ id }) => id) : [],
+    buyerOutcomes,
     deliveredBuyers,
     fulfilledUnits: units,
     qualifies,
@@ -712,6 +748,15 @@ function evaluateOffer(rawScenario, rawOffer) {
     averageLandedUnitCost: units > 0 ? totalCost / units : null,
     fulfillmentRate: totalRequestedUnits > 0 ? units / totalRequestedUnits : 0
   };
+}
+
+function incompatibilityReasons(buyer, offer) {
+  const reasons = [];
+  if (normalizeText(buyer.category) !== normalizeText(offer.category)) reasons.push("category");
+  if (!buyer.allowedVariants.some((variant) => normalizeText(variant) === normalizeText(offer.variant))) reasons.push("variant");
+  if (offer.unitPrice > buyer.maxUnitPrice) reasons.push("price");
+  if (offer.deliveryDays > buyer.latestDeliveryDays) reasons.push("delivery");
+  return reasons;
 }
 
 function selectWholeBuyers(compatible, capacity) {
@@ -831,6 +876,9 @@ const elements = {
   buyerTemplate: document.querySelector("#buyer-row-template"),
   offerTemplate: document.querySelector("#offer-row-template"),
   resultRows: document.querySelector("#result-rows"),
+  inspector: document.querySelector("#offer-inspector"),
+  inspectorRows: document.querySelector("#inspector-rows"),
+  inspectorSummary: document.querySelector("#inspector-summary"),
   demandGroups: document.querySelector("#demand-groups"),
   chart: document.querySelector("#offer-chart"),
   winner: document.querySelector("#metric-winner"),
@@ -844,6 +892,7 @@ const elements = {
 };
 
 let scenario = loadInitialScenario();
+let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
 refresh();
@@ -869,10 +918,15 @@ function loadInitialScenario() {
 function bindStaticEvents() {
   elements.title.addEventListener("input", (event) => updateRoot("title", event.target.value));
   elements.currency.addEventListener("input", (event) => updateRoot("currency", event.target.value.toUpperCase()));
+  elements.inspector.addEventListener("change", () => {
+    inspectedOfferId = elements.inspector.value;
+    try { renderInspector(evaluateMarket(scenario)); } catch { /* Invalid edits already have a visible message. */ }
+  });
 
   document.querySelectorAll("[data-preset]").forEach((button) => {
     button.addEventListener("click", () => {
       scenario = clonePreset(button.dataset.preset);
+      inspectedOfferId = scenario.offers[0]?.id ?? "";
       document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry === button));
       window.history.replaceState(null, "", window.location.pathname + window.location.search);
       renderEditor();
@@ -910,6 +964,7 @@ function bindStaticEvents() {
       capacity: 20,
       shippingPerBuyer: 0
     });
+    inspectedOfferId = next;
     renderEditor();
     refresh();
     elements.offerRows.lastElementChild?.querySelector("input")?.focus();
@@ -927,6 +982,7 @@ function bindStaticEvents() {
   }
   document.querySelector("#reset-button").addEventListener("click", () => {
     scenario = clonePreset();
+    inspectedOfferId = scenario.offers[0]?.id ?? "";
     localStorage.removeItem(STORAGE_KEY);
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry.dataset.preset === "neighbourhood"));
@@ -1035,6 +1091,7 @@ function refresh() {
     scenario = market.scenario;
     renderSummary(market);
     renderResults(market);
+    renderInspector(market);
     renderDemand(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
@@ -1070,6 +1127,65 @@ function renderResults(market) {
     return row;
   });
   elements.resultRows.replaceChildren(...rows);
+}
+
+function renderInspector(market) {
+  if (!market.results.some(({ offer }) => offer.id === inspectedOfferId)) {
+    inspectedOfferId = market.winner?.offer.id ?? market.ranked[0]?.offer.id ?? "";
+  }
+  const options = market.results.map((result) => {
+    const option = document.createElement("option");
+    option.value = result.offer.id;
+    option.textContent = `${result.offer.merchant} / ${result.offer.variant}`;
+    option.selected = result.offer.id === inspectedOfferId;
+    return option;
+  });
+  elements.inspector.replaceChildren(...options);
+
+  const result = market.results.find(({ offer }) => offer.id === inspectedOfferId);
+  if (!result) {
+    elements.inspectorSummary.textContent = "No offer is available to inspect.";
+    elements.inspectorRows.replaceChildren();
+    return;
+  }
+  elements.inspectorSummary.textContent = result.qualifies
+    ? `${result.deliveredBuyers} buyers and ${result.fulfilledUnits} units are included.`
+    : `${result.compatibleUnits} compatible units are available, leaving the offer ${result.unitsShort} units short of its minimum.`;
+  const buyers = new Map(market.scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const rows = result.buyerOutcomes.map((outcome) => {
+    const buyer = buyers.get(outcome.buyerId);
+    const row = document.createElement("tr");
+    addCell(row, buyer?.label ?? outcome.buyerId);
+    addCell(row, String(buyer?.quantity ?? 0));
+    const presentation = outcomePresentation(outcome);
+    addCell(row, presentation.status, presentation.className);
+    addCell(row, presentation.explanation);
+    return row;
+  });
+  elements.inspectorRows.replaceChildren(...rows);
+}
+
+function outcomePresentation(outcome) {
+  if (outcome.status === "included") {
+    return { status: "Included", className: "status-pass", explanation: "All constraints pass and the whole order fits capacity." };
+  }
+  if (outcome.status === "minimum") {
+    return { status: "Offer locked", className: "status-short", explanation: "All constraints pass and the order fits capacity, but the offer misses its minimum." };
+  }
+  if (outcome.status === "capacity") {
+    return { status: "Capacity", className: "status-short", explanation: "All constraints pass, but this whole order is outside the capacity-maximizing cohort." };
+  }
+  const explanations = {
+    category: "category differs",
+    variant: "variant is not accepted",
+    price: "unit price exceeds the ceiling",
+    delivery: "delivery exceeds the limit"
+  };
+  return {
+    status: "Incompatible",
+    className: "status-short",
+    explanation: outcome.reasons.map((reason) => explanations[reason]).join("; ")
+  };
 }
 
 function renderDemand(rawScenario) {
@@ -1170,6 +1286,7 @@ async function importScenario(event) {
   if (file.size > 250_000) return setStatus("Import files must be smaller than 250 KB.");
   try {
     scenario = validateScenario(JSON.parse(await file.text()));
+    inspectedOfferId = scenario.offers[0]?.id ?? "";
     renderEditor();
     refresh();
     setStatus("Scenario imported.", true);

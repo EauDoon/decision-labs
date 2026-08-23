@@ -38,6 +38,7 @@ npm run check
 - Add buyers with a category, quantity, price ceiling, delivery limit, and accepted variants.
 - Add merchant bids with a price, minimum order, delivery time, capacity, and shipping cost.
 - Compare qualified offers by fulfilled units, group headroom, buyers included, and landed cost.
+- Inspect why each buyer order is included, blocked by the minimum, left out by capacity, or incompatible with an offer.
 - Inspect a merchant view that contains aggregate ranges rather than individual records.
 - Import or export a scenario as JSON.
 - Encode the current scenario in a share link.
@@ -52,7 +53,7 @@ A buyer is compatible with an offer only when all four tests pass:
 3. The unit price is no higher than the buyer's ceiling.
 4. Delivery is no later than the buyer's limit.
 
-The allocator performs an exact bounded search for the greatest whole-buyer quantity within merchant capacity. An offer unlocks only when the selected units reach its minimum order. See [MODEL.md](./MODEL.md) for formulas, bounds, ranking rules, and limitations.
+The allocator performs an exact bounded search for the greatest whole-buyer quantity within merchant capacity. An offer unlocks only when the selected units reach its minimum order. The offer inspector exposes each outcome in the private buyer room while the merchant view remains aggregate-only. See [MODEL.md](./MODEL.md) for formulas, bounds, ranking rules, and limitations.
 
 ## Repository map
 

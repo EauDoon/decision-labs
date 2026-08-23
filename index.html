@@ -163,6 +163,27 @@ SOFTWARE.
             </div>
           </article>
         </div>
+
+        <article class="panel inspector-panel" aria-labelledby="inspector-title">
+          <div class="panel-heading inspector-heading">
+            <div>
+              <p class="section-number">Offer inspector</p>
+              <h3 id="inspector-title">Why each order is included or excluded</h3>
+              <p id="inspector-summary" class="inspector-summary"></p>
+            </div>
+            <label class="inspector-picker">Inspect offer
+              <select id="offer-inspector"></select>
+            </label>
+          </div>
+          <div class="table-shell compact">
+            <table>
+              <caption class="sr-only">Buyer outcomes for the inspected offer</caption>
+              <thead><tr><th scope="col">Private label</th><th scope="col">Quantity</th><th scope="col">Outcome</th><th scope="col">Explanation</th></tr></thead>
+              <tbody id="inspector-rows"></tbody>
+            </table>
+          </div>
+          <p class="canvas-note">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
+        </article>
       </div>
 
       <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" hidden>

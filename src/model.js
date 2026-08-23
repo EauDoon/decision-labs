@@ -161,12 +161,11 @@ export function evaluateOffer(rawScenario, rawOffer) {
     : validateOffer(rawOffer, 0);
   if (!offerEntry) throw new ScenarioError("Offer was not found.");
 
-  const compatible = scenario.buyers.filter((entry) =>
-    normalizeText(entry.category) === normalizeText(offerEntry.category)
-    && entry.allowedVariants.some((variant) => normalizeText(variant) === normalizeText(offerEntry.variant))
-    && offerEntry.unitPrice <= entry.maxUnitPrice
-    && offerEntry.deliveryDays <= entry.latestDeliveryDays
-  );
+  const compatibility = scenario.buyers.map((entry) => ({
+    buyer: entry,
+    reasons: incompatibilityReasons(entry, offerEntry)
+  }));
+  const compatible = compatibility.filter(({ reasons }) => reasons.length === 0).map(({ buyer }) => buyer);
 
   const selected = selectWholeBuyers(compatible, offerEntry.capacity);
   const compatibleUnits = compatible.reduce((sum, entry) => sum + entry.quantity, 0);
@@ -180,12 +179,21 @@ export function evaluateOffer(rawScenario, rawOffer) {
     : 0;
   const savings = Math.max(0, reservationValue - totalCost);
   const totalRequestedUnits = scenario.buyers.reduce((sum, entry) => sum + entry.quantity, 0);
+  const selectedIds = new Set(selected.map(({ id }) => id));
+  const buyerOutcomes = compatibility.map(({ buyer, reasons }) => {
+    if (reasons.length > 0) return { buyerId: buyer.id, status: "incompatible", reasons };
+    if (!selectedIds.has(buyer.id)) return { buyerId: buyer.id, status: "capacity", reasons: ["capacity"] };
+    return qualifies
+      ? { buyerId: buyer.id, status: "included", reasons: [] }
+      : { buyerId: buyer.id, status: "minimum", reasons: ["minimum"] };
+  });
 
   return {
     offer: offerEntry,
     compatibleBuyerCount: compatible.length,
     compatibleUnits,
     selectedBuyerIds: qualifies ? selected.map(({ id }) => id) : [],
+    buyerOutcomes,
     deliveredBuyers,
     fulfilledUnits: units,
     qualifies,
@@ -196,6 +204,15 @@ export function evaluateOffer(rawScenario, rawOffer) {
     averageLandedUnitCost: units > 0 ? totalCost / units : null,
     fulfillmentRate: totalRequestedUnits > 0 ? units / totalRequestedUnits : 0
   };
+}
+
+function incompatibilityReasons(buyer, offer) {
+  const reasons = [];
+  if (normalizeText(buyer.category) !== normalizeText(offer.category)) reasons.push("category");
+  if (!buyer.allowedVariants.some((variant) => normalizeText(variant) === normalizeText(offer.variant))) reasons.push("variant");
+  if (offer.unitPrice > buyer.maxUnitPrice) reasons.push("price");
+  if (offer.deliveryDays > buyer.latestDeliveryDays) reasons.push("delivery");
+  return reasons;
 }
 
 function selectWholeBuyers(compatible, capacity) {

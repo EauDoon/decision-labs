@@ -29,6 +29,30 @@ test("buyer compatibility requires category, variant, price, and delivery", () =
   assert.equal(result.unitsShort, 0);
 });
 
+test("offer outcomes explain every included and excluded buyer", () => {
+  const scenario = clonePreset("neighbourhood");
+  scenario.buyers = [
+    { ...scenario.buyers[0], id: "included", quantity: 2 },
+    { ...scenario.buyers[0], id: "capacity", quantity: 4 },
+    { ...scenario.buyers[0], id: "mismatch", category: "Tea", allowedVariants: ["Dark"], maxUnitPrice: 1, latestDeliveryDays: 1 }
+  ];
+  scenario.offers[0] = { ...scenario.offers[0], minimumUnits: 2, capacity: 3 };
+  const result = evaluateOffer(scenario, scenario.offers[0]);
+  assert.deepEqual(result.buyerOutcomes, [
+    { buyerId: "included", status: "included", reasons: [] },
+    { buyerId: "capacity", status: "capacity", reasons: ["capacity"] },
+    { buyerId: "mismatch", status: "incompatible", reasons: ["category", "variant", "price", "delivery"] }
+  ]);
+});
+
+test("compatible buyers explain when an offer remains below minimum", () => {
+  const scenario = clonePreset("neighbourhood");
+  scenario.offers[0].minimumUnits = 100;
+  const result = evaluateOffer(scenario, scenario.offers[0]);
+  assert.equal(result.qualifies, false);
+  assert.equal(result.buyerOutcomes.filter(({ status }) => status === "minimum").length, result.compatibleBuyerCount);
+});
+
 test("capacity never splits a buyer quantity", () => {
   const scenario = clonePreset("neighbourhood");
   scenario.offers[0].capacity = 4;

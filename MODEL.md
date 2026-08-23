@@ -63,6 +63,8 @@ fulfillment rate = fulfilled units / all requested units
 
 An offer that misses its minimum executes no synthetic transaction, so fulfilled units, cost, headroom, and included buyer IDs are reported as zero or empty. Its compatible unit count remains visible to show the gap.
 
+The buyer room also reports a deterministic outcome for every buyer and offer pair. It identifies failed compatibility tests, whole orders omitted by capacity, compatible orders blocked because the offer misses its minimum, and orders included in a qualifying cohort. These buyer-level explanations are not displayed in the merchant view.
+
 ## Ranking
 
 Qualified offers always rank above unqualified offers. The remaining order is:
