@@ -31,6 +31,7 @@ const elements = {
   settledTotal: document.querySelector("#settled-total-value"),
   finalQueue: document.querySelector("#final-queue-value"),
   peakQueue: document.querySelector("#peak-queue-value"),
+  backlogHours: document.querySelector("#backlog-hours-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -143,7 +144,7 @@ function noPayoutExplanation(currentScenario, reserveRemainingAud) {
     [currentScenario.payoutThroughputAudPerHour, "payout throughput"]
   ].find(([capacity]) => capacity <= 0)?.[1];
   if (zeroThroughput) return `No payout is available because ${zeroThroughput} is zero.`;
-  return "The edited business-hour windows do not overlap within the modelled search period.";
+  return "The edited business-hour windows do not overlap within the modeled search period.";
 }
 
 function currentScenarioHashError(error) {
@@ -163,12 +164,13 @@ function render() {
   elements.queueDetail.textContent = `${formatAud(point.settledAud)} paid so far`;
   elements.ratio.textContent = formatPercent(point.liquidityRatio);
   elements.discount.textContent = formatPercent(point.discountBps / 10000, 2);
-  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour } = simulation.summary;
+  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour, hoursWithQueue } = simulation.summary;
   const settledShare = totalDemandAud > 0 ? totalSettledAud / totalDemandAud : 1;
   elements.outcomeSummary.textContent = `${formatPercent(settledShare)} of demand settled`;
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
+  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS + 1}`;
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
     : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
@@ -178,7 +180,7 @@ function render() {
 
   if (point.nextPayoutHour === selectedHour && point.immediateAud > 0) {
     elements.nextPayout.textContent = "Available now";
-    elements.payoutExplanation.textContent = `A$${Math.round(point.immediateAud).toLocaleString("en-AU")} can move through the modelled chain this hour.`;
+    elements.payoutExplanation.textContent = `A$${Math.round(point.immediateAud).toLocaleString("en-AU")} can move through the modeled chain this hour.`;
   } else if (point.nextPayoutHour === null) {
     elements.nextPayout.textContent = "Not found in seven days";
     elements.payoutExplanation.textContent = noPayoutExplanation(scenario, point.reserveRemainingAud);

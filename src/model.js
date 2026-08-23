@@ -290,6 +290,7 @@ export function runSimulation(input = {}) {
         (peak, point) => point.queuedAud > peak.queuedAud ? point : peak,
         timeline[0],
       ).hour,
+      hoursWithQueue: timeline.filter((point) => point.queuedAud > 0).length,
     })
   });
 }

@@ -21,7 +21,7 @@ test("zero-capacity payout explanations name the actual permanent blocker", () =
   );
   assert.equal(
     noPayoutExplanation(DEFAULT_SCENARIO, 1),
-    "The edited business-hour windows do not overlap within the modelled search period."
+    "The edited business-hour windows do not overlap within the modeled search period."
   );
 });
 
@@ -44,7 +44,9 @@ test("outcome summary surfaces completion, residual queue and peak timing", asyn
   assert.match(indexSource, /id="settled-total-value"/);
   assert.match(indexSource, /id="final-queue-value"/);
   assert.match(indexSource, /id="peak-queue-value"/);
+  assert.match(indexSource, /id="backlog-hours-value"/);
   assert.match(appSource, /simulation\.summary/);
   assert.match(appSource, /peakQueueHour/);
+  assert.match(appSource, /hoursWithQueue/);
   assert.match(appSource, /outcome-explanation/);
 });

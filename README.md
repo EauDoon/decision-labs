@@ -58,7 +58,7 @@ npm run check
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
 - Normal Friday, Weekend Rush and Market Stress presets.
 - Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, and next payout time.
-- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, and the peak queue timestamp.
+- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, and the number of hourly checkpoints with a backlog.
 - Play, pause and keyboard-accessible timeline scrubber.
 - Canvas chart with a text-equivalent data table.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.

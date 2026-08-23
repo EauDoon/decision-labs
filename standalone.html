@@ -189,7 +189,7 @@ input[type="number"]::-webkit-inner-spin-button, input[type="number"]::-webkit-o
 
 .outcome-card { padding: 1.2rem; }
 .outcome-card > .card-heading { align-items: end; }
-.outcome-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0 0; }
+.outcome-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1rem; margin: 1rem 0 0; }
 .outcome-grid > div { border-top: 1px solid var(--line); padding-top: 0.7rem; }
 .outcome-grid dt { color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.72rem; }
 .outcome-grid dd { margin: 0.28rem 0 0; color: var(--amber-soft); font-family: Arial, Helvetica, sans-serif; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.02em; }
@@ -242,6 +242,7 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
 @media (max-width: 1120px) {
   .workspace { grid-template-columns: minmax(300px, 350px) minmax(0, 1fr); }
   .metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .outcome-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @media (max-width: 850px) {
@@ -263,8 +264,8 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
   .metrics, .detail-grid, .method-grid, .outcome-grid { grid-template-columns: 1fr; }
   .input-grid { grid-template-columns: 1fr; }
   .chart-wrap { height: 250px; }
-  .table-card .card-heading { align-items: start; flex-direction: column; }
-  .table-card .card-heading > p { text-align: left; }
+  .table-card .card-heading, .chart-heading, .outcome-card > .card-heading { align-items: start; flex-direction: column; }
+  .table-card .card-heading > p, .chart-heading .gate-summary, .outcome-card .gate-summary { text-align: left; }
   .scenario-actions { grid-template-columns: 1fr; }
 }
 
@@ -455,6 +456,7 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
               <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
               <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
               <div><dt>Peak queue</dt><dd id="peak-queue-value">A$0</dd></div>
+              <div><dt>Hours with backlog</dt><dd id="backlog-hours-value">0 of 73</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -822,6 +824,7 @@ function runSimulation(input = {}) {
         (peak, point) => point.queuedAud > peak.queuedAud ? point : peak,
         timeline[0],
       ).hour,
+      hoursWithQueue: timeline.filter((point) => point.queuedAud > 0).length,
     })
   });
 }
@@ -889,6 +892,7 @@ const elements = {
   settledTotal: document.querySelector("#settled-total-value"),
   finalQueue: document.querySelector("#final-queue-value"),
   peakQueue: document.querySelector("#peak-queue-value"),
+  backlogHours: document.querySelector("#backlog-hours-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -1001,7 +1005,7 @@ function noPayoutExplanation(currentScenario, reserveRemainingAud) {
     [currentScenario.payoutThroughputAudPerHour, "payout throughput"]
   ].find(([capacity]) => capacity <= 0)?.[1];
   if (zeroThroughput) return `No payout is available because ${zeroThroughput} is zero.`;
-  return "The edited business-hour windows do not overlap within the modelled search period.";
+  return "The edited business-hour windows do not overlap within the modeled search period.";
 }
 
 function currentScenarioHashError(error) {
@@ -1021,12 +1025,13 @@ function render() {
   elements.queueDetail.textContent = `${formatAud(point.settledAud)} paid so far`;
   elements.ratio.textContent = formatPercent(point.liquidityRatio);
   elements.discount.textContent = formatPercent(point.discountBps / 10000, 2);
-  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour } = simulation.summary;
+  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour, hoursWithQueue } = simulation.summary;
   const settledShare = totalDemandAud > 0 ? totalSettledAud / totalDemandAud : 1;
   elements.outcomeSummary.textContent = `${formatPercent(settledShare)} of demand settled`;
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
+  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS + 1}`;
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
     : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
@@ -1036,7 +1041,7 @@ function render() {
 
   if (point.nextPayoutHour === selectedHour && point.immediateAud > 0) {
     elements.nextPayout.textContent = "Available now";
-    elements.payoutExplanation.textContent = `A$${Math.round(point.immediateAud).toLocaleString("en-AU")} can move through the modelled chain this hour.`;
+    elements.payoutExplanation.textContent = `A$${Math.round(point.immediateAud).toLocaleString("en-AU")} can move through the modeled chain this hour.`;
   } else if (point.nextPayoutHour === null) {
     elements.nextPayout.textContent = "Not found in seven days";
     elements.payoutExplanation.textContent = noPayoutExplanation(scenario, point.reserveRemainingAud);

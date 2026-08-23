@@ -8,7 +8,7 @@ This document describes a synthetic, deterministic model of AUD stablecoin redem
 
 All money values are Australian dollars (AUD). Throughputs and FX depth are AUD per hour. Operating hours use a local 24-hour clock and apply on business days only. The editable scenario contains:
 
-- Nominal stablecoin liquidity: the modelled outstanding nominal base used in the liquidity-ratio denominator.
+- Nominal stablecoin liquidity: the modeled outstanding nominal base used in the liquidity-ratio denominator.
 - AUD reserve and cash capacity: the maximum cash pool that can be paid in the 72-hour simulation.
 - Issuer redemption throughput and business-day operating window.
 - Bank settlement operating window.

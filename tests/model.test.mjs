@@ -64,6 +64,7 @@ test("summary reports the overall settlement result and peak queue", () => {
   assert.equal(result.summary.finalQueuedAud, result.timeline.at(-1).queuedAud);
   assert.equal(result.summary.peakQueuedAud, peakPoint.queuedAud);
   assert.equal(result.summary.peakQueueHour, peakPoint.hour);
+  assert.equal(result.summary.hoursWithQueue, result.timeline.filter((point) => point.queuedAud > 0).length);
   assert.ok(result.summary.peakQueuedAud >= result.summary.finalQueuedAud);
 });
 
