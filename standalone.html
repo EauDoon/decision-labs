@@ -111,7 +111,7 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .results-section { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 2px solid var(--ink); }
 .search-meta { margin: 0; color: var(--ink-soft); font-size: .8rem; }
 .result-alert { min-height: 1.1rem; margin-top: .8rem; color: var(--brick); font-weight: 700; }
-.result-summary { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: .75rem; margin: 1rem 0; }
+.result-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; margin: 1rem 0; }
 .metric { padding: .9rem; border-top: 3px solid var(--pencil); background: #edf1ea; }
 .metric.cost { border-color: var(--brick); background: #faeee9; }
 .metric .metric-label { display: block; color: var(--ink-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .67rem; font-weight: 700; text-transform: uppercase; }
@@ -788,6 +788,11 @@ function number(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function formatMargin(value) {
+  const rounded = Number(value.toFixed(1));
+  return [rounded > 0 ? "+" : "", rounded.toFixed(1), " points"].join("");
+}
+
 function render() {
   const proposal = state.proposal;
   $("#proposal-title").value = proposal.title;
@@ -865,12 +870,16 @@ function renderResults(result) {
   else if (result.status === "infeasible") alert.textContent = "No tested combination crosses the threshold. Inspect the near misses or change the choices, scores, weights, or threshold.";
   else alert.textContent = "A lowest-cost passing combination was found.";
 
+  const closestMiss = result.nearMisses[0];
+  const closestGap = closestMiss ? proposal.threshold - closestMiss.approval : null;
   $("#result-summary").innerHTML = agreement ? `
     <div class="metric"><span class="metric-label">Current approval</span><strong>${formatPercent(current.approval)}</strong></div>
     <div class="metric"><span class="metric-label">Recommended approval</span><strong>${formatPercent(agreement.approval)}</strong></div>
+    <div class="metric"><span class="metric-label">Threshold margin</span><strong class="positive">${formatMargin(agreement.approval - proposal.threshold)}</strong></div>
     <div class="metric cost"><span class="metric-label">Total change cost</span><strong>${agreement.changeCost.toFixed(1)}</strong></div>` : `
     <div class="metric"><span class="metric-label">Current approval</span><strong>${formatPercent(current.approval)}</strong></div>
     <div class="metric cost"><span class="metric-label">Threshold</span><strong>${proposal.threshold}%</strong></div>
+    <div class="metric cost"><span class="metric-label">Closest gap</span><strong>${closestGap === null ? "Not found" : closestGap.toFixed(1) + " points"}</strong></div>
     <div class="metric cost"><span class="metric-label">Best result</span><strong>Not found</strong></div>`;
   renderChanges(agreement, current);
   renderNearMisses(result.nearMisses);

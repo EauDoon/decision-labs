@@ -55,7 +55,7 @@ The project is also a static ESM app, so any static file server can host it.
 1. Choose a synthetic preset or make a new proposal from the controls.
 2. Set the approval threshold and participant group weights.
 3. Give every option a support score from 0 to 100 for each group. Set each alternative's explicit change cost. Original options always have cost 0.
-4. Review the current approval, recommended combination, group shifts, coalition table, and near misses.
+4. Review the current approval, recommended combination, threshold margin, group shifts, coalition table, and near misses.
 5. Export a Markdown brief for a meeting-ready handoff, or export JSON for a complete portable record. When running through the local server, Share link can place the draft in the URL hash.
 
 Each clause keeps one original option and at least two alternatives, so the workshop always compares a structured choice set.

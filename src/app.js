@@ -191,6 +191,11 @@ function number(value, fallback = 0) {
   return Number.isFinite(parsed) ? parsed : fallback;
 }
 
+function formatMargin(value) {
+  const rounded = Number(value.toFixed(1));
+  return [rounded > 0 ? "+" : "", rounded.toFixed(1), " points"].join("");
+}
+
 function render() {
   const proposal = state.proposal;
   $("#proposal-title").value = proposal.title;
@@ -268,12 +273,16 @@ function renderResults(result) {
   else if (result.status === "infeasible") alert.textContent = "No tested combination crosses the threshold. Inspect the near misses or change the choices, scores, weights, or threshold.";
   else alert.textContent = "A lowest-cost passing combination was found.";
 
+  const closestMiss = result.nearMisses[0];
+  const closestGap = closestMiss ? proposal.threshold - closestMiss.approval : null;
   $("#result-summary").innerHTML = agreement ? `
     <div class="metric"><span class="metric-label">Current approval</span><strong>${formatPercent(current.approval)}</strong></div>
     <div class="metric"><span class="metric-label">Recommended approval</span><strong>${formatPercent(agreement.approval)}</strong></div>
+    <div class="metric"><span class="metric-label">Threshold margin</span><strong class="positive">${formatMargin(agreement.approval - proposal.threshold)}</strong></div>
     <div class="metric cost"><span class="metric-label">Total change cost</span><strong>${agreement.changeCost.toFixed(1)}</strong></div>` : `
     <div class="metric"><span class="metric-label">Current approval</span><strong>${formatPercent(current.approval)}</strong></div>
     <div class="metric cost"><span class="metric-label">Threshold</span><strong>${proposal.threshold}%</strong></div>
+    <div class="metric cost"><span class="metric-label">Closest gap</span><strong>${closestGap === null ? "Not found" : closestGap.toFixed(1) + " points"}</strong></div>
     <div class="metric cost"><span class="metric-label">Best result</span><strong>Not found</strong></div>`;
   renderChanges(agreement, current);
   renderNearMisses(result.nearMisses);

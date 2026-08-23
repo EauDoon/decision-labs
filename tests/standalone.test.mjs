@@ -24,4 +24,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(csp ?? "", /object-src 'none';/u);
   assert.match(csp ?? "", /base-uri 'none';/u);
   assert.match(csp ?? "", /form-action 'none'/u);
+  assert.match(html, /Threshold margin/u);
+  assert.match(html, /Closest gap/u);
+  assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
