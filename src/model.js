@@ -99,6 +99,29 @@ export function validateProposal(proposal) {
   return { valid: errors.length === 0, errors };
 }
 
+/** Return only the validated fields that the application understands. */
+export function canonicalProposal(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) throw new TypeError(validation.errors[0]);
+  const groupIds = proposal.groups.map(({ id }) => id);
+  return {
+    title: proposal.title,
+    threshold: proposal.threshold,
+    groups: proposal.groups.map(({ id, name, weight }) => ({ id, name, weight })),
+    clauses: proposal.clauses.map(({ id, title, options }) => ({
+      id,
+      title,
+      options: options.map(({ id: optionId, label, original, changeCost, support }) => ({
+        id: optionId,
+        label,
+        original,
+        changeCost,
+        support: Object.fromEntries(groupIds.map((groupId) => [groupId, support[groupId]])),
+      })),
+    })),
+  };
+}
+
 export function getOriginalOptions(proposal) {
   return proposal.clauses.map((clause) => clause.options.find((option) => option.original === true));
 }
@@ -245,4 +268,90 @@ export function findSmallestAgreement(proposal, { maxCombinations = MAX_COMBINAT
 
 export function formatPercent(value) {
   return `${Number(value).toFixed(1)}%`;
+}
+
+function briefText(value) {
+  return String(value ?? "")
+    .replace(/[\r\n|]+/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replace(/([\\`*_{}\[\]()#+.!])/gu, "\\$1") || "(unnamed)";
+}
+
+function briefOption(value) {
+  return `\"${briefText(value)}\"`;
+}
+
+/**
+ * Produce a deterministic Markdown handoff for a result that people can review outside the GUI.
+ * The brief reports the model output and inputs, but never claims legitimacy or authority.
+ */
+export function formatDecisionBrief(proposal, result) {
+  const title = briefText(proposal?.title) || "Untitled proposal";
+  const threshold = Number.isFinite(proposal?.threshold) ? formatPercent(proposal.threshold) : "unknown";
+  const lines = [
+    "# The Smallest Agreement",
+    "",
+    `Proposal: ${title}`,
+    `Approval threshold: ${threshold}`,
+    "",
+  ];
+
+  if (!result || result.status === "invalid") {
+    lines.push("## Result", "", "The draft is not valid enough to evaluate.", "");
+    for (const error of result?.errors ?? ["No result was available."]) lines.push(`- ${briefText(error)}`);
+    lines.push("");
+    return `${lines.join("\n")}Scores, weights, and costs remain human inputs.\n`;
+  }
+
+  if (result.status === "too_large") {
+    lines.push("## Result", "", `The exhaustive search stopped above ${Number(result.maxCombinations).toLocaleString("en-US")} combinations.`, "", "Reduce alternatives or clauses before relying on a recommendation.", "");
+    return `${lines.join("\n")}Scores, weights, and costs remain human inputs.\n`;
+  }
+
+  const current = result.baseline;
+  const agreement = result.agreement;
+  lines.push("## Result", "");
+  if (result.status === "already_passing") lines.push("The original proposal already crosses the threshold.", "");
+  else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "");
+  else lines.push("No tested combination crosses the threshold.", "");
+  lines.push(`Search combinations checked: ${Number(result.possibleCombinations).toLocaleString("en-US")}`, `Current approval: ${formatPercent(current.approval)}`);
+
+  if (agreement) {
+    lines.push(`Recommended approval: ${formatPercent(agreement.approval)}`, `Total change cost: ${agreement.changeCost.toFixed(1)}`, `Changed clauses: ${agreement.changedClauseCount}`, "");
+    lines.push("## Recommendation", "");
+    if (agreement.changes.length) {
+      for (const change of agreement.changes) {
+        lines.push(`- ${briefText(change.clauseTitle)}: ${briefOption(change.from)} => ${briefOption(change.to)} (cost ${change.changeCost.toFixed(1)})`);
+      }
+    } else {
+      lines.push("- Keep every original option.");
+    }
+    lines.push("");
+  } else {
+    lines.push("", "## Recommendation", "", "No passing combination was found.", "");
+  }
+
+  lines.push("## Group view", "", "| Group | Weight | Current | Recommended | Change |", "| --- | ---: | ---: | ---: | ---: |");
+  for (const group of current.byGroup) {
+    const after = agreement?.byGroup.find((candidate) => candidate.id === group.id)?.approval;
+    const recommended = Number.isFinite(after) ? formatPercent(after) : "not found";
+    const delta = Number.isFinite(after) ? `${after - group.approval >= 0 ? "+" : ""}${(after - group.approval).toFixed(1)} points` : "not found";
+    lines.push(`| ${briefText(group.name)} | ${group.weight} | ${formatPercent(group.approval)} | ${recommended} | ${delta} |`);
+  }
+  lines.push("");
+
+  if (result.nearMisses?.length) {
+    lines.push("## Near misses", "");
+    for (const miss of result.nearMisses) {
+      const labels = miss.changes.length ? miss.changes.map((change) => `${briefText(change.clauseTitle)}: ${briefText(change.to)}`).join("; ") : "Keep every original option";
+      lines.push(`- ${formatPercent(miss.approval)}, short by ${(proposal.threshold - miss.approval).toFixed(1)} points, cost ${miss.changeCost.toFixed(1)}: ${labels}`);
+    }
+    lines.push("");
+  }
+  lines.push("Scores, weights, and costs remain human inputs. This brief is a deliberation aid, not a decision or a claim of legitimacy.");
+  return `${lines.join("\n")}\n`;
 }

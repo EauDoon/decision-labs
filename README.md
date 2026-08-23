@@ -56,7 +56,7 @@ The project is also a static ESM app, so any static file server can host it.
 2. Set the approval threshold and participant group weights.
 3. Give every option a support score from 0 to 100 for each group. Set each alternative's explicit change cost. Original options always have cost 0.
 4. Review the current approval, recommended combination, group shifts, coalition table, and near misses.
-5. Export JSON for a portable record. When running through the local server, Share link can place the draft in the URL hash.
+5. Export a Markdown brief for a meeting-ready handoff, or export JSON for a complete portable record. When running through the local server, Share link can place the draft in the URL hash.
 
 Each clause keeps one original option and at least two alternatives, so the workshop always compares a structured choice set.
 
@@ -64,7 +64,7 @@ The three included synthetic presets are Neighbourhood Plan, Open Source Policy,
 
 ## Local data and sharing
 
-Drafts autosave to this browser's local storage. Invalid storage is ignored safely. Import accepts only JSON that passes the model's structural validation. Export creates a JSON file.
+Drafts autosave to this browser's local storage. Invalid storage is ignored safely. Import accepts only JSON that passes the model's structural validation and discards fields the application does not understand. Export JSON creates a complete draft file. Export brief creates a deterministic Markdown report with the current result, recommendation, group-level changes, and near misses. It is a handoff of model output, not a decision record or a claim of legitimacy.
 
 When the app is served locally, Share link serializes the complete proposal in the URL fragment. Fragments are not sent as part of an HTTP request, but anyone with the link can read the proposal. Do not use it for sensitive material. Long proposals can exceed practical URL-length limits, so export JSON for larger drafts. The standalone `file://` mode does not offer share links because local file addresses are not portable.
 
@@ -81,8 +81,8 @@ A score can be incomplete, a weight can be contested, and a low numerical change
 ## Project files
 
 - `index.html` and `styles.css`: accessible responsive interface.
-- `src/model.js`: pure validation, calculation, and deterministic search functions.
-- `src/app.js`: local browser state, editing controls, import/export, URL sharing, and canvas display.
+- `src/model.js`: pure validation, calculation, deterministic search, and Markdown brief functions.
+- `src/app.js`: local browser state, editing controls, import/export, brief download, URL sharing, and canvas display.
 - `tests/model.test.mjs`: Node built-in test coverage for the model.
 - `tests/standalone.test.mjs`: self-contained artifact checks.
 - `scripts/dev-server.mjs`: dependency-free localhost server.

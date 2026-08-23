@@ -1,7 +1,9 @@
 import {
   MAX_COMBINATIONS,
+  canonicalProposal,
   findSmallestAgreement,
   formatPercent,
+  formatDecisionBrief,
   validateProposal,
 } from "./model.js";
 
@@ -132,7 +134,7 @@ function loadInitialProposal() {
   if (shared) return shared;
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (validateProposal(saved).valid) return saved;
+    if (validateProposal(saved).valid) return canonicalProposal(saved);
   } catch { /* Invalid browser storage is ignored. */ }
   return clone(presets.neighbourhood);
 }
@@ -155,7 +157,7 @@ function parseHash() {
       return null;
     }
     initialLoadMessage = "Loaded proposal from the share link.";
-    return proposal;
+    return canonicalProposal(proposal);
   } catch {
     initialLoadMessage = "Share link ignored: it could not be decoded.";
     return null;
@@ -426,14 +428,23 @@ document.addEventListener("click", (event) => {
 $("#load-preset").addEventListener("click", () => {
   changeAndRender(() => { state.proposal = clone(presets[$("#preset-select").value]); state.saveMessage = "Preset loaded and saved locally."; });
 });
-$("#export-button").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(state.proposal, null, 2)], { type: "application/json" });
+function downloadText(filename, content, type) {
+  const blob = new Blob([content], { type });
   const url = URL.createObjectURL(blob);
   const link = document.createElement("a");
   link.href = url;
-  link.download = "smallest-agreement.json";
+  link.download = filename;
   link.click();
   URL.revokeObjectURL(url);
+}
+
+$("#export-button").addEventListener("click", () => {
+  downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
+});
+$("#brief-button").addEventListener("click", () => {
+  downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");
+  state.saveMessage = "Decision brief downloaded.";
+  $("#autosave-status").textContent = state.saveMessage;
 });
 $("#import-button").addEventListener("click", () => $("#import-file").click());
 $("#import-file").addEventListener("change", async (event) => {
@@ -449,7 +460,7 @@ $("#import-file").addEventListener("change", async (event) => {
     const proposal = JSON.parse(await file.text());
     const validation = validateProposal(proposal);
     if (!validation.valid) throw new Error(validation.errors[0]);
-    state.proposal = proposal;
+    state.proposal = canonicalProposal(proposal);
     state.saveMessage = "Imported and saved locally.";
     save();
     render();

@@ -8,7 +8,7 @@ Treat proposal content as potentially sensitive. Do not place confidential mater
 
 ## Import safety
 
-Imported JSON is parsed and structurally validated before it replaces the active draft. Files, URL fragments, collection sizes, labels, and identifiers have explicit limits before search or rendering. Invalid local storage and malformed URL fragments are ignored. Validation cannot determine whether scores, weights, labels, or costs are truthful or appropriate.
+Imported JSON is parsed and structurally validated before it replaces the active draft. Unknown fields are discarded before the draft is stored, exported, or shared. Files, URL fragments, collection sizes, labels, and identifiers have explicit limits before search or rendering. Invalid local storage and malformed URL fragments are ignored. Validation cannot determine whether scores, weights, labels, or costs are truthful or appropriate.
 
 ## Reporting a vulnerability
 

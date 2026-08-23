@@ -14,8 +14,10 @@ const scriptMarker = '<script type="module" src="src/app.js"></script>';
 const cspMarker = "    <title>The Smallest Agreement</title>";
 const appImport = `import {
   MAX_COMBINATIONS,
+  canonicalProposal,
   findSmallestAgreement,
   formatPercent,
+  formatDecisionBrief,
   validateProposal,
 } from "./model.js";
 
@@ -42,7 +44,7 @@ function requireSafeInline(value, label) {
 function inlineModel(value) {
   const inlined = value.replace(/^export\s+(?=(?:const|function|class)\b)/gmu, "");
   if (/^export\s/mu.test(inlined)) throw new Error("Model contains an unsupported export.");
-  for (const name of ["MAX_COMBINATIONS", "findSmallestAgreement", "formatPercent", "validateProposal"]) {
+  for (const name of ["MAX_COMBINATIONS", "canonicalProposal", "findSmallestAgreement", "formatPercent", "validateProposal"]) {
     if (!new RegExp(`\\b${name}\\b`, "u").test(inlined)) throw new Error(`Model is missing ${name}.`);
   }
   return inlined;

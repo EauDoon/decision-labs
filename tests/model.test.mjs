@@ -7,7 +7,9 @@ import {
   MAX_OPTIONS_PER_CLAUSE,
   MAX_WEIGHT,
   approvalForOptions,
+  canonicalProposal,
   findSmallestAgreement,
+  formatDecisionBrief,
   validateProposal,
 } from "../src/model.js";
 
@@ -23,6 +25,58 @@ test("weighted approval uses group weights and averages clause support", () => {
   const groups = [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 3 }];
   const options = [option("o", true, { a: 100, b: 50 })];
   assert.equal(approvalForOptions(groups, options), 62.5);
+});
+
+test("decision brief is deterministic and carries the recommendation into a portable handoff", () => {
+  const input = proposal({
+    title: "A | safe local change",
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "Access | hours", options: [
+        option("one-original", true, { g: 50 }),
+        option("one-change", false, { g: 90 }, 2),
+        option("one-more", false, { g: 60 }, 4),
+      ] },
+    ],
+  });
+  const result = findSmallestAgreement(input);
+  const brief = formatDecisionBrief(input, result);
+  assert.equal(brief, formatDecisionBrief(input, result));
+  assert.match(brief, /Approval threshold: 70\.0%/u);
+  assert.match(brief, /A lowest-cost passing combination was found\./u);
+  assert.match(brief, /Access hours: "one-original" => "one-change" \(cost 2\.0\)/u);
+  assert.match(brief, /\| Group \| Weight \| Current \| Recommended \| Change \|/u);
+  assert.doesNotMatch(brief, /[|][^\\n]*safe local change/u);
+  assert.doesNotMatch(brief, /[\u2014\u2013]/u);
+});
+
+test("canonical proposals discard unknown imported fields at every level", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "One", hidden: "clause", options: [
+      { ...option("original", true, { g: 50, hidden: 99 }), hidden: "option" },
+      option("alternative", false, { g: 80 }, 1),
+      option("alternative-two", false, { g: 70 }, 2),
+    ] }],
+  });
+  input.hidden = "root";
+  input.groups[0].hidden = "group";
+  const clean = canonicalProposal(input);
+  assert.equal(JSON.stringify(clean).includes("hidden"), false);
+  assert.deepEqual(Object.keys(clean), ["title", "threshold", "groups", "clauses"]);
+  assert.deepEqual(Object.keys(clean.clauses[0].options[0].support), ["g"]);
+});
+
+test("decision briefs render user markup as text", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "<script>alert(1)</script>", options: [
+      option("original", true, { g: 50 }),
+      option("alternative", false, { g: 80 }, 1),
+      option("alternative-two", false, { g: 70 }, 2),
+    ] }],
+  });
+  const brief = formatDecisionBrief(input, findSmallestAgreement(input));
+  assert.doesNotMatch(brief, /<script>/u);
+  assert.match(brief, /&lt;script&gt;/u);
 });
 
 test("search chooses the passing agreement with the smallest total change cost", () => {
