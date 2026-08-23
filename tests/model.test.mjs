@@ -53,6 +53,20 @@ test("reserve exhaustion is explicit and never allows negative balances", () => 
   assert.equal(result.timeline.at(-1).immediateAud, 0);
 });
 
+test("summary reports the overall settlement result and peak queue", () => {
+  const result = runSimulation(PRESETS.weekendRush);
+  const peakPoint = result.timeline.reduce(
+    (peak, point) => point.queuedAud > peak.queuedAud ? point : peak,
+    result.timeline[0],
+  );
+  assert.equal(result.summary.totalDemandAud, PRESETS.weekendRush.redemptionDemandAud);
+  assert.equal(result.summary.totalSettledAud, result.timeline.at(-1).settledAud);
+  assert.equal(result.summary.finalQueuedAud, result.timeline.at(-1).queuedAud);
+  assert.equal(result.summary.peakQueuedAud, peakPoint.queuedAud);
+  assert.equal(result.summary.peakQueueHour, peakPoint.hour);
+  assert.ok(result.summary.peakQueuedAud >= result.summary.finalQueuedAud);
+});
+
 test("invalid input is clamped to safe operational values", () => {
   const { scenario, errors } = sanitizeScenario({
     nominalLiquidityAud: -1,

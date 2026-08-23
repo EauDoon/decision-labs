@@ -284,7 +284,12 @@ export function runSimulation(input = {}) {
       totalDemandAud: scenario.redemptionDemandAud,
       totalSettledAud: state.settledAud,
       finalQueuedAud: state.queuedAud,
-      finalReserveAud: state.reserveRemainingAud
+      finalReserveAud: state.reserveRemainingAud,
+      peakQueuedAud: timeline.reduce((peak, point) => Math.max(peak, point.queuedAud), 0),
+      peakQueueHour: timeline.reduce(
+        (peak, point) => point.queuedAud > peak.queuedAud ? point : peak,
+        timeline[0],
+      ).hour,
     })
   });
 }

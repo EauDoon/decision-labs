@@ -37,3 +37,14 @@ test("invalid hash handling keeps state and reports that accurately", () => {
   const hashChangeHandler = appSource.slice(appSource.indexOf('window.addEventListener("hashchange"'), appSource.indexOf('window.addEventListener("resize"'));
   assert.match(hashChangeHandler, /if \(!fromHash\.scenario\) \{\s+if \(fromHash\.errors\.length\) setMessage\(currentScenarioHashError\(fromHash\.errors\[0\]\)\);\s+return;/s);
 });
+
+test("outcome summary surfaces completion, residual queue and peak timing", async () => {
+  const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(indexSource, /id="outcome-summary"/);
+  assert.match(indexSource, /id="settled-total-value"/);
+  assert.match(indexSource, /id="final-queue-value"/);
+  assert.match(indexSource, /id="peak-queue-value"/);
+  assert.match(appSource, /simulation\.summary/);
+  assert.match(appSource, /peakQueueHour/);
+  assert.match(appSource, /outcome-explanation/);
+});

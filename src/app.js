@@ -27,6 +27,11 @@ const elements = {
   queueDetail: document.querySelector("#queue-detail"),
   ratio: document.querySelector("#ratio-value"),
   discount: document.querySelector("#discount-value"),
+  outcomeSummary: document.querySelector("#outcome-summary"),
+  settledTotal: document.querySelector("#settled-total-value"),
+  finalQueue: document.querySelector("#final-queue-value"),
+  peakQueue: document.querySelector("#peak-queue-value"),
+  outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
   payoutExplanation: document.querySelector("#payout-explanation"),
@@ -158,6 +163,15 @@ function render() {
   elements.queueDetail.textContent = `${formatAud(point.settledAud)} paid so far`;
   elements.ratio.textContent = formatPercent(point.liquidityRatio);
   elements.discount.textContent = formatPercent(point.discountBps / 10000, 2);
+  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour } = simulation.summary;
+  const settledShare = totalDemandAud > 0 ? totalSettledAud / totalDemandAud : 1;
+  elements.outcomeSummary.textContent = `${formatPercent(settledShare)} of demand settled`;
+  elements.settledTotal.textContent = formatAud(totalSettledAud, false);
+  elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
+  elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
+  elements.outcomeExplanation.textContent = finalQueuedAud > 0
+    ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
+    : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
   elements.gateSummary.textContent = point.immediateAud > 0
     ? `Payout chain open · limited by ${point.limitingGate}`
     : `Payout chain closed · blocked at ${point.limitingGate}`;

@@ -78,7 +78,7 @@ function normaliseLf(text) {
 function replaceExactlyOnce(source, marker, replacement, label) {
   const matches = source.split(marker).length - 1;
   if (matches !== 1) throw new Error(`${label} replacement marker must appear exactly once; found ${matches}.`);
-  return source.replace(marker, replacement);
+  return source.replace(marker, () => replacement);
 }
 
 function assertNoUnsafeInlineBoundary(source, label, closingTag) {
