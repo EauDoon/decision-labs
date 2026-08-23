@@ -166,6 +166,16 @@ export function exitVolume(participant, feePerTransaction) {
   return Math.max(profitVolume, participant.minimumCommitment ?? 0);
 }
 
+function economicConstraint(participant, feePerTransaction, exitThreshold) {
+  if (exitThreshold === null) return { kind: 'profit', label: 'minimum acceptable profit' };
+  const contribution = contributionPerTransaction(participant, feePerTransaction);
+  const requiredProfit = participant.minimumAcceptableProfit + participant.fixedMonthlyCost + participant.riskCost;
+  const profitVolume = contribution > 0 ? requiredProfit / contribution : 0;
+  return (participant.minimumCommitment ?? 0) > profitVolume + EPSILON
+    ? { kind: 'commitment', label: 'minimum commitment' }
+    : { kind: 'profit', label: 'minimum acceptable profit' };
+}
+
 function shockResult({ kind, breakpoint, current, direction, reason }) {
   if (breakpoint === null) return { kind, status: 'unbounded', breakpoint: null, change: null, changePct: null, reason };
   const rawChange = direction === 'decrease' ? current - breakpoint : breakpoint - current;
@@ -193,8 +203,10 @@ export function participantShocks(participant, deal, volume = effectiveVolume(de
     const immediate = { status: 'already-failing', breakpoint: null, change: 0, changePct: 0, reason: 'The current scenario already fails this participant exit criterion.' };
     return {
       volume: { kind: 'volume', ...immediate },
+      volumeIncrease: { kind: 'volumeIncrease', ...immediate },
       fee: { kind: 'fee', ...immediate },
       variableCost: { kind: 'variableCost', ...immediate },
+      currentProfit,
     };
   }
 
@@ -202,6 +214,10 @@ export function participantShocks(participant, deal, volume = effectiveVolume(de
   const volumeShock = targetVolume === null || targetVolume <= 0
     ? { kind: 'volume', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'Lower volume does not breach the participant exit criterion under these inputs.' }
     : shockResult({ kind: 'volume', breakpoint: targetVolume, current: volume, direction: 'decrease', reason: 'Volume where the profit or commitment exit threshold is reached.' });
+  const capacity = participant.capacity ?? null;
+  const volumeIncrease = capacity === null
+    ? { kind: 'volumeIncrease', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'No participant capacity limit is supplied.' }
+    : shockResult({ kind: 'volumeIncrease', breakpoint: capacity, current: volume, direction: 'increase', reason: 'Volume where the participant capacity limit is reached.' });
 
   const revenueUnits = volume * participant.revenueShare;
   const feeBreakpoint = revenueUnits <= EPSILON
@@ -218,7 +234,7 @@ export function participantShocks(participant, deal, volume = effectiveVolume(de
     ? { kind: 'variableCost', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'A variable-cost increase cannot change this participant profit at zero volume.' }
     : shockResult({ kind: 'variableCost', breakpoint: costBreakpoint, current: participant.variableCostPerTransaction, direction: 'increase', reason: 'Variable cost where the monthly-profit exit threshold is reached.' });
 
-  return { volume: volumeShock, fee: feeShock, variableCost: costShock, currentProfit };
+  return { volume: volumeShock, volumeIncrease, fee: feeShock, variableCost: costShock, currentProfit };
 }
 
 export function evaluateParticipant(participant, deal, volume = effectiveVolume(deal)) {
@@ -238,6 +254,10 @@ export function evaluateParticipant(participant, deal, volume = effectiveVolume(
   const headroomToExit = exitThreshold === null ? null : volume - exitThreshold;
   const capacityHeadroom = capacity === null ? Infinity : capacity - volume;
   const fragilityHeadroom = Math.min(headroomToExit ?? -Infinity, capacityHeadroom);
+  const economicLimit = economicConstraint(participant, deal.feePerTransaction, exitThreshold);
+  const bindingConstraint = capacityHeadroom < (headroomToExit ?? -Infinity) - EPSILON
+    ? { kind: 'capacity', label: 'capacity' }
+    : economicLimit;
   const failureReasons = [];
   if (!profitPass) failureReasons.push('monthly profit is below the minimum acceptable profit');
   if (!commitmentPass) failureReasons.push('volume is below the minimum commitment');
@@ -258,6 +278,7 @@ export function evaluateParticipant(participant, deal, volume = effectiveVolume(
     headroomToExit,
     capacityHeadroom,
     fragilityHeadroom,
+    bindingConstraint,
     profitPass,
     commitmentPass,
     capacityPass,

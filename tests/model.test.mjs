@@ -77,6 +77,8 @@ test('capacity makes the partnership non-viable even when profit passes', () => 
   const result = calculatePartnership(config);
   assert.equal(result.viable, false);
   assert.equal(result.participants[1].capacityPass, false);
+  assert.equal(result.participants[1].bindingConstraint.kind, 'capacity');
+  assert.equal(result.participants[1].shocks.volumeIncrease.status, 'already-failing');
   assert.match(result.participants[1].failureReasons.join(' '), /exceeds capacity/);
 });
 
@@ -90,6 +92,25 @@ test('volume, fee, and cost shocks report economically meaningful thresholds', (
   assert.ok(shocks.variableCost.change > 0);
   assert.ok(shocks.fee.breakpoint < config.deal.feePerTransaction);
   assert.ok(shocks.variableCost.breakpoint > participant.variableCostPerTransaction);
+  assert.equal(shocks.volumeIncrease.status, 'bounded');
+  assert.equal(shocks.volumeIncrease.breakpoint, participant.capacity);
+});
+
+test('capacity shock is unbounded when no capacity limit is supplied', () => {
+  const config = clonePreset('balanced');
+  config.participants[0].capacity = null;
+  const shocks = participantShocks(config.participants[0], config.deal);
+  assert.equal(shocks.volumeIncrease.status, 'unbounded');
+  assert.equal(shocks.volumeIncrease.breakpoint, null);
+});
+
+test('binding limit identifies a minimum commitment when it is the nearest economic boundary', () => {
+  const config = clonePreset('balanced');
+  config.participants[0].minimumCommitment = 120000;
+  config.participants[0].capacity = 200000;
+  const result = calculatePartnership(config);
+  assert.equal(result.participants[0].bindingConstraint.kind, 'commitment');
+  assert.equal(result.participants[0].bindingConstraint.label, 'minimum commitment');
 });
 
 test('first breakpoint ranks the smallest relative adverse movement deterministically', () => {
@@ -132,6 +153,8 @@ test('weakest participant includes distance to a capacity failure', () => {
   const result = calculatePartnership(config);
   assert.equal(result.weakestParticipant.id, 'capacity-edge');
   assert.equal(result.weakestParticipant.fragilityHeadroom, 1);
+  assert.equal(result.weakestParticipant.bindingConstraint.kind, 'capacity');
+  assert.equal(result.weakestParticipant.shocks.volumeIncrease.change, 1);
 });
 
 test('already failing participants have a zero adverse shock', () => {
@@ -141,6 +164,7 @@ test('already failing participants have a zero adverse shock', () => {
   const shocks = result.participants[2].shocks;
   assert.equal(shocks.volume.status, 'already-failing');
   assert.equal(shocks.volume.change, 0);
+  assert.equal(shocks.volumeIncrease.status, 'already-failing');
 });
 
 test('all three presets are valid, viable starting configurations', () => {

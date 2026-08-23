@@ -129,7 +129,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .pass-text { color: #0b5c78; }
 .output-note { color: var(--muted); font-size: .78rem; margin: .5rem 1rem 0; }
 
-.shock-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.shock-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .shock-card { background: #fbfaf6; padding: .75rem; min-width: 0; }
 .shock-card h3 { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 .45rem; }
 .shock-card strong { font-size: 1.1rem; overflow-wrap: anywhere; }
@@ -362,6 +362,16 @@ function exitVolume(participant, feePerTransaction) {
   return Math.max(profitVolume, participant.minimumCommitment ?? 0);
 }
 
+function economicConstraint(participant, feePerTransaction, exitThreshold) {
+  if (exitThreshold === null) return { kind: 'profit', label: 'minimum acceptable profit' };
+  const contribution = contributionPerTransaction(participant, feePerTransaction);
+  const requiredProfit = participant.minimumAcceptableProfit + participant.fixedMonthlyCost + participant.riskCost;
+  const profitVolume = contribution > 0 ? requiredProfit / contribution : 0;
+  return (participant.minimumCommitment ?? 0) > profitVolume + EPSILON
+    ? { kind: 'commitment', label: 'minimum commitment' }
+    : { kind: 'profit', label: 'minimum acceptable profit' };
+}
+
 function shockResult({ kind, breakpoint, current, direction, reason }) {
   if (breakpoint === null) return { kind, status: 'unbounded', breakpoint: null, change: null, changePct: null, reason };
   const rawChange = direction === 'decrease' ? current - breakpoint : breakpoint - current;
@@ -389,8 +399,10 @@ function participantShocks(participant, deal, volume = effectiveVolume(deal)) {
     const immediate = { status: 'already-failing', breakpoint: null, change: 0, changePct: 0, reason: 'The current scenario already fails this participant exit criterion.' };
     return {
       volume: { kind: 'volume', ...immediate },
+      volumeIncrease: { kind: 'volumeIncrease', ...immediate },
       fee: { kind: 'fee', ...immediate },
       variableCost: { kind: 'variableCost', ...immediate },
+      currentProfit,
     };
   }
 
@@ -398,6 +410,10 @@ function participantShocks(participant, deal, volume = effectiveVolume(deal)) {
   const volumeShock = targetVolume === null || targetVolume <= 0
     ? { kind: 'volume', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'Lower volume does not breach the participant exit criterion under these inputs.' }
     : shockResult({ kind: 'volume', breakpoint: targetVolume, current: volume, direction: 'decrease', reason: 'Volume where the profit or commitment exit threshold is reached.' });
+  const capacity = participant.capacity ?? null;
+  const volumeIncrease = capacity === null
+    ? { kind: 'volumeIncrease', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'No participant capacity limit is supplied.' }
+    : shockResult({ kind: 'volumeIncrease', breakpoint: capacity, current: volume, direction: 'increase', reason: 'Volume where the participant capacity limit is reached.' });
 
   const revenueUnits = volume * participant.revenueShare;
   const feeBreakpoint = revenueUnits <= EPSILON
@@ -414,7 +430,7 @@ function participantShocks(participant, deal, volume = effectiveVolume(deal)) {
     ? { kind: 'variableCost', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'A variable-cost increase cannot change this participant profit at zero volume.' }
     : shockResult({ kind: 'variableCost', breakpoint: costBreakpoint, current: participant.variableCostPerTransaction, direction: 'increase', reason: 'Variable cost where the monthly-profit exit threshold is reached.' });
 
-  return { volume: volumeShock, fee: feeShock, variableCost: costShock, currentProfit };
+  return { volume: volumeShock, volumeIncrease, fee: feeShock, variableCost: costShock, currentProfit };
 }
 
 function evaluateParticipant(participant, deal, volume = effectiveVolume(deal)) {
@@ -434,6 +450,10 @@ function evaluateParticipant(participant, deal, volume = effectiveVolume(deal)) 
   const headroomToExit = exitThreshold === null ? null : volume - exitThreshold;
   const capacityHeadroom = capacity === null ? Infinity : capacity - volume;
   const fragilityHeadroom = Math.min(headroomToExit ?? -Infinity, capacityHeadroom);
+  const economicLimit = economicConstraint(participant, deal.feePerTransaction, exitThreshold);
+  const bindingConstraint = capacityHeadroom < (headroomToExit ?? -Infinity) - EPSILON
+    ? { kind: 'capacity', label: 'capacity' }
+    : economicLimit;
   const failureReasons = [];
   if (!profitPass) failureReasons.push('monthly profit is below the minimum acceptable profit');
   if (!commitmentPass) failureReasons.push('volume is below the minimum commitment');
@@ -454,6 +474,7 @@ function evaluateParticipant(participant, deal, volume = effectiveVolume(deal)) 
     headroomToExit,
     capacityHeadroom,
     fragilityHeadroom,
+    bindingConstraint,
     profitPass,
     commitmentPass,
     capacityPass,
@@ -756,7 +777,7 @@ function resultsPanel(result) {
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
   const statusDetail = escapeAttribute(result.viable
-    ? `${result.weakestParticipant.name} has the least volume headroom to an economic or capacity limit.`
+    ? `${result.weakestParticipant.name} has the least volume headroom to its ${result.weakestParticipant.bindingConstraint.label} limit.`
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
   return `<section class="results">
     <section class="status-card ${statusClass}" aria-live="polite">
@@ -792,9 +813,10 @@ function participantTable(result) {
       <td>${formatVolume(participant.exitVolume)}</td>
       <td>${participant.headroomToExit === null ? 'Impossible' : formatVolume(participant.headroomToExit)}</td>
       <td>${participant.capacity === null ? 'Unbounded' : formatVolume(participant.capacity)}</td>
+      <td>${escapeAttribute(participant.bindingConstraint.label)}</td>
       <td class="${participant.viable ? 'pass-text' : 'failure-text'}">${participant.viable ? 'Holds' : escapeAttribute(participant.failureReasons.join('; '))}</td>
     </tr>`).join('');
-  return `<section class="panel"><div class="table-wrap"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Capacity is tested separately.</p></section>`;
+  return `<section class="panel"><div class="table-wrap"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary.</p></section>`;
 }
 
 function shockCard(label, shock, units) {
@@ -804,7 +826,7 @@ function shockCard(label, shock, units) {
 }
 
 function shockSection(result) {
-  return `<section class="panel"><div class="panel-heading"><h2>Smallest adverse shock by participant</h2><span class="optional">threshold is not a forecast</span></div><div class="panel-body">${result.participants.map((participant) => `<section class="input-section"><h2>${escapeAttribute(participant.name)}</h2><div class="shock-grid">${shockCard('Volume decrease', participant.shocks.volume, 'txn')}${shockCard('Fee decrease', participant.shocks.fee, 'units / txn')}${shockCard('Variable cost increase', participant.shocks.variableCost, 'units / txn')}</div></section>`).join('')}</div></section>`;
+  return `<section class="panel"><div class="panel-heading"><h2>Smallest adverse shock by participant</h2><span class="optional">threshold is not a forecast</span></div><div class="panel-body">${result.participants.map((participant) => `<section class="input-section"><h2>${escapeAttribute(participant.name)}</h2><div class="shock-grid">${shockCard('Volume decrease', participant.shocks.volume, 'txn')}${shockCard('Volume increase', participant.shocks.volumeIncrease, 'txn')}${shockCard('Fee decrease', participant.shocks.fee, 'units / txn')}${shockCard('Variable cost increase', participant.shocks.variableCost, 'units / txn')}</div></section>`).join('')}</div></section>`;
 }
 
 function sensitivityGrid() {

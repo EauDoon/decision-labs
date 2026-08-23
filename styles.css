@@ -97,7 +97,7 @@ tbody tr:last-child td { border-bottom: 0; }
 .pass-text { color: #0b5c78; }
 .output-note { color: var(--muted); font-size: .78rem; margin: .5rem 1rem 0; }
 
-.shock-grid { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
+.shock-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); }
 .shock-card { background: #fbfaf6; padding: .75rem; min-width: 0; }
 .shock-card h3 { font-size: .78rem; text-transform: uppercase; letter-spacing: .06em; margin: 0 0 .45rem; }
 .shock-card strong { font-size: 1.1rem; overflow-wrap: anywhere; }

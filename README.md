@@ -53,7 +53,7 @@ npm run check
 2. Add or edit participants. Revenue shares must total exactly 1. At least two participants are required.
 3. Enter each participant's per-transaction variable cost, monthly fixed cost, minimum acceptable monthly profit, capacity, minimum commitment if any, and monthly risk cost.
 4. Start with the First breakpoint card. It identifies who to protect first and the smallest percentage movement in volume, fee, or variable cost that reaches an exit boundary.
-5. Read the participant ledger, adverse-shock thresholds, and fee-volume operating region.
+5. Read the participant ledger, binding limits, adverse-shock thresholds, and fee-volume operating region.
 
 The app autosaves valid inputs in local browser storage. When served locally, it also writes valid input state to the URL hash so the current case can be copied as a link. In standalone file mode, use Export JSON for a portable case file. Import JSON is available in both modes.
 
@@ -63,8 +63,8 @@ The app autosaves valid inputs in local browser storage. When served locally, it
 - Monthly profit is participant revenue less variable cost, fixed cost, and risk cost.
 - Break-even volume is the volume where accounting profit equals zero. It can be impossible when contribution per transaction is not positive.
 - Exit volume is the larger of the volume needed to meet minimum acceptable profit and any stated minimum commitment.
-- Headroom is effective volume less exit volume. Capacity is evaluated separately because excess volume is an operating constraint, not an economic benefit.
-- An adverse-shock threshold is the boundary at which the exit test is reached. Any further adverse movement causes failure. It is not a probability forecast.
+- Headroom is effective volume less exit volume. The binding limit identifies whether the nearest boundary is minimum acceptable profit, minimum commitment, or capacity.
+- Adverse-shock thresholds show the boundary at which an exit test is reached. Volume decrease tests economic exit, volume increase tests capacity, and fee or variable-cost movement tests profit. Any further adverse movement causes failure. They are not probability forecasts.
 - First breakpoint ranks bounded shocks by percentage movement from the current scenario. It is a negotiation prioritisation aid, not a forecast of which participant will act.
 
 ## Design boundaries

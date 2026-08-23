@@ -64,21 +64,22 @@ effectiveVolume <= capacity, when capacity is supplied
 
 The partnership is viable only when every participant holds.
 
-The named weakest participant has the smallest transaction-volume distance to either its economic exit threshold or its capacity ceiling. This is a local headroom comparison, not a probability of exit.
+The named weakest participant has the smallest transaction-volume distance to either its economic exit threshold or its capacity ceiling. Its binding limit identifies the nearest boundary as minimum acceptable profit, minimum commitment, or capacity. This is a local headroom comparison, not a probability of exit.
 
 ## Adverse shocks
 
 The app calculates a local deterministic boundary for each participant using all other inputs unchanged:
 
 - Volume decrease: reduction from effective volume to the participant exit volume.
+- Volume increase: increase from effective volume to the participant capacity, when a capacity is supplied.
 - Fee decrease: reduction from the current fee to the fee where monthly profit equals the acceptable-profit floor.
 - Variable-cost increase: increase from the current cost to the cost where monthly profit equals the acceptable-profit floor.
 
-At the displayed boundary, the applicable profit or commitment condition is exactly met. Any further movement in the adverse direction fails. If a participant already fails, the adverse movement is zero. If the named adverse movement cannot cause failure under the current inputs, it is reported as unbounded rather than assigned an invented number.
+At the displayed boundary, the applicable profit, commitment, or capacity condition is exactly met. Any further movement in the adverse direction fails. If a participant already fails, the adverse movement is zero. If the named adverse movement cannot cause failure under the current inputs, it is reported as unbounded rather than assigned an invented number.
 
 The First breakpoint card compares bounded volume, fee, and variable-cost shocks by percentage movement from their current values. An already-failing or at-breakpoint condition ranks first. A zero current value has no percentage denominator, so that shock is ranked after shocks with a finite percentage. Ties use participant order, then volume, fee, and variable cost order. This is a deterministic negotiation prioritisation aid, not a probability or behavioural forecast.
 
-Capacity is deliberately not converted into a fee or cost shock. It is an independent operational constraint. The fee-volume operating-region grid tests the current participant data over a finite range from zero to the greater of addressable and planned volume, and from zero to 150 percent of the current fee.
+Capacity is deliberately not converted into a fee or cost shock. It remains an independent operational constraint, with its volume increase threshold shown separately. The First breakpoint card continues to rank only volume decrease, fee decrease, and variable-cost increase because capacity is an operating limit rather than an economic shock. The fee-volume operating-region grid tests the current participant data over a finite range from zero to the greater of addressable and planned volume, and from zero to 150 percent of the current fee.
 
 ## Assumptions and limits
 
