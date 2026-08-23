@@ -259,6 +259,7 @@ function renderSummary(market) {
 
 function renderResults(market) {
   const formatter = money(market.scenario.currency);
+  const labels = new Map(market.scenario.buyers.map(({ id, label }) => [id, label]));
   const rows = market.ranked.map((result) => {
     const row = document.createElement("tr");
     addCell(row, `${result.offer.merchant} / ${result.offer.variant}`);
@@ -266,6 +267,9 @@ function renderResults(market) {
     addCell(row, String(result.fulfilledUnits));
     addCell(row, result.averageLandedUnitCost === null ? "Not available" : formatter.format(result.averageLandedUnitCost));
     addCell(row, formatter.format(result.savings));
+    addCell(row, result.qualifies
+      ? result.selectedBuyerIds.map((id) => labels.get(id) ?? id).join(", ")
+      : "No complete buyer set");
     return row;
   });
   elements.resultRows.replaceChildren(...rows);

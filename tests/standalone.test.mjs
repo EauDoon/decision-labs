@@ -20,4 +20,6 @@ test("standalone GUI has no external resource dependency", async () => {
   assert.doesNotMatch(html, /(?:src|href)=["'](?:\.\/|https?:|\/\/)/iu);
   assert.match(html, /window\.location\.protocol === "file:"/u);
   assert.match(html, /Use Export JSON to share a standalone scenario\./u);
+  assert.match(html, /Included locally/u);
+  assert.match(html, /No complete buyer set/u);
 });

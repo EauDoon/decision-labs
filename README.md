@@ -39,6 +39,7 @@ npm run check
 - Add merchant bids with a price, minimum order, delivery time, capacity, and shipping cost.
 - Compare qualified offers by fulfilled units, group headroom, buyers included, and landed cost.
 - Inspect why each buyer order is included, blocked by the minimum, left out by capacity, or incompatible with an offer.
+- See which local buyer labels each qualified offer includes; merchant-facing views stay aggregated.
 - Inspect a merchant view that contains aggregate ranges rather than individual records.
 - Import or export a scenario as JSON.
 - Encode the current scenario in a share link.
