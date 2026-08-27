@@ -1,8 +1,11 @@
 import {
   PRESETS,
+  DEFAULT_STRESS,
   ValidationError,
+  applyStressProposal,
   calculatePartnership,
   clonePreset,
+  evaluateStressGrid,
   makeParticipant,
   validateConfiguration,
 } from './model.js';
@@ -13,11 +16,15 @@ const app = document.querySelector('#workbench');
 const standaloneFileMode = window.location.protocol === 'file:';
 let participantSequence = 1;
 let activePreset = 'balanced';
-let state = loadInitialState();
+let state = withStress(loadInitialState());
 let eventsBound = false;
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function withStress(config) {
+  return { ...config, stress: { ...(config.stress ?? DEFAULT_STRESS) } };
 }
 
 function decodeHash(hash) {
@@ -77,11 +84,11 @@ function inputValue(value) {
   return value === null || value === undefined || Number.isNaN(value) ? '' : String(value);
 }
 
-function field({ label, path, value, optional = false, min = 0, step = 'any', wide = false, type = 'number' }) {
+function field({ label, path, value, optional = false, min = 0, max = null, step = 'any', wide = false, type = 'number' }) {
   const optionalText = optional ? '<span class="optional">optional</span>' : '';
   const input = type === 'text'
     ? `<input type="text" data-path="${path}" data-type="text" value="${escapeAttribute(value)}" maxlength="80" required />`
-    : `<input type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'} />`;
+    : `<input type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'} />`;
   return `<div class="field ${wide ? 'wide' : ''}"><label>${label} ${optionalText}${input}</label></div>`;
 }
 
@@ -180,6 +187,17 @@ function inputPanel() {
             ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, step: '0.1' })}
           </div>
         </section>
+        <section class="input-section" aria-labelledby="stress-inputs-title">
+          <h2 id="stress-inputs-title">Compound stress settings</h2>
+          <p class="notice">Test simultaneous shocks. Volume changes start from current effective volume and remain capped by addressable demand.</p>
+          <div class="field-grid">
+            ${field({ label: 'Volume decline %', path: 'stress.volumeDropPct', value: state.stress.volumeDropPct, max: 100 })}
+            ${field({ label: 'Volume growth %', path: 'stress.volumeGrowthPct', value: state.stress.volumeGrowthPct, max: 100 })}
+            ${field({ label: 'Fee reduction %', path: 'stress.feeDropPct', value: state.stress.feeDropPct, max: 100 })}
+            ${field({ label: 'Variable cost increase %', path: 'stress.variableCostRisePct', value: state.stress.variableCostRisePct, max: 200 })}
+          </div>
+          <p class="notice">Volume: decline, current, growth. Fee and cost: current, half, full shock. Up to 27 cases, with no assigned probabilities.</p>
+        </section>
         <section class="input-section" aria-labelledby="presets-title">
           <h2 id="presets-title">Starting points</h2>
           <div class="preset-row">
@@ -231,12 +249,51 @@ function resultsPanel(result) {
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
     ${breakpointSection(result)}
+    ${stressSection()}
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
     ${participantTable(result)}
     ${shockSection(result)}
     ${sensitivitySection(result)}
     ${methodAndLimits()}
   </section>`;
+}
+
+function caseLabel(scenario) {
+  return `${scenario.id}: volume ${formatPct(scenario.volumeChangePct)}, fee cut ${formatPct(scenario.feeDropPct)}, cost rise ${formatPct(scenario.variableCostRisePct)}`;
+}
+
+function stressSection() {
+  const stress = evaluateStressGrid(state);
+  const negotiation = stress.negotiation;
+  const statusText = {
+    'operational-breach': 'Revenue shares cannot fix every case. Review capacity or minimum commitments shown in the case evidence.',
+    'no-revenue': 'At least one case cannot fund a participant\'s required costs and profit with any finite share of its fee revenue.',
+    'insufficient-revenue': 'No single fixed revenue split can fund every participant across all tested cases. Reduce the shocks, costs, or profit floors, or change the fee.',
+    'precision-limit': 'A candidate split failed numerical rechecking. No proposal is offered.',
+    feasible: 'A fixed-share proposal passes every tested case. Remaining revenue is distributed in proportion to the current shares. Applying it changes only revenue shares.',
+  }[negotiation.status];
+  const rows = stress.participants.map((participant, index) => {
+    const worstCase = stress.scenarios.find((scenario) => scenario.id === participant.worst.scenarioId);
+    const operations = negotiation.operationalFailures.filter((failure) => failure.participantId === participant.id);
+    return `<tr><th scope="row">${escapeAttribute(participant.name)}</th>
+      <td>${participant.passCount} / ${stress.caseCount} hold</td>
+      <td>${formatMoney(participant.worst.profitGap)}<br><small>${caseLabel(worstCase)}</small></td>
+      <td>${operations.length ? `${operations.length} cases fail capacity or commitment` : 'All operational tests pass'}</td>
+      <td>${formatPct(participant.currentShare * 100)}</td>
+      <td>${participant.requiredShare === null ? 'No finite share' : formatPct(participant.requiredShare * 100)}<br><small>${participant.requiredShareScenarioId}</small></td>
+      <td>${negotiation.proposal ? formatPct(negotiation.proposal[index].revenueShare * 100) : 'Not available'}</td></tr>`;
+  }).join('');
+  const cases = stress.scenarios.map((scenario) => `<tr><th scope="row">${caseLabel(scenario)}</th>
+    <td>${formatVolume(scenario.volume)}</td><td>${formatNumber(scenario.fee, 4)}</td><td>${formatMoney(scenario.totalProfit)}</td>
+    <td class="${scenario.viable ? 'pass-text' : 'failure-text'}">${scenario.viable ? 'All participants hold' : scenario.participants.filter((participant) => !participant.viable).map((participant) => `${escapeAttribute(participant.name)}: ${escapeAttribute(participant.failureReasons.join('; '))}`).join('<br>')}</td></tr>`).join('');
+  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.2.0</span></div>
+    <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
+      <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
+      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button></div>
+      <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying.</p></div>
+    <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
+    <details class="case-details"><summary>Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases}</tbody></table></div></details>
+    <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
 }
 
 function participantTable(result) {
@@ -319,8 +376,13 @@ function setPath(path, value) {
 }
 
 function refresh(message = '') {
+  const focusedPath = document.activeElement?.dataset?.path;
   saveState();
   render();
+  if (focusedPath) {
+    const replacement = [...app.querySelectorAll('input[data-path]')].find((input) => input.dataset.path === focusedPath);
+    replacement?.focus({ preventScroll: true });
+  }
   const notice = document.querySelector('#notice');
   if (notice) notice.textContent = message;
 }
@@ -334,7 +396,9 @@ function attachEvents() {
     if (input.dataset.path) {
       setPath(input.dataset.path, input.dataset.type === 'text' ? input.value : numberFromInput(input.value, input.dataset.optional === 'true'));
       activePreset = '';
-      refresh(standaloneFileMode ? 'Saved locally. Export JSON to transfer this standalone case.' : 'Saved locally and updated the shareable URL.');
+      refresh(validateConfiguration(state).valid
+        ? (standaloneFileMode ? 'Saved locally. Export JSON to transfer this standalone case.' : 'Saved locally and updated the shareable URL.')
+        : 'Invalid inputs are not saved. Correct the listed fields.');
       return;
     }
     if (input.dataset.action === 'import' && input.files?.[0]) importFile(input.files[0]);
@@ -343,9 +407,12 @@ function attachEvents() {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
     const action = button.dataset.action;
+    if (action === 'edit-stress-settings') {
+      app.querySelector('input[data-path="stress.volumeDropPct"]')?.focus();
+    }
     if (action === 'preset') {
       activePreset = button.dataset.preset;
-      state = clonePreset(activePreset);
+      state = withStress(clonePreset(activePreset));
       refresh(`${PRESETS[activePreset].name} loaded.`);
     }
     if (action === 'add-participant') {
@@ -360,9 +427,19 @@ function attachEvents() {
       refresh('Participant removed.');
     }
     if (action === 'export') exportFile();
+    if (action === 'apply-stress-proposal') {
+      try {
+        state = applyStressProposal(state);
+        activePreset = '';
+        refresh('Tested revenue split applied. Every selected compound case was rechecked.');
+      } catch (error) {
+        if (!(error instanceof ValidationError)) throw error;
+        refresh(error.errors[0]);
+      }
+    }
     if (action === 'reset') {
       activePreset = 'balanced';
-      state = clonePreset('balanced');
+      state = withStress(clonePreset('balanced'));
       refresh('Reset to Balanced.');
     }
   });
@@ -398,7 +475,7 @@ function importFile(file) {
       const candidate = JSON.parse(String(reader.result));
       const validation = validateConfiguration(candidate);
       if (!validation.valid) throw new ValidationError(validation.errors);
-      state = candidate;
+      state = withStress(candidate);
       activePreset = '';
       refresh('JSON imported.');
     } catch (error) {

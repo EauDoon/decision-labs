@@ -4,9 +4,12 @@ import { fileURLToPath } from 'node:url';
 const outputPath = fileURLToPath(new URL('../standalone.html', import.meta.url));
 const appImport = `import {
   PRESETS,
+  DEFAULT_STRESS,
   ValidationError,
+  applyStressProposal,
   calculatePartnership,
   clonePreset,
+  evaluateStressGrid,
   makeParticipant,
   validateConfiguration,
 } from './model.js';

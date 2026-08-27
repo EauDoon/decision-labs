@@ -56,6 +56,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .button-row { margin-top: 1rem; }
 button { border: 1px solid var(--ink); background: transparent; color: var(--ink); padding: .42rem .65rem; border-radius: 2px; font-weight: 650; font-size: .78rem; }
 button:hover { background: var(--ink); color: white; }
+button:disabled { cursor: not-allowed; opacity: .55; }
 button.primary { background: var(--cobalt); border-color: var(--cobalt); color: white; }
 button.primary:hover { background: #1044a8; }
 button.danger { color: var(--coral); border-color: var(--coral); }
@@ -124,6 +125,15 @@ canvas { width: 100%; height: auto; display: block; border: 1px solid var(--line
 .error-box h2 { font-size: .85rem; margin: 0 0 .3rem; }
 .error-box ul { margin: 0; padding-left: 1.1rem; font-size: .82rem; }
 .notice { min-height: 1.25rem; margin: 0; font-size: .78rem; color: var(--muted); }
+.compound-panel { border-left: 6px solid var(--cobalt); padding-bottom: 1rem; }
+.compound-panel p { line-height: 1.45; }
+.stress-summary { font-size: 1.1rem; margin-top: 0; }
+.stress-table th, .stress-table td { white-space: normal; min-width: 7rem; }
+.stress-table th:first-child, .stress-table td:first-child { min-width: 10rem; }
+.stress-table small { display: inline-block; color: var(--muted); margin-top: .35rem; }
+.table-wrap:focus-visible, summary:focus-visible { outline: 3px solid var(--cobalt); outline-offset: -3px; }
+.case-details { margin: 1rem 0 0; }
+.case-details summary { cursor: pointer; padding: .8rem 1rem; font-weight: 650; }
 
 @media (max-width: 980px) {
   .app-grid { grid-template-columns: 1fr; }

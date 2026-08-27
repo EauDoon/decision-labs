@@ -4,6 +4,8 @@ Partnership Breakpoint is a static browser workbench for locating the participan
 
 It is useful when a negotiated revenue split looks acceptable in aggregate but may fail for one participant after costs, capacity, commitments, or a modest commercial shock are included.
 
+Version 1.2.0 adds simultaneous volume, fee, and variable-cost stress tests, with a participant failure ledger and a tested revenue-split proposal when the selected cases permit one.
+
 ## Open without installation
 
 Double-click [standalone.html](standalone.html) to run the complete workbench directly from a local file. It includes the interface, styles, and model code in one file and makes no network requests.
@@ -54,8 +56,14 @@ npm run check
 3. Enter each participant's per-transaction variable cost, monthly fixed cost, minimum acceptable monthly profit, capacity, minimum commitment if any, and monthly risk cost.
 4. Start with the First breakpoint card. It identifies who to protect first and the smallest percentage movement in volume, fee, or variable cost that reaches an exit boundary.
 5. Read the participant ledger, binding limits, adverse-shock thresholds, and fee-volume operating region.
+6. Edit Compound stress settings. The workbench tests up to 27 combinations of volume decline or growth, fee cuts, and variable-cost increases. Open the case evidence to inspect every outcome.
+7. Compare each participant's worst profit gap and minimum revenue share. If a fixed split can fund every participant in every tested case without capacity or commitment failures, preview the proposal and select Apply tested revenue split. The workbench rechecks it before changing the shares.
 
 The app autosaves valid inputs in local browser storage. When served locally, it also writes valid input state to the URL hash so the current case can be copied as a link. In standalone file mode, use Export JSON for a portable case file. Import JSON is available in both modes.
+
+Existing v1 case files still import. Cases without stress settings start with illustrative stress settings, which are saved with the next export. These settings are assumptions, not forecasts. The original case economics and revenue shares stay unchanged unless you edit them or apply a proposal.
+
+To try a feasible proposal, load Balanced, set volume decline to 5%, and set growth, fee reduction, and variable-cost increase to 0%. The two tested cases hold, and a fixed split is available to preview. Default stress settings are deliberately more demanding and expose both funding shortfalls and a capacity failure.
 
 ## What the outputs mean
 
@@ -66,6 +74,8 @@ The app autosaves valid inputs in local browser storage. When served locally, it
 - Headroom is effective volume less exit volume. The binding limit identifies whether the nearest boundary is minimum acceptable profit, minimum commitment, or capacity.
 - Adverse-shock thresholds show the boundary at which an exit test is reached. Volume decrease tests economic exit, volume increase tests capacity, and fee or variable-cost movement tests profit. Any further adverse movement causes failure. They are not probability forecasts.
 - First breakpoint ranks bounded shocks by percentage movement from the current scenario. It is a negotiation prioritisation aid, not a forecast of which participant will act.
+- Compound case counts describe only discrete tested combinations, not likelihoods. Worst profit gap is the lowest monthly profit less the participant's minimum acceptable profit across those cases.
+- Minimum fixed share is the largest share needed to meet a participant's profit floor across the tested cases. All participant minima must fit within 100%, and all capacity and commitment tests must pass, before a proposal is offered. A proposal does not prove that untested conditions or a counterparty will accept it.
 
 ## Design boundaries
 

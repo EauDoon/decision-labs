@@ -81,6 +81,46 @@ The First breakpoint card compares bounded volume, fee, and variable-cost shocks
 
 Capacity is deliberately not converted into a fee or cost shock. It remains an independent operational constraint, with its volume increase threshold shown separately. The First breakpoint card continues to rank only volume decrease, fee decrease, and variable-cost increase because capacity is an operating limit rather than an economic shock. The fee-volume operating-region grid tests the current participant data over a finite range from zero to the greater of addressable and planned volume, and from zero to 150 percent of the current fee.
 
+## Compound stress grid and fixed-share negotiation
+
+The optional `stress` object accepts exactly four finite percentages:
+
+- `volumeDropPct`: 0 to 100.
+- `volumeGrowthPct`: 0 to 100.
+- `feeDropPct`: 0 to 100.
+- `variableCostRisePct`: 0 to 200.
+
+All four fields are required if the object is supplied. Legacy cases without it remain valid. The GUI supplies illustrative defaults of 20%, 20%, 10%, and 20%, respectively, and preserves them in case JSON, local storage, and locally served URL fragments. No shares change when a case is imported.
+
+The grid crosses volume changes of current, full decline, and full growth with fee cuts of zero, half, and full, and cost rises of zero, half, and full. Repeated percentage values on an axis are removed, giving 1 to 27 cases. Different shocks that produce the same demand-capped volume remain separate labeled cases. Counts are not probabilities or forecasts. Every scenario applies all its shocks at once:
+
+```text
+baseV = min(monthlyVolume * (1 - volumeShockPct / 100), addressableVolume)
+scenarioV = min(baseV * (1 + volumeChangePct / 100), addressableVolume)
+scenarioF = feePerTransaction * (1 - feeDropPct / 100)
+scenarioC = variableCostPerTransaction * (1 + variableCostRisePct / 100)
+scenarioProfit = scenarioV * (scenarioF * revenueShare - scenarioC) - K - R
+```
+
+Growth cannot restore demand after a 100% base volume shock. Percentage cost growth cannot increase a zero base cost. Capacity and commitment remain independent exit tests. Costs, shares, and monthly profit floors are otherwise unchanged. The model finds each participant's worst profit gap by evaluating every selected case, so a loss-making participant can have its worst result in a growth case. Ties keep the first case in deterministic grid order.
+
+For each participant and case with positive gross fee revenue, the minimum share that funds the monthly profit floor is:
+
+```text
+requiredShare = (scenarioV * scenarioC + K + R + M) / (scenarioV * scenarioF)
+fixedMinimumShare = max(requiredShare across every tested case)
+```
+
+At zero gross revenue, the required share is zero only if all required costs and profit are zero. Otherwise no finite share funds that case. Values too large for finite floating-point representation also block a proposal.
+
+A single fixed split can be proposed only when all fixed minimum shares fit within 100% and every case passes capacity and commitment tests. A revenue redistribution cannot repair a capacity or commitment breach. No transfers, subsidies, fee changes, or scenario-specific shares are assumed.
+
+The proposal assigns each participant its fixed minimum plus a share of unused revenue proportional to its current share. A floating-point remainder is assigned to the largest proposed share. The model validates the resulting configuration and rechecks every participant in every case using the original profit, commitment, capacity, and numeric-tolerance conventions. It also verifies the input numbers, shock formulas, and proposed shares with exact rational arithmetic over the supplied binary numbers. This prevents a small fixed cost from disappearing beside a large transaction total and falsely certifying a split. The original absolute tolerance of `1e-9` still applies. Either failed recheck returns `precision-limit` and blocks the proposal. Applying it is an explicit GUI action, changes only shares, and creates no commitment outside the workbench.
+
+Each case must also pass two exact aggregate checks: the participants' combined costs and required profits cannot exceed gross fee revenue, and the proposed shares cannot allocate more than that gross revenue. Each aggregate check allows only `1e-9` currency units in total, not a percentage of revenue or a per-participant allowance. A binary share sum that rounds to 1 can still fail this check when large transaction totals make the excess material. Such a split is blocked with `precision-limit` rather than silently borrowing or adding revenue.
+
+This is a feasible split for the selected discrete cases, not a bargaining recommendation, an optimal allocation, or proof covering untested shocks. The minimum-share table describes funding needs even when an operational breach separately blocks an allocation. Displayed calculations use JavaScript floating-point arithmetic. Exact proposal verification uses those supplied binary numbers, not a decimal accounting convention, and can block a split even when rounded displayed results appear to hold.
+
 ## Assumptions and limits
 
 The model treats costs, shares, risk cost, capacity, and minimum acceptable profit as known fixed inputs for one representative month. It assumes every effective transaction completes, the entered revenue split applies to every transaction, and no participant receives value outside the model unless it is represented in its acceptable-profit floor.

@@ -6,9 +6,11 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
+export const DEFAULT_STRESS = Object.freeze({ volumeDropPct: 20, volumeGrowthPct: 20, feeDropPct: 10, variableCostRisePct: 20 });
+const STRESS_LIMITS = Object.freeze({ volumeDropPct: 100, volumeGrowthPct: 100, feeDropPct: 100, variableCostRisePct: 200 });
 
 export class ValidationError extends Error {
   constructor(errors) {
@@ -82,6 +84,19 @@ export function validateConfiguration(config) {
     return { valid: false, errors: ['Configuration must be an object.'] };
   }
   rejectUnknownKeys(config, CONFIG_KEYS, 'Configuration', errors);
+  if (config.stress !== undefined) {
+    if (!config.stress || typeof config.stress !== 'object' || Array.isArray(config.stress)) {
+      errors.push('Stress settings must be an object.');
+    } else {
+      rejectUnknownKeys(config.stress, new Set(Object.keys(STRESS_LIMITS)), 'Stress settings', errors);
+      for (const [key, limit] of Object.entries(STRESS_LIMITS)) {
+        const value = config.stress[key];
+        if (!isFiniteNumber(value) || value < 0 || value > limit) {
+          errors.push(`Stress ${key} must be a finite percentage from 0 through ${limit}.`);
+        }
+      }
+    }
+  }
 
   const deal = config.deal;
   if (!deal || typeof deal !== 'object' || Array.isArray(deal)) {
@@ -334,7 +349,7 @@ export function calculatePartnership(config) {
     return a.fragilityHeadroom - b.fragilityHeadroom || a.monthlyProfit - b.monthlyProfit || (a.id < b.id ? -1 : a.id > b.id ? 1 : 0);
   })[0];
   const capacityCeiling = participants.reduce((ceiling, participant) => (
-    participant.capacity === null ? ceiling : Math.min(ceiling, participant.capacity)
+    participant.capacity == null ? ceiling : Math.min(ceiling, participant.capacity)
   ), config.deal.addressableVolume);
   const result = {
     deal: { ...config.deal },
@@ -348,6 +363,173 @@ export function calculatePartnership(config) {
     capacityCeiling,
   };
   return { ...result, firstBreakpoint: firstBreakpoint(result) };
+}
+
+// Exact fractions are used only to verify a proposed split. Display calculations
+// keep their existing Number semantics, but cannot certify their own roundoff.
+function exactNumber(value) {
+  if (value === 0) return { numerator: 0n, denominator: 1n };
+  const bytes = new DataView(new ArrayBuffer(8));
+  bytes.setFloat64(0, value);
+  const bits = bytes.getBigUint64(0);
+  const encodedExponent = Number((bits >> 52n) & 0x7ffn);
+  const significand = (bits & ((1n << 52n) - 1n)) + (encodedExponent === 0 ? 0n : 1n << 52n);
+  const signed = bits >> 63n ? -significand : significand;
+  const exponent = encodedExponent === 0 ? -1074 : encodedExponent - 1075;
+  return exponent < 0
+    ? { numerator: signed, denominator: 1n << BigInt(-exponent) }
+    : { numerator: signed << BigInt(exponent), denominator: 1n };
+}
+
+function exactAdd(left, right) {
+  return { numerator: left.numerator * right.denominator + right.numerator * left.denominator,
+    denominator: left.denominator * right.denominator };
+}
+
+function exactMultiply(left, right) {
+  return { numerator: left.numerator * right.numerator, denominator: left.denominator * right.denominator };
+}
+
+function exactNegative(value) {
+  return { numerator: -value.numerator, denominator: value.denominator };
+}
+
+function exactAtLeast(left, right) {
+  return left.numerator * right.denominator >= right.numerator * left.denominator;
+}
+
+function exactPercentFactor(percent) {
+  const value = exactNumber(percent);
+  return { numerator: 100n * value.denominator + value.numerator, denominator: 100n * value.denominator };
+}
+
+function exactProposalPasses(config, scenarios, proposal) {
+  const tolerance = exactNumber(EPSILON);
+  const demand = exactNumber(config.deal.addressableVolume);
+  const planned = exactMultiply(exactNumber(config.deal.monthlyVolume), exactPercentFactor(-(config.deal.volumeShockPct ?? 0)));
+  const baseVolume = exactAtLeast(planned, demand) ? demand : planned;
+  const proposedShareTotal = proposal.map((participant) => exactNumber(participant.revenueShare)).reduce(exactAdd);
+  return scenarios.every((scenario) => {
+    const shocked = exactMultiply(baseVolume, exactPercentFactor(scenario.volumeChangePct));
+    const volume = exactAtLeast(shocked, demand) ? demand : shocked;
+    const fee = exactMultiply(exactNumber(config.deal.feePerTransaction), exactPercentFactor(-scenario.feeDropPct));
+    const grossRevenue = exactMultiply(volume, fee);
+    const availableRevenue = exactAdd(grossRevenue, tolerance);
+    if (!exactAtLeast(availableRevenue, exactMultiply(grossRevenue, proposedShareTotal))) return false;
+    let aggregateRequiredRevenue = exactNumber(0);
+    const individualPasses = config.participants.every((participant, index) => {
+      if (!exactAtLeast(exactAdd(volume, tolerance), exactNumber(participant.minimumCommitment ?? 0))) return false;
+      if (participant.capacity != null && !exactAtLeast(exactAdd(exactNumber(participant.capacity), tolerance), volume)) return false;
+      const variableCost = exactMultiply(exactNumber(participant.variableCostPerTransaction), exactPercentFactor(scenario.variableCostRisePct));
+      const revenue = exactMultiply(grossRevenue, exactNumber(proposal[index].revenueShare));
+      const requiredRevenue = [exactMultiply(volume, variableCost), exactNumber(participant.fixedMonthlyCost),
+        exactNumber(participant.riskCost), exactNumber(participant.minimumAcceptableProfit)]
+        .reduce(exactAdd);
+      aggregateRequiredRevenue = exactAdd(aggregateRequiredRevenue, requiredRevenue);
+      const gap = exactAdd(revenue, exactNegative(requiredRevenue));
+      return exactAtLeast(exactAdd(gap, tolerance), exactNumber(0));
+    });
+    return individualPasses && exactAtLeast(availableRevenue, aggregateRequiredRevenue);
+  });
+}
+
+/** Finite compound scenarios. Counts describe tested cases, never probabilities. */
+export function evaluateStressGrid(config) {
+  assertValidConfiguration(config);
+  const settings = { ...(config.stress ?? DEFAULT_STRESS) };
+  const baseVolume = effectiveVolume(config.deal);
+  const unique = (values) => [...new Set(values)];
+  const volumes = unique([0, -settings.volumeDropPct, settings.volumeGrowthPct]);
+  const fees = unique([0, settings.feeDropPct / 2, settings.feeDropPct]);
+  const costs = unique([0, settings.variableCostRisePct / 2, settings.variableCostRisePct]);
+  const scenarios = [];
+  for (const volumeChangePct of volumes) {
+    for (const feeDropPct of fees) {
+      for (const variableCostRisePct of costs) {
+        const volume = Math.min(baseVolume * (1 + volumeChangePct / 100), config.deal.addressableVolume);
+        const fee = config.deal.feePerTransaction * (1 - feeDropPct / 100);
+        const participants = config.participants.map((participant) => evaluateParticipant({
+          ...participant,
+          variableCostPerTransaction: participant.variableCostPerTransaction * (1 + variableCostRisePct / 100),
+        }, { ...config.deal, feePerTransaction: fee }, volume));
+        scenarios.push({
+          id: `case-${scenarios.length + 1}`,
+          volumeChangePct, feeDropPct, variableCostRisePct,
+          volume, fee, participants,
+          viable: participants.every((participant) => participant.viable),
+          totalProfit: participants.reduce((sum, participant) => sum + participant.monthlyProfit, 0),
+        });
+      }
+    }
+  }
+  const operationalFailures = [];
+  const participants = config.participants.map((participant, index) => {
+    let requiredShare = 0;
+    let requiredShareScenarioId = scenarios[0].id;
+    let worst = null;
+    let passCount = 0;
+    for (const scenario of scenarios) {
+      const tested = scenario.participants[index];
+      const profitGap = tested.monthlyProfit - participant.minimumAcceptableProfit;
+      if (!worst || profitGap < worst.profitGap) {
+        worst = { scenarioId: scenario.id, profitGap, monthlyProfit: tested.monthlyProfit };
+      }
+      if (tested.viable) passCount += 1;
+      if (!tested.commitmentPass || !tested.capacityPass) {
+        operationalFailures.push({ participantId: participant.id, scenarioId: scenario.id,
+          commitmentPass: tested.commitmentPass, capacityPass: tested.capacityPass });
+      }
+      const requiredRevenue = scenario.volume * tested.variableCostPerTransaction
+        + participant.fixedMonthlyCost + participant.riskCost + participant.minimumAcceptableProfit;
+      const grossRevenue = scenario.volume * scenario.fee;
+      const ratio = grossRevenue === 0 ? (requiredRevenue === 0 ? 0 : null) : requiredRevenue / grossRevenue;
+      const minimumShare = ratio === null || !Number.isFinite(ratio) ? null : ratio;
+      if (requiredShare !== null && (minimumShare === null || minimumShare > requiredShare)) {
+        requiredShare = minimumShare;
+        requiredShareScenarioId = scenario.id;
+      }
+    }
+    return { id: participant.id, name: participant.name, currentShare: participant.revenueShare,
+      passCount, worst, requiredShare, requiredShareScenarioId };
+  });
+  const requiredShareTotal = participants.some((participant) => participant.requiredShare === null)
+    ? null : participants.reduce((sum, participant) => sum + participant.requiredShare, 0);
+  // Allow accumulated division/summation roundoff only, then recheck the actual split.
+  const shareTolerance = Number.EPSILON * Math.max(1, requiredShareTotal ?? 0) * participants.length * 4;
+  let status = operationalFailures.length ? 'operational-breach'
+    : requiredShareTotal === null ? 'no-revenue'
+      : requiredShareTotal - 1 > shareTolerance ? 'insufficient-revenue' : 'feasible';
+  let proposal = null;
+  if (status === 'feasible') {
+    const residual = Math.max(0, 1 - requiredShareTotal);
+    proposal = participants.map((participant) => ({ id: participant.id,
+      revenueShare: participant.requiredShare + residual * participant.currentShare }));
+    const total = proposal.reduce((sum, participant) => sum + participant.revenueShare, 0);
+    // Put floating-point reconciliation in the largest share, never a zero-share participant.
+    const largest = proposal.reduce((best, participant, index) => participant.revenueShare > proposal[best].revenueShare ? index : best, 0);
+    proposal[largest].revenueShare += 1 - total;
+    const candidate = { ...config, participants: config.participants.map((participant, index) => ({
+      ...participant, revenueShare: proposal[index].revenueShare,
+    })) };
+    const passes = validateConfiguration(candidate).valid && exactProposalPasses(config, scenarios, proposal)
+      && scenarios.every((scenario) => scenario.participants.every((participant, index) =>
+      evaluateParticipant({ ...participant, revenueShare: proposal[index].revenueShare },
+        { ...config.deal, feePerTransaction: scenario.fee }, scenario.volume).viable));
+    if (!passes) {
+      status = 'precision-limit';
+      proposal = null;
+    }
+  }
+  return { settings, scenarios, caseCount: scenarios.length, passCount: scenarios.filter((scenario) => scenario.viable).length,
+    participants, negotiation: { status, requiredShareTotal, operationalFailures, proposal } };
+}
+
+/** Explicit user action only. Leaves the original inputs untouched. */
+export function applyStressProposal(config) {
+  const proposal = evaluateStressGrid(config).negotiation.proposal;
+  if (!proposal) throw new ValidationError(['No verified fixed-share proposal is available for these stress cases.']);
+  return { ...config, deal: { ...config.deal }, ...(config.stress ? { stress: { ...config.stress } } : {}),
+    participants: config.participants.map((participant, index) => ({ ...participant, revenueShare: proposal[index].revenueShare })) };
 }
 
 /** Creates a safe immutable copy for UI state or JSON export. */
