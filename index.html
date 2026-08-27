@@ -44,6 +44,7 @@ SOFTWARE.
             <option value="neighbourhood">Neighbourhood Plan</option>
             <option value="open-source">Open Source Policy</option>
             <option value="association-budget">Association Budget</option>
+            <option value="protected-access">Protected Access</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -69,9 +70,15 @@ SOFTWARE.
           <p>Weighted average support across all clauses and groups.</p>
         </section>
         <section class="panel-section">
+          <label for="max-change-cost">Maximum total change cost</label>
+          <input id="max-change-cost" type="number" min="0" max="20000000000" step="any" placeholder="Unlimited" aria-describedby="budget-note">
+          <p id="budget-note" class="field-note">Optional hard budget. Leave blank for no limit. Zero permits only zero-cost changes.</p>
+        </section>
+        <section class="panel-section">
           <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" data-action="add-group">Add group</button></div>
           <div id="groups-editor" class="groups-editor"></div>
           <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
+          <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
         </section>
       </aside>
 
@@ -97,6 +104,10 @@ SOFTWARE.
           </div>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
+          <section class="result-card constraint-card" aria-labelledby="constraints-heading">
+            <h3 id="constraints-heading">Constraint checks</h3>
+            <div id="constraint-checks"></div>
+          </section>
           <div class="results-grid">
             <section class="result-card coalition-card" aria-labelledby="coalition-heading">
               <h3 id="coalition-heading">Coalition view</h3>
@@ -122,7 +133,8 @@ SOFTWARE.
             <p class="eyebrow">Method</p>
             <h2>Count what changes</h2>
             <p>For each combination of one option per clause, the workshop computes a weighted average of the group support scores. It selects a passing combination by lowest change cost, then fewest changed clauses, then higher approval, then option ID order.</p>
-            <p>The search is exhaustive only up to 50,000 combinations. Above that, it stops and tells you to reduce the choice set.</p>
+            <p>Only combinations meeting every support floor, cost budget, and clause lock can pass. Near misses meet those constraints but miss the overall threshold.</p>
+            <p>The search is exhaustive only up to 50,000 lock-permitted combinations. Above that, it stops and tells you to reduce the choice set. An already-passing original proposal needs only one check.</p>
           </article>
           <article>
             <p class="eyebrow">Limits</p>

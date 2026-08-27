@@ -13,6 +13,27 @@ let idNumber = 100;
 let initialLoadMessage = "Loaded local draft.";
 
 const presets = {
+  "protected-access": {
+    title: "Protected Access: shared workshop",
+    threshold: 70,
+    maxChangeCost: 3,
+    groups: [
+      { id: "regular", name: "Regular participants", weight: 9 },
+      { id: "new", name: "New participants", weight: 1, minSupport: 60 },
+    ],
+    clauses: [
+      { id: "booking", title: "Workshop booking", options: [
+        { id: "booking-original", original: true, label: "Retain recurring reservations", changeCost: 0, support: { regular: 90, new: 10 } },
+        { id: "booking-notice", original: false, label: "Publish cancellations each week", changeCost: 1, support: { regular: 95, new: 30 } },
+        { id: "booking-open", original: false, label: "Reserve an open booking window", changeCost: 3, support: { regular: 80, new: 90 } },
+      ] },
+      { id: "training", title: "Safety training", lockedOptionId: "training-original", options: [
+        { id: "training-original", original: true, label: "Keep supervised induction", changeCost: 0, support: { regular: 80, new: 50 } },
+        { id: "training-weekly", original: false, label: "Add weekly induction sessions", changeCost: 2, support: { regular: 85, new: 90 } },
+        { id: "training-pairs", original: false, label: "Offer paired induction appointments", changeCost: 4, support: { regular: 80, new: 95 } },
+      ] },
+    ],
+  },
   neighbourhood: {
     title: "Neighbourhood Plan: the shared green",
     threshold: 68,
@@ -173,9 +194,13 @@ function encodeHash(proposal) {
 }
 
 function save() {
+  if (!validateProposal(state.proposal).valid) {
+    state.saveMessage = "Invalid edits are not saved. Correct them to resume autosave.";
+    return;
+  }
   if (location.hash.startsWith(HASH_PREFIX)) history.replaceState(null, "", `${location.pathname}${location.search}`);
   try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(state.proposal));
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(canonicalProposal(state.proposal)));
     state.saveMessage = "Saved in this browser.";
   } catch {
     state.saveMessage = "Browser storage is unavailable. Export to keep this draft.";
@@ -201,6 +226,7 @@ function render() {
   $("#proposal-title").value = proposal.title;
   $("#threshold").value = proposal.threshold;
   $("#threshold-output").textContent = `${proposal.threshold}%`;
+  $("#max-change-cost").value = proposal.maxChangeCost ?? "";
   $("#proposal-heading").textContent = proposal.title;
   $("#autosave-status").textContent = state.saveMessage;
   renderGroups();
@@ -214,6 +240,7 @@ function renderGroups() {
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0.1" step="0.1" value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
       <button class="text-button danger" type="button" data-action="remove-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length <= 1 ? "disabled" : ""}>Remove</button>
+      <label class="group-floor">Minimum support (%)<input data-field="group-floor" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" value="${group.minSupport ?? ""}" placeholder="No floor" aria-label="${escapeHtml(group.name)} minimum support" aria-describedby="floor-note"></label>
     </div>`).join("");
 }
 
@@ -226,6 +253,12 @@ function renderClauses() {
         <button class="text-button danger" type="button" data-action="remove-clause" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses.length <= 1 ? "disabled" : ""}>Remove clause</button>
       </div>
       <p class="clause-annotation">Cost is an explicit human estimate of disruption, scope expansion, or process burden. It is not a measure of merit.</p>
+      <label class="clause-lock">Lock clause to an option
+        <select data-field="clause-lock" data-clause-id="${escapeHtml(clause.id)}" aria-label="${escapeHtml(clause.title)} locked option">
+          <option value="">No lock, search all options</option>
+          ${clause.options.map((option) => `<option value="${escapeHtml(option.id)}" ${clause.lockedOptionId === option.id ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+        </select>
+      </label>
       <div class="options-table-wrap"><table class="options-table">
         <thead><tr><th scope="col">Option</th><th scope="col">Change cost</th>${groups.map((group) => `<th scope="col">${escapeHtml(group.name)}<br>support</th>`).join("")}<th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
         <tbody>${clause.options.map((option) => `
@@ -233,7 +266,7 @@ function renderClauses() {
             <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="Option label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
             <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" step="0.1" value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
             ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="1" value="${option.support[group.id]}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
-            <td><div class="option-tools">${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 ? "disabled" : ""}>Remove</button>`}</div></td>
+            <td><div class="option-tools">${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
           </tr>`).join("")}</tbody>
       </table></div>
       <button class="text-button add-alternative" type="button" data-action="add-option" data-clause-id="${escapeHtml(clause.id)}">Add alternative</button>
@@ -244,6 +277,9 @@ function renderResults(result) {
   const { proposal } = state;
   const alert = $("#result-alert");
   const meta = $("#search-meta");
+  $("#export-button").disabled = result.status === "invalid";
+  $("#share-button").disabled = result.status === "invalid";
+  $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
     alert.textContent = `Search paused: more than ${MAX_COMBINATIONS.toLocaleString()} combinations. Reduce alternatives or clauses to evaluate every combination.`;
     meta.textContent = `More than ${MAX_COMBINATIONS.toLocaleString()} combinations`;
@@ -266,12 +302,12 @@ function renderResults(result) {
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
     return;
   }
-  meta.textContent = `${result.possibleCombinations.toLocaleString()} combinations checked`;
+  meta.textContent = `${result.checkedCombinations.toLocaleString()} checked, ${result.possibleCombinations.toLocaleString()} lock-permitted combinations`;
   const agreement = result.agreement;
   const current = result.baseline;
-  if (result.status === "already_passing") alert.textContent = "The original proposal already crosses the threshold. No clause change is recommended.";
-  else if (result.status === "infeasible") alert.textContent = "No tested combination crosses the threshold. Inspect the near misses or change the choices, scores, weights, or threshold.";
-  else alert.textContent = "A lowest-cost passing combination was found.";
+  if (result.status === "already_passing") alert.textContent = "The original proposal crosses the threshold and meets every constraint. No clause change is recommended.";
+  else if (result.status === "infeasible") alert.textContent = "No permitted combination meets both the threshold and every configured constraint. Review the constraint checks and near misses.";
+  else alert.textContent = "A lowest-cost passing combination was found. It meets every configured constraint.";
 
   const closestMiss = result.nearMisses[0];
   const closestGap = closestMiss ? proposal.threshold - closestMiss.approval : null;
@@ -285,9 +321,22 @@ function renderResults(result) {
     <div class="metric cost"><span class="metric-label">Closest gap</span><strong>${closestGap === null ? "Not found" : closestGap.toFixed(1) + " points"}</strong></div>
     <div class="metric cost"><span class="metric-label">Best result</span><strong>Not found</strong></div>`;
   renderChanges(agreement, current);
+  renderConstraints(result);
   renderNearMisses(result.nearMisses);
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
+}
+
+function renderConstraints(result) {
+  const checks = result.agreement?.constraints ?? result.baseline.constraints;
+  const rows = [];
+  const mark = (met) => met ? "Met" : "Not met";
+  if (checks.budget) rows.push(`<tr><th scope="row">Total change cost</th><td>At most ${checks.budget.maximum}</td><td>${checks.budget.actual}</td><td>${mark(checks.budget.met)}</td></tr>`);
+  for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(floor.name)} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
+  for (const lock of checks.locks) rows.push(`<tr><th scope="row">${escapeHtml(lock.clauseTitle)}</th><td>${escapeHtml(lock.label)}</td><td>Locked option</td><td>${mark(lock.met)}</td></tr>`);
+  const inspected = result.agreement ? "Recommended combination" : "Original proposal, no recommendation found";
+  const counts = result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget and ${result.rejected.floors.toLocaleString()} below a group floor. These counts can overlap. Locks exclude other options before enumeration.`;
+  $("#constraint-checks").innerHTML = `<p>${counts}</p>${rows.length ? `<p>${inspected}</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Constraint</th><th scope="col">Required</th><th scope="col">Actual</th><th scope="col">Status</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>` : '<p>No group floors, budget, or clause locks set.</p>'}`;
 }
 
 function emptyResults() {
@@ -311,7 +360,7 @@ function renderNearMisses(nearMisses) {
   $("#near-misses-list").innerHTML = nearMisses.length ? nearMisses.map((miss) => {
     const labels = miss.changes.length ? miss.changes.map((change) => `${change.clauseTitle}: ${change.to}`).join("; ") : "Keep every original option";
     return `<div class="miss-item"><span class="miss-score">${formatPercent(miss.approval)}</span><span>${escapeHtml(labels)}<br><small>Short by ${(state.proposal.threshold - miss.approval).toFixed(1)} points. Cost ${miss.changeCost.toFixed(1)}.</small></span></div>`;
-  }).join("") : '<p class="empty-state">No near misses to show.</p>';
+  }).join("") : '<p class="empty-state">No constraint-compliant near misses to show.</p>';
 }
 
 function drawCoalition(current, agreement) {
@@ -375,10 +424,21 @@ document.addEventListener("input", (event) => {
   const target = event.target;
   const field = target.dataset.field;
   if (!field) return;
+  if (field === "clause-lock") return;
+  if (field === "group-floor") {
+    const group = groupById(target.dataset.groupId);
+    if (target.value === "" && !target.validity.badInput) delete group.minSupport;
+    else group.minSupport = target.valueAsNumber;
+  }
   if (field === "group-name") groupById(target.dataset.groupId).name = target.value || "Unnamed group";
   if (field === "group-weight") groupById(target.dataset.groupId).weight = Math.max(.1, number(target.value, 1));
   if (field === "clause-title") clauseById(target.dataset.clauseId).title = target.value || "Untitled clause";
   if (field === "option-label") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).label = target.value || "Untitled option";
+  if (field === "option-label") {
+    const select = [...document.querySelectorAll('[data-field="clause-lock"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId);
+    const choice = [...select.options].find((element) => element.value === target.dataset.optionId);
+    choice.textContent = target.value || "Untitled option";
+  }
   if (field === "option-cost") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).changeCost = Math.max(0, number(target.value));
   if (field === "option-support") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).support[target.dataset.groupId] = Math.min(100, Math.max(0, number(target.value)));
   save();
@@ -388,10 +448,11 @@ document.addEventListener("input", (event) => {
 });
 
 $("#proposal-title").addEventListener("input", (event) => {
-  state.proposal.title = event.target.value || "Untitled proposal";
+  state.proposal.title = event.target.value;
   save();
   $("#proposal-heading").textContent = state.proposal.title;
   $("#autosave-status").textContent = state.saveMessage;
+  renderResults(currentResult());
 });
 $("#threshold").addEventListener("input", (event) => {
   state.proposal.threshold = Math.min(100, Math.max(0, number(event.target.value)));
@@ -399,6 +460,25 @@ $("#threshold").addEventListener("input", (event) => {
   $("#threshold-output").textContent = `${state.proposal.threshold}%`;
   $("#autosave-status").textContent = state.saveMessage;
   renderResults(currentResult());
+});
+$("#max-change-cost").addEventListener("input", (event) => {
+  const target = event.target;
+  if (target.value === "" && !target.validity.badInput) delete state.proposal.maxChangeCost;
+  else state.proposal.maxChangeCost = target.valueAsNumber;
+  save();
+  $("#autosave-status").textContent = state.saveMessage;
+  renderResults(currentResult());
+});
+document.addEventListener("change", (event) => {
+  const target = event.target;
+  if (target.dataset.field !== "clause-lock") return;
+  changeAndRender(() => {
+    const clause = clauseById(target.dataset.clauseId);
+    if (target.value === "") delete clause.lockedOptionId;
+    else clause.lockedOptionId = target.value;
+  });
+  const restored = [...document.querySelectorAll('[data-field="clause-lock"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId);
+  restored?.focus();
 });
 
 document.addEventListener("click", (event) => {
@@ -430,6 +510,7 @@ document.addEventListener("click", (event) => {
   });
   if (action === "remove-option") changeAndRender(() => {
     const clause = clauseById(button.dataset.clauseId);
+    if (clause.lockedOptionId === button.dataset.optionId) return;
     clause.options = clause.options.filter((option) => option.id !== button.dataset.optionId);
   });
 });
@@ -448,6 +529,10 @@ function downloadText(filename, content, type) {
 }
 
 $("#export-button").addEventListener("click", () => {
+  if (!validateProposal(state.proposal).valid) {
+    $("#autosave-status").textContent = "Correct invalid inputs before exporting JSON.";
+    return;
+  }
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#brief-button").addEventListener("click", () => {
@@ -480,6 +565,10 @@ $("#import-file").addEventListener("change", async (event) => {
   event.target.value = "";
 });
 $("#share-button").addEventListener("click", async () => {
+  if (!validateProposal(state.proposal).valid) {
+    $("#autosave-status").textContent = "Correct invalid inputs before sharing.";
+    return;
+  }
   if (location.protocol === "file:") {
     state.saveMessage = "Share links are not portable from a local file. Export JSON to share this draft.";
     $("#autosave-status").textContent = state.saveMessage;

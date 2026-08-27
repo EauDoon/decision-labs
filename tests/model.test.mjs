@@ -66,6 +66,38 @@ test("canonical proposals discard unknown imported fields at every level", () =>
   assert.deepEqual(Object.keys(clean.clauses[0].options[0].support), ["g"]);
 });
 
+test("original flags reject nested payloads and nonboolean values before canonical export", () => {
+  for (const invalid of [{ privateNote: "synthetic-canary" }, {}, [], null, 0, 1, "false", "true"]) {
+    const input = proposal({ clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 50 }),
+      option("alternative", invalid, { g: 80 }, 1),
+      option("alternative-two", false, { g: 70 }, 2),
+    ] }] });
+    const snapshot = structuredClone(input);
+    const validation = validateProposal(input);
+    assert.equal(validation.valid, false);
+    assert.match(validation.errors.join(" "), /original must be a boolean/u);
+    assert.equal(findSmallestAgreement(input).status, "invalid");
+    assert.throws(() => canonicalProposal(input), /original must be a boolean/u);
+    assert.deepEqual(input, snapshot);
+  }
+});
+
+test("omitted and false original flags remain alternatives and canonicalize to booleans", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 50 }),
+    option("omitted", undefined, { g: 80 }, 1),
+    option("explicit-false", false, { g: 70 }, 2),
+  ] }] });
+  delete input.clauses[0].options[1].original;
+  assert.equal(validateProposal(input).valid, true);
+  const clean = canonicalProposal(input);
+  assert.deepEqual(clean.clauses[0].options.map(({ original }) => original), [true, false, false]);
+  assert.equal(findSmallestAgreement(clean).agreement.options[0].id, "omitted");
+  assert.equal(Object.hasOwn(input.clauses[0].options[1], "original"), false);
+  assert.deepEqual(canonicalProposal(JSON.parse(JSON.stringify(clean))), clean);
+});
+
 test("decision briefs render user markup as text", () => {
   const input = proposal({
     clauses: [{ id: "one", title: "<script>alert(1)</script>", options: [
@@ -213,4 +245,199 @@ test("infeasible searches retain only the requested best near misses", () => {
   assert.equal(result.possibleCombinations, 19_683);
   assert.equal(result.nearMisses.length, 5);
   assert.ok(result.nearMisses.every((candidate, index, list) => index === 0 || list[index - 1].approval >= candidate.approval));
+});
+
+function constrainedProposal() {
+  return proposal({
+    threshold: 70,
+    groups: [{ id: "majority", name: "Majority", weight: 9 }, { id: "minority", name: "Minority", weight: 1 }],
+    clauses: [{ id: "access", title: "Access", options: [
+      option("original", true, { majority: 80, minority: 10 }),
+      option("cheap", false, { majority: 90, minority: 30 }, 1),
+      option("balanced", false, { majority: 75, minority: 75 }, 3),
+    ] }],
+  });
+}
+
+test("a protected group's floor prevents an already-passing majority from bypassing it", () => {
+  const input = constrainedProposal();
+  assert.equal(findSmallestAgreement(input).status, "already_passing");
+  input.groups[1].minSupport = 60;
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "found");
+  assert.equal(result.agreement.options[0].id, "balanced");
+  assert.equal(result.baseline.constraints.met, false);
+  assert.equal(result.agreement.constraints.floors[0].met, true);
+  assert.equal(result.rejected.floors, 2);
+  assert.equal(result.checkedCombinations, 3);
+});
+
+test("budget and floors jointly produce honest infeasibility without unsafe near misses", () => {
+  const input = constrainedProposal();
+  input.groups[1].minSupport = 60;
+  input.maxChangeCost = 2;
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "infeasible");
+  assert.equal(result.agreement, null);
+  assert.equal(result.eligibleCombinations, 0);
+  assert.deepEqual(result.nearMisses, []);
+  assert.deepEqual(result.rejected, { budget: 1, floors: 2, anyConstraint: 3 });
+  const brief = formatDecisionBrief(input, result);
+  assert.match(brief, /No permitted combination meets both/u);
+  assert.match(brief, /Maximum total change cost: 2/u);
+  assert.match(brief, /Minority: average support must be at least 60%/u);
+  assert.doesNotMatch(brief, /short by -/u);
+});
+
+test("floor and budget boundaries are inclusive, zero budgets are real constraints", () => {
+  const input = constrainedProposal();
+  input.groups[1].minSupport = 75;
+  input.maxChangeCost = 3;
+  assert.equal(findSmallestAgreement(input).status, "found");
+  input.maxChangeCost = 0;
+  assert.equal(findSmallestAgreement(input).status, "infeasible");
+  input.clauses[0].options[2].changeCost = 0;
+  assert.equal(findSmallestAgreement(input).agreement.changeCost, 0);
+  input.groups[1].minSupport = 0;
+  assert.equal(findSmallestAgreement(input).status, "already_passing");
+});
+
+test("floors apply to a group's average across clauses, not each individual option", () => {
+  const input = constrainedProposal();
+  input.groups[1].minSupport = 60;
+  input.clauses.push({ id: "second", title: "Second", lockedOptionId: "high", options: [
+    option("original", true, { majority: 0, minority: 0 }),
+    option("high", false, { majority: 80, minority: 90 }, 1),
+    option("other", false, { majority: 30, minority: 0 }, 2),
+  ] });
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "found");
+  assert.deepEqual(result.agreement.options.map(({ id }) => id), ["cheap", "high"]);
+  assert.equal(result.agreement.constraints.floors[0].actual, 60);
+});
+
+test("locking an alternative rejects a passing original and includes its full cost", () => {
+  const input = constrainedProposal();
+  input.clauses[0].lockedOptionId = "balanced";
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "found");
+  assert.equal(result.possibleCombinations, 1);
+  assert.equal(result.agreement.changeCost, 3);
+  assert.equal(result.agreement.constraints.locks[0].met, true);
+  assert.equal(result.baseline.constraints.locks[0].met, false);
+  input.maxChangeCost = 2;
+  assert.equal(findSmallestAgreement(input).status, "infeasible");
+});
+
+test("locks reduce the actual search space without raising the hard cap", () => {
+  const input = constrainedProposal();
+  input.clauses = Array.from({ length: 12 }, (_, i) => ({ ...structuredClone(input.clauses[0]), id: `c${i}`, lockedOptionId: "balanced" }));
+  assert.equal(findSmallestAgreement(input).possibleCombinations, 1);
+  assert.equal(findSmallestAgreement(input).agreement.changedClauseCount, 12);
+  for (const clause of input.clauses) delete clause.lockedOptionId;
+  assert.equal(findSmallestAgreement(input).status, "too_large");
+  input.maxChangeCost = 0;
+  assert.equal(findSmallestAgreement(input).status, "too_large");
+});
+
+test("near misses honor all constraints and rejection counts disclose overlap", () => {
+  const input = constrainedProposal();
+  input.threshold = 100;
+  input.groups[1].minSupport = 20;
+  input.maxChangeCost = 0;
+  const result = findSmallestAgreement(input);
+  assert.deepEqual(result.rejected, { budget: 2, floors: 1, anyConstraint: 3 });
+  input.maxChangeCost = 2;
+  input.groups[1].minSupport = 60;
+  const overlapping = findSmallestAgreement(input);
+  assert.equal(overlapping.rejected.anyConstraint, 3);
+  input.maxChangeCost = 0;
+  const overlap = findSmallestAgreement(input);
+  assert.equal(overlap.rejected.budget + overlap.rejected.floors, 4);
+  assert.equal(overlap.rejected.anyConstraint, 3);
+  input.maxChangeCost = 3;
+  const misses = findSmallestAgreement(input);
+  assert.deepEqual(misses.nearMisses.map((miss) => miss.options[0].id), ["balanced"]);
+  assert.ok(misses.nearMisses.every((miss) => miss.constraints.met && miss.approval < input.threshold));
+});
+
+test("invalid constraint types, references, and limits fail closed", () => {
+  for (const value of [-1, 101, NaN, Infinity, null, "60", false, {}]) {
+    const input = constrainedProposal();
+    input.groups[1].minSupport = value;
+    assert.equal(findSmallestAgreement(input).status, "invalid", `floor ${String(value)}`);
+    assert.throws(() => canonicalProposal(input));
+  }
+  for (const value of [-1, 20_000_000_001, NaN, Infinity, null, "0", false, {}]) {
+    const input = constrainedProposal();
+    input.maxChangeCost = value;
+    assert.equal(findSmallestAgreement(input).status, "invalid", `budget ${String(value)}`);
+  }
+  for (const value of [null, "missing", "", 0, {}, true]) {
+    const input = constrainedProposal();
+    input.clauses[0].lockedOptionId = value;
+    assert.equal(findSmallestAgreement(input).status, "invalid", `lock ${String(value)}`);
+  }
+});
+
+test("canonical import and JSON round trips preserve constraints without adding them to legacy drafts", () => {
+  const legacy = constrainedProposal();
+  assert.deepEqual(canonicalProposal(legacy), legacy);
+  const input = constrainedProposal();
+  input.maxChangeCost = 0;
+  input.groups[1].minSupport = 0;
+  input.clauses[0].lockedOptionId = "original";
+  const clean = canonicalProposal(JSON.parse(JSON.stringify(input)));
+  assert.deepEqual(clean, input);
+  assert.deepEqual(findSmallestAgreement(clean), findSmallestAgreement(input));
+});
+
+test("constraint brief escapes names and reports actual checked count for early baseline return", () => {
+  const input = constrainedProposal();
+  input.groups[1].name = "<img src=x> | [Group](https://invalid.test)";
+  input.groups[1].minSupport = 0;
+  input.clauses[0].lockedOptionId = "original";
+  const result = findSmallestAgreement(input);
+  const brief = formatDecisionBrief(input, result);
+  assert.match(brief, /Search combinations checked: 1/u);
+  assert.match(brief, /Lock Access to "original"/u);
+  assert.doesNotMatch(brief, /<img|\[Group\]\(/u);
+  assert.match(brief, /&lt;img src=x&gt;/u);
+  assert.doesNotMatch(brief, /[\u2013\u2014]/u);
+  assert.equal(brief, formatDecisionBrief(input, result));
+});
+
+test("constrained search matches an independent Cartesian-product oracle across 128 synthetic cases", () => {
+  let seed = 47319;
+  const next = (limit) => { seed = (Math.imul(seed, 1664525) + 1013904223) >>> 0; return seed % limit; };
+  const rank = (a, b) => a.cost - b.cost || a.changed - b.changed || b.approval - a.approval || (a.ids.join("|") < b.ids.join("|") ? -1 : a.ids.join("|") > b.ids.join("|") ? 1 : 0);
+  for (let sample = 0; sample < 128; sample += 1) {
+    const input = proposal({ threshold: next(101), groups: [
+      { id: "a", name: "A", weight: 1 + next(5), ...(sample % 2 ? { minSupport: next(101) } : {}) },
+      { id: "b", name: "B", weight: 1 + next(5), ...(sample % 3 ? { minSupport: next(101) } : {}) },
+    ], clauses: Array.from({ length: 3 }, (_, ci) => ({
+      id: `c${ci}`, title: `Clause ${ci}`, ...(sample % 4 === ci ? { lockedOptionId: `o${next(3)}` } : {}),
+      options: Array.from({ length: 3 }, (_, oi) => option(`o${oi}`, oi === 0, { a: next(101), b: next(101) }, oi === 0 ? 0 : next(8))),
+    })) });
+    if (sample % 3) input.maxChangeCost = next(15);
+    let combinations = [[]];
+    for (const clause of input.clauses) combinations = combinations.flatMap((selected) => clause.options.filter((o) => clause.lockedOptionId === undefined || clause.lockedOptionId === o.id).map((o) => [...selected, o]));
+    const summarized = combinations.map((selected) => {
+      const averages = input.groups.map((g) => selected.reduce((s, o) => s + o.support[g.id], 0) / selected.length);
+      const approval = averages.reduce((s, score, i) => s + score * input.groups[i].weight, 0) / input.groups.reduce((s, g) => s + g.weight, 0);
+      const cost = selected.reduce((s, o) => s + o.changeCost, 0);
+      return { approval, cost, changed: selected.filter((o) => !o.original).length, ids: selected.map((o) => o.id), eligible: averages.every((score, i) => input.groups[i].minSupport === undefined || score + 1e-9 >= input.groups[i].minSupport) && (input.maxChangeCost === undefined || cost <= input.maxChangeCost + 1e-9) };
+    });
+    const feasible = summarized.filter((s) => s.eligible && s.approval + 1e-9 >= input.threshold).sort(rank);
+    const actual = findSmallestAgreement(input);
+    assert.equal(actual.possibleCombinations, combinations.length, `sample ${sample}`);
+    assert.deepEqual(actual.agreement?.options.map((o) => o.id) ?? null, feasible[0]?.ids ?? null, `sample ${sample}`);
+    assert.equal(actual.status, feasible.length ? feasible[0].changed === 0 ? "already_passing" : "found" : "infeasible");
+    if (actual.status !== "already_passing") {
+      assert.equal(actual.eligibleCombinations, summarized.filter((s) => s.eligible).length);
+      assert.equal(actual.rejected.anyConstraint, summarized.filter((s) => !s.eligible).length);
+      const expectedMisses = summarized.filter((s) => s.eligible && s.approval + 1e-9 < input.threshold).sort((a, b) => b.approval - a.approval || rank(a, b)).slice(0, 5);
+      assert.deepEqual(actual.nearMisses.map((s) => s.options.map((o) => o.id)), expectedMisses.map((s) => s.ids));
+    }
+  }
 });

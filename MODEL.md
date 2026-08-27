@@ -32,13 +32,27 @@ overall approval =
   * 100
 ```
 
-An agreement passes when overall approval is at least the threshold. The displayed group approval is the unweighted average of that group's selected option scores. The overall result then weights those group averages by the supplied group weights.
+An agreement passes when overall approval is at least the threshold and every configured constraint is met. The displayed group approval is the unweighted average of that group's selected option scores. The overall result then weights those group averages by the supplied group weights.
+
+## Optional constraints
+
+| JSON field | Accepted values | Meaning |
+| --- | --- | --- |
+| `groups[].minSupport` | Finite number from 0 to 100 | That group's average across selected clause options must meet this minimum, regardless of weight. |
+| `maxChangeCost` | Finite number from 0 to 20,000,000,000 | Sum of selected alternatives' change costs cannot exceed this budget. |
+| `clauses[].lockedOptionId` | An option ID belonging to that clause | The search must select this option. Other choices stay in the draft but are excluded from search. |
+
+Omit an optional field to disable it. `null`, numeric strings, unknown option references, and out-of-range values are invalid. In the GUI, a blank budget or floor omits the field; zero remains a real constraint. Locks may select originals or alternatives. A locked alternative still contributes its full cost and counts as a changed clause. Removing a locked option requires unlocking it first.
+
+All constraints apply together. No priority rule silently relaxes a budget, floor, or lock to make a proposal pass. A group floor applies to an average, not to every individual clause and not to semantic consent. JSON canonicalization preserves understood constraints and drops unrelated fields. Unconstrained v1 drafts remain valid and retain their original field shape.
+
+Calculations use JavaScript floating-point numbers. Comparisons use an absolute tolerance of `1e-9` for approval, support floors, costs, and numeric tie breakers. Display rounding never decides feasibility.
 
 ## Search and ordering
 
-The search evaluates the Cartesian product of clause options: exactly one selected option for each clause. It always starts by evaluating the status quo, meaning every original option.
+The search evaluates the Cartesian product of permitted clause options: exactly one selected option for each clause. A locked clause contributes one choice. It starts by evaluating the status quo, meaning every original option, even if a lock requires a different option.
 
-If status quo already passes, it is returned with cost 0. Otherwise, passing combinations are ordered by:
+If status quo meets the threshold and every constraint, it is returned with cost 0 after one baseline check. This is optimal because costs are non-negative and no alternative can use fewer than zero changes. Otherwise, all permitted combinations are evaluated and passing combinations are ordered by:
 
 1. Lowest total change cost.
 2. Fewest changed clauses.
@@ -47,18 +61,20 @@ If status quo already passes, it is returned with cost 0. Otherwise, passing com
 
 This final option-ID rule makes otherwise equal choices reproducible. It does not represent a substantive preference.
 
-Non-passing combinations are ordered as near misses by smallest approval gap, then by the same ordering above. At most five are returned.
+Constraint-compliant combinations below the approval threshold are ordered as near misses by smallest approval gap, then by the same ordering above. At most five are returned. Over-budget and below-floor combinations are excluded rather than presented as adoptable alternatives.
+
+For an enumerated result, `eligibleCombinations` counts combinations meeting every constraint, whether or not they meet the approval threshold. `rejected.anyConstraint` counts rejected combinations once each; `rejected.budget` and `rejected.floors` can overlap. A floor rejection means one or more groups miss their floor. Locks remove options before enumeration, so excluded options are not counted as rejected candidates.
 
 ## Bound and outcomes
 
-The default maximum is 50,000 combinations. The count is calculated before enumeration. If it exceeds that maximum, the result is `too_large`; no partial search, sampling, or recommendation occurs.
+The default maximum is 50,000 lock-permitted combinations. The count is calculated before enumeration or the baseline shortcut. If it exceeds that maximum, the result is `too_large`; no partial search, sampling, or recommendation occurs. Budgets and floors do not reduce the counted search space. `possibleCombinations` is the permitted search-space size (or a cap-plus-one sentinel when too large). `checkedCombinations` is 1 for an already-passing baseline and the full space for an enumerated result; it does not count the separately reported baseline again.
 
 Other explicit outcomes are:
 
 - `invalid`: structural input validation failed.
-- `already_passing`: the original proposal passes.
-- `found`: at least one changed combination passes.
-- `infeasible`: every combination was evaluated and none passes.
+- `already_passing`: the original proposal meets the threshold and every constraint.
+- `found`: at least one changed combination meets the threshold and every constraint.
+- `infeasible`: every permitted combination was evaluated and none meets both the threshold and every constraint.
 - `too_large`: the full search exceeds the configured maximum.
 
 The pure model has no network access, no semantic inference, and no hidden randomness.

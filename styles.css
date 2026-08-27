@@ -54,6 +54,9 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .group-row { display: grid; grid-template-columns: 1fr 4.3rem auto; gap: .35rem; align-items: center; margin-top: .5rem; }
 .group-row label { font-size: .75rem; color: var(--ink-soft); }
 .group-row input { min-width: 0; }
+.group-floor { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 6rem; gap: .5rem; align-items: center; padding-bottom: .65rem; border-bottom: 1px solid var(--line); }
+.clause-lock { display: grid; gap: .4rem; margin: .75rem 0; font-size: .82rem; }
+.constraint-card { margin-bottom: 1rem; }
 
 .workbench { padding: clamp(1.4rem, 4vw, 3.7rem); min-width: 0; }
 .proposal-line { display: flex; align-items: end; gap: .8rem 1.5rem; flex-wrap: wrap; padding-bottom: 1.3rem; border-bottom: 2px solid var(--ink); }

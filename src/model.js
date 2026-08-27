@@ -41,6 +41,9 @@ export function validateProposal(proposal) {
   if (!isFiniteNumber(proposal.threshold) || proposal.threshold < 0 || proposal.threshold > 100) {
     errors.push("threshold must be a number from 0 to 100.");
   }
+  if (proposal.maxChangeCost !== undefined && (!isFiniteNumber(proposal.maxChangeCost) || proposal.maxChangeCost < 0 || proposal.maxChangeCost > MAX_CHANGE_COST * MAX_CLAUSES)) {
+    errors.push(`maxChangeCost must be from 0 through ${MAX_CHANGE_COST * MAX_CLAUSES}, or omitted.`);
+  }
   if (!Array.isArray(proposal.groups) || proposal.groups.length < 1 || proposal.groups.length > MAX_GROUPS) {
     errors.push(`Between 1 and ${MAX_GROUPS} participant groups are required.`);
   } else {
@@ -51,6 +54,9 @@ export function validateProposal(proposal) {
       }
       if (!isFiniteNumber(group?.weight) || group.weight <= 0 || group.weight > MAX_WEIGHT) {
         errors.push(`groups[${index}].weight must be greater than 0 and no more than ${MAX_WEIGHT}.`);
+      }
+      if (group?.minSupport !== undefined && (!isFiniteNumber(group.minSupport) || group.minSupport < 0 || group.minSupport > 100)) {
+        errors.push(`groups[${index}].minSupport must be from 0 to 100, or omitted.`);
       }
     });
   }
@@ -76,6 +82,9 @@ export function validateProposal(proposal) {
         if (!isPlainObject(option) || typeof option.label !== "string" || !option.label.trim() || option.label.trim().length > 240) {
           errors.push(`${path}.label must be a non-empty string no longer than 240 characters.`);
         }
+        if (option?.original !== undefined && typeof option.original !== "boolean") {
+          errors.push(`${path}.original must be a boolean, or omitted for an alternative.`);
+        }
         if (option?.original === true) originals += 1;
         if (!isFiniteNumber(option?.changeCost) || option.changeCost < 0 || option.changeCost > MAX_CHANGE_COST) {
           errors.push(`${path}.changeCost must be from 0 through ${MAX_CHANGE_COST}.`);
@@ -94,6 +103,9 @@ export function validateProposal(proposal) {
       if (originals !== 1) errors.push(`clauses[${clauseIndex}] must have exactly one original option.`);
       const original = clause.options.find((option) => option?.original === true);
       if (original && original.changeCost !== 0) errors.push(`clauses[${clauseIndex}] original option must have zero change cost.`);
+      if (clause.lockedOptionId !== undefined && (typeof clause.lockedOptionId !== "string" || !clause.options.some((option) => option?.id === clause.lockedOptionId))) {
+        errors.push(`clauses[${clauseIndex}].lockedOptionId must identify an option in that clause, or be omitted.`);
+      }
     });
   }
   return { valid: errors.length === 0, errors };
@@ -107,14 +119,16 @@ export function canonicalProposal(proposal) {
   return {
     title: proposal.title,
     threshold: proposal.threshold,
-    groups: proposal.groups.map(({ id, name, weight }) => ({ id, name, weight })),
-    clauses: proposal.clauses.map(({ id, title, options }) => ({
+    ...(proposal.maxChangeCost !== undefined ? { maxChangeCost: proposal.maxChangeCost } : {}),
+    groups: proposal.groups.map(({ id, name, weight, minSupport }) => ({ id, name, weight, ...(minSupport !== undefined ? { minSupport } : {}) })),
+    clauses: proposal.clauses.map(({ id, title, options, lockedOptionId }) => ({
       id,
       title,
+      ...(lockedOptionId !== undefined ? { lockedOptionId } : {}),
       options: options.map(({ id: optionId, label, original, changeCost, support }) => ({
         id: optionId,
         label,
-        original,
+        original: original === true,
         changeCost,
         support: Object.fromEntries(groupIds.map((groupId) => [groupId, support[groupId]])),
       })),
@@ -161,12 +175,25 @@ export function selectionSummary(proposal, options, baselineOptions = getOrigina
     const after = options.reduce((sum, option) => sum + option.support[group.id], 0) / options.length;
     return { id: group.id, name: group.name, weight: group.weight, before, after, delta: after - before };
   });
+  const byGroup = approvalByGroup(proposal.groups, options);
+  const changeCost = changes.reduce((sum, change) => sum + change.changeCost, 0);
+  const floors = proposal.groups.filter((group) => group.minSupport !== undefined).map((group) => {
+    const actual = byGroup.find((row) => row.id === group.id).approval;
+    return { id: group.id, name: group.name, minimum: group.minSupport, actual, met: actual + EPSILON >= group.minSupport };
+  });
+  const locks = proposal.clauses.flatMap((clause, index) => clause.lockedOptionId === undefined ? [] : [{
+    clauseId: clause.id, clauseTitle: clause.title, optionId: clause.lockedOptionId,
+    label: clause.options.find((option) => option.id === clause.lockedOptionId).label,
+    met: options[index].id === clause.lockedOptionId,
+  }]);
+  const budget = proposal.maxChangeCost === undefined ? null : { maximum: proposal.maxChangeCost, actual: changeCost, met: changeCost <= proposal.maxChangeCost + EPSILON };
   return {
     options,
     approval: approvalForOptions(proposal.groups, options),
-    byGroup: approvalByGroup(proposal.groups, options),
+    byGroup,
     changes,
-    changeCost: changes.reduce((sum, change) => sum + change.changeCost, 0),
+    changeCost,
+    constraints: { floors, locks, budget, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) },
     changedClauseCount: changes.length,
     groupDeltas,
     supportersGained: groupDeltas.filter((group) => group.delta > EPSILON),
@@ -204,7 +231,7 @@ export function compareNearMisses(threshold, a, b) {
 export function combinationCount(clauses, cap = Number.MAX_SAFE_INTEGER) {
   let count = 1;
   for (const clause of clauses) {
-    const choices = clause.options.length;
+    const choices = clause.lockedOptionId === undefined ? clause.options.length : 1;
     if (choices === 0 || count > Math.floor(cap / choices)) return cap + 1;
     count *= choices;
   }
@@ -230,16 +257,25 @@ export function findSmallestAgreement(proposal, { maxCombinations = MAX_COMBINAT
   }
 
   const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
-  if (baseline.approval + EPSILON >= proposal.threshold) {
-    return { status: "already_passing", possibleCombinations, baseline, agreement: baseline, nearMisses: [] };
+  if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met) {
+    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
   }
 
   let best = null;
   const nearMisses = [];
+  const rejected = { budget: 0, floors: 0, anyConstraint: 0 };
+  let eligibleCombinations = 0;
   const selected = [];
   const visit = (clauseIndex) => {
     if (clauseIndex === proposal.clauses.length) {
       const summary = selectionSummary(proposal, [...selected]);
+      if (!summary.constraints.met) {
+        rejected.anyConstraint += 1;
+        if (summary.constraints.budget && !summary.constraints.budget.met) rejected.budget += 1;
+        if (summary.constraints.floors.some((floor) => !floor.met)) rejected.floors += 1;
+        return;
+      }
+      eligibleCombinations += 1;
       if (summary.approval + EPSILON >= proposal.threshold) {
         if (!best || compareAgreements(summary, best) < 0) best = summary;
       } else if (nearMissLimit > 0) {
@@ -250,6 +286,7 @@ export function findSmallestAgreement(proposal, { maxCombinations = MAX_COMBINAT
       return;
     }
     for (const option of proposal.clauses[clauseIndex].options) {
+      if (proposal.clauses[clauseIndex].lockedOptionId !== undefined && option.id !== proposal.clauses[clauseIndex].lockedOptionId) continue;
       selected.push(option);
       visit(clauseIndex + 1);
       selected.pop();
@@ -259,6 +296,9 @@ export function findSmallestAgreement(proposal, { maxCombinations = MAX_COMBINAT
   const result = {
     status: best ? "found" : "infeasible",
     possibleCombinations,
+    checkedCombinations: possibleCombinations,
+    eligibleCombinations,
+    rejected,
     baseline,
     agreement: best,
     nearMisses,
@@ -307,6 +347,15 @@ export function formatDecisionBrief(proposal, result) {
     return `${lines.join("\n")}Scores, weights, and costs remain human inputs.\n`;
   }
 
+  lines.push("## Search constraints", "", `Maximum total change cost: ${proposal.maxChangeCost === undefined ? "unlimited" : proposal.maxChangeCost}`, "");
+  const protectedGroups = proposal.groups.filter((group) => group.minSupport !== undefined);
+  if (!protectedGroups.length) lines.push("No group support floors set.");
+  for (const group of protectedGroups) lines.push(`- ${briefText(group.name)}: average support must be at least ${group.minSupport}%.`);
+  const lockedClauses = proposal.clauses.filter((clause) => clause.lockedOptionId !== undefined);
+  if (!lockedClauses.length) lines.push("No clause options locked.");
+  for (const clause of lockedClauses) lines.push(`- Lock ${briefText(clause.title)} to ${briefOption(clause.options.find((option) => option.id === clause.lockedOptionId).label)}.`);
+  lines.push("");
+
   if (result.status === "too_large") {
     lines.push("## Result", "", `The exhaustive search stopped above ${Number(result.maxCombinations).toLocaleString("en-US")} combinations.`, "", "Reduce alternatives or clauses before relying on a recommendation.", "");
     return `${lines.join("\n")}Scores, weights, and costs remain human inputs.\n`;
@@ -315,10 +364,12 @@ export function formatDecisionBrief(proposal, result) {
   const current = result.baseline;
   const agreement = result.agreement;
   lines.push("## Result", "");
-  if (result.status === "already_passing") lines.push("The original proposal already crosses the threshold.", "");
-  else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "");
-  else lines.push("No tested combination crosses the threshold.", "");
-  lines.push(`Search combinations checked: ${Number(result.possibleCombinations).toLocaleString("en-US")}`, `Current approval: ${formatPercent(current.approval)}`);
+  if (result.status === "already_passing") lines.push("The original proposal crosses the threshold and meets every constraint. No change is needed.", "");
+  else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "Every configured constraint is met.", "");
+  else lines.push("No permitted combination meets both the threshold and every configured constraint.", "");
+  lines.push(`Search combinations checked: ${Number(result.checkedCombinations).toLocaleString("en-US")}`, `Lock-permitted search space: ${Number(result.possibleCombinations).toLocaleString("en-US")}`);
+  if (result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
+  lines.push(`Current approval: ${formatPercent(current.approval)}`, `Original proposal meets constraints: ${current.constraints.met ? "yes" : "no"}`);
 
   if (agreement) {
     lines.push(`Recommended approval: ${formatPercent(agreement.approval)}`, `Total change cost: ${agreement.changeCost.toFixed(1)}`, `Changed clauses: ${agreement.changedClauseCount}`, "");
@@ -344,8 +395,14 @@ export function formatDecisionBrief(proposal, result) {
   }
   lines.push("");
 
+  if (agreement && protectedGroups.length) {
+    lines.push("## Protected-group checks", "");
+    for (const floor of agreement.constraints.floors) lines.push(`- ${briefText(floor.name)}: ${formatPercent(floor.actual)} against minimum ${floor.minimum}%, ${floor.met ? "met" : "not met"}.`);
+    lines.push("");
+  }
+
   if (result.nearMisses?.length) {
-    lines.push("## Near misses", "");
+    lines.push("## Near misses", "", "These meet every configured constraint but fall below the overall threshold.", "");
     for (const miss of result.nearMisses) {
       const labels = miss.changes.length ? miss.changes.map((change) => `${briefText(change.clauseTitle)}: ${briefText(change.to)}`).join("; ") : "Keep every original option";
       lines.push(`- ${formatPercent(miss.approval)}, short by ${(proposal.threshold - miss.approval).toFixed(1)} points, cost ${miss.changeCost.toFixed(1)}: ${labels}`);

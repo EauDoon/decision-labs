@@ -1,6 +1,6 @@
 # The Smallest Agreement
 
-The Smallest Agreement is a local, static workshop for a group that wants to test structured clause changes against a chosen approval threshold. It searches every permitted combination of one option per clause and recommends the lowest-cost combination that passes.
+The Smallest Agreement is a local, static workshop for a group that wants to test structured clause changes against a chosen approval threshold. It finds the lowest-cost combination that also respects optional group support floors, a change-cost budget, and locked clause choices.
 
 It is deliberately a decision aid, not a decision maker. People define the groups, weights, support scores, clauses, alternatives, and change costs. The app does not interpret policy text or infer what an option means.
 
@@ -55,12 +55,13 @@ The project is also a static ESM app, so any static file server can host it.
 1. Choose a synthetic preset or make a new proposal from the controls.
 2. Set the approval threshold and participant group weights.
 3. Give every option a support score from 0 to 100 for each group. Set each alternative's explicit change cost. Original options always have cost 0.
-4. Review the current approval, recommended combination, threshold margin, group shifts, coalition table, and near misses.
-5. Export a Markdown brief for a meeting-ready handoff, or export JSON for a complete portable record. When running through the local server, Share link can place the draft in the URL hash.
+4. Optionally set a minimum average support for any group, a maximum total change cost, and an option lock on a clause. Blank budget and floor inputs mean no limit. Zero is an active limit. Unlock an option before removing it.
+5. Review the current approval, recommendation, constraint checks, group shifts, coalition table, and near misses. If no combination satisfies every requirement, the app reports infeasibility and shows budget and floor rejection counts.
+6. Export a Markdown brief for a meeting-ready handoff, or export JSON for a complete portable record. Both carry the constraints. When running through the local server, Share link can place the draft in the URL hash.
 
 Each clause keeps one original option and at least two alternatives, so the workshop always compares a structured choice set.
 
-The three included synthetic presets are Neighbourhood Plan, Open Source Policy, and Association Budget.
+The synthetic presets are Neighbourhood Plan, Open Source Policy, Association Budget, and Protected Access. Protected Access demonstrates why majority-weighted approval alone can miss a group's minimum support. It starts with a budget of 3, a 60% floor for new participants, and a locked safety-training clause. The recommendation costs 3 and gives that group 70% average support. Lower the budget to 2 to see an infeasible result.
 
 ## Local data and sharing
 
@@ -70,13 +71,25 @@ When the app is served locally, Share link serializes the complete proposal in t
 
 ## Search boundary
 
-The app exhaustively checks up to 50,000 combinations. It does not sample, guess, or use hidden randomness. If the number of combinations is higher, it returns an explicit `too_large` result and does not recommend an agreement. Reduce alternatives or clauses before relying on the result.
+The app exhaustively checks up to 50,000 lock-permitted combinations. Locks reduce the choice set; budgets and support floors do not bypass this limit. It does not sample, guess, or use hidden randomness. If the number of combinations is higher, it returns an explicit `too_large` result and does not recommend an agreement. Reduce alternatives or clauses, or lock choices, before relying on the result. If the original proposal already meets every requirement, one baseline check proves that no change is needed.
+
+Near misses meet every configured constraint but miss the overall approval threshold. An over-budget or below-floor result is never offered as a near miss. Rejection counts can overlap when a combination fails both the budget and a floor.
 
 See [MODEL.md](MODEL.md) for the formula, deterministic ordering, assumptions, and limits.
 
 ## What this cannot establish
 
 A score can be incomplete, a weight can be contested, and a low numerical change cost can mask a large semantic shift. A passing result cannot confer legitimacy, consent, representation, fairness, legal validity, or authority to adopt the proposal. Keep deliberation, governing rules, and accountable human judgment outside the calculation.
+
+Support floors protect only the numerical average you enter. They do not establish consent or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority.
+
+## v1.2.0, 27-08-2026
+
+- Added constrained agreement search with support floors, a total-cost budget, and option locks.
+- Added a Protected Access preset, constraint explanations, and budget/floor rejection counts.
+- Preserved constraints in JSON, browser autosave, share links, and Markdown briefs. Existing unconstrained drafts remain valid without migration.
+- Corrected search reporting to distinguish the permitted search space from checks actually performed when the original already passes.
+- Added independent exhaustive-oracle coverage across 128 synthetic cases, invalid-input checks, constraint boundary tests, and standalone control checks.
 
 ## Project files
 
