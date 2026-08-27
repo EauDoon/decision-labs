@@ -21,6 +21,8 @@ Each merchant offer supplies:
 - capacity in units; and
 - shipping cost per included buyer.
 
+An offer can also supply `tiers`, an optional array of up to eight `{ minimumUnits, unitPrice }` objects. Thresholds must be whole numbers, strictly increase above the previous minimum, and fit capacity. Prices must be nonnegative and strictly decrease below the previous price. Missing or empty tiers retain the original flat-price behavior. Tier objects survive JSON, autosave, and share-link round trips.
+
 All money values use the scenario's three-letter currency code. The app does not perform currency conversion.
 
 ## Compatibility
@@ -36,11 +38,23 @@ and deliveryDays(o) <= latestDeliveryDays(b)
 
 Category and variant comparisons are case-insensitive after input validation. Inputs are not otherwise interpreted or classified.
 
+For a tiered offer, `unitPrice` means the price of the band being evaluated. The ceiling covers items only. Shipping is included in landed totals and may exceed that ceiling; the buyer room shows the excess without excluding a buyer who meets the original item-price rule.
+
 ## Capacity allocation
 
 The allocator performs an exact bounded whole-order search. It chooses a set of complete buyer quantities with the greatest total units that does not exceed merchant capacity. It never splits a buyer's quantity. Buyer IDs provide a stable deterministic order when more than one set reaches the same unit total.
 
 To keep this exact search responsive, a scenario accepts at most 40 buyers and 40 offers, and each buyer quantity, merchant minimum, and merchant capacity is capped at 5,000 units.
+
+## Quantity price bands
+
+Each price applies to all included units, not just the units above its threshold. A band's inclusive upper bound is the next tier's minimum minus one, or merchant capacity for the final band. Each band gets an independent exact whole-order search using buyers compatible at that band's price and its upper bound. The band is feasible only if its allocated units reach its own minimum. The feasible band with the most units is selected.
+
+This also handles buyers who cannot afford the base price but can jointly qualify for a lower price. Eligibility does not depend on a preliminary base-price allocation. A group with two six-unit orders cannot reach a ten-unit threshold when capacity is ten, even though interested demand totals twelve.
+
+The price-band table distinguishes all compatible demand from whole units that actually fit that band. Its shortfall is a quantity gap, not a promise that one extra buyer will solve it. The added buyer must also meet the constraints and fit as a whole order. Lower bands can be feasible without being selected. No synthetic transaction occurs when every band is infeasible.
+
+The allocator maximizes units for one offer, not fairness or multi-merchant allocation. Equal-unit cohorts preserve the existing stable buyer-ID rule rather than optimizing shipping or headroom. Tier bands are disjoint, so different feasible bands cannot tie on allocated quantity.
 
 ## Qualification and totals
 
@@ -59,7 +73,15 @@ group headroom = max(0, reservation value - total cost)
 landed unit cost = total cost / fulfilled units
 
 fulfillment rate = fulfilled units / all requested units
+
+base-price discount = fulfilled units * (base price - selected tier price)
+
+buyer landed total = buyer quantity * selected tier price + shipping per buyer
+
+buyer ceiling headroom = buyer quantity * max item price - buyer landed total
 ```
+
+Buyer ceiling headroom is signed, so a shipping overrun remains visible. Group headroom retains its original zero floor. The base-price discount compares the same allocated units at two declared prices with unchanged shipping. It is separate from group headroom and is not a comparison with a verified market offer. Arithmetic uses JavaScript numbers and display rounding, not an accounting ledger.
 
 An offer that misses its minimum executes no synthetic transaction, so fulfilled units, cost, headroom, and included buyer IDs are reported as zero or empty. Its compatible unit count remains visible to show the gap.
 

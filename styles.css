@@ -26,9 +26,9 @@ body {
   line-height: 1.5;
 }
 
-button, input { font: inherit; }
+button, input, select { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible, a:focus-visible {
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
 }
@@ -183,6 +183,14 @@ canvas { display: block; width: 100%; height: 280px; }
 .inspector-summary { margin: 0; color: var(--muted); }
 .inspector-picker { min-width: min(100%, 270px); color: var(--muted); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .inspector-picker select { width: 100%; margin-top: 0.35rem; color: var(--text); letter-spacing: 0; text-transform: none; }
+.tier-section { margin: 1.5rem 0; }
+.tier-editors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 1rem; }
+.tier-editor { min-width: 0; border: 1px solid var(--line); padding: 1rem; }
+.tier-editor legend { font-weight: 800; padding: 0 0.4rem; }
+.tier-input-row { display: flex; align-items: end; flex-wrap: wrap; gap: 0.6rem; margin-bottom: 0.8rem; }
+.tier-input-row label { flex: 1; min-width: 110px; }
+caption { padding: 0.65rem; text-align: left; color: var(--muted); }
+button:disabled { cursor: not-allowed; opacity: 0.55; }
 
 .demand-groups { display: grid; gap: 0.75rem; }
 .demand-card { padding: 0.9rem; border-left: 5px solid var(--orange); background: #f3eee4; }

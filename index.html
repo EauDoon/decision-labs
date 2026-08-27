@@ -65,6 +65,7 @@ SOFTWARE.
           <button class="preset active" data-preset="neighbourhood" type="button">Coffee run</button>
           <button class="preset" data-preset="studio" type="button">Studio chairs</button>
           <button class="preset" data-preset="pantry" type="button">Pantry staples</button>
+          <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
       <label class="title-field">Room name
@@ -125,7 +126,7 @@ SOFTWARE.
                 <th scope="col">Private label</th>
                 <th scope="col">Category</th>
                 <th scope="col">Qty</th>
-                <th scope="col">Max each</th>
+                <th scope="col">Max item price</th>
                 <th scope="col">Delivery by</th>
                 <th scope="col">Variants</th>
                 <th scope="col"><span class="sr-only">Remove</span></th>
@@ -157,7 +158,7 @@ SOFTWARE.
             <div class="table-shell compact">
               <table>
                 <caption class="sr-only">Ranked offer outcomes</caption>
-                <thead><tr><th scope="col">Offer</th><th scope="col">Status</th><th scope="col">Units</th><th scope="col">Landed</th><th scope="col">Headroom</th><th scope="col">Included locally</th></tr></thead>
+                <thead><tr><th scope="col">Offer</th><th scope="col">Status</th><th scope="col">Units</th><th scope="col">Item price</th><th scope="col">Landed / unit</th><th scope="col">Base-price discount</th><th scope="col">Headroom</th><th scope="col">Included locally</th></tr></thead>
                 <tbody id="result-rows"></tbody>
               </table>
             </div>
@@ -178,11 +179,20 @@ SOFTWARE.
           <div class="table-shell compact">
             <table>
               <caption class="sr-only">Buyer outcomes for the inspected offer</caption>
-              <thead><tr><th scope="col">Private label</th><th scope="col">Quantity</th><th scope="col">Outcome</th><th scope="col">Explanation</th></tr></thead>
+              <thead><tr><th scope="col">Private label</th><th scope="col">Quantity</th><th scope="col">Outcome</th><th scope="col">Explanation</th><th scope="col">Items</th><th scope="col">Shipping</th><th scope="col">Total</th><th scope="col">Landed / unit</th><th scope="col">Against item ceiling</th></tr></thead>
               <tbody id="inspector-rows"></tbody>
             </table>
           </div>
           <p class="canvas-note">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
+          <p class="canvas-note">The price ceiling covers items only, as in earlier scenarios. Shipping can put the landed total above that ceiling. Any excess is flagged above and does not exclude the buyer.</p>
+          <h4>Price-band feasibility</h4>
+          <div class="table-shell compact">
+            <table>
+              <caption>Each tier must qualify at its own allocated quantity, not the total interested demand.</caption>
+              <thead><tr><th scope="col">Band</th><th scope="col">Allocated-unit range</th><th scope="col">Item price</th><th scope="col">Compatible demand</th><th scope="col">Whole units fitting band</th><th scope="col">Result</th></tr></thead>
+              <tbody id="tier-progress-rows"></tbody>
+            </table>
+          </div>
         </article>
       </div>
 
@@ -204,6 +214,19 @@ SOFTWARE.
               </tr>
             </thead>
             <tbody id="offer-rows"></tbody>
+          </table>
+        </div>
+
+        <section class="tier-section" aria-labelledby="tier-title">
+          <h3 id="tier-title">Quantity price tiers</h3>
+          <p>Optional, up to eight tiers per offer. Each minimum must increase and fit capacity. Each price must decrease. A qualifying tier prices all included units at that price. The original price remains the base band.</p>
+          <div id="tier-editors" class="tier-editors"></div>
+        </section>
+        <div class="table-shell">
+          <table>
+            <caption>Aggregate offer outcomes, no buyer labels or individual allocations</caption>
+            <thead><tr><th scope="col">Merchant</th><th scope="col">Status</th><th scope="col">Units</th><th scope="col">Buyers</th><th scope="col">Item price</th><th scope="col">Landed total</th></tr></thead>
+            <tbody id="merchant-result-rows"></tbody>
           </table>
         </div>
 
@@ -232,6 +255,7 @@ SOFTWARE.
             <h2>One transparent matching rule</h2>
             <p>An offer is compatible when its category and variant are accepted, its unit price is within the buyer's ceiling, and delivery is no later than the buyer's limit.</p>
             <p>Whole buyer quantities are selected within merchant capacity. The offer unlocks only if those units meet its minimum. Qualified offers rank by fulfilled units, group headroom, buyers included, landed cost, then offer ID.</p>
+            <p>For quantity discounts, each price is tested inside its own unit range. The next tier's minimum ends the preceding band. Only actually allocated whole orders count toward a tier. The feasible band with the most units wins.</p>
           </article>
           <article>
             <p class="section-number">Limits</p>
@@ -239,7 +263,7 @@ SOFTWARE.
             <ul>
               <li>No real inventory, checkout, payments, identity, or delivery.</li>
               <li>Maximum willingness to pay is not the same as realized consumer welfare.</li>
-              <li>The deterministic capacity rule may not find every globally optimal allocation.</li>
+              <li>Capacity allocation maximizes units for one offer, not fairness or savings across multiple offers.</li>
               <li>Aggregates can still reveal information when a cohort is very small.</li>
               <li>A real service would need merchant verification, buyer consent, dispute handling, and anti-manipulation controls.</li>
             </ul>
@@ -264,7 +288,7 @@ SOFTWARE.
     <tr>
       <td data-label="Private label"><input data-field="label" maxlength="60" aria-label="Buyer private label"></td>
       <td data-label="Category"><input data-field="category" maxlength="60" aria-label="Buyer category"></td>
-      <td data-label="Quantity"><input data-field="quantity" type="number" min="1" max="100000" step="1" aria-label="Buyer quantity"></td>
+      <td data-label="Quantity"><input data-field="quantity" type="number" min="1" max="5000" step="1" aria-label="Buyer quantity"></td>
       <td data-label="Max each"><input data-field="maxUnitPrice" type="number" min="0" max="1000000" step="0.01" aria-label="Buyer maximum unit price"></td>
       <td data-label="Delivery by"><span class="unit-input"><input data-field="latestDeliveryDays" type="number" min="0" max="365" step="1" aria-label="Latest delivery in days"><span>days</span></span></td>
       <td data-label="Variants"><input data-field="allowedVariants" maxlength="300" aria-label="Allowed variants, comma separated"></td>
@@ -278,9 +302,9 @@ SOFTWARE.
       <td data-label="Category"><input data-field="category" maxlength="60" aria-label="Offer category"></td>
       <td data-label="Variant"><input data-field="variant" maxlength="60" aria-label="Offer variant"></td>
       <td data-label="Unit price"><input data-field="unitPrice" type="number" min="0" max="1000000" step="0.01" aria-label="Offer unit price"></td>
-      <td data-label="Minimum"><input data-field="minimumUnits" type="number" min="1" max="1000000" step="1" aria-label="Offer minimum units"></td>
+      <td data-label="Minimum"><input data-field="minimumUnits" type="number" min="1" max="5000" step="1" aria-label="Offer minimum units"></td>
       <td data-label="Delivery"><span class="unit-input"><input data-field="deliveryDays" type="number" min="0" max="365" step="1" aria-label="Offer delivery in days"><span>days</span></span></td>
-      <td data-label="Capacity"><input data-field="capacity" type="number" min="1" max="1000000" step="1" aria-label="Offer capacity"></td>
+      <td data-label="Capacity"><input data-field="capacity" type="number" min="1" max="5000" step="1" aria-label="Offer capacity"></td>
       <td data-label="Ship per buyer"><input data-field="shippingPerBuyer" type="number" min="0" max="1000000" step="0.01" aria-label="Shipping cost per buyer"></td>
       <td><button class="icon-button remove-row" type="button" aria-label="Remove offer">×</button></td>
     </tr>

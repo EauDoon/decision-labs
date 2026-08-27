@@ -15,6 +15,9 @@ const elements = {
   status: document.querySelector("#status"),
   buyerRows: document.querySelector("#buyer-rows"),
   offerRows: document.querySelector("#offer-rows"),
+  tierEditors: document.querySelector("#tier-editors"),
+  tierRows: document.querySelector("#tier-progress-rows"),
+  merchantResults: document.querySelector("#merchant-result-rows"),
   buyerTemplate: document.querySelector("#buyer-row-template"),
   offerTemplate: document.querySelector("#offer-row-template"),
   resultRows: document.querySelector("#result-rows"),
@@ -169,6 +172,7 @@ function renderEditor() {
   elements.currency.value = scenario.currency;
   elements.buyerRows.replaceChildren(...scenario.buyers.map(renderBuyerRow));
   elements.offerRows.replaceChildren(...scenario.offers.map(renderOfferRow));
+  renderTierEditors();
 }
 
 function renderBuyerRow(entry) {
@@ -181,7 +185,7 @@ function renderBuyerRow(entry) {
       const target = scenario.buyers.find((buyer) => buyer.id === row.dataset.id);
       target[field] = field === "allowedVariants"
         ? input.value.split(",").map((value) => value.trim()).filter(Boolean)
-        : numericField(field) ? Number(input.value) : input.value;
+        : input.value;
       refresh();
     });
   });
@@ -202,7 +206,10 @@ function renderOfferRow(entry) {
     input.value = entry[field];
     input.addEventListener("input", () => {
       const target = scenario.offers.find((offer) => offer.id === row.dataset.id);
-      target[field] = numericField(field) ? Number(input.value) : input.value;
+      target[field] = input.value;
+      if (field === "merchant") {
+        elements.tierEditors.querySelectorAll("legend")[scenario.offers.indexOf(target)].textContent = `${target.merchant} (${target.id})`;
+      }
       refresh();
     });
   });
@@ -215,11 +222,65 @@ function renderOfferRow(entry) {
   return row;
 }
 
-function numericField(field) {
-  return new Set([
-    "quantity", "maxUnitPrice", "latestDeliveryDays", "unitPrice", "minimumUnits",
-    "deliveryDays", "capacity", "shippingPerBuyer"
-  ]).has(field);
+function renderTierEditors() {
+  elements.tierEditors.replaceChildren(...scenario.offers.map((entry) => {
+    const card = document.createElement("fieldset");
+    card.className = "tier-editor";
+    const legend = document.createElement("legend");
+    legend.textContent = `${entry.merchant} (${entry.id})`;
+    card.append(legend);
+    for (const [index, tier] of (entry.tiers ?? []).entries()) {
+      const row = document.createElement("div");
+      row.className = "tier-input-row";
+      for (const [field, labelText] of [["minimumUnits", "Minimum units"], ["unitPrice", "Price per unit"]]) {
+        const label = document.createElement("label");
+        label.textContent = `Tier ${index + 1}: ${labelText}`;
+        const input = document.createElement("input");
+        input.type = "number";
+        input.min = field === "minimumUnits" ? "1" : "0";
+        input.max = field === "minimumUnits" ? "5000" : "1000000";
+        input.step = field === "minimumUnits" ? "1" : "0.01";
+        input.value = tier[field];
+        input.addEventListener("input", () => {
+          scenario.offers.find(({ id }) => id === entry.id).tiers[index][field] = input.value;
+          refresh();
+        });
+        label.append(input);
+        row.append(label);
+      }
+      const remove = document.createElement("button");
+      remove.type = "button";
+      remove.textContent = "Remove tier";
+      remove.setAttribute("aria-label", `Remove tier ${index + 1} for ${entry.merchant}`);
+      remove.addEventListener("click", () => {
+        scenario.offers.find(({ id }) => id === entry.id).tiers.splice(index, 1);
+        renderTierEditors();
+        refresh();
+      });
+      row.append(remove);
+      card.append(row);
+    }
+    const add = document.createElement("button");
+    add.type = "button";
+    add.textContent = "Add price tier";
+    add.setAttribute("aria-label", `Add price tier for ${entry.merchant}`);
+    add.disabled = (entry.tiers?.length ?? 0) >= 8;
+    add.addEventListener("click", () => {
+      const target = scenario.offers.find(({ id }) => id === entry.id);
+      const previous = target.tiers?.at(-1) ?? target;
+      if (Number(previous.minimumUnits) >= Number(target.capacity) || Number(previous.unitPrice) <= 0) {
+        return setStatus("Increase capacity or the previous price before adding a lower-price tier.");
+      }
+      target.tiers ??= [];
+      target.tiers.push({ minimumUnits: Number(previous.minimumUnits) + 1, unitPrice: Math.floor(Number(previous.unitPrice) * 50) / 100 });
+      const offerIndex = scenario.offers.indexOf(target);
+      renderTierEditors();
+      refresh();
+      elements.tierEditors.querySelectorAll("fieldset")[offerIndex]?.querySelector(".tier-input-row:last-of-type input")?.focus();
+    });
+    card.append(add);
+    return card;
+  }));
 }
 
 function updateRoot(field, value) {
@@ -239,6 +300,13 @@ function refresh() {
     scheduleSave(market.scenario);
     setStatus("");
   } catch (error) {
+    clearTimeout(saveTimer);
+    elements.winner.textContent = "Check inputs";
+    elements.winnerNote.textContent = "Results are unavailable until the scenario is valid.";
+    for (const element of [elements.units, elements.buyers, elements.fulfilled, elements.delivered, elements.savings]) element.textContent = "Not available";
+    for (const element of [elements.resultRows, elements.inspectorRows, elements.tierRows, elements.demandGroups, elements.merchantResults]) element.replaceChildren();
+    elements.inspectorSummary.textContent = "Correct the input error to inspect allocations.";
+    elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
   }
 }
@@ -263,9 +331,11 @@ function renderResults(market) {
   const rows = market.ranked.map((result) => {
     const row = document.createElement("tr");
     addCell(row, `${result.offer.merchant} / ${result.offer.variant}`);
-    addCell(row, result.qualifies ? "Unlocked" : `${result.unitsShort} short`, result.qualifies ? "status-pass" : "status-short");
+    addCell(row, result.qualifies ? "Unlocked" : result.offer.tiers?.length ? "No feasible tier" : `${result.unitsShort} short`, result.qualifies ? "status-pass" : "status-short");
     addCell(row, String(result.fulfilledUnits));
+    addCell(row, result.effectiveUnitPrice === null ? "Not available" : formatter.format(result.effectiveUnitPrice));
     addCell(row, result.averageLandedUnitCost === null ? "Not available" : formatter.format(result.averageLandedUnitCost));
+    addCell(row, formatter.format(result.basePriceDiscount));
     addCell(row, formatter.format(result.savings));
     addCell(row, result.qualifies
       ? result.selectedBuyerIds.map((id) => labels.get(id) ?? id).join(", ")
@@ -273,6 +343,16 @@ function renderResults(market) {
     return row;
   });
   elements.resultRows.replaceChildren(...rows);
+  elements.merchantResults.replaceChildren(...market.ranked.map((result) => {
+    const row = document.createElement("tr");
+    addCell(row, result.offer.merchant);
+    addCell(row, result.qualifies ? "Unlocked" : "Locked");
+    addCell(row, String(result.fulfilledUnits));
+    addCell(row, String(result.deliveredBuyers));
+    addCell(row, result.effectiveUnitPrice === null ? "Not available" : formatter.format(result.effectiveUnitPrice));
+    addCell(row, formatter.format(result.totalCost));
+    return row;
+  }));
 }
 
 function renderInspector(market) {
@@ -295,9 +375,21 @@ function renderInspector(market) {
     return;
   }
   elements.inspectorSummary.textContent = result.qualifies
-    ? `${result.deliveredBuyers} buyers and ${result.fulfilledUnits} units are included.`
-    : `${result.compatibleUnits} compatible units are available, leaving the offer ${result.unitsShort} units short of its minimum.`;
+    ? `${result.deliveredBuyers} buyers and ${result.fulfilledUnits} units are included at ${money(market.scenario.currency).format(result.effectiveUnitPrice)} per item. ${result.activeTierIndex === 0 ? "Base price" : `Tier ${result.activeTierIndex}`} applies to every included unit.`
+    : "No whole-buyer cohort reaches a valid price band. The table below shows each band's allocation shortfall.";
+  const formatter = money(market.scenario.currency);
+  elements.tierRows.replaceChildren(...result.tierProgress.map((tier) => {
+    const row = document.createElement("tr");
+    addCell(row, tier.index === 0 ? "Base" : `Tier ${tier.index}`);
+    addCell(row, tier.maximumUnits < tier.minimumUnits ? `Minimum ${tier.minimumUnits} exceeds capacity ${tier.maximumUnits}` : `${tier.minimumUnits} to ${tier.maximumUnits}`);
+    addCell(row, formatter.format(tier.unitPrice));
+    addCell(row, String(tier.compatibleUnits));
+    addCell(row, String(tier.allocatedUnits));
+    addCell(row, tier.selected ? "Selected" : tier.qualifies ? "Feasible" : `${tier.unitsShort} short`, tier.selected ? "status-pass" : "");
+    return row;
+  }));
   const buyers = new Map(market.scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const allocations = new Map(result.allocations.map((allocation) => [allocation.buyerId, allocation]));
   const rows = result.buyerOutcomes.map((outcome) => {
     const buyer = buyers.get(outcome.buyerId);
     const row = document.createElement("tr");
@@ -306,6 +398,13 @@ function renderInspector(market) {
     const presentation = outcomePresentation(outcome);
     addCell(row, presentation.status, presentation.className);
     addCell(row, presentation.explanation);
+    const allocation = allocations.get(outcome.buyerId);
+    for (const field of ["itemsCost", "shippingCost", "totalCost", "landedUnitCost"]) {
+      addCell(row, allocation ? formatter.format(allocation[field]) : "Not allocated");
+    }
+    addCell(row, allocation ? allocation.exceedsCeilingAfterShipping
+      ? `${formatter.format(-allocation.headroom)} over item ceiling after shipping`
+      : `${formatter.format(allocation.headroom)} remaining` : "Not allocated", allocation?.exceedsCeilingAfterShipping ? "status-short" : "");
     return row;
   });
   elements.inspectorRows.replaceChildren(...rows);

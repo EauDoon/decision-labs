@@ -1,6 +1,7 @@
 const MAX_BUYERS = 40;
 const MAX_OFFERS = 40;
 const MAX_UNITS = 5000;
+const MAX_TIERS = 8;
 const MAX_SHARE_LENGTH = 60_000;
 
 export class ScenarioError extends Error {
@@ -40,6 +41,21 @@ export const presets = Object.freeze({
       offer("O01", "Form Office", "Desk chair", "Black", 218, 10, 12, 20, 18),
       offer("O02", "Seat Works", "Desk chair", "Grey", 236, 7, 15, 14, 12),
       offer("O03", "Warehouse North", "Desk chair", "Black", 199, 20, 18, 30, 15)
+    ]
+  },
+  tiers: {
+    title: "Coffee price ladder",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Early group", "Coffee beans", 6, 30, 7, ["Medium roast"]),
+      buyer("B02", "Price-sensitive group", "Coffee beans", 5, 24, 7, ["Medium roast"]),
+      buyer("B03", "Small group", "Coffee beans", 4, 24, 7, ["Medium roast"]),
+      buyer("B04", "Large group", "Coffee beans", 10, 20, 7, ["Medium roast"])
+    ],
+    offers: [
+      { ...offer("O01", "Common Roast", "Coffee beans", "Medium roast", 28, 4, 5, 20, 3),
+        tiers: [{ minimumUnits: 10, unitPrice: 24 }, { minimumUnits: 18, unitPrice: 20 }] },
+      offer("O02", "Single Price Supply", "Coffee beans", "Medium roast", 25, 4, 5, 20, 0)
     ]
   },
   pantry: {
@@ -112,7 +128,7 @@ function validateBuyer(entry, index) {
 function validateOffer(entry, index) {
   const prefix = `offers[${index}]`;
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new ScenarioError(`${prefix} must be an object.`);
-  return {
+  const normalized = {
     id: requiredText(entry.id, `${prefix}.id`, 24),
     merchant: requiredText(entry.merchant, `${prefix}.merchant`, 60),
     category: requiredText(entry.category, `${prefix}.category`, 60),
@@ -123,6 +139,25 @@ function validateOffer(entry, index) {
     capacity: integer(entry.capacity, `${prefix}.capacity`, 1, MAX_UNITS),
     shippingPerBuyer: finite(entry.shippingPerBuyer, `${prefix}.shippingPerBuyer`, 0, 1_000_000)
   };
+  if (entry.tiers !== undefined) {
+    if (!Array.isArray(entry.tiers) || entry.tiers.length > MAX_TIERS) {
+      throw new ScenarioError(`${prefix}.tiers must contain at most ${MAX_TIERS} entries.`);
+    }
+    let previousMinimum = normalized.minimumUnits;
+    let previousPrice = normalized.unitPrice;
+    normalized.tiers = entry.tiers.map((tier, tierIndex) => {
+      const path = `${prefix}.tiers[${tierIndex}]`;
+      if (!tier || typeof tier !== "object" || Array.isArray(tier)) throw new ScenarioError(`${path} must be an object.`);
+      const minimumUnits = integer(tier.minimumUnits, `${path}.minimumUnits`, 1, normalized.capacity);
+      const unitPrice = finite(tier.unitPrice, `${path}.unitPrice`, 0, 1_000_000);
+      if (minimumUnits <= previousMinimum) throw new ScenarioError(`${path}.minimumUnits must increase above the previous minimum.`);
+      if (unitPrice >= previousPrice) throw new ScenarioError(`${path}.unitPrice must decrease below the previous price.`);
+      previousMinimum = minimumUnits;
+      previousPrice = unitPrice;
+      return { minimumUnits, unitPrice };
+    });
+  }
+  return normalized;
 }
 
 function requiredText(value, path, maxLength) {
@@ -133,6 +168,9 @@ function requiredText(value, path, maxLength) {
 }
 
 function finite(value, path, minimum, maximum) {
+  if (typeof value !== "number" && (typeof value !== "string" || value.trim() === "")) {
+    throw new ScenarioError(`${path} must be a number.`);
+  }
   const number = typeof value === "number" ? value : Number(value);
   if (!Number.isFinite(number) || number < minimum || number > maximum) {
     throw new ScenarioError(`${path} must be between ${minimum} and ${maximum}.`);
@@ -161,25 +199,45 @@ export function evaluateOffer(rawScenario, rawOffer) {
     : validateOffer(rawOffer, 0);
   if (!offerEntry) throw new ScenarioError("Offer was not found.");
 
-  const compatibility = scenario.buyers.map((entry) => ({
-    buyer: entry,
-    reasons: incompatibilityReasons(entry, offerEntry)
-  }));
-  const compatible = compatibility.filter(({ reasons }) => reasons.length === 0).map(({ buyer }) => buyer);
-
-  const selected = selectWholeBuyers(compatible, offerEntry.capacity);
+  const bands = [{ minimumUnits: offerEntry.minimumUnits, unitPrice: offerEntry.unitPrice }, ...(offerEntry.tiers ?? [])];
+  const candidates = bands.map((band, index) => {
+    const maximumUnits = Math.min(offerEntry.capacity, (bands[index + 1]?.minimumUnits ?? offerEntry.capacity + 1) - 1);
+    const compatibility = scenario.buyers.map((entry) => ({
+      buyer: entry,
+      reasons: incompatibilityReasons(entry, { ...offerEntry, unitPrice: band.unitPrice })
+    }));
+    const compatible = compatibility.filter(({ reasons }) => reasons.length === 0).map(({ buyer }) => buyer);
+    const selected = selectWholeBuyers(compatible, maximumUnits);
+    const allocatedUnits = selected.reduce((sum, entry) => sum + entry.quantity, 0);
+    return { ...band, index, maximumUnits, compatibility, compatible, selected, allocatedUnits, qualifies: allocatedUnits >= band.minimumUnits };
+  });
+  const feasible = candidates.filter(({ qualifies }) => qualifies);
+  const active = feasible.sort((left, right) => right.allocatedUnits - left.allocatedUnits)[0] ?? candidates[0];
+  const { compatibility, compatible, selected, unitPrice: evaluatedUnitPrice } = active;
   const compatibleUnits = compatible.reduce((sum, entry) => sum + entry.quantity, 0);
   const fulfilledUnits = selected.reduce((sum, entry) => sum + entry.quantity, 0);
-  const qualifies = fulfilledUnits >= offerEntry.minimumUnits;
+  const qualifies = active.qualifies;
   const deliveredBuyers = qualifies ? selected.length : 0;
   const units = qualifies ? fulfilledUnits : 0;
-  const totalCost = qualifies ? (units * offerEntry.unitPrice) + (deliveredBuyers * offerEntry.shippingPerBuyer) : 0;
+  const totalCost = qualifies ? (units * evaluatedUnitPrice) + (deliveredBuyers * offerEntry.shippingPerBuyer) : 0;
   const reservationValue = qualifies
     ? selected.reduce((sum, entry) => sum + (entry.maxUnitPrice * entry.quantity), 0)
     : 0;
   const savings = Math.max(0, reservationValue - totalCost);
   const totalRequestedUnits = scenario.buyers.reduce((sum, entry) => sum + entry.quantity, 0);
   const selectedIds = new Set(selected.map(({ id }) => id));
+  const allocations = qualifies ? selected.map((entry) => {
+    const itemsCost = entry.quantity * evaluatedUnitPrice;
+    const totalCost = itemsCost + offerEntry.shippingPerBuyer;
+    const ceilingTotal = entry.quantity * entry.maxUnitPrice;
+    return {
+      buyerId: entry.id, quantity: entry.quantity, unitPrice: evaluatedUnitPrice,
+      itemsCost, shippingCost: offerEntry.shippingPerBuyer, totalCost,
+      landedUnitCost: totalCost / entry.quantity,
+      ceilingTotal, headroom: ceilingTotal - totalCost,
+      exceedsCeilingAfterShipping: totalCost > ceilingTotal
+    };
+  }) : [];
   const buyerOutcomes = compatibility.map(({ buyer, reasons }) => {
     if (reasons.length > 0) return { buyerId: buyer.id, status: "incompatible", reasons };
     if (!selectedIds.has(buyer.id)) return { buyerId: buyer.id, status: "capacity", reasons: ["capacity"] };
@@ -194,6 +252,21 @@ export function evaluateOffer(rawScenario, rawOffer) {
     compatibleUnits,
     selectedBuyerIds: qualifies ? selected.map(({ id }) => id) : [],
     buyerOutcomes,
+    allocations,
+    activeTierIndex: qualifies ? active.index : null,
+    effectiveUnitPrice: qualifies ? evaluatedUnitPrice : null,
+    basePriceDiscount: qualifies ? units * (offerEntry.unitPrice - evaluatedUnitPrice) : 0,
+    tierProgress: candidates.map((candidate) => ({
+      index: candidate.index,
+      minimumUnits: candidate.minimumUnits,
+      maximumUnits: candidate.maximumUnits,
+      unitPrice: candidate.unitPrice,
+      compatibleUnits: candidate.compatible.reduce((sum, entry) => sum + entry.quantity, 0),
+      allocatedUnits: candidate.allocatedUnits,
+      unitsShort: Math.max(0, candidate.minimumUnits - candidate.allocatedUnits),
+      qualifies: candidate.qualifies,
+      selected: qualifies && candidate.index === active.index
+    })),
     deliveredBuyers,
     fulfilledUnits: units,
     qualifies,
