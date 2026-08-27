@@ -4,6 +4,10 @@ The Smallest Agreement is a local, static workshop for a group that wants to tes
 
 It is deliberately a decision aid, not a decision maker. People define the groups, weights, support scores, clauses, alternatives, and change costs. The app does not interpret policy text or infer what an option means.
 
+![The Smallest Agreement showing the built-in neighborhood proposal, approval threshold, cost budget, and clause lock controls.](.github/assets/project-preview.jpg)
+
+*Built-in synthetic neighborhood-plan scenario.*
+
 ## Use without installation
 
 Open [standalone.html](standalone.html) directly in a current desktop or mobile browser. It is one self-contained file: no package installation, server, account, or network connection is needed. The full GUI, local autosave, JSON import, and JSON export work from `file://`.
