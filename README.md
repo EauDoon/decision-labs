@@ -4,6 +4,10 @@ Common Cart is a local-first pooled purchase simulator. Buyers enter compatible 
 
 It is a working research prototype for a simple question: can shared demand create bargaining power before a marketplace has accounts, payments, or live merchant integrations?
 
+![Common Cart showing the built-in coffee example, requested units, fulfilled demand, and group headroom.](.github/assets/project-preview.jpg)
+
+*Built-in synthetic coffee scenario.*
+
 ## v1.2.0, quantity price ladders (27-08-2026)
 
 Merchant offers now support up to eight quantity discounts. The exact allocator checks each price at a quantity that can actually be filled, including buyers who can afford only the discounted price. Demand that does not fit capacity cannot unlock a discount.
