@@ -87,7 +87,7 @@ SOFTWARE.
                 </div>
                 <div class="input-group">
                   <label for="reserveCashAud">AUD reserve and cash capacity</label>
-                  <div class="unit-input"><span>A$</span><input id="reserveCashAud" name="reserveCashAud" data-field="reserveCashAud" type="number" min="0" step="10000" inputmode="decimal"></div>
+                  <div class="unit-input"><span>A$</span><input id="reserveCashAud" name="reserveCashAud" data-field="reserveCashAud" type="number" min="0" step="0.01" inputmode="decimal"></div>
                 </div>
               </div>
             </fieldset>
@@ -220,6 +220,44 @@ SOFTWARE.
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
 
+          <article class="planning-card card" aria-labelledby="comparison-title">
+            <p class="eyebrow">Scenario comparison</p>
+            <h2 id="comparison-title">Hold a baseline. Test a change.</h2>
+            <p>Baseline: <strong id="baseline-name"></strong>. It starts from the scenario loaded in this tab and stays in memory until you replace it or close the page.</p>
+            <div class="planning-actions">
+              <button id="pin-baseline" type="button">Pin current as baseline</button>
+              <button id="restore-baseline" type="button">Restore baseline</button>
+              <button id="analysis-export" type="button">Export analysis JSON</button>
+            </div>
+            <p id="changed-assumptions"></p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
+              <table>
+                <caption>Current minus baseline. Parentheses indicate decreases. Compare demand as well as queue size.</caption>
+                <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th><th scope="col">Change</th></tr></thead>
+                <tbody id="comparison-rows"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="planning-card card" aria-labelledby="reserve-title">
+            <p class="eyebrow">Reserve sizing</p>
+            <h2 id="reserve-title">Can reserve alone meet the target?</h2>
+            <p>Find the minimum whole-cent starting reserve for a share of total 72-hour demand by a chosen checkpoint. Operating windows and throughput remain unchanged. The search cannot exceed nominal liquidity.</p>
+            <div class="input-grid">
+              <div class="input-group">
+                <label for="reserve-target">Target settled (%)</label>
+                <input id="reserve-target" type="number" min="0" max="100" step="1" value="100">
+              </div>
+              <div class="input-group">
+                <label for="reserve-deadline">Deadline (hour 1 to 72)</label>
+                <input id="reserve-deadline" type="number" min="1" max="72" step="1" value="72">
+              </div>
+            </div>
+            <p id="reserve-result" role="status" aria-live="polite"></p>
+            <button id="apply-reserve" type="button" disabled>Apply calculated reserve</button>
+            <p>Analysis exports include both scenarios, target, deadline, results, and hourly queue comparison. They are reports, not scenario-import files. Scenario JSON and share links continue to contain only the current scenario.</p>
+          </article>
+
           <article class="chart-card card" aria-labelledby="chart-title">
             <div class="card-heading chart-heading">
               <div>
@@ -234,6 +272,7 @@ SOFTWARE.
             <div class="chart-legend" aria-label="Chart legend">
               <span><i class="legend-mark legend-mark--queue" aria-hidden="true"></i>Queued AUD demand</span>
               <span><i class="legend-mark legend-mark--immediate" aria-hidden="true"></i>Immediate AUD capacity</span>
+              <span><i class="legend-mark legend-mark--baseline" aria-hidden="true"></i>Baseline queue (dashed)</span>
             </div>
           </article>
 
@@ -266,7 +305,7 @@ SOFTWARE.
             </div>
             <div class="table-scroll">
               <table>
-                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th></tr></thead>
+                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th></tr></thead>
                 <tbody id="timeline-table"></tbody>
               </table>
             </div>

@@ -41,7 +41,10 @@ const appImportMarker = `import {
   scenarioFromHash,
   scenarioFromJSON,
   scenarioToHash,
-  scenarioToJSON
+  scenarioToJSON,
+  compareScenarios,
+  planReserve,
+  analysisToJSON
 } from "./model.js";`;
 const exportedNames = Object.freeze([
   "SIMULATION_HOURS",
@@ -65,6 +68,9 @@ const exportedNames = Object.freeze([
   "nextPayoutTime",
   "createSnapshot",
   "runSimulation",
+  "compareScenarios",
+  "planReserve",
+  "analysisToJSON",
   "scenarioToHash",
   "scenarioFromHash",
   "scenarioToJSON",

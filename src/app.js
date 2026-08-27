@@ -8,7 +8,10 @@ import {
   scenarioFromHash,
   scenarioFromJSON,
   scenarioToHash,
-  scenarioToJSON
+  scenarioToJSON,
+  compareScenarios,
+  planReserve,
+  analysisToJSON
 } from "./model.js";
 
 const STORAGE_KEY = "weekend-gap:scenario:v1";
@@ -46,6 +49,9 @@ const elements = {
 
 let scenario = { ...DEFAULT_SCENARIO };
 let simulation = runSimulation(scenario);
+let baselineScenario = { ...scenario };
+let comparison = compareScenarios(baselineScenario, scenario);
+let reservePlan = null;
 let selectedHour = 0;
 let playing = false;
 let playTimer = null;
@@ -118,10 +124,12 @@ function setScenario(nextScenario, { normaliseForm = true, message = "" } = {}) 
   const cleaned = sanitizeScenario(nextScenario);
   scenario = cleaned.scenario;
   simulation = runSimulation(scenario);
+  comparison = compareScenarios(baselineScenario, scenario);
   selectedHour = Math.min(selectedHour, SIMULATION_HOURS);
   if (normaliseForm) writeForm();
   saveScenario();
   render();
+  renderPlanning();
   if (message) setMessage(message);
   else if (cleaned.errors.length) setMessage(cleaned.errors[0]);
   else setMessage("");
@@ -219,7 +227,8 @@ function renderTable() {
       formatAud(point.queuedAud),
       formatPercent(point.liquidityRatio),
       formatPercent(point.discountBps / 10000, 2),
-      point.immediateAud > 0 ? "Open" : `Blocked: ${point.limitingGate}`
+      point.immediateAud > 0 ? "Open" : `Blocked: ${point.limitingGate}`,
+      formatAud(comparison.baseline.timeline[hour].queuedAud)
     ];
     cells.forEach((value, index) => {
       const cell = document.createElement("td");
@@ -260,7 +269,8 @@ function drawChart() {
 
   const dimensions = { left: 52, top: 18, width: Math.max(1, width - 70), height: Math.max(1, height - 58) };
   const points = simulation.timeline;
-  const maximum = Math.max(1, ...points.map((point) => Math.max(point.queuedAud, point.immediateAud)));
+  const maximum = Math.max(1, ...points.map((point) => Math.max(point.queuedAud, point.immediateAud)),
+    ...comparison.baseline.timeline.map((point) => point.queuedAud));
   chartContext.font = "11px Arial, Helvetica, sans-serif";
   chartContext.fillStyle = "#aabac4";
   chartContext.strokeStyle = "rgba(211, 229, 235, 0.16)";
@@ -283,6 +293,9 @@ function drawChart() {
 
   drawLine(chartContext, points, (point) => point.queuedAud, "#f4b942", dimensions, maximum);
   drawLine(chartContext, points, (point) => point.immediateAud, "#64d59b", dimensions, maximum);
+  chartContext.setLineDash([6, 4]);
+  drawLine(chartContext, comparison.baseline.timeline, (point) => point.queuedAud, "#aac7ff", dimensions, maximum);
+  chartContext.setLineDash([]);
   const selectedX = dimensions.left + (selectedHour / SIMULATION_HOURS) * dimensions.width;
   chartContext.beginPath();
   chartContext.moveTo(selectedX, dimensions.top);
@@ -318,6 +331,79 @@ function downloadScenario() {
   URL.revokeObjectURL(url);
   setMessage("Scenario JSON exported.");
 }
+
+function planningAud(amount) {
+  return `${amount.toLocaleString("en-US", { style: "currency", currency: "AUD" })} (rounded to cents)`;
+}
+
+function signedAud(amount) {
+  const money = Math.abs(amount).toLocaleString("en-US", { style: "currency", currency: "AUD", minimumFractionDigits: 2 });
+  return amount < 0 ? `(${money})` : amount > 0 ? `+${money}` : money;
+}
+
+function renderPlanning() {
+  document.querySelector("#baseline-name").textContent = baselineScenario.name;
+  const rows = [
+    ["Starting reserve", comparison.baseline.scenario.reserveCashAud, scenario.reserveCashAud],
+    ["Total demand", comparison.baseline.summary.totalDemandAud, simulation.summary.totalDemandAud],
+    ["Settled by Monday 15:00", comparison.baseline.summary.totalSettledAud, simulation.summary.totalSettledAud],
+    ["Remaining queue", comparison.baseline.summary.finalQueuedAud, simulation.summary.finalQueuedAud],
+    ["Peak queue", comparison.baseline.summary.peakQueuedAud, simulation.summary.peakQueuedAud]
+  ];
+  document.querySelector("#comparison-rows").replaceChildren(...rows.map(([label, before, after]) => {
+    const row = document.createElement("tr");
+    for (const value of [label, before.toLocaleString("en-US", { style: "currency", currency: "AUD" }),
+      after.toLocaleString("en-US", { style: "currency", currency: "AUD" }), signedAud(after - before)]) {
+      const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+    }
+    return row;
+  }));
+  document.querySelector("#changed-assumptions").textContent = comparison.changes.length
+    ? comparison.changes.map(({ field, baseline, candidate }) => `${field}: ${baseline} to ${candidate}`).join("; ")
+    : "No assumptions changed. Pin a baseline, then edit the scenario or choose a preset.";
+  const output = document.querySelector("#reserve-result");
+  const apply = document.querySelector("#apply-reserve");
+  apply.disabled = true;
+  reservePlan = null;
+  try {
+    reservePlan = planReserve(scenario, document.querySelector("#reserve-target").valueAsNumber,
+      document.querySelector("#reserve-deadline").valueAsNumber);
+    document.querySelector("#analysis-export").disabled = false;
+    const p = reservePlan;
+    const target = `${p.targetPercent}% of total 72-hour demand (${planningAud(p.targetAud)}) by ${formatTime(p.deadlineHour)}`;
+    output.textContent = p.status === "reachable"
+      ? `${target}: minimum starting reserve ${p.minimumReserveAud.toLocaleString("en-US", { style: "currency", currency: "AUD" })}. Change from current reserve: ${signedAud(p.reserveChangeAud)}. ${p.reason}`
+      : `${target}: unreachable by reserve alone. Maximum modeled settlement: ${planningAud(p.maximumSettledAud)}. ${p.reason}`;
+    apply.disabled = p.status !== "reachable" || p.minimumReserveAud === scenario.reserveCashAud;
+  } catch (error) {
+    output.textContent = error instanceof RangeError ? error.message : "Reserve analysis could not be calculated.";
+    document.querySelector("#analysis-export").disabled = true;
+  }
+}
+
+document.querySelector("#pin-baseline").addEventListener("click", () => {
+  baselineScenario = { ...scenario };
+  comparison = compareScenarios(baselineScenario, scenario);
+  renderPlanning(); render();
+});
+document.querySelector("#restore-baseline").addEventListener("click", () => {
+  setScenario(baselineScenario, { message: "Baseline restored to the scenario editor." });
+});
+for (const id of ["reserve-target", "reserve-deadline"]) {
+  document.getElementById(id).addEventListener("input", renderPlanning);
+}
+document.querySelector("#apply-reserve").addEventListener("click", () => {
+  if (reservePlan?.status !== "reachable") return;
+  setScenario({ ...scenario, reserveCashAud: reservePlan.minimumReserveAud }, { message: "Calculated reserve applied. Other scenario assumptions and baseline were kept." });
+});
+document.querySelector("#analysis-export").addEventListener("click", () => {
+  if (!reservePlan) return;
+  const blob = new Blob([analysisToJSON(baselineScenario, scenario, reservePlan.targetPercent, reservePlan.deadlineHour)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a"); link.href = url; link.download = "weekend-gap-analysis.json";
+  document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url);
+  setMessage("Analysis exported with both scenarios, changed assumptions, hourly queue comparison, and reserve plan.");
+});
 
 async function copyShareLink() {
   const hash = scenarioToHash(scenario);
@@ -413,6 +499,10 @@ if (!standaloneMode) {
 window.addEventListener("resize", drawChart);
 
 restoreScenario();
+baselineScenario = { ...scenario };
+simulation = runSimulation(scenario);
+comparison = compareScenarios(baselineScenario, scenario);
 writeForm();
 render();
+renderPlanning();
 if (!userEdited && !window.location.hash) saveScenario();

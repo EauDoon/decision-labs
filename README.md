@@ -63,6 +63,24 @@ npm run check
 - Canvas chart with a text-equivalent data table.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
+## New in v1.2.0
+
+Pin a baseline, then test a preset or edit an assumption. The comparison table
+shows signed changes in demand, settled amount, remaining queue, peak queue, and
+starting reserve. A dashed baseline queue overlays the chart.
+
+The reserve planner finds the minimum whole-cent starting reserve needed to settle
+a chosen percentage of total 72-hour demand by an hourly checkpoint. It holds all
+other inputs fixed and reports unreachable targets when the nominal cap, demand
+arrival, operating windows, or throughput prevent them. Apply a reachable result
+to the editor, or export an analysis report containing both scenarios, changed
+assumptions, target, deadline, and hourly comparison.
+
+Baselines and planner settings stay in the tab and are not autosaved. Scenario
+JSON and share links still carry only the current scenario. Analysis JSON is a
+report, not an importable scenario. Reduced queues are not evidence of a better
+strategy if the scenarios use different demand.
+
 ## Operating interpretation
 
 The model only settles queued demand during an overlapping issuer redemption, bank settlement and Australian AUD payout window. When the chain is open, hourly settlement is limited by the smallest of issuer throughput, available FX depth, payout throughput and remaining AUD reserve. On weekends, the synthetic FX multiplier reduces available depth and widens the base spread. A closed issuer, bank or payout gate reduces immediate payout capacity to zero.

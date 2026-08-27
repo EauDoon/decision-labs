@@ -4,6 +4,32 @@
 
 This document describes a synthetic, deterministic model of AUD stablecoin redemption operations from Friday 15:00 through Monday 15:00 local time. It is designed to make operating-window constraints visible. It is not a valuation model, market forecast, reserve assessment or representation of a real issuer.
 
+## Reserve planner and comparison
+
+The v1.2.0 planner uses the same hourly queue and settlement recurrence as the
+timeline. Its target is a percentage of total 72-hour demand, not just demand
+arrived by the deadline. Hour 1 is the checkpoint after the first hourly step;
+hour 72 is Monday 15:00.
+
+Only starting reserve changes. Candidate reserves are integer cents between zero
+and nominal liquidity rounded down to cents. Settlement is nondecreasing in
+starting reserve under the fixed inputs, so a binary search finds the first
+passing cent in at most 39 iterations at the model's A$5 billion bound. A
+scale-aware tolerance (128 times machine epsilon times the larger target or
+settled amount, below A$0.000143 at the model cap) absorbs floating-point
+summation without accepting zero settlement for a positive target. Tests compare planner
+outputs with the full simulation and require the preceding cent to fail.
+
+If the maximum allowed reserve cannot meet the target, the result is unreachable.
+It must not be read as a recommendation to add reserve. Demand arrival, closed
+windows, throughput, and nominal liquidity may each prevent the target.
+
+Comparison deltas are current minus baseline. Baselines are detached canonical
+scenarios in tab memory. A decrease in queue is not necessarily an improvement
+if demand or other assumptions changed. The analysis JSON report binds both
+input scenarios, changed fields, summaries, planner target and deadline, and
+hourly queue values. It has no timestamp, making identical inputs reproducible.
+
 ## Units and editable assumptions
 
 All money values are Australian dollars (AUD). Throughputs and FX depth are AUD per hour. Operating hours use a local 24-hour clock and apply on business days only. The editable scenario contains:

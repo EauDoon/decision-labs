@@ -295,6 +295,88 @@ export function runSimulation(input = {}) {
   });
 }
 
+/** Compare detached canonical inputs; positive deltas mean candidate minus baseline. */
+export function compareScenarios(baselineInput, candidateInput) {
+  const baseline = runSimulation(baselineInput);
+  const candidate = runSimulation(candidateInput);
+  const changes = Object.keys(DEFAULT_SCENARIO)
+    .filter((key) => baseline.scenario[key] !== candidate.scenario[key])
+    .map((key) => ({ field: key, baseline: baseline.scenario[key], candidate: candidate.scenario[key] }));
+  const deltas = Object.fromEntries(Object.keys(baseline.summary)
+    .map((key) => [key, candidate.summary[key] - baseline.summary[key]]));
+  return { baseline, candidate, changes, deltas };
+}
+
+// Same hourly settlement recurrence as runSimulation, without chart snapshots.
+function settlementByDeadline(scenario, reserveAud, deadlineHour) {
+  let reserve = reserveAud;
+  let queued = 0;
+  let settled = 0;
+  const demand = scenario.redemptionDemandAud / SIMULATION_HOURS;
+  for (let hour = 0; hour < deadlineHour; hour += 1) {
+    queued += demand;
+    const amount = Math.min(queued, capacityForHour(scenario, hour, reserve).capacityAud);
+    queued = Math.max(0, queued - amount);
+    reserve = Math.max(0, reserve - amount);
+    settled += amount;
+  }
+  return settled;
+}
+
+/** Minimum whole-cent starting reserve for a share of TOTAL 72-hour demand. */
+export function planReserve(input, targetPercent = 100, deadlineHour = SIMULATION_HOURS) {
+  if (typeof targetPercent !== "number" || !Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100) {
+    throw new RangeError("Settlement target must be a number from 0 to 100.");
+  }
+  if (!Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > SIMULATION_HOURS) {
+    throw new RangeError("Deadline must be a whole hour from 1 to 72.");
+  }
+  const { scenario } = sanitizeScenario(input);
+  const targetAud = scenario.redemptionDemandAud * targetPercent / 100;
+  const scaledCap = scenario.nominalLiquidityAud * 100;
+  const maximumCents = Math.floor(scaledCap + Number.EPSILON * Math.max(1, scaledCap));
+  const maximumReserveAud = maximumCents / 100;
+  const currentSettledAud = settlementByDeadline(scenario, scenario.reserveCashAud, deadlineHour);
+  const maximumSettledAud = settlementByDeadline(scenario, maximumReserveAud, deadlineHour);
+  // Scale with at most 72 hourly additions; stay well below one cent at the cap.
+  // No absolute floor: tiny positive targets must never pass with zero settlement.
+  const meets = (amount) => amount >= targetAud ||
+    targetAud - amount <= 128 * Number.EPSILON * Math.max(Math.abs(amount), Math.abs(targetAud));
+  const shared = { targetPercent, deadlineHour, targetAud, currentSettledAud, maximumSettledAud, maximumReserveAud };
+  if (!meets(maximumSettledAud)) {
+    return { ...shared, status: "unreachable", minimumReserveAud: null, reserveChangeAud: null,
+      reason: "The target cannot be reached by changing reserve alone within nominal liquidity. Demand arrival, operating windows, throughput, or the nominal cap also constrain settlement." };
+  }
+  let low = 0;
+  let high = maximumCents;
+  let iterations = 0;
+  while (low < high) {
+    const mid = Math.floor((low + high) / 2);
+    if (meets(settlementByDeadline(scenario, mid / 100, deadlineHour))) high = mid;
+    else low = mid + 1;
+    iterations += 1;
+  }
+  const minimumReserveAud = low / 100;
+  return { ...shared, status: "reachable", minimumReserveAud,
+    reserveChangeAud: minimumReserveAud - scenario.reserveCashAud,
+    achievedSettledAud: settlementByDeadline(scenario, minimumReserveAud, deadlineHour), iterations,
+    reason: "Minimum whole-cent reserve under the unchanged scenario assumptions. This is a synthetic funding calculation, not a liquidity recommendation." };
+}
+
+export function analysisToJSON(baselineInput, candidateInput, targetPercent = 100, deadlineHour = SIMULATION_HOURS) {
+  const comparison = compareScenarios(baselineInput, candidateInput);
+  return JSON.stringify({ format: "weekend-gap-analysis", version: 1,
+    baseline: comparison.baseline.scenario, candidate: comparison.candidate.scenario,
+    changes: comparison.changes, deltas: comparison.deltas,
+    baselineSummary: comparison.baseline.summary, candidateSummary: comparison.candidate.summary,
+    reservePlan: planReserve(candidateInput, targetPercent, deadlineHour),
+    timeline: comparison.candidate.timeline.map((point, index) => ({
+      hour: point.hour, time: point.timeLabel, baselineQueuedAud: comparison.baseline.timeline[index].queuedAud,
+      candidateQueuedAud: point.queuedAud, candidateSettledAud: point.settledAud,
+      candidateReserveAud: point.reserveRemainingAud
+    })) }, null, 2);
+}
+
 export function scenarioToHash(scenarioInput) {
   const { scenario } = sanitizeScenario(scenarioInput);
   return `#scenario=${encodeURIComponent(JSON.stringify(scenario))}`;
@@ -324,6 +406,7 @@ export function scenarioFromJSON(text) {
   }
   try {
     const parsed = JSON.parse(text);
+    if (parsed?.format === "weekend-gap-analysis") throw new Error("Analysis reports are not scenario files.");
     const candidate = parsed?.scenario ?? parsed;
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) throw new Error("Scenario must be an object.");
     return sanitizeScenario(candidate);

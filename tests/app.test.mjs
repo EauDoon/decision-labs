@@ -4,6 +4,16 @@ import test from "node:test";
 import { DEFAULT_SCENARIO } from "../src/model.js";
 
 const appSource = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+const planningAud = Function(`${appSource.slice(appSource.indexOf("function planningAud("), appSource.indexOf("function signedAud("))}; return planningAud;`)();
+
+test("reserve planner money retains cents and discloses display rounding", () => {
+  assert.equal(planningAud(0.615), "A$0.62 (rounded to cents)");
+  assert.equal(planningAud(10000.051), "A$10,000.05 (rounded to cents)");
+  assert.equal(planningAud(5e-7), "A$0.00 (rounded to cents)");
+  assert.match(appSource, /planningAud\(p\.targetAud\)/);
+  assert.match(appSource, /planningAud\(p\.maximumSettledAud\)/);
+});
+
 const helperStart = appSource.indexOf("function noPayoutExplanation");
 const helperEnd = appSource.indexOf("function render()", helperStart);
 const { noPayoutExplanation, currentScenarioHashError } = Function(
