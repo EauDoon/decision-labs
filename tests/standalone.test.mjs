@@ -22,4 +22,8 @@ test("standalone GUI has no external resource dependency", async () => {
   assert.match(html, /Use Export JSON to share a standalone scenario\./u);
   assert.match(html, /Included locally/u);
   assert.match(html, /No complete buyer set/u);
+  assert.match(html, /Three ASCII letters, e\.g\. AUD/u);
+  assert.match(html, /Accepted variants are a comma-separated list/u);
+  assert.match(html, /cannot be empty/u);
+  assert.match(html, /"Room name"/u);
 });

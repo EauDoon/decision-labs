@@ -153,9 +153,9 @@ test("validation rejects duplicate ids and invalid currency", () => {
   assert.throws(() => validateScenario(duplicate), ScenarioError);
   const currency = clonePreset("neighbourhood");
   currency.currency = "A$";
-  assert.throws(() => validateScenario(currency), /three-letter code/);
+  assert.throws(() => validateScenario(currency), /three-letter ASCII code/);
   currency.currency = "ſgd";
-  assert.throws(() => validateScenario(currency), /three-letter code/);
+  assert.throws(() => validateScenario(currency), /three-letter ASCII code/);
 });
 
 test("validation rejects non-objects, empty collections, and unknown identifiers", () => {
@@ -174,6 +174,40 @@ test("validation rejects non-objects, empty collections, and unknown identifiers
   assert.throws(() => evaluateOffer(clonePreset("neighbourhood"), "missing-offer"), /Offer was not found/);
   assert.throws(() => decodeScenario(null), /must be a string/);
   assert.throws(() => decodeScenario(""), /empty or too large/);
+});
+
+test("empty fields name the missing input instead of a JSON path", () => {
+  const scenario = clonePreset("neighbourhood");
+  scenario.title = "   ";
+  assert.throws(() => validateScenario(scenario), /Room name cannot be empty/);
+  scenario.title = "Neighbourhood coffee run";
+  scenario.currency = "";
+  assert.throws(() => validateScenario(scenario), /Currency cannot be empty/);
+  scenario.currency = "AUD";
+  scenario.buyers[0].label = " \t";
+  assert.throws(() => validateScenario(scenario), /Buyer 1 private label cannot be empty/);
+  scenario.buyers[0].label = "North block";
+  scenario.buyers[0].quantity = "";
+  assert.throws(() => validateScenario(scenario), /Buyer 1 quantity cannot be empty/);
+  scenario.buyers[0].quantity = 2;
+  scenario.buyers[0].allowedVariants = [];
+  assert.throws(() => validateScenario(scenario), /Buyer 1 accepted variants must contain 1 to 12 names/);
+  scenario.buyers[0].allowedVariants = ["Medium roast"];
+  scenario.offers[0].merchant = "";
+  assert.throws(() => validateScenario(scenario), /Offer 1 merchant cannot be empty/);
+  scenario.offers[0].merchant = "Harbour Roasters";
+  scenario.offers[0].unitPrice = " ";
+  assert.throws(() => validateScenario(scenario), /Offer 1 unit price cannot be empty/);
+  scenario.offers[0].unitPrice = 26;
+  scenario.offers[0].tiers = [{ minimumUnits: "", unitPrice: 20 }];
+  assert.throws(() => validateScenario(scenario), /Offer 1 tier 1 minimum units cannot be empty/);
+  try {
+    validateScenario({ ...clonePreset("neighbourhood"), buyers: [{ ...clonePreset("neighbourhood").buyers[0], label: "" }] });
+    assert.fail("expected empty label to fail");
+  } catch (error) {
+    assert.match(error.message, /Buyer 1 private label cannot be empty/);
+    assert.doesNotMatch(error.message, /buyers\[\d+\]/);
+  }
 });
 
 test("numeric fields reject exponential notation and plus prefixes", () => {

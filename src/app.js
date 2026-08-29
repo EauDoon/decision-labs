@@ -81,6 +81,7 @@ function bindStaticEvents() {
   });
 
   document.querySelector("#add-buyer").addEventListener("click", () => {
+    if (scenario.buyers.length >= 40) return setStatus("A room can have at most 40 buyers.");
     const next = nextId(scenario.buyers, "B");
     scenario.buyers.push({
       id: next,
@@ -97,6 +98,7 @@ function bindStaticEvents() {
   });
 
   document.querySelector("#add-offer").addEventListener("click", () => {
+    if (scenario.offers.length >= 40) return setStatus("A room can have at most 40 offers.");
     const next = nextId(scenario.offers, "O");
     scenario.offers.push({
       id: next,
@@ -172,6 +174,12 @@ function renderEditor() {
   elements.currency.value = scenario.currency;
   elements.buyerRows.replaceChildren(...scenario.buyers.map(renderBuyerRow));
   elements.offerRows.replaceChildren(...scenario.offers.map(renderOfferRow));
+  const addBuyer = document.querySelector("#add-buyer");
+  const addOffer = document.querySelector("#add-offer");
+  addBuyer.disabled = scenario.buyers.length >= 40;
+  addOffer.disabled = scenario.offers.length >= 40;
+  addBuyer.title = addBuyer.disabled ? "A room can have at most 40 buyers." : "";
+  addOffer.title = addOffer.disabled ? "A room can have at most 40 offers." : "";
   renderTierEditors();
 }
 
@@ -304,8 +312,16 @@ function refresh() {
     elements.winner.textContent = "Check inputs";
     elements.winnerNote.textContent = "Results are unavailable until the scenario is valid.";
     for (const element of [elements.units, elements.buyers, elements.fulfilled, elements.delivered, elements.savings]) element.textContent = "Not available";
-    for (const element of [elements.resultRows, elements.inspectorRows, elements.tierRows, elements.demandGroups, elements.merchantResults]) element.replaceChildren();
-    elements.inspectorSummary.textContent = "Correct the input error to inspect allocations.";
+    setEmptyState(elements.resultRows, 8, "Ranked offers will appear once every field is valid.");
+    setEmptyState(elements.inspectorRows, 9, "Buyer outcomes will appear once every field is valid.");
+    setEmptyState(elements.tierRows, 6, "Price-band feasibility will appear once every field is valid.");
+    setEmptyState(elements.merchantResults, 6, "Aggregate offer outcomes will appear once every field is valid.");
+    elements.demandGroups.replaceChildren();
+    const demandNote = document.createElement("p");
+    demandNote.className = "canvas-note";
+    demandNote.textContent = "Aggregate demand will appear once every field is valid.";
+    elements.demandGroups.append(demandNote);
+    elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
   }
@@ -461,6 +477,16 @@ function addCell(row, text, className = "") {
   row.append(cell);
 }
 
+function setEmptyState(body, columns, message) {
+  const row = document.createElement("tr");
+  const cell = document.createElement("td");
+  cell.colSpan = columns;
+  cell.className = "empty-state";
+  cell.textContent = message;
+  row.append(cell);
+  body.replaceChildren(row);
+}
+
 function appendDetail(list, term, value) {
   const wrapper = document.createElement("div");
   const dt = document.createElement("dt");
@@ -528,9 +554,18 @@ async function importScenario(event) {
   const file = event.target.files?.[0];
   event.target.value = "";
   if (!file) return;
+  if (file.size === 0) return setStatus("Import failed: the file is empty.");
   if (file.size > 250_000) return setStatus("Import files must be smaller than 250 KB.");
   try {
-    scenario = validateScenario(JSON.parse(await file.text()));
+    const text = await file.text();
+    if (!text.trim()) return setStatus("Import failed: the file is empty.");
+    let parsed;
+    try {
+      parsed = JSON.parse(text);
+    } catch {
+      return setStatus("Import failed: the file is not valid JSON.");
+    }
+    scenario = validateScenario(parsed);
     inspectedOfferId = scenario.offers[0]?.id ?? "";
     renderEditor();
     refresh();
