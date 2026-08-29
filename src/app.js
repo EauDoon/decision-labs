@@ -16,6 +16,7 @@ const MAX_HASH_LENGTH = 60_000;
 const app = document.querySelector('#workbench');
 const standaloneFileMode = window.location.protocol === 'file:';
 let participantSequence = 0;
+let importSequence = 0;
 let activePreset = 'balanced';
 let state = withStress(loadInitialState());
 let eventsBound = false;
@@ -465,6 +466,7 @@ function exportFile() {
 }
 
 function importFile(file) {
+  const sequence = ++importSequence;
   if (file.size > 250_000) {
     const notice = document.querySelector('#notice');
     if (notice) notice.textContent = 'Import rejected: files must be 250 KB or smaller.';
@@ -472,6 +474,7 @@ function importFile(file) {
   }
   const reader = new FileReader();
   reader.onload = () => {
+    if (sequence !== importSequence) return;
     try {
       const candidate = JSON.parse(String(reader.result));
       const validation = validateConfiguration(candidate);
