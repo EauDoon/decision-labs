@@ -7,6 +7,7 @@ import {
   buildDemandSchedule,
   capacityForHour,
   createSnapshot,
+  finiteNumber,
   getOperationalStatus,
   nextPayoutTime,
   runSimulation,
@@ -121,6 +122,8 @@ test("invalid input is clamped to safe operational values", () => {
   assert.equal(scenario.weekendFxMultiplier, 1);
   assert.equal(scenario.name, DEFAULT_SCENARIO.name);
   assert.ok(errors.length > 0);
+  for (const value of [null, false, [], {}, "", " "]) assert.equal(finiteNumber(value, 42), 42);
+  assert.equal(finiteNumber("12.5", 42), 12.5);
 });
 
 test("current payout capacity is bounded by every operational bottleneck", () => {

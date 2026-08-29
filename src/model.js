@@ -71,6 +71,7 @@ const FIELD_RULES = Object.freeze({
 });
 
 export function finiteNumber(value, fallback) {
+  if (typeof value !== "number" && (typeof value !== "string" || value.trim() === "")) return fallback;
   const parsed = typeof value === "number" ? value : Number(value);
   return Number.isFinite(parsed) ? parsed : fallback;
 }
