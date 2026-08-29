@@ -4,7 +4,7 @@ import vm from 'node:vm';
 import { buildStandalone } from '../scripts/build-standalone.mjs';
 import { clonePreset } from '../src/model.js';
 
-async function workbench(protocol = 'file:') {
+async function workbench(protocol = 'file:', options = {}) {
   const html = await buildStandalone();
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
   const events = new Map();
@@ -27,7 +27,7 @@ async function workbench(protocol = 'file:') {
   }
   const context = vm.createContext({ console, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
     history: { replaceState() {} },
-    window: { location: { protocol, hash: '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
+    window: { location: { protocol, hash: options.hash ?? '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
     document: { activeElement: null, querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
   });
@@ -36,15 +36,20 @@ async function workbench(protocol = 'file:') {
     markup: () => app.innerHTML,
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
-    edit: (path, value) => events.get('change')({ target: new Input({ path }, value) }),
+    edit: (path, value, extra = {}) => events.get('change')({ target: new Input({ path, ...extra }, value) }),
     click: (action) => events.get('click')({ target: { closest: () => ({ dataset: { action } }) } }),
     navigate: (config) => {
       context.window.location.hash = `#deal=${Buffer.from(JSON.stringify(config)).toString('base64url')}`;
       windowEvents.get('hashchange')?.();
     },
-    import: (config, pending, error = false) => {
+    navigateHash: (hash) => {
+      context.window.location.hash = hash;
+      windowEvents.get('hashchange')?.();
+    },
+    import: (config, pending, error = false, file = {}) => {
+      const contents = Object.hasOwn(file, 'contents') ? file.contents : JSON.stringify(config);
       const input = new Input({ action: 'import' }, '');
-      input.files = [{ size: 100, contents: JSON.stringify(config), pending, error }];
+      input.files = [{ size: file.size ?? String(contents).length, contents, pending, error }];
       events.get('change')({ target: input });
     },
   };
@@ -175,4 +180,62 @@ test('participant controls stop at the model capacity without invalidating the s
   app.click('add-participant');
   assert.equal(app.saved().participants.length, 24);
   assert.doesNotMatch(app.markup(), /Resolve these inputs/);
+});
+
+test('form help and native bounds cover empty fields, volume shock, and blank versus zero capacity', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /Volume shock % is the only baseline volume reduction, 0 through 100/);
+  assert.match(app.markup(), /data-path="deal.volumeShockPct"[^>]*max="100"/);
+  assert.match(app.markup(), /data-path="participants.0.revenueShare"[^>]*max="1"/);
+  assert.match(app.markup(), /Leave capacity blank for no limit; a capacity of zero forbids any volume/);
+  assert.match(app.markup(), /Import a JSON case exported by this workbench. Files must be 250 KB or smaller/);
+  app.edit('deal.monthlyVolume', '');
+  assert.match(app.markup(), /Resolve these inputs/);
+  assert.match(app.notice(), /Invalid inputs are not saved/);
+  assert.doesNotMatch(app.markup(), /tested cases hold/);
+});
+
+test('empty and whitespace imports are rejected without changing the case', async () => {
+  const app = await workbench();
+  app.import(clonePreset('balanced'));
+  const previous = app.saved();
+  app.import({}, undefined, false, { contents: '', size: 0 });
+  assert.match(app.notice(), /the file is empty/);
+  assert.deepEqual(app.saved(), previous);
+  app.import({}, undefined, false, { contents: ' \n\t ', size: 4 });
+  assert.match(app.notice(), /the file is empty/);
+  assert.deepEqual(app.saved(), previous);
+});
+
+test('a UTF-8 BOM on an exported case is ignored during import', async () => {
+  const app = await workbench();
+  const config = clonePreset('balanced');
+  config.deal.monthlyVolume = 88_000;
+  app.import({}, undefined, false, { contents: `\uFEFF${JSON.stringify(config)}` });
+  assert.equal(app.saved().deal.monthlyVolume, 88_000);
+  assert.match(app.notice(), /JSON imported/);
+});
+
+test('an invalid share hash keeps the current case and reports the failure', async () => {
+  const app = await workbench('http:');
+  const shared = clonePreset('thinMargin');
+  shared.deal.monthlyVolume = 76_543;
+  app.navigate(shared);
+  const previous = app.saved();
+  app.navigateHash('#deal=not-a-valid-case');
+  assert.match(app.notice(), /Share link could not be loaded. The current case is unchanged/);
+  assert.equal(app.saved().deal.monthlyVolume, 76_543);
+  assert.deepEqual(app.saved(), previous);
+});
+
+test('an invalid opening share hash falls back to Balanced with a visible notice', async () => {
+  const app = await workbench('http:', { hash: '#deal=%%%' });
+  assert.match(app.notice(), /Share link could not be loaded. Showing the Balanced starting point/);
+  assert.match(app.markup(), /data-path="deal.monthlyVolume"[^>]*value="100000"/);
+});
+
+test('participant names are trimmed before they are stored', async () => {
+  const app = await workbench();
+  app.edit('participants.0.name', '  Platform  ', { type: 'text' });
+  assert.equal(app.saved().participants[0].name, 'Platform');
 });

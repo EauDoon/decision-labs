@@ -18,6 +18,7 @@ const standaloneFileMode = window.location.protocol === 'file:';
 let participantSequence = 0;
 let importSequence = 0;
 let activePreset = 'balanced';
+let pendingNotice = '';
 let state = withStress(loadInitialState());
 let eventsBound = false;
 
@@ -30,15 +31,15 @@ function withStress(config) {
 }
 
 function decodeHash(hash) {
-  if (!hash.startsWith('#deal=')) return null;
-  if (hash.length > MAX_HASH_LENGTH) return null;
+  if (!hash.startsWith('#deal=')) return { kind: 'none' };
+  if (hash.length > MAX_HASH_LENGTH) return { kind: 'invalid' };
   try {
     const encoded = hash.slice(6).replace(/-/g, '+').replace(/_/g, '/');
     const padded = encoded + '='.repeat((4 - encoded.length % 4) % 4);
     const parsed = JSON.parse(decodeURIComponent(Array.from(atob(padded), (character) => `%${character.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')));
-    return validateConfiguration(parsed).valid ? parsed : null;
+    return validateConfiguration(parsed).valid ? { kind: 'ok', config: parsed } : { kind: 'invalid' };
   } catch {
-    return null;
+    return { kind: 'invalid' };
   }
 }
 
@@ -60,9 +61,19 @@ function loadStoredState() {
 
 function loadInitialState() {
   const fromHash = decodeHash(window.location.hash);
-  if (fromHash) return fromHash;
+  if (fromHash.kind === 'ok') return fromHash.config;
   const fromStorage = loadStoredState();
+  if (fromHash.kind === 'invalid') {
+    pendingNotice = fromStorage
+      ? 'Share link could not be loaded. Showing the last saved case.'
+      : 'Share link could not be loaded. Showing the Balanced starting point.';
+  }
   return fromStorage ?? clonePreset('balanced');
+}
+
+function setNotice(message) {
+  const notice = document.querySelector('#notice');
+  if (notice) notice.textContent = message;
 }
 
 function saveState() {
@@ -86,11 +97,12 @@ function inputValue(value) {
   return value === null || value === undefined || Number.isNaN(value) ? '' : String(value);
 }
 
-function field({ label, path, value, optional = false, min = 0, max = null, step = 'any', wide = false, type = 'number' }) {
+function field({ label, path, value, optional = false, min = 0, max = null, step = 'any', wide = false, type = 'number', title = '' }) {
   const optionalText = optional ? '<span class="optional">optional</span>' : '';
+  const titleAttr = title ? ` title="${escapeAttribute(title)}"` : '';
   const input = type === 'text'
-    ? `<input type="text" data-path="${path}" data-type="text" value="${escapeAttribute(value)}" maxlength="80" required />`
-    : `<input type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'} />`;
+    ? `<input type="text" data-path="${path}" data-type="text" value="${escapeAttribute(value)}" maxlength="80" required${titleAttr} />`
+    : `<input type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'}${titleAttr} />`;
   return `<div class="field ${wide ? 'wide' : ''}"><label>${label} ${optionalText}${input}</label></div>`;
 }
 
@@ -165,13 +177,13 @@ function inputPanel() {
         <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
       </div>
       <div class="field-grid">
-        ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text' })}
-        ${field({ label: 'Revenue share', path: `participants.${index}.revenueShare`, value: participant.revenueShare, min: 0, step: '0.0001' })}
+        ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text', title: 'Display name, 1 through 80 characters after trimming spaces.' })}
+        ${field({ label: 'Revenue share', path: `participants.${index}.revenueShare`, value: participant.revenueShare, min: 0, max: 1, step: '0.0001', title: 'Share of gross fee revenue, 0 through 1. All shares must sum to 1.' })}
         ${field({ label: 'Variable cost / txn', path: `participants.${index}.variableCostPerTransaction`, value: participant.variableCostPerTransaction, step: '0.0001' })}
         ${field({ label: 'Fixed monthly cost', path: `participants.${index}.fixedMonthlyCost`, value: participant.fixedMonthlyCost, step: '0.01' })}
         ${field({ label: 'Minimum monthly profit', path: `participants.${index}.minimumAcceptableProfit`, value: participant.minimumAcceptableProfit, step: '0.01' })}
-        ${field({ label: 'Capacity / month', path: `participants.${index}.capacity`, value: participant.capacity, optional: true, step: '1' })}
-        ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1' })}
+        ${field({ label: 'Capacity / month', path: `participants.${index}.capacity`, value: participant.capacity, optional: true, step: '1', title: 'Leave blank for no capacity limit. Zero forbids any volume.' })}
+        ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1', title: 'Leave blank for no commitment. Blank and zero are equivalent here.' })}
         ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
       </div>
     </section>`).join('');
@@ -182,21 +194,22 @@ function inputPanel() {
       <div class="panel-body">
         <section class="input-section" aria-labelledby="deal-inputs-title">
           <h2 id="deal-inputs-title">Shared deal</h2>
+          <p class="notice">Volume shock % is the only baseline volume reduction, 0 through 100. Addressable volume caps realized demand. Empty required fields are not saved.</p>
           <div class="field-grid">
-            ${field({ label: 'Monthly volume', path: 'deal.monthlyVolume', value: state.deal.monthlyVolume, step: '1' })}
-            ${field({ label: 'Fee / transaction', path: 'deal.feePerTransaction', value: state.deal.feePerTransaction, step: '0.0001' })}
-            ${field({ label: 'Addressable volume', path: 'deal.addressableVolume', value: state.deal.addressableVolume, step: '1' })}
-            ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, step: '0.1' })}
+            ${field({ label: 'Monthly volume', path: 'deal.monthlyVolume', value: state.deal.monthlyVolume, step: '1', title: 'Planned transactions per month, zero or greater.' })}
+            ${field({ label: 'Fee / transaction', path: 'deal.feePerTransaction', value: state.deal.feePerTransaction, step: '0.0001', title: 'Gross fee collected per transaction, zero or greater.' })}
+            ${field({ label: 'Addressable volume', path: 'deal.addressableVolume', value: state.deal.addressableVolume, step: '1', title: 'Maximum transactions available from demand, zero or greater.' })}
+            ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, max: 100, step: '0.1', title: 'Baseline volume reduction, 0 through 100. There is no separate churn field.' })}
           </div>
         </section>
         <section class="input-section" aria-labelledby="stress-inputs-title">
           <h2 id="stress-inputs-title">Compound stress settings</h2>
           <p class="notice">Test simultaneous shocks. Volume changes start from current effective volume and remain capped by addressable demand.</p>
           <div class="field-grid">
-            ${field({ label: 'Volume decline %', path: 'stress.volumeDropPct', value: state.stress.volumeDropPct, max: 100 })}
-            ${field({ label: 'Volume growth %', path: 'stress.volumeGrowthPct', value: state.stress.volumeGrowthPct, max: 100 })}
-            ${field({ label: 'Fee reduction %', path: 'stress.feeDropPct', value: state.stress.feeDropPct, max: 100 })}
-            ${field({ label: 'Variable cost increase %', path: 'stress.variableCostRisePct', value: state.stress.variableCostRisePct, max: 200 })}
+            ${field({ label: 'Volume decline %', path: 'stress.volumeDropPct', value: state.stress.volumeDropPct, max: 100, title: 'Additional volume decline from current effective volume, 0 through 100.' })}
+            ${field({ label: 'Volume growth %', path: 'stress.volumeGrowthPct', value: state.stress.volumeGrowthPct, max: 100, title: 'Additional volume growth from current effective volume, 0 through 100, still capped by addressable demand.' })}
+            ${field({ label: 'Fee reduction %', path: 'stress.feeDropPct', value: state.stress.feeDropPct, max: 100, title: 'Fee cut from the current fee, 0 through 100.' })}
+            ${field({ label: 'Variable cost increase %', path: 'stress.variableCostRisePct', value: state.stress.variableCostRisePct, max: 200, title: 'Variable-cost increase from each participant current cost, 0 through 200.' })}
           </div>
           <p class="notice">Volume: decline, current, growth. Fee and cost: current, half, full shock. Up to 27 cases, with no assigned probabilities.</p>
         </section>
@@ -208,12 +221,13 @@ function inputPanel() {
         </section>
         <section class="input-section" aria-labelledby="participant-inputs-title">
           <h2 id="participant-inputs-title">Participants</h2>
-          <p class="notice">Shares must add to exactly 1. Capacity and commitment may be left blank.</p>
+          <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent.</p>
           ${participantForms}
           <div class="button-row"><button type="button" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
+          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files and invalid share links are rejected.</p>
           <div class="button-row">
             <button type="button" data-action="export">Export JSON</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
@@ -364,6 +378,12 @@ function render() {
   app.innerHTML = `<div class="app-grid">${inputPanel()}${resultsPanel(result)}</div>`;
   attachEvents();
   if (result) drawSensitivityChart(sensitivityGrid());
+  if (pendingNotice) {
+    const message = pendingNotice;
+    pendingNotice = '';
+    setNotice(message);
+    saveState();
+  }
 }
 
 function getPath(path) {
@@ -385,8 +405,7 @@ function refresh(message = '') {
     const replacement = [...app.querySelectorAll('input[data-path]')].find((input) => input.dataset.path === focusedPath);
     replacement?.focus({ preventScroll: true });
   }
-  const notice = document.querySelector('#notice');
-  if (notice) notice.textContent = message;
+  setNotice(message);
 }
 
 function attachEvents() {
@@ -396,7 +415,7 @@ function attachEvents() {
     const input = event.target;
     if (!(input instanceof HTMLInputElement)) return;
     if (input.dataset.path) {
-      setPath(input.dataset.path, input.dataset.type === 'text' ? input.value : numberFromInput(input.value, input.dataset.optional === 'true'));
+      setPath(input.dataset.path, input.dataset.type === 'text' ? input.value.trim() : numberFromInput(input.value, input.dataset.optional === 'true'));
       activePreset = '';
       refresh(validateConfiguration(state).valid
         ? (standaloneFileMode ? 'Saved locally. Export JSON to transfer this standalone case.' : 'Saved locally and updated the shareable URL.')
@@ -450,8 +469,7 @@ function attachEvents() {
 function exportFile() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
-    const notice = document.querySelector('#notice');
-    if (notice) notice.textContent = 'Resolve invalid inputs before exporting.';
+    setNotice('Resolve invalid inputs before exporting.');
     return;
   }
   const blob = new Blob([`${JSON.stringify(state, null, 2)}\n`], { type: 'application/json' });
@@ -461,36 +479,41 @@ function exportFile() {
   link.download = 'partnership-breakpoint.json';
   link.click();
   URL.revokeObjectURL(url);
-  const notice = document.querySelector('#notice');
-  if (notice) notice.textContent = 'JSON exported.';
+  setNotice('JSON exported.');
 }
 
 function importFile(file) {
   const sequence = ++importSequence;
+  if (file.size === 0) {
+    setNotice('Import rejected: the file is empty.');
+    return;
+  }
   if (file.size > 250_000) {
-    const notice = document.querySelector('#notice');
-    if (notice) notice.textContent = 'Import rejected: files must be 250 KB or smaller.';
+    setNotice('Import rejected: files must be 250 KB or smaller.');
     return;
   }
   const reader = new FileReader();
   reader.onload = () => {
     if (sequence !== importSequence) return;
+    const text = String(reader.result ?? '').trim();
+    if (!text) {
+      setNotice('Import rejected: the file is empty.');
+      return;
+    }
     try {
-      const candidate = JSON.parse(String(reader.result));
+      const candidate = JSON.parse(text);
       const validation = validateConfiguration(candidate);
       if (!validation.valid) throw new ValidationError(validation.errors);
       state = withStress(candidate);
       activePreset = '';
       refresh('JSON imported.');
     } catch (error) {
-      const notice = document.querySelector('#notice');
-      if (notice) notice.textContent = error instanceof ValidationError ? `Import rejected: ${error.errors[0]}` : 'Import rejected: valid JSON is required.';
+      setNotice(error instanceof ValidationError ? `Import rejected: ${error.errors[0]}` : 'Import rejected: valid JSON is required.');
     }
   };
   reader.onerror = () => {
     if (sequence !== importSequence) return;
-    const notice = document.querySelector('#notice');
-    if (notice) notice.textContent = 'Import rejected: file could not be read.';
+    setNotice('Import rejected: file could not be read.');
   };
   reader.readAsText(file);
 }
@@ -548,9 +571,14 @@ window.addEventListener('resize', () => {
 
 window.addEventListener('hashchange', () => {
   const shared = decodeHash(window.location.hash);
-  if (!shared) return;
+  if (shared.kind === 'none') return;
+  if (shared.kind !== 'ok') {
+    saveState();
+    setNotice('Share link could not be loaded. The current case is unchanged.');
+    return;
+  }
   importSequence += 1;
-  state = withStress(shared);
+  state = withStress(shared.config);
   activePreset = '';
   refresh('Shared case loaded.');
 });
