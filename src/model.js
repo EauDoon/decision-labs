@@ -93,8 +93,8 @@ export function validateScenario(candidate) {
     throw new ScenarioError("Scenario must be an object.");
   }
   const title = requiredText(candidate.title, "title", 80);
-  const currency = requiredText(candidate.currency, "currency", 3).toUpperCase();
-  if (!/^[A-Z]{3}$/.test(currency)) throw new ScenarioError("Currency must be a three-letter code.");
+  const currency = requiredText(candidate.currency, "currency", 3);
+  if (!/^[A-Za-z]{3}$/.test(currency)) throw new ScenarioError("Currency must be a three-letter code.");
   if (!Array.isArray(candidate.buyers) || candidate.buyers.length < 1 || candidate.buyers.length > MAX_BUYERS) {
     throw new ScenarioError(`Buyers must contain 1 to ${MAX_BUYERS} entries.`);
   }
@@ -105,7 +105,7 @@ export function validateScenario(candidate) {
   const offers = candidate.offers.map((entry, index) => validateOffer(entry, index));
   uniqueIds(buyers, "buyer");
   uniqueIds(offers, "offer");
-  return { title, currency, buyers, offers };
+  return { title, currency: currency.toUpperCase(), buyers, offers };
 }
 
 function validateBuyer(entry, index) {

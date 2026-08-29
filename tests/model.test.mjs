@@ -139,6 +139,8 @@ test("validation rejects duplicate ids and invalid currency", () => {
   const currency = clonePreset("neighbourhood");
   currency.currency = "A$";
   assert.throws(() => validateScenario(currency), /three-letter code/);
+  currency.currency = "ſgd";
+  assert.throws(() => validateScenario(currency), /three-letter code/);
 });
 
 test("validation returns a detached normalized scenario", () => {
