@@ -1,3 +1,4 @@
+import { spawnSync } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -25,9 +26,17 @@ for (const file of publicFiles) {
     if (rule.expression.test(text)) findings.push(`${relative(root, file)} contains ${rule.label}.`);
   }
 }
+const scriptFiles = publicFiles.filter((file) => file.endsWith('.js') || file.endsWith('.mjs'));
+for (const file of scriptFiles) {
+  const result = spawnSync(process.execPath, ['--check', file], { encoding: 'utf8' });
+  if (result.status !== 0) {
+    const detail = (result.stderr || result.stdout || result.error?.message || 'syntax check failed').trim();
+    findings.push(`${relative(root, file)} failed syntax check. ${detail}`);
+  }
+}
 if (findings.length) {
   console.error(findings.join('\n'));
   process.exitCode = 1;
 } else {
-  console.log(`Checked ${publicFiles.length} files: no em dashes, private paths, or private key markers found.`);
+  console.log(`Checked ${publicFiles.length} files: no em dashes, private paths, or private key markers found. Syntax-checked ${scriptFiles.length} JavaScript files.`);
 }

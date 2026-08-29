@@ -261,6 +261,23 @@ test('reachable capacity limits the weakest participant and first breakpoint', (
   assert.equal(result.firstBreakpoint.shock.changePct, 1);
 });
 
+test('first breakpoint can name a different participant than the weakest volume-headroom ranking', () => {
+  const config = {
+    deal: { monthlyVolume: 100, feePerTransaction: 1, addressableVolume: 200, volumeShockPct: 0 },
+    participants: [
+      { id: 'tight-capacity', name: 'Tight Capacity', revenueShare: 0.5, variableCostPerTransaction: 0.01, fixedMonthlyCost: 0, minimumAcceptableProfit: 0, capacity: 101, minimumCommitment: 0, riskCost: 0 },
+      { id: 'tight-fee', name: 'Tight Fee', revenueShare: 0.5, variableCostPerTransaction: 0.1, fixedMonthlyCost: 0, minimumAcceptableProfit: 39.55, capacity: 1000, minimumCommitment: 0, riskCost: 0 },
+    ],
+  };
+  const result = calculatePartnership(config);
+  assert.equal(result.viable, true);
+  assert.equal(result.weakestParticipant.id, 'tight-capacity');
+  assert.ok(result.weakestParticipant.fragilityHeadroom < result.participants.find((participant) => participant.id === 'tight-fee').fragilityHeadroom);
+  assert.equal(result.firstBreakpoint.participant.id, 'tight-fee');
+  assert.equal(result.firstBreakpoint.kind, 'fee');
+  assert.ok(result.firstBreakpoint.shock.changePct < result.participants[0].shocks.volumeIncrease.changePct);
+});
+
 test('already failing participants have a zero adverse shock', () => {
   const config = clonePreset('balanced');
   config.participants[2].minimumAcceptableProfit = 10000;

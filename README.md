@@ -1,8 +1,8 @@
 # Partnership Breakpoint
 
-Partnership Breakpoint is a static browser workbench for locating the participant most likely to exit a shared commercial arrangement, then quantifying the smallest adverse change in volume, fee, or variable cost that reaches that participant's exit boundary.
+Partnership Breakpoint is a static browser workbench for locating participant-level exit thresholds in a shared commercial arrangement, then ranking the smallest adverse percentage movements in volume, fee, or variable cost that reach those boundaries. A reachable capacity limit is ranked as a volume-increase shock.
 
-It is useful when a negotiated revenue split looks acceptable in aggregate but may fail for one participant after costs, capacity, commitments, or a modest commercial shock are included.
+It is useful when a negotiated revenue split looks acceptable in aggregate but may fail for one participant after costs, capacity, commitments, or a modest commercial shock are included. The workbench does not assign probabilities. The viability card names the participant with the least volume headroom. First breakpoint is a separate ranking by relative shock size and can name a different participant.
 
 Version 1.2.0 adds simultaneous volume, fee, and variable-cost stress tests, with a participant failure ledger and a tested revenue-split proposal when the selected cases permit one.
 
@@ -40,24 +40,24 @@ To run the server without the launcher:
 npm start
 ```
 
-Open the local address printed by the server, normally `http://localhost:4173`.
+Open the local address printed by the server, normally `http://127.0.0.1:4173`. The listener is loopback IPv4 only.
 
 ```sh
 npm test
 npm run check
 ```
 
-`npm test` runs the pure economic-model tests. `npm run check` scans project files for em dashes, private filesystem paths, and common private-key markers. GitHub Actions runs both commands on pull requests and on pushes to `main`.
+`npm test` runs every Node test file under `tests/`: the economic model, compound-stress negotiation, standalone renderer, and workbench interaction checks. `npm run check` scans project files for em dashes, private filesystem paths, and common private-key markers, syntax-checks JavaScript sources, and verifies that `standalone.html` matches the current sources. GitHub Actions runs both commands on pull requests and on pushes to `main`.
 
 ## Use the workbench
 
-1. Set the shared monthly volume, fee per transaction, addressable monthly volume, and any churn or volume shock.
-2. Add or edit participants. Revenue shares must total exactly 1. At least two participants are required.
-3. Enter each participant's per-transaction variable cost, monthly fixed cost, minimum acceptable monthly profit, capacity, minimum commitment if any, and monthly risk cost.
-4. Start with the First breakpoint card. It identifies who to protect first and the smallest percentage movement in volume, fee, or variable cost that reaches an exit boundary.
-5. Read the participant ledger, binding limits, adverse-shock thresholds, and fee-volume operating region.
-6. Edit Compound stress settings. The workbench tests up to 27 combinations of volume decline or growth, fee cuts, and variable-cost increases. Open the case evidence to inspect every outcome.
-7. Compare each participant's worst profit gap and minimum revenue share. If a fixed split can fund every participant in every tested case without capacity or commitment failures, preview the proposal and select Apply tested revenue split. The workbench rechecks it before changing the shares.
+1. Set Monthly volume, Fee / transaction, Addressable volume, and Volume shock % on the Shared deal form. Volume shock % is the only baseline volume reduction; there is no separate churn field.
+2. Add or edit participants. Revenue shares must total exactly 1. Between 2 and 24 participants are required.
+3. Enter each participant's Variable cost / txn, Fixed monthly cost, Minimum monthly profit, optional Capacity / month, optional Minimum commitment, and Risk cost / month.
+4. Start with the First breakpoint card. It ranks bounded volume decrease, volume increase (capacity), fee decrease, and variable-cost increase shocks by the smallest percentage movement from the current scenario. That ranking can name a different participant than the viability card's least-headroom participant.
+5. Read the Participant ledger (including Binding limit), Smallest adverse shock by participant, and Operating region (fee and volume sensitivity).
+6. Edit Compound stress settings. The workbench tests up to 27 combinations of volume decline or growth, fee cuts, and variable-cost increases. Open Inspect all N compound cases to review every outcome.
+7. Compare each participant's Worst profit gap and Minimum share. If a fixed split can fund every participant in every tested case without capacity or commitment failures, preview the proposal and select Apply tested revenue split. The workbench rechecks it before changing the shares.
 
 The app autosaves valid inputs in local browser storage. When served locally, it also writes valid input state to the URL hash so the current case can be copied as a link. In standalone file mode, use Export JSON for a portable case file. Import JSON is available in both modes.
 
