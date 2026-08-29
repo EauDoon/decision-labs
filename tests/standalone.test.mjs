@@ -26,4 +26,7 @@ test("standalone GUI has no external resource dependency", async () => {
   assert.match(html, /Accepted variants are a comma-separated list/u);
   assert.match(html, /cannot be empty/u);
   assert.match(html, /"Room name"/u);
+  assert.match(html, /Share link could not be opened/u);
+  assert.match(html, /Saved room could not be restored/u);
+  assert.match(html, /not valid JSON/u);
 });

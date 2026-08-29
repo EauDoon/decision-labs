@@ -981,14 +981,37 @@ function decodeScenario(value) {
   if (typeof value !== "string") throw new ScenarioError("Shared scenario must be a string.");
   if (value.length === 0 || value.length > MAX_SHARE_LENGTH) throw new ScenarioError("Shared scenario is empty or too large.");
   const padded = value.replaceAll("-", "+").replaceAll("_", "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+  let binary;
   try {
-    const binary = atob(padded);
-    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-    return validateScenario(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)));
-  } catch (error) {
-    if (error instanceof ScenarioError) throw error;
-    throw new ScenarioError("Shared scenario could not be decoded.");
+    binary = atob(padded);
+  } catch {
+    throw new ScenarioError("Shared scenario is not valid base64.");
   }
+  let text;
+  try {
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    throw new ScenarioError("Shared scenario is not valid UTF-8.");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    throw new ScenarioError(`Shared scenario is not valid JSON${jsonSyntaxHint(error)}.`);
+  }
+  return validateScenario(parsed);
+}
+
+function jsonSyntaxHint(error) {
+  const message = String(error?.message ?? "").replace(/\s+/g, " ").trim();
+  if (!message) return "";
+  const lineColumn = message.match(/line (\d+)(?: column (\d+))?/i);
+  if (lineColumn?.[2]) return ` (line ${lineColumn[1]}, column ${lineColumn[2]})`;
+  if (lineColumn) return ` (line ${lineColumn[1]})`;
+  const position = message.match(/position (\d+)/i);
+  if (position) return ` (at position ${position[1]})`;
+  return ` (${message})`;
 }
 
 const STORAGE_KEY = "common-cart.scenario.v1";
@@ -1028,17 +1051,29 @@ bindStaticEvents();
 
 function loadInitialScenario() {
   const hashValue = window.location.hash.startsWith("#scenario=") ? window.location.hash.slice(10) : "";
+  let shareFailed = false;
   if (hashValue) {
     try {
       return decodeScenario(hashValue);
     } catch (error) {
-      queueMicrotask(() => setStatus(messageOf(error)));
+      shareFailed = true;
+      queueMicrotask(() => setStatus(`Share link could not be opened: ${messageOf(error)}`));
     }
   }
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? validateScenario(JSON.parse(stored)) : clonePreset();
-  } catch {
+    if (!stored) return clonePreset();
+    let parsed;
+    try {
+      parsed = JSON.parse(stored);
+    } catch (error) {
+      throw new ScenarioError(`the saved JSON is not valid${jsonSyntaxHint(error)}.`);
+    }
+    return validateScenario(parsed);
+  } catch (error) {
+    if (!shareFailed) {
+      queueMicrotask(() => setStatus(`Saved room could not be restored: ${messageOf(error)} Starting from the neighbourhood example.`));
+    }
     return clonePreset();
   }
 }
@@ -1545,8 +1580,8 @@ async function importScenario(event) {
     let parsed;
     try {
       parsed = JSON.parse(text);
-    } catch {
-      return setStatus("Import failed: the file is not valid JSON.");
+    } catch (error) {
+      return setStatus(`Import failed: the file is not valid JSON${jsonSyntaxHint(error)}.`);
     }
     scenario = validateScenario(parsed);
     inspectedOfferId = scenario.offers[0]?.id ?? "";
@@ -1569,7 +1604,7 @@ function exportScenario() {
     URL.revokeObjectURL(link.href);
     setStatus("Scenario exported.", true);
   } catch (error) {
-    setStatus(messageOf(error));
+    setStatus(`Export failed: ${messageOf(error)}`);
   }
 }
 
@@ -1582,7 +1617,7 @@ async function shareScenario() {
     await navigator.clipboard.writeText(url.href);
     setStatus("Share link copied. It contains this scenario's data.", true);
   } catch (error) {
-    setStatus(error?.name === "NotAllowedError" ? "The share link is in the address bar, but clipboard access was denied." : messageOf(error));
+    setStatus(error?.name === "NotAllowedError" ? "The share link is in the address bar, but clipboard access was denied." : `Share failed: ${messageOf(error)}`);
   }
 }
 
@@ -1611,6 +1646,17 @@ function setStatus(message, success = false) {
 
 function messageOf(error) {
   return error instanceof ScenarioError || error instanceof Error ? error.message : "The scenario is invalid.";
+}
+
+function jsonSyntaxHint(error) {
+  const message = String(error?.message ?? "").replace(/\s+/g, " ").trim();
+  if (!message) return "";
+  const lineColumn = message.match(/line (\d+)(?: column (\d+))?/i);
+  if (lineColumn?.[2]) return ` (line ${lineColumn[1]}, column ${lineColumn[2]})`;
+  if (lineColumn) return ` (line ${lineColumn[1]})`;
+  const position = message.match(/position (\d+)/i);
+  if (position) return ` (at position ${position[1]})`;
+  return ` (${message})`;
 }</script>
 </body>
 </html>

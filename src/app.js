@@ -45,17 +45,29 @@ bindStaticEvents();
 
 function loadInitialScenario() {
   const hashValue = window.location.hash.startsWith("#scenario=") ? window.location.hash.slice(10) : "";
+  let shareFailed = false;
   if (hashValue) {
     try {
       return decodeScenario(hashValue);
     } catch (error) {
-      queueMicrotask(() => setStatus(messageOf(error)));
+      shareFailed = true;
+      queueMicrotask(() => setStatus(`Share link could not be opened: ${messageOf(error)}`));
     }
   }
   try {
     const stored = localStorage.getItem(STORAGE_KEY);
-    return stored ? validateScenario(JSON.parse(stored)) : clonePreset();
-  } catch {
+    if (!stored) return clonePreset();
+    let parsed;
+    try {
+      parsed = JSON.parse(stored);
+    } catch (error) {
+      throw new ScenarioError(`the saved JSON is not valid${jsonSyntaxHint(error)}.`);
+    }
+    return validateScenario(parsed);
+  } catch (error) {
+    if (!shareFailed) {
+      queueMicrotask(() => setStatus(`Saved room could not be restored: ${messageOf(error)} Starting from the neighbourhood example.`));
+    }
     return clonePreset();
   }
 }
@@ -562,8 +574,8 @@ async function importScenario(event) {
     let parsed;
     try {
       parsed = JSON.parse(text);
-    } catch {
-      return setStatus("Import failed: the file is not valid JSON.");
+    } catch (error) {
+      return setStatus(`Import failed: the file is not valid JSON${jsonSyntaxHint(error)}.`);
     }
     scenario = validateScenario(parsed);
     inspectedOfferId = scenario.offers[0]?.id ?? "";
@@ -586,7 +598,7 @@ function exportScenario() {
     URL.revokeObjectURL(link.href);
     setStatus("Scenario exported.", true);
   } catch (error) {
-    setStatus(messageOf(error));
+    setStatus(`Export failed: ${messageOf(error)}`);
   }
 }
 
@@ -599,7 +611,7 @@ async function shareScenario() {
     await navigator.clipboard.writeText(url.href);
     setStatus("Share link copied. It contains this scenario's data.", true);
   } catch (error) {
-    setStatus(error?.name === "NotAllowedError" ? "The share link is in the address bar, but clipboard access was denied." : messageOf(error));
+    setStatus(error?.name === "NotAllowedError" ? "The share link is in the address bar, but clipboard access was denied." : `Share failed: ${messageOf(error)}`);
   }
 }
 
@@ -628,4 +640,15 @@ function setStatus(message, success = false) {
 
 function messageOf(error) {
   return error instanceof ScenarioError || error instanceof Error ? error.message : "The scenario is invalid.";
+}
+
+function jsonSyntaxHint(error) {
+  const message = String(error?.message ?? "").replace(/\s+/g, " ").trim();
+  if (!message) return "";
+  const lineColumn = message.match(/line (\d+)(?: column (\d+))?/i);
+  if (lineColumn?.[2]) return ` (line ${lineColumn[1]}, column ${lineColumn[2]})`;
+  if (lineColumn) return ` (line ${lineColumn[1]})`;
+  const position = message.match(/position (\d+)/i);
+  if (position) return ` (at position ${position[1]})`;
+  return ` (${message})`;
 }

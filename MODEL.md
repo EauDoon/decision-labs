@@ -114,6 +114,6 @@ Demand is grouped by product category. For each category, the merchant view repo
 - Aggregate ranges can reveal information in small or distinctive cohorts.
 - The model excludes taxes, tiered shipping, substitutions across categories, partial quantities, returns, credit risk, inventory changes, and strategic behavior.
 - A real marketplace needs informed consent, identity and merchant controls, payment safety, fulfillment evidence, dispute handling, accessibility research, and jurisdiction-specific compliance.
-- An encoded share payload is at most 60,000 characters of URL-safe base64. Oversized scenarios must be exported as JSON instead.
+- An encoded share payload is at most 60,000 characters of URL-safe base64. Oversized scenarios must be exported as JSON instead. Malformed payloads name the failed step (base64, UTF-8, or JSON location) rather than a generic decode error.
 
 The model can test whether a declared offer satisfies declared constraints. It cannot prove that a purchase is wise, fair, available, safe, or legally compliant.

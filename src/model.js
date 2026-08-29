@@ -402,12 +402,35 @@ export function decodeScenario(value) {
   if (typeof value !== "string") throw new ScenarioError("Shared scenario must be a string.");
   if (value.length === 0 || value.length > MAX_SHARE_LENGTH) throw new ScenarioError("Shared scenario is empty or too large.");
   const padded = value.replaceAll("-", "+").replaceAll("_", "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
+  let binary;
   try {
-    const binary = atob(padded);
-    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-    return validateScenario(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)));
-  } catch (error) {
-    if (error instanceof ScenarioError) throw error;
-    throw new ScenarioError("Shared scenario could not be decoded.");
+    binary = atob(padded);
+  } catch {
+    throw new ScenarioError("Shared scenario is not valid base64.");
   }
+  let text;
+  try {
+    const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
+    text = new TextDecoder("utf-8", { fatal: true }).decode(bytes);
+  } catch {
+    throw new ScenarioError("Shared scenario is not valid UTF-8.");
+  }
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    throw new ScenarioError(`Shared scenario is not valid JSON${jsonSyntaxHint(error)}.`);
+  }
+  return validateScenario(parsed);
+}
+
+function jsonSyntaxHint(error) {
+  const message = String(error?.message ?? "").replace(/\s+/g, " ").trim();
+  if (!message) return "";
+  const lineColumn = message.match(/line (\d+)(?: column (\d+))?/i);
+  if (lineColumn?.[2]) return ` (line ${lineColumn[1]}, column ${lineColumn[2]})`;
+  if (lineColumn) return ` (line ${lineColumn[1]})`;
+  const position = message.match(/position (\d+)/i);
+  if (position) return ` (at position ${position[1]})`;
+  return ` (${message})`;
 }

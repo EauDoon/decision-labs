@@ -269,15 +269,28 @@ test("validation returns a detached normalized scenario", () => {
   assert.equal(input.buyers[0].allowedVariants.includes("Changed"), false);
 });
 
-test("share encoding round trips normal cases and rejects malformed or oversized links", () => {
+function sharePayload(bytesOrText) {
+  const bytes = typeof bytesOrText === "string" ? new TextEncoder().encode(bytesOrText) : bytesOrText;
+  return btoa(String.fromCharCode(...bytes)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+}
+
+test("share encoding round trips normal cases and names decode failures", () => {
   const normal = clonePreset("neighbourhood");
   assert.deepEqual(decodeScenario(encodeScenario(normal)), validateScenario(normal));
 
   const json = JSON.stringify(normal);
   const malformedUtf8 = new TextEncoder().encode(json);
   malformedUtf8[json.indexOf(normal.title)] = 0x80;
-  const corrupted = btoa(String.fromCharCode(...malformedUtf8)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
-  assert.throws(() => decodeScenario(corrupted), /could not be decoded/);
+  assert.throws(() => decodeScenario(sharePayload(malformedUtf8)), /not valid UTF-8/);
+  assert.throws(() => decodeScenario("!!!"), /not valid base64/);
+  try {
+    decodeScenario(sharePayload("{"));
+    assert.fail("expected invalid JSON share payload to fail");
+  } catch (error) {
+    assert.match(error.message, /not valid JSON/);
+    assert.match(error.message, /position \d+|line \d+|Unexpected/i);
+  }
+  assert.throws(() => decodeScenario(sharePayload("null")), /must be an object/);
 
   const large = clonePreset("neighbourhood");
   const variants = Array.from({ length: 12 }, (_, index) => `variant-${index}-${"x".repeat(48)}`);
