@@ -546,4 +546,13 @@ window.addEventListener('resize', () => {
   if (validateConfiguration(state).valid) drawSensitivityChart(sensitivityGrid());
 });
 
+window.addEventListener('hashchange', () => {
+  const shared = decodeHash(window.location.hash);
+  if (!shared) return;
+  importSequence += 1;
+  state = withStress(shared);
+  activePreset = '';
+  refresh('Shared case loaded.');
+});
+
 render();
