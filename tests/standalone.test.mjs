@@ -74,6 +74,28 @@ async function savedWorkbench(storage, hash = "") {
   };
 }
 
+test("invalid thresholds in storage and share links fail closed without replacing the workshop", async () => {
+  const key = "smallest-agreement:proposal:v1";
+  const valid = { title: "Custom saved workshop", threshold: 70,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "clause", title: "Clause", options: [
+      { id: "original", label: "Original", original: true, changeCost: 0, support: { g: 60 } },
+      { id: "alternative", label: "Alternative", original: false, changeCost: 1, support: { g: 80 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+  for (const value of [101, -1, null, "70", false, {}]) {
+    const storage = new Map([[key, JSON.stringify({ ...valid, threshold: value })]]);
+    const app = await savedWorkbench(storage);
+    assert.equal(app.title(), "Neighbourhood Plan: the shared green", `stored threshold ${String(value)}`);
+    assert.doesNotMatch(app.alert(), /Fix the proposal before searching/u);
+  }
+  const encoded = Buffer.from(JSON.stringify({ ...valid, threshold: 101 })).toString("base64url");
+  const shared = await savedWorkbench(new Map(), `#agreement=${encoded}`);
+  assert.equal(shared.title(), "Neighbourhood Plan: the shared green");
+  assert.match(shared.message(), /proposal is invalid/u);
+});
+
 test("share links reject malformed UTF-8 instead of loading replacement text", async () => {
   const draft = { title: "Corrupt workshop", threshold: 70,
     groups: [{ id: "g", name: "Group", weight: 1 }],

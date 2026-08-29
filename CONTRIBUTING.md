@@ -29,4 +29,6 @@ npm test
 npm run check
 ```
 
+CI runs the same commands on Node 20 and 22 for Ubuntu and Windows. Keep those commands passing without installing packages.
+
 Keep public prose direct and accurate. Do not use em dashes.

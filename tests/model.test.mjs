@@ -221,12 +221,84 @@ test("validation bounds imported structure, labels, and identifier syntax", () =
   }
 });
 
+test("invalid thresholds fail closed before any search or canonical export", () => {
+  const clauses = [{ id: "one", title: "One", options: [
+    option("original", true, { g: 50 }),
+    option("alternative", false, { g: 80 }, 1),
+    option("alternative-two", false, { g: 70 }, 2),
+  ] }];
+  for (const value of [-1, 101, NaN, Infinity, -Infinity, null, undefined, "70", false, true, {}, []]) {
+    const input = proposal({ clauses: structuredClone(clauses) });
+    input.threshold = value;
+    const snapshot = structuredClone(input);
+    const validation = validateProposal(input);
+    assert.equal(validation.valid, false, `threshold ${String(value)}`);
+    assert.match(validation.errors.join(" "), /threshold must be a number from 0 to 100/u);
+    const result = findSmallestAgreement(input);
+    assert.equal(result.status, "invalid", `threshold ${String(value)}`);
+    assert.match(result.errors.join(" "), /threshold must be a number from 0 to 100/u);
+    assert.equal(result.agreement, undefined);
+    assert.throws(() => canonicalProposal(input), /threshold must be a number from 0 to 100/u);
+    assert.deepEqual(input, snapshot);
+    const brief = formatDecisionBrief(input, result);
+    assert.match(brief, /The draft is not valid enough to evaluate/u);
+    assert.match(brief, /threshold must be a number from 0 to 100/u);
+    assert.doesNotMatch(brief, /A lowest-cost passing combination was found/u);
+  }
+  for (const value of [0, 100, 70, 12.5]) {
+    assert.equal(validateProposal(proposal({ threshold: value, clauses: structuredClone(clauses) })).valid, true, `threshold ${value}`);
+  }
+});
+
+test("search treats threshold 0 and 100 as inclusive bounds", () => {
+  const clauses = [{ id: "one", title: "One", options: [
+    option("original", true, { g: 0 }),
+    option("middle", false, { g: 50 }, 1),
+    option("perfect", false, { g: 100 }, 2),
+  ] }];
+  const atZero = findSmallestAgreement(proposal({ threshold: 0, clauses: structuredClone(clauses) }));
+  assert.equal(atZero.status, "already_passing");
+  assert.equal(atZero.agreement.options[0].id, "original");
+  assert.equal(atZero.checkedCombinations, 1);
+
+  const exactCeiling = findSmallestAgreement(proposal({ threshold: 100, clauses: structuredClone(clauses) }));
+  assert.equal(exactCeiling.status, "found");
+  assert.equal(exactCeiling.agreement.options[0].id, "perfect");
+  assert.equal(exactCeiling.agreement.approval, 100);
+  assert.equal(exactCeiling.nearMisses[0].options[0].id, "middle");
+
+  const alreadyPerfect = proposal({ threshold: 100, clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 100 }),
+    option("middle", false, { g: 50 }, 1),
+    option("other", false, { g: 0 }, 2),
+  ] }] });
+  assert.equal(findSmallestAgreement(alreadyPerfect).status, "already_passing");
+});
+
 test("public search options cannot raise the resource or result caps", () => {
   const input = proposal({ clauses: [{ id: "one", title: "One", options: [
     option("a", true, { g: 40 }), option("b", false, { g: 60 }, 1), option("c", false, { g: 80 }, 2),
   ] }] });
   assert.equal(findSmallestAgreement(input, { maxCombinations: MAX_COMBINATIONS + 1 }).status, "invalid");
   assert.equal(findSmallestAgreement(input, { nearMissLimit: MAX_NEAR_MISSES + 1 }).status, "invalid");
+  for (const value of [0, -1, 1.5, NaN, Infinity, "4", null, {}, true]) {
+    const combinations = findSmallestAgreement(input, { maxCombinations: value });
+    assert.equal(combinations.status, "invalid", `maxCombinations ${String(value)}`);
+    assert.match(combinations.errors.join(" "), /maxCombinations must be an integer from 1 through/u);
+  }
+  for (const value of [-1, 1.5, NaN, Infinity, "2", null, {}, true]) {
+    const misses = findSmallestAgreement(input, { nearMissLimit: value });
+    assert.equal(misses.status, "invalid", `nearMissLimit ${String(value)}`);
+    assert.match(misses.errors.join(" "), /nearMissLimit must be an integer from 0 through/u);
+  }
+  const noMisses = findSmallestAgreement(proposal({
+    threshold: 90,
+    clauses: [{ id: "one", title: "One", options: [
+      option("a", true, { g: 40 }), option("b", false, { g: 75 }, 1), option("c", false, { g: 65 }, 2),
+    ] }],
+  }), { nearMissLimit: 0 });
+  assert.equal(noMisses.status, "infeasible");
+  assert.deepEqual(noMisses.nearMisses, []);
 });
 
 test("search returns an explicit safety result when combinations exceed the bound", () => {

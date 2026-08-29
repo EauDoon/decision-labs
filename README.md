@@ -102,6 +102,7 @@ Support floors protect only the numerical average you enter. They do not establi
 - `src/app.js`: local browser state, editing controls, import/export, brief download, URL sharing, and canvas display.
 - `tests/model.test.mjs`: Node built-in test coverage for the model.
 - `tests/standalone.test.mjs`: self-contained artifact checks.
+- `.github/workflows/ci.yml`: Node 20+ syntax, standalone, and test checks on Ubuntu and Windows.
 - `scripts/dev-server.mjs`: dependency-free localhost server.
 - `scripts/launch.mjs`: cross-platform GUI launcher.
 - `scripts/build-standalone.mjs`: deterministic standalone-file builder and stale-output check.
