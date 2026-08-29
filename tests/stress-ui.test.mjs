@@ -18,6 +18,7 @@ async function workbench() {
   class Input { constructor(dataset, value) { this.dataset = dataset; this.value = value; } }
   class Reader {
     readAsText(file) {
+      if (file.error) return this.onerror();
       this.result = file.contents;
       if (file.pending) file.pending.push(() => this.onload());
       else this.onload();
@@ -35,9 +36,9 @@ async function workbench() {
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
     edit: (path, value) => events.get('change')({ target: new Input({ path }, value) }),
     click: (action) => events.get('click')({ target: { closest: () => ({ dataset: { action } }) } }),
-    import: (config, pending) => {
+    import: (config, pending, error = false) => {
       const input = new Input({ action: 'import' }, '');
-      input.files = [{ size: 100, contents: JSON.stringify(config), pending }];
+      input.files = [{ size: 100, contents: JSON.stringify(config), pending, error }];
       events.get('change')({ target: input });
     },
   };
@@ -111,6 +112,15 @@ test('an older file read cannot overwrite the latest import selection', async ()
   pending[0]();
 
   assert.equal(app.saved().deal.monthlyVolume, 80_000);
+});
+
+test('an unreadable import reports the failure and preserves the case', async () => {
+  const app = await workbench();
+  app.import(clonePreset('balanced'));
+  const previous = app.saved();
+  app.import(null, undefined, true);
+  assert.match(app.notice(), /could not be read/);
+  assert.deepEqual(app.saved(), previous);
 });
 
 test('participant controls stop at the model capacity without invalidating the saved case', async () => {

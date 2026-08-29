@@ -487,6 +487,11 @@ function importFile(file) {
       if (notice) notice.textContent = error instanceof ValidationError ? `Import rejected: ${error.errors[0]}` : 'Import rejected: valid JSON is required.';
     }
   };
+  reader.onerror = () => {
+    if (sequence !== importSequence) return;
+    const notice = document.querySelector('#notice');
+    if (notice) notice.textContent = 'Import rejected: file could not be read.';
+  };
   reader.readAsText(file);
 }
 
