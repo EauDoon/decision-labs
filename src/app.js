@@ -1,5 +1,8 @@
 import {
+  MAX_CLAUSES,
   MAX_COMBINATIONS,
+  MAX_GROUPS,
+  MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
   findSmallestAgreement,
   formatPercent,
@@ -223,6 +226,8 @@ function formatMargin(value) {
 
 function render() {
   const proposal = state.proposal;
+  $("[data-action=\"add-group\"]").disabled = proposal.groups.length >= MAX_GROUPS;
+  $("[data-action=\"add-clause\"]").disabled = proposal.clauses.length >= MAX_CLAUSES;
   $("#proposal-title").value = proposal.title;
   $("#threshold").value = proposal.threshold;
   $("#threshold-output").textContent = `${proposal.threshold}%`;
@@ -269,7 +274,7 @@ function renderClauses() {
             <td><div class="option-tools">${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
           </tr>`).join("")}</tbody>
       </table></div>
-      <button class="text-button add-alternative" type="button" data-action="add-option" data-clause-id="${escapeHtml(clause.id)}">Add alternative</button>
+      <button class="text-button add-alternative" type="button" data-action="add-option" data-clause-id="${escapeHtml(clause.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Add alternative</button>
     </article>`).join("");
 }
 

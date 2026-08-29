@@ -58,6 +58,7 @@ async function savedWorkbench(storage) {
     message: () => element("#autosave-status").textContent,
     alert: () => element("#result-alert").textContent,
     summary: () => element("#result-summary").innerHTML,
+    clauses: () => element("#clauses-editor").innerHTML,
     disabled: (selector) => element(selector).disabled,
     click: (selector) => element(selector).events.get("click")(),
     setTitle: (value) => {
@@ -129,4 +130,31 @@ test("empty and whitespace title edits clear stale results and block export and 
   assert.equal(app.disabled("#export-button"), false);
   assert.equal(app.disabled("#share-button"), false);
   assert.equal(JSON.parse(storage.get(key)).title, "Corrected workshop title");
+});
+
+test("editor disables add controls at the model's validation caps", async () => {
+  const key = "smallest-agreement:proposal:v1";
+  const base = { title: "Bounded workshop", threshold: 70,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "clause", title: "Clause", options: [
+      { id: "original", label: "Original", original: true, changeCost: 0, support: { g: 60 } },
+      { id: "alternative", label: "Alternative", original: false, changeCost: 1, support: { g: 80 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+
+  const groupCapped = structuredClone(base);
+  groupCapped.groups = Array.from({ length: 24 }, (_, index) => ({ id: `g${index}`, name: `Group ${index}`, weight: 1 }));
+  for (const option of groupCapped.clauses[0].options) option.support = Object.fromEntries(groupCapped.groups.map(({ id }) => [id, 50]));
+  assert.equal((await savedWorkbench(new Map([[key, JSON.stringify(groupCapped)]]))).disabled('[data-action="add-group"]'), true);
+
+  const clauseCapped = structuredClone(base);
+  clauseCapped.clauses = Array.from({ length: 20 }, (_, index) => ({ ...structuredClone(base.clauses[0]), id: `clause-${index}` }));
+  assert.equal((await savedWorkbench(new Map([[key, JSON.stringify(clauseCapped)]]))).disabled('[data-action="add-clause"]'), true);
+
+  const optionCapped = structuredClone(base);
+  optionCapped.clauses[0].options.push(...Array.from({ length: 21 }, (_, index) => ({
+    id: `extra-${index}`, label: `Extra ${index}`, original: false, changeCost: index + 3, support: { g: 50 },
+  })));
+  assert.match((await savedWorkbench(new Map([[key, JSON.stringify(optionCapped)]]))).clauses(), /data-action="add-option"[^>]*disabled/u);
 });

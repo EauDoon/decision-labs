@@ -13,7 +13,10 @@ const stylesheetMarker = '<link rel="stylesheet" href="styles.css">';
 const scriptMarker = '<script type="module" src="src/app.js"></script>';
 const cspMarker = "    <title>The Smallest Agreement</title>";
 const appImport = `import {
+  MAX_CLAUSES,
   MAX_COMBINATIONS,
+  MAX_GROUPS,
+  MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
   findSmallestAgreement,
   formatPercent,
