@@ -1107,12 +1107,15 @@ function setMessage(message = "") {
   elements.inputMessage.textContent = message;
 }
 
-function setScenario(nextScenario, { normaliseForm = true, message = "" } = {}) {
+function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false } = {}) {
   const cleaned = sanitizeScenario(nextScenario);
   scenario = cleaned.scenario;
   simulation = runSimulation(scenario);
   comparison = compareScenarios(baselineScenario, scenario);
   selectedHour = Math.min(selectedHour, SIMULATION_HOURS);
+  if (!preserveShareHash && window.location.hash.startsWith("#scenario=")) {
+    history.replaceState(null, "", `${window.location.pathname}${window.location.search}`);
+  }
   if (normaliseForm) writeForm();
   saveScenario();
   render();
@@ -1479,7 +1482,7 @@ if (!standaloneMode) {
     }
     selectedHour = 0;
     setPlaying(false);
-    setScenario(fromHash.scenario, { message: "Loaded scenario from the share link." });
+    setScenario(fromHash.scenario, { message: "Loaded scenario from the share link.", preserveShareHash: true });
   });
 }
 

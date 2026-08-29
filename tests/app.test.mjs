@@ -48,6 +48,15 @@ test("invalid hash handling keeps state and reports that accurately", () => {
   assert.match(hashChangeHandler, /if \(!fromHash\.scenario\) \{\s+if \(fromHash\.errors\.length\) setMessage\(currentScenarioHashError\(fromHash\.errors\[0\]\)\);\s+return;/s);
 });
 
+test("editing a shared scenario cannot leave a stale reload hash", () => {
+  const setScenario = appSource.slice(appSource.indexOf("function setScenario("), appSource.indexOf("function gateText("));
+  assert.match(setScenario, /preserveShareHash = false/);
+  assert.match(setScenario, /if \(!preserveShareHash && window\.location\.hash\.startsWith\("#scenario="\)\) \{\s+history\.replaceState\(null, "", `\$\{window\.location\.pathname\}\$\{window\.location\.search\}`\);\s+\}/s);
+
+  const hashChangeHandler = appSource.slice(appSource.indexOf('window.addEventListener("hashchange"'), appSource.indexOf('window.addEventListener("resize"'));
+  assert.match(hashChangeHandler, /setScenario\(fromHash\.scenario, \{ message: "Loaded scenario from the share link\.", preserveShareHash: true \}\)/);
+});
+
 test("outcome summary surfaces completion, residual queue and peak timing", async () => {
   const indexSource = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(indexSource, /id="outcome-summary"/);
