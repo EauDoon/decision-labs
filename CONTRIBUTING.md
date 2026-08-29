@@ -5,7 +5,7 @@ Common Cart is deliberately small. Contributions should preserve the transparent
 ## Before opening a pull request
 
 1. Create a focused branch.
-2. Keep model calculations in `src/model.js` as pure exported functions.
+2. Keep model calculations in `src/model.js` as pure exported functions, and keep `src/model.d.ts` aligned with those exports.
 3. Add or update deterministic tests for every model behavior change.
 4. Keep the browser functional without external services, trackers, fonts, or assets.
 5. Update `MODEL.md` when formulas, ordering, fields, or limits change.

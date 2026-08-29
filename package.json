@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "description": "A local-first pooled purchase simulator that matches aggregate buyer constraints to synthetic merchant offers.",
+  "types": "./src/model.d.ts",
   "scripts": {
     "build:standalone": "node scripts/build-standalone.mjs",
     "launch": "node scripts/launch.mjs",

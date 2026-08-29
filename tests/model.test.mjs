@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   ScenarioError,
   aggregateDemand,
@@ -262,4 +263,14 @@ test("share encoding round trips normal cases and rejects malformed or oversized
     variant: variants[index % variants.length]
   }));
   assert.throws(() => encodeScenario(large), /too large/);
+});
+
+test("model.d.ts declares every runtime export", async () => {
+  const source = await readFile(new URL("../src/model.js", import.meta.url), "utf8");
+  const types = await readFile(new URL("../src/model.d.ts", import.meta.url), "utf8");
+  const exports = [...source.matchAll(/^export (?:class|const|function) (\w+)/gm)].map((match) => match[1]);
+  assert.ok(exports.length >= 8);
+  for (const name of exports) {
+    assert.match(types, new RegExp(`^export (?:class|const|function) ${name}\\b`, "m"));
+  }
 });

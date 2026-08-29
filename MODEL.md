@@ -23,7 +23,9 @@ Each merchant offer supplies:
 
 An offer can also supply `tiers`, an optional array of up to eight `{ minimumUnits, unitPrice }` objects. Thresholds must be whole numbers, strictly increase above the previous minimum, and fit capacity. Prices must be nonnegative and strictly decrease below the previous price. Missing or empty tiers retain the original flat-price behavior. Tier objects survive JSON, autosave, and share-link round trips.
 
-All money values use the scenario's three-letter currency code. The app does not perform currency conversion. Numeric fields accept JSON numbers and plain decimal strings; hexadecimal, binary, octal, exponential, and plus-prefixed strings are rejected rather than coerced.
+All money values use the scenario's currency code. The code must be exactly three ASCII letters and is stored uppercase. The app does not perform currency conversion. Numeric fields accept JSON numbers and plain decimal strings; hexadecimal, binary, octal, exponential, and plus-prefixed strings are rejected rather than coerced.
+
+Text fields are trimmed. Titles are at most 80 characters. Buyer and offer identifiers are at most 24 characters and must be unique within their collection. Labels, categories, merchant names, and variants are at most 60 characters. Each buyer lists between 1 and 12 accepted variants. Money amounts are finite numbers from 0 to 1,000,000. Delivery times are whole days from 0 to 365. Identifiers are compared as stored; they are not case-folded or Unicode-normalized.
 
 ## Compatibility
 
@@ -112,5 +114,6 @@ Demand is grouped by product category. For each category, the merchant view repo
 - Aggregate ranges can reveal information in small or distinctive cohorts.
 - The model excludes taxes, tiered shipping, substitutions across categories, partial quantities, returns, credit risk, inventory changes, and strategic behavior.
 - A real marketplace needs informed consent, identity and merchant controls, payment safety, fulfillment evidence, dispute handling, accessibility research, and jurisdiction-specific compliance.
+- An encoded share payload is at most 60,000 characters of URL-safe base64. Oversized scenarios must be exported as JSON instead.
 
 The model can test whether a declared offer satisfies declared constraints. It cannot prove that a purchase is wise, fair, available, safe, or legally compliant.

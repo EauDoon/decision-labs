@@ -46,7 +46,7 @@ npm run check
 
 ## What you can do
 
-- Start from coffee, office chair, or community pantry examples.
+- Start from coffee, office chair, community pantry, or price-ladder examples.
 - Add buyers with a category, quantity, price ceiling, delivery limit, and accepted variants.
 - Add merchant bids with a price, minimum order, delivery time, capacity, and shipping cost.
 - Edit quantity price tiers and inspect each band's whole-order feasibility.
@@ -78,13 +78,18 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |-- styles.css              Responsive visual system
 |-- src/
 |   |-- app.js              UI, local storage, import, export, and charts
-|   `-- model.js            Pure validation, matching, ranking, and aggregation
-|-- tests/model.test.mjs    Deterministic model tests
+|   |-- model.js            Pure validation, matching, ranking, and aggregation
+|   `-- model.d.ts          Public model types
+|-- tests/
+|   |-- model.test.mjs      Deterministic matching and validation tests
+|   |-- tiers.test.mjs      Quantity-band allocator tests
+|   `-- standalone.test.mjs Single-file build checks
 |-- standalone.html         No-install, single-file GUI
 |-- launch-windows.cmd      One-click Windows GUI launcher
 |-- scripts/build-standalone.mjs  Deterministic single-file builder
 |-- scripts/launch.mjs      Cross-platform GUI launcher
 |-- scripts/dev-server.mjs  Dependency-free local server
+|-- .github/workflows/check.yml   Node 20 `npm run check` job
 |-- MODEL.md                Model contract and limitations
 |-- SECURITY.md             Security and privacy boundary
 `-- CONTRIBUTING.md         Contribution workflow
