@@ -54,6 +54,18 @@ test('standalone displays the complete compound grid with accessible controls an
   assert.match(app.markup(), /data-action="apply-stress-proposal" disabled/);
 });
 
+test('first breakpoint card reports capacity-limited volume growth', async () => {
+  const app = await workbench();
+  const config = clonePreset('balanced');
+  config.participants[0].capacity = 101_000;
+  config.participants[1].capacity = 140_000;
+  config.participants[2].capacity = 140_000;
+  app.import(config);
+  assert.match(app.markup(), /Protect Platform first/);
+  assert.match(app.markup(), /volume increase/);
+  assert.match(app.markup(), /1,000 txn, 1.0%/);
+});
+
 test('invalid stress values retain editable controls and recover without stale results', async () => {
   const app = await workbench();
   app.edit('stress.volumeDropPct', '101');
