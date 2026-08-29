@@ -866,16 +866,40 @@ function withStress(config) {
   return { ...config, stress: { ...(config.stress ?? DEFAULT_STRESS) } };
 }
 
+function compactErrorMessage(error) {
+  if (!(error instanceof Error) || !error.message) return '';
+  return error.message.replace(/\s+/g, ' ').trim().slice(0, 140);
+}
+
+function summarizeErrors(errors) {
+  if (!errors.length) return 'unknown issue.';
+  const extra = errors.length > 1 ? ` (${errors.length - 1} more)` : '';
+  return `${errors[0]}${extra}`;
+}
+
+function describeJsonFailure(subject, error) {
+  const detail = compactErrorMessage(error);
+  if (error instanceof SyntaxError) {
+    return detail ? `${subject} is not valid JSON (${detail}).` : `${subject} is not valid JSON.`;
+  }
+  return detail ? `${subject} could not be decoded (${detail}).` : `${subject} could not be decoded.`;
+}
+
 function decodeHash(hash) {
   if (!hash.startsWith('#deal=')) return { kind: 'none' };
-  if (hash.length > MAX_HASH_LENGTH) return { kind: 'invalid' };
+  if (hash.length > MAX_HASH_LENGTH) {
+    return { kind: 'invalid', reason: 'The share link is longer than 60,000 characters.' };
+  }
   try {
     const encoded = hash.slice(6).replace(/-/g, '+').replace(/_/g, '/');
     const padded = encoded + '='.repeat((4 - encoded.length % 4) % 4);
     const parsed = JSON.parse(decodeURIComponent(Array.from(atob(padded), (character) => `%${character.charCodeAt(0).toString(16).padStart(2, '0')}`).join('')));
-    return validateConfiguration(parsed).valid ? { kind: 'ok', config: parsed } : { kind: 'invalid' };
-  } catch {
-    return { kind: 'invalid' };
+    const validation = validateConfiguration(parsed);
+    return validation.valid
+      ? { kind: 'ok', config: parsed }
+      : { kind: 'invalid', reason: `The share link failed validation: ${summarizeErrors(validation.errors)}` };
+  } catch (error) {
+    return { kind: 'invalid', reason: describeJsonFailure('The share link', error) };
   }
 }
 
@@ -900,9 +924,12 @@ function loadInitialState() {
   if (fromHash.kind === 'ok') return fromHash.config;
   const fromStorage = loadStoredState();
   if (fromHash.kind === 'invalid') {
-    pendingNotice = fromStorage
-      ? 'Share link could not be loaded. Showing the last saved case.'
-      : 'Share link could not be loaded. Showing the Balanced starting point.';
+    const fallback = fromStorage
+      ? 'Showing the last saved case.'
+      : 'Showing the Balanced starting point.';
+    pendingNotice = fromHash.reason
+      ? `Share link could not be loaded. ${fallback} ${fromHash.reason}`
+      : `Share link could not be loaded. ${fallback}`;
   }
   return fromStorage ?? clonePreset('balanced');
 }
@@ -1063,7 +1090,7 @@ function inputPanel() {
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
-          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files and invalid share links are rejected.</p>
+          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
           <div class="button-row">
             <button type="button" data-action="export">Export JSON</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
@@ -1253,9 +1280,10 @@ function attachEvents() {
     if (input.dataset.path) {
       setPath(input.dataset.path, input.dataset.type === 'text' ? input.value.trim() : numberFromInput(input.value, input.dataset.optional === 'true'));
       activePreset = '';
-      refresh(validateConfiguration(state).valid
+      const validation = validateConfiguration(state);
+      refresh(validation.valid
         ? (standaloneFileMode ? 'Saved locally. Export JSON to transfer this standalone case.' : 'Saved locally and updated the shareable URL.')
-        : 'Invalid inputs are not saved. Correct the listed fields.');
+        : `Invalid inputs are not saved. ${summarizeErrors(validation.errors)}`);
       return;
     }
     if (input.dataset.action === 'import' && input.files?.[0]) importFile(input.files[0]);
@@ -1291,7 +1319,7 @@ function attachEvents() {
         refresh('Tested revenue split applied. Every selected compound case was rechecked.');
       } catch (error) {
         if (!(error instanceof ValidationError)) throw error;
-        refresh(error.errors[0]);
+        refresh(`Apply tested revenue split rejected: ${summarizeErrors(error.errors)}`);
       }
     }
     if (action === 'reset') {
@@ -1305,7 +1333,7 @@ function attachEvents() {
 function exportFile() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
-    setNotice('Resolve invalid inputs before exporting.');
+    setNotice(`Resolve invalid inputs before exporting. ${summarizeErrors(validation.errors)}`);
     return;
   }
   const blob = new Blob([`${JSON.stringify(state, null, 2)}\n`], { type: 'application/json' });
@@ -1344,12 +1372,17 @@ function importFile(file) {
       activePreset = '';
       refresh('JSON imported.');
     } catch (error) {
-      setNotice(error instanceof ValidationError ? `Import rejected: ${error.errors[0]}` : 'Import rejected: valid JSON is required.');
+      if (error instanceof ValidationError) {
+        setNotice(`Import rejected: ${summarizeErrors(error.errors)}`);
+        return;
+      }
+      setNotice(`Import rejected: ${describeJsonFailure('the file', error)}`);
     }
   };
   reader.onerror = () => {
     if (sequence !== importSequence) return;
-    setNotice('Import rejected: file could not be read.');
+    const detail = compactErrorMessage(reader.error);
+    setNotice(detail ? `Import rejected: file could not be read (${detail}).` : 'Import rejected: file could not be read.');
   };
   reader.readAsText(file);
 }
@@ -1410,7 +1443,9 @@ window.addEventListener('hashchange', () => {
   if (shared.kind === 'none') return;
   if (shared.kind !== 'ok') {
     saveState();
-    setNotice('Share link could not be loaded. The current case is unchanged.');
+    setNotice(shared.reason
+      ? `Share link could not be loaded. The current case is unchanged. ${shared.reason}`
+      : 'Share link could not be loaded. The current case is unchanged.');
     return;
   }
   importSequence += 1;

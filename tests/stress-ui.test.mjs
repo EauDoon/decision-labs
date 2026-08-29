@@ -107,7 +107,7 @@ test('invalid stress values retain editable controls and recover without stale r
   assert.match(app.markup(), /Resolve these inputs/);
   assert.match(app.markup(), /data-path="stress.volumeDropPct"/);
   assert.doesNotMatch(app.markup(), /tested cases hold/);
-  assert.match(app.notice(), /Invalid inputs are not saved/);
+  assert.match(app.notice(), /Invalid inputs are not saved. Stress volumeDropPct/);
   app.edit('stress.volumeDropPct', '10');
   assert.doesNotMatch(app.markup(), /Resolve these inputs/);
   assert.match(app.markup(), /tested cases hold/);
@@ -141,7 +141,7 @@ test('legacy imports gain default stress settings, hostile names escape, and inv
   assert.doesNotMatch(app.markup(), /<img src=x/);
   const previous = app.saved();
   app.import({ ...config, stress: { volumeDropPct: 20 } });
-  assert.match(app.notice(), /Import rejected/);
+  assert.match(app.notice(), /Import rejected: Stress volumeGrowthPct.*\(2 more\)/);
   assert.deepEqual(app.saved(), previous);
 });
 
@@ -191,7 +191,7 @@ test('form help and native bounds cover empty fields, volume shock, and blank ve
   assert.match(app.markup(), /Import a JSON case exported by this workbench. Files must be 250 KB or smaller/);
   app.edit('deal.monthlyVolume', '');
   assert.match(app.markup(), /Resolve these inputs/);
-  assert.match(app.notice(), /Invalid inputs are not saved/);
+  assert.match(app.notice(), /Invalid inputs are not saved. Deal monthly volume/);
   assert.doesNotMatch(app.markup(), /tested cases hold/);
 });
 
@@ -238,4 +238,48 @@ test('participant names are trimmed before they are stored', async () => {
   const app = await workbench();
   app.edit('participants.0.name', '  Platform  ', { type: 'text' });
   assert.equal(app.saved().participants[0].name, 'Platform');
+});
+
+test('malformed JSON imports name the parse cause and preserve the case', async () => {
+  const app = await workbench();
+  app.import(clonePreset('balanced'));
+  const previous = app.saved();
+  app.import({}, undefined, false, { contents: '{not-json' });
+  assert.match(app.notice(), /Import rejected: the file is not valid JSON \(/);
+  assert.deepEqual(app.saved(), previous);
+});
+
+test('an invalid share hash that fails validation names the field', async () => {
+  const app = await workbench('http:');
+  const shared = clonePreset('thinMargin');
+  shared.deal.monthlyVolume = 76_543;
+  app.navigate(shared);
+  const invalid = clonePreset('balanced');
+  invalid.deal.monthlyVolume = -1;
+  app.navigate(invalid);
+  assert.match(app.notice(), /Share link could not be loaded. The current case is unchanged. The share link failed validation: Deal monthly volume/);
+  assert.equal(app.saved().deal.monthlyVolume, 76_543);
+});
+
+test('an oversized share hash names the length limit', async () => {
+  const app = await workbench('http:');
+  const shared = clonePreset('thinMargin');
+  shared.deal.monthlyVolume = 76_543;
+  app.navigate(shared);
+  app.navigateHash(`#deal=${'a'.repeat(60_000)}`);
+  assert.match(app.notice(), /Share link could not be loaded. The current case is unchanged. The share link is longer than 60,000 characters/);
+  assert.equal(app.saved().deal.monthlyVolume, 76_543);
+});
+
+test('export of invalid inputs names the failing field', async () => {
+  const app = await workbench();
+  app.edit('deal.monthlyVolume', '');
+  app.click('export');
+  assert.match(app.notice(), /Resolve invalid inputs before exporting. Deal monthly volume/);
+});
+
+test('applying a missing proposal names the rejected action', async () => {
+  const app = await workbench();
+  app.click('apply-stress-proposal');
+  assert.match(app.notice(), /Apply tested revenue split rejected: No verified fixed-share proposal/);
 });
