@@ -4,10 +4,11 @@ import vm from 'node:vm';
 import { buildStandalone } from '../scripts/build-standalone.mjs';
 import { clonePreset } from '../src/model.js';
 
-async function workbench() {
+async function workbench(protocol = 'file:') {
   const html = await buildStandalone();
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/)[1];
   const events = new Map();
+  const windowEvents = new Map();
   const storage = new Map();
   const notice = { textContent: '' };
   const app = { innerHTML: '', querySelectorAll: () => [],
@@ -24,8 +25,9 @@ async function workbench() {
       else this.onload();
     }
   }
-  const context = vm.createContext({ console, HTMLInputElement: Input, FileReader: Reader, TextEncoder,
-    window: { location: { protocol: 'file:', hash: '' }, addEventListener() {} },
+  const context = vm.createContext({ console, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
+    history: { replaceState() {} },
+    window: { location: { protocol, hash: '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
     document: { activeElement: null, querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
   });
@@ -36,6 +38,10 @@ async function workbench() {
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
     edit: (path, value) => events.get('change')({ target: new Input({ path }, value) }),
     click: (action) => events.get('click')({ target: { closest: () => ({ dataset: { action } }) } }),
+    navigate: (config) => {
+      context.window.location.hash = `#deal=${Buffer.from(JSON.stringify(config)).toString('base64url')}`;
+      windowEvents.get('hashchange')?.();
+    },
     import: (config, pending, error = false) => {
       const input = new Input({ action: 'import' }, '');
       input.files = [{ size: 100, contents: JSON.stringify(config), pending, error }];
@@ -43,6 +49,30 @@ async function workbench() {
     },
   };
 }
+
+test('hash navigation loads a shared case without requiring a page reload', async () => {
+  const app = await workbench('http:');
+  const shared = clonePreset('thinMargin');
+  shared.deal.monthlyVolume = 76_543;
+  app.navigate(shared);
+  assert.match(app.markup(), /data-path="deal.monthlyVolume"[^>]*value="76543"/);
+  assert.equal(app.saved().deal.monthlyVolume, 76_543);
+});
+
+test('hash navigation supersedes a pending file import', async () => {
+  const app = await workbench('http:');
+  const pending = [];
+  const imported = clonePreset('balanced');
+  imported.deal.monthlyVolume = 90_000;
+  const shared = clonePreset('thinMargin');
+  shared.deal.monthlyVolume = 76_543;
+
+  app.import(imported, pending);
+  app.navigate(shared);
+  pending[0]();
+
+  assert.equal(app.saved().deal.monthlyVolume, 76_543);
+});
 
 test('standalone displays the complete compound grid with accessible controls and case evidence', async () => {
   const app = await workbench();
