@@ -148,9 +148,15 @@ test("validation returns a detached normalized scenario", () => {
   assert.equal(input.buyers[0].allowedVariants.includes("Changed"), false);
 });
 
-test("share encoding round trips normal cases and rejects oversized links", () => {
+test("share encoding round trips normal cases and rejects malformed or oversized links", () => {
   const normal = clonePreset("neighbourhood");
   assert.deepEqual(decodeScenario(encodeScenario(normal)), validateScenario(normal));
+
+  const json = JSON.stringify(normal);
+  const malformedUtf8 = new TextEncoder().encode(json);
+  malformedUtf8[json.indexOf(normal.title)] = 0x80;
+  const corrupted = btoa(String.fromCharCode(...malformedUtf8)).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
+  assert.throws(() => decodeScenario(corrupted), /could not be decoded/);
 
   const large = clonePreset("neighbourhood");
   const variants = Array.from({ length: 12 }, (_, index) => `variant-${index}-${"x".repeat(48)}`);

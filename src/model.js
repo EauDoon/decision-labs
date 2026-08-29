@@ -390,7 +390,7 @@ export function decodeScenario(value) {
   try {
     const binary = atob(padded);
     const bytes = Uint8Array.from(binary, (character) => character.charCodeAt(0));
-    return validateScenario(JSON.parse(new TextDecoder().decode(bytes)));
+    return validateScenario(JSON.parse(new TextDecoder("utf-8", { fatal: true }).decode(bytes)));
   } catch (error) {
     if (error instanceof ScenarioError) throw error;
     throw new ScenarioError("Shared scenario could not be decoded.");
