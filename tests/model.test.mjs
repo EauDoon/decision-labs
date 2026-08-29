@@ -1,6 +1,9 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
+  MAX_CHANGE_COST,
+  MAX_CLAUSES,
   MAX_COMBINATIONS,
   MAX_GROUPS,
   MAX_NEAR_MISSES,
@@ -177,6 +180,44 @@ test("validation rejects missing originals, unsafe costs, and incomplete support
   assert.match(validation.errors.join(" "), /exactly one original option/);
   assert.match(validation.errors.join(" "), /from 0 through/);
   assert.match(validation.errors.join(" "), /support.b/);
+});
+
+test("model contract documents the live validation, search, and transport caps", async () => {
+  const contract = await readFile(new URL("../MODEL.md", import.meta.url), "utf8");
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  const security = await readFile(new URL("../SECURITY.md", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const withCommas = (value) => value.toLocaleString("en-US");
+
+  assert.equal(MAX_GROUPS, 24);
+  assert.equal(MAX_CLAUSES, 20);
+  assert.equal(MAX_OPTIONS_PER_CLAUSE, 24);
+  assert.equal(MAX_COMBINATIONS, 50_000);
+  assert.equal(MAX_NEAR_MISSES, 5);
+  assert.equal(MAX_WEIGHT, 1_000_000);
+  assert.equal(MAX_CHANGE_COST, 1_000_000_000);
+  assert.equal(MAX_CHANGE_COST * MAX_CLAUSES, 20_000_000_000);
+
+  assert.match(contract, new RegExp(`1 to ${MAX_GROUPS}`));
+  assert.match(contract, new RegExp(`1 to ${MAX_CLAUSES}`));
+  assert.match(contract, new RegExp(`3 to ${MAX_OPTIONS_PER_CLAUSE}`));
+  assert.match(contract, new RegExp(`at most ${withCommas(MAX_WEIGHT)}`));
+  assert.match(contract, new RegExp(`from 0 through ${withCommas(MAX_CHANGE_COST)}`));
+  assert.match(contract, new RegExp(`${withCommas(MAX_COMBINATIONS)} lock-permitted combinations`));
+  assert.match(contract, new RegExp(`integer from 1 through ${withCommas(MAX_COMBINATIONS)}`));
+  assert.match(contract, new RegExp(`integer from 0 through ${MAX_NEAR_MISSES}`));
+  assert.match(contract, /1 to 64 characters/u);
+  assert.match(contract, /at most 120 characters/u);
+  assert.match(contract, /at most 80 characters/u);
+  assert.match(contract, /at most 240 characters/u);
+  assert.match(contract, /Omitting `original`, or setting it to `false`, marks an alternative/u);
+
+  assert.match(html, /id="proposal-title"[^>]*maxlength="120"/u);
+  assert.match(html, /id="max-change-cost"[^>]*max="20000000000"/u);
+  assert.match(readme, /JSON files of 250 KB or smaller/u);
+  assert.match(readme, /60,000 characters/u);
+  assert.match(security, /250 KB/u);
+  assert.match(security, /60,000 characters/u);
 });
 
 test("validation bounds imported structure, labels, and identifier syntax", () => {

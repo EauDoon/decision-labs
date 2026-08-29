@@ -55,6 +55,11 @@ function inlineModel(value) {
 
 const standaloneCsp = "default-src 'none'; base-uri 'none'; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'none'; font-src 'none'; connect-src 'none'; media-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'";
 
+/**
+ * Build the self-contained standalone.html document from index.html, CSS, and source modules.
+ * The result is LF-normalized and contains no external resource references.
+ * @returns {Promise<string>}
+ */
 export async function standaloneBytes() {
   const [html, css, model, app] = await Promise.all(Object.values(inputs).map(async (path) => lf(await readFile(path, "utf8"))));
   requireSafeInline(css, "Stylesheet");
@@ -78,6 +83,12 @@ export async function standaloneBytes() {
   return standalone;
 }
 
+/**
+ * Compare standalone artifacts after normalizing CR LF to LF.
+ * @param {unknown} actual File contents to check.
+ * @param {string} expected Fresh output of {@link standaloneBytes}.
+ * @returns {boolean}
+ */
 export function isStandaloneCurrent(actual, expected) {
   return typeof actual === "string" && lf(actual) === lf(expected);
 }

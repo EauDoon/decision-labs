@@ -15,9 +15,28 @@ A valid proposal has:
 - For every option and every group, a support score from 0 to 100.
 - A non-negative finite change cost for every option. The original option's cost must be 0.
 
-To keep imported and shared drafts bounded, the model accepts at most 24 groups, 20 clauses, and 24 options per clause. Titles, names, labels, identifiers, weights, and change costs also have explicit limits.
+An option is original only when `original` is the boolean `true`. Omitting `original`, or setting it to `false`, marks an alternative. Any other value is invalid.
 
 Option labels are opaque strings to the model. Only the supplied numbers affect calculation.
+
+## Field limits
+
+These bounds apply to validation, import, autosave, and share-link decoding. Out-of-range values are invalid rather than clamped. Titles, names, and labels must contain a non-whitespace character; the length limit counts the string as stored, including surrounding spaces.
+
+| Field | Limit |
+| --- | --- |
+| `title` | Non-empty string, at most 120 characters |
+| `groups` | 1 to 24 |
+| `groups[].id`, `clauses[].id`, `options[].id` | 1 to 64 characters: start with `A-Z`, `a-z`, or `0-9`; then those characters, `.`, `_`, or `-` |
+| `groups[].name` | Non-empty string, at most 80 characters |
+| `groups[].weight` | Finite number greater than 0 and at most 1,000,000 |
+| `clauses` | 1 to 20 |
+| `clauses[].title` | Non-empty string, at most 120 characters |
+| `clauses[].options` | 3 to 24, including exactly one original |
+| `options[].label` | Non-empty string, at most 240 characters |
+| `options[].changeCost` | Finite number from 0 through 1,000,000,000 |
+
+The GUI uses the same title, name, and label lengths as `maxlength` attributes. Support floors, the total-cost budget, and option locks are listed under Optional constraints.
 
 ## Approval formula
 
@@ -68,6 +87,8 @@ For an enumerated result, `eligibleCombinations` counts combinations meeting eve
 ## Bound and outcomes
 
 The default maximum is 50,000 lock-permitted combinations. The count is calculated before enumeration or the baseline shortcut. If it exceeds that maximum, the result is `too_large`; no partial search, sampling, or recommendation occurs. Budgets and floors do not reduce the counted search space. `possibleCombinations` is the permitted search-space size (or a cap-plus-one sentinel when too large). `checkedCombinations` is 1 for an already-passing baseline and the full space for an enumerated result; it does not count the separately reported baseline again.
+
+`findSmallestAgreement(proposal, options)` accepts `maxCombinations` (integer from 1 through 50,000) and `nearMissLimit` (integer from 0 through 5). Both default to those maxima. Values outside those ranges return `invalid`. A caller can lower a cap for tests or a tighter bound, but cannot raise either cap.
 
 Other explicit outcomes are:
 

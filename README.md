@@ -12,7 +12,7 @@ It is deliberately a decision aid, not a decision maker. People define the group
 
 Open [standalone.html](standalone.html) directly in a current desktop or mobile browser. It is one self-contained file: no package installation, server, account, or network connection is needed. The full GUI, local autosave, JSON import, and JSON export work from `file://`.
 
-The Share link action is intentionally unavailable in this mode. A `file://` address points to a local path and is not a portable way to share a draft; export JSON instead.
+Share link does not create a URL in this mode. A `file://` address points to a local path and is not a portable way to share a draft; export JSON instead. The button remains visible and explains that limit if it is used.
 
 To regenerate or verify the standalone file from source:
 
@@ -47,12 +47,14 @@ npm start
 
 Open the local address shown in the terminal. The app listens only on `127.0.0.1`.
 
+The project is also a static ESM app, so any static file server can host it.
+
+### Checks
+
 ```sh
 npm test
 npm run check
 ```
-
-The project is also a static ESM app, so any static file server can host it.
 
 ## Use the workshop
 
@@ -69,9 +71,9 @@ The synthetic presets are Neighbourhood Plan, Open Source Policy, Association Bu
 
 ## Local data and sharing
 
-Drafts autosave to this browser's local storage. Invalid storage is ignored safely. Import accepts only JSON that passes the model's structural validation and discards fields the application does not understand. Export JSON creates a complete draft file. Export brief creates a deterministic Markdown report with the current result, recommendation, group-level changes, and near misses. It is a handoff of model output, not a decision record or a claim of legitimacy.
+Drafts autosave to this browser's local storage. Invalid storage is ignored safely. Import accepts JSON files of 250 KB or smaller that pass the model's structural validation and discards fields the application does not understand. Export JSON creates a complete draft file. Export brief creates a deterministic Markdown report with the current result, recommendation, group-level changes, and near misses. It is a handoff of model output, not a decision record or a claim of legitimacy.
 
-When the app is served locally, Share link serializes the complete proposal in the URL fragment. Fragments are not sent as part of an HTTP request, but anyone with the link can read the proposal. Do not use it for sensitive material. Long proposals can exceed practical URL-length limits, so export JSON for larger drafts. The standalone `file://` mode does not offer share links because local file addresses are not portable.
+When the app is served locally, Share link serializes the complete proposal in the URL fragment. Fragments are not sent as part of an HTTP request, but anyone with the link can read the proposal. Do not use it for sensitive material. Share links longer than 60,000 characters are rejected; export JSON for larger drafts. The standalone `file://` mode does not create share links because local file addresses are not portable.
 
 ## Search boundary
 
