@@ -47,7 +47,7 @@ npm test
 npm run check
 ```
 
-`npm test` runs the pure economic-model tests. `npm run check` scans project files for em dashes, private filesystem paths, and common private-key markers.
+`npm test` runs the pure economic-model tests. `npm run check` scans project files for em dashes, private filesystem paths, and common private-key markers. GitHub Actions runs both commands on pull requests and on pushes to `main`.
 
 ## Use the workbench
 

@@ -9,6 +9,7 @@ import {
   calculatePartnership,
   clonePreset,
   effectiveVolume,
+  exitVolume,
   participantShocks,
   validateConfiguration,
 } from '../src/model.js';
@@ -27,6 +28,45 @@ test('validation rejects shares that do not reconcile exactly to one', () => {
   assert.equal(validation.valid, false);
   assert.match(validation.errors.join(' '), /shares must sum to 1/);
   assert.throws(() => calculatePartnership(config), ValidationError);
+});
+
+test('validation rejects malformed deals instead of calculating thresholds', () => {
+  const base = clonePreset('balanced');
+  const invalidDeals = [
+    [undefined, /Deal must be an object/],
+    [null, /Deal must be an object/],
+    [[], /Deal must be an object/],
+    ['deal', /Deal must be an object/],
+    [{ ...base.deal, monthlyVolume: -1 }, /monthly volume/],
+    [{ ...base.deal, monthlyVolume: '100000' }, /monthly volume/],
+    [{ ...base.deal, feePerTransaction: Number.NaN }, /fee per transaction/],
+    [{ ...base.deal, addressableVolume: Number.POSITIVE_INFINITY }, /addressable volume/],
+    [{ ...base.deal, volumeShockPct: 101 }, /volume shock/],
+    [{ ...base.deal, volumeShockPct: -0.1 }, /volume shock/],
+    [{ ...base.deal, volumeShockPct: '10' }, /volume shock/],
+    [{ ...base.deal, extra: 1 }, /unknown field/],
+  ];
+  for (const [deal, pattern] of invalidDeals) {
+    const config = { deal, participants: base.participants };
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(pattern));
+    assert.match(validation.errors.join(' '), pattern);
+    assert.throws(() => calculatePartnership(config), ValidationError);
+  }
+
+  const missingVolume = clonePreset('balanced');
+  delete missingVolume.deal.monthlyVolume;
+  assert.match(validateConfiguration(missingVolume).errors.join(' '), /monthly volume/);
+  assert.throws(() => calculatePartnership(missingVolume), ValidationError);
+
+  const omittedShock = clonePreset('balanced');
+  delete omittedShock.deal.volumeShockPct;
+  assert.equal(validateConfiguration(omittedShock).valid, true);
+  assert.equal(calculatePartnership(omittedShock).effectiveVolume, 100000);
+
+  assert.equal(validateConfiguration(null).valid, false);
+  assert.equal(validateConfiguration([]).valid, false);
+  assert.match(validateConfiguration(null).errors.join(' '), /must be an object/);
 });
 
 test('validation rejects non-numeric optional values instead of coercing them', () => {
@@ -94,6 +134,56 @@ test('volume, fee, and cost shocks report economically meaningful thresholds', (
   assert.ok(shocks.variableCost.breakpoint > participant.variableCostPerTransaction);
   assert.equal(shocks.volumeIncrease.status, 'bounded');
   assert.equal(shocks.volumeIncrease.breakpoint, participant.capacity);
+});
+
+test('exit volume and adverse-shock thresholds match the documented formulas', () => {
+  const config = clonePreset('balanced');
+  const deal = config.deal;
+  const volume = effectiveVolume(deal);
+  assert.equal(volume, 100000);
+
+  for (const participant of config.participants) {
+    const requiredProfit = participant.minimumAcceptableProfit + participant.fixedMonthlyCost + participant.riskCost;
+    const contribution = participant.revenueShare * deal.feePerTransaction - participant.variableCostPerTransaction;
+    const expectedExit = Math.max(requiredProfit / contribution, participant.minimumCommitment ?? 0);
+    assert.equal(exitVolume(participant, deal.feePerTransaction), expectedExit);
+
+    const shocks = participantShocks(participant, deal);
+    const expectedFee = (requiredProfit + volume * participant.variableCostPerTransaction) / (volume * participant.revenueShare);
+    const expectedCost = (participant.revenueShare * deal.feePerTransaction * volume - participant.fixedMonthlyCost
+      - participant.riskCost - participant.minimumAcceptableProfit) / volume;
+    assert.equal(shocks.volume.status, 'bounded');
+    assert.equal(shocks.volume.breakpoint, expectedExit);
+    assert.equal(shocks.volume.change, volume - expectedExit);
+    assert.equal(shocks.fee.breakpoint, expectedFee);
+    assert.equal(shocks.fee.change, deal.feePerTransaction - expectedFee);
+    assert.equal(shocks.variableCost.breakpoint, expectedCost);
+    assert.equal(shocks.variableCost.change, expectedCost - participant.variableCostPerTransaction);
+    assert.equal(shocks.volumeIncrease.breakpoint, participant.capacity);
+    assert.equal(shocks.volumeIncrease.change, participant.capacity - volume);
+  }
+
+  const result = calculatePartnership(config);
+  assert.equal(result.firstBreakpoint.participant.id, 'liquidity-partner');
+  assert.equal(result.firstBreakpoint.kind, 'fee');
+  assert.equal(result.firstBreakpoint.shock.breakpoint, 0.192);
+  assert.equal(Math.round(result.firstBreakpoint.shock.changePct * 10) / 10, 4);
+});
+
+test('a deal already at an exit volume reports an at-breakpoint shock of zero', () => {
+  const config = clonePreset('balanced');
+  const liquidity = config.participants.find((participant) => participant.id === 'liquidity-partner');
+  const threshold = exitVolume(liquidity, config.deal.feePerTransaction);
+  config.deal.monthlyVolume = threshold;
+  config.deal.addressableVolume = threshold;
+  const result = calculatePartnership(config);
+  const shocks = result.participants.find((participant) => participant.id === 'liquidity-partner').shocks;
+  assert.equal(result.viable, true);
+  assert.equal(shocks.volume.status, 'at-breakpoint');
+  assert.equal(shocks.volume.change, 0);
+  assert.equal(result.firstBreakpoint.status, 'at-breakpoint');
+  assert.equal(result.firstBreakpoint.kind, 'volume');
+  assert.equal(result.firstBreakpoint.participant.id, 'liquidity-partner');
 });
 
 test('capacity shock is unbounded when no capacity limit is supplied', () => {
