@@ -116,6 +116,16 @@ test("aggregate demand exposes ranges, not buyer records", () => {
   assert.equal("label" in groups[0], false);
 });
 
+test("aggregate demand deduplicates variant casing", () => {
+  const scenario = clonePreset("neighbourhood");
+  scenario.buyers = [
+    { ...scenario.buyers[0], allowedVariants: ["Medium roast"] },
+    { ...scenario.buyers[1], allowedVariants: ["medium ROAST"] }
+  ];
+  assert.equal(evaluateOffer(scenario, "O01").compatibleBuyerCount, 2);
+  assert.deepEqual(aggregateDemand(scenario)[0].variants, ["Medium roast"]);
+});
+
 test("validation rejects duplicate ids and invalid currency", () => {
   const duplicate = clonePreset("neighbourhood");
   duplicate.buyers[1].id = duplicate.buyers[0].id;

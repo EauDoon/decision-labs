@@ -358,7 +358,7 @@ export function aggregateDemand(rawScenario) {
       priceCeiling: -Infinity,
       earliestDelivery: Infinity,
       latestDelivery: -Infinity,
-      variants: new Set()
+      variants: new Map()
     };
     current.buyerCount += 1;
     current.units += entry.quantity;
@@ -366,10 +366,13 @@ export function aggregateDemand(rawScenario) {
     current.priceCeiling = Math.max(current.priceCeiling, entry.maxUnitPrice);
     current.earliestDelivery = Math.min(current.earliestDelivery, entry.latestDeliveryDays);
     current.latestDelivery = Math.max(current.latestDelivery, entry.latestDeliveryDays);
-    entry.allowedVariants.forEach((variant) => current.variants.add(variant));
+    entry.allowedVariants.forEach((variant) => {
+      const key = normalizeText(variant);
+      if (!current.variants.has(key)) current.variants.set(key, variant);
+    });
     groups.set(key, current);
   }
-  return [...groups.values()].map((group) => ({ ...group, variants: [...group.variants].sort() }));
+  return [...groups.values()].map((group) => ({ ...group, variants: [...group.variants.values()].sort() }));
 }
 
 export function encodeScenario(rawScenario) {
