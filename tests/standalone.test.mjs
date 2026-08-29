@@ -35,7 +35,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
-async function savedWorkbench(storage) {
+async function savedWorkbench(storage, hash = "") {
   const html = await standaloneBytes();
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/u)[1];
   const elements = new Map();
@@ -46,10 +46,10 @@ async function savedWorkbench(storage) {
       events: new Map(), addEventListener(name, callback) { this.events.set(name, callback); }, getContext: () => canvasContext });
     return elements.get(selector);
   };
-  const context = vm.createContext({ console,
+  const context = vm.createContext({ console, TextDecoder, Uint8Array, atob,
     document: { querySelector: element, addEventListener: (name, callback) => documentEvents.set(name, callback) },
     window: { devicePixelRatio: 1, addEventListener() {} },
-    location: { hash: "", protocol: "file:" },
+    location: { hash, protocol: "file:" },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
   });
   new vm.Script(script).runInContext(context, { timeout: 2000 });
@@ -73,6 +73,25 @@ async function savedWorkbench(storage) {
     },
   };
 }
+
+test("share links reject malformed UTF-8 instead of loading replacement text", async () => {
+  const draft = { title: "Corrupt workshop", threshold: 70,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "clause", title: "Clause", options: [
+      { id: "original", label: "Original", original: true, changeCost: 0, support: { g: 60 } },
+      { id: "alternative", label: "Alternative", original: false, changeCost: 1, support: { g: 80 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+  const bytes = Buffer.from(JSON.stringify(draft));
+  const titleStart = bytes.indexOf("Corrupt");
+  bytes[titleStart] = 0xc3;
+  bytes[titleStart + 1] = 0x28;
+
+  const app = await savedWorkbench(new Map(), `#agreement=${bytes.toString("base64url")}`);
+  assert.equal(app.title(), "Neighbourhood Plan: the shared green");
+  assert.match(app.message(), /could not be decoded/u);
+});
 
 test("invalid budget and floor edits preserve the last valid custom autosave across reloads", async () => {
   const key = "smallest-agreement:proposal:v1";

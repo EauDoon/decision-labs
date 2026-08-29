@@ -840,7 +840,7 @@ function parseHash() {
       .replaceAll("-", "+")
       .replaceAll("_", "/");
     const padded = encoded.padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), "=");
-    const text = new TextDecoder().decode(Uint8Array.from(atob(padded), (character) => character.charCodeAt(0)));
+    const text = new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(atob(padded), (character) => character.charCodeAt(0)));
     const proposal = JSON.parse(text);
     if (!validateProposal(proposal).valid) {
       initialLoadMessage = "Share link ignored: its proposal is invalid.";
