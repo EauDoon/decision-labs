@@ -90,3 +90,13 @@ test('legacy imports gain default stress settings, hostile names escape, and inv
   assert.match(app.notice(), /Import rejected/);
   assert.deepEqual(app.saved(), previous);
 });
+
+test('participant controls stop at the model capacity without invalidating the saved case', async () => {
+  const app = await workbench();
+  for (let index = 3; index < 24; index += 1) app.click('add-participant');
+  assert.equal(app.saved().participants.length, 24);
+  assert.match(app.markup(), /data-action="add-participant" disabled title="Participant limit reached"/);
+  app.click('add-participant');
+  assert.equal(app.saved().participants.length, 24);
+  assert.doesNotMatch(app.markup(), /Resolve these inputs/);
+});
