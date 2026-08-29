@@ -15,7 +15,7 @@ const STORAGE_KEY = 'partnership-breakpoint.v1';
 const MAX_HASH_LENGTH = 60_000;
 const app = document.querySelector('#workbench');
 const standaloneFileMode = window.location.protocol === 'file:';
-let participantSequence = 1;
+let participantSequence = 0;
 let activePreset = 'balanced';
 let state = withStress(loadInitialState());
 let eventsBound = false;
