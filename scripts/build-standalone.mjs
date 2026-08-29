@@ -5,6 +5,7 @@ const outputPath = fileURLToPath(new URL('../standalone.html', import.meta.url))
 const appImport = `import {
   PRESETS,
   DEFAULT_STRESS,
+  MAX_PARTICIPANTS,
   ValidationError,
   applyStressProposal,
   calculatePartnership,

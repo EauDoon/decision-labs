@@ -1,6 +1,7 @@
 import {
   PRESETS,
   DEFAULT_STRESS,
+  MAX_PARTICIPANTS,
   ValidationError,
   applyStressProposal,
   calculatePartnership,
@@ -208,7 +209,7 @@ function inputPanel() {
           <h2 id="participant-inputs-title">Participants</h2>
           <p class="notice">Shares must add to exactly 1. Capacity and commitment may be left blank.</p>
           ${participantForms}
-          <div class="button-row"><button type="button" data-action="add-participant">Add participant</button></div>
+          <div class="button-row"><button type="button" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
@@ -415,7 +416,7 @@ function attachEvents() {
       state = withStress(clonePreset(activePreset));
       refresh(`${PRESETS[activePreset].name} loaded.`);
     }
-    if (action === 'add-participant') {
+    if (action === 'add-participant' && state.participants.length < MAX_PARTICIPANTS) {
       participantSequence += 1;
       state.participants.push(makeParticipant(nextParticipantId()));
       activePreset = '';

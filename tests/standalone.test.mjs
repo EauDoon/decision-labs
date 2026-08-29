@@ -6,6 +6,7 @@ const html = '<html><head><title>Partnership Breakpoint</title><link rel="styles
 const appImport = `import {
   PRESETS,
   DEFAULT_STRESS,
+  MAX_PARTICIPANTS,
   ValidationError,
   applyStressProposal,
   calculatePartnership,
