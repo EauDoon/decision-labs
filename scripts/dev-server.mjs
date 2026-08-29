@@ -49,7 +49,14 @@ const server = createServer(async (request, response) => {
     return;
   }
   try {
-    const info = await fs.stat(filePath);
+    const realPath = await fs.realpath(filePath);
+    const relative = path.relative(root, realPath);
+    if (relative.startsWith("..") || path.isAbsolute(relative)) {
+      response.writeHead(403, { "Content-Type": "text/plain; charset=utf-8" });
+      response.end("Forbidden");
+      return;
+    }
+    const info = await fs.stat(realPath);
     if (!info.isFile()) throw new Error("Not a file");
     response.writeHead(200, {
       "Content-Type": types[path.extname(filePath)] || "application/octet-stream",
@@ -60,7 +67,7 @@ const server = createServer(async (request, response) => {
       response.end();
       return;
     }
-    createReadStream(filePath).pipe(response);
+    createReadStream(realPath).pipe(response);
   } catch {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Not found");
