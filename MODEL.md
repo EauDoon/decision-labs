@@ -36,7 +36,7 @@ and unitPrice(o) <= maxUnitPrice(b)
 and deliveryDays(o) <= latestDeliveryDays(b)
 ```
 
-Category and variant comparisons are case-insensitive after input validation. Inputs are not otherwise interpreted or classified.
+Category and variant comparisons trim surrounding whitespace, apply Unicode lowercasing, and normalize to NFC after input validation. Canonically equivalent spellings therefore match and group together. Matching remains exact after that normalization; inputs are not otherwise interpreted or classified.
 
 For a tiered offer, `unitPrice` means the price of the band being evaluated. The ceiling covers items only. Shipping is included in landed totals and may exceed that ceiling; the buyer room shows the excess without excluding a buyer who meets the original item-price rule.
 

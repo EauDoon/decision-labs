@@ -311,7 +311,7 @@ function selectWholeBuyers(compatible, capacity) {
 }
 
 function normalizeText(value) {
-  return value.trim().toLowerCase();
+  return value.trim().toLowerCase().normalize("NFC");
 }
 
 function compareText(left, right) {

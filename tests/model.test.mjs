@@ -107,6 +107,20 @@ test("text matching and id ordering do not depend on the host locale", () => {
   assert.deepEqual(market.ranked.map((result) => result.offer.id), ["a", "z"]);
 });
 
+test("canonically equivalent Unicode text shares matching and grouping semantics", () => {
+  const scenario = clonePreset("neighbourhood");
+  scenario.buyers = [
+    { ...scenario.buyers[0], id: "B1", category: "Caf\u00e9", allowedVariants: ["Cr\u00e8me"] },
+    { ...scenario.buyers[0], id: "B2", category: "Cafe\u0301", allowedVariants: ["Cre\u0300me"] }
+  ];
+  scenario.offers = [{ ...scenario.offers[0], category: "Cafe\u0301", variant: "Cre\u0300me", minimumUnits: 1 }];
+  assert.equal(evaluateOffer(scenario, scenario.offers[0]).compatibleBuyerCount, 2);
+  assert.equal(evaluateMarket(scenario).categoryCount, 1);
+  const demand = aggregateDemand(scenario)[0];
+  assert.equal(demand.category, "Caf\u00e9");
+  assert.deepEqual(demand.variants, ["Cr\u00e8me"]);
+});
+
 test("market summary counts categories with matching semantics", () => {
   const scenario = clonePreset("neighbourhood");
   scenario.buyers[0].category = "COFFEE BEANS";
