@@ -168,14 +168,20 @@ function requiredText(value, path, maxLength) {
 }
 
 function finite(value, path, minimum, maximum) {
-  if (typeof value !== "number" && (typeof value !== "string" || value.trim() === "" || /^0[box]/i.test(value.trim()))) {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (trimmed === "" || /^0[box]/i.test(trimmed) || /[eE+]/.test(trimmed)) {
+      throw new ScenarioError(`${path} must be a number.`);
+    }
+    value = Number(trimmed);
+  } else if (typeof value !== "number") {
     throw new ScenarioError(`${path} must be a number.`);
   }
-  const number = typeof value === "number" ? value : Number(value);
-  if (!Number.isFinite(number) || number < minimum || number > maximum) {
+  if (!Number.isFinite(value)) throw new ScenarioError(`${path} must be a number.`);
+  if (value < minimum || value > maximum) {
     throw new ScenarioError(`${path} must be between ${minimum} and ${maximum}.`);
   }
-  return number;
+  return value;
 }
 
 function integer(value, path, minimum, maximum) {
@@ -385,7 +391,8 @@ export function encodeScenario(rawScenario) {
 }
 
 export function decodeScenario(value) {
-  if (typeof value !== "string" || value.length === 0 || value.length > MAX_SHARE_LENGTH) throw new ScenarioError("Shared scenario is empty or too large.");
+  if (typeof value !== "string") throw new ScenarioError("Shared scenario must be a string.");
+  if (value.length === 0 || value.length > MAX_SHARE_LENGTH) throw new ScenarioError("Shared scenario is empty or too large.");
   const padded = value.replaceAll("-", "+").replaceAll("_", "/").padEnd(Math.ceil(value.length / 4) * 4, "=");
   try {
     const binary = atob(padded);

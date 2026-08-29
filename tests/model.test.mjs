@@ -157,6 +157,76 @@ test("validation rejects duplicate ids and invalid currency", () => {
   assert.throws(() => validateScenario(currency), /three-letter code/);
 });
 
+test("validation rejects non-objects, empty collections, and unknown identifiers", () => {
+  assert.throws(() => validateScenario(null), /must be an object/);
+  assert.throws(() => validateScenario([]), /must be an object/);
+  const emptyBuyers = clonePreset("neighbourhood");
+  emptyBuyers.buyers = [];
+  assert.throws(() => validateScenario(emptyBuyers), /Buyers must contain 1 to 40 entries/);
+  const emptyOffers = clonePreset("neighbourhood");
+  emptyOffers.offers = [];
+  assert.throws(() => validateScenario(emptyOffers), /Offers must contain 1 to 40 entries/);
+  const tooMany = clonePreset("neighbourhood");
+  tooMany.buyers = Array.from({ length: 41 }, (_, index) => ({ ...tooMany.buyers[0], id: `B${index}` }));
+  assert.throws(() => validateScenario(tooMany), /Buyers must contain 1 to 40 entries/);
+  assert.throws(() => clonePreset("missing"), /Unknown preset/);
+  assert.throws(() => evaluateOffer(clonePreset("neighbourhood"), "missing-offer"), /Offer was not found/);
+  assert.throws(() => decodeScenario(null), /must be a string/);
+  assert.throws(() => decodeScenario(""), /empty or too large/);
+});
+
+test("numeric fields reject exponential notation and plus prefixes", () => {
+  for (const value of ["1e2", "1E-1", "+10", "1e+2", "NaN", "Infinity"]) {
+    const quantity = clonePreset("neighbourhood");
+    quantity.buyers[0].quantity = value;
+    assert.throws(() => validateScenario(quantity), /must be a number/);
+    const price = clonePreset("neighbourhood");
+    price.offers[0].unitPrice = value;
+    assert.throws(() => validateScenario(price), /must be a number/);
+  }
+  const decimals = clonePreset("neighbourhood");
+  decimals.buyers[0].quantity = "2";
+  decimals.offers[0].unitPrice = "26.50";
+  const normalized = validateScenario(decimals);
+  assert.equal(normalized.buyers[0].quantity, 2);
+  assert.equal(normalized.offers[0].unitPrice, 26.5);
+});
+
+test("price and delivery equality is compatible, and a minimum above capacity cannot qualify", () => {
+  const scenario = clonePreset("neighbourhood");
+  scenario.buyers = [{
+    ...scenario.buyers[0],
+    id: "B01",
+    quantity: 4,
+    maxUnitPrice: 20,
+    latestDeliveryDays: 5,
+    allowedVariants: ["Medium roast"]
+  }];
+  scenario.offers = [{
+    ...scenario.offers[0],
+    unitPrice: 20,
+    deliveryDays: 5,
+    minimumUnits: 4,
+    capacity: 4
+  }];
+  const equal = evaluateOffer(scenario, scenario.offers[0]);
+  assert.equal(equal.qualifies, true);
+  assert.deepEqual(equal.buyerOutcomes, [{ buyerId: "B01", status: "included", reasons: [] }]);
+
+  scenario.offers[0].unitPrice = 20.01;
+  assert.deepEqual(evaluateOffer(scenario, scenario.offers[0]).buyerOutcomes[0].reasons, ["price"]);
+  scenario.offers[0].unitPrice = 20;
+  scenario.offers[0].deliveryDays = 6;
+  assert.deepEqual(evaluateOffer(scenario, scenario.offers[0]).buyerOutcomes[0].reasons, ["delivery"]);
+
+  scenario.offers[0].deliveryDays = 5;
+  scenario.offers[0].minimumUnits = 5;
+  const impossible = evaluateOffer(scenario, scenario.offers[0]);
+  assert.equal(impossible.qualifies, false);
+  assert.equal(impossible.fulfilledUnits, 0);
+  assert.equal(impossible.tierProgress[0].maximumUnits, 4);
+});
+
 test("validation returns a detached normalized scenario", () => {
   const input = clonePreset("pantry");
   const output = validateScenario(input);

@@ -9,7 +9,7 @@ Common Cart is deliberately small. Contributions should preserve the transparent
 3. Add or update deterministic tests for every model behavior change.
 4. Keep the browser functional without external services, trackers, fonts, or assets.
 5. Update `MODEL.md` when formulas, ordering, fields, or limits change.
-6. Run `npm run check`.
+6. Run `npm run check`. Pull requests run the same command in GitHub Actions.
 
 ## Design constraints
 

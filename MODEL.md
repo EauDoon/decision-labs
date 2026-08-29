@@ -23,7 +23,7 @@ Each merchant offer supplies:
 
 An offer can also supply `tiers`, an optional array of up to eight `{ minimumUnits, unitPrice }` objects. Thresholds must be whole numbers, strictly increase above the previous minimum, and fit capacity. Prices must be nonnegative and strictly decrease below the previous price. Missing or empty tiers retain the original flat-price behavior. Tier objects survive JSON, autosave, and share-link round trips.
 
-All money values use the scenario's three-letter currency code. The app does not perform currency conversion.
+All money values use the scenario's three-letter currency code. The app does not perform currency conversion. Numeric fields accept JSON numbers and plain decimal strings; hexadecimal, binary, octal, exponential, and plus-prefixed strings are rejected rather than coerced.
 
 ## Compatibility
 
