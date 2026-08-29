@@ -59,7 +59,7 @@ npm run check
 6. Edit Compound stress settings. The workbench tests up to 27 combinations of volume decline or growth, fee cuts, and variable-cost increases. Open Inspect all N compound cases to review every outcome.
 7. Compare each participant's Worst profit gap and Minimum share. If a fixed split can fund every participant in every tested case without capacity or commitment failures, preview the proposal and select Apply tested revenue split. The workbench rechecks it before changing the shares.
 
-The app autosaves valid inputs in local browser storage. When served locally, it also writes valid input state to the URL hash so the current case can be copied as a link. In standalone file mode, use Export JSON for a portable case file. Import JSON is available in both modes.
+The app autosaves valid inputs in local browser storage. When served locally, it also writes valid input state to the URL hash so the current case can be copied as a link. In standalone file mode, use Export JSON for a portable case file. Import JSON is available in both modes. Rejected imports, share links, exports, and unsaved edits name the parse or validation cause.
 
 Existing v1 case files still import. Cases without stress settings start with illustrative stress settings, which are saved with the next export. These settings are assumptions, not forecasts. The original case economics and revenue shares stay unchanged unless you edit them or apply a proposal.
 
