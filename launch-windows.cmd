@@ -21,6 +21,6 @@ if %NODE_MAJOR% LSS 20 (
   exit /b 1
 )
 
-node "%~dp0scripts\launch.mjs"
+node "%~dp0scripts\launch.mjs" %*
 set "LAUNCH_EXIT=%ERRORLEVEL%"
 endlocal & exit /b %LAUNCH_EXIT%

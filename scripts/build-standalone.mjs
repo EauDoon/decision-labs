@@ -93,9 +93,22 @@ export function isStandaloneCurrent(actual, expected) {
   return typeof actual === "string" && lf(actual) === lf(expected);
 }
 
+const usage = `Usage: node scripts/build-standalone.mjs [options]
+
+Build or verify the self-contained standalone.html artifact.
+
+Options:
+  -h, --help    Show this help and exit
+  --check       Verify standalone.html matches a fresh build without writing
+`;
+
 async function main(args) {
+  if (args.includes("--help") || args.includes("-h")) {
+    console.log(usage.trimEnd());
+    return 0;
+  }
   if (args.length > 1 || (args.length === 1 && args[0] !== "--check")) {
-    throw new Error("Usage: node scripts/build-standalone.mjs [--check]");
+    throw new Error(usage.trimEnd());
   }
   const expected = await standaloneBytes();
   if (args[0] === "--check") {
