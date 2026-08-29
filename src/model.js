@@ -1,6 +1,42 @@
 /**
  * Partnership Breakpoint economic model.
  * All money values are monthly units in the currency selected by the user.
+ *
+ * @typedef {object} Deal
+ * @property {number} monthlyVolume Planned transactions per month before `volumeShockPct`.
+ * @property {number} feePerTransaction Gross fee collected per transaction.
+ * @property {number} addressableVolume Maximum transactions available from demand.
+ * @property {number} [volumeShockPct] Optional reduction from planned volume, 0 through 100.
+ *
+ * @typedef {object} ParticipantInput
+ * @property {string} id Unique identifier, at most 64 characters.
+ * @property {string} name Display name, at most 80 characters.
+ * @property {number} revenueShare Share of gross fee revenue; all shares must sum to 1.
+ * @property {number} variableCostPerTransaction
+ * @property {number} fixedMonthlyCost
+ * @property {number} minimumAcceptableProfit
+ * @property {number|null} [capacity]
+ * @property {number|null} [minimumCommitment]
+ * @property {number} riskCost
+ *
+ * @typedef {object} StressSettings
+ * @property {number} volumeDropPct 0 through 100.
+ * @property {number} volumeGrowthPct 0 through 100.
+ * @property {number} feeDropPct 0 through 100.
+ * @property {number} variableCostRisePct 0 through 200.
+ *
+ * @typedef {object} PartnershipConfig
+ * @property {Deal} deal
+ * @property {ParticipantInput[]} participants
+ * @property {StressSettings} [stress] Optional. Legacy cases omit this object.
+ *
+ * @typedef {object} ShockResult
+ * @property {string} kind
+ * @property {'bounded'|'unbounded'|'at-breakpoint'|'already-failing'} status
+ * @property {number|null} breakpoint
+ * @property {number|null} change
+ * @property {number|null} changePct
+ * @property {string} reason
  */
 
 export const EPSILON = 1e-9;
@@ -9,6 +45,7 @@ export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
 const CONFIG_KEYS = new Set(['deal', 'participants', 'stress']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
+/** @type {Readonly<StressSettings>} Illustrative GUI defaults; not forecasts. */
 export const DEFAULT_STRESS = Object.freeze({ volumeDropPct: 20, volumeGrowthPct: 20, feeDropPct: 10, variableCostRisePct: 20 });
 const STRESS_LIMITS = Object.freeze({ volumeDropPct: 100, volumeGrowthPct: 100, feeDropPct: 100, variableCostRisePct: 200 });
 
@@ -77,7 +114,11 @@ function stringValue(value, field, errors, maxLength = 80) {
   return value.trim();
 }
 
-/** Returns validation errors without throwing, so forms can report all issues at once. */
+/**
+ * Returns validation errors without throwing, so forms can report all issues at once.
+ * @param {unknown} config
+ * @returns {{valid: boolean, errors: string[]}}
+ */
 export function validateConfiguration(config) {
   const errors = [];
   if (!config || typeof config !== 'object' || Array.isArray(config)) {
@@ -144,6 +185,7 @@ export function validateConfiguration(config) {
   return { valid: errors.length === 0, errors };
 }
 
+/** @param {unknown} config @returns {PartnershipConfig} */
 export function assertValidConfiguration(config) {
   const validation = validateConfiguration(config);
   if (!validation.valid) throw new ValidationError(validation.errors);
@@ -152,17 +194,25 @@ export function assertValidConfiguration(config) {
 
 /**
  * Actual monthly transactions are limited by addressable demand after the chosen volume shock.
+ * @param {Deal} deal
+ * @returns {number}
  */
 export function effectiveVolume(deal) {
   const shockedVolume = deal.monthlyVolume * (1 - (deal.volumeShockPct ?? 0) / 100);
   return Math.min(shockedVolume, deal.addressableVolume);
 }
 
+/** @param {ParticipantInput} participant @param {number} feePerTransaction @returns {number} */
 export function contributionPerTransaction(participant, feePerTransaction) {
   return participant.revenueShare * feePerTransaction - participant.variableCostPerTransaction;
 }
 
-/** The transaction volume at which accounting profit equals zero. */
+/**
+ * The transaction volume at which accounting profit equals zero.
+ * @param {Pick<ParticipantInput, 'revenueShare'|'variableCostPerTransaction'|'fixedMonthlyCost'|'riskCost'>} participant
+ * @param {number} feePerTransaction
+ * @returns {number|null}
+ */
 export function breakEvenVolume(participant, feePerTransaction) {
   const contribution = contributionPerTransaction(participant, feePerTransaction);
   const monthlyOverhead = participant.fixedMonthlyCost + participant.riskCost;
@@ -170,7 +220,12 @@ export function breakEvenVolume(participant, feePerTransaction) {
   return monthlyOverhead / contribution;
 }
 
-/** The minimum volume that clears the participant's monthly profit and commitment exit tests. */
+/**
+ * The minimum volume that clears the participant's monthly profit and commitment exit tests.
+ * @param {ParticipantInput} participant
+ * @param {number} feePerTransaction
+ * @returns {number|null}
+ */
 export function exitVolume(participant, feePerTransaction) {
   const contribution = contributionPerTransaction(participant, feePerTransaction);
   const requiredProfit = participant.minimumAcceptableProfit + participant.fixedMonthlyCost + participant.riskCost;
@@ -207,6 +262,10 @@ function shockResult({ kind, breakpoint, current, direction, reason }) {
 
 /**
  * Returns the threshold and required adverse movement. At a threshold, any additional adverse movement fails.
+ * @param {ParticipantInput} participant
+ * @param {Deal} deal
+ * @param {number} [volume]
+ * @returns {{volume: ShockResult, volumeIncrease: ShockResult, fee: ShockResult, variableCost: ShockResult, currentProfit: number}}
  */
 export function participantShocks(participant, deal, volume = effectiveVolume(deal)) {
   const currentProfit = participant.revenueShare * deal.feePerTransaction * volume
@@ -254,6 +313,13 @@ export function participantShocks(participant, deal, volume = effectiveVolume(de
   return { volume: volumeShock, volumeIncrease, fee: feeShock, variableCost: costShock, currentProfit };
 }
 
+/**
+ * Evaluates one participant against profit, commitment, and capacity tests at a volume.
+ * `fragilityHeadroom` is the volume-distance ranking used by `weakestParticipant`.
+ * @param {ParticipantInput} participant
+ * @param {Deal} deal
+ * @param {number} [volume]
+ */
 export function evaluateParticipant(participant, deal, volume = effectiveVolume(deal)) {
   const revenue = volume * deal.feePerTransaction * participant.revenueShare;
   const variableCost = volume * participant.variableCostPerTransaction;
@@ -310,6 +376,7 @@ const SHOCK_ORDER = Object.freeze(['volume', 'volumeIncrease', 'fee', 'variableC
  * Identifies the first adverse movement in the current scenario, using the
  * smallest percentage change from the current value as the comparison unit.
  * This is a prioritisation aid, not a probability or a claim about behaviour.
+ * It can name a different participant than `weakestParticipant`.
  */
 export function firstBreakpoint(result) {
   const candidates = [];
@@ -337,6 +404,12 @@ export function firstBreakpoint(result) {
   };
 }
 
+/**
+ * Baseline monthly partnership evaluation for a valid configuration.
+ * `weakestParticipant` is the smallest volume-headroom ranking.
+ * `firstBreakpoint` is a separate ranking of bounded shocks by percentage movement.
+ * @param {PartnershipConfig} config
+ */
 export function calculatePartnership(config) {
   assertValidConfiguration(config);
   const volume = effectiveVolume(config.deal);
@@ -435,7 +508,10 @@ function exactProposalPasses(config, scenarios, proposal) {
   });
 }
 
-/** Finite compound scenarios. Counts describe tested cases, never probabilities. */
+/**
+ * Finite compound scenarios. Counts describe tested cases, never probabilities.
+ * @param {PartnershipConfig} config
+ */
 export function evaluateStressGrid(config) {
   assertValidConfiguration(config);
   const settings = { ...(config.stress ?? DEFAULT_STRESS) };
@@ -526,7 +602,11 @@ export function evaluateStressGrid(config) {
     participants, negotiation: { status, requiredShareTotal, operationalFailures, proposal } };
 }
 
-/** Explicit user action only. Leaves the original inputs untouched. */
+/**
+ * Explicit user action only. Leaves the original inputs untouched.
+ * @param {PartnershipConfig} config
+ * @returns {PartnershipConfig}
+ */
 export function applyStressProposal(config) {
   const proposal = evaluateStressGrid(config).negotiation.proposal;
   if (!proposal) throw new ValidationError(['No verified fixed-share proposal is available for these stress cases.']);
@@ -534,13 +614,19 @@ export function applyStressProposal(config) {
     participants: config.participants.map((participant, index) => ({ ...participant, revenueShare: proposal[index].revenueShare })) };
 }
 
-/** Creates a safe immutable copy for UI state or JSON export. */
+/**
+ * Creates a safe copy of a named preset. Stress settings are omitted so legacy
+ * v1 exports remain valid; the GUI applies {@link DEFAULT_STRESS} when missing.
+ * @param {keyof typeof PRESETS} key
+ * @returns {PartnershipConfig}
+ */
 export function clonePreset(key) {
   const preset = PRESETS[key];
   if (!preset) throw new Error(`Unknown preset: ${key}`);
   return JSON.parse(JSON.stringify({ deal: preset.deal, participants: preset.participants }));
 }
 
+/** @param {string} id @returns {ParticipantInput} */
 export function makeParticipant(id) {
   return {
     id,

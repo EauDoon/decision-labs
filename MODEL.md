@@ -64,7 +64,7 @@ effectiveVolume <= capacity, when capacity is supplied
 
 The partnership is viable only when every participant holds.
 
-The named weakest participant has the smallest transaction-volume distance to either its economic exit threshold or its capacity ceiling. Its binding limit identifies the nearest boundary as minimum acceptable profit, minimum commitment, or capacity. This is a local headroom comparison, not a probability of exit.
+The named weakest participant has the smallest transaction-volume distance to either its economic exit threshold or its capacity ceiling. Its binding limit identifies the nearest boundary as minimum acceptable profit, minimum commitment, or capacity. This is a local headroom comparison, not a probability of exit. First breakpoint uses a different measure, relative shock size, so the two rankings can name different participants.
 
 ## Adverse shocks
 
