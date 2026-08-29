@@ -16,7 +16,13 @@ async function workbench() {
       events.set(name, callback);
     } };
   class Input { constructor(dataset, value) { this.dataset = dataset; this.value = value; } }
-  class Reader { readAsText(file) { this.result = file.contents; this.onload(); } }
+  class Reader {
+    readAsText(file) {
+      this.result = file.contents;
+      if (file.pending) file.pending.push(() => this.onload());
+      else this.onload();
+    }
+  }
   const context = vm.createContext({ console, HTMLInputElement: Input, FileReader: Reader, TextEncoder,
     window: { location: { protocol: 'file:', hash: '' }, addEventListener() {} },
     document: { activeElement: null, querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
@@ -29,9 +35,9 @@ async function workbench() {
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
     edit: (path, value) => events.get('change')({ target: new Input({ path }, value) }),
     click: (action) => events.get('click')({ target: { closest: () => ({ dataset: { action } }) } }),
-    import: (config) => {
+    import: (config, pending) => {
       const input = new Input({ action: 'import' }, '');
-      input.files = [{ size: 100, contents: JSON.stringify(config) }];
+      input.files = [{ size: 100, contents: JSON.stringify(config), pending }];
       events.get('change')({ target: input });
     },
   };
@@ -89,6 +95,22 @@ test('legacy imports gain default stress settings, hostile names escape, and inv
   app.import({ ...config, stress: { volumeDropPct: 20 } });
   assert.match(app.notice(), /Import rejected/);
   assert.deepEqual(app.saved(), previous);
+});
+
+test('an older file read cannot overwrite the latest import selection', async () => {
+  const app = await workbench();
+  const pending = [];
+  const older = clonePreset('balanced');
+  older.deal.monthlyVolume = 90_000;
+  const latest = clonePreset('balanced');
+  latest.deal.monthlyVolume = 80_000;
+
+  app.import(older, pending);
+  app.import(latest, pending);
+  pending[1]();
+  pending[0]();
+
+  assert.equal(app.saved().deal.monthlyVolume, 80_000);
 });
 
 test('participant controls stop at the model capacity without invalidating the saved case', async () => {
