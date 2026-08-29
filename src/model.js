@@ -272,7 +272,7 @@ export function runSimulation(input = {}) {
     state.queuedAud = Math.max(0, state.queuedAud - settledThisHour);
     state.reserveRemainingAud = Math.max(0, state.reserveRemainingAud - settledThisHour);
     state.settledAud += settledThisHour;
-    timeline.push(createSnapshot(scenario, hour + 1, state, demandThisHour, settledThisHour, capacity.limitingGate));
+    timeline.push(createSnapshot(scenario, hour + 1, state, demandThisHour, settledThisHour));
   }
 
   return Object.freeze({

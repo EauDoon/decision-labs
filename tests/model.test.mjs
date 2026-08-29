@@ -6,6 +6,7 @@ import {
   SIMULATION_HOURS,
   buildDemandSchedule,
   capacityForHour,
+  createSnapshot,
   getOperationalStatus,
   nextPayoutTime,
   runSimulation,
@@ -43,6 +44,42 @@ test("normal scenario permits settlement in the Friday overlap and on Monday", (
   assert.ok(result.timeline[66].settledThisHour > 0); // Monday 09:00.
   assert.ok(result.summary.totalSettledAud > 0);
   assert.ok(result.summary.totalSettledAud <= result.summary.totalDemandAud);
+});
+
+test("checkpoint bottlenecks match current capacity across operating transitions", () => {
+  const result = runSimulation(DEFAULT_SCENARIO);
+  const fridayClose = result.timeline[2];
+  const mondayOpen = result.timeline[65];
+
+  assert.equal(fridayClose.timeLabel, "Fri 17:00");
+  assert.equal(fridayClose.immediateAud, 0);
+  assert.equal(fridayClose.issuerOpen, false);
+  assert.equal(fridayClose.limitingGate, "issuer");
+
+  assert.equal(mondayOpen.timeLabel, "Mon 08:00");
+  assert.ok(mondayOpen.immediateAud > 0);
+  assert.equal(mondayOpen.issuerOpen, true);
+  assert.equal(mondayOpen.limitingGate, "payout throughput");
+
+  for (const point of result.timeline) {
+    const capacity = capacityForHour(result.scenario, point.hour, point.reserveRemainingAud);
+    assert.equal(point.immediateAud, capacity.capacityAud);
+    assert.equal(point.limitingGate, capacity.limitingGate);
+  }
+});
+
+test("direct snapshot callers can still supply a limiting-gate override", () => {
+  const result = runSimulation(DEFAULT_SCENARIO);
+  const snapshot = createSnapshot(
+    result.scenario,
+    0,
+    result.timeline[0],
+    0,
+    0,
+    "external override"
+  );
+
+  assert.equal(snapshot.limitingGate, "external override");
 });
 
 test("reserve exhaustion is explicit and never allows negative balances", () => {
