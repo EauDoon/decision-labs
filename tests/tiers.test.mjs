@@ -141,8 +141,8 @@ test("malformed, unordered, duplicate, upward, and over-capacity tiers are rejec
   for (const tiers of invalid) assert.throws(() => validateScenario(room([10], { tiers })));
 });
 
-test("ambiguous numeric values are rejected rather than silently becoming zero", () => {
-  for (const value of [null, true, false, [], {}, "", " "]) {
+test("ambiguous numeric values are rejected rather than silently becoming zero or another base", () => {
+  for (const value of [null, true, false, [], {}, "", " ", "0x10", "0b10", "0o10"]) {
     const scenario = room([10]);
     scenario.offers[0].tiers[0].unitPrice = value;
     assert.throws(() => validateScenario(scenario));

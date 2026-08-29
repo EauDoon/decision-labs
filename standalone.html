@@ -744,7 +744,7 @@ function requiredText(value, path, maxLength) {
 }
 
 function finite(value, path, minimum, maximum) {
-  if (typeof value !== "number" && (typeof value !== "string" || value.trim() === "")) {
+  if (typeof value !== "number" && (typeof value !== "string" || value.trim() === "" || /^0[box]/i.test(value.trim()))) {
     throw new ScenarioError(`${path} must be a number.`);
   }
   const number = typeof value === "number" ? value : Number(value);
