@@ -806,6 +806,21 @@ const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
+function firstProposalError(proposal) {
+  return validateProposal(proposal).errors[0];
+}
+
+function parseProposalJson(text) {
+  let proposal;
+  try {
+    proposal = JSON.parse(text);
+  } catch (error) {
+    return { cause: error instanceof SyntaxError ? "the text is not valid JSON." : "it could not be parsed." };
+  }
+  const cause = firstProposalError(proposal);
+  return cause ? { cause } : { proposal: canonicalProposal(proposal) };
+}
+
 function makeId(prefix) {
   const used = new Set([
     ...state.proposal.groups.map((group) => group.id),
@@ -822,11 +837,21 @@ function defaultSupport(groups, value = 50) {
 function loadInitialProposal() {
   const shared = parseHash();
   if (shared) return shared;
+  let raw;
   try {
-    const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    if (validateProposal(saved).valid) return canonicalProposal(saved);
-  } catch { /* Invalid browser storage is ignored. */ }
-  return clone(presets.neighbourhood);
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    initialLoadMessage = "Browser storage is unavailable. Started from the Neighbourhood Plan preset.";
+    return clone(presets.neighbourhood);
+  }
+  if (raw == null || raw === "") return clone(presets.neighbourhood);
+  const parsed = parseProposalJson(raw);
+  if (parsed.cause) {
+    initialLoadMessage = `Local draft ignored: ${parsed.cause}`;
+    return clone(presets.neighbourhood);
+  }
+  initialLoadMessage = "Loaded local draft.";
+  return parsed.proposal;
 }
 
 function parseHash() {
@@ -835,23 +860,37 @@ function parseHash() {
     initialLoadMessage = "Share link ignored: it is larger than 60 KB.";
     return null;
   }
+  let encoded;
   try {
-    const encoded = decodeURIComponent(location.hash.slice(HASH_PREFIX.length))
+    encoded = decodeURIComponent(location.hash.slice(HASH_PREFIX.length))
       .replaceAll("-", "+")
       .replaceAll("_", "/");
-    const padded = encoded.padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), "=");
-    const text = new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(atob(padded), (character) => character.charCodeAt(0)));
-    const proposal = JSON.parse(text);
-    if (!validateProposal(proposal).valid) {
-      initialLoadMessage = "Share link ignored: its proposal is invalid.";
-      return null;
-    }
-    initialLoadMessage = "Loaded proposal from the share link.";
-    return canonicalProposal(proposal);
   } catch {
-    initialLoadMessage = "Share link ignored: it could not be decoded.";
+    initialLoadMessage = "Share link ignored: the URL encoding is invalid.";
     return null;
   }
+  const padded = encoded.padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), "=");
+  let binary;
+  try {
+    binary = atob(padded);
+  } catch {
+    initialLoadMessage = "Share link ignored: it is not valid base64.";
+    return null;
+  }
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+  } catch {
+    initialLoadMessage = "Share link ignored: it is not valid UTF-8.";
+    return null;
+  }
+  const parsed = parseProposalJson(text);
+  if (parsed.cause) {
+    initialLoadMessage = `Share link ignored: ${parsed.cause}`;
+    return null;
+  }
+  initialLoadMessage = "Loaded proposal from the share link.";
+  return parsed.proposal;
 }
 
 function encodeHash(proposal) {
@@ -863,8 +902,9 @@ function encodeHash(proposal) {
 }
 
 function save() {
-  if (!validateProposal(state.proposal).valid) {
-    state.saveMessage = "Invalid edits are not saved. Correct them to resume autosave.";
+  const error = firstProposalError(state.proposal);
+  if (error) {
+    state.saveMessage = `Invalid edits are not saved: ${error}`;
     return;
   }
   if (location.hash.startsWith(HASH_PREFIX)) history.replaceState(null, "", `${location.pathname}${location.search}`);
@@ -1221,18 +1261,26 @@ $("#import-file").addEventListener("change", async (event) => {
     event.target.value = "";
     return;
   }
+  let text;
   try {
-    const proposal = JSON.parse(await file.text());
-    const validation = validateProposal(proposal);
-    if (!validation.valid) throw new Error(validation.errors[0]);
-    state.proposal = canonicalProposal(proposal);
-    state.saveMessage = "Imported and saved locally.";
-    save();
-    render();
-  } catch (error) {
-    state.saveMessage = `Import failed: ${error.message || "invalid JSON"}`;
+    text = await file.text();
+  } catch {
+    state.saveMessage = "Import failed: the file could not be read.";
     $("#autosave-status").textContent = state.saveMessage;
+    event.target.value = "";
+    return;
   }
+  const parsed = parseProposalJson(text);
+  if (parsed.cause) {
+    state.saveMessage = `Import failed: ${parsed.cause}`;
+    $("#autosave-status").textContent = state.saveMessage;
+    event.target.value = "";
+    return;
+  }
+  state.proposal = parsed.proposal;
+  state.saveMessage = "Imported and saved locally.";
+  save();
+  render();
   event.target.value = "";
 });
 $("#share-button").addEventListener("click", async () => {

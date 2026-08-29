@@ -61,6 +61,13 @@ async function savedWorkbench(storage, hash = "") {
     clauses: () => element("#clauses-editor").innerHTML,
     disabled: (selector) => element(selector).disabled,
     click: (selector) => element(selector).events.get("click")(),
+    importJson: async (contents, { size } = {}) => {
+      const target = {
+        files: [{ size: size ?? contents.length, text: async () => contents }],
+        value: "draft.json",
+      };
+      await element("#import-file").events.get("change")({ target });
+    },
     setTitle: (value) => {
       const target = element("#proposal-title");
       target.value = value;
@@ -88,12 +95,13 @@ test("invalid thresholds in storage and share links fail closed without replacin
     const storage = new Map([[key, JSON.stringify({ ...valid, threshold: value })]]);
     const app = await savedWorkbench(storage);
     assert.equal(app.title(), "Neighbourhood Plan: the shared green", `stored threshold ${String(value)}`);
+    assert.match(app.message(), /Local draft ignored: threshold must be a number from 0 to 100/u, `stored threshold ${String(value)}`);
     assert.doesNotMatch(app.alert(), /Fix the proposal before searching/u);
   }
   const encoded = Buffer.from(JSON.stringify({ ...valid, threshold: 101 })).toString("base64url");
   const shared = await savedWorkbench(new Map(), `#agreement=${encoded}`);
   assert.equal(shared.title(), "Neighbourhood Plan: the shared green");
-  assert.match(shared.message(), /proposal is invalid/u);
+  assert.match(shared.message(), /Share link ignored: threshold must be a number from 0 to 100/u);
 });
 
 test("share links reject malformed UTF-8 instead of loading replacement text", async () => {
@@ -112,7 +120,46 @@ test("share links reject malformed UTF-8 instead of loading replacement text", a
 
   const app = await savedWorkbench(new Map(), `#agreement=${bytes.toString("base64url")}`);
   assert.equal(app.title(), "Neighbourhood Plan: the shared green");
-  assert.match(app.message(), /could not be decoded/u);
+  assert.match(app.message(), /Share link ignored: it is not valid UTF-8/u);
+});
+
+test("share-link and storage parse failures name the decode or JSON cause", async () => {
+  const key = "smallest-agreement:proposal:v1";
+  const cases = [
+    ["#agreement=%", /Share link ignored: the URL encoding is invalid/u],
+    ["#agreement=$$$$", /Share link ignored: it is not valid base64/u],
+    [`#agreement=${Buffer.from("not-json").toString("base64url")}`, /Share link ignored: the text is not valid JSON/u],
+  ];
+  for (const [hash, pattern] of cases) {
+    const app = await savedWorkbench(new Map(), hash);
+    assert.equal(app.title(), "Neighbourhood Plan: the shared green", hash);
+    assert.match(app.message(), pattern, hash);
+  }
+
+  const storedJson = await savedWorkbench(new Map([[key, "{not json"]]));
+  assert.equal(storedJson.title(), "Neighbourhood Plan: the shared green");
+  assert.match(storedJson.message(), /Local draft ignored: the text is not valid JSON/u);
+});
+
+test("import failures name JSON syntax, the first invalid field, and oversize files", async () => {
+  const draft = { title: "Imported workshop", threshold: 70,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "clause", title: "Clause", options: [
+      { id: "original", label: "Original", original: true, changeCost: 0, support: { g: 60 } },
+      { id: "alternative", label: "Alternative", original: false, changeCost: 1, support: { g: 80 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+  const app = await savedWorkbench(new Map());
+  await app.importJson("{not json");
+  assert.match(app.message(), /Import failed: the text is not valid JSON/u);
+  await app.importJson("[]");
+  assert.match(app.message(), /Import failed: Proposal must be an object/u);
+  await app.importJson(JSON.stringify({ ...draft, threshold: 101 }));
+  assert.match(app.message(), /Import failed: threshold must be a number from 0 to 100/u);
+  await app.importJson("{}", { size: 250_001 });
+  assert.match(app.message(), /Import failed: files must be 250 KB or smaller/u);
+  assert.equal(app.title(), "Neighbourhood Plan: the shared green");
 });
 
 test("invalid budget and floor edits preserve the last valid custom autosave across reloads", async () => {
@@ -132,7 +179,9 @@ test("invalid budget and floor edits preserve the last valid custom autosave acr
     const lastValid = storage.get(key);
     assert.match(app.message(), /Saved in this browser/u);
     app.edit(field, invalid);
-    assert.match(app.message(), /Invalid edits are not saved/u);
+    assert.match(app.message(), field === "budget"
+      ? /Invalid edits are not saved: maxChangeCost must be from 0 through/u
+      : /Invalid edits are not saved: groups\[0\]\.minSupport must be from 0 to 100/u);
     assert.equal(storage.get(key), lastValid);
     const reloaded = await savedWorkbench(storage);
     assert.equal(reloaded.title(), `Custom ${field} workshop`);
@@ -154,7 +203,8 @@ test("empty and whitespace title edits clear stale results and block export and 
   for (const title of ["", "   "]) {
     app.setTitle(title);
     assert.equal(app.title(), title, "typing must preserve the entered text");
-    assert.match(app.alert(), /Fix the proposal before searching/u);
+    assert.match(app.message(), /Invalid edits are not saved: title must be a non-empty string no longer than 120 characters/u);
+    assert.match(app.alert(), /Fix the proposal before searching: title must be a non-empty string no longer than 120 characters/u);
     assert.match(app.summary(), /Not evaluated/u);
     assert.equal(app.disabled("#export-button"), true);
     assert.equal(app.disabled("#share-button"), true);
