@@ -438,6 +438,8 @@ function participantShocks(participant, deal, volume = effectiveVolume(deal)) {
   const capacity = participant.capacity ?? null;
   const volumeIncrease = capacity === null
     ? { kind: 'volumeIncrease', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'No participant capacity limit is supplied.' }
+    : capacity > deal.addressableVolume
+      ? { kind: 'volumeIncrease', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'Addressable demand prevents volume from reaching this participant capacity.' }
     : shockResult({ kind: 'volumeIncrease', breakpoint: capacity, current: volume, direction: 'increase', reason: 'Volume where the participant capacity limit is reached.' });
 
   const revenueUnits = volume * participant.revenueShare;
@@ -473,7 +475,7 @@ function evaluateParticipant(participant, deal, volume = effectiveVolume(deal)) 
   const capacityPass = capacity === null || volume <= capacity + EPSILON;
   const exitThreshold = exitVolume(participant, deal.feePerTransaction);
   const headroomToExit = exitThreshold === null ? null : volume - exitThreshold;
-  const capacityHeadroom = capacity === null ? Infinity : capacity - volume;
+  const capacityHeadroom = capacity === null || capacity > deal.addressableVolume ? Infinity : capacity - volume;
   const fragilityHeadroom = Math.min(headroomToExit ?? -Infinity, capacityHeadroom);
   const economicLimit = economicConstraint(participant, deal.feePerTransaction, exitThreshold);
   const bindingConstraint = capacityHeadroom < (headroomToExit ?? -Infinity) - EPSILON
@@ -508,7 +510,7 @@ function evaluateParticipant(participant, deal, volume = effectiveVolume(deal)) 
   };
 }
 
-const SHOCK_ORDER = Object.freeze(['volume', 'fee', 'variableCost']);
+const SHOCK_ORDER = Object.freeze(['volume', 'volumeIncrease', 'fee', 'variableCost']);
 
 /**
  * Identifies the first adverse movement in the current scenario, using the
@@ -875,11 +877,11 @@ function compactShock(shock, units) {
 }
 
 function shockLabel(kind) {
-  return { volume: 'volume decrease', fee: 'fee decrease', variableCost: 'variable cost increase' }[kind] ?? kind;
+  return { volume: 'volume decrease', volumeIncrease: 'volume increase', fee: 'fee decrease', variableCost: 'variable cost increase' }[kind] ?? kind;
 }
 
 function shockUnits(kind) {
-  return kind === 'volume' ? 'txn' : 'units / txn';
+  return kind === 'volume' || kind === 'volumeIncrease' ? 'txn' : 'units / txn';
 }
 
 function breakpointSection(result) {

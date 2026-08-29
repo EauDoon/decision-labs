@@ -104,6 +104,17 @@ test('capacity shock is unbounded when no capacity limit is supplied', () => {
   assert.equal(shocks.volumeIncrease.breakpoint, null);
 });
 
+test('capacity above addressable demand is not a reachable shock', () => {
+  const config = clonePreset('balanced');
+  config.deal.addressableVolume = 100_000;
+  config.participants[0].capacity = 101_000;
+  const result = calculatePartnership(config);
+  assert.equal(result.participants[0].shocks.volumeIncrease.status, 'unbounded');
+  assert.match(result.participants[0].shocks.volumeIncrease.reason, /Addressable demand/);
+  assert.notEqual(result.weakestParticipant.id, 'platform');
+  assert.notEqual(result.firstBreakpoint.kind, 'volumeIncrease');
+});
+
 test('binding limit identifies a minimum commitment when it is the nearest economic boundary', () => {
   const config = clonePreset('balanced');
   config.participants[0].minimumCommitment = 120000;
@@ -142,9 +153,9 @@ test('a zero fee floor with zero costs has no adverse fee threshold', () => {
   assert.equal(participantShocks(config.participants[0], config.deal).fee.status, 'unbounded');
 });
 
-test('weakest participant includes distance to a capacity failure', () => {
+test('reachable capacity limits the weakest participant and first breakpoint', () => {
   const config = {
-    deal: { monthlyVolume: 100, feePerTransaction: 10, addressableVolume: 100, volumeShockPct: 0 },
+    deal: { monthlyVolume: 100, feePerTransaction: 10, addressableVolume: 200, volumeShockPct: 0 },
     participants: [
       { id: 'capacity-edge', name: 'Capacity Edge', revenueShare: 0.5, variableCostPerTransaction: 0, fixedMonthlyCost: 0, minimumAcceptableProfit: 0, capacity: 101, minimumCommitment: 0, riskCost: 0 },
       { id: 'profit-edge', name: 'Profit Edge', revenueShare: 0.5, variableCostPerTransaction: 0, fixedMonthlyCost: 0, minimumAcceptableProfit: 450, capacity: 1000, minimumCommitment: 0, riskCost: 0 },
@@ -155,6 +166,9 @@ test('weakest participant includes distance to a capacity failure', () => {
   assert.equal(result.weakestParticipant.fragilityHeadroom, 1);
   assert.equal(result.weakestParticipant.bindingConstraint.kind, 'capacity');
   assert.equal(result.weakestParticipant.shocks.volumeIncrease.change, 1);
+  assert.equal(result.firstBreakpoint.participant.id, 'capacity-edge');
+  assert.equal(result.firstBreakpoint.kind, 'volumeIncrease');
+  assert.equal(result.firstBreakpoint.shock.changePct, 1);
 });
 
 test('already failing participants have a zero adverse shock', () => {

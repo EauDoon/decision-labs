@@ -127,11 +127,11 @@ function compactShock(shock, units) {
 }
 
 function shockLabel(kind) {
-  return { volume: 'volume decrease', fee: 'fee decrease', variableCost: 'variable cost increase' }[kind] ?? kind;
+  return { volume: 'volume decrease', volumeIncrease: 'volume increase', fee: 'fee decrease', variableCost: 'variable cost increase' }[kind] ?? kind;
 }
 
 function shockUnits(kind) {
-  return kind === 'volume' ? 'txn' : 'units / txn';
+  return kind === 'volume' || kind === 'volumeIncrease' ? 'txn' : 'units / txn';
 }
 
 function breakpointSection(result) {

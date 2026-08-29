@@ -232,6 +232,8 @@ export function participantShocks(participant, deal, volume = effectiveVolume(de
   const capacity = participant.capacity ?? null;
   const volumeIncrease = capacity === null
     ? { kind: 'volumeIncrease', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'No participant capacity limit is supplied.' }
+    : capacity > deal.addressableVolume
+      ? { kind: 'volumeIncrease', status: 'unbounded', breakpoint: null, change: null, changePct: null, reason: 'Addressable demand prevents volume from reaching this participant capacity.' }
     : shockResult({ kind: 'volumeIncrease', breakpoint: capacity, current: volume, direction: 'increase', reason: 'Volume where the participant capacity limit is reached.' });
 
   const revenueUnits = volume * participant.revenueShare;
@@ -267,7 +269,7 @@ export function evaluateParticipant(participant, deal, volume = effectiveVolume(
   const capacityPass = capacity === null || volume <= capacity + EPSILON;
   const exitThreshold = exitVolume(participant, deal.feePerTransaction);
   const headroomToExit = exitThreshold === null ? null : volume - exitThreshold;
-  const capacityHeadroom = capacity === null ? Infinity : capacity - volume;
+  const capacityHeadroom = capacity === null || capacity > deal.addressableVolume ? Infinity : capacity - volume;
   const fragilityHeadroom = Math.min(headroomToExit ?? -Infinity, capacityHeadroom);
   const economicLimit = economicConstraint(participant, deal.feePerTransaction, exitThreshold);
   const bindingConstraint = capacityHeadroom < (headroomToExit ?? -Infinity) - EPSILON
@@ -302,7 +304,7 @@ export function evaluateParticipant(participant, deal, volume = effectiveVolume(
   };
 }
 
-const SHOCK_ORDER = Object.freeze(['volume', 'fee', 'variableCost']);
+const SHOCK_ORDER = Object.freeze(['volume', 'volumeIncrease', 'fee', 'variableCost']);
 
 /**
  * Identifies the first adverse movement in the current scenario, using the
