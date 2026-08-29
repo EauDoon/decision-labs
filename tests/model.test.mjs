@@ -107,6 +107,12 @@ test("text matching and id ordering do not depend on the host locale", () => {
   assert.deepEqual(market.ranked.map((result) => result.offer.id), ["a", "z"]);
 });
 
+test("market summary counts categories with matching semantics", () => {
+  const scenario = clonePreset("neighbourhood");
+  scenario.buyers[0].category = "COFFEE BEANS";
+  assert.equal(evaluateMarket(scenario).categoryCount, 1);
+});
+
 test("aggregate demand exposes ranges, not buyer records", () => {
   const groups = aggregateDemand(clonePreset("studio"));
   assert.equal(groups[0].buyerCount, 4);

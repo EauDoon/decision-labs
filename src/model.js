@@ -324,7 +324,6 @@ export function evaluateMarket(rawScenario) {
   const ranked = [...results].sort(compareResults);
   const winner = ranked.find(({ qualifies }) => qualifies) ?? null;
   const totalRequestedUnits = scenario.buyers.reduce((sum, entry) => sum + entry.quantity, 0);
-  const categories = [...new Set(scenario.buyers.map(({ category }) => category))];
   return {
     scenario,
     results,
@@ -332,7 +331,7 @@ export function evaluateMarket(rawScenario) {
     winner,
     totalRequestedUnits,
     buyerCount: scenario.buyers.length,
-    categoryCount: categories.length
+    categoryCount: new Set(scenario.buyers.map(({ category }) => normalizeText(category))).size
   };
 }
 
