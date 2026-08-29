@@ -19,6 +19,7 @@ const types = {
 
 function resolvedFile(urlPath) {
   const pathname = decodeURIComponent(urlPath.split("?")[0]);
+  if (pathname.split(/[\\/]/).some((segment) => segment.startsWith("."))) return null;
   const safePath = pathname === "/" ? "/index.html" : pathname;
   const candidate = path.resolve(root, `.${safePath}`);
   const relative = path.relative(root, candidate);

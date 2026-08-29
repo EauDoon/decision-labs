@@ -49,9 +49,16 @@ test("server reports a reachable port selected by the operating system", async (
   assert.match(await response.text(), /<title>Weekend Gap \| AUD liquidity simulator<\/title>/);
 });
 
+test("server blocks hidden repository metadata", async (t) => {
+  const url = await startServer(t);
+  const response = await fetch(`${url}/.git/HEAD`, { signal: AbortSignal.timeout(5000) });
+  assert.equal(response.status, 403);
+  assert.doesNotMatch(await response.text(), /refs\/heads/);
+});
+
 test("server blocks symlinked directories that escape the project root", async (t) => {
   const id = randomUUID();
-  const linkName = `.weekend-gap-outside-${id}`;
+  const linkName = `weekend-gap-outside-${id}`;
   const linkPath = fileURLToPath(new URL(`../${linkName}`, import.meta.url));
   const outsidePath = path.join(tmpdir(), `weekend-gap-outside-${id}`);
   t.after(async () => {
