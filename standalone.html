@@ -300,7 +300,7 @@ function uniqueIds(items, path, errors) {
 function validateProposal(proposal) {
   const errors = [];
   if (!isPlainObject(proposal)) return { valid: false, errors: ["Proposal must be an object."] };
-  if (typeof proposal.title !== "string" || !proposal.title.trim() || proposal.title.trim().length > 120) errors.push("title must be a non-empty string no longer than 120 characters.");
+  if (typeof proposal.title !== "string" || !proposal.title.trim() || proposal.title.length > 120) errors.push("title must be a non-empty string no longer than 120 characters.");
   if (!isFiniteNumber(proposal.threshold) || proposal.threshold < 0 || proposal.threshold > 100) {
     errors.push("threshold must be a number from 0 to 100.");
   }
@@ -312,7 +312,7 @@ function validateProposal(proposal) {
   } else {
     uniqueIds(proposal.groups, "groups", errors);
     proposal.groups.forEach((group, index) => {
-      if (!isPlainObject(group) || typeof group.name !== "string" || !group.name.trim() || group.name.trim().length > 80) {
+      if (!isPlainObject(group) || typeof group.name !== "string" || !group.name.trim() || group.name.length > 80) {
         errors.push(`groups[${index}].name must be a non-empty string no longer than 80 characters.`);
       }
       if (!isFiniteNumber(group?.weight) || group.weight <= 0 || group.weight > MAX_WEIGHT) {
@@ -331,7 +331,7 @@ function validateProposal(proposal) {
       ? proposal.groups.filter(isPlainObject).map((group) => group.id).filter((id) => typeof id === "string")
       : []);
     proposal.clauses.forEach((clause, clauseIndex) => {
-      if (!isPlainObject(clause) || typeof clause.title !== "string" || !clause.title.trim() || clause.title.trim().length > 120) {
+      if (!isPlainObject(clause) || typeof clause.title !== "string" || !clause.title.trim() || clause.title.length > 120) {
         errors.push(`clauses[${clauseIndex}].title must be a non-empty string no longer than 120 characters.`);
       }
       if (!Array.isArray(clause?.options) || clause.options.length < 3 || clause.options.length > MAX_OPTIONS_PER_CLAUSE) {
@@ -342,7 +342,7 @@ function validateProposal(proposal) {
       let originals = 0;
       clause.options.forEach((option, optionIndex) => {
         const path = `clauses[${clauseIndex}].options[${optionIndex}]`;
-        if (!isPlainObject(option) || typeof option.label !== "string" || !option.label.trim() || option.label.trim().length > 240) {
+        if (!isPlainObject(option) || typeof option.label !== "string" || !option.label.trim() || option.label.length > 240) {
           errors.push(`${path}.label must be a non-empty string no longer than 240 characters.`);
         }
         if (option?.original !== undefined && typeof option.original !== "boolean") {

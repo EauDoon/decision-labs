@@ -207,6 +207,18 @@ test("validation bounds imported structure, labels, and identifier syntax", () =
   const nullGroup = proposal({ groups: [null], clauses: [baseClause] });
   assert.doesNotThrow(() => validateProposal(nullGroup));
   assert.equal(validateProposal(nullGroup).valid, false);
+
+  const padded = " ".repeat(241) + "x";
+  for (const mutate of [
+    (input) => { input.title = padded; },
+    (input) => { input.groups[0].name = padded; },
+    (input) => { input.clauses[0].title = padded; },
+    (input) => { input.clauses[0].options[0].label = padded; },
+  ]) {
+    const input = proposal({ clauses: [structuredClone(baseClause)] });
+    mutate(input);
+    assert.equal(validateProposal(input).valid, false);
+  }
 });
 
 test("public search options cannot raise the resource or result caps", () => {
