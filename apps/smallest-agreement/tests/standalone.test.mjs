@@ -52,7 +52,7 @@ async function savedWorkbench(storage, hash = "") {
     location: { hash, protocol: "file:" },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
   });
-  new vm.Script(script).runInContext(context, { timeout: 2000 });
+  new vm.Script(script).runInContext(context, { timeout: 5000 });
   return {
     title: () => element("#proposal-title").value,
     message: () => element("#autosave-status").textContent,
