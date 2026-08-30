@@ -10,7 +10,7 @@
     "launch": "node scripts/launch.mjs",
     "start": "node scripts/dev-server.mjs",
     "test": "node --test",
-    "check": "node --check src/model.js && node --check src/app.js && node --check scripts/dev-server.mjs && node --check scripts/launch.mjs && node --check scripts/build-standalone.mjs && node scripts/build-standalone.mjs --check && node --test"
+    "check": "node --check src/model.js && node --check src/app.js && node --check scripts/dev-server.mjs && node --check scripts/launch.mjs && node --check scripts/listen-config.mjs && node --check scripts/build-standalone.mjs && node scripts/build-standalone.mjs --check && node --test"
   },
   "engines": {
     "node": ">=20"

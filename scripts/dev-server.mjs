@@ -2,9 +2,15 @@ import { createReadStream, statSync } from "node:fs";
 import { createServer } from "node:http";
 import { fileURLToPath } from "node:url";
 import { dirname, extname, isAbsolute, join, normalize, relative, sep } from "node:path";
+import { DEFAULT_HOST, parsePort } from "./listen-config.mjs";
 
 const root = normalize(join(dirname(fileURLToPath(import.meta.url)), ".."));
-const port = Number.parseInt(process.env.PORT ?? "4173", 10);
+const parsedPort = parsePort(process.env.PORT);
+if (parsedPort.error) {
+  console.error(parsedPort.error);
+  process.exit(1);
+}
+const port = parsedPort.port;
 const types = {
   ".css": "text/css; charset=utf-8",
   ".html": "text/html; charset=utf-8",
@@ -40,8 +46,8 @@ createServer((request, response) => {
     "content-type": types[extname(file)] ?? "application/octet-stream"
   });
   createReadStream(file).pipe(response);
-}).listen(port, "127.0.0.1", () => {
-  console.log(`Common Cart is running at http://127.0.0.1:${port}`);
+}).listen(port, DEFAULT_HOST, () => {
+  console.log(`Common Cart is running at http://${DEFAULT_HOST}:${port}`);
 });
 
 function statSafe(path) {

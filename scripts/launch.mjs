@@ -1,6 +1,7 @@
 import { spawn } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { parsePort } from "./listen-config.mjs";
 
 const minimumNodeMajor = 20;
 const nodeMajor = Number.parseInt(process.versions.node.split(".")[0], 10);
@@ -10,11 +11,18 @@ if (!Number.isInteger(nodeMajor) || nodeMajor < minimumNodeMajor) {
   process.exit(1);
 }
 
+const parsedPort = parsePort(process.env.PORT);
+if (parsedPort.error) {
+  console.error(parsedPort.error);
+  process.exit(1);
+}
+
 const root = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const serverPath = resolve(root, "scripts", "dev-server.mjs");
 const skipBrowser = process.argv.includes("--no-open") || process.env.NO_BROWSER === "1";
 const server = spawn(process.execPath, [serverPath], {
   cwd: root,
+  env: { ...process.env, PORT: String(parsedPort.port) },
   stdio: ["inherit", "pipe", "inherit"],
   windowsHide: false,
 });

@@ -34,9 +34,9 @@ On Windows, macOS, or Linux, run:
 npm run launch
 ```
 
-The command opens `http://127.0.0.1:4173` after the server is ready. If automatic browser opening is unavailable, copy the printed address into a browser. No package installation, account, API key, build, or network connection is required.
+The command opens `http://127.0.0.1:4173` after the server is ready. The listener is loopback IPv4 only. Set `PORT` to an integer from 1 through 65535 to use a different loopback port; omit it to use 4173. Empty or invalid `PORT` values are rejected before the server starts. Pass `--no-open` or set `NO_BROWSER=1` to print the address without opening a browser. If automatic browser opening is unavailable, copy the printed address into a browser. No package installation, account, API key, build, or network connection is required.
 
-For server-only use, run `npm start` and open the printed address manually.
+For server-only use, run `npm start` and open the printed address manually. `npm start` uses the same `PORT` default and validation.
 
 Run the full local check:
 
@@ -89,6 +89,7 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |-- scripts/build-standalone.mjs  Deterministic single-file builder
 |-- scripts/launch.mjs      Cross-platform GUI launcher
 |-- scripts/dev-server.mjs  Dependency-free local server
+|-- scripts/listen-config.mjs     Shared PORT default and validation
 |-- .github/workflows/check.yml   Node 20 `npm run check` job
 |-- MODEL.md                Model contract and limitations
 |-- SECURITY.md             Security and privacy boundary
