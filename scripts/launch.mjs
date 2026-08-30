@@ -1,8 +1,8 @@
 import { spawn } from "node:child_process";
 import { fileURLToPath } from "node:url";
+import { BIND_HOST, DEFAULT_PORT, parsePort } from "./listen-config.mjs";
 
 const minimumNodeMajor = 20;
-const defaultPort = 4173;
 const serverPath = fileURLToPath(new URL("./dev-server.mjs", import.meta.url));
 const usage = `Usage: node scripts/launch.mjs [options]
 
@@ -14,9 +14,9 @@ Options:
   --exit-after-ready     Stop the server after it begins listening
 
 Environment:
-  PORT                   Loopback TCP port from 1 through 65535 (default ${defaultPort})
+  PORT                   Loopback TCP port from 1 through 65535 (default ${DEFAULT_PORT})
 
-The server listens only on 127.0.0.1. Press Ctrl+C to stop it.
+The server listens only on ${BIND_HOST}. HOST is not read. Press Ctrl+C to stop it.
 
 Examples:
   npm run launch
@@ -28,23 +28,6 @@ Examples:
 function nodeMajorVersion() {
   const major = Number.parseInt(process.versions.node.split(".")[0], 10);
   return Number.isSafeInteger(major) ? major : null;
-}
-
-function portValue(value) {
-  if (!/^(?:[1-9][0-9]{0,4})$/.test(value)) return null;
-  const port = Number(value);
-  return port <= 65535 ? port : null;
-}
-
-function parsePort(raw) {
-  if (raw === undefined) return { port: defaultPort };
-  const trimmed = String(raw).trim();
-  if (trimmed === "") {
-    return { error: `PORT is empty. Omit it to use ${defaultPort}, or set an integer from 1 through 65535.` };
-  }
-  const port = portValue(trimmed);
-  if (port === null) return { error: "PORT must be an integer from 1 through 65535." };
-  return { port };
 }
 
 function parseArgs(argv) {

@@ -2,9 +2,15 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, normalize, resolve, sep } from "node:path";
 import { fileURLToPath } from "node:url";
+import { BIND_HOST, parsePort } from "./listen-config.mjs";
 
 const root = resolve(fileURLToPath(new URL("..", import.meta.url)));
-const port = Number(process.env.PORT || 4173);
+const parsedPort = parsePort(process.env.PORT);
+if (parsedPort.error) {
+  console.error(parsedPort.error);
+  process.exit(1);
+}
+const port = parsedPort.port;
 const types = { ".html": "text/html; charset=utf-8", ".js": "text/javascript; charset=utf-8", ".css": "text/css; charset=utf-8", ".json": "application/json; charset=utf-8" };
 
 function safePath(urlPath) {
@@ -30,6 +36,6 @@ createServer(async (request, response) => {
     response.writeHead(404, { "Content-Type": "text/plain; charset=utf-8" });
     response.end("Not found");
   }
-}).listen(port, "127.0.0.1", () => {
-  console.log(`The Smallest Agreement is serving at http://127.0.0.1:${port}`);
+}).listen(port, BIND_HOST, () => {
+  console.log(`The Smallest Agreement is serving at http://${BIND_HOST}:${port}`);
 });

@@ -39,7 +39,7 @@ npm run launch
 
 The launcher prints the local URL before it opens it. If the system browser opener is unavailable, open that printed URL manually. Press Ctrl+C in the terminal to stop the local server cleanly.
 
-`npm run launch -- --help` lists flags. `--no-open` prints the URL without opening a browser. `PORT` must be an integer from 1 through 65535; omit it to use 4173. Empty PORT values and unknown arguments are rejected with that usage text.
+`npm run launch -- --help` lists flags. `--no-open` prints the URL without opening a browser. `PORT` must be an integer from 1 through 65535; omit it to use 4173. Empty PORT values and unknown arguments are rejected with that usage text. `HOST` is not read; the server always binds `127.0.0.1`.
 
 ### Start server only
 
@@ -47,7 +47,7 @@ The launcher prints the local URL before it opens it. If the system browser open
 npm start
 ```
 
-Open the local address shown in the terminal. The app listens only on `127.0.0.1`.
+Open the local address shown in the terminal. The app listens only on `127.0.0.1`. `HOST` is not read. `PORT` uses the same rules as the launcher: an integer from 1 through 65535, default 4173. Empty and invalid values are rejected before the server listens.
 
 The project is also a static ESM app, so any static file server can host it.
 
@@ -109,6 +109,7 @@ Support floors protect only the numerical average you enter. They do not establi
 - `tests/cli.test.mjs`: launcher and builder help, unknown-flag, and PORT checks.
 - `.github/workflows/ci.yml`: Node 20+ syntax, standalone, and test checks on Ubuntu and Windows.
 - `scripts/dev-server.mjs`: dependency-free localhost server.
+- `scripts/listen-config.mjs`: shared loopback bind address, PORT default, and PORT parsing.
 - `scripts/launch.mjs`: cross-platform GUI launcher.
 - `scripts/build-standalone.mjs`: deterministic standalone-file builder and stale-output check.
 - `launch-windows.cmd`: Windows one-click launcher.
