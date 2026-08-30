@@ -13,7 +13,7 @@ Shared deal inputs:
 
 Participant inputs:
 
-- `revenueShare`: share of gross fee revenue. All participant shares must sum to exactly 1.
+- `revenueShare`: share of gross fee revenue, from 0 through 1. All participant shares must sum to exactly 1.
 - `variableCostPerTransaction`: participant-specific variable cost per completed transaction.
 - `fixedMonthlyCost`: recurring monthly cost.
 - `minimumAcceptableProfit`: monthly profit needed to remain in the arrangement, including any outside-option floor supplied by the user.
@@ -21,7 +21,7 @@ Participant inputs:
 - `minimumCommitment`: optional minimum monthly transactions required by the participant.
 - `riskCost`: monthly expected risk cost entered by the user.
 
-All numeric inputs must be finite, non-negative, and no greater than 1,000,000,000,000,000. Between 2 and 24 participants with unique identifiers and non-empty names are required. Participant names are limited to 80 characters and identifiers to 64 characters. Unknown imported fields are rejected rather than preserved.
+All numeric inputs must be finite, non-negative, and no greater than 1,000,000,000,000,000. Each revenue share must also be at most 1. Between 2 and 24 participants with unique identifiers and non-empty names are required. Participant names are limited to 80 characters and identifiers to 64 characters. Configuration, deal, stress, and participant values must be plain objects. Only own fields are read, so inherited prototype values are ignored. Unknown imported fields and reserved keys (`__proto__`, `constructor`, `prototype`) are rejected rather than preserved. A present `volumeShockPct` of `null` is invalid; omit the field to use zero.
 
 ## Formulas
 
