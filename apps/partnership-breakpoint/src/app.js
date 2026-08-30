@@ -190,7 +190,7 @@ function breakpointSection(result) {
   }
 
   const units = shockUnits(breakpoint.kind);
-  const threshold = breakpoint.kind === 'volume'
+  const threshold = units === 'txn'
     ? `${formatNumber(shock.breakpoint)} txn`
     : `${formatNumber(shock.breakpoint, 4)} units / txn`;
   return `<section class="panel breakpoint-summary"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p></div></section>`;
