@@ -1,0 +1,1346 @@
+<!doctype html>
+<!--
+MIT License
+
+Copyright (c) 2026 EauDoon
+
+Permission is hereby granted, free of charge, to any person obtaining a copy
+of this software and associated documentation files (the "Software"), to deal
+in the Software without restriction, including without limitation the rights
+to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+copies of the Software, and to permit persons to whom the Software is
+furnished to do so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+-->
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="description" content="A local deliberation workshop for testing the smallest structured agreement that crosses a chosen approval threshold.">
+    <meta http-equiv="Content-Security-Policy" content="default-src 'none'; base-uri 'none'; object-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src 'none'; font-src 'none'; connect-src 'none'; media-src 'none'; worker-src 'none'; frame-src 'none'; form-action 'none'">
+    <title>The Smallest Agreement</title>
+    <style>
+:root {
+  --paper: #f6f0e4;
+  --paper-deep: #e9dfce;
+  --ink: #19352d;
+  --ink-soft: #466054;
+  --brick: #a64431;
+  --brick-dark: #7e2f23;
+  --pencil: #3778a6;
+  --line: #cdbfaa;
+  --card: #fffaf0;
+  --shadow: 0 10px 26px #362b1d1a;
+}
+
+* { box-sizing: border-box; }
+html { background: var(--paper); color: var(--ink); font-family: Georgia, "Times New Roman", serif; }
+body { margin: 0; min-width: 320px; }
+button, input, select { font: inherit; }
+button { cursor: pointer; }
+button:focus-visible, input:focus-visible, select:focus-visible, canvas:focus-visible { outline: 3px solid var(--pencil); outline-offset: 3px; }
+.skip-link { position: absolute; left: -9999px; top: 0; background: var(--ink); color: white; padding: .7rem 1rem; z-index: 5; }
+.skip-link:focus { left: .75rem; top: .75rem; }
+
+.site-header { display: flex; justify-content: space-between; gap: 2rem; padding: clamp(1.4rem, 4vw, 3.5rem) clamp(1rem, 5vw, 6rem) 1.6rem; border-bottom: 1px solid var(--line); background: #f4ecdf; }
+.brand-block { max-width: 48rem; }
+.eyebrow { margin: 0 0 .35rem; color: var(--brick); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .73rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+h1, h2, h3, p { overflow-wrap: anywhere; }
+h1 { margin: 0; font-size: clamp(2rem, 4vw, 3.7rem); font-weight: 500; letter-spacing: -.035em; line-height: .95; }
+.lede { max-width: 43rem; margin: 1rem 0 0; color: var(--ink-soft); font-size: 1.05rem; line-height: 1.45; }
+.header-actions { display: flex; align-content: flex-start; align-items: flex-end; flex-wrap: wrap; gap: .5rem; max-width: 28rem; }
+.select-label { display: grid; gap: .22rem; color: var(--ink-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; }
+
+.button, .text-button { border: 1px solid var(--ink); border-radius: 0; padding: .58rem .75rem; background: var(--card); color: var(--ink); font-weight: 700; }
+.button:hover, .text-button:hover { background: var(--paper-deep); }
+.button-brick { border-color: var(--brick); background: var(--brick); color: white; }
+.button-brick:hover { background: var(--brick-dark); }
+.button-quiet { border-color: transparent; background: transparent; color: var(--ink-soft); }
+.text-button { border: 0; padding: .2rem 0; background: transparent; color: var(--pencil); font-size: .88rem; text-decoration: underline; }
+.text-button:hover { background: transparent; color: var(--brick); }
+.text-button.danger { color: var(--brick); }
+.button:disabled, .text-button:disabled { cursor: not-allowed; opacity: .5; }
+
+.workspace { display: grid; grid-template-columns: minmax(15rem, 21rem) minmax(0, 1fr); max-width: 1500px; margin: 0 auto; }
+.control-panel { padding: 2rem clamp(1rem, 3vw, 2.6rem); border-right: 1px solid var(--line); background: #f0e6d5; }
+.margin-note { margin: 0 0 2rem; padding: .7rem .8rem .7rem 1rem; border-left: 3px solid var(--pencil); color: var(--ink-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; line-height: 1.45; transform: rotate(-1deg); }
+.margin-note span { color: var(--pencil); font-weight: 800; }
+.panel-section { padding: 1.15rem 0; border-top: 1px solid var(--line); }
+.panel-section > label, .label-row label { display: block; margin-bottom: .45rem; font-size: .88rem; font-weight: 700; }
+input[type="text"], input[type="number"], select { width: 100%; border: 1px solid #9c907d; border-radius: 0; padding: .5rem; background: #fffdf7; color: var(--ink); }
+input[type="range"] { width: 100%; accent-color: var(--brick); }
+.label-row, .section-heading { display: flex; align-items: baseline; justify-content: space-between; gap: .8rem; }
+.label-row output { color: var(--brick); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 800; }
+.threshold-panel p, .field-note, .canvas-note { margin: .5rem 0 0; color: var(--ink-soft); font-size: .79rem; line-height: 1.35; }
+.panel-section h2, .section-heading h2 { margin: 0; font-size: 1.16rem; font-weight: 500; }
+.group-row { display: grid; grid-template-columns: 1fr 4.3rem auto; gap: .35rem; align-items: center; margin-top: .5rem; }
+.group-row label { font-size: .75rem; color: var(--ink-soft); }
+.group-row input { min-width: 0; }
+.group-floor { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 6rem; gap: .5rem; align-items: center; padding-bottom: .65rem; border-bottom: 1px solid var(--line); }
+.clause-lock { display: grid; gap: .4rem; margin: .75rem 0; font-size: .82rem; }
+.constraint-card { margin-bottom: 1rem; }
+
+.workbench { padding: clamp(1.4rem, 4vw, 3.7rem); min-width: 0; }
+.proposal-line { display: flex; align-items: end; gap: .8rem 1.5rem; flex-wrap: wrap; padding-bottom: 1.3rem; border-bottom: 2px solid var(--ink); }
+.proposal-line h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.5rem); font-weight: 500; letter-spacing: -.025em; }
+.autosave-status { margin: 0 0 .15rem auto; color: var(--ink-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; }
+.clause-heading { margin: 2.2rem 0 1rem; }
+.clauses-editor { display: grid; gap: 1rem; min-width: 0; }
+.clause-card { position: relative; min-width: 0; padding: 1.15rem; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+.clause-card::before { content: ""; position: absolute; top: -.25rem; left: 1.5rem; width: 4rem; border-top: 2px solid var(--pencil); transform: rotate(-1deg); }
+.clause-top { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 1rem; align-items: center; }
+.clause-title-input { border: 0 !important; border-bottom: 1px solid var(--ink) !important; padding: .25rem 0 !important; background: transparent !important; font-size: 1.18rem; font-weight: 500; }
+.clause-annotation { margin: .65rem 0 .9rem; color: var(--ink-soft); font-size: .82rem; }
+.options-table-wrap { width: 100%; max-width: 100%; overflow-x: auto; }
+.options-table, .coalition-table { width: 100%; border-collapse: collapse; font-size: .82rem; }
+.options-table th, .options-table td, .coalition-table th, .coalition-table td { padding: .45rem .35rem; border-bottom: 1px solid #ded3c0; text-align: left; vertical-align: top; }
+.options-table th, .coalition-table th { color: var(--ink-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .68rem; font-weight: 700; letter-spacing: .03em; text-transform: uppercase; }
+.options-table input { min-width: 4.4rem; }
+.options-table .option-label-input { min-width: 12rem; }
+.original-marker { display: inline-block; margin-top: .23rem; color: var(--pencil); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .66rem; font-weight: 800; text-transform: uppercase; }
+.option-tools { display: flex; align-items: center; justify-content: flex-end; gap: .5rem; }
+.add-alternative { margin-top: .85rem; }
+
+.results-section { margin-top: 3.5rem; padding-top: 1.5rem; border-top: 2px solid var(--ink); }
+.search-meta { margin: 0; color: var(--ink-soft); font-size: .8rem; }
+.result-alert { min-height: 1.1rem; margin-top: .8rem; color: var(--brick); font-weight: 700; }
+.result-summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr)); gap: .75rem; margin: 1rem 0; }
+.metric { padding: .9rem; border-top: 3px solid var(--pencil); background: #edf1ea; }
+.metric.cost { border-color: var(--brick); background: #faeee9; }
+.metric .metric-label { display: block; color: var(--ink-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .67rem; font-weight: 700; text-transform: uppercase; }
+.metric strong { display: block; margin-top: .2rem; font-size: 1.45rem; font-weight: 500; }
+.results-grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(15rem, .9fr); gap: 1rem; }
+.result-card, .near-misses { padding: 1.1rem; border: 1px solid var(--line); background: var(--card); }
+.result-card h3, .near-misses h3 { margin: 0; font-size: 1.04rem; font-weight: 500; }
+.subheading { margin-top: 1.25rem !important; }
+canvas { display: block; width: 100%; height: auto; min-height: 190px; margin-top: .9rem; border: 1px solid var(--line); background: #fffdf7; }
+.coalition-table { margin-top: .9rem; }
+.change-item, .shift-item, .miss-item { padding: .65rem 0; border-bottom: 1px solid #ded3c0; }
+.change-item:last-child, .shift-item:last-child, .miss-item:last-child { border-bottom: 0; }
+.change-item strong { display: block; }
+.change-item span, .shift-item span, .miss-item small { color: var(--ink-soft); font-size: .82rem; }
+.positive { color: #286842 !important; }.negative { color: var(--brick) !important; }
+.near-misses { margin-top: 1rem; }
+.miss-item { display: grid; grid-template-columns: auto 1fr; gap: .8rem; }
+.miss-score { color: var(--brick); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 800; }
+.empty-state { color: var(--ink-soft); font-style: italic; }
+.method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 3rem; }
+.method-grid article { padding: 1.2rem 1.2rem 1.25rem; border-top: 3px solid var(--ink); background: #ece4d5; }
+.method-grid h2 { margin: 0 0 .65rem; font-size: 1.3rem; font-weight: 500; }.method-grid p:not(.eyebrow) { color: var(--ink-soft); line-height: 1.45; }
+.site-footer { padding: 1.4rem clamp(1rem, 5vw, 6rem); border-top: 1px solid var(--line); color: var(--ink-soft); font-size: .82rem; }
+.visually-hidden { position: absolute; inset: 0 auto auto 0; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+@media (max-width: 950px) { .site-header { display: block; }.header-actions { margin-top: 1.3rem; max-width: none; }.workspace { grid-template-columns: 1fr; }.control-panel { border-right: 0; border-bottom: 1px solid var(--line); }.margin-note { max-width: 28rem; }.groups-editor { max-width: 38rem; } }
+@media (max-width: 680px) { .site-header { padding: 1.25rem 1rem; }.workbench { padding: 1.5rem 1rem; }.control-panel { padding: 1.4rem 1rem; }.header-actions { align-items: stretch; }.select-label { width: 100%; }.result-summary, .results-grid, .method-grid { grid-template-columns: 1fr; }.clause-top { grid-template-columns: 1fr; }.clause-top .text-button { justify-self: start; }.autosave-status { margin-left: 0; width: 100%; }.options-table { min-width: 630px; } }
+</style>
+  </head>
+  <body>
+    <a class="skip-link" href="#workspace">Skip to workspace</a>
+    <header class="site-header">
+      <div class="brand-block">
+        <p class="eyebrow">A local deliberation workshop</p>
+        <h1>The Smallest Agreement</h1>
+        <p class="lede">Test structured clause changes, keep the cost visible, and find the lowest-cost combination that crosses your group’s approval threshold.</p>
+      </div>
+      <div class="header-actions" aria-label="Project actions">
+        <label class="select-label">Preset
+          <select id="preset-select">
+            <option value="neighbourhood">Neighbourhood Plan</option>
+            <option value="open-source">Open Source Policy</option>
+            <option value="association-budget">Association Budget</option>
+            <option value="protected-access">Protected Access</option>
+          </select>
+        </label>
+        <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
+        <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
+        <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
+        <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
+        <button class="button button-secondary" type="button" id="share-button">Share link</button>
+        <button class="button button-quiet" type="button" id="reset-button">Reset</button>
+        <input id="import-file" type="file" accept="application/json,.json" hidden>
+      </div>
+    </header>
+
+    <main id="workspace" class="workspace">
+      <aside class="control-panel" aria-label="Proposal controls">
+        <div class="margin-note"><span>01</span> Shape the room before you ask it to decide.</div>
+        <section class="panel-section">
+          <label for="proposal-title">Proposal title</label>
+          <input id="proposal-title" type="text" maxlength="120" autocomplete="off">
+        </section>
+        <section class="panel-section threshold-panel">
+          <div class="label-row"><label for="threshold">Approval threshold</label><output id="threshold-output"></output></div>
+          <input id="threshold" type="range" min="0" max="100" step="1">
+          <p>Weighted average support across all clauses and groups.</p>
+        </section>
+        <section class="panel-section">
+          <label for="max-change-cost">Maximum total change cost</label>
+          <input id="max-change-cost" type="number" min="0" max="20000000000" step="any" placeholder="Unlimited" aria-describedby="budget-note">
+          <p id="budget-note" class="field-note">Optional hard budget. Leave blank for no limit. Zero permits only zero-cost changes.</p>
+        </section>
+        <section class="panel-section">
+          <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" data-action="add-group">Add group</button></div>
+          <div id="groups-editor" class="groups-editor"></div>
+          <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
+          <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
+        </section>
+      </aside>
+
+      <section class="workbench" aria-label="Clause workshop">
+        <div class="proposal-line">
+          <p class="eyebrow">Working proposal</p>
+          <h2 id="proposal-heading"></h2>
+          <p id="autosave-status" class="autosave-status" role="status"></p>
+        </div>
+
+        <section aria-labelledby="clauses-heading">
+          <div class="section-heading clause-heading">
+            <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading">What can change?</h2></div>
+            <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
+          </div>
+          <div id="clauses-editor" class="clauses-editor"></div>
+        </section>
+
+        <section class="results-section" aria-labelledby="results-heading">
+          <div class="section-heading">
+            <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading">The smallest agreement</h2></div>
+            <p id="search-meta" class="search-meta"></p>
+          </div>
+          <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
+          <div id="result-summary" class="result-summary"></div>
+          <section class="result-card constraint-card" aria-labelledby="constraints-heading">
+            <h3 id="constraints-heading">Constraint checks</h3>
+            <div id="constraint-checks"></div>
+          </section>
+          <div class="results-grid">
+            <section class="result-card coalition-card" aria-labelledby="coalition-heading">
+              <h3 id="coalition-heading">Coalition view</h3>
+              <canvas id="coalition-canvas" role="img" tabindex="0" aria-label="Approval by participant group"></canvas>
+              <p class="canvas-note">Blue is current support. Brick is the recommended support. The table gives the same values.</p>
+              <div id="coalition-table"></div>
+            </section>
+            <section class="result-card" aria-labelledby="changes-heading">
+              <h3 id="changes-heading">Changed clauses</h3>
+              <div id="changed-clauses"></div>
+              <h3 class="subheading">Support groups gained or lost</h3>
+              <div id="support-shifts"></div>
+            </section>
+          </div>
+          <section class="near-misses" aria-labelledby="near-misses-heading">
+            <div class="section-heading"><div><p class="eyebrow">Alternatives</p><h3 id="near-misses-heading">Near misses</h3></div></div>
+            <div id="near-misses-list"></div>
+          </section>
+        </section>
+
+        <section class="method-grid" aria-label="Method and limits">
+          <article>
+            <p class="eyebrow">Method</p>
+            <h2>Count what changes</h2>
+            <p>For each combination of one option per clause, the workshop computes a weighted average of the group support scores. It selects a passing combination by lowest change cost, then fewest changed clauses, then higher approval, then option ID order.</p>
+            <p>Only combinations meeting every support floor, cost budget, and clause lock can pass. Near misses meet those constraints but miss the overall threshold.</p>
+            <p>The search is exhaustive only up to 50,000 lock-permitted combinations. Above that, it stops and tells you to reduce the choice set. An already-passing original proposal needs only one check.</p>
+          </article>
+          <article>
+            <p class="eyebrow">Limits</p>
+            <h2>Keep human judgment in the room</h2>
+            <p>Scores, weights, and costs are supplied by people. The workshop makes no semantic judgment about text, fairness, representation, or scope.</p>
+            <p>Small textual edits can have large semantic effects. A passing result is a deliberation prompt, not democratic legitimacy, consent, or authority to adopt a policy.</p>
+          </article>
+        </section>
+      </section>
+    </main>
+    <footer class="site-footer">Local only. Your draft is stored in this browser unless you export or share it.</footer>
+    <script type="module">
+/**
+ * Pure, deterministic agreement calculations.
+ * The model treats labels as data. It never infers their meaning.
+ */
+
+const MAX_COMBINATIONS = 50000;
+const MAX_GROUPS = 24;
+const MAX_CLAUSES = 20;
+const MAX_OPTIONS_PER_CLAUSE = 24;
+const MAX_NEAR_MISSES = 5;
+const MAX_WEIGHT = 1_000_000;
+const MAX_CHANGE_COST = 1_000_000_000;
+
+const EPSILON = 1e-9;
+
+const ID_PATTERN = /^[A-Za-z0-9][A-Za-z0-9._-]{0,63}$/;
+const RESERVED_IDS = new Set(["constructor", "prototype", "__proto__"]);
+
+function isPlainObject(value) {
+  if (value === null || typeof value !== "object" || Array.isArray(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+function isFiniteNumber(value) {
+  return typeof value === "number" && Number.isFinite(value);
+}
+
+function uniqueIds(items, path, errors) {
+  const seen = new Set();
+  items.forEach((item, index) => {
+    if (!isPlainObject(item) || typeof item.id !== "string" || !ID_PATTERN.test(item.id) || RESERVED_IDS.has(item.id)) {
+      errors.push(`${path}[${index}].id must be 1 to 64 safe identifier characters.`);
+      return;
+    }
+    if (seen.has(item.id)) errors.push(`${path}[${index}].id must be unique.`);
+    seen.add(item.id);
+  });
+}
+
+/** Return structured validation errors without mutating the proposal. */
+function validateProposal(proposal) {
+  const errors = [];
+  if (!isPlainObject(proposal)) return { valid: false, errors: ["Proposal must be an object."] };
+  if (typeof proposal.title !== "string" || !proposal.title.trim() || proposal.title.length > 120) errors.push("title must be a non-empty string no longer than 120 characters.");
+  if (!isFiniteNumber(proposal.threshold) || proposal.threshold < 0 || proposal.threshold > 100) {
+    errors.push("threshold must be a number from 0 to 100.");
+  }
+  if (Object.hasOwn(proposal, "maxChangeCost") && (!isFiniteNumber(proposal.maxChangeCost) || proposal.maxChangeCost < 0 || proposal.maxChangeCost > MAX_CHANGE_COST * MAX_CLAUSES)) {
+    errors.push(`maxChangeCost must be from 0 through ${MAX_CHANGE_COST * MAX_CLAUSES}, or omitted.`);
+  }
+  if (!Array.isArray(proposal.groups) || proposal.groups.length < 1 || proposal.groups.length > MAX_GROUPS) {
+    errors.push(`Between 1 and ${MAX_GROUPS} participant groups are required.`);
+  } else {
+    uniqueIds(proposal.groups, "groups", errors);
+    proposal.groups.forEach((group, index) => {
+      if (!isPlainObject(group) || typeof group.name !== "string" || !group.name.trim() || group.name.length > 80) {
+        errors.push(`groups[${index}].name must be a non-empty string no longer than 80 characters.`);
+      }
+      if (!isFiniteNumber(group?.weight) || group.weight <= 0 || group.weight > MAX_WEIGHT) {
+        errors.push(`groups[${index}].weight must be greater than 0 and no more than ${MAX_WEIGHT}.`);
+      }
+      if (isPlainObject(group) && Object.hasOwn(group, "minSupport") && (!isFiniteNumber(group.minSupport) || group.minSupport < 0 || group.minSupport > 100)) {
+        errors.push(`groups[${index}].minSupport must be from 0 to 100, or omitted.`);
+      }
+    });
+  }
+  if (!Array.isArray(proposal.clauses) || proposal.clauses.length < 1 || proposal.clauses.length > MAX_CLAUSES) {
+    errors.push(`Between 1 and ${MAX_CLAUSES} clauses are required.`);
+  } else {
+    uniqueIds(proposal.clauses, "clauses", errors);
+    const groupIds = new Set(Array.isArray(proposal.groups)
+      ? proposal.groups.filter(isPlainObject).map((group) => group.id).filter((id) => typeof id === "string")
+      : []);
+    proposal.clauses.forEach((clause, clauseIndex) => {
+      if (!isPlainObject(clause) || typeof clause.title !== "string" || !clause.title.trim() || clause.title.length > 120) {
+        errors.push(`clauses[${clauseIndex}].title must be a non-empty string no longer than 120 characters.`);
+      }
+      if (!Array.isArray(clause?.options) || clause.options.length < 3 || clause.options.length > MAX_OPTIONS_PER_CLAUSE) {
+        errors.push(`clauses[${clauseIndex}] needs 3 to ${MAX_OPTIONS_PER_CLAUSE} options, including one original.`);
+        return;
+      }
+      uniqueIds(clause.options, `clauses[${clauseIndex}].options`, errors);
+      let originals = 0;
+      clause.options.forEach((option, optionIndex) => {
+        const path = `clauses[${clauseIndex}].options[${optionIndex}]`;
+        if (!isPlainObject(option) || typeof option.label !== "string" || !option.label.trim() || option.label.length > 240) {
+          errors.push(`${path}.label must be a non-empty string no longer than 240 characters.`);
+        }
+        if (isPlainObject(option) && Object.hasOwn(option, "original") && typeof option.original !== "boolean") {
+          errors.push(`${path}.original must be a boolean, or omitted for an alternative.`);
+        }
+        if (isPlainObject(option) && Object.hasOwn(option, "original") && option.original === true) originals += 1;
+        if (!isFiniteNumber(option?.changeCost) || option.changeCost < 0 || option.changeCost > MAX_CHANGE_COST) {
+          errors.push(`${path}.changeCost must be from 0 through ${MAX_CHANGE_COST}.`);
+        }
+        if (!isPlainObject(option?.support)) {
+          errors.push(`${path}.support must be an object.`);
+        } else {
+          groupIds.forEach((groupId) => {
+            const score = Object.hasOwn(option.support, groupId) ? option.support[groupId] : undefined;
+            if (!isFiniteNumber(score) || score < 0 || score > 100) {
+              errors.push(`${path}.support.${groupId} must be a number from 0 to 100.`);
+            }
+          });
+          if (Object.keys(option.support).some((key) => !groupIds.has(key))) {
+            errors.push(`${path}.support may only contain the declared group ids.`);
+          }
+        }
+      });
+      if (originals !== 1) errors.push(`clauses[${clauseIndex}] must have exactly one original option.`);
+      const original = clause.options.find((option) => isPlainObject(option) && Object.hasOwn(option, "original") && option.original === true);
+      if (original && original.changeCost !== 0) errors.push(`clauses[${clauseIndex}] original option must have zero change cost.`);
+      if (isPlainObject(clause) && Object.hasOwn(clause, "lockedOptionId") && (typeof clause.lockedOptionId !== "string" || !clause.options.some((option) => option?.id === clause.lockedOptionId))) {
+        errors.push(`clauses[${clauseIndex}].lockedOptionId must identify an option in that clause, or be omitted.`);
+      }
+    });
+  }
+  return { valid: errors.length === 0, errors };
+}
+
+/** Return only the validated fields that the application understands. */
+function canonicalProposal(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) throw new TypeError(validation.errors[0]);
+  const groupIds = proposal.groups.map(({ id }) => id);
+  return {
+    title: proposal.title,
+    threshold: proposal.threshold,
+    ...(Object.hasOwn(proposal, "maxChangeCost") ? { maxChangeCost: proposal.maxChangeCost } : {}),
+    groups: proposal.groups.map((group) => ({
+      id: group.id,
+      name: group.name,
+      weight: group.weight,
+      ...(Object.hasOwn(group, "minSupport") ? { minSupport: group.minSupport } : {}),
+    })),
+    clauses: proposal.clauses.map((clause) => ({
+      id: clause.id,
+      title: clause.title,
+      ...(Object.hasOwn(clause, "lockedOptionId") ? { lockedOptionId: clause.lockedOptionId } : {}),
+      options: clause.options.map((option) => ({
+        id: option.id,
+        label: option.label,
+        original: Object.hasOwn(option, "original") && option.original === true,
+        changeCost: option.changeCost,
+        support: Object.fromEntries(groupIds.map((groupId) => [groupId, option.support[groupId]])),
+      })),
+    })),
+  };
+}
+
+function getOriginalOptions(proposal) {
+  return proposal.clauses.map((clause) => clause.options.find((option) => option.original === true));
+}
+
+function approvalForOptions(groups, options) {
+  const totalWeight = groups.reduce((sum, group) => sum + group.weight, 0);
+  const totalSupport = groups.reduce(
+    (sum, group) => sum + group.weight * options.reduce((optionSum, option) => optionSum + option.support[group.id], 0),
+    0,
+  );
+  const maximum = totalWeight * options.length * 100;
+  return maximum === 0 ? 0 : (totalSupport / maximum) * 100;
+}
+
+function approvalByGroup(groups, options) {
+  return groups.map((group) => ({
+    id: group.id,
+    name: group.name,
+    weight: group.weight,
+    approval: options.reduce((sum, option) => sum + option.support[group.id], 0) / options.length,
+  }));
+}
+
+function selectionSummary(proposal, options, baselineOptions = getOriginalOptions(proposal)) {
+  const changes = options
+    .map((option, index) => ({ clause: proposal.clauses[index], option, baseline: baselineOptions[index] }))
+    .filter(({ option, baseline }) => option.id !== baseline.id)
+    .map(({ clause, option, baseline }) => ({
+      clauseId: clause.id,
+      clauseTitle: clause.title,
+      from: baseline.label,
+      to: option.label,
+      changeCost: option.changeCost,
+    }));
+  const groupDeltas = proposal.groups.map((group) => {
+    const before = baselineOptions.reduce((sum, option) => sum + option.support[group.id], 0) / baselineOptions.length;
+    const after = options.reduce((sum, option) => sum + option.support[group.id], 0) / options.length;
+    return { id: group.id, name: group.name, weight: group.weight, before, after, delta: after - before };
+  });
+  const byGroup = approvalByGroup(proposal.groups, options);
+  const changeCost = changes.reduce((sum, change) => sum + change.changeCost, 0);
+  const floors = proposal.groups.filter((group) => group.minSupport !== undefined).map((group) => {
+    const actual = byGroup.find((row) => row.id === group.id).approval;
+    return { id: group.id, name: group.name, minimum: group.minSupport, actual, met: actual + EPSILON >= group.minSupport };
+  });
+  const locks = proposal.clauses.flatMap((clause, index) => clause.lockedOptionId === undefined ? [] : [{
+    clauseId: clause.id, clauseTitle: clause.title, optionId: clause.lockedOptionId,
+    label: clause.options.find((option) => option.id === clause.lockedOptionId).label,
+    met: options[index].id === clause.lockedOptionId,
+  }]);
+  const budget = proposal.maxChangeCost === undefined ? null : { maximum: proposal.maxChangeCost, actual: changeCost, met: changeCost <= proposal.maxChangeCost + EPSILON };
+  return {
+    options,
+    approval: approvalForOptions(proposal.groups, options),
+    byGroup,
+    changes,
+    changeCost,
+    constraints: { floors, locks, budget, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) },
+    changedClauseCount: changes.length,
+    groupDeltas,
+    supportersGained: groupDeltas.filter((group) => group.delta > EPSILON),
+    supportersLost: groupDeltas.filter((group) => group.delta < -EPSILON),
+  };
+}
+
+function compareText(a, b) {
+  return a < b ? -1 : a > b ? 1 : 0;
+}
+
+/**
+ * Best-first ordering for passing candidates:
+ * lower cost, fewer changed clauses, higher approval, then option ids by clause order.
+ */
+function compareAgreements(a, b) {
+  if (Math.abs(a.changeCost - b.changeCost) > EPSILON) return a.changeCost - b.changeCost;
+  if (a.changedClauseCount !== b.changedClauseCount) return a.changedClauseCount - b.changedClauseCount;
+  if (Math.abs(a.approval - b.approval) > EPSILON) return b.approval - a.approval;
+  for (let index = 0; index < a.options.length; index += 1) {
+    const comparison = compareText(a.options[index].id, b.options[index].id);
+    if (comparison !== 0) return comparison;
+  }
+  return 0;
+}
+
+/** Near misses prioritize closest approval gap, then the same deterministic agreement order. */
+function compareNearMisses(threshold, a, b) {
+  const gapA = threshold - a.approval;
+  const gapB = threshold - b.approval;
+  if (Math.abs(gapA - gapB) > EPSILON) return gapA - gapB;
+  return compareAgreements(a, b);
+}
+
+function combinationCount(clauses, cap = Number.MAX_SAFE_INTEGER) {
+  let count = 1;
+  for (const clause of clauses) {
+    const choices = clause.lockedOptionId === undefined ? clause.options.length : 1;
+    if (choices === 0 || count > Math.floor(cap / choices)) return cap + 1;
+    count *= choices;
+  }
+  return count;
+}
+
+/**
+ * Deterministically evaluates every option combination if it is within the cap.
+ * It intentionally returns too_large instead of silently sampling candidates.
+ */
+function findSmallestAgreement(proposal, options = {}) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!isPlainObject(options)) {
+    return { status: "invalid", errors: ["Search options must be a plain object."] };
+  }
+  const unknown = Object.keys(options).filter((key) => key !== "maxCombinations" && key !== "nearMissLimit");
+  if (unknown.length > 0) {
+    return { status: "invalid", errors: [`Unknown search option: ${unknown.join(", ")}.`] };
+  }
+  const maxCombinations = Object.hasOwn(options, "maxCombinations") ? options.maxCombinations : MAX_COMBINATIONS;
+  const nearMissLimit = Object.hasOwn(options, "nearMissLimit") ? options.nearMissLimit : MAX_NEAR_MISSES;
+  if (!Number.isSafeInteger(maxCombinations) || maxCombinations < 1 || maxCombinations > MAX_COMBINATIONS) {
+    return { status: "invalid", errors: [`maxCombinations must be an integer from 1 through ${MAX_COMBINATIONS}.`] };
+  }
+  if (!Number.isSafeInteger(nearMissLimit) || nearMissLimit < 0 || nearMissLimit > MAX_NEAR_MISSES) {
+    return { status: "invalid", errors: [`nearMissLimit must be an integer from 0 through ${MAX_NEAR_MISSES}.`] };
+  }
+  const possibleCombinations = combinationCount(proposal.clauses, maxCombinations);
+  if (possibleCombinations > maxCombinations) {
+    return { status: "too_large", possibleCombinations, maxCombinations, nearMisses: [] };
+  }
+
+  const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
+  if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met) {
+    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
+  }
+
+  let best = null;
+  const nearMisses = [];
+  const rejected = { budget: 0, floors: 0, anyConstraint: 0 };
+  let eligibleCombinations = 0;
+  const selected = [];
+  const visit = (clauseIndex) => {
+    if (clauseIndex === proposal.clauses.length) {
+      const summary = selectionSummary(proposal, [...selected]);
+      if (!summary.constraints.met) {
+        rejected.anyConstraint += 1;
+        if (summary.constraints.budget && !summary.constraints.budget.met) rejected.budget += 1;
+        if (summary.constraints.floors.some((floor) => !floor.met)) rejected.floors += 1;
+        return;
+      }
+      eligibleCombinations += 1;
+      if (summary.approval + EPSILON >= proposal.threshold) {
+        if (!best || compareAgreements(summary, best) < 0) best = summary;
+      } else if (nearMissLimit > 0) {
+        nearMisses.push(summary);
+        nearMisses.sort((a, b) => compareNearMisses(proposal.threshold, a, b));
+        if (nearMisses.length > nearMissLimit) nearMisses.pop();
+      }
+      return;
+    }
+    for (const option of proposal.clauses[clauseIndex].options) {
+      if (proposal.clauses[clauseIndex].lockedOptionId !== undefined && option.id !== proposal.clauses[clauseIndex].lockedOptionId) continue;
+      selected.push(option);
+      visit(clauseIndex + 1);
+      selected.pop();
+    }
+  };
+  visit(0);
+  const result = {
+    status: best ? "found" : "infeasible",
+    possibleCombinations,
+    checkedCombinations: possibleCombinations,
+    eligibleCombinations,
+    rejected,
+    baseline,
+    agreement: best,
+    nearMisses,
+  };
+  return result;
+}
+
+function formatPercent(value) {
+  return `${Number(value).toFixed(1)}%`;
+}
+
+function briefText(value) {
+  return String(value ?? "")
+    .replace(/[\r\n|]+/gu, " ")
+    .replace(/\s+/gu, " ")
+    .trim()
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replace(/([\\`*_{}\[\]()#+.!])/gu, "\\$1") || "(unnamed)";
+}
+
+function briefOption(value) {
+  return `\"${briefText(value)}\"`;
+}
+
+/**
+ * Produce a deterministic Markdown handoff for a result that people can review outside the GUI.
+ * The brief reports the model output and inputs, but never claims legitimacy or authority.
+ */
+function formatDecisionBrief(proposal, result) {
+  const title = briefText(proposal?.title) || "Untitled proposal";
+  const threshold = Number.isFinite(proposal?.threshold) ? formatPercent(proposal.threshold) : "unknown";
+  const lines = [
+    "# The Smallest Agreement",
+    "",
+    `Proposal: ${title}`,
+    `Approval threshold: ${threshold}`,
+    "",
+  ];
+
+  if (!result || result.status === "invalid") {
+    lines.push("## Result", "", "The draft is not valid enough to evaluate.", "");
+    for (const error of result?.errors ?? ["No result was available."]) lines.push(`- ${briefText(error)}`);
+    lines.push("");
+    return `${lines.join("\n")}Scores, weights, and costs remain human inputs.\n`;
+  }
+
+  lines.push("## Search constraints", "", `Maximum total change cost: ${proposal.maxChangeCost === undefined ? "unlimited" : proposal.maxChangeCost}`, "");
+  const protectedGroups = proposal.groups.filter((group) => group.minSupport !== undefined);
+  if (!protectedGroups.length) lines.push("No group support floors set.");
+  for (const group of protectedGroups) lines.push(`- ${briefText(group.name)}: average support must be at least ${group.minSupport}%.`);
+  const lockedClauses = proposal.clauses.filter((clause) => clause.lockedOptionId !== undefined);
+  if (!lockedClauses.length) lines.push("No clause options locked.");
+  for (const clause of lockedClauses) lines.push(`- Lock ${briefText(clause.title)} to ${briefOption(clause.options.find((option) => option.id === clause.lockedOptionId).label)}.`);
+  lines.push("");
+
+  if (result.status === "too_large") {
+    lines.push("## Result", "", `The exhaustive search stopped above ${Number(result.maxCombinations).toLocaleString("en-US")} combinations.`, "", "Reduce alternatives or clauses before relying on a recommendation.", "");
+    return `${lines.join("\n")}Scores, weights, and costs remain human inputs.\n`;
+  }
+
+  const current = result.baseline;
+  const agreement = result.agreement;
+  lines.push("## Result", "");
+  if (result.status === "already_passing") lines.push("The original proposal crosses the threshold and meets every constraint. No change is needed.", "");
+  else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "Every configured constraint is met.", "");
+  else lines.push("No permitted combination meets both the threshold and every configured constraint.", "");
+  lines.push(`Search combinations checked: ${Number(result.checkedCombinations).toLocaleString("en-US")}`, `Lock-permitted search space: ${Number(result.possibleCombinations).toLocaleString("en-US")}`);
+  if (result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
+  lines.push(`Current approval: ${formatPercent(current.approval)}`, `Original proposal meets constraints: ${current.constraints.met ? "yes" : "no"}`);
+
+  if (agreement) {
+    lines.push(`Recommended approval: ${formatPercent(agreement.approval)}`, `Total change cost: ${agreement.changeCost.toFixed(1)}`, `Changed clauses: ${agreement.changedClauseCount}`, "");
+    lines.push("## Recommendation", "");
+    if (agreement.changes.length) {
+      for (const change of agreement.changes) {
+        lines.push(`- ${briefText(change.clauseTitle)}: ${briefOption(change.from)} => ${briefOption(change.to)} (cost ${change.changeCost.toFixed(1)})`);
+      }
+    } else {
+      lines.push("- Keep every original option.");
+    }
+    lines.push("");
+  } else {
+    lines.push("", "## Recommendation", "", "No passing combination was found.", "");
+  }
+
+  lines.push("## Group view", "", "| Group | Weight | Current | Recommended | Change |", "| --- | ---: | ---: | ---: | ---: |");
+  for (const group of current.byGroup) {
+    const after = agreement?.byGroup.find((candidate) => candidate.id === group.id)?.approval;
+    const recommended = Number.isFinite(after) ? formatPercent(after) : "not found";
+    const delta = Number.isFinite(after) ? `${after - group.approval >= 0 ? "+" : ""}${(after - group.approval).toFixed(1)} points` : "not found";
+    lines.push(`| ${briefText(group.name)} | ${group.weight} | ${formatPercent(group.approval)} | ${recommended} | ${delta} |`);
+  }
+  lines.push("");
+
+  if (agreement && protectedGroups.length) {
+    lines.push("## Protected-group checks", "");
+    for (const floor of agreement.constraints.floors) lines.push(`- ${briefText(floor.name)}: ${formatPercent(floor.actual)} against minimum ${floor.minimum}%, ${floor.met ? "met" : "not met"}.`);
+    lines.push("");
+  }
+
+  if (result.nearMisses?.length) {
+    lines.push("## Near misses", "", "These meet every configured constraint but fall below the overall threshold.", "");
+    for (const miss of result.nearMisses) {
+      const labels = miss.changes.length ? miss.changes.map((change) => `${briefText(change.clauseTitle)}: ${briefText(change.to)}`).join("; ") : "Keep every original option";
+      lines.push(`- ${formatPercent(miss.approval)}, short by ${(proposal.threshold - miss.approval).toFixed(1)} points, cost ${miss.changeCost.toFixed(1)}: ${labels}`);
+    }
+    lines.push("");
+  }
+  lines.push("Scores, weights, and costs remain human inputs. This brief is a deliberation aid, not a decision or a claim of legitimacy.");
+  return `${lines.join("\n")}\n`;
+}
+
+const STORAGE_KEY = "smallest-agreement:proposal:v1";
+const HASH_PREFIX = "#agreement=";
+let idNumber = 100;
+let initialLoadMessage = "Loaded local draft.";
+
+const presets = {
+  "protected-access": {
+    title: "Protected Access: shared workshop",
+    threshold: 70,
+    maxChangeCost: 3,
+    groups: [
+      { id: "regular", name: "Regular participants", weight: 9 },
+      { id: "new", name: "New participants", weight: 1, minSupport: 60 },
+    ],
+    clauses: [
+      { id: "booking", title: "Workshop booking", options: [
+        { id: "booking-original", original: true, label: "Retain recurring reservations", changeCost: 0, support: { regular: 90, new: 10 } },
+        { id: "booking-notice", original: false, label: "Publish cancellations each week", changeCost: 1, support: { regular: 95, new: 30 } },
+        { id: "booking-open", original: false, label: "Reserve an open booking window", changeCost: 3, support: { regular: 80, new: 90 } },
+      ] },
+      { id: "training", title: "Safety training", lockedOptionId: "training-original", options: [
+        { id: "training-original", original: true, label: "Keep supervised induction", changeCost: 0, support: { regular: 80, new: 50 } },
+        { id: "training-weekly", original: false, label: "Add weekly induction sessions", changeCost: 2, support: { regular: 85, new: 90 } },
+        { id: "training-pairs", original: false, label: "Offer paired induction appointments", changeCost: 4, support: { regular: 80, new: 95 } },
+      ] },
+    ],
+  },
+  neighbourhood: {
+    title: "Neighbourhood Plan: the shared green",
+    threshold: 68,
+    groups: [
+      { id: "residents", name: "Residents", weight: 3 },
+      { id: "shopkeepers", name: "Shopkeepers", weight: 2 },
+      { id: "stewards", name: "Park stewards", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "hours", title: "Park access hours", options: [
+          { id: "hours-original", original: true, label: "Close at 20:00 every day", changeCost: 0, support: { residents: 78, shopkeepers: 55, stewards: 88 } },
+          { id: "hours-seasonal", original: false, label: "Use seasonal closing times", changeCost: 2, support: { residents: 86, shopkeepers: 74, stewards: 73 } },
+          { id: "hours-pilot", original: false, label: "Trial a 21:00 Friday close for three months", changeCost: 3, support: { residents: 84, shopkeepers: 83, stewards: 60 } },
+        ],
+      },
+      {
+        id: "market", title: "Weekend market use", options: [
+          { id: "market-original", original: true, label: "No regular market use", changeCost: 0, support: { residents: 60, shopkeepers: 52, stewards: 91 } },
+          { id: "market-monthly", original: false, label: "Permit one monthly market with clean-up bond", changeCost: 2, support: { residents: 74, shopkeepers: 89, stewards: 72 } },
+          { id: "market-seasonal", original: false, label: "Permit a summer market series", changeCost: 5, support: { residents: 68, shopkeepers: 93, stewards: 48 } },
+        ],
+      },
+      {
+        id: "path", title: "Path lighting", options: [
+          { id: "path-original", original: true, label: "Replace failed lamps as needed", changeCost: 0, support: { residents: 58, shopkeepers: 63, stewards: 80 } },
+          { id: "path-warm", original: false, label: "Install warm low-level path lighting", changeCost: 3, support: { residents: 85, shopkeepers: 76, stewards: 67 } },
+          { id: "path-motion", original: false, label: "Install motion-activated lighting", changeCost: 4, support: { residents: 78, shopkeepers: 71, stewards: 75 } },
+        ],
+      },
+    ],
+  },
+  "open-source": {
+    title: "Open Source Policy: contributor access",
+    threshold: 72,
+    groups: [
+      { id: "maintainers", name: "Maintainers", weight: 3 },
+      { id: "contributors", name: "Contributors", weight: 3 },
+      { id: "users", name: "Downstream users", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "review", title: "Pull request review", options: [
+          { id: "review-original", original: true, label: "Two maintainer approvals for every merge", changeCost: 0, support: { maintainers: 88, contributors: 48, users: 75 } },
+          { id: "review-risk", original: false, label: "One approval for documented low-risk changes", changeCost: 2, support: { maintainers: 73, contributors: 80, users: 78 } },
+          { id: "review-rotation", original: false, label: "Weekly rotating review pair", changeCost: 4, support: { maintainers: 69, contributors: 85, users: 72 } },
+        ],
+      },
+      {
+        id: "release", title: "Release cadence", options: [
+          { id: "release-original", original: true, label: "Quarterly feature releases", changeCost: 0, support: { maintainers: 81, contributors: 51, users: 69 } },
+          { id: "release-monthly", original: false, label: "Monthly release train with a freeze week", changeCost: 3, support: { maintainers: 70, contributors: 79, users: 85 } },
+          { id: "release-patch", original: false, label: "Keep quarterly features and publish monthly patches", changeCost: 1, support: { maintainers: 80, contributors: 68, users: 82 } },
+        ],
+      },
+      {
+        id: "conduct", title: "Contributor conduct process", options: [
+          { id: "conduct-original", original: true, label: "Maintainer-led private review", changeCost: 0, support: { maintainers: 74, contributors: 57, users: 72 } },
+          { id: "conduct-panel", original: false, label: "Standing three-person review panel", changeCost: 3, support: { maintainers: 68, contributors: 83, users: 77 } },
+          { id: "conduct-adviser", original: false, label: "External adviser for escalated cases", changeCost: 5, support: { maintainers: 60, contributors: 86, users: 80 } },
+        ],
+      },
+    ],
+  },
+  "association-budget": {
+    title: "Association Budget: repair and reserve plan",
+    threshold: 70,
+    groups: [
+      { id: "owners", name: "Owners", weight: 4 },
+      { id: "tenants", name: "Tenants", weight: 2 },
+      { id: "board", name: "Board", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "reserve", title: "Reserve contribution", options: [
+          { id: "reserve-original", original: true, label: "Raise annual reserve contribution by 8%", changeCost: 0, support: { owners: 57, tenants: 72, board: 91 } },
+          { id: "reserve-staged", original: false, label: "Raise 4% now and review after six months", changeCost: 2, support: { owners: 77, tenants: 76, board: 75 } },
+          { id: "reserve-loan", original: false, label: "Fund reserves with a five-year loan", changeCost: 5, support: { owners: 61, tenants: 81, board: 54 } },
+        ],
+      },
+      {
+        id: "roof", title: "Roof repair timing", options: [
+          { id: "roof-original", original: true, label: "Complete all repairs this financial year", changeCost: 0, support: { owners: 63, tenants: 71, board: 87 } },
+          { id: "roof-priority", original: false, label: "Repair critical sections now and inspect the rest", changeCost: 2, support: { owners: 82, tenants: 78, board: 74 } },
+          { id: "roof-defer", original: false, label: "Defer repairs for one year", changeCost: 4, support: { owners: 70, tenants: 52, board: 39 } },
+        ],
+      },
+      {
+        id: "amenity", title: "Amenity refresh", options: [
+          { id: "amenity-original", original: true, label: "Refresh lobby and courtyard this year", changeCost: 0, support: { owners: 55, tenants: 69, board: 77 } },
+          { id: "amenity-courtyard", original: false, label: "Refresh courtyard only after roof milestones", changeCost: 2, support: { owners: 76, tenants: 75, board: 71 } },
+          { id: "amenity-pause", original: false, label: "Pause amenity works for one year", changeCost: 1, support: { owners: 72, tenants: 49, board: 68 } },
+        ],
+      },
+    ],
+  },
+};
+
+const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
+const $ = (selector) => document.querySelector(selector);
+const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
+function clone(value) { return JSON.parse(JSON.stringify(value)); }
+
+function firstProposalError(proposal) {
+  return validateProposal(proposal).errors[0];
+}
+
+function parseProposalJson(text) {
+  let proposal;
+  try {
+    proposal = JSON.parse(text);
+  } catch (error) {
+    return { cause: error instanceof SyntaxError ? "the text is not valid JSON." : "it could not be parsed." };
+  }
+  const cause = firstProposalError(proposal);
+  return cause ? { cause } : { proposal: canonicalProposal(proposal) };
+}
+
+function makeId(prefix) {
+  const used = new Set([
+    ...state.proposal.groups.map((group) => group.id),
+    ...state.proposal.clauses.flatMap((clause) => [clause.id, ...clause.options.map((option) => option.id)]),
+  ]);
+  do { idNumber += 1; } while (used.has(`${prefix}-${idNumber}`));
+  return `${prefix}-${idNumber}`;
+}
+
+function defaultSupport(groups, value = 50) {
+  return Object.fromEntries(groups.map((group) => [group.id, value]));
+}
+
+function loadInitialProposal() {
+  const shared = parseHash();
+  if (shared) return shared;
+  let raw;
+  try {
+    raw = localStorage.getItem(STORAGE_KEY);
+  } catch {
+    initialLoadMessage = "Browser storage is unavailable. Started from the Neighbourhood Plan preset.";
+    return clone(presets.neighbourhood);
+  }
+  if (raw == null || raw === "") return clone(presets.neighbourhood);
+  const parsed = parseProposalJson(raw);
+  if (parsed.cause) {
+    initialLoadMessage = `Local draft ignored: ${parsed.cause}`;
+    return clone(presets.neighbourhood);
+  }
+  initialLoadMessage = "Loaded local draft.";
+  return parsed.proposal;
+}
+
+function parseHash() {
+  if (!location.hash.startsWith(HASH_PREFIX)) return null;
+  if (location.hash.length > 60_000) {
+    initialLoadMessage = "Share link ignored: it is larger than 60 KB.";
+    return null;
+  }
+  let encoded;
+  try {
+    encoded = decodeURIComponent(location.hash.slice(HASH_PREFIX.length))
+      .replaceAll("-", "+")
+      .replaceAll("_", "/");
+  } catch {
+    initialLoadMessage = "Share link ignored: the URL encoding is invalid.";
+    return null;
+  }
+  const padded = encoded.padEnd(encoded.length + ((4 - (encoded.length % 4)) % 4), "=");
+  let binary;
+  try {
+    binary = atob(padded);
+  } catch {
+    initialLoadMessage = "Share link ignored: it is not valid base64.";
+    return null;
+  }
+  let text;
+  try {
+    text = new TextDecoder("utf-8", { fatal: true }).decode(Uint8Array.from(binary, (character) => character.charCodeAt(0)));
+  } catch {
+    initialLoadMessage = "Share link ignored: it is not valid UTF-8.";
+    return null;
+  }
+  const parsed = parseProposalJson(text);
+  if (parsed.cause) {
+    initialLoadMessage = `Share link ignored: ${parsed.cause}`;
+    return null;
+  }
+  initialLoadMessage = "Loaded proposal from the share link.";
+  return parsed.proposal;
+}
+
+function encodeHash(proposal) {
+  const bytes = new TextEncoder().encode(JSON.stringify(proposal));
+  let binary = "";
+  bytes.forEach((byte) => { binary += String.fromCharCode(byte); });
+  const encoded = btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replace(/=+$/u, "");
+  return `${HASH_PREFIX}${encoded}`;
+}
+
+function save() {
+  const error = firstProposalError(state.proposal);
+  if (error) {
+    state.saveMessage = `Invalid edits are not saved: ${error}`;
+    return;
+  }
+  if (location.hash.startsWith(HASH_PREFIX)) history.replaceState(null, "", `${location.pathname}${location.search}`);
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(canonicalProposal(state.proposal)));
+    state.saveMessage = "Saved in this browser.";
+  } catch {
+    state.saveMessage = "Browser storage is unavailable. Export to keep this draft.";
+  }
+}
+
+function currentResult() {
+  return findSmallestAgreement(state.proposal, { maxCombinations: MAX_COMBINATIONS });
+}
+
+function number(value, fallback = 0) {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : fallback;
+}
+
+function formatMargin(value) {
+  const rounded = Number(value.toFixed(1));
+  return [rounded > 0 ? "+" : "", rounded.toFixed(1), " points"].join("");
+}
+
+function render() {
+  const proposal = state.proposal;
+  $("[data-action=\"add-group\"]").disabled = proposal.groups.length >= MAX_GROUPS;
+  $("[data-action=\"add-clause\"]").disabled = proposal.clauses.length >= MAX_CLAUSES;
+  $("#proposal-title").value = proposal.title;
+  $("#threshold").value = proposal.threshold;
+  $("#threshold-output").textContent = `${proposal.threshold}%`;
+  $("#max-change-cost").value = proposal.maxChangeCost ?? "";
+  $("#proposal-heading").textContent = proposal.title;
+  $("#autosave-status").textContent = state.saveMessage;
+  renderGroups();
+  renderClauses();
+  renderResults(currentResult());
+}
+
+function renderGroups() {
+  $("#groups-editor").innerHTML = state.proposal.groups.map((group) => `
+    <div class="group-row">
+      <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
+      <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0.1" step="0.1" value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
+      <button class="text-button danger" type="button" data-action="remove-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length <= 1 ? "disabled" : ""}>Remove</button>
+      <label class="group-floor">Minimum support (%)<input data-field="group-floor" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" value="${group.minSupport ?? ""}" placeholder="No floor" aria-label="${escapeHtml(group.name)} minimum support" aria-describedby="floor-note"></label>
+    </div>`).join("");
+}
+
+function renderClauses() {
+  const { groups } = state.proposal;
+  $("#clauses-editor").innerHTML = state.proposal.clauses.map((clause, clauseIndex) => `
+    <article class="clause-card">
+      <div class="clause-top">
+        <label><span class="visually-hidden">Clause title</span><input class="clause-title-input" data-field="clause-title" data-clause-id="${escapeHtml(clause.id)}" value="${escapeHtml(clause.title)}" maxlength="120" aria-label="Clause ${clauseIndex + 1} title"></label>
+        <button class="text-button danger" type="button" data-action="remove-clause" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses.length <= 1 ? "disabled" : ""}>Remove clause</button>
+      </div>
+      <p class="clause-annotation">Cost is an explicit human estimate of disruption, scope expansion, or process burden. It is not a measure of merit.</p>
+      <label class="clause-lock">Lock clause to an option
+        <select data-field="clause-lock" data-clause-id="${escapeHtml(clause.id)}" aria-label="${escapeHtml(clause.title)} locked option">
+          <option value="">No lock, search all options</option>
+          ${clause.options.map((option) => `<option value="${escapeHtml(option.id)}" ${clause.lockedOptionId === option.id ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
+        </select>
+      </label>
+      <div class="options-table-wrap"><table class="options-table">
+        <thead><tr><th scope="col">Option</th><th scope="col">Change cost</th>${groups.map((group) => `<th scope="col">${escapeHtml(group.name)}<br>support</th>`).join("")}<th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
+        <tbody>${clause.options.map((option) => `
+          <tr>
+            <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="Option label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
+            <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" step="0.1" value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
+            ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="1" value="${option.support[group.id]}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
+            <td><div class="option-tools">${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
+          </tr>`).join("")}</tbody>
+      </table></div>
+      <button class="text-button add-alternative" type="button" data-action="add-option" data-clause-id="${escapeHtml(clause.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Add alternative</button>
+    </article>`).join("");
+}
+
+function renderResults(result) {
+  const { proposal } = state;
+  const alert = $("#result-alert");
+  const meta = $("#search-meta");
+  $("#export-button").disabled = result.status === "invalid";
+  $("#share-button").disabled = result.status === "invalid";
+  $("#constraint-checks").textContent = "Constraints have not been evaluated.";
+  if (result.status === "too_large") {
+    alert.textContent = `Search paused: more than ${MAX_COMBINATIONS.toLocaleString()} combinations. Reduce alternatives or clauses to evaluate every combination.`;
+    meta.textContent = `More than ${MAX_COMBINATIONS.toLocaleString()} combinations`;
+    $("#result-summary").innerHTML = emptyResults();
+    $("#changed-clauses").innerHTML = '<p class="empty-state">No recommendation was evaluated.</p>';
+    $("#support-shifts").innerHTML = "";
+    $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable when the full search is over the safety bound.</p>';
+    drawCoalition(null, null);
+    $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
+    return;
+  }
+  if (result.status === "invalid") {
+    alert.textContent = `Fix the proposal before searching: ${result.errors[0]}`;
+    meta.textContent = "Waiting for valid inputs";
+    $("#result-summary").innerHTML = emptyResults();
+    $("#changed-clauses").innerHTML = '<p class="empty-state">No recommendation was evaluated.</p>';
+    $("#support-shifts").innerHTML = "";
+    $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable for invalid inputs.</p>';
+    drawCoalition(null, null);
+    $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
+    return;
+  }
+  meta.textContent = `${result.checkedCombinations.toLocaleString()} checked, ${result.possibleCombinations.toLocaleString()} lock-permitted combinations`;
+  const agreement = result.agreement;
+  const current = result.baseline;
+  if (result.status === "already_passing") alert.textContent = "The original proposal crosses the threshold and meets every constraint. No clause change is recommended.";
+  else if (result.status === "infeasible") alert.textContent = "No permitted combination meets both the threshold and every configured constraint. Review the constraint checks and near misses.";
+  else alert.textContent = "A lowest-cost passing combination was found. It meets every configured constraint.";
+
+  const closestMiss = result.nearMisses[0];
+  const closestGap = closestMiss ? proposal.threshold - closestMiss.approval : null;
+  $("#result-summary").innerHTML = agreement ? `
+    <div class="metric"><span class="metric-label">Current approval</span><strong>${formatPercent(current.approval)}</strong></div>
+    <div class="metric"><span class="metric-label">Recommended approval</span><strong>${formatPercent(agreement.approval)}</strong></div>
+    <div class="metric"><span class="metric-label">Threshold margin</span><strong class="positive">${formatMargin(agreement.approval - proposal.threshold)}</strong></div>
+    <div class="metric cost"><span class="metric-label">Total change cost</span><strong>${agreement.changeCost.toFixed(1)}</strong></div>` : `
+    <div class="metric"><span class="metric-label">Current approval</span><strong>${formatPercent(current.approval)}</strong></div>
+    <div class="metric cost"><span class="metric-label">Threshold</span><strong>${proposal.threshold}%</strong></div>
+    <div class="metric cost"><span class="metric-label">Closest gap</span><strong>${closestGap === null ? "Not found" : closestGap.toFixed(1) + " points"}</strong></div>
+    <div class="metric cost"><span class="metric-label">Best result</span><strong>Not found</strong></div>`;
+  renderChanges(agreement, current);
+  renderConstraints(result);
+  renderNearMisses(result.nearMisses);
+  drawCoalition(current, agreement);
+  renderCoalitionTable(current, agreement);
+}
+
+function renderConstraints(result) {
+  const checks = result.agreement?.constraints ?? result.baseline.constraints;
+  const rows = [];
+  const mark = (met) => met ? "Met" : "Not met";
+  if (checks.budget) rows.push(`<tr><th scope="row">Total change cost</th><td>At most ${checks.budget.maximum}</td><td>${checks.budget.actual}</td><td>${mark(checks.budget.met)}</td></tr>`);
+  for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(floor.name)} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
+  for (const lock of checks.locks) rows.push(`<tr><th scope="row">${escapeHtml(lock.clauseTitle)}</th><td>${escapeHtml(lock.label)}</td><td>Locked option</td><td>${mark(lock.met)}</td></tr>`);
+  const inspected = result.agreement ? "Recommended combination" : "Original proposal, no recommendation found";
+  const counts = result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget and ${result.rejected.floors.toLocaleString()} below a group floor. These counts can overlap. Locks exclude other options before enumeration.`;
+  $("#constraint-checks").innerHTML = `<p>${counts}</p>${rows.length ? `<p>${inspected}</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Constraint</th><th scope="col">Required</th><th scope="col">Actual</th><th scope="col">Status</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>` : '<p>No group floors, budget, or clause locks set.</p>'}`;
+}
+
+function emptyResults() {
+  return '<div class="metric"><span class="metric-label">Current approval</span><strong>Not evaluated</strong></div><div class="metric"><span class="metric-label">Recommended approval</span><strong>Not evaluated</strong></div><div class="metric cost"><span class="metric-label">Total change cost</span><strong>Not evaluated</strong></div>';
+}
+
+function renderChanges(agreement, current) {
+  const changes = $("#changed-clauses");
+  const shifts = $("#support-shifts");
+  if (!agreement) {
+    changes.innerHTML = '<p class="empty-state">No passing combination was found.</p>';
+    shifts.innerHTML = "";
+    return;
+  }
+  changes.innerHTML = agreement.changes.length ? agreement.changes.map((change) => `<div class="change-item"><strong>${escapeHtml(change.clauseTitle)}</strong><span>${escapeHtml(change.from)} to ${escapeHtml(change.to)}. Cost ${change.changeCost.toFixed(1)}.</span></div>`).join("") : '<p class="empty-state">Keep every original option.</p>';
+  const deltas = agreement.groupDeltas.filter((group) => Math.abs(group.delta) > 0.0001);
+  shifts.innerHTML = deltas.length ? deltas.map((group) => `<div class="shift-item"><strong>${escapeHtml(group.name)}</strong> <span class="${group.delta > 0 ? "positive" : "negative"}">${group.delta > 0 ? "+" : ""}${group.delta.toFixed(1)} points</span><br><span>${formatPercent(group.before)} to ${formatPercent(group.after)}</span></div>`).join("") : '<p class="empty-state">No group support changes.</p>';
+}
+
+function renderNearMisses(nearMisses) {
+  $("#near-misses-list").innerHTML = nearMisses.length ? nearMisses.map((miss) => {
+    const labels = miss.changes.length ? miss.changes.map((change) => `${change.clauseTitle}: ${change.to}`).join("; ") : "Keep every original option";
+    return `<div class="miss-item"><span class="miss-score">${formatPercent(miss.approval)}</span><span>${escapeHtml(labels)}<br><small>Short by ${(state.proposal.threshold - miss.approval).toFixed(1)} points. Cost ${miss.changeCost.toFixed(1)}.</small></span></div>`;
+  }).join("") : '<p class="empty-state">No constraint-compliant near misses to show.</p>';
+}
+
+function drawCoalition(current, agreement) {
+  const canvas = $("#coalition-canvas");
+  const context = canvas.getContext("2d");
+  const width = Math.max(280, Math.floor(canvas.clientWidth));
+  const rows = current?.byGroup ?? [];
+  const height = Math.max(190, 24 + rows.length * 34);
+  const ratio = window.devicePixelRatio || 1;
+  canvas.width = width * ratio;
+  canvas.height = height * ratio;
+  context.setTransform(ratio, 0, 0, ratio, 0, 0);
+  context.clearRect(0, 0, width, height);
+  context.fillStyle = "#fffdf7";
+  context.fillRect(0, 0, width, height);
+  if (!current) return;
+
+  const labelWidth = Math.min(130, width * .34);
+  const barStart = labelWidth + 8;
+  const barWidth = Math.max(55, width - barStart - 35);
+  const rowHeight = Math.max(30, Math.min(42, (height - 16) / rows.length));
+  context.font = "12px Georgia";
+  context.textBaseline = "middle";
+  rows.forEach((group, index) => {
+    const y = 12 + index * rowHeight;
+    context.fillStyle = "#19352d";
+    context.fillText(group.name.slice(0, 18), 8, y + 10);
+    context.fillStyle = "#e8dfd0";
+    context.fillRect(barStart, y, barWidth, 8);
+    context.fillStyle = "#3778a6";
+    context.fillRect(barStart, y, barWidth * (group.approval / 100), 8);
+    if (agreement) {
+      const next = agreement.byGroup[index].approval;
+      context.fillStyle = "#a64431";
+      context.fillRect(barStart, y + 11, barWidth * (next / 100), 8);
+      context.fillStyle = "#466054";
+      context.fillText(`${group.approval.toFixed(0)} / ${next.toFixed(0)}`, barStart + barWidth + 5, y + 10);
+    } else {
+      context.fillStyle = "#466054";
+      context.fillText(`${group.approval.toFixed(0)}`, barStart + barWidth + 5, y + 5);
+    }
+  });
+}
+
+function renderCoalitionTable(current, agreement) {
+  if (!current) return;
+  $("#coalition-table").innerHTML = `<table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Current</th><th scope="col">Recommended</th></tr></thead><tbody>${current.byGroup.map((group, index) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${group.weight}</td><td>${formatPercent(group.approval)}</td><td>${agreement ? formatPercent(agreement.byGroup[index].approval) : "Not found"}</td></tr>`).join("")}</tbody></table>`;
+}
+
+function groupById(id) { return state.proposal.groups.find((group) => group.id === id); }
+function clauseById(id) { return state.proposal.clauses.find((clause) => clause.id === id); }
+function optionById(clause, id) { return clause?.options.find((option) => option.id === id); }
+
+function changeAndRender(mutator) {
+  mutator();
+  save();
+  render();
+}
+
+document.addEventListener("input", (event) => {
+  const target = event.target;
+  const field = target.dataset.field;
+  if (!field) return;
+  if (field === "clause-lock") return;
+  if (field === "group-floor") {
+    const group = groupById(target.dataset.groupId);
+    if (target.value === "" && !target.validity.badInput) delete group.minSupport;
+    else group.minSupport = target.valueAsNumber;
+  }
+  if (field === "group-name") groupById(target.dataset.groupId).name = target.value || "Unnamed group";
+  if (field === "group-weight") groupById(target.dataset.groupId).weight = Math.max(.1, number(target.value, 1));
+  if (field === "clause-title") clauseById(target.dataset.clauseId).title = target.value || "Untitled clause";
+  if (field === "option-label") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).label = target.value || "Untitled option";
+  if (field === "option-label") {
+    const select = [...document.querySelectorAll('[data-field="clause-lock"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId);
+    const choice = [...select.options].find((element) => element.value === target.dataset.optionId);
+    choice.textContent = target.value || "Untitled option";
+  }
+  if (field === "option-cost") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).changeCost = Math.max(0, number(target.value));
+  if (field === "option-support") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).support[target.dataset.groupId] = Math.min(100, Math.max(0, number(target.value)));
+  save();
+  $("#proposal-heading").textContent = state.proposal.title;
+  $("#autosave-status").textContent = state.saveMessage;
+  renderResults(currentResult());
+});
+
+$("#proposal-title").addEventListener("input", (event) => {
+  state.proposal.title = event.target.value;
+  save();
+  $("#proposal-heading").textContent = state.proposal.title;
+  $("#autosave-status").textContent = state.saveMessage;
+  renderResults(currentResult());
+});
+$("#threshold").addEventListener("input", (event) => {
+  state.proposal.threshold = Math.min(100, Math.max(0, number(event.target.value)));
+  save();
+  $("#threshold-output").textContent = `${state.proposal.threshold}%`;
+  $("#autosave-status").textContent = state.saveMessage;
+  renderResults(currentResult());
+});
+$("#max-change-cost").addEventListener("input", (event) => {
+  const target = event.target;
+  if (target.value === "" && !target.validity.badInput) delete state.proposal.maxChangeCost;
+  else state.proposal.maxChangeCost = target.valueAsNumber;
+  save();
+  $("#autosave-status").textContent = state.saveMessage;
+  renderResults(currentResult());
+});
+document.addEventListener("change", (event) => {
+  const target = event.target;
+  if (target.dataset.field !== "clause-lock") return;
+  changeAndRender(() => {
+    const clause = clauseById(target.dataset.clauseId);
+    if (target.value === "") delete clause.lockedOptionId;
+    else clause.lockedOptionId = target.value;
+  });
+  const restored = [...document.querySelectorAll('[data-field="clause-lock"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId);
+  restored?.focus();
+});
+
+document.addEventListener("click", (event) => {
+  const button = event.target.closest("[data-action]");
+  if (!button || button.disabled) return;
+  const action = button.dataset.action;
+  if (action === "add-group") changeAndRender(() => {
+    const group = { id: makeId("group"), name: "New group", weight: 1 };
+    state.proposal.groups.push(group);
+    state.proposal.clauses.forEach((clause) => clause.options.forEach((option) => { option.support[group.id] = 50; }));
+  });
+  if (action === "remove-group") changeAndRender(() => {
+    const id = button.dataset.groupId;
+    state.proposal.groups = state.proposal.groups.filter((group) => group.id !== id);
+    state.proposal.clauses.forEach((clause) => clause.options.forEach((option) => { delete option.support[id]; }));
+  });
+  if (action === "add-clause") changeAndRender(() => {
+    const support = defaultSupport(state.proposal.groups);
+    state.proposal.clauses.push({ id: makeId("clause"), title: "New clause", options: [
+      { id: makeId("original"), original: true, label: "Keep the current wording", changeCost: 0, support: { ...support } },
+      { id: makeId("alternative"), original: false, label: "Add a first structured alternative", changeCost: 1, support: { ...support } },
+      { id: makeId("alternative"), original: false, label: "Add a second structured alternative", changeCost: 2, support: { ...support } },
+    ] });
+  });
+  if (action === "remove-clause") changeAndRender(() => { state.proposal.clauses = state.proposal.clauses.filter((clause) => clause.id !== button.dataset.clauseId); });
+  if (action === "add-option") changeAndRender(() => {
+    const clause = clauseById(button.dataset.clauseId);
+    clause.options.push({ id: makeId("alternative"), original: false, label: "New alternative", changeCost: 1, support: { ...defaultSupport(state.proposal.groups) } });
+  });
+  if (action === "remove-option") changeAndRender(() => {
+    const clause = clauseById(button.dataset.clauseId);
+    if (clause.lockedOptionId === button.dataset.optionId) return;
+    clause.options = clause.options.filter((option) => option.id !== button.dataset.optionId);
+  });
+});
+
+$("#load-preset").addEventListener("click", () => {
+  changeAndRender(() => { state.proposal = clone(presets[$("#preset-select").value]); state.saveMessage = "Preset loaded and saved locally."; });
+});
+function downloadText(filename, content, type) {
+  const blob = new Blob([content], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement("a");
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+$("#export-button").addEventListener("click", () => {
+  if (!validateProposal(state.proposal).valid) {
+    $("#autosave-status").textContent = "Correct invalid inputs before exporting JSON.";
+    return;
+  }
+  downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
+});
+$("#brief-button").addEventListener("click", () => {
+  downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");
+  state.saveMessage = "Decision brief downloaded.";
+  $("#autosave-status").textContent = state.saveMessage;
+});
+$("#import-button").addEventListener("click", () => $("#import-file").click());
+$("#import-file").addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  if (!file) return;
+  if (file.size > 250_000) {
+    state.saveMessage = "Import failed: files must be 250 KB or smaller.";
+    $("#autosave-status").textContent = state.saveMessage;
+    event.target.value = "";
+    return;
+  }
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    state.saveMessage = "Import failed: the file could not be read.";
+    $("#autosave-status").textContent = state.saveMessage;
+    event.target.value = "";
+    return;
+  }
+  const parsed = parseProposalJson(text);
+  if (parsed.cause) {
+    state.saveMessage = `Import failed: ${parsed.cause}`;
+    $("#autosave-status").textContent = state.saveMessage;
+    event.target.value = "";
+    return;
+  }
+  state.proposal = parsed.proposal;
+  state.saveMessage = "Imported and saved locally.";
+  save();
+  render();
+  event.target.value = "";
+});
+$("#share-button").addEventListener("click", async () => {
+  if (!validateProposal(state.proposal).valid) {
+    $("#autosave-status").textContent = "Correct invalid inputs before sharing.";
+    return;
+  }
+  if (location.protocol === "file:") {
+    state.saveMessage = "Share links are not portable from a local file. Export JSON to share this draft.";
+    $("#autosave-status").textContent = state.saveMessage;
+    return;
+  }
+  const encoded = encodeHash(state.proposal);
+  if (encoded.length > 60_000) {
+    state.saveMessage = "This draft is too large for a share link. Export JSON instead.";
+    $("#autosave-status").textContent = state.saveMessage;
+    return;
+  }
+  location.hash = encoded;
+  const link = location.href;
+  try { await navigator.clipboard.writeText(link); state.saveMessage = "Share link copied. It contains this draft in the URL."; }
+  catch { state.saveMessage = "Share link is now in the address bar. Copy it to share this draft."; }
+  $("#autosave-status").textContent = state.saveMessage;
+});
+$("#reset-button").addEventListener("click", () => {
+  if (!window.confirm("Reset this local draft to the Neighbourhood Plan preset?")) return;
+  state.proposal = clone(presets.neighbourhood);
+  location.hash = "";
+  state.saveMessage = "Draft reset and saved locally.";
+  save();
+  render();
+});
+window.addEventListener("resize", () => {
+  const result = currentResult();
+  if (result.baseline) drawCoalition(result.baseline, result.agreement);
+});
+
+render();
+</script>
+  </body>
+</html>

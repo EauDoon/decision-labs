@@ -1,0 +1,18 @@
+{
+  "name": "smallest-agreement",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "description": "A local deliberation workshop for finding the lowest-cost structured agreement that crosses an approval threshold.",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "start": "node scripts/dev-server.mjs",
+    "launch": "node scripts/launch.mjs",
+    "build:standalone": "node scripts/build-standalone.mjs",
+    "test": "node --test tests/*.test.mjs",
+    "check": "node --check src/model.js && node --check src/app.js && node --check scripts/listen-config.mjs && node --check scripts/dev-server.mjs && node --check scripts/launch.mjs && node --check scripts/build-standalone.mjs && node --check tests/model.test.mjs && node --check tests/standalone.test.mjs && node --check tests/cli.test.mjs && node scripts/build-standalone.mjs --check"
+  },
+  "license": "MIT"
+}

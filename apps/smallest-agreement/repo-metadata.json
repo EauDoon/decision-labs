@@ -1,0 +1,13 @@
+{
+  "name": "smallest-agreement",
+  "description": "A local deliberation workshop for finding the lowest-cost structured agreement that crosses an approval threshold.",
+  "homepage": "",
+  "topics": [
+    "deliberation",
+    "decision-support",
+    "civic-tech",
+    "local-first",
+    "static-web-app",
+    "participation"
+  ]
+}
