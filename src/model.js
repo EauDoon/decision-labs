@@ -7,6 +7,10 @@ export const SIMULATION_HOURS = 72;
 export const START_DAY_INDEX = 5; // Friday, where Sunday is 0.
 export const START_HOUR = 15;
 
+const SCENARIO_FORMAT = "weekend-gap-scenario";
+const SCENARIO_VERSION = 1;
+const ANALYSIS_FORMAT = "weekend-gap-analysis";
+
 export const DEFAULT_SCENARIO = Object.freeze({
   name: "Normal Friday",
   nominalLiquidityAud: 10000000,
@@ -366,7 +370,7 @@ export function planReserve(input, targetPercent = 100, deadlineHour = SIMULATIO
 
 export function analysisToJSON(baselineInput, candidateInput, targetPercent = 100, deadlineHour = SIMULATION_HOURS) {
   const comparison = compareScenarios(baselineInput, candidateInput);
-  return JSON.stringify({ format: "weekend-gap-analysis", version: 1,
+  return JSON.stringify({ format: ANALYSIS_FORMAT, version: 1,
     baseline: comparison.baseline.scenario, candidate: comparison.candidate.scenario,
     changes: comparison.changes, deltas: comparison.deltas,
     baselineSummary: comparison.baseline.summary, candidateSummary: comparison.candidate.summary,
@@ -398,7 +402,7 @@ export function scenarioFromHash(hash) {
 
 export function scenarioToJSON(scenarioInput) {
   const { scenario } = sanitizeScenario(scenarioInput);
-  return JSON.stringify({ format: "weekend-gap-scenario", version: 1, scenario }, null, 2);
+  return JSON.stringify({ format: SCENARIO_FORMAT, version: SCENARIO_VERSION, scenario }, null, 2);
 }
 
 export function scenarioFromJSON(text) {
@@ -407,8 +411,20 @@ export function scenarioFromJSON(text) {
   }
   try {
     const parsed = JSON.parse(text);
-    if (parsed?.format === "weekend-gap-analysis") throw new Error("Analysis reports are not scenario files.");
-    const candidate = parsed?.scenario ?? parsed;
+    if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
+      throw new Error("Scenario must be an object.");
+    }
+    if (parsed.format === ANALYSIS_FORMAT) {
+      return { scenario: null, errors: ["Import failed. Analysis reports are not scenario files."] };
+    }
+
+    const isClaimedEnvelope = ["format", "version", "scenario"].some((field) =>
+      Object.prototype.hasOwnProperty.call(parsed, field)
+    );
+    if (isClaimedEnvelope && (parsed.format !== SCENARIO_FORMAT || parsed.version !== SCENARIO_VERSION)) {
+      return { scenario: null, errors: ["Import failed. This scenario format or version is not supported."] };
+    }
+    const candidate = isClaimedEnvelope ? parsed.scenario : parsed;
     if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) throw new Error("Scenario must be an object.");
     return sanitizeScenario(candidate);
   } catch {

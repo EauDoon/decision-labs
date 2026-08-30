@@ -160,3 +160,40 @@ test("scenario JSON and hash round trips preserve valid editable assumptions", (
   assert.equal(scenarioFromJSON("x".repeat(250001)).scenario, null);
   assert.equal(scenarioFromHash(`#scenario=${"x".repeat(60000)}`).scenario, null);
 });
+
+test("scenario import validates claimed envelopes without breaking raw scenario objects", () => {
+  const rawScenario = { ...DEFAULT_SCENARIO, name: "Raw scenario" };
+  assert.deepEqual(
+    scenarioFromJSON(JSON.stringify(rawScenario)).scenario,
+    sanitizeScenario(rawScenario).scenario
+  );
+
+  const malformedEnvelopes = [
+    { format: "weekend-gap-scenario", version: 2, scenario: rawScenario },
+    { format: "another-format", version: 1, scenario: rawScenario },
+    { format: "weekend-gap-scenario", version: 1 },
+    { format: "weekend-gap-scenario", version: 1, scenario: null },
+    { version: 1, scenario: rawScenario },
+    { scenario: rawScenario }
+  ];
+  for (const envelope of malformedEnvelopes) {
+    const imported = scenarioFromJSON(JSON.stringify(envelope));
+    assert.equal(imported.scenario, null);
+    assert.ok(imported.errors.length > 0);
+  }
+
+  const analysis = scenarioFromJSON(JSON.stringify({ format: "weekend-gap-analysis", version: 1 }));
+  assert.equal(analysis.scenario, null);
+  assert.match(analysis.errors[0], /Analysis reports are not scenario files/);
+});
+
+test("scenario import does not require the newer Object.hasOwn API", () => {
+  const exported = scenarioToJSON({ ...DEFAULT_SCENARIO, name: "Compatible import" });
+  const originalHasOwn = Object.hasOwn;
+  try {
+    Object.hasOwn = undefined;
+    assert.equal(scenarioFromJSON(exported).scenario.name, "Compatible import");
+  } finally {
+    Object.hasOwn = originalHasOwn;
+  }
+});

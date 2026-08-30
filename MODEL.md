@@ -92,7 +92,7 @@ When total redemption demand is zero, queue pressure is defined as zero. The dis
 
 ## Validation and failure states
 
-The model exports pure functions. It sanitizes untrusted scenario data, clamps numeric values to bounded ranges, caps reserve capacity at nominal liquidity, enforces an operating window of at least one hour, and rejects malformed JSON and URL hashes without executing them. It has no random input and no network access.
+The model exports pure functions. It sanitizes untrusted scenario data, clamps numeric values to bounded ranges, caps reserve capacity at nominal liquidity, enforces an operating window of at least one hour, and rejects malformed JSON and URL hashes without executing them. Scenario envelopes must carry the supported `weekend-gap-scenario` format and version; raw scenario objects remain importable, while malformed, unsupported, and analysis-report envelopes are rejected. It has no random input and no network access.
 
 Explicit failure states include a closed issuer, bank or payout gate, zero reserve, zero throughput, zero FX depth, no overlapping payout time in the next seven days, malformed import JSON and malformed shared URLs. A failed import or hash keeps the current or default scenario instead of partially applying data.
 
