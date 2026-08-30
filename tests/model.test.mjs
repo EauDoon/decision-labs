@@ -158,6 +158,42 @@ test("validation rejects duplicate ids and invalid currency", () => {
   assert.throws(() => validateScenario(currency), /three-letter ASCII code/);
 });
 
+test("validation rejects extra fields and inherited prototype values", () => {
+  const extraRoot = clonePreset("neighbourhood");
+  extraRoot.note = "hand-edited";
+  assert.throws(() => validateScenario(extraRoot), /Scenario has unexpected field: note/);
+
+  const extraBuyer = clonePreset("neighbourhood");
+  extraBuyer.buyers[0].role = "admin";
+  assert.throws(() => validateScenario(extraBuyer), /Buyer 1 has unexpected field: role/);
+
+  const extraOffer = clonePreset("neighbourhood");
+  extraOffer.offers[0].sku = "ABC";
+  assert.throws(() => validateScenario(extraOffer), /Offer 1 has unexpected field: sku/);
+
+  const extraTier = clonePreset("tiers");
+  extraTier.offers[0].tiers[0].label = "bulk";
+  assert.throws(() => validateScenario(extraTier), /Offer 1 tier 1 has unexpected field: label/);
+
+  const protoPayload = `{"__proto__":{"polluted":true},${JSON.stringify(clonePreset("neighbourhood")).slice(1)}`;
+  assert.throws(() => validateScenario(JSON.parse(protoPayload)), /unexpected field: __proto__/);
+
+  const constructorKey = clonePreset("neighbourhood");
+  Object.defineProperty(constructorKey, "constructor", { value: { polluted: true }, enumerable: true });
+  assert.throws(() => validateScenario(constructorKey), /unexpected field: constructor/);
+
+  const inheritedTitle = { ...clonePreset("neighbourhood") };
+  delete inheritedTitle.title;
+  Object.setPrototypeOf(inheritedTitle, { title: "Hacked from prototype" });
+  assert.throws(() => validateScenario(inheritedTitle), /Room name must be 1 to 80 characters/);
+
+  const inheritedQuantity = clonePreset("neighbourhood");
+  const quantity = inheritedQuantity.buyers[0].quantity;
+  delete inheritedQuantity.buyers[0].quantity;
+  Object.setPrototypeOf(inheritedQuantity.buyers[0], { quantity });
+  assert.throws(() => validateScenario(inheritedQuantity), /Buyer 1 quantity must be a number/);
+});
+
 test("validation rejects non-objects, empty collections, and unknown identifiers", () => {
   assert.throws(() => validateScenario(null), /must be an object/);
   assert.throws(() => validateScenario([]), /must be an object/);

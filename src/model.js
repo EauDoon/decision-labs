@@ -3,6 +3,10 @@ const MAX_OFFERS = 40;
 const MAX_UNITS = 5000;
 const MAX_TIERS = 8;
 const MAX_SHARE_LENGTH = 60_000;
+const SCENARIO_FIELDS = ["title", "currency", "buyers", "offers"];
+const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "latestDeliveryDays", "allowedVariants"];
+const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers"];
+const TIER_FIELDS = ["minimumUnits", "unitPrice"];
 
 export class ScenarioError extends Error {
   constructor(message) {
@@ -92,64 +96,72 @@ export function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");
   }
-  const title = requiredText(candidate.title, "Room name", 80);
-  const currency = requiredText(candidate.currency, "Currency", 3);
+  rejectUnknownFields(candidate, SCENARIO_FIELDS, "Scenario");
+  const title = requiredText(own(candidate, "title"), "Room name", 80);
+  const currency = requiredText(own(candidate, "currency"), "Currency", 3);
   if (!/^[A-Za-z]{3}$/.test(currency)) throw new ScenarioError("Currency must be a three-letter ASCII code, such as AUD.");
-  if (!Array.isArray(candidate.buyers) || candidate.buyers.length < 1 || candidate.buyers.length > MAX_BUYERS) {
+  const buyers = own(candidate, "buyers");
+  const offers = own(candidate, "offers");
+  if (!Array.isArray(buyers) || buyers.length < 1 || buyers.length > MAX_BUYERS) {
     throw new ScenarioError(`Buyers must contain 1 to ${MAX_BUYERS} entries.`);
   }
-  if (!Array.isArray(candidate.offers) || candidate.offers.length < 1 || candidate.offers.length > MAX_OFFERS) {
+  if (!Array.isArray(offers) || offers.length < 1 || offers.length > MAX_OFFERS) {
     throw new ScenarioError(`Offers must contain 1 to ${MAX_OFFERS} entries.`);
   }
-  const buyers = candidate.buyers.map((entry, index) => validateBuyer(entry, index));
-  const offers = candidate.offers.map((entry, index) => validateOffer(entry, index));
-  uniqueIds(buyers, "buyer");
-  uniqueIds(offers, "offer");
-  return { title, currency: currency.toUpperCase(), buyers, offers };
+  const normalizedBuyers = buyers.map((entry, index) => validateBuyer(entry, index));
+  const normalizedOffers = offers.map((entry, index) => validateOffer(entry, index));
+  uniqueIds(normalizedBuyers, "buyer");
+  uniqueIds(normalizedOffers, "offer");
+  return { title, currency: currency.toUpperCase(), buyers: normalizedBuyers, offers: normalizedOffers };
 }
 
 function validateBuyer(entry, index) {
   const prefix = named("Buyer", index);
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new ScenarioError(`${prefix} must be an object.`);
-  if (!Array.isArray(entry.allowedVariants) || entry.allowedVariants.length < 1 || entry.allowedVariants.length > 12) {
+  rejectUnknownFields(entry, BUYER_FIELDS, prefix);
+  const allowedVariants = own(entry, "allowedVariants");
+  if (!Array.isArray(allowedVariants) || allowedVariants.length < 1 || allowedVariants.length > 12) {
     throw new ScenarioError(`${prefix} accepted variants must contain 1 to 12 names.`);
   }
   return {
-    id: requiredText(entry.id, `${prefix} id`, 24),
-    label: requiredText(entry.label, `${prefix} private label`, 60),
-    category: requiredText(entry.category, `${prefix} category`, 60),
-    quantity: integer(entry.quantity, `${prefix} quantity`, 1, MAX_UNITS),
-    maxUnitPrice: finite(entry.maxUnitPrice, `${prefix} max item price`, 0, 1_000_000),
-    latestDeliveryDays: integer(entry.latestDeliveryDays, `${prefix} delivery limit`, 0, 365),
-    allowedVariants: [...new Set(entry.allowedVariants.map((value, variantIndex) => requiredText(value, `${prefix} variant ${variantIndex + 1}`, 60)))]
+    id: requiredText(own(entry, "id"), `${prefix} id`, 24),
+    label: requiredText(own(entry, "label"), `${prefix} private label`, 60),
+    category: requiredText(own(entry, "category"), `${prefix} category`, 60),
+    quantity: integer(own(entry, "quantity"), `${prefix} quantity`, 1, MAX_UNITS),
+    maxUnitPrice: finite(own(entry, "maxUnitPrice"), `${prefix} max item price`, 0, 1_000_000),
+    latestDeliveryDays: integer(own(entry, "latestDeliveryDays"), `${prefix} delivery limit`, 0, 365),
+    allowedVariants: [...new Set(allowedVariants.map((value, variantIndex) => requiredText(value, `${prefix} variant ${variantIndex + 1}`, 60)))]
   };
 }
 
 function validateOffer(entry, index) {
   const prefix = named("Offer", index);
   if (!entry || typeof entry !== "object" || Array.isArray(entry)) throw new ScenarioError(`${prefix} must be an object.`);
+  rejectUnknownFields(entry, OFFER_FIELDS, prefix);
   const normalized = {
-    id: requiredText(entry.id, `${prefix} id`, 24),
-    merchant: requiredText(entry.merchant, `${prefix} merchant`, 60),
-    category: requiredText(entry.category, `${prefix} category`, 60),
-    variant: requiredText(entry.variant, `${prefix} variant`, 60),
-    unitPrice: finite(entry.unitPrice, `${prefix} unit price`, 0, 1_000_000),
-    minimumUnits: integer(entry.minimumUnits, `${prefix} minimum`, 1, MAX_UNITS),
-    deliveryDays: integer(entry.deliveryDays, `${prefix} delivery`, 0, 365),
-    capacity: integer(entry.capacity, `${prefix} capacity`, 1, MAX_UNITS),
-    shippingPerBuyer: finite(entry.shippingPerBuyer, `${prefix} shipping`, 0, 1_000_000)
+    id: requiredText(own(entry, "id"), `${prefix} id`, 24),
+    merchant: requiredText(own(entry, "merchant"), `${prefix} merchant`, 60),
+    category: requiredText(own(entry, "category"), `${prefix} category`, 60),
+    variant: requiredText(own(entry, "variant"), `${prefix} variant`, 60),
+    unitPrice: finite(own(entry, "unitPrice"), `${prefix} unit price`, 0, 1_000_000),
+    minimumUnits: integer(own(entry, "minimumUnits"), `${prefix} minimum`, 1, MAX_UNITS),
+    deliveryDays: integer(own(entry, "deliveryDays"), `${prefix} delivery`, 0, 365),
+    capacity: integer(own(entry, "capacity"), `${prefix} capacity`, 1, MAX_UNITS),
+    shippingPerBuyer: finite(own(entry, "shippingPerBuyer"), `${prefix} shipping`, 0, 1_000_000)
   };
-  if (entry.tiers !== undefined) {
-    if (!Array.isArray(entry.tiers) || entry.tiers.length > MAX_TIERS) {
+  const tiers = own(entry, "tiers");
+  if (tiers !== undefined) {
+    if (!Array.isArray(tiers) || tiers.length > MAX_TIERS) {
       throw new ScenarioError(`${prefix} price tiers must contain at most ${MAX_TIERS} entries.`);
     }
     let previousMinimum = normalized.minimumUnits;
     let previousPrice = normalized.unitPrice;
-    normalized.tiers = entry.tiers.map((tier, tierIndex) => {
+    normalized.tiers = tiers.map((tier, tierIndex) => {
       const path = `${prefix} tier ${tierIndex + 1}`;
       if (!tier || typeof tier !== "object" || Array.isArray(tier)) throw new ScenarioError(`${path} must be an object.`);
-      const minimumUnits = integer(tier.minimumUnits, `${path} minimum units`, 1, normalized.capacity);
-      const unitPrice = finite(tier.unitPrice, `${path} unit price`, 0, 1_000_000);
+      rejectUnknownFields(tier, TIER_FIELDS, path);
+      const minimumUnits = integer(own(tier, "minimumUnits"), `${path} minimum units`, 1, normalized.capacity);
+      const unitPrice = finite(own(tier, "unitPrice"), `${path} unit price`, 0, 1_000_000);
       if (minimumUnits <= previousMinimum) throw new ScenarioError(`${path} minimum units must increase above the previous minimum.`);
       if (unitPrice >= previousPrice) throw new ScenarioError(`${path} unit price must decrease below the previous price.`);
       previousMinimum = minimumUnits;
@@ -162,6 +174,19 @@ function validateOffer(entry, index) {
 
 function named(kind, index) {
   return `${kind} ${index + 1}`;
+}
+
+function own(entry, key) {
+  return Object.hasOwn(entry, key) ? entry[key] : undefined;
+}
+
+function rejectUnknownFields(entry, allowed, path) {
+  const allowedFields = new Set(allowed);
+  for (const key of Object.keys(entry)) {
+    if (!allowedFields.has(key)) {
+      throw new ScenarioError(`${path} has unexpected field: ${key}.`);
+    }
+  }
 }
 
 function requiredText(value, path, maxLength) {

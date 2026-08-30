@@ -25,7 +25,7 @@ An offer can also supply `tiers`, an optional array of up to eight `{ minimumUni
 
 All money values use the scenario's currency code. The code must be exactly three ASCII letters and is stored uppercase. The app does not perform currency conversion. Numeric fields accept JSON numbers and plain decimal strings; hexadecimal, binary, octal, exponential, and plus-prefixed strings are rejected rather than coerced.
 
-Text fields are trimmed. Empty values after trim are rejected. Titles are at most 80 characters. Buyer and offer identifiers are at most 24 characters and must be unique within their collection. Labels, categories, merchant names, and variants are at most 60 characters. Each buyer lists between 1 and 12 accepted variants. Money amounts are finite numbers from 0 to 1,000,000. Delivery times are whole days from 0 to 365. Identifiers are compared as stored; they are not case-folded or Unicode-normalized.
+Text fields are trimmed. Empty values after trim are rejected. Titles are at most 80 characters. Buyer and offer identifiers are at most 24 characters and must be unique within their collection. Labels, categories, merchant names, and variants are at most 60 characters. Each buyer lists between 1 and 12 accepted variants. Money amounts are finite numbers from 0 to 1,000,000. Delivery times are whole days from 0 to 365. Identifiers are compared as stored; they are not case-folded or Unicode-normalized. Unknown fields are rejected, including prototype keys such as `__proto__` and `constructor`. Validation reads own properties only, so values inherited from a prototype do not satisfy a field.
 
 ## Compatibility
 
