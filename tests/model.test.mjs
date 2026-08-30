@@ -98,6 +98,54 @@ test('validation bounds participant count and user-controlled names', () => {
   assert.equal(validateConfiguration(excessive).valid, false);
 });
 
+test('validation rejects duplicate ids, prototype keys, extra fields, and non-finite shares', () => {
+  const base = clonePreset('balanced');
+
+  const duplicate = clonePreset('balanced');
+  duplicate.participants[1].id = duplicate.participants[0].id;
+  assert.match(validateConfiguration(duplicate).errors.join(' '), /id must be unique/);
+  assert.throws(() => calculatePartnership(duplicate), ValidationError);
+
+  const inheritedDeal = Object.create(base.deal);
+  assert.equal(validateConfiguration({ deal: inheritedDeal, participants: base.participants }).valid, false);
+  assert.match(validateConfiguration({ deal: inheritedDeal, participants: base.participants }).errors.join(' '), /Deal must be an object/);
+
+  const inheritedConfig = Object.create({ deal: base.deal, participants: base.participants });
+  assert.equal(validateConfiguration(inheritedConfig).valid, false);
+  assert.match(validateConfiguration(inheritedConfig).errors.join(' '), /must be an object/);
+
+  const reserved = JSON.parse(JSON.stringify({ deal: base.deal, participants: base.participants })
+    .replace('"monthlyVolume"', '"__proto__":{"polluted":true},"constructor":{"prototype":{}},"prototype":1,"monthlyVolume"'));
+  const reservedErrors = validateConfiguration(reserved).errors.join(' ');
+  assert.match(reservedErrors, /reserved field: __proto__/);
+  assert.match(reservedErrors, /reserved field: constructor/);
+  assert.match(reservedErrors, /reserved field: prototype/);
+  assert.throws(() => calculatePartnership(reserved), ValidationError);
+
+  const extraParticipant = clonePreset('balanced');
+  extraParticipant.participants[0].injected = 1;
+  assert.match(validateConfiguration(extraParticipant).errors.join(' '), /unknown field: injected/);
+
+  for (const share of [Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY, -0.01, 1.01]) {
+    const config = clonePreset('balanced');
+    config.participants[0].revenueShare = share;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(share));
+    assert.match(validation.errors.join(' '), /revenue share/);
+  }
+
+  const nullShock = clonePreset('balanced');
+  nullShock.deal.volumeShockPct = null;
+  assert.match(validateConfiguration(nullShock).errors.join(' '), /volume shock/);
+
+  const dictionary = Object.assign(Object.create(null), {
+    deal: Object.assign(Object.create(null), base.deal),
+    participants: base.participants.map((participant) => Object.assign(Object.create(null), participant)),
+  });
+  assert.equal(validateConfiguration(dictionary).valid, true);
+  assert.equal(calculatePartnership(dictionary).effectiveVolume, 100000);
+});
+
 test('break-even volume is transparent for positive, zero, and impossible contribution', () => {
   const participant = { revenueShare: 0.5, variableCostPerTransaction: 0.05, fixedMonthlyCost: 100, riskCost: 20 };
   assert.equal(breakEvenVolume(participant, 0.5), 600);

@@ -11,7 +11,7 @@
  * @typedef {object} ParticipantInput
  * @property {string} id Unique identifier, at most 64 characters.
  * @property {string} name Display name, at most 80 characters.
- * @property {number} revenueShare Share of gross fee revenue; all shares must sum to 1.
+ * @property {number} revenueShare Share of gross fee revenue, 0 through 1; all shares must sum to 1.
  * @property {number} variableCostPerTransaction
  * @property {number} fixedMonthlyCost
  * @property {number} minimumAcceptableProfit
@@ -45,6 +45,7 @@ export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
 const CONFIG_KEYS = new Set(['deal', 'participants', 'stress']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
+const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 /** @type {Readonly<StressSettings>} Illustrative GUI defaults; not forecasts. */
 export const DEFAULT_STRESS = Object.freeze({ volumeDropPct: 20, volumeGrowthPct: 20, feeDropPct: 10, variableCostRisePct: 20 });
 const STRESS_LIMITS = Object.freeze({ volumeDropPct: 100, volumeGrowthPct: 100, feeDropPct: 100, variableCostRisePct: 200 });
@@ -91,18 +92,29 @@ function isFiniteNumber(value) {
   return typeof value === 'number' && Number.isFinite(value);
 }
 
-function nonNegative(value, field, errors, { optional = false } = {}) {
+function isPlainObject(value) {
+  if (value === null || typeof value !== 'object' || Array.isArray(value)) return false;
+  const proto = Object.getPrototypeOf(value);
+  return proto === Object.prototype || proto === null;
+}
+
+function own(object, key) {
+  return Object.hasOwn(object, key) ? object[key] : undefined;
+}
+
+function nonNegative(value, field, errors, { optional = false, max = MAX_NUMERIC_INPUT } = {}) {
   if (optional && (value === null || value === undefined)) return null;
-  if (!isFiniteNumber(value) || value < 0 || value > MAX_NUMERIC_INPUT) {
-    errors.push(`${field} must be a finite number from zero through ${MAX_NUMERIC_INPUT}.`);
+  if (!isFiniteNumber(value) || value < 0 || value > max) {
+    errors.push(`${field} must be a finite number from zero through ${max}.`);
     return null;
   }
   return value;
 }
 
 function rejectUnknownKeys(value, allowed, field, errors) {
-  for (const key of Object.keys(value)) {
-    if (!allowed.has(key)) errors.push(`${field} contains an unknown field: ${key}.`);
+  for (const key of Object.getOwnPropertyNames(value)) {
+    if (RESERVED_KEYS.has(key)) errors.push(`${field} contains a reserved field: ${key}.`);
+    else if (!allowed.has(key)) errors.push(`${field} contains an unknown field: ${key}.`);
   }
 }
 
@@ -121,17 +133,18 @@ function stringValue(value, field, errors, maxLength = 80) {
  */
 export function validateConfiguration(config) {
   const errors = [];
-  if (!config || typeof config !== 'object' || Array.isArray(config)) {
+  if (!isPlainObject(config)) {
     return { valid: false, errors: ['Configuration must be an object.'] };
   }
   rejectUnknownKeys(config, CONFIG_KEYS, 'Configuration', errors);
-  if (config.stress !== undefined) {
-    if (!config.stress || typeof config.stress !== 'object' || Array.isArray(config.stress)) {
+  if (Object.hasOwn(config, 'stress')) {
+    const stress = own(config, 'stress');
+    if (!isPlainObject(stress)) {
       errors.push('Stress settings must be an object.');
     } else {
-      rejectUnknownKeys(config.stress, new Set(Object.keys(STRESS_LIMITS)), 'Stress settings', errors);
+      rejectUnknownKeys(stress, new Set(Object.keys(STRESS_LIMITS)), 'Stress settings', errors);
       for (const [key, limit] of Object.entries(STRESS_LIMITS)) {
-        const value = config.stress[key];
+        const value = own(stress, key);
         if (!isFiniteNumber(value) || value < 0 || value > limit) {
           errors.push(`Stress ${key} must be a finite percentage from 0 through ${limit}.`);
         }
@@ -139,44 +152,47 @@ export function validateConfiguration(config) {
     }
   }
 
-  const deal = config.deal;
-  if (!deal || typeof deal !== 'object' || Array.isArray(deal)) {
+  const deal = own(config, 'deal');
+  if (!isPlainObject(deal)) {
     errors.push('Deal must be an object.');
   } else {
     rejectUnknownKeys(deal, DEAL_KEYS, 'Deal', errors);
-    nonNegative(deal.monthlyVolume, 'Deal monthly volume', errors);
-    nonNegative(deal.feePerTransaction, 'Deal fee per transaction', errors);
-    nonNegative(deal.addressableVolume, 'Deal addressable volume', errors);
-    const shock = deal.volumeShockPct ?? 0;
-    if (!isFiniteNumber(shock) || shock < 0 || shock > 100) {
-      errors.push('Deal volume shock must be a finite percentage from 0 through 100.');
+    nonNegative(own(deal, 'monthlyVolume'), 'Deal monthly volume', errors);
+    nonNegative(own(deal, 'feePerTransaction'), 'Deal fee per transaction', errors);
+    nonNegative(own(deal, 'addressableVolume'), 'Deal addressable volume', errors);
+    if (Object.hasOwn(deal, 'volumeShockPct')) {
+      const shock = own(deal, 'volumeShockPct');
+      if (!isFiniteNumber(shock) || shock < 0 || shock > 100) {
+        errors.push('Deal volume shock must be a finite percentage from 0 through 100.');
+      }
     }
   }
 
-  if (!Array.isArray(config.participants) || config.participants.length < 2 || config.participants.length > MAX_PARTICIPANTS) {
+  const participants = own(config, 'participants');
+  if (!Array.isArray(participants) || participants.length < 2 || participants.length > MAX_PARTICIPANTS) {
     errors.push(`Between 2 and ${MAX_PARTICIPANTS} participants are required.`);
   } else {
     const ids = new Set();
     let shareTotal = 0;
-    config.participants.forEach((participant, index) => {
+    participants.forEach((participant, index) => {
       const prefix = `Participant ${index + 1}`;
-      if (!participant || typeof participant !== 'object' || Array.isArray(participant)) {
+      if (!isPlainObject(participant)) {
         errors.push(`${prefix} must be an object.`);
         return;
       }
       rejectUnknownKeys(participant, PARTICIPANT_KEYS, prefix, errors);
-      const id = stringValue(participant.id, `${prefix} id`, errors, 64);
+      const id = stringValue(own(participant, 'id'), `${prefix} id`, errors, 64);
       if (id && ids.has(id)) errors.push(`${prefix} id must be unique.`);
       ids.add(id);
-      stringValue(participant.name, `${prefix} name`, errors);
-      const share = nonNegative(participant.revenueShare, `${prefix} revenue share`, errors);
+      stringValue(own(participant, 'name'), `${prefix} name`, errors);
+      const share = nonNegative(own(participant, 'revenueShare'), `${prefix} revenue share`, errors, { max: 1 });
       if (share !== null) shareTotal += share;
-      nonNegative(participant.variableCostPerTransaction, `${prefix} variable cost per transaction`, errors);
-      nonNegative(participant.fixedMonthlyCost, `${prefix} fixed monthly cost`, errors);
-      nonNegative(participant.minimumAcceptableProfit, `${prefix} minimum acceptable monthly profit`, errors);
-      nonNegative(participant.capacity, `${prefix} capacity`, errors, { optional: true });
-      nonNegative(participant.minimumCommitment, `${prefix} minimum commitment`, errors, { optional: true });
-      nonNegative(participant.riskCost, `${prefix} risk cost`, errors);
+      nonNegative(own(participant, 'variableCostPerTransaction'), `${prefix} variable cost per transaction`, errors);
+      nonNegative(own(participant, 'fixedMonthlyCost'), `${prefix} fixed monthly cost`, errors);
+      nonNegative(own(participant, 'minimumAcceptableProfit'), `${prefix} minimum acceptable monthly profit`, errors);
+      nonNegative(own(participant, 'capacity'), `${prefix} capacity`, errors, { optional: true });
+      nonNegative(own(participant, 'minimumCommitment'), `${prefix} minimum commitment`, errors, { optional: true });
+      nonNegative(own(participant, 'riskCost'), `${prefix} risk cost`, errors);
     });
     if (Math.abs(shareTotal - 1) > EPSILON) {
       errors.push(`Participant revenue shares must sum to 1. Current total: ${shareTotal.toFixed(6)}.`);
