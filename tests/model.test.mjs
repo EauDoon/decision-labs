@@ -56,7 +56,7 @@ test("decision brief is deterministic and carries the recommendation into a port
 test("canonical proposals discard unknown imported fields at every level", () => {
   const input = proposal({
     clauses: [{ id: "one", title: "One", hidden: "clause", options: [
-      { ...option("original", true, { g: 50, hidden: 99 }), hidden: "option" },
+      { ...option("original", true, { g: 50 }), hidden: "option" },
       option("alternative", false, { g: 80 }, 1),
       option("alternative-two", false, { g: 70 }, 2),
     ] }],
@@ -207,10 +207,15 @@ test("model contract documents the live validation, search, and transport caps",
   assert.match(contract, new RegExp(`integer from 1 through ${withCommas(MAX_COMBINATIONS)}`));
   assert.match(contract, new RegExp(`integer from 0 through ${MAX_NEAR_MISSES}`));
   assert.match(contract, /1 to 64 characters/u);
+  assert.match(contract, /constructor.*prototype.*__proto__/u);
+  assert.match(contract, /Support maps must contain exactly the declared group ids|no other keys/u);
+  assert.match(contract, /`NaN` and infinities are invalid/u);
   assert.match(contract, /at most 120 characters/u);
   assert.match(contract, /at most 80 characters/u);
   assert.match(contract, /at most 240 characters/u);
   assert.match(contract, /Omitting `original`, or setting it to `false`, marks an alternative/u);
+  assert.match(contract, /plain object with only `maxCombinations`/u);
+  assert.match(contract, /unknown keys/u);
 
   assert.match(html, /id="proposal-title"[^>]*maxlength="120"/u);
   assert.match(html, /id="max-change-cost"[^>]*max="20000000000"/u);
@@ -259,6 +264,76 @@ test("validation bounds imported structure, labels, and identifier syntax", () =
     const input = proposal({ clauses: [structuredClone(baseClause)] });
     mutate(input);
     assert.equal(validateProposal(input).valid, false);
+  }
+});
+
+test("validation rejects duplicate ids, prototype keys, extra support fields, and non-finite numbers", () => {
+  const clauses = [{ id: "one", title: "One", options: [
+    option("original", true, { g: 50 }),
+    option("alternative", false, { g: 80 }, 1),
+    option("alternative-two", false, { g: 70 }, 2),
+  ] }];
+  const duplicateGroups = proposal({
+    groups: [{ id: "g", name: "A", weight: 1 }, { id: "g", name: "B", weight: 1 }],
+    clauses: structuredClone(clauses),
+  });
+  assert.match(validateProposal(duplicateGroups).errors.join(" "), /groups\[1\]\.id must be unique/u);
+  assert.equal(findSmallestAgreement(duplicateGroups).status, "invalid");
+
+  const duplicateClauses = proposal({ clauses: [structuredClone(clauses[0]), { ...structuredClone(clauses[0]) }] });
+  assert.match(validateProposal(duplicateClauses).errors.join(" "), /clauses\[1\]\.id must be unique/u);
+
+  const duplicateOptions = proposal({ clauses: [{ id: "one", title: "One", options: [
+    option("same", true, { g: 50 }),
+    option("same", false, { g: 80 }, 1),
+    option("other", false, { g: 70 }, 2),
+  ] }] });
+  assert.match(validateProposal(duplicateOptions).errors.join(" "), /options\[1\]\.id must be unique/u);
+
+  for (const id of ["constructor", "prototype", "__proto__"]) {
+    const reserved = proposal({ clauses: [{ ...structuredClone(clauses[0]), id }] });
+    assert.match(validateProposal(reserved).errors.join(" "), /safe identifier/u, `id ${id}`);
+    assert.equal(findSmallestAgreement(reserved).status, "invalid");
+  }
+
+  const extraSupport = proposal({ clauses: structuredClone(clauses) });
+  extraSupport.clauses[0].options[0].support.hidden = 99;
+  assert.match(validateProposal(extraSupport).errors.join(" "), /declared group ids/u);
+  assert.throws(() => canonicalProposal(extraSupport), /declared group ids/u);
+
+  const protoSupport = proposal({ clauses: structuredClone(clauses) });
+  protoSupport.clauses[0].options[0].support = JSON.parse('{"g":50,"__proto__":1,"constructor":2}');
+  assert.match(validateProposal(protoSupport).errors.join(" "), /declared group ids/u);
+
+  const inherited = proposal({ clauses: structuredClone(clauses) });
+  inherited.clauses[0].options[0].support = {};
+  const descriptor = Object.getOwnPropertyDescriptor(Object.prototype, "g");
+  Object.defineProperty(Object.prototype, "g", { configurable: true, enumerable: true, value: 50 });
+  try {
+    assert.equal(inherited.clauses[0].options[0].support.g, 50);
+    const validation = validateProposal(inherited);
+    assert.equal(validation.valid, false);
+    assert.match(validation.errors.join(" "), /support\.g must be a number from 0 to 100/u);
+  } finally {
+    if (descriptor) Object.defineProperty(Object.prototype, "g", descriptor);
+    else delete Object.prototype.g;
+  }
+
+  for (const value of [NaN, Infinity, -Infinity, "1", null, undefined, true, {}]) {
+    const costly = proposal({ clauses: structuredClone(clauses) });
+    costly.clauses[0].options[1].changeCost = value;
+    const validation = validateProposal(costly);
+    assert.equal(validation.valid, false, `changeCost ${String(value)}`);
+    assert.match(validation.errors.join(" "), /changeCost must be from 0 through/u);
+    assert.equal(findSmallestAgreement(costly).status, "invalid");
+  }
+  for (const value of [NaN, Infinity, -Infinity, 0, -1, "2", null, undefined, true, {}]) {
+    const weighted = proposal({ clauses: structuredClone(clauses) });
+    weighted.groups[0].weight = value;
+    const validation = validateProposal(weighted);
+    assert.equal(validation.valid, false, `weight ${String(value)}`);
+    assert.match(validation.errors.join(" "), /weight must be greater than 0 and no more than/u);
+    assert.equal(findSmallestAgreement(weighted).status, "invalid");
   }
 });
 
@@ -340,6 +415,14 @@ test("public search options cannot raise the resource or result caps", () => {
   }), { nearMissLimit: 0 });
   assert.equal(noMisses.status, "infeasible");
   assert.deepEqual(noMisses.nearMisses, []);
+  for (const value of [null, 4, "options", true, []]) {
+    const result = findSmallestAgreement(input, value);
+    assert.equal(result.status, "invalid", `search options ${String(value)}`);
+    assert.match(result.errors.join(" "), /Search options must be a plain object/u);
+  }
+  const extra = findSmallestAgreement(input, { maxCombinations: 8, debug: true, sample: false });
+  assert.equal(extra.status, "invalid");
+  assert.match(extra.errors.join(" "), /Unknown search option: debug, sample/u);
 });
 
 test("search returns an explicit safety result when combinations exceed the bound", () => {
