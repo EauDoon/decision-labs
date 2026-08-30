@@ -90,11 +90,12 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |-- scripts/launch.mjs      Cross-platform GUI launcher
 |-- scripts/dev-server.mjs  Dependency-free local server
 |-- scripts/listen-config.mjs     Shared PORT default and validation
-|-- .github/workflows/check.yml   Node 20 `npm run check` job
 |-- MODEL.md                Model contract and limitations
 |-- SECURITY.md             Security and privacy boundary
 `-- CONTRIBUTING.md         Contribution workflow
 ```
+
+The [root CI workflow](../../.github/workflows/common-cart.yml) runs this component's integrity check.
 
 ## Data and privacy
 

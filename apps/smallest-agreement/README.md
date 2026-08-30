@@ -107,7 +107,7 @@ Support floors protect only the numerical average you enter. They do not establi
 - `tests/model.test.mjs`: Node built-in test coverage for the model.
 - `tests/standalone.test.mjs`: self-contained artifact checks.
 - `tests/cli.test.mjs`: launcher and builder help, unknown-flag, and PORT checks.
-- `.github/workflows/ci.yml`: Node 20+ syntax, standalone, and test checks on Ubuntu and Windows.
+- [`../../.github/workflows/smallest-agreement.yml`](../../.github/workflows/smallest-agreement.yml): monorepo syntax, standalone, and test checks on Ubuntu and Windows.
 - `scripts/dev-server.mjs`: dependency-free localhost server.
 - `scripts/listen-config.mjs`: shared loopback bind address, PORT default, and PORT parsing.
 - `scripts/launch.mjs`: cross-platform GUI launcher.

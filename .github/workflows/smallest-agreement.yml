@@ -1,15 +1,21 @@
-name: CI
+name: The Smallest Agreement
 
 on:
   push:
     branches: [main]
+    paths:
+      - "apps/smallest-agreement/**"
+      - ".github/workflows/smallest-agreement.yml"
   pull_request:
+    paths:
+      - "apps/smallest-agreement/**"
+      - ".github/workflows/smallest-agreement.yml"
 
 permissions:
   contents: read
 
 concurrency:
-  group: ci-${{ github.ref }}
+  group: smallest-agreement-ci-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
@@ -34,5 +40,7 @@ jobs:
           package-manager-cache: false
       - name: Check syntax and standalone artifact
         run: npm run check
+        working-directory: apps/smallest-agreement
       - name: Run tests
         run: npm test
+        working-directory: apps/smallest-agreement
