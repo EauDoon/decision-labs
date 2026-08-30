@@ -99,6 +99,7 @@ test('first breakpoint card reports capacity-limited volume growth', async () =>
   assert.match(app.markup(), /Protect Platform first/);
   assert.match(app.markup(), /volume increase/);
   assert.match(app.markup(), /1,000 txn, 1.0%/);
+  assert.match(app.markup(), /boundary at 101,000 txn/);
 });
 
 test('invalid stress values retain editable controls and recover without stale results', async () => {
