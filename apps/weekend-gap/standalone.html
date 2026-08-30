@@ -989,7 +989,7 @@ function scenarioFromJSON(text) {
     return { scenario: null, errors: ["Import failed. Scenario JSON must be 250 KB or smaller."] };
   }
   try {
-    const parsed = JSON.parse(text);
+    const parsed = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
     if (!parsed || typeof parsed !== "object" || Array.isArray(parsed)) {
       throw new Error("Scenario must be an object.");
     }
