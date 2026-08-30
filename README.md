@@ -40,14 +40,16 @@ To run the server without the launcher:
 npm start
 ```
 
-Open the local address printed by the server, normally `http://127.0.0.1:4173`. The listener is loopback IPv4 only.
+Open the local address printed by the server, normally `http://127.0.0.1:4173`. The listener is loopback IPv4 only; `HOST` is ignored. Override the port with `PORT`, a base-10 integer from 1 through 65535. Invalid values, including `0`, hex, and non-integers, are rejected rather than treated as 4173.
+
+`npm run launch` opens a browser after the server is listening. Set `PARTNERSHIP_BREAKPOINT_NO_OPEN=1` to print the URL without opening a browser.
 
 ```sh
 npm test
 npm run check
 ```
 
-`npm test` runs every Node test file under `tests/`: the economic model, compound-stress negotiation, standalone renderer, and workbench interaction checks. `npm run check` scans project files for em dashes, private filesystem paths, and common private-key markers, syntax-checks JavaScript sources, and verifies that `standalone.html` matches the current sources. GitHub Actions runs both commands on pull requests and on pushes to `main`.
+`npm test` runs every Node test file under `tests/`: the economic model, compound-stress negotiation, standalone renderer, workbench interaction, and local-server checks. `npm run check` scans project files for em dashes, private filesystem paths, and common private-key markers, syntax-checks JavaScript sources, and verifies that `standalone.html` matches the current sources. GitHub Actions runs both commands on pull requests and on pushes to `main`.
 
 ## Use the workbench
 
