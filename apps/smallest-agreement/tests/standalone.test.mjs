@@ -61,9 +61,9 @@ async function savedWorkbench(storage, hash = "") {
     clauses: () => element("#clauses-editor").innerHTML,
     disabled: (selector) => element(selector).disabled,
     click: (selector) => element(selector).events.get("click")(),
-    importJson: async (contents, { size } = {}) => {
+    importJson: async (contents, { size, read } = {}) => {
       const target = {
-        files: [{ size: size ?? contents.length, text: async () => contents }],
+        files: [{ size: size ?? contents.length, text: async () => read === undefined ? contents : await read }],
         value: "draft.json",
       };
       await element("#import-file").events.get("change")({ target });
@@ -160,6 +160,35 @@ test("import failures name JSON syntax, the first invalid field, and oversize fi
   await app.importJson("{}", { size: 250_001 });
   assert.match(app.message(), /Import failed: files must be 250 KB or smaller/u);
   assert.equal(app.title(), "Neighbourhood Plan: the shared green");
+});
+
+test("newer imports and edits supersede slower file reads", async () => {
+  const draft = { title: "Earlier import", threshold: 70,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "clause", title: "Clause", options: [
+      { id: "original", label: "Original", original: true, changeCost: 0, support: { g: 60 } },
+      { id: "alternative", label: "Alternative", original: false, changeCost: 1, support: { g: 80 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  let releaseEarlier;
+  const earlierRead = new Promise((resolve) => { releaseEarlier = resolve; });
+  const earlierImport = app.importJson("", { size: 100, read: earlierRead });
+  await app.importJson(JSON.stringify({ ...draft, title: "Latest import" }));
+  releaseEarlier(JSON.stringify(draft));
+  await earlierImport;
+  assert.equal(app.title(), "Latest import");
+
+  let releasePending;
+  const pendingRead = new Promise((resolve) => { releasePending = resolve; });
+  const pendingImport = app.importJson("", { size: 100, read: pendingRead });
+  app.setTitle("Intervening edit");
+  releasePending(JSON.stringify({ ...draft, title: "Stale import" }));
+  await pendingImport;
+  assert.equal(app.title(), "Intervening edit");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).title, "Intervening edit");
 });
 
 test("invalid budget and floor edits preserve the last valid custom autosave across reloads", async () => {
