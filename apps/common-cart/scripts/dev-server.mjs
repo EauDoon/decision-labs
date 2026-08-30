@@ -19,41 +19,67 @@ const types = {
   ".md": "text/markdown; charset=utf-8"
 };
 
-createServer((request, response) => {
-  let requestedPath;
-  try {
-    const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
-    requestedPath = pathname === "/" ? "index.html" : decodeURIComponent(pathname.slice(1));
-  } catch {
-    response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
-    response.end("Bad request");
-    return;
-  }
-  if (requestedPath.includes("\\")) {
-    response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
-    response.end("Bad request");
-    return;
-  }
-  const file = normalize(join(root, requestedPath));
-  const fromRoot = relative(root, file);
-  if (fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot) || !statSafe(file)) {
-    response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
-    response.end("Not found");
-    return;
-  }
-  response.writeHead(200, {
-    "cache-control": "no-store",
-    "content-type": types[extname(file)] ?? "application/octet-stream"
+export function createCommonCartServer(serveRoot = root) {
+  return createServer((request, response) => {
+    if (request.method !== "GET" && request.method !== "HEAD") {
+      response.writeHead(405, {
+        "allow": "GET, HEAD",
+        "content-type": "text/plain; charset=utf-8"
+      });
+      response.end("Method not allowed");
+      return;
+    }
+    let requestedPath;
+    try {
+      const pathname = new URL(request.url ?? "/", "http://localhost").pathname;
+      requestedPath = pathname === "/" ? "index.html" : decodeURIComponent(pathname.slice(1));
+    } catch {
+      response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Bad request");
+      return;
+    }
+    if (requestedPath.includes("\\")) {
+      response.writeHead(400, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Bad request");
+      return;
+    }
+    const file = normalize(join(serveRoot, requestedPath));
+    const fromRoot = relative(serveRoot, file);
+    if (fromRoot === ".." || fromRoot.startsWith(`..${sep}`) || isAbsolute(fromRoot)) {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+      return;
+    }
+    const fileInfo = statSafe(file);
+    if (fileInfo === null) {
+      response.writeHead(404, { "content-type": "text/plain; charset=utf-8" });
+      response.end("Not found");
+      return;
+    }
+    response.writeHead(200, {
+      "cache-control": "no-store",
+      "content-length": fileInfo.size,
+      "content-type": types[extname(file)] ?? "application/octet-stream"
+    });
+    if (request.method === "HEAD") {
+      response.end();
+      return;
+    }
+    createReadStream(file).pipe(response);
   });
-  createReadStream(file).pipe(response);
-}).listen(port, DEFAULT_HOST, () => {
-  console.log(`Common Cart is running at http://${DEFAULT_HOST}:${port}`);
-});
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  createCommonCartServer().listen(port, DEFAULT_HOST, () => {
+    console.log(`Common Cart is running at http://${DEFAULT_HOST}:${port}`);
+  });
+}
 
 function statSafe(path) {
   try {
-    return statSync(path).isFile();
+    const info = statSync(path);
+    return info.isFile() ? info : null;
   } catch {
-    return false;
+    return null;
   }
 }

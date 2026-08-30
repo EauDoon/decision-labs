@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { spawnSync } from "node:child_process";
+import { access, mkdir, mkdtemp, rm, writeFile } from "node:fs/promises";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { createCommonCartServer } from "../scripts/dev-server.mjs";
 import { DEFAULT_HOST, DEFAULT_PORT, parsePort } from "../scripts/listen-config.mjs";
 
 const root = fileURLToPath(new URL("..", import.meta.url));
@@ -65,4 +69,47 @@ test("launcher and server reject invalid PORT before listening", () => {
     assert.match(result.stderr, pattern, `${script} PORT=${JSON.stringify(port)}`);
     assert.doesNotMatch(`${result.stdout}${result.stderr}`, /running at/u);
   }
+});
+
+test("server serves GET and HEAD consistently and rejects unsupported methods", async () => {
+  const directory = await mkdtemp(join(tmpdir(), "common-cart-server-"));
+  const publicDirectory = join(directory, "public");
+  const server = createCommonCartServer(publicDirectory);
+  try {
+    await mkdir(publicDirectory);
+    await writeFile(join(publicDirectory, "index.html"), "<!doctype html><title>ok</title>\n", "utf8");
+    await writeFile(join(directory, "secret.txt"), "outside root\n", "utf8");
+    await new Promise((resolve, reject) => {
+      server.once("error", reject);
+      server.listen(0, DEFAULT_HOST, resolve);
+    });
+    const address = server.address();
+    assert.equal(typeof address, "object");
+    const url = `http://${DEFAULT_HOST}:${address.port}`;
+
+    const get = await fetch(url);
+    assert.equal(get.status, 200);
+    assert.equal(await get.text(), "<!doctype html><title>ok</title>\n");
+
+    const post = await fetch(url, { method: "POST" });
+    assert.equal(post.status, 405);
+    assert.equal(post.headers.get("allow"), "GET, HEAD");
+    assert.equal(await post.text(), "Method not allowed");
+
+    const head = await fetch(url, { method: "HEAD" });
+    assert.equal(head.status, 200);
+    assert.equal(head.headers.get("content-length"), get.headers.get("content-length"));
+    assert.equal(await head.text(), "");
+
+    const traversal = await fetch(`${url}/%2e%2e%2fsecret.txt`);
+    assert.equal(traversal.status, 404);
+    assert.equal(await traversal.text(), "Not found");
+  } finally {
+    if (server.listening) {
+      await new Promise((resolve, reject) => server.close((error) => error ? reject(error) : resolve()));
+    }
+    await rm(directory, { recursive: true, force: true });
+  }
+  assert.equal(server.listening, false);
+  await assert.rejects(access(directory), (error) => error.code === "ENOENT");
 });
