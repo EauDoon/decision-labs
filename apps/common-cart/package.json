@@ -1,0 +1,19 @@
+{
+  "name": "common-cart",
+  "version": "1.2.0",
+  "private": true,
+  "type": "module",
+  "description": "A local-first pooled purchase simulator that matches aggregate buyer constraints to synthetic merchant offers.",
+  "types": "./src/model.d.ts",
+  "scripts": {
+    "build:standalone": "node scripts/build-standalone.mjs",
+    "launch": "node scripts/launch.mjs",
+    "start": "node scripts/dev-server.mjs",
+    "test": "node --test",
+    "check": "node --check src/model.js && node --check src/app.js && node --check scripts/dev-server.mjs && node --check scripts/launch.mjs && node --check scripts/listen-config.mjs && node --check scripts/build-standalone.mjs && node scripts/build-standalone.mjs --check && node --test"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "license": "MIT"
+}
