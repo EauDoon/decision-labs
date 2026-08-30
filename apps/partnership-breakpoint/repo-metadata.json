@@ -1,7 +1,7 @@
 {
   "name": "partnership-breakpoint",
   "description": "A transparent browser workbench for finding participant exit thresholds in shared commercial deals.",
-  "homepage": "",
+  "homepage": "https://github.com/EauDoon/decision-labs/tree/main/apps/partnership-breakpoint",
   "topics": [
     "partnerships",
     "negotiation",

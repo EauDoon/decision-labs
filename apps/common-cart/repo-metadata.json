@@ -1,7 +1,7 @@
 {
   "name": "common-cart",
   "description": "Local-first pooled-purchase simulator matching buyer constraints to synthetic merchant offers.",
-  "homepage": "",
+  "homepage": "https://github.com/EauDoon/decision-labs/tree/main/apps/common-cart",
   "topics": [
     "collective-buying",
     "marketplace-simulation",

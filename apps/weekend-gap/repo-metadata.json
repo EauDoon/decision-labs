@@ -1,7 +1,7 @@
 {
   "name": "weekend-gap",
   "description": "Educational browser simulator for synthetic AUD stablecoin liquidity across a weekend payout gap.",
-  "homepage": "",
+  "homepage": "https://github.com/EauDoon/decision-labs/tree/main/apps/weekend-gap",
   "topics": [
     "stablecoin",
     "liquidity",

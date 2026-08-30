@@ -1,7 +1,7 @@
 {
   "name": "smallest-agreement",
   "description": "A local deliberation workshop for finding the lowest-cost structured agreement that crosses an approval threshold.",
-  "homepage": "",
+  "homepage": "https://github.com/EauDoon/decision-labs/tree/main/apps/smallest-agreement",
   "topics": [
     "deliberation",
     "decision-support",
