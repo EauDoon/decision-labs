@@ -14,6 +14,7 @@ const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const HASH_PREFIX = "#agreement=";
 let idNumber = 100;
 let initialLoadMessage = "Loaded local draft.";
+let importSequence = 0;
 
 const presets = {
   "protected-access": {
@@ -236,6 +237,7 @@ function encodeHash(proposal) {
 }
 
 function save() {
+  importSequence += 1;
   const error = firstProposalError(state.proposal);
   if (error) {
     state.saveMessage = `Invalid edits are not saved: ${error}`;
@@ -587,35 +589,35 @@ $("#brief-button").addEventListener("click", () => {
 });
 $("#import-button").addEventListener("click", () => $("#import-file").click());
 $("#import-file").addEventListener("change", async (event) => {
+  const sequence = ++importSequence;
   const file = event.target.files?.[0];
+  event.target.value = "";
   if (!file) return;
   if (file.size > 250_000) {
     state.saveMessage = "Import failed: files must be 250 KB or smaller.";
     $("#autosave-status").textContent = state.saveMessage;
-    event.target.value = "";
     return;
   }
   let text;
   try {
     text = await file.text();
   } catch {
+    if (sequence !== importSequence) return;
     state.saveMessage = "Import failed: the file could not be read.";
     $("#autosave-status").textContent = state.saveMessage;
-    event.target.value = "";
     return;
   }
+  if (sequence !== importSequence) return;
   const parsed = parseProposalJson(text);
   if (parsed.cause) {
     state.saveMessage = `Import failed: ${parsed.cause}`;
     $("#autosave-status").textContent = state.saveMessage;
-    event.target.value = "";
     return;
   }
   state.proposal = parsed.proposal;
   state.saveMessage = "Imported and saved locally.";
   save();
   render();
-  event.target.value = "";
 });
 $("#share-button").addEventListener("click", async () => {
   if (!validateProposal(state.proposal).valid) {
