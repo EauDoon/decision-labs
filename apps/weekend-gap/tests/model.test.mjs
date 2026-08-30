@@ -151,8 +151,13 @@ test("next payout searches through the weekend to Monday business hours", () => 
 
 test("scenario JSON and hash round trips preserve valid editable assumptions", () => {
   const source = { ...DEFAULT_SCENARIO, name: "Shared stress check", redemptionDemandAud: 987654 };
-  const imported = scenarioFromJSON(scenarioToJSON(source));
+  const exported = scenarioToJSON(source);
+  const imported = scenarioFromJSON(exported);
   assert.deepEqual(imported.scenario, sanitizeScenario(source).scenario);
+  assert.deepEqual(
+    scenarioFromJSON(`\uFEFF${exported}`).scenario,
+    sanitizeScenario(source).scenario,
+  );
   const restored = scenarioFromHash(scenarioToHash(source));
   assert.deepEqual(restored.scenario, sanitizeScenario(source).scenario);
   assert.equal(scenarioFromJSON("not json").scenario, null);
