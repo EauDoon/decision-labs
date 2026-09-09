@@ -160,6 +160,7 @@ export interface ResidualCoverage {
   note: string;
   primary: CoverageOfferSummary | null;
   secondary: CoverageOfferSummary | null;
+  tertiary: CoverageOfferSummary | null;
   leftoverBuyerCount: number;
   leftoverUnits: number;
   leftoverBuyerIds: string[];
@@ -224,7 +225,27 @@ export interface DeliveryHeatmap {
   buckets: DeliveryBucket[];
 }
 export function deliveryHeatmap(rawScenario: unknown): DeliveryHeatmap;
+export function createDeliveryHeatmapCsv(rawScenario: unknown): string;
+
+export interface VariantOverlapCount {
+  variant: string;
+  offerCount: number;
+  buyerCount: number;
+  units: number;
+}
+export interface VariantOverlapCell {
+  rowVariant: string;
+  columnVariant: string;
+  buyerCount: number;
+  units: number;
+}
+export interface VariantOverlapMatrix {
+  variants: VariantOverlapCount[];
+  cells: VariantOverlapCell[][];
+}
+export function variantOverlapMatrix(rawScenario: unknown): VariantOverlapMatrix;
 export function encodeScenario(rawScenario: unknown): string;
+export function encodeRedactedScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;
 
 export interface ScenarioHistory {
@@ -236,7 +257,17 @@ export interface ScenarioHistory {
   redo(): Scenario;
 }
 export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; }
-export interface ComparisonMetrics { requested: number; fulfilled: number; buyers: number; cost: number | null; winner: string; }
+export interface ComparisonMetrics {
+  requested: number;
+  fulfilled: number;
+  buyers: number;
+  cost: number | null;
+  winner: string;
+  leftoverBuyers: number;
+  leftoverUnits: number;
+  unfilledBuyers: number;
+  unfilledUnits: number;
+}
 export interface ScenarioComparison { baseline: ComparisonMetrics; current: ComparisonMetrics; sameCurrency: boolean; sameDemand: boolean; }
 export interface MerchantReport {
   report: string; version: number; currency: string; limitations: string;
@@ -247,12 +278,14 @@ export interface MerchantResidualReport {
   report: string; version: number; currency: string; limitations: string;
   primary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
   secondary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
+  tertiary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
   leftoverBuyerCount: number; leftoverUnits: number; unfilledBuyerCount: number; unfilledUnits: number;
 }
 export function createScenarioHistory(initial: unknown): ScenarioHistory;
 export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
 export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", id: string): Scenario;
 export function copyOfferAsNewTierSet(rawScenario: unknown, offerId: string): Scenario;
+export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenario;
 export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;
 export interface ThreeRoomRow {
   title: string;
@@ -262,6 +295,10 @@ export interface ThreeRoomRow {
   buyers: number;
   cost: number | null;
   winner: string;
+  leftoverBuyers: number;
+  leftoverUnits: number;
+  unfilledBuyers: number;
+  unfilledUnits: number;
 }
 export interface ThreeRoomComparison { sameCurrency: boolean; rooms: ThreeRoomRow[]; }
 export function compareThreeRooms(first: unknown, second: unknown, third: unknown): ThreeRoomComparison;

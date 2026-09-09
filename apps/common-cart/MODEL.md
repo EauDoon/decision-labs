@@ -49,7 +49,7 @@ For a tiered offer, `unitPrice` means the price of the band being evaluated. The
 
 The allocator performs an exact bounded whole-order search. It chooses a set of complete buyer quantities with the greatest total units that does not exceed merchant capacity. It never splits a buyer's quantity. Buyer IDs provide a stable deterministic order when more than one set reaches the same unit total.
 
-To keep this exact search responsive, a scenario accepts at most 40 buyers and 40 offers, and each buyer quantity, merchant minimum, and merchant capacity is capped at 5,000 units.
+To keep this exact search responsive, a scenario accepts at most 40 buyers and 40 offers, and each buyer quantity, merchant minimum, and merchant capacity is capped at 5,000 units. A room may have zero buyers. That empty room has no demand, so no offer qualifies until buyers are added or the neighbourhood example is restored.
 
 ## Quantity price bands
 
@@ -106,11 +106,11 @@ The final rule makes exact ties deterministic.
 
 ## Residual coverage
 
-After a winning offer is chosen, leftover buyers (those not in the winner's selected set) may be matched to the next-best other offer using the same exact whole-order allocator. A buyer's quantity is never split across offers. If no winner exists, every buyer remains leftover. If leftover buyers or leftover offers are missing, there is no secondary fill.
+After a winning offer is chosen, leftover buyers (those not in the winner's selected set) may be matched to the next-best other offer, then a third distinct offer, using the same exact whole-order allocator. A buyer's quantity is never split across offers. If no winner exists, every buyer remains leftover. If leftover buyers or leftover offers are missing, there is no secondary fill. Tertiary fill runs only after a secondary match, on the buyers still unfilled, and never reuses the primary or secondary offer.
 
-This is a planning aid. It is not a dual checkout, split invoice, or promise that two merchants will jointly fulfill one room.
+This is a planning aid. It is not a dual checkout, split invoice, or promise that two or three merchants will jointly fulfill one room.
 
-Organizer views may list leftover buyer identifiers. Merchant residual JSON reports leftover buyer counts and units only.
+Organizer views may list leftover buyer identifiers. Merchant residual JSON reports leftover buyer counts and units only. Organizer briefing names secondary and tertiary merchants as aggregates. Room comparisons include leftover and unfilled counts.
 
 ## Units to the next cheaper tier
 
@@ -119,6 +119,10 @@ For one offer, the next cheaper quantity band is the band after the selected ind
 ## Aggregate merchant signal
 
 Demand is grouped by product category. For each category, the merchant view reports buyer count, total units, the range of price ceilings, the range of delivery limits, and the union of accepted variants. It does not report buyer labels or buyer-to-offer matches.
+
+The variant overlap matrix counts buyers whose accepted variants include each offered variant. Pairwise cells count buyers who accept both variants. Offered variants that differ only by the same matching normalization share a column. Buyer labels, IDs, budgets, and allocations are omitted.
+
+The delivery heatmap groups buyers into deadline buckets of 0 to 3, 4 to 7, 8 to 14, 15 to 30, and 31 to 365 days. The matching CSV export uses those aggregate buckets only and escapes spreadsheet formula prefixes.
 
 ## Limits
 
@@ -138,4 +142,4 @@ The model can test whether a declared offer satisfies declared constraints. It c
 
 Buyer CSV import accepts a header row of label, category, quantity, max unit price, latest delivery days, variants, and optional max order total. Cells that were escaped for spreadsheet safety by a leading apostrophe have that apostrophe stripped. Formula-like labels are stored as text, not evaluated. Invalid rows name the CSV buyer and field.
 
-Named snapshots contain validated version-1 scenarios, at most 12 per workspace. Valid history contains at most 50 detached states. Baseline and three-room comparisons do not claim welfare or savings from differing cohorts. Merchant reports use an explicit whitelist and omit the scenario title as well as private buyer records. Buyer CSV is explicitly private and escapes spreadsheet formula prefixes. Organizer briefing markdown and merchant residual JSON omit private buyer rows. `redactBuyerLabels` replaces labels with Buyer 1 through N without changing identifiers or constraints.
+Named snapshots contain validated version-1 scenarios, at most 12 per workspace. Valid history contains at most 50 detached states. Baseline and three-room comparisons do not claim welfare or savings from differing cohorts. They do report leftover and unfilled residual counts. Merchant reports use an explicit whitelist and omit the scenario title as well as private buyer records. Buyer CSV is explicitly private and escapes spreadsheet formula prefixes. Organizer briefing markdown, merchant residual JSON, heatmap CSV, and variant overlap omit private buyer rows. `redactBuyerLabels` replaces labels with Buyer 1 through N without changing identifiers or constraints. `encodeRedactedScenario` encodes that redacted room; `encodeScenario` still keeps saved labels. `copyOfferAsPickup` duplicates an offer with `fulfillment` set to pickup and `shippingPerBuyer` set to 0.

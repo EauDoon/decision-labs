@@ -221,6 +221,13 @@ table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th { padding: 0.65rem; color: #4f4c5e; background: #eee8dd; text-align: left; font-size: 0.69rem; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
 .th-note { margin-left: 0.35rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); }
 td.empty-state { color: var(--muted); font-style: italic; }
+.empty-recovery {
+  margin: 0.85rem 0 0;
+  padding: 1rem 1.1rem;
+  border: 1px dashed var(--line-strong);
+  background: #fffefa;
+}
+.empty-recovery p { margin: 0 0 0.75rem; color: var(--muted); }
 td { padding: 0.48rem; border-top: 1px solid var(--line); vertical-align: middle; }
 td input { min-width: 86px; border-color: transparent; background: transparent; }
 td select {
@@ -253,6 +260,10 @@ canvas { display: block; width: 100%; height: 280px; }
 .chart-scroll:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .canvas-note { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.75rem; }
 .inspector-panel { margin-top: 1rem; }
+.inspector-panel:focus-visible, #merchant-panel:focus-visible {
+  outline: 3px solid rgba(243, 111, 61, 0.55);
+  outline-offset: 2px;
+}
 .inspector-heading { display: flex; align-items: end; }
 .inspector-heading h3 { margin-bottom: 0.2rem; }
 .inspector-summary { margin: 0; color: var(--muted); }
@@ -390,6 +401,7 @@ footer {
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON</li>
         <li><kbd>n</kbd> Add a buyer</li>
+        <li><kbd>m</kbd> Focus the merchant inspector region</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -414,6 +426,7 @@ footer {
       <button class="quiet" id="screenshot-mode" type="button" aria-pressed="false">Screenshot mode</button>
       <button class="quiet" id="export-redacted" type="button">Export redacted JSON</button>
       <button class="quiet" id="share-button" type="button">Copy share link</button>
+      <button class="quiet" id="share-redacted-button" type="button">Copy redacted share link</button>
     </nav>
   </header>
 
@@ -529,6 +542,10 @@ footer {
             <tbody id="buyer-rows"></tbody>
           </table>
         </div>
+        <div id="empty-buyer-recovery" class="empty-recovery" hidden>
+          <p>This room has no buyers. There is no demand to match, so every offer stays locked. Add a buyer, import a CSV, or restore the neighbourhood example. Restore is undoable.</p>
+          <button id="restore-neighbourhood" type="button">Restore neighbourhood example</button>
+        </div>
         <p id="variants-help" class="canvas-note">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
 
         <div class="result-grid">
@@ -562,7 +579,7 @@ footer {
           </article>
         </div>
 
-        <article class="panel inspector-panel" aria-labelledby="inspector-title">
+        <article class="panel inspector-panel" id="merchant-inspector-region" tabindex="-1" aria-labelledby="inspector-title">
           <div class="panel-heading inspector-heading">
             <div>
               <p class="section-number">Offer inspector</p>
@@ -620,7 +637,7 @@ footer {
         </article>
       </div>
 
-      <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" hidden>
+      <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" tabindex="-1" hidden>
         <div class="snapshot-bar">
           <button id="merchant-report" type="button">Export aggregate merchant report</button>
           <button id="merchant-residual-report" type="button">Export residual coverage (aggregate)</button>
@@ -666,6 +683,16 @@ footer {
             <h4>Delivery deadline heatmap</h4>
             <p id="delivery-heatmap-text" class="canvas-note"></p>
             <svg id="delivery-heatmap" class="capacity-bar" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
+            <button id="heatmap-csv" type="button">Export heatmap CSV</button>
+            <h4>Offered variant overlap</h4>
+            <p id="variant-overlap-note" class="canvas-note"></p>
+            <div class="table-shell compact">
+              <table>
+                <caption>Buyer counts whose accepted variants include each offered variant. Cells are pairwise overlaps. Labels, IDs, budgets, and allocations are omitted.</caption>
+                <thead id="variant-overlap-head"></thead>
+                <tbody id="variant-overlap-rows"></tbody>
+              </table>
+            </div>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>
@@ -942,18 +969,42 @@ function copyOfferAsNewTierSet(rawScenario, offerId) {
   return validateScenario(clean);
 }
 
-function compareScenarios(before, after) {
-  const baseline = evaluateMarket(before);
-  const current = evaluateMarket(after);
-  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
-  const metrics = (market) => ({
+function copyOfferAsPickup(rawScenario, offerId) {
+  const clean = duplicateEntry(rawScenario, "offers", offerId);
+  const source = clean.offers.find((offer) => offer.id === offerId);
+  const copy = clean.offers.at(-1);
+  copy.merchant = `${source.merchant.slice(0, 51)} (pickup)`;
+  copy.fulfillment = "pickup";
+  copy.shippingPerBuyer = 0;
+  return validateScenario(clean);
+}
+
+function residualCoverageCounts(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  return {
+    leftoverBuyers: coverage.leftoverBuyerCount,
+    leftoverUnits: coverage.leftoverUnits,
+    unfilledBuyers: coverage.unfilledBuyerCount,
+    unfilledUnits: coverage.unfilledUnits
+  };
+}
+
+function marketComparisonMetrics(market) {
+  return {
     requested: market.totalRequestedUnits,
     fulfilled: market.winner?.fulfilledUnits ?? 0,
     buyers: market.winner?.deliveredBuyers ?? 0,
     cost: market.winner?.totalCost ?? null,
-    winner: market.winner?.offer.merchant ?? "No qualifying offer"
-  });
-  return { baseline: metrics(baseline), current: metrics(current), sameCurrency,
+    winner: market.winner?.offer.merchant ?? "No qualifying offer",
+    ...residualCoverageCounts(market.scenario)
+  };
+}
+
+function compareScenarios(before, after) {
+  const baseline = evaluateMarket(before);
+  const current = evaluateMarket(after);
+  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
+  return { baseline: marketComparisonMetrics(baseline), current: marketComparisonMetrics(current), sameCurrency,
     sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
 }
 
@@ -976,7 +1027,8 @@ function compareThreeRooms(first, second, third) {
       fulfilled: markets[index].winner?.fulfilledUnits ?? 0,
       buyers: markets[index].winner?.deliveredBuyers ?? 0,
       cost: markets[index].winner?.totalCost ?? null,
-      winner: markets[index].winner?.offer.merchant ?? "No qualifying offer"
+      winner: markets[index].winner?.offer.merchant ?? "No qualifying offer",
+      ...residualCoverageCounts(room)
     }))
   };
 }
@@ -1015,6 +1067,7 @@ function createMerchantResidualReport(rawScenario) {
     limitations: coverage.note,
     primary: publicOffer(coverage.primary),
     secondary: publicOffer(coverage.secondary),
+    tertiary: publicOffer(coverage.tertiary),
     leftoverBuyerCount: coverage.leftoverBuyerCount,
     leftoverUnits: coverage.leftoverUnits,
     unfilledBuyerCount: coverage.unfilledBuyerCount,
@@ -1216,6 +1269,9 @@ function createOrganizerBriefing(rawScenario) {
     residual.secondary
       ? `- Leftover fill: ${residual.secondary.merchant} / ${residual.secondary.variant}, ${residual.secondary.fulfilledUnits} units, ${residual.secondary.deliveredBuyers} buyers.`
       : `- Leftover fill: none.`,
+    residual.tertiary
+      ? `- Tertiary fill: ${residual.tertiary.merchant} / ${residual.tertiary.variant}, ${residual.tertiary.fulfilledUnits} units, ${residual.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
     `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
     `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
     ``,
@@ -1244,8 +1300,8 @@ function validateScenario(candidate) {
   if (!/^[A-Za-z]{3}$/.test(currency)) throw new ScenarioError("Currency must be a three-letter ASCII code, such as AUD.");
   const buyers = own(candidate, "buyers");
   const offers = own(candidate, "offers");
-  if (!Array.isArray(buyers) || buyers.length < 1 || buyers.length > MAX_BUYERS) {
-    throw new ScenarioError(`Buyers must contain 1 to ${MAX_BUYERS} entries.`);
+  if (!Array.isArray(buyers) || buyers.length > MAX_BUYERS) {
+    throw new ScenarioError(`Buyers must contain at most ${MAX_BUYERS} entries.`);
   }
   if (!Array.isArray(offers) || offers.length < 1 || offers.length > MAX_OFFERS) {
     throw new ScenarioError(`Offers must contain 1 to ${MAX_OFFERS} entries.`);
@@ -1547,19 +1603,35 @@ function coverageOfferSummary(result) {
   };
 }
 
+function residualMatch(title, currency, leftoverBuyers, leftoverOffers) {
+  if (leftoverBuyers.length === 0 || leftoverOffers.length === 0) {
+    return { summary: null, remaining: leftoverBuyers };
+  }
+  const residual = evaluateMarket({ title, currency, buyers: leftoverBuyers, offers: leftoverOffers });
+  if (!residual.winner) return { summary: null, remaining: leftoverBuyers };
+  const summary = coverageOfferSummary(residual.winner);
+  summary.selectedBuyerIds = residual.winner.selectedBuyerIds;
+  const taken = new Set(residual.winner.selectedBuyerIds);
+  return {
+    summary,
+    remaining: leftoverBuyers.filter((buyer) => !taken.has(buyer.id))
+  };
+}
+
 /**
  * After the winning offer is chosen, leftover whole-buyer demand may be filled
- * by the next-best other offer using the same exact allocator. A buyer's quantity
- * is never split across offers.
+ * by the next-best other offer, then a third distinct offer, using the same exact
+ * allocator. A buyer's quantity is never split across offers.
  */
 function computeResidualCoverage(rawScenario) {
   const market = evaluateMarket(rawScenario);
+  const base = { planningAid: true, note: RESIDUAL_PLANNING_NOTE };
   if (!market.winner) {
     return {
-      planningAid: true,
-      note: RESIDUAL_PLANNING_NOTE,
+      ...base,
       primary: null,
       secondary: null,
+      tertiary: null,
       leftoverBuyerCount: market.buyerCount,
       leftoverUnits: market.totalRequestedUnits,
       leftoverBuyerIds: market.scenario.buyers.map(({ id }) => id),
@@ -1571,38 +1643,21 @@ function computeResidualCoverage(rawScenario) {
   const leftoverBuyers = market.scenario.buyers.filter((buyer) => !taken.has(buyer.id));
   const leftoverUnits = leftoverBuyers.reduce((sum, buyer) => sum + buyer.quantity, 0);
   const leftoverBuyerIds = leftoverBuyers.map(({ id }) => id);
-  const otherOffers = market.scenario.offers.filter((offer) => offer.id !== market.winner.offer.id);
+  const leftoverOffers = market.scenario.offers.filter((offer) => offer.id !== market.winner.offer.id);
   const primary = coverageOfferSummary(market.winner);
-  if (leftoverBuyers.length === 0 || otherOffers.length === 0) {
-    return {
-      planningAid: true,
-      note: RESIDUAL_PLANNING_NOTE,
-      primary,
-      secondary: null,
-      leftoverBuyerCount: leftoverBuyers.length,
-      leftoverUnits,
-      leftoverBuyerIds,
-      unfilledBuyerCount: leftoverBuyers.length,
-      unfilledUnits: leftoverUnits
-    };
-  }
-  const residual = evaluateMarket({
-    title: market.scenario.title,
-    currency: market.scenario.currency,
-    buyers: leftoverBuyers,
-    offers: otherOffers
-  });
-  const secondary = residual.winner ? coverageOfferSummary(residual.winner) : null;
-  if (secondary) {
-    secondary.selectedBuyerIds = residual.winner.selectedBuyerIds;
-  }
-  const secondaryTaken = new Set(residual.winner?.selectedBuyerIds ?? []);
-  const unfilledBuyers = leftoverBuyers.filter((buyer) => !secondaryTaken.has(buyer.id));
+  const secondaryMatch = residualMatch(market.scenario.title, market.scenario.currency, leftoverBuyers, leftoverOffers);
+  const usedOfferIds = new Set([market.winner.offer.id]);
+  if (secondaryMatch.summary) usedOfferIds.add(secondaryMatch.summary.offerId);
+  const tertiaryOffers = market.scenario.offers.filter((offer) => !usedOfferIds.has(offer.id));
+  const tertiaryMatch = secondaryMatch.summary
+    ? residualMatch(market.scenario.title, market.scenario.currency, secondaryMatch.remaining, tertiaryOffers)
+    : { summary: null, remaining: leftoverBuyers };
+  const unfilledBuyers = tertiaryMatch.remaining;
   return {
-    planningAid: true,
-    note: RESIDUAL_PLANNING_NOTE,
+    ...base,
     primary,
-    secondary,
+    secondary: secondaryMatch.summary,
+    tertiary: tertiaryMatch.summary,
     leftoverBuyerCount: leftoverBuyers.length,
     leftoverUnits,
     leftoverBuyerIds,
@@ -1788,6 +1843,58 @@ function deliveryHeatmap(rawScenario) {
   };
 }
 
+function createDeliveryHeatmapCsv(rawScenario) {
+  const map = deliveryHeatmap(rawScenario);
+  const rows = [["Bucket", "Earliest day", "Latest day", "Buyers", "Units"]];
+  for (const bucket of map.buckets) {
+    rows.push([bucket.label, bucket.min, bucket.max, bucket.buyerCount, bucket.units]);
+  }
+  rows.push(["All buckets", "", "", map.buyerCount, map.units]);
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
+function buyerAcceptsVariant(buyer, variantKey) {
+  return buyer.allowedVariants.some((variant) => normalizeText(variant) === variantKey);
+}
+
+/**
+ * Merchant-facing counts of buyers whose accepted variants include each
+ * offered variant. Pairwise cells count buyers who accept both variants.
+ * Buyer labels, IDs, budgets, and allocations are omitted.
+ */
+function variantOverlapMatrix(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const offered = [];
+  const indexByKey = new Map();
+  for (const offer of scenario.offers) {
+    const key = normalizeText(offer.variant);
+    if (!indexByKey.has(key)) {
+      indexByKey.set(key, offered.length);
+      offered.push({ key, variant: offer.variant, offerCount: 0 });
+    }
+    offered[indexByKey.get(key)].offerCount += 1;
+  }
+  const variants = offered.map((entry) => {
+    const matching = scenario.buyers.filter((buyer) => buyerAcceptsVariant(buyer, entry.key));
+    return {
+      variant: entry.variant,
+      offerCount: entry.offerCount,
+      buyerCount: matching.length,
+      units: matching.reduce((sum, buyer) => sum + buyer.quantity, 0)
+    };
+  });
+  const cells = offered.map((row) => offered.map((column) => {
+    const matching = scenario.buyers.filter((buyer) => buyerAcceptsVariant(buyer, row.key) && buyerAcceptsVariant(buyer, column.key));
+    return {
+      rowVariant: row.variant,
+      columnVariant: column.variant,
+      buyerCount: matching.length,
+      units: matching.reduce((sum, buyer) => sum + buyer.quantity, 0)
+    };
+  }));
+  return { variants, cells };
+}
+
 function encodeScenario(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const bytes = new TextEncoder().encode(JSON.stringify(scenario));
@@ -1796,6 +1903,10 @@ function encodeScenario(rawScenario) {
   const encoded = btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
   if (encoded.length > MAX_SHARE_LENGTH) throw new ScenarioError("This scenario is too large for a share link. Export JSON instead.");
   return encoded;
+}
+
+function encodeRedactedScenario(rawScenario) {
+  return encodeScenario(redactBuyerLabels(rawScenario));
 }
 
 function decodeScenario(value) {
@@ -1987,6 +2098,12 @@ function bindStaticEvents() {
       setStatus("Residual coverage exported as aggregates. Buyer IDs and labels are omitted. This is not a dual checkout.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
   });
+  document.querySelector("#heatmap-csv").addEventListener("click", () => {
+    try {
+      downloadFile(createDeliveryHeatmapCsv(scenario), "common-cart-delivery-heatmap.csv", "text/csv;charset=utf-8");
+      setStatus("Delivery heatmap CSV exported. It contains aggregate deadline buckets only.", true);
+    } catch (error) { setStatus(`Heatmap export failed: ${messageOf(error)}`); }
+  });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
     catch (error) { setStatus(messageOf(error)); }
@@ -2061,7 +2178,7 @@ function bindStaticEvents() {
     scenario.buyers.push({
       id: next,
       label: `Buyer ${scenario.buyers.length + 1}`,
-      category: scenario.buyers[0]?.category ?? "Product",
+      category: scenario.buyers[0]?.category ?? scenario.offers[0]?.category ?? "Product",
       quantity: 1,
       maxUnitPrice: 100,
       latestDeliveryDays: 7,
@@ -2070,6 +2187,18 @@ function bindStaticEvents() {
     renderEditor();
     refresh();
     elements.buyerRows.lastElementChild?.querySelector("input")?.focus();
+  });
+
+  document.querySelector("#restore-neighbourhood").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    scenario = clonePreset("neighbourhood");
+    inspectedOfferId = scenario.offers[0]?.id ?? "";
+    document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry.dataset.preset === "neighbourhood"));
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    renderEditor();
+    refresh();
+    setStatus("Neighbourhood example restored. Undo returns to the empty buyer room.", true);
+    elements.buyerRows.querySelector("input")?.focus();
   });
 
   document.querySelector("#add-offer").addEventListener("click", () => {
@@ -2122,11 +2251,17 @@ function bindStaticEvents() {
     }
   });
   const shareButton = document.querySelector("#share-button");
+  const shareRedactedButton = document.querySelector("#share-redacted-button");
   if (window.location.protocol === "file:") {
     shareButton.textContent = "Share via export";
     shareButton.addEventListener("click", () => setStatus("Use Export JSON to share a standalone scenario."));
+    if (shareRedactedButton) {
+      shareRedactedButton.textContent = "Share redacted via export";
+      shareRedactedButton.addEventListener("click", () => setStatus("Use Export redacted JSON to share a standalone scenario with Buyer 1 through N labels."));
+    }
   } else {
-    shareButton.addEventListener("click", shareScenario);
+    shareButton.addEventListener("click", () => shareScenario(false));
+    shareRedactedButton?.addEventListener("click", () => shareScenario(true));
   }
   document.querySelector("#reset-button").addEventListener("click", () => {
     if (!allowReplaceDraft()) return;
@@ -2218,7 +2353,23 @@ function handleShortcut(event) {
   if (key === "n") {
     event.preventDefault();
     document.querySelector("#add-buyer").click();
+    return;
   }
+  if (key === "m") {
+    event.preventDefault();
+    focusMerchantInspector();
+  }
+}
+
+function focusMerchantInspector() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (merchantTab?.getAttribute("aria-selected") === "true") {
+    document.querySelector("#merchant-panel")?.focus();
+    return;
+  }
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#merchant-inspector-region")?.focus();
 }
 
 function maybeShowCoach() {
@@ -2258,7 +2409,12 @@ function renderEditor() {
   elements.title.value = scenario.title;
   elements.currency.value = scenario.currency;
   elements.buyerRows.replaceChildren(...scenario.buyers.map(renderBuyerRow));
+  if (scenario.buyers.length === 0) {
+    setEmptyState(elements.buyerRows, 8, "No buyers are in this room.");
+  }
   elements.offerRows.replaceChildren(...scenario.offers.map(renderOfferRow));
+  const recovery = document.querySelector("#empty-buyer-recovery");
+  if (recovery) recovery.hidden = scenario.buyers.length > 0;
   const addBuyer = document.querySelector("#add-buyer");
   const addOffer = document.querySelector("#add-offer");
   addBuyer.disabled = scenario.buyers.length >= 40;
@@ -2304,11 +2460,14 @@ function renderBuyerRow(entry) {
     });
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
-    if (scenario.buyers.length === 1) return setStatus("A room needs at least one buyer.");
     const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
     renderEditor();
     refresh();
+    if (scenario.buyers.length === 0) {
+      document.querySelector("#restore-neighbourhood")?.focus();
+      return;
+    }
     elements.buyerRows.children[Math.min(index, scenario.buyers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
@@ -2422,6 +2581,7 @@ function refresh() {
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
     renderDeliveryHeatmap(market.scenario);
+    renderVariantOverlap(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
     setStatus("");
@@ -2457,6 +2617,11 @@ function refresh() {
     const heatmapText = document.querySelector("#delivery-heatmap-text");
     if (heatmapText) heatmapText.textContent = "Delivery heatmap will appear once every field is valid.";
     document.querySelector("#delivery-heatmap")?.replaceChildren();
+    const overlapNote = document.querySelector("#variant-overlap-note");
+    if (overlapNote) overlapNote.textContent = "Variant overlap will appear once every field is valid.";
+    document.querySelector("#variant-overlap-head")?.replaceChildren();
+    const overlapRows = document.querySelector("#variant-overlap-rows");
+    if (overlapRows) setEmptyState(overlapRows, 2, "Variant overlap will appear once every field is valid.");
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -2473,7 +2638,11 @@ function renderComparison() {
     ["Winner", before.winner, after.winner],
     ["Requested units", before.requested, after.requested],
     ["Fulfilled units", before.fulfilled, after.fulfilled],
-    ["Included buyers", before.buyers, after.buyers]
+    ["Included buyers", before.buyers, after.buyers],
+    ["Leftover buyers after winner", before.leftoverBuyers, after.leftoverBuyers],
+    ["Leftover units after winner", before.leftoverUnits, after.leftoverUnits],
+    ["Unfilled buyers after residual", before.unfilledBuyers, after.unfilledBuyers],
+    ["Unfilled units after residual", before.unfilledUnits, after.unfilledUnits]
   ];
   if (comparison.sameCurrency) rows.push(["Landed total", before.cost === null ? "No allocation" : money(scenario.currency).format(before.cost), after.cost === null ? "No allocation" : money(scenario.currency).format(after.cost)]);
   const table = document.createElement("table");
@@ -2513,7 +2682,11 @@ function renderThreeRoomComparison(comparison) {
     ["Winner", ...comparison.rooms.map((room) => room.winner)],
     ["Requested units", ...comparison.rooms.map((room) => room.requested)],
     ["Fulfilled units", ...comparison.rooms.map((room) => room.fulfilled)],
-    ["Included buyers", ...comparison.rooms.map((room) => room.buyers)]
+    ["Included buyers", ...comparison.rooms.map((room) => room.buyers)],
+    ["Leftover buyers after winner", ...comparison.rooms.map((room) => room.leftoverBuyers)],
+    ["Leftover units after winner", ...comparison.rooms.map((room) => room.leftoverUnits)],
+    ["Unfilled buyers after residual", ...comparison.rooms.map((room) => room.unfilledBuyers)],
+    ["Unfilled units after residual", ...comparison.rooms.map((room) => room.unfilledUnits)]
   ];
   if (comparison.sameCurrency) {
     rows.push(["Landed total", ...comparison.rooms.map((room) => room.cost === null ? "No allocation" : money(room.currency).format(room.cost))]);
@@ -2529,7 +2702,7 @@ function renderThreeRoomComparison(comparison) {
 
 function addDuplicateAction(row, kind, entry) {
   row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? buyerDisplayLabel(entry) : entry.merchant} (${entry.id})`);
-  row.querySelector(".remove-row").disabled = scenario[kind].length === 1;
+  row.querySelector(".remove-row").disabled = kind === "offers" && scenario.offers.length === 1;
   row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
   const button = document.createElement("button");
   button.type = "button";
@@ -2563,6 +2736,22 @@ function addDuplicateAction(row, kind, entry) {
     } catch (error) { setStatus(messageOf(error)); }
   });
   row.lastElementChild.append(tierSet);
+  const pickup = document.createElement("button");
+  pickup.type = "button";
+  pickup.textContent = "As pickup";
+  pickup.setAttribute("aria-label", `Copy ${entry.merchant} as a pickup offer`);
+  pickup.disabled = scenario.offers.length >= 40;
+  pickup.addEventListener("click", () => {
+    try {
+      scenario = copyOfferAsPickup(scenario, entry.id);
+      inspectedOfferId = scenario.offers.at(-1).id;
+      renderEditor();
+      refresh();
+      elements.offerRows.lastElementChild.querySelector("input").focus();
+      setStatus("Copied this offer as a pickup clone. Shipping is 0. This is a planning draft, not a merchant quote.", true);
+    } catch (error) { setStatus(messageOf(error)); }
+  });
+  row.lastElementChild.append(pickup);
 }
 
 function updateHistoryButtons() {
@@ -2649,6 +2838,13 @@ function renderResidualCoverage(rawScenario) {
     appendDetail(list, "Leftover buyers that fit", coverage.secondary.deliveredBuyers);
   } else {
     appendDetail(list, "Next-best leftover offer", "No other qualifying offer on leftover whole orders");
+  }
+  if (coverage.tertiary) {
+    appendDetail(list, "Third leftover offer", `${coverage.tertiary.merchant} / ${coverage.tertiary.variant}`);
+    appendDetail(list, "Tertiary units that fit", coverage.tertiary.fulfilledUnits);
+    appendDetail(list, "Tertiary buyers that fit", coverage.tertiary.deliveredBuyers);
+  } else {
+    appendDetail(list, "Third leftover offer", "No third distinct offer on remaining whole orders");
   }
   appendDetail(list, "Still unfilled", `${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`);
   summary.replaceChildren(list);
@@ -2838,6 +3034,13 @@ function outcomePresentation(outcome) {
 
 function renderDemand(rawScenario) {
   const groups = aggregateDemand(rawScenario);
+  if (groups.length === 0) {
+    const demandNote = document.createElement("p");
+    demandNote.className = "canvas-note";
+    demandNote.textContent = "No buyers are in this room, so there is no aggregate demand.";
+    elements.demandGroups.replaceChildren(demandNote);
+    return;
+  }
   const formatter = money(rawScenario.currency);
   const cards = groups.map((group) => {
     const card = document.createElement("article");
@@ -2878,6 +3081,36 @@ function renderDeliveryHeatmap(rawScenario) {
     append("rect", { x, y: 64 - barHeight, width: 64, height: barHeight, fill: bucket.units ? "#f36f3d" : "#d8d0c3" });
     append("text", { x: x + 32, y: 80, fill: "#636174", "font-size": "9", "text-anchor": "middle" }).textContent = bucket.key;
   });
+}
+
+function renderVariantOverlap(rawScenario) {
+  const note = document.querySelector("#variant-overlap-note");
+  const head = document.querySelector("#variant-overlap-head");
+  const body = document.querySelector("#variant-overlap-rows");
+  if (!note || !head || !body) return;
+  const matrix = variantOverlapMatrix(rawScenario);
+  note.textContent = matrix.variants.map((entry) => `${entry.variant}: ${entry.buyerCount} buyers, ${entry.units} units (${entry.offerCount} offers)`).join(". ") + ".";
+  const headerRow = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.scope = "col";
+  corner.textContent = "Accepted variant";
+  headerRow.append(corner);
+  for (const entry of matrix.variants) {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = entry.variant;
+    headerRow.append(th);
+  }
+  head.replaceChildren(headerRow);
+  body.replaceChildren(...matrix.cells.map((row, index) => {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.scope = "row";
+    th.textContent = matrix.variants[index].variant;
+    tr.append(th);
+    for (const cell of row) addCell(tr, String(cell.buyerCount));
+    return tr;
+  }));
 }
 
 function addCell(row, text, className = "") {
@@ -3044,14 +3277,16 @@ function downloadFile(content, filename, type) {
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-async function shareScenario() {
+async function shareScenario(redacted = false) {
   try {
-    const encoded = encodeScenario(scenario);
+    const encoded = redacted ? encodeRedactedScenario(scenario) : encodeScenario(scenario);
     const url = new URL(window.location.href);
     url.hash = `scenario=${encoded}`;
     window.history.replaceState(null, "", url);
     await navigator.clipboard.writeText(url.href);
-    setStatus("Share link copied. It contains this scenario's data.", true);
+    setStatus(redacted
+      ? "Redacted share link copied. Buyer labels are Buyer 1 through N. IDs and constraints are unchanged."
+      : "Share link copied. It contains this scenario's data.", true);
   } catch (error) {
     setStatus(error?.name === "NotAllowedError" ? "The share link is in the address bar, but clipboard access was denied." : `Share failed: ${messageOf(error)}`);
   }

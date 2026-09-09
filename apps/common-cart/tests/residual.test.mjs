@@ -94,6 +94,77 @@ test("residual coverage without a winner leaves every buyer unfilled", () => {
   const coverage = computeResidualCoverage(scenario);
   assert.equal(coverage.primary, null);
   assert.equal(coverage.secondary, null);
+  assert.equal(coverage.tertiary, null);
   assert.equal(coverage.leftoverBuyerCount, 4);
   assert.equal(coverage.unfilledBuyerCount, 4);
+});
+
+function tertiaryFixture() {
+  const source = clonePreset("neighbourhood");
+  return validateScenario({
+    title: "Tertiary fill fixture",
+    currency: "AUD",
+    buyers: [
+      { ...source.buyers[0], id: "B01", label: "Coffee hall", category: "Coffee beans", quantity: 8, maxUnitPrice: 30, latestDeliveryDays: 7, allowedVariants: ["Medium roast"] },
+      { ...source.buyers[0], id: "B02", label: "Coffee annex", category: "Coffee beans", quantity: 4, maxUnitPrice: 30, latestDeliveryDays: 7, allowedVariants: ["Medium roast"] },
+      { ...source.buyers[0], id: "B03", label: "Tea room", category: "Tea tins", quantity: 5, maxUnitPrice: 18, latestDeliveryDays: 10, allowedVariants: ["Black tea"] },
+      { ...source.buyers[0], id: "B04", label: "Tea loft", category: "Tea tins", quantity: 4, maxUnitPrice: 18, latestDeliveryDays: 10, allowedVariants: ["Black tea"] },
+      { ...source.buyers[0], id: "B05", label: "Pantry desk", category: "Pantry box", quantity: 6, maxUnitPrice: 50, latestDeliveryDays: 5, allowedVariants: ["Standard"] },
+      { ...source.buyers[0], id: "B06", label: "Pantry hall", category: "Pantry box", quantity: 5, maxUnitPrice: 50, latestDeliveryDays: 5, allowedVariants: ["Standard"] }
+    ],
+    offers: [
+      { ...source.offers[0], id: "O01", merchant: "Harbour Roasters", category: "Coffee beans", variant: "Medium roast", unitPrice: 24, minimumUnits: 10, deliveryDays: 5, capacity: 20, shippingPerBuyer: 1 },
+      { ...source.offers[0], id: "O02", merchant: "Leaf Collective", category: "Tea tins", variant: "Black tea", unitPrice: 14, minimumUnits: 6, deliveryDays: 8, capacity: 20, shippingPerBuyer: 1 },
+      { ...source.offers[0], id: "O03", merchant: "Shared Shelf", category: "Pantry box", variant: "Standard", unitPrice: 42, minimumUnits: 8, deliveryDays: 4, capacity: 20, shippingPerBuyer: 1 }
+    ]
+  });
+}
+
+test("tertiary residual fill uses a third distinct offer on remaining whole buyers", () => {
+  const scenario = tertiaryFixture();
+  const market = evaluateMarket(scenario);
+  assert.equal(market.winner?.offer.id, "O01");
+  assert.deepEqual(market.winner.selectedBuyerIds, ["B01", "B02"]);
+
+  const coverage = computeResidualCoverage(scenario);
+  assert.equal(coverage.planningAid, true);
+  assert.match(coverage.note, /not a dual checkout/i);
+  assert.equal(coverage.primary.offerId, "O01");
+  assert.equal(coverage.secondary.offerId, "O03");
+  assert.equal(coverage.tertiary.offerId, "O02");
+  assert.notEqual(coverage.primary.offerId, coverage.secondary.offerId);
+  assert.notEqual(coverage.secondary.offerId, coverage.tertiary.offerId);
+  assert.notEqual(coverage.primary.offerId, coverage.tertiary.offerId);
+  assert.deepEqual(coverage.secondary.selectedBuyerIds, ["B05", "B06"]);
+  assert.deepEqual(coverage.tertiary.selectedBuyerIds, ["B03", "B04"]);
+  assert.equal(coverage.secondary.fulfilledUnits, 11);
+  assert.equal(coverage.tertiary.fulfilledUnits, 9);
+  assert.equal(coverage.leftoverBuyerCount, 4);
+  assert.equal(coverage.unfilledBuyerCount, 0);
+  assert.equal(coverage.unfilledUnits, 0);
+  assert.equal(
+    coverage.primary.fulfilledUnits + coverage.secondary.fulfilledUnits + coverage.tertiary.fulfilledUnits,
+    32
+  );
+});
+
+test("tertiary residual fill is omitted when leftover demand has no third offer", () => {
+  const scenario = leftoverFixture();
+  const coverage = computeResidualCoverage(scenario);
+  assert.equal(coverage.primary.offerId, "O01");
+  assert.equal(coverage.secondary.offerId, "O02");
+  assert.equal(coverage.tertiary, null);
+  assert.equal(coverage.unfilledBuyerCount, 0);
+});
+
+test("tertiary residual fill leaves remaining buyers when the third offer misses its minimum", () => {
+  const scenario = tertiaryFixture();
+  scenario.offers[1].minimumUnits = 40;
+  const coverage = computeResidualCoverage(scenario);
+  assert.equal(coverage.primary.offerId, "O01");
+  assert.equal(coverage.secondary.offerId, "O03");
+  assert.equal(coverage.tertiary, null);
+  assert.deepEqual(coverage.leftoverBuyerIds, ["B03", "B04", "B05", "B06"]);
+  assert.equal(coverage.unfilledBuyerCount, 2);
+  assert.equal(coverage.unfilledUnits, 9);
 });

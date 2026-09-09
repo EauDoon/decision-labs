@@ -191,18 +191,42 @@ export function copyOfferAsNewTierSet(rawScenario, offerId) {
   return validateScenario(clean);
 }
 
-export function compareScenarios(before, after) {
-  const baseline = evaluateMarket(before);
-  const current = evaluateMarket(after);
-  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
-  const metrics = (market) => ({
+export function copyOfferAsPickup(rawScenario, offerId) {
+  const clean = duplicateEntry(rawScenario, "offers", offerId);
+  const source = clean.offers.find((offer) => offer.id === offerId);
+  const copy = clean.offers.at(-1);
+  copy.merchant = `${source.merchant.slice(0, 51)} (pickup)`;
+  copy.fulfillment = "pickup";
+  copy.shippingPerBuyer = 0;
+  return validateScenario(clean);
+}
+
+function residualCoverageCounts(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  return {
+    leftoverBuyers: coverage.leftoverBuyerCount,
+    leftoverUnits: coverage.leftoverUnits,
+    unfilledBuyers: coverage.unfilledBuyerCount,
+    unfilledUnits: coverage.unfilledUnits
+  };
+}
+
+function marketComparisonMetrics(market) {
+  return {
     requested: market.totalRequestedUnits,
     fulfilled: market.winner?.fulfilledUnits ?? 0,
     buyers: market.winner?.deliveredBuyers ?? 0,
     cost: market.winner?.totalCost ?? null,
-    winner: market.winner?.offer.merchant ?? "No qualifying offer"
-  });
-  return { baseline: metrics(baseline), current: metrics(current), sameCurrency,
+    winner: market.winner?.offer.merchant ?? "No qualifying offer",
+    ...residualCoverageCounts(market.scenario)
+  };
+}
+
+export function compareScenarios(before, after) {
+  const baseline = evaluateMarket(before);
+  const current = evaluateMarket(after);
+  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
+  return { baseline: marketComparisonMetrics(baseline), current: marketComparisonMetrics(current), sameCurrency,
     sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
 }
 
@@ -225,7 +249,8 @@ export function compareThreeRooms(first, second, third) {
       fulfilled: markets[index].winner?.fulfilledUnits ?? 0,
       buyers: markets[index].winner?.deliveredBuyers ?? 0,
       cost: markets[index].winner?.totalCost ?? null,
-      winner: markets[index].winner?.offer.merchant ?? "No qualifying offer"
+      winner: markets[index].winner?.offer.merchant ?? "No qualifying offer",
+      ...residualCoverageCounts(room)
     }))
   };
 }
@@ -264,6 +289,7 @@ export function createMerchantResidualReport(rawScenario) {
     limitations: coverage.note,
     primary: publicOffer(coverage.primary),
     secondary: publicOffer(coverage.secondary),
+    tertiary: publicOffer(coverage.tertiary),
     leftoverBuyerCount: coverage.leftoverBuyerCount,
     leftoverUnits: coverage.leftoverUnits,
     unfilledBuyerCount: coverage.unfilledBuyerCount,
@@ -465,6 +491,9 @@ export function createOrganizerBriefing(rawScenario) {
     residual.secondary
       ? `- Leftover fill: ${residual.secondary.merchant} / ${residual.secondary.variant}, ${residual.secondary.fulfilledUnits} units, ${residual.secondary.deliveredBuyers} buyers.`
       : `- Leftover fill: none.`,
+    residual.tertiary
+      ? `- Tertiary fill: ${residual.tertiary.merchant} / ${residual.tertiary.variant}, ${residual.tertiary.fulfilledUnits} units, ${residual.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
     `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
     `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
     ``,
@@ -493,8 +522,8 @@ export function validateScenario(candidate) {
   if (!/^[A-Za-z]{3}$/.test(currency)) throw new ScenarioError("Currency must be a three-letter ASCII code, such as AUD.");
   const buyers = own(candidate, "buyers");
   const offers = own(candidate, "offers");
-  if (!Array.isArray(buyers) || buyers.length < 1 || buyers.length > MAX_BUYERS) {
-    throw new ScenarioError(`Buyers must contain 1 to ${MAX_BUYERS} entries.`);
+  if (!Array.isArray(buyers) || buyers.length > MAX_BUYERS) {
+    throw new ScenarioError(`Buyers must contain at most ${MAX_BUYERS} entries.`);
   }
   if (!Array.isArray(offers) || offers.length < 1 || offers.length > MAX_OFFERS) {
     throw new ScenarioError(`Offers must contain 1 to ${MAX_OFFERS} entries.`);
@@ -796,19 +825,35 @@ function coverageOfferSummary(result) {
   };
 }
 
+function residualMatch(title, currency, leftoverBuyers, leftoverOffers) {
+  if (leftoverBuyers.length === 0 || leftoverOffers.length === 0) {
+    return { summary: null, remaining: leftoverBuyers };
+  }
+  const residual = evaluateMarket({ title, currency, buyers: leftoverBuyers, offers: leftoverOffers });
+  if (!residual.winner) return { summary: null, remaining: leftoverBuyers };
+  const summary = coverageOfferSummary(residual.winner);
+  summary.selectedBuyerIds = residual.winner.selectedBuyerIds;
+  const taken = new Set(residual.winner.selectedBuyerIds);
+  return {
+    summary,
+    remaining: leftoverBuyers.filter((buyer) => !taken.has(buyer.id))
+  };
+}
+
 /**
  * After the winning offer is chosen, leftover whole-buyer demand may be filled
- * by the next-best other offer using the same exact allocator. A buyer's quantity
- * is never split across offers.
+ * by the next-best other offer, then a third distinct offer, using the same exact
+ * allocator. A buyer's quantity is never split across offers.
  */
 export function computeResidualCoverage(rawScenario) {
   const market = evaluateMarket(rawScenario);
+  const base = { planningAid: true, note: RESIDUAL_PLANNING_NOTE };
   if (!market.winner) {
     return {
-      planningAid: true,
-      note: RESIDUAL_PLANNING_NOTE,
+      ...base,
       primary: null,
       secondary: null,
+      tertiary: null,
       leftoverBuyerCount: market.buyerCount,
       leftoverUnits: market.totalRequestedUnits,
       leftoverBuyerIds: market.scenario.buyers.map(({ id }) => id),
@@ -820,38 +865,21 @@ export function computeResidualCoverage(rawScenario) {
   const leftoverBuyers = market.scenario.buyers.filter((buyer) => !taken.has(buyer.id));
   const leftoverUnits = leftoverBuyers.reduce((sum, buyer) => sum + buyer.quantity, 0);
   const leftoverBuyerIds = leftoverBuyers.map(({ id }) => id);
-  const otherOffers = market.scenario.offers.filter((offer) => offer.id !== market.winner.offer.id);
+  const leftoverOffers = market.scenario.offers.filter((offer) => offer.id !== market.winner.offer.id);
   const primary = coverageOfferSummary(market.winner);
-  if (leftoverBuyers.length === 0 || otherOffers.length === 0) {
-    return {
-      planningAid: true,
-      note: RESIDUAL_PLANNING_NOTE,
-      primary,
-      secondary: null,
-      leftoverBuyerCount: leftoverBuyers.length,
-      leftoverUnits,
-      leftoverBuyerIds,
-      unfilledBuyerCount: leftoverBuyers.length,
-      unfilledUnits: leftoverUnits
-    };
-  }
-  const residual = evaluateMarket({
-    title: market.scenario.title,
-    currency: market.scenario.currency,
-    buyers: leftoverBuyers,
-    offers: otherOffers
-  });
-  const secondary = residual.winner ? coverageOfferSummary(residual.winner) : null;
-  if (secondary) {
-    secondary.selectedBuyerIds = residual.winner.selectedBuyerIds;
-  }
-  const secondaryTaken = new Set(residual.winner?.selectedBuyerIds ?? []);
-  const unfilledBuyers = leftoverBuyers.filter((buyer) => !secondaryTaken.has(buyer.id));
+  const secondaryMatch = residualMatch(market.scenario.title, market.scenario.currency, leftoverBuyers, leftoverOffers);
+  const usedOfferIds = new Set([market.winner.offer.id]);
+  if (secondaryMatch.summary) usedOfferIds.add(secondaryMatch.summary.offerId);
+  const tertiaryOffers = market.scenario.offers.filter((offer) => !usedOfferIds.has(offer.id));
+  const tertiaryMatch = secondaryMatch.summary
+    ? residualMatch(market.scenario.title, market.scenario.currency, secondaryMatch.remaining, tertiaryOffers)
+    : { summary: null, remaining: leftoverBuyers };
+  const unfilledBuyers = tertiaryMatch.remaining;
   return {
-    planningAid: true,
-    note: RESIDUAL_PLANNING_NOTE,
+    ...base,
     primary,
-    secondary,
+    secondary: secondaryMatch.summary,
+    tertiary: tertiaryMatch.summary,
     leftoverBuyerCount: leftoverBuyers.length,
     leftoverUnits,
     leftoverBuyerIds,
@@ -1037,6 +1065,58 @@ export function deliveryHeatmap(rawScenario) {
   };
 }
 
+export function createDeliveryHeatmapCsv(rawScenario) {
+  const map = deliveryHeatmap(rawScenario);
+  const rows = [["Bucket", "Earliest day", "Latest day", "Buyers", "Units"]];
+  for (const bucket of map.buckets) {
+    rows.push([bucket.label, bucket.min, bucket.max, bucket.buyerCount, bucket.units]);
+  }
+  rows.push(["All buckets", "", "", map.buyerCount, map.units]);
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
+function buyerAcceptsVariant(buyer, variantKey) {
+  return buyer.allowedVariants.some((variant) => normalizeText(variant) === variantKey);
+}
+
+/**
+ * Merchant-facing counts of buyers whose accepted variants include each
+ * offered variant. Pairwise cells count buyers who accept both variants.
+ * Buyer labels, IDs, budgets, and allocations are omitted.
+ */
+export function variantOverlapMatrix(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const offered = [];
+  const indexByKey = new Map();
+  for (const offer of scenario.offers) {
+    const key = normalizeText(offer.variant);
+    if (!indexByKey.has(key)) {
+      indexByKey.set(key, offered.length);
+      offered.push({ key, variant: offer.variant, offerCount: 0 });
+    }
+    offered[indexByKey.get(key)].offerCount += 1;
+  }
+  const variants = offered.map((entry) => {
+    const matching = scenario.buyers.filter((buyer) => buyerAcceptsVariant(buyer, entry.key));
+    return {
+      variant: entry.variant,
+      offerCount: entry.offerCount,
+      buyerCount: matching.length,
+      units: matching.reduce((sum, buyer) => sum + buyer.quantity, 0)
+    };
+  });
+  const cells = offered.map((row) => offered.map((column) => {
+    const matching = scenario.buyers.filter((buyer) => buyerAcceptsVariant(buyer, row.key) && buyerAcceptsVariant(buyer, column.key));
+    return {
+      rowVariant: row.variant,
+      columnVariant: column.variant,
+      buyerCount: matching.length,
+      units: matching.reduce((sum, buyer) => sum + buyer.quantity, 0)
+    };
+  }));
+  return { variants, cells };
+}
+
 export function encodeScenario(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const bytes = new TextEncoder().encode(JSON.stringify(scenario));
@@ -1045,6 +1125,10 @@ export function encodeScenario(rawScenario) {
   const encoded = btoa(binary).replaceAll("+", "-").replaceAll("/", "_").replaceAll("=", "");
   if (encoded.length > MAX_SHARE_LENGTH) throw new ScenarioError("This scenario is too large for a share link. Export JSON instead.");
   return encoded;
+}
+
+export function encodeRedactedScenario(rawScenario) {
+  return encodeScenario(redactBuyerLabels(rawScenario));
 }
 
 export function decodeScenario(value) {

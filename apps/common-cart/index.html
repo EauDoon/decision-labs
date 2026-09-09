@@ -65,6 +65,7 @@ SOFTWARE.
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON</li>
         <li><kbd>n</kbd> Add a buyer</li>
+        <li><kbd>m</kbd> Focus the merchant inspector region</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -89,6 +90,7 @@ SOFTWARE.
       <button class="quiet" id="screenshot-mode" type="button" aria-pressed="false">Screenshot mode</button>
       <button class="quiet" id="export-redacted" type="button">Export redacted JSON</button>
       <button class="quiet" id="share-button" type="button">Copy share link</button>
+      <button class="quiet" id="share-redacted-button" type="button">Copy redacted share link</button>
     </nav>
   </header>
 
@@ -204,6 +206,10 @@ SOFTWARE.
             <tbody id="buyer-rows"></tbody>
           </table>
         </div>
+        <div id="empty-buyer-recovery" class="empty-recovery" hidden>
+          <p>This room has no buyers. There is no demand to match, so every offer stays locked. Add a buyer, import a CSV, or restore the neighbourhood example. Restore is undoable.</p>
+          <button id="restore-neighbourhood" type="button">Restore neighbourhood example</button>
+        </div>
         <p id="variants-help" class="canvas-note">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
 
         <div class="result-grid">
@@ -237,7 +243,7 @@ SOFTWARE.
           </article>
         </div>
 
-        <article class="panel inspector-panel" aria-labelledby="inspector-title">
+        <article class="panel inspector-panel" id="merchant-inspector-region" tabindex="-1" aria-labelledby="inspector-title">
           <div class="panel-heading inspector-heading">
             <div>
               <p class="section-number">Offer inspector</p>
@@ -295,7 +301,7 @@ SOFTWARE.
         </article>
       </div>
 
-      <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" hidden>
+      <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" tabindex="-1" hidden>
         <div class="snapshot-bar">
           <button id="merchant-report" type="button">Export aggregate merchant report</button>
           <button id="merchant-residual-report" type="button">Export residual coverage (aggregate)</button>
@@ -341,6 +347,16 @@ SOFTWARE.
             <h4>Delivery deadline heatmap</h4>
             <p id="delivery-heatmap-text" class="canvas-note"></p>
             <svg id="delivery-heatmap" class="capacity-bar" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
+            <button id="heatmap-csv" type="button">Export heatmap CSV</button>
+            <h4>Offered variant overlap</h4>
+            <p id="variant-overlap-note" class="canvas-note"></p>
+            <div class="table-shell compact">
+              <table>
+                <caption>Buyer counts whose accepted variants include each offered variant. Cells are pairwise overlaps. Labels, IDs, budgets, and allocations are omitted.</caption>
+                <thead id="variant-overlap-head"></thead>
+                <tbody id="variant-overlap-rows"></tbody>
+              </table>
+            </div>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>

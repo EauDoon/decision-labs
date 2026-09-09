@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, evaluateMarket, redactBuyerLabels, validateScenario } from "../src/model.js";
+import { clonePreset, evaluateMarket, redactBuyerLabels, validateScenario, encodeScenario, encodeRedactedScenario, decodeScenario } from "../src/model.js";
 
 test("redactBuyerLabels replaces private labels without changing ids or the source room", () => {
   const source = clonePreset("neighbourhood");
@@ -27,4 +27,22 @@ test("redacted export keeps offer text and omits original buyer labels", () => {
   assert.equal(redacted.offers[0].merchant, source.offers[0].merchant);
   redacted.buyers[0].label = "Mutated";
   assert.equal(redactBuyerLabels(source).buyers[0].label, "Buyer 1");
+});
+
+test("redacted share encoding uses Buyer 1 through N and leaves the default share payload unchanged", () => {
+  const source = clonePreset("neighbourhood");
+  source.buyers[0].label = "SECRET_HALL";
+  const defaultShare = encodeScenario(source);
+  const redactedShare = encodeRedactedScenario(source);
+  assert.notEqual(defaultShare, redactedShare);
+  const restored = decodeScenario(defaultShare);
+  const redacted = decodeScenario(redactedShare);
+  assert.equal(restored.buyers[0].label, "SECRET_HALL");
+  assert.equal(redacted.buyers[0].label, "Buyer 1");
+  assert.equal(redacted.buyers[1].label, "Buyer 2");
+  assert.equal(redacted.buyers.at(-1).label, `Buyer ${redacted.buyers.length}`);
+  assert.equal(redacted.buyers[0].id, source.buyers[0].id);
+  assert.equal(JSON.stringify(redacted).includes("SECRET_HALL"), false);
+  assert.equal(source.buyers[0].label, "SECRET_HALL");
+  assert.deepEqual(evaluateMarket(redacted).winner?.selectedBuyerIds, evaluateMarket(source).winner?.selectedBuyerIds);
 });

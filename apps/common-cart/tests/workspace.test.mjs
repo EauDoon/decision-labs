@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios, compareThreeRooms, copyOfferAsNewTierSet, evaluateOffer } from "../src/model.js";
+import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios, compareThreeRooms, copyOfferAsNewTierSet, copyOfferAsPickup, evaluateOffer } from "../src/model.js";
 
 test("history detaches states, caps memory, and truncates branches", () => {
   const s = clonePreset(); const h = createScenarioHistory(s);
@@ -57,6 +57,25 @@ test("copy offer as a new tier set adds an independent cheaper band", () => {
   assert.equal(original.offer.id, s.offers[0].id);
 });
 
+test("copy offer as a pickup clone zeros shipping and leaves the source offer unchanged", () => {
+  const s = clonePreset("neighbourhood");
+  const shipped = evaluateOffer(s, s.offers[0].id);
+  assert.ok(shipped.allocations.some((entry) => entry.shippingCost > 0));
+  const next = copyOfferAsPickup(s, s.offers[0].id);
+  assert.equal(next.offers.length, s.offers.length + 1);
+  const copy = next.offers.at(-1);
+  assert.match(copy.merchant, /pickup/);
+  assert.equal(copy.fulfillment, "pickup");
+  assert.equal(copy.shippingPerBuyer, 0);
+  assert.equal(s.offers[0].fulfillment, undefined);
+  assert.equal(s.offers[0].shippingPerBuyer, 2);
+  const pickup = evaluateOffer(next, copy.id);
+  assert.equal(pickup.allocations.every((entry) => entry.shippingCost === 0), true);
+  assert.equal(pickup.totalCost, pickup.fulfilledUnits * pickup.effectiveUnitPrice);
+  copy.merchant = "Mutated pickup";
+  assert.equal(s.offers[0].merchant, "Harbour Roasters");
+});
+
 test("workspace validates every room and rejects unsupported schema or oversized collections", () => {
   const s = clonePreset();
   const workspace = validateWorkspace({ version: 1, rooms: [s] });
@@ -65,6 +84,20 @@ test("workspace validates every room and rejects unsupported schema or oversized
   for (const invalid of [{ version: 2, rooms: [] }, { version: 1, rooms: [{}] }, { version: 1, rooms: Array(13).fill(s) }, { version: 1, rooms: [], extra: true }]) {
     assert.throws(() => validateWorkspace(invalid));
   }
+});
+
+test("scenario comparison includes residual leftover and unfilled counts", () => {
+  const before = clonePreset("neighbourhood");
+  const after = clonePreset("neighbourhood");
+  after.buyers[3].quantity += 1;
+  const comparison = compareScenarios(before, after);
+  assert.equal(typeof comparison.baseline.leftoverBuyers, "number");
+  assert.equal(typeof comparison.baseline.leftoverUnits, "number");
+  assert.equal(typeof comparison.baseline.unfilledBuyers, "number");
+  assert.equal(typeof comparison.baseline.unfilledUnits, "number");
+  assert.equal(typeof comparison.current.leftoverBuyers, "number");
+  assert.equal(typeof comparison.current.unfilledUnits, "number");
+  assert.equal(comparison.sameDemand, false);
 });
 
 test("three-room comparison reports winners without mixing currencies", () => {
@@ -77,5 +110,7 @@ test("three-room comparison reports winners without mixing currencies", () => {
   assert.equal(comparison.sameCurrency, false);
   assert.equal(comparison.rooms[0].winner, compareScenarios(a, a).baseline.winner);
   assert.ok(comparison.rooms.every((room) => typeof room.fulfilled === "number"));
+  assert.ok(comparison.rooms.every((room) => typeof room.leftoverBuyers === "number"));
+  assert.ok(comparison.rooms.every((room) => typeof room.unfilledUnits === "number"));
   assert.throws(() => compareThreeRooms(a, b, {}), /Room 3 is invalid/);
 });
