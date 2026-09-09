@@ -73,9 +73,10 @@ Decision Labs page that points back to the catalog rather than a blank
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
 an input. Press `h` to focus the catalog heading. Press `t` to focus Trust and
 limits. Press `?` on the catalog for the in-page shortcut list. The branded 404
-page still returns HTTP 404 and links
+page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
-Smallest Agreement, and Weekend Gap.
+Smallest Agreement, and Weekend Gap. When the catalog is served over http,
+a control copies the loopback address; it stays hidden on a file URL.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
