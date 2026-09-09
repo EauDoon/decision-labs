@@ -3482,6 +3482,13 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'c' || event.key === 'C') {
+    const target = document.querySelector('#imported-compare-title')
+      ?? document.querySelector('#comparison-title')
+      ?? document.querySelector('#three-compare-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -4054,6 +4061,7 @@ function helpDialog() {
         <li><kbd>g</kbd> Jump to the results nav or the first results heading</li>
         <li><kbd>n</kbd> Focus Add participant, or add one if that control is missing</li>
         <li><kbd>s</kbd> Jump to share-to-hold (preview if open, otherwise the first solver)</li>
+        <li><kbd>c</kbd> Jump to snapshot or imported JSON compare heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

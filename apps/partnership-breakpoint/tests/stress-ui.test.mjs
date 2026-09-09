@@ -52,6 +52,7 @@ async function workbench(protocol = 'file:', options = {}) {
       const focusIds = new Set([
         'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
+        'comparison-title', 'three-compare-title',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1042,6 +1043,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>g<\/kbd> Jump to the results nav/);
   assert.match(app.markup(), /<kbd>n<\/kbd> Focus Add participant/);
   assert.match(app.markup(), /<kbd>s<\/kbd> Jump to share-to-hold/);
+  assert.match(app.markup(), /<kbd>c<\/kbd> Jump to snapshot or imported JSON compare/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1105,6 +1107,31 @@ test('keyboard s jumps to share-to-hold and ignores focused inputs', async () =>
   app.click('solve-share-hold', { participantId: 'liquidity-partner' });
   app.keydown('s');
   assert.ok(app.focused().includes('#share-hold-title'));
+});
+
+test('keyboard c jumps to snapshot or imported compare unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const idle = app.focused().length;
+  app.keydown('c');
+  assert.equal(app.focused().length, idle);
+  app.nameCase('Baseline');
+  app.click('save-case');
+  app.click('compare-case', { caseId: 'case-1' });
+  app.keydown('c');
+  assert.ok(app.focused().includes('#comparison-title'));
+  assert.ok(app.focused().includes('scroll:#comparison-title'));
+  const afterSnapshot = app.focused().length;
+  app.keydown('c', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, afterSnapshot);
+  app.keydown('c', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, afterSnapshot);
+  const other = clonePreset('balanced');
+  other.participants[0].fixedMonthlyCost = 1900;
+  app.compareImport(other, undefined, false, { name: 'alt.json' });
+  app.keydown('c');
+  assert.ok(app.focused().includes('#imported-compare-title'));
+  assert.ok(app.focused().includes('scroll:#imported-compare-title'));
 });
 
 test('redacted export replaces names, clears the title, and keeps identifiers', async () => {
