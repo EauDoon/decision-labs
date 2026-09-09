@@ -19,6 +19,7 @@ const appImport = `import {
   materializeStressCase,
   moveParticipant,
   redactConfiguration,
+  solveFeeForAllHold,
   solveMinimumShareToHold,
   validateConfiguration,
 } from './model.js';

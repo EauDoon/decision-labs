@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { calculateFeeRequirements, calculatePartnership, clonePreset } from '../src/model.js';
+import { calculateFeeRequirements, calculatePartnership, clonePreset, solveFeeForAllHold } from '../src/model.js';
 
 test('fee floor matches independent participant arithmetic and satisfies profit with positive headroom', () => {
  const config = clonePreset('balanced');
@@ -27,4 +27,22 @@ test('subnormal volume does not underflow a positive variable-cost fee floor to 
  const guide = calculateFeeRequirements(config);
  assert.ok(guide.requiredFee > 0);
  assert.equal(guide.participants[0].requiredFee, config.participants[0].variableCostPerTransaction / config.participants[0].revenueShare);
+});
+
+test('fee-to-hold solver matches the diagnostic floor and reports operational impossibility', () => {
+  const config = clonePreset('balanced');
+  const solved = solveFeeForAllHold(config);
+  assert.equal(solved.status, 'possible');
+  assert.equal(solved.fee, calculateFeeRequirements(config).requiredFee);
+  const applied = { ...config, deal: { ...config.deal, feePerTransaction: solved.fee } };
+  assert.equal(calculatePartnership(applied).viable, true);
+  const slightlyBelow = { ...config, deal: { ...config.deal, feePerTransaction: solved.fee * 0.99 } };
+  assert.equal(calculatePartnership(slightlyBelow).viable, false);
+
+  const blocked = clonePreset('balanced');
+  blocked.participants[0].capacity = 1;
+  const impossible = solveFeeForAllHold(blocked);
+  assert.equal(impossible.status, 'impossible');
+  assert.equal(impossible.fee, null);
+  assert.match(impossible.reason, /Capacity or commitment/);
 });

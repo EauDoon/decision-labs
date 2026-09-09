@@ -936,3 +936,32 @@ export function redactConfiguration(config) {
   });
   return copy;
 }
+
+/**
+ * Minimum fee per transaction at which every participant holds, with volume
+ * and shares held fixed. Capacity and commitment failures cannot be repaired.
+ * @param {PartnershipConfig} config
+ */
+export function solveFeeForAllHold(config) {
+  assertValidConfiguration(config);
+  const guide = calculateFeeRequirements(config);
+  if (!guide.operationallyFeasible) {
+    return {
+      status: 'impossible',
+      fee: null,
+      reason: 'Capacity or commitment failures cannot be repaired by changing the fee.',
+    };
+  }
+  if (guide.requiredFee === null) {
+    return {
+      status: 'impossible',
+      fee: null,
+      reason: 'No finite fee can fund every participant profit floor at the current volume and shares.',
+    };
+  }
+  return {
+    status: 'possible',
+    fee: guide.requiredFee,
+    reason: 'Minimum fee per transaction at which every participant holds, with volume and shares held fixed. Demand response is not included.',
+  };
+}

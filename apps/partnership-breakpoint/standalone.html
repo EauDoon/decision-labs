@@ -1220,6 +1220,35 @@ function redactConfiguration(config) {
   return copy;
 }
 
+/**
+ * Minimum fee per transaction at which every participant holds, with volume
+ * and shares held fixed. Capacity and commitment failures cannot be repaired.
+ * @param {PartnershipConfig} config
+ */
+function solveFeeForAllHold(config) {
+  assertValidConfiguration(config);
+  const guide = calculateFeeRequirements(config);
+  if (!guide.operationallyFeasible) {
+    return {
+      status: 'impossible',
+      fee: null,
+      reason: 'Capacity or commitment failures cannot be repaired by changing the fee.',
+    };
+  }
+  if (guide.requiredFee === null) {
+    return {
+      status: 'impossible',
+      fee: null,
+      reason: 'No finite fee can fund every participant profit floor at the current volume and shares.',
+    };
+  }
+  return {
+    status: 'possible',
+    fee: guide.requiredFee,
+    reason: 'Minimum fee per transaction at which every participant holds, with volume and shares held fixed. Demand response is not included.',
+  };
+}
+
 const STORAGE_KEY = 'partnership-breakpoint.v1';
 const LIBRARY_KEY = 'partnership-breakpoint.cases.v1';
 const COACH_KEY = 'partnership-breakpoint.coach.v1';
@@ -1240,6 +1269,7 @@ let removedCase = null;
 let comparisonId = '';
 let stressPreviewId = '';
 let shareHoldPreview = null;
+let feeHoldPreview = null;
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
 let helpOpen = false;
@@ -1249,6 +1279,7 @@ const redoHistory = [];
 function checkpoint() {
   stressPreviewId = '';
   shareHoldPreview = null;
+  feeHoldPreview = null;
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -1263,6 +1294,7 @@ function travelHistory(direction) {
   state = source.pop();
   stressPreviewId = '';
   shareHoldPreview = null;
+  feeHoldPreview = null;
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -1639,6 +1671,7 @@ function resultsPanel(result) {
     </section>
     <section class="print-only"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
     ${feeRequirementsSection()}
+    ${feeHoldPreviewSection()}
     ${shareHoldPreviewSection()}
     ${comparisonSection(result)}
     ${breakpointSection(result)}
@@ -1952,6 +1985,9 @@ function attachEvents() {
     if (action === 'solve-share-hold') { previewShareHold(button.dataset.participantId); return; }
     if (action === 'apply-share-hold') { applyShareHold(); return; }
     if (action === 'close-share-hold') { shareHoldPreview = null; render(); return; }
+    if (action === 'solve-fee-hold') { previewFeeHold(); return; }
+    if (action === 'apply-fee-hold') { applyFeeHold(); return; }
+    if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
     if (action === 'apply-stress-case') { applyInspectedStressCase(); return; }
     if (action === 'compare-case') { comparisonId = button.dataset.caseId; render(); document.querySelector('#comparison-title')?.focus(); return; }
     if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
@@ -2332,7 +2368,7 @@ function exportStressCsv() {
 
 function feeRequirementsSection() {
   const guidance = calculateFeeRequirements(state);
-  return `<section class="panel" aria-labelledby="fee-guidance-title"><div class="panel-heading"><h2 id="fee-guidance-title">Fee negotiation guide</h2><span class="optional">fixed volume and shares</span></div><div class="panel-body"><p>At ${formatVolume(guidance.volume)}, the mathematical fee floor for all participant profit requirements is <strong>${guidance.requiredFee === null ? 'unavailable within the input limits' : formatNumber(guidance.requiredFee, 6) + ' units / transaction'}</strong>.</p><p>${guidance.operationallyFeasible ? 'Current capacity and commitment tests hold.' : 'Fee changes cannot repair the capacity or commitment failures below.'} A rounded floor is a guide; recheck the full model after changing a fee. Demand response and compound stress are not included in this floor.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Participant fee requirements"><table><caption>Fee needed to meet each minimum monthly profit</caption><thead><tr><th scope="col">Participant</th><th scope="col">Fee floor</th><th scope="col">Operational restrictions</th></tr></thead><tbody>${guidance.participants.map((item) => `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${item.requiredFee === null ? 'No bounded fee can fund this share' : formatNumber(item.requiredFee, 6)}</td><td>${item.operationalFailures.length ? escapeAttribute(item.operationalFailures.join(', ')) : 'None at current volume'}</td></tr>`).join('')}</tbody></table></div></section>`;
+  return `<section class="panel" aria-labelledby="fee-guidance-title"><div class="panel-heading"><h2 id="fee-guidance-title">Fee negotiation guide</h2><span class="optional">fixed volume and shares</span></div><div class="panel-body"><p>At ${formatVolume(guidance.volume)}, the mathematical fee floor for all participant profit requirements is <strong>${guidance.requiredFee === null ? 'unavailable within the input limits' : formatNumber(guidance.requiredFee, 6) + ' units / transaction'}</strong>.</p><p>${guidance.operationallyFeasible ? 'Current capacity and commitment tests hold.' : 'Fee changes cannot repair the capacity or commitment failures below.'} A rounded floor is a guide; recheck the full model after changing a fee. Demand response and compound stress are not included in this floor.</p><div class="button-row"><button type="button" data-action="solve-fee-hold">Solve fee for all to hold</button></div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Participant fee requirements"><table><caption>Fee needed to meet each minimum monthly profit</caption><thead><tr><th scope="col">Participant</th><th scope="col">Fee floor</th><th scope="col">Operational restrictions</th></tr></thead><tbody>${guidance.participants.map((item) => `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${item.requiredFee === null ? 'No bounded fee can fund this share' : formatNumber(item.requiredFee, 6)}</td><td>${item.operationalFailures.length ? escapeAttribute(item.operationalFailures.join(', ')) : 'None at current volume'}</td></tr>`).join('')}</tbody></table></div></section>`;
 }
 
 function shareBalanceText() {
@@ -2416,6 +2452,43 @@ function shareHoldPreviewSection() {
     return `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${current ? formatPct(current.revenueShare * 100) : 'n/a'}</td><td>${formatPct(item.revenueShare * 100)}</td></tr>`;
   }).join('');
   return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p><strong>${name}</strong> holds at a minimum revenue share of <strong>${formatPct(solved.share * 100)}</strong>. Remaining participants keep their relative shares of the leftover. Apply is required; the current case is unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Proposed hold shares"><table><caption>Current shares versus proposed hold split</caption><thead><tr><th scope="col">Participant</th><th scope="col">Current share</th><th scope="col">Proposed share</th></tr></thead><tbody>${rows}</tbody></table></div><div class="panel-body"><div class="button-row"><button type="button" class="primary" data-action="apply-share-hold">Apply minimum hold share</button><button type="button" data-action="close-share-hold">Keep current shares</button></div></div></section>`;
+}
+
+function previewFeeHold() {
+  if (!validateConfiguration(state).valid) {
+    setNotice('Resolve invalid inputs before solving a hold fee.');
+    return;
+  }
+  try {
+    feeHoldPreview = solveFeeForAllHold(state);
+    render();
+    document.querySelector('#fee-hold-title')?.focus();
+  } catch (error) {
+    if (!(error instanceof ValidationError)) throw error;
+    setNotice(`Fee-to-hold solver rejected: ${summarizeErrors(error.errors)}`);
+  }
+}
+
+function applyFeeHold() {
+  if (!feeHoldPreview || feeHoldPreview.status !== 'possible' || feeHoldPreview.fee == null) {
+    setNotice('No fee-to-hold proposal is available to apply.');
+    return;
+  }
+  const fee = feeHoldPreview.fee;
+  checkpoint();
+  state.deal.feePerTransaction = fee;
+  feeHoldPreview = null;
+  activePreset = '';
+  refresh(`Applied hold fee of ${formatNumber(fee, 6)} per transaction. Volume and shares are unchanged. Undo restores the previous fee.`);
+}
+
+function feeHoldPreviewSection() {
+  if (!feeHoldPreview) return '';
+  const solved = feeHoldPreview;
+  if (solved.status === 'impossible') {
+    return `<section class="panel" aria-labelledby="fee-hold-title"><div class="panel-heading"><h2 id="fee-hold-title" tabindex="-1">Fee-to-hold preview</h2><button type="button" data-action="close-fee-hold">Close preview</button></div><div class="panel-body"><p>${escapeAttribute(solved.reason)}</p></div></section>`;
+  }
+  return `<section class="panel" aria-labelledby="fee-hold-title"><div class="panel-heading"><h2 id="fee-hold-title" tabindex="-1">Fee-to-hold preview</h2><button type="button" data-action="close-fee-hold">Close preview</button></div><div class="panel-body"><p>Current fee: <strong>${formatNumber(state.deal.feePerTransaction, 6)}</strong>. Proposed hold fee: <strong>${formatNumber(solved.fee, 6)}</strong> per transaction. Apply is required; volume, shares, and costs stay unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p><div class="button-row"><button type="button" class="primary" data-action="apply-fee-hold">Apply hold fee</button><button type="button" data-action="close-fee-hold">Keep current fee</button></div></div></section>`;
 }
 
 function coachIsDismissed() {

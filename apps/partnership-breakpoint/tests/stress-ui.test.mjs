@@ -598,3 +598,19 @@ test('negotiation brief downloads Markdown focused on weakest participant and fi
   app.click('copy-brief');
   assert.equal(app.downloads().length, 1);
 });
+
+test('fee-to-hold previews the floor and requires an explicit apply', async () => {
+  const app = await workbench();
+  app.click('solve-fee-hold');
+  assert.match(app.markup(), /Fee-to-hold preview/);
+  assert.match(app.markup(), /Apply hold fee/);
+  const original = 0.2;
+  app.click('close-fee-hold');
+  assert.doesNotMatch(app.markup(), /Fee-to-hold preview/);
+  app.click('solve-fee-hold');
+  app.click('apply-fee-hold');
+  assert.ok(app.saved().deal.feePerTransaction < original);
+  assert.equal(app.saved().participants[0].revenueShare, 0.4);
+  app.click('undo');
+  assert.equal(app.saved().deal.feePerTransaction, original);
+});
