@@ -13,6 +13,7 @@ const appImport = `import {
   clonePreset,
   evaluateStressGrid,
   makeParticipant,
+  materializeStressCase,
   validateConfiguration,
 } from './model.js';
 

@@ -345,3 +345,15 @@ test('aggregate funding has one absolute tolerance rather than a per-participant
   config.participants.forEach((participant) => { participant.fixedMonthlyCost = 0.4e-9; });
   assert.equal(evaluateStressGrid(config).negotiation.status, 'feasible');
 });
+
+test('materializing a compound case reproduces its baseline and does not double count churn', async () => {
+  const { materializeStressCase, calculatePartnership } = await import('../src/model.js');
+  const config = clonePreset('balanced'); config.deal.volumeShockPct = 10;
+  const scenario = evaluateStressGrid(config).scenarios.at(-1);
+  const next = materializeStressCase(config, scenario.id);
+  assert.equal(next.deal.volumeShockPct, 0);
+  assert.equal(calculatePartnership(next).effectiveVolume, scenario.volume);
+  assert.equal(calculatePartnership(next).totalProfit, scenario.totalProfit);
+  assert.equal(config.deal.volumeShockPct, 10);
+  assert.throws(() => materializeStressCase(config, 'case-999'));
+});

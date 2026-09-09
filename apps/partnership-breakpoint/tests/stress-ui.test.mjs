@@ -405,3 +405,14 @@ test('normalization refuses missing shares and equal split recovers them explici
  app.click('normalize-shares'); assert.match(app.notice(), /Normalize requires/);
  app.click('equal-shares'); assert.doesNotMatch(app.markup(), /Resolve these inputs/);
 });
+
+test('compound case inspection requires explicit application and supports undo', async () => {
+  const app = await workbench(); app.click('reset'); const original = app.saved();
+  app.click('inspect-stress', { scenarioId: 'case-27' });
+  assert.match(app.markup(), /Inspect case-27 as a new baseline/);
+  assert.deepEqual(app.saved(), original);
+  app.click('apply-stress-case');
+  assert.equal(app.saved().deal.monthlyVolume, 120000);
+  assert.equal(app.saved().deal.feePerTransaction, 0.2 * 0.9);
+  app.click('undo'); assert.deepEqual(app.saved(), original);
+});

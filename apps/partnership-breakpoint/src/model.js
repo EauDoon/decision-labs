@@ -674,3 +674,12 @@ export function calculateFeeRequirements(config) {
   const requiredFee = participants.some((item) => item.requiredFee === null) ? null : Math.max(...participants.map((item) => item.requiredFee));
   return { volume, requiredFee, operationallyFeasible: participants.every((item) => !item.operationalFailures.length), participants };
 }
+
+/** Materialize one displayed compound case as new baseline inputs. */
+export function materializeStressCase(config, scenarioId) {
+  const scenario = evaluateStressGrid(config).scenarios.find((item) => item.id === scenarioId);
+  if (!scenario) throw new ValidationError(['Choose a current compound case.']);
+  const candidate = { ...config, deal: { ...config.deal, monthlyVolume: scenario.volume, feePerTransaction: scenario.fee, volumeShockPct: 0 }, participants: config.participants.map((item) => ({ ...item, variableCostPerTransaction: item.variableCostPerTransaction * (1 + scenario.variableCostRisePct / 100) })), ...(config.stress ? { stress: { ...config.stress } } : {}) };
+  assertValidConfiguration(candidate);
+  return candidate;
+}
