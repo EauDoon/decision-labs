@@ -2082,3 +2082,100 @@ export function parseClauseOptionsCsv(csvText, proposal) {
   if (!imported.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", imported.errors[0])] };
   return { status: "ok", proposal: canonicalProposal(next), importedClauses: next.clauses.length, importedOptions: next.clauses.reduce((sum, clause) => sum + clause.options.length, 0) };
 }
+
+export const AGREEMENT_REVIEW_TOOLS=Object.freeze([
+ {id:'margin',title:'Approval margin'},
+ {id:'floors',title:'Group floor and veto slack'},
+ {id:'dominance',title:'Option support and cost dominance'},
+ {id:'substitutions',title:'Single-clause substitutions'},
+ {id:'rollback',title:'Rollback contribution'},
+ {id:'thresholds',title:'Threshold scenarios'},
+ {id:'budgets',title:'Budget scenarios'},
+ {id:'locks',title:'Single-lock opportunity cost'},
+ {id:'uncertainty',title:'Targeted support uncertainty'},
+// SA_REVIEW_TOOLS
+]);
+export function analyzeAgreementReview(rawProposal,tool){
+ const proposal=canonicalProposal(rawProposal);const selectedTool=AGREEMENT_REVIEW_TOOLS.find(entry=>entry.id===tool);if(!selectedTool)throw new TypeError('Unknown agreement review.');
+ const solved=findSmallestAgreement(proposal);const selected=solved.agreement??selectionSummary(proposal,getOriginalOptions(proposal));
+ const context=solved.agreement?'Recommended package':'Original package ('+solved.status+')';
+ const report=(columns,rows,note)=>({tool,title:selectedTool.title,currency:'declared cost units',columns,rows,note:note+' Context: '+context+'.'});
+ switch(tool){
+ case 'margin':{
+
+ return report(['Package','Approval %','Threshold %','Margin points','Change cost','Other constraints'],[[context,selected.approval,proposal.threshold,selected.approval-proposal.threshold,selected.changeCost,selected.constraints.met?'Met':'Not met']],'A positive aggregate margin alone does not pass floors, vetoes, locks or budget. Support scores and weights are declared inputs, not measured votes.');
+
+ }
+ case 'floors':{
+
+ return report(['Group','Package support %','Floor %','Floor slack points','Veto requirement %','Veto slack points'],proposal.groups.map((g,i)=>{const actual=selected.byGroup[i].approval,required=g.veto?Math.max(proposal.threshold,g.minSupport??0):null;return[g.name,actual,g.minSupport??null,g.minSupport===undefined?null:actual-g.minSupport,required,required===null?null:actual-required];}),'Blank means that constraint is not declared. Veto requirements use the greater of the aggregate threshold and any group floor. These rows use the same fixed package as the review context.');
+
+ }
+ case 'dominance':{
+
+ const rows=[];for(const clause of proposal.clauses){for(const option of clause.options){const allowed=o=>!clause.lockedOptionId||clause.lockedOptionId===o.id;const dominates=allowed(option)?clause.options.filter(other=>other.id!==option.id&&allowed(other)&&other.changeCost<=option.changeCost&&Number(!other.original)<=Number(!option.original)&&proposal.groups.every(g=>other.support[g.id]>=option.support[g.id])&&(other.changeCost<option.changeCost||Number(!other.original)<Number(!option.original)||proposal.groups.some(g=>other.support[g.id]>option.support[g.id]))):[];rows.push([clause.title,option.label,option.changeCost,allowed(option)?dominates.map(o=>o.label).join('; ')||'None on these measures':'Excluded by current lock']);}}
+ return report(['Clause','Option','Change cost','Dominating allowed alternatives'],rows,'Comparison is within one clause across every declared group score, change cost and whether the option changes the original. Current locks are respected. This does not infer semantic substitutability or delete options.');
+
+ }
+ case 'substitutions':{
+
+ const rows=[];proposal.clauses.forEach((clause,index)=>{for(const option of clause.options){if(option.id===selected.options[index].id)continue;const options=[...selected.options];options[index]=option;const tested=selectionSummary(proposal,options);rows.push([clause.title,option.label,tested.approval,tested.approval-selected.approval,tested.changeCost,tested.approval+EPSILON>=proposal.threshold&&tested.constraints.met?'Pass':'Does not pass']);}});
+ return report(['Changed clause','Alternative','Approval %','Approval change points','Package cost','All tests'],rows,'One clause changes at a time, all other selected options stay fixed. Lock, budget, floor and veto failures remain failures. At most 460 alternatives; this local neighborhood is not a complete package search.');
+
+ }
+ case 'rollback':{
+
+ const rows=[];proposal.clauses.forEach((clause,index)=>{const original=clause.options.find(o=>o.original);if(original.id===selected.options[index].id)return;const options=[...selected.options];options[index]=original;const tested=selectionSummary(proposal,options);rows.push([clause.title,selected.options[index].label,selected.approval-tested.approval,selected.changeCost-tested.changeCost,tested.approval,tested.approval+EPSILON>=proposal.threshold&&tested.constraints.met?'Still passes':'Does not pass']);});
+ return report(['Rolled-back clause','Selected change','Approval lost points','Cost removed','Approval after rollback %','All tests after rollback'],rows,'Each row separately restores one original option. This is a fixed-package accounting exercise, not proof that a clause causes real approval. No rows means the context package has no changes.');
+
+ }
+ case 'thresholds':{
+
+ const levels=[...new Set([-10,-5,0,5,10].map(delta=>Math.max(0,Math.min(100,proposal.threshold+delta))))];
+ const rows=levels.map(threshold=>{const r=findSmallestAgreement({...proposal,threshold},{maxCombinations:10000});return[threshold,r.status,r.agreement?.changeCost??null,r.agreement?.approval??null,r.agreement?.options.map(o=>o.id).join(', ')??'Unavailable'];});
+ return report(['Threshold %','Search status','Least passing cost','Approval %','Option IDs in clause order'],rows,'Up to five thresholds within 0 to 100. Veto requirements change with the threshold. Every counterfactual search is capped at 10,000 combinations; too_large is unavailable, not infeasible. Other inputs stay fixed.');
+
+ }
+ case 'budgets':{
+
+ const maximum=proposal.clauses.reduce((sum,c)=>sum+Math.max(...c.options.map(o=>o.changeCost)),0);const reference=proposal.maxChangeCost??selected.changeCost;const levels=[...new Set([0,reference/2,reference,Math.min(maximum,reference*1.5),maximum])].sort((a,b)=>a-b);
+ const rows=levels.map(maxChangeCost=>{const r=findSmallestAgreement({...proposal,maxChangeCost},{maxCombinations:10000});return[maxChangeCost,r.status,r.agreement?.changeCost??null,r.agreement?.approval??null,r.agreement?.options.map(o=>o.id).join(', ')??'Unavailable'];});
+ return report(['Tested maximum cost','Search status','Least passing cost','Approval %','Option IDs in clause order'],rows,'At most five discrete budgets around the current budget or selected cost, plus the maximum sum of clause costs. This is not a continuous frontier. Each search is capped at 10,000 combinations; too_large means unavailable.');
+
+ }
+ case 'locks':{
+
+ const locked=proposal.clauses.filter(c=>c.lockedOptionId);const perSearch=Math.max(1,Math.floor(50000/Math.max(1,locked.length)));
+ const rows=locked.map(clause=>{const changed={...proposal,clauses:proposal.clauses.map(c=>{const copy={...c};if(c.id===clause.id)delete copy.lockedOptionId;return copy;})};const r=findSmallestAgreement(changed,{maxCombinations:perSearch});return[clause.title,clause.lockedOptionId,r.status,r.agreement?.changeCost??null,solved.agreement&&r.agreement?solved.agreement.changeCost-r.agreement.changeCost:null,r.agreement?.options.map(o=>o.id).join(', ')??'Unavailable'];});
+ return report(['Unlocked clause','Original lock ID','Search status','Cost with one lock removed','Cost saved vs recommendation','New option IDs'],rows,'One lock is removed per row without changing the current proposal. Across rows at most 50,000 candidate combinations are allowed. A too_large result is unavailable and is not evidence that the lock is necessary.');
+
+ }
+ case 'uncertainty':{
+
+ const rows=[];for(const group of proposal.groups)for(const drop of [5,10,20]){const options=selected.options.map(o=>({...o,support:{...o.support,[group.id]:Math.max(0,o.support[group.id]-drop)}}));const tested=selectionSummary(proposal,options);rows.push([group.name,drop,tested.byGroup.find(g=>g.id===group.id).approval,tested.approval,tested.approval-proposal.threshold,tested.approval+EPSILON>=proposal.threshold&&tested.constraints.met?'Pass':'Does not pass']);}
+ return report(['Stressed group','Score reduction points','Group support after clamp %','Aggregate approval %','Margin points','All tests'],rows,'Reduce the selected option scores for one group by 5, 10 or 20 points, clamped at zero. Other scores and the package stay fixed; no search or probability is implied. At most 72 cases.');
+
+ }
+// SA_REVIEW_CASES
+ default:throw new TypeError('Unavailable agreement review.');
+ }
+}
+
+export function createAgreementReviewPacket(rawProposal, tool) {
+  const scenario = canonicalProposal(rawProposal);
+  const packet = { format: 'agreement-review', version: 1, tool, scenario, inputJSON: JSON.stringify(scenario), review: analyzeAgreementReview(scenario, tool) };
+  if (new TextEncoder().encode(JSON.stringify(packet)).length > 1048576) throw new TypeError('Review packet exceeds 1 MiB. Choose a narrower review.');
+  return packet;
+}
+
+export function replayAgreementReviewPacket(candidate) {
+  const fields = ['format', 'version', 'tool', 'scenario', 'inputJSON', 'review'];
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== fields.length || !fields.every((field) => Object.hasOwn(candidate, field)) || candidate.format !== 'agreement-review' || candidate.version !== 1) throw new TypeError('Unsupported review packet.');
+  const current = createAgreementReviewPacket(candidate.scenario, candidate.tool);
+  if (candidate.inputJSON !== current.inputJSON) throw new TypeError('Review input snapshot changed. Run a new review.');
+  const supplied = candidate.review, expected = current.review;
+  if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied) || Object.keys(supplied).length !== Object.keys(expected).length || !Object.keys(expected).every((field) => Object.hasOwn(supplied, field))) throw new TypeError('Review result fields changed.');
+  for (const field of ['tool', 'title', 'currency', 'note']) if (supplied[field] !== expected[field]) throw new TypeError('Review result does not match the input snapshot.');
+  if (!Array.isArray(supplied.columns) || supplied.columns.length !== expected.columns.length || expected.columns.some((value, index) => !Object.hasOwn(supplied.columns, index) || supplied.columns[index] !== value) || !Array.isArray(supplied.rows) || supplied.rows.length !== expected.rows.length || expected.rows.some((row, index) => !Object.hasOwn(supplied.rows, index) || !Array.isArray(supplied.rows[index]) || supplied.rows[index].length !== row.length || row.some((value, column) => !Object.hasOwn(supplied.rows[index], column) || supplied.rows[index][column] !== value))) throw new TypeError('Review result does not match the input snapshot.');
+  return current;
+}

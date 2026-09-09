@@ -145,3 +145,43 @@ Use the result to focus a human conversation. Establish process rules, evidence 
 - `resetGroupSupport(proposal, groupId)` copies the proposal and blanks that group's support scores. The copy is invalid until those cells are filled. Unknown group ids fail closed. It does not mutate the input.
 
 Snapshot libraries hold at most 20 canonical proposals and reject stored payloads over 5,000,000 characters. Single-draft JSON import remains bounded at 250 KB. Undo keeps at most 50 prior draft states in memory; undo history, custom choices, near-miss sort, and downside settings are not part of the proposal schema. Optional clause notes are part of the proposal schema and are ignored by search.
+
+### Approval margin
+
+The optional package review can separate aggregate approval margin from non-approval constraints. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Group floor and veto slack
+
+The optional package review can show group-specific remaining support above declared floors and veto requirements. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Option support and cost dominance
+
+The optional package review can find within-clause alternatives that improve every declared score without added cost or changes. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Single-clause substitutions
+
+The optional package review can review every one-clause alternative around the fixed package. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Rollback contribution
+
+The optional package review can show what is lost when each recommended change returns to its original option. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Threshold scenarios
+
+The optional package review can show whether nearby approval rules change the least-cost passing package. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Budget scenarios
+
+The optional package review can compare discrete cost limits without changing scores or locks. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Single-lock opportunity cost
+
+The optional package review can compare removing one lock while retaining every other declared constraint. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Targeted support uncertainty
+
+The optional package review can stress one group at a time while holding the selected package fixed. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Review packet contract
+
+`createAgreementReviewPacket(proposal, tool)` and `replayAgreementReviewPacket(packet)` bind canonical inputs to exact review result primitives. Version 1 uses format `agreement-review`, six strict top-level fields and a 1 MiB serialized cap. Replay recomputes; changing an input snapshot or result rejects the packet. These are unsigned records, not authenticated decisions. Aggregate calculations preserve full floating-point values in the packet even when the display rounds. The normal solver retains its 50,000-combination cap. Threshold/budget reviews cap each of at most five additional searches at 10,000; single-lock reviews share a total 50,000-candidate budget across their counterfactual searches.

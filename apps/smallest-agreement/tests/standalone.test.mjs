@@ -117,6 +117,9 @@ async function savedWorkbench(storage, hash = "") {
         innerHTML: "",
         className: "",
         clientWidth: 400,
+        append() {},
+        replaceChildren() {},
+        setAttribute() {},
         events: new Map(),
         addEventListener(name, callback) { this.events.set(name, callback); },
         getContext: () => canvasContext,
@@ -135,9 +138,10 @@ async function savedWorkbench(storage, hash = "") {
     return elements.get(selector);
   };
   const clipboard = { text: "", writeText(value) { this.text = value; return Promise.resolve(); } };
-  const context = vm.createContext({ console, TextDecoder, Uint8Array, atob,
+  const context = vm.createContext({ console, TextEncoder, TextDecoder, Uint8Array, atob,
     document: {
       querySelector: element,
+      createElement: (tag) => element(Symbol(tag)),
       querySelectorAll: () => [],
       addEventListener: (name, callback) => documentEvents.set(name, callback),
     },
@@ -1149,4 +1153,12 @@ test("renormalize weights requires a preview then apply and can be undone", asyn
   assert.match(app.message(), /Renormalized group weights so they sum to 1/u);
   app.click("#undo-button");
   assert.deepEqual(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.map((group) => group.weight), before.groups.map((group) => group.weight));
+});
+
+test('partial numeric edit clears the exported review even without full render', async () => {
+ const app = await savedWorkbench(new Map());
+ app.click('#agreement-review-run');
+ assert.equal(app.disabled('#agreement-review-export'), false);
+ app.numberInput('#threshold-number', 61);
+ assert.equal(app.disabled('#agreement-review-export'), true);
 });
