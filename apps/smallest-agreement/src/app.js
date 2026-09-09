@@ -1164,10 +1164,58 @@ $("#coach-next").addEventListener("click", () => {
     showCoachStep();
   }
 });
+
+let shortcutOpen = false;
+function typingInField(target) {
+  const tag = target?.tagName;
+  return tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || target?.isContentEditable === true;
+}
+function setShortcutOpen(open) {
+  shortcutOpen = open;
+  const overlay = $("#shortcut-overlay");
+  if (overlay) overlay.hidden = !open;
+  if (open) $("#shortcut-close")?.focus?.();
+}
+function findAgreement() {
+  $("#results-heading")?.focus?.();
+  notifyDraft("Search already runs as you edit. Review the recommendation below.");
+}
+$("#find-agreement").addEventListener("click", findAgreement);
+$("#shortcut-help-button").addEventListener("click", () => setShortcutOpen(true));
+$("#shortcut-close").addEventListener("click", () => setShortcutOpen(false));
 document.addEventListener("keydown", (event) => {
-  if (!coachOpen || event.key !== "Escape") return;
-  event.preventDefault();
-  dismissCoach();
+  if (event.key === "Escape") {
+    if (coachOpen) {
+      event.preventDefault();
+      dismissCoach();
+      return;
+    }
+    if (shortcutOpen) {
+      event.preventDefault();
+      setShortcutOpen(false);
+    }
+    return;
+  }
+  if (typingInField(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.key === "?") {
+    event.preventDefault();
+    setShortcutOpen(true);
+    return;
+  }
+  if (shortcutOpen) return;
+  if (event.key === "u" || event.key === "U") {
+    event.preventDefault();
+    if (!$("#undo-button").disabled) $("#undo-button").click();
+  } else if (event.key === "r" || event.key === "R") {
+    event.preventDefault();
+    if (!$("#redo-button").disabled) $("#redo-button").click();
+  } else if (event.key === "e" || event.key === "E") {
+    event.preventDefault();
+    $("#export-button").click();
+  } else if (event.key === "s" || event.key === "S") {
+    event.preventDefault();
+    findAgreement();
+  }
 });
 
 render();

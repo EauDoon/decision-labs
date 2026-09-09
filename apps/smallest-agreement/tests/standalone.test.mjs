@@ -39,6 +39,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Try this option/u);
   assert.match(html, /Leave one group out/u);
   assert.match(html, /id="coach-overlay"/u);
+  assert.match(html, /id="shortcut-overlay"/u);
+  assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 

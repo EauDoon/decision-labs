@@ -138,6 +138,8 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 .coach-dialog { width: min(32rem, 100%); padding: 1.4rem; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
 .coach-dialog h2 { margin: 0 0 .75rem; font-size: 1.4rem; font-weight: 500; }
 .coach-highlight { outline: 3px solid var(--pencil); outline-offset: 4px; }
+.shortcut-list { margin: 0 0 1rem; padding-left: 1.1rem; line-height: 1.6; }
+kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
   .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .manual-options, .autosave-status, button, #comparison-select { display: none !important; }

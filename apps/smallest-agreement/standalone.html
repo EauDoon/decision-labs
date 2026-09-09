@@ -170,6 +170,8 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 .coach-dialog { width: min(32rem, 100%); padding: 1.4rem; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
 .coach-dialog h2 { margin: 0 0 .75rem; font-size: 1.4rem; font-weight: 500; }
 .coach-highlight { outline: 3px solid var(--pencil); outline-offset: 4px; }
+.shortcut-list { margin: 0 0 1rem; padding-left: 1.1rem; line-height: 1.6; }
+kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
   .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .manual-options, .autosave-status, button, #comparison-select { display: none !important; }
@@ -215,6 +217,8 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
         <button class="button button-secondary" type="button" id="redo-button" disabled>Redo</button>
+        <button class="button button-secondary" type="button" id="find-agreement">Find agreement</button>
+        <button class="button button-secondary" type="button" id="shortcut-help-button">Keyboard shortcuts</button>
         <button class="button button-quiet" type="button" id="reset-button">Reset</button>
         <input id="import-file" type="file" accept="application/json,.json" hidden>
         <input id="matrix-import-file" type="file" accept="text/csv,.csv" hidden>
@@ -368,6 +372,21 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
           <button class="button button-secondary" type="button" id="coach-skip">Skip tour</button>
           <button class="button button-brick" type="button" id="coach-next">Next</button>
         </div>
+      </div>
+    </div>
+    <div id="shortcut-overlay" class="coach-overlay" hidden>
+      <div class="coach-dialog" role="dialog" aria-modal="true" aria-labelledby="shortcut-title" tabindex="-1">
+        <h2 id="shortcut-title">Keyboard shortcuts</h2>
+        <p>Shortcuts are ignored while you type in an input, select, or text area.</p>
+        <ul class="shortcut-list">
+          <li><kbd>?</kbd> Open this help</li>
+          <li><kbd>u</kbd> Undo</li>
+          <li><kbd>r</kbd> Redo</li>
+          <li><kbd>e</kbd> Export JSON</li>
+          <li><kbd>s</kbd> Find agreement (jump to the live recommendation)</li>
+          <li><kbd>Esc</kbd> Close help or the tour</li>
+        </ul>
+        <button class="button button-brick" type="button" id="shortcut-close">Close</button>
       </div>
     </div>
     <script type="module">
@@ -2403,10 +2422,58 @@ $("#coach-next").addEventListener("click", () => {
     showCoachStep();
   }
 });
+
+let shortcutOpen = false;
+function typingInField(target) {
+  const tag = target?.tagName;
+  return tag === "INPUT" || tag === "SELECT" || tag === "TEXTAREA" || target?.isContentEditable === true;
+}
+function setShortcutOpen(open) {
+  shortcutOpen = open;
+  const overlay = $("#shortcut-overlay");
+  if (overlay) overlay.hidden = !open;
+  if (open) $("#shortcut-close")?.focus?.();
+}
+function findAgreement() {
+  $("#results-heading")?.focus?.();
+  notifyDraft("Search already runs as you edit. Review the recommendation below.");
+}
+$("#find-agreement").addEventListener("click", findAgreement);
+$("#shortcut-help-button").addEventListener("click", () => setShortcutOpen(true));
+$("#shortcut-close").addEventListener("click", () => setShortcutOpen(false));
 document.addEventListener("keydown", (event) => {
-  if (!coachOpen || event.key !== "Escape") return;
-  event.preventDefault();
-  dismissCoach();
+  if (event.key === "Escape") {
+    if (coachOpen) {
+      event.preventDefault();
+      dismissCoach();
+      return;
+    }
+    if (shortcutOpen) {
+      event.preventDefault();
+      setShortcutOpen(false);
+    }
+    return;
+  }
+  if (typingInField(event.target) || event.ctrlKey || event.metaKey || event.altKey) return;
+  if (event.key === "?") {
+    event.preventDefault();
+    setShortcutOpen(true);
+    return;
+  }
+  if (shortcutOpen) return;
+  if (event.key === "u" || event.key === "U") {
+    event.preventDefault();
+    if (!$("#undo-button").disabled) $("#undo-button").click();
+  } else if (event.key === "r" || event.key === "R") {
+    event.preventDefault();
+    if (!$("#redo-button").disabled) $("#redo-button").click();
+  } else if (event.key === "e" || event.key === "E") {
+    event.preventDefault();
+    $("#export-button").click();
+  } else if (event.key === "s" || event.key === "S") {
+    event.preventDefault();
+    findAgreement();
+  }
 });
 
 render();

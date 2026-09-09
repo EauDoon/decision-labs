@@ -58,6 +58,8 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
         <button class="button button-secondary" type="button" id="redo-button" disabled>Redo</button>
+        <button class="button button-secondary" type="button" id="find-agreement">Find agreement</button>
+        <button class="button button-secondary" type="button" id="shortcut-help-button">Keyboard shortcuts</button>
         <button class="button button-quiet" type="button" id="reset-button">Reset</button>
         <input id="import-file" type="file" accept="application/json,.json" hidden>
         <input id="matrix-import-file" type="file" accept="text/csv,.csv" hidden>
@@ -211,6 +213,21 @@ SOFTWARE.
           <button class="button button-secondary" type="button" id="coach-skip">Skip tour</button>
           <button class="button button-brick" type="button" id="coach-next">Next</button>
         </div>
+      </div>
+    </div>
+    <div id="shortcut-overlay" class="coach-overlay" hidden>
+      <div class="coach-dialog" role="dialog" aria-modal="true" aria-labelledby="shortcut-title" tabindex="-1">
+        <h2 id="shortcut-title">Keyboard shortcuts</h2>
+        <p>Shortcuts are ignored while you type in an input, select, or text area.</p>
+        <ul class="shortcut-list">
+          <li><kbd>?</kbd> Open this help</li>
+          <li><kbd>u</kbd> Undo</li>
+          <li><kbd>r</kbd> Redo</li>
+          <li><kbd>e</kbd> Export JSON</li>
+          <li><kbd>s</kbd> Find agreement (jump to the live recommendation)</li>
+          <li><kbd>Esc</kbd> Close help or the tour</li>
+        </ul>
+        <button class="button button-brick" type="button" id="shortcut-close">Close</button>
       </div>
     </div>
     <script type="module" src="src/app.js"></script>
