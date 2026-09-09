@@ -197,6 +197,38 @@ const presets = {
       },
     ],
   },
+  "club-constitution": {
+    title: "Club Constitution: membership meetings",
+    threshold: 66,
+    groups: [
+      { id: "members", name: "Members", weight: 5 },
+      { id: "officers", name: "Officers", weight: 2, veto: true },
+      { id: "staff", name: "Club staff", weight: 1 },
+    ],
+    clauses: [
+      {
+        id: "quorum", title: "Meeting quorum", options: [
+          { id: "quorum-original", original: true, label: "Keep a 40% membership quorum", changeCost: 0, support: { members: 55, officers: 88, staff: 70 } },
+          { id: "quorum-one-third", original: false, label: "Lower quorum to one third of members", changeCost: 2, support: { members: 82, officers: 64, staff: 74 } },
+          { id: "quorum-present", original: false, label: "Count only members present in the room", changeCost: 3, support: { members: 48, officers: 71, staff: 80 } },
+        ],
+      },
+      {
+        id: "proxy", title: "Proxy votes", options: [
+          { id: "proxy-original", original: true, label: "Allow unlimited written proxies", changeCost: 0, support: { members: 62, officers: 40, staff: 55 } },
+          { id: "proxy-capped", original: false, label: "Cap each member at two proxies", changeCost: 1, support: { members: 78, officers: 82, staff: 70 } },
+          { id: "proxy-none", original: false, label: "End proxy voting and require attendance", changeCost: 4, support: { members: 35, officers: 90, staff: 68 } },
+        ],
+      },
+      {
+        id: "guests", title: "Guest speakers at general meetings", options: [
+          { id: "guests-original", original: true, label: "Officers may invite speakers without notice", changeCost: 0, support: { members: 44, officers: 86, staff: 60 } },
+          { id: "guests-notice", original: false, label: "Publish speaker names seven days in advance", changeCost: 2, support: { members: 84, officers: 72, staff: 78 } },
+          { id: "guests-vote", original: false, label: "Require a members vote before each invitation", changeCost: 3, support: { members: 80, officers: 38, staff: 52 } },
+        ],
+      },
+    ],
+  },
 };
 
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };

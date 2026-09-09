@@ -55,6 +55,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="near-miss-sort"/u);
   assert.match(html, /Lock this package/u);
   assert.match(html, /workplace-hybrid/u);
+  assert.match(html, /club-constitution/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /aria-live="polite"/u);
@@ -505,6 +506,24 @@ test("workplace hybrid preset loads a valid three-group office policy", async ()
   assert.match(app.clauses(), /Core collaboration hours/u);
   assert.match(app.clauses(), /Desk assignment/u);
   assert.match(app.clauses(), /On-site staff|data-group-id="onsite"|onsite/u);
+});
+
+test("club constitution preset loads a distinct synthetic membership-meeting workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "club-constitution");
+  app.click("#load-preset");
+  assert.match(app.title(), /Club Constitution: membership meetings/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Meeting quorum/u);
+  assert.match(app.clauses(), /Proxy votes/u);
+  assert.match(app.clauses(), /Guest speakers at general meetings/u);
+  assert.match(app.groups(), /Officers/u);
+  assert.match(app.groups(), /Club staff/u);
+  assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.clauses(), /Weekly office presence/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
 });
 
 test("keyboard f focuses the clause filter unless an input is active", async () => {
