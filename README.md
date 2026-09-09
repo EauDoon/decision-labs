@@ -56,7 +56,9 @@ npm start
 Open the printed address, normally `http://127.0.0.1:4170`. The launcher serves
 only the catalog page and the four generated workbenches. It accepts local Host
 headers, binds loopback only, and does not expose source files, model notes, or
-local drafts. Set `PORT` to an integer from 1 through 65535 to choose another
+local drafts. A path outside that set still returns HTTP 404; the body is a
+Decision Labs page that points back to the catalog rather than a blank
+"Not found" line. Set `PORT` to an integer from 1 through 65535 to choose another
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
 an input. Press `?` on the catalog for the in-page shortcut list.
 
