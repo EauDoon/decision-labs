@@ -117,6 +117,7 @@ function loadWorkspace() {
     if (!raw) return [];
     const workspace = validateWorkspace(JSON.parse(raw));
     offerFulfillmentFilter = workspace.fulfillmentFilter;
+    hideExcludedBuyers = workspace.hideExcludedBuyers;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -159,19 +160,23 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
 }
 
-function persistFulfillmentFilter() {
+function persistWorkspaceDisplaySettings() {
   if (workspaceReadFailed) return;
   try {
     storeWorkspace(savedRooms);
   } catch (error) {
-    setStatus(`Could not save fulfillment filter: ${messageOf(error)}`);
+    setStatus(`Could not save display settings: ${messageOf(error)}`);
   }
+}
+
+function persistFulfillmentFilter() {
+  persistWorkspaceDisplaySettings();
 }
 
 function loadInitialScenario() {
@@ -553,11 +558,12 @@ function bindStaticEvents() {
   });
   document.querySelector("#hide-excluded-buyers").addEventListener("change", (event) => {
     hideExcludedBuyers = event.target.checked;
+    persistWorkspaceDisplaySettings();
     try {
       applyBuyerDisplayFilters();
       setStatus(hideExcludedBuyers
-        ? "Hiding buyers excluded from the inspected offer. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only."
-        : "Showing excluded buyers again. Saved buyers and matching stay unchanged.", true);
+        ? "Hiding buyers excluded from the inspected offer. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing excluded buyers again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }

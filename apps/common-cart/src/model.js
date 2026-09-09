@@ -166,7 +166,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -175,7 +175,15 @@ export function validateWorkspace(candidate) {
     }
     filter = fulfillmentFilter;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter };
+  const hideExcludedBuyers = own(candidate, "hideExcludedBuyers");
+  let hideExcluded = false;
+  if (hideExcludedBuyers !== undefined) {
+    if (hideExcludedBuyers !== true && hideExcludedBuyers !== false) {
+      throw new ScenarioError("Hide excluded buyers must be true or false.");
+    }
+    hideExcluded = hideExcludedBuyers;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
