@@ -171,6 +171,26 @@ export function duplicateEntry(rawScenario, kind, id) {
   return clean;
 }
 
+export function copyOfferAsNewTierSet(rawScenario, offerId) {
+  const clean = duplicateEntry(rawScenario, "offers", offerId);
+  const source = clean.offers.find((offer) => offer.id === offerId);
+  const copy = clean.offers.at(-1);
+  copy.merchant = `${source.merchant.slice(0, 48)} (tier set)`;
+  const previous = source.tiers?.at(-1) ?? source;
+  const nextMinimum = Math.min(source.capacity, previous.minimumUnits + Math.max(1, Math.ceil((source.capacity - previous.minimumUnits) / 2)));
+  const nextPrice = Math.floor(previous.unitPrice * 80) / 100;
+  if (
+    nextMinimum > previous.minimumUnits
+    && nextPrice < previous.unitPrice
+    && nextPrice >= 0
+    && nextMinimum <= source.capacity
+    && (source.tiers?.length ?? 0) < 8
+  ) {
+    copy.tiers = [...(source.tiers ?? []).map((tier) => ({ ...tier })), { minimumUnits: nextMinimum, unitPrice: nextPrice }];
+  }
+  return validateScenario(clean);
+}
+
 export function compareScenarios(before, after) {
   const baseline = evaluateMarket(before);
   const current = evaluateMarket(after);

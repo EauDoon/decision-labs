@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios, compareThreeRooms } from "../src/model.js";
+import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios, compareThreeRooms, copyOfferAsNewTierSet, evaluateOffer } from "../src/model.js";
 
 test("history detaches states, caps memory, and truncates branches", () => {
   const s = clonePreset(); const h = createScenarioHistory(s);
@@ -38,6 +38,23 @@ test("duplicate gives a unique id and independent nested constraints", () => {
   assert.equal(offers.offers.length, s.offers.length + 1);
   assert.throws(() => duplicateEntry(s, "__proto__", s.buyers[0].id));
   assert.throws(() => duplicateEntry(s, "buyers", "missing"));
+});
+
+test("copy offer as a new tier set adds an independent cheaper band", () => {
+  const s = clonePreset("neighbourhood");
+  const next = copyOfferAsNewTierSet(s, s.offers[0].id);
+  assert.equal(next.offers.length, s.offers.length + 1);
+  const copy = next.offers.at(-1);
+  assert.match(copy.merchant, /tier set/);
+  assert.ok(copy.tiers?.length >= 1);
+  assert.ok(copy.tiers.at(-1).unitPrice < copy.unitPrice);
+  assert.ok(copy.tiers.at(-1).minimumUnits > copy.minimumUnits);
+  copy.tiers[0].unitPrice = 0;
+  assert.notEqual(s.offers[0].tiers, copy.tiers);
+  const original = evaluateOffer(s, s.offers[0].id);
+  const copied = evaluateOffer(next, copy.id);
+  assert.equal(typeof copied.fulfilledUnits, "number");
+  assert.equal(original.offer.id, s.offers[0].id);
 });
 
 test("workspace validates every room and rejects unsupported schema or oversized collections", () => {

@@ -13,6 +13,7 @@ import {
   createOrganizerBriefing,
   decodeScenario,
   duplicateEntry,
+  copyOfferAsNewTierSet,
   encodeScenario,
   evaluateMarket,
   unitsToNextTier,
@@ -719,6 +720,23 @@ function addDuplicateAction(row, kind, entry) {
     } catch (error) { setStatus(messageOf(error)); }
   });
   row.lastElementChild.append(button);
+  if (kind !== "offers") return;
+  const tierSet = document.createElement("button");
+  tierSet.type = "button";
+  tierSet.textContent = "As tier set";
+  tierSet.setAttribute("aria-label", `Copy ${entry.merchant} as a new price-tier set`);
+  tierSet.disabled = scenario.offers.length >= 40;
+  tierSet.addEventListener("click", () => {
+    try {
+      scenario = copyOfferAsNewTierSet(scenario, entry.id);
+      inspectedOfferId = scenario.offers.at(-1).id;
+      renderEditor();
+      refresh();
+      elements.offerRows.lastElementChild.querySelector("input").focus();
+      setStatus("Copied this offer as a new tier set. The extra band is a planning draft, not a merchant quote.", true);
+    } catch (error) { setStatus(messageOf(error)); }
+  });
+  row.lastElementChild.append(tierSet);
 }
 
 function updateHistoryButtons() {

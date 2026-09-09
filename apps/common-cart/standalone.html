@@ -906,6 +906,26 @@ function duplicateEntry(rawScenario, kind, id) {
   return clean;
 }
 
+function copyOfferAsNewTierSet(rawScenario, offerId) {
+  const clean = duplicateEntry(rawScenario, "offers", offerId);
+  const source = clean.offers.find((offer) => offer.id === offerId);
+  const copy = clean.offers.at(-1);
+  copy.merchant = `${source.merchant.slice(0, 48)} (tier set)`;
+  const previous = source.tiers?.at(-1) ?? source;
+  const nextMinimum = Math.min(source.capacity, previous.minimumUnits + Math.max(1, Math.ceil((source.capacity - previous.minimumUnits) / 2)));
+  const nextPrice = Math.floor(previous.unitPrice * 80) / 100;
+  if (
+    nextMinimum > previous.minimumUnits
+    && nextPrice < previous.unitPrice
+    && nextPrice >= 0
+    && nextMinimum <= source.capacity
+    && (source.tiers?.length ?? 0) < 8
+  ) {
+    copy.tiers = [...(source.tiers ?? []).map((tier) => ({ ...tier })), { minimumUnits: nextMinimum, unitPrice: nextPrice }];
+  }
+  return validateScenario(clean);
+}
+
 function compareScenarios(before, after) {
   const baseline = evaluateMarket(before);
   const current = evaluateMarket(after);
@@ -2446,6 +2466,23 @@ function addDuplicateAction(row, kind, entry) {
     } catch (error) { setStatus(messageOf(error)); }
   });
   row.lastElementChild.append(button);
+  if (kind !== "offers") return;
+  const tierSet = document.createElement("button");
+  tierSet.type = "button";
+  tierSet.textContent = "As tier set";
+  tierSet.setAttribute("aria-label", `Copy ${entry.merchant} as a new price-tier set`);
+  tierSet.disabled = scenario.offers.length >= 40;
+  tierSet.addEventListener("click", () => {
+    try {
+      scenario = copyOfferAsNewTierSet(scenario, entry.id);
+      inspectedOfferId = scenario.offers.at(-1).id;
+      renderEditor();
+      refresh();
+      elements.offerRows.lastElementChild.querySelector("input").focus();
+      setStatus("Copied this offer as a new tier set. The extra band is a planning draft, not a merchant quote.", true);
+    } catch (error) { setStatus(messageOf(error)); }
+  });
+  row.lastElementChild.append(tierSet);
 }
 
 function updateHistoryButtons() {
