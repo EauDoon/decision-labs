@@ -250,6 +250,15 @@ SOFTWARE.
           <article class="planning-card card" aria-labelledby="diagnostics-title">
             <p class="eyebrow">Queue diagnostics</p><h2 id="diagnostics-title">What constrained this run?</h2>
             <p id="diagnostic-summary"></p><ul id="bottleneck-list"></ul><p id="milestone-summary"></p>
+            <h3 id="attribution-title">Hourly limiting gate</h3>
+            <p id="bottleneck-explanation">Each of the 72 hours is tagged with the single limitingGate value at the start of the interval. Closed issuer, bank or payout gates are named first. This is a count of observations, not a ranking of which change would raise settlement.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly limiting gate counts">
+              <table>
+                <caption>Hours limited by each named gate versus none. Shares are hours divided by 72.</caption>
+                <thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of 72h</th></tr></thead>
+                <tbody id="bottleneck-hours"></tbody>
+              </table>
+            </div>
             <p>Blockers can overlap. Counts describe observed constraints while backlog remains, not how much a single change would improve settlement. Queue exposure sums end-of-hour backlog across 72 one-hour intervals.</p>
           </article>
           <article class="planning-card card" aria-labelledby="comparison-title">

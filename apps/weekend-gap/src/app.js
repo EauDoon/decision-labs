@@ -13,6 +13,7 @@ import {
   planReserve,
   analysisToJSON,
   analyzeTimeline,
+  attributeBottlenecks,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -575,6 +576,20 @@ function renderDiagnostics() {
   document.querySelector("#milestone-summary").textContent = [
     ["First backlog",d.firstBacklogHour], ["Reserve exhausted",d.reserveExhaustionHour], ["Last settlement checkpoint",d.lastSettlementHour]
   ].map(([label,hour])=>label + ": " + (hour === null ? "not observed" : formatTime(hour))).join(". ");
+  const attribution = attributeBottlenecks(scenario);
+  const active = attribution.rows.filter((row) => row.hours > 0);
+  document.querySelector("#bottleneck-hours").replaceChildren(...attribution.rows.map((row) => {
+    const tr = document.createElement("tr");
+    for (const value of [row.label, String(row.hours), `${(row.share * 100).toFixed(1)}%`]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.append(td);
+    }
+    return tr;
+  }));
+  document.querySelector("#bottleneck-explanation").textContent = active.length
+    ? `Of 72 hours, ${active.map((row) => `${row.hours} were limited by ${row.label}`).join(", ")}. Hours labeled none had no recorded limiter. This does not say which assumption to change.`
+    : "No limiting-gate hours were recorded for this run.";
 }
 renderDiagnostics();
 
