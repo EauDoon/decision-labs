@@ -132,7 +132,11 @@ SOFTWARE.
             <h2>Describe acceptable purchases</h2>
             <p>Labels stay inside this browser. Merchant-facing views use grouped ranges only. Empty or invalid fields are named in the status line until they are corrected.</p>
           </div>
-          <button id="add-buyer" class="primary" type="button">Add buyer</button>
+          <div class="button-row">
+            <button id="add-buyer" class="primary" type="button">Add buyer</button>
+            <button id="import-buyers" type="button">Import buyer CSV</button>
+            <input id="import-buyers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
+          </div>
         </div>
         <div class="table-shell">
           <table>
@@ -152,7 +156,7 @@ SOFTWARE.
             <tbody id="buyer-rows"></tbody>
           </table>
         </div>
-        <p id="variants-help" class="canvas-note">Accepted variants are a comma-separated list. At least one name is required.</p>
+        <p id="variants-help" class="canvas-note">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
 
         <div class="result-grid">
           <article class="panel chart-panel">

@@ -181,12 +181,134 @@ export function createBuyerCsv(rawScenario, offerId) {
     const allocation = allocations.get(outcome.buyerId);
     rows.push([buyer.label, result.offer.merchant, market.scenario.currency, buyer.quantity, outcome.status, outcome.reasons.join("; "), allocation?.quantity ?? 0, allocation?.itemsCost ?? "", allocation?.shippingCost ?? "", allocation?.totalCost ?? "", result.offer.deliveryDays]);
   }
-  const cell = value => {
-    let text = typeof value === "number" ? String(Math.round(value * 1e8) / 1e8) : String(value);
-    if (typeof value === "string" && (/^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text))) text = `'${text}`;
-    return `"${text.replaceAll('"', '""')}"`;
-  };
-  return rows.map(row => row.map(cell).join(",")).join("\r\n") + "\r\n";
+  return rows.map(row => row.map(escapeCsvCell).join(",")).join("\r\n") + "\r\n";
+}
+
+const BUYER_CSV_HEADERS = {
+  label: "label",
+  "private label": "label",
+  "private buyer label": "label",
+  buyer: "label",
+  category: "category",
+  quantity: "quantity",
+  qty: "quantity",
+  "max unit price": "maxUnitPrice",
+  "max item price": "maxUnitPrice",
+  "latest delivery days": "latestDeliveryDays",
+  "delivery by": "latestDeliveryDays",
+  variants: "allowedVariants",
+  "max order total": "maxOrderTotal"
+};
+
+const REQUIRED_BUYER_CSV_FIELDS = ["label", "category", "quantity", "maxUnitPrice", "latestDeliveryDays", "allowedVariants"];
+
+function spreadsheetUnsafe(text) {
+  return /^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text);
+}
+
+function escapeCsvCell(value) {
+  let text = typeof value === "number" ? String(Math.round(value * 1e8) / 1e8) : String(value);
+  if (typeof value === "string" && spreadsheetUnsafe(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+export function neutralizeSpreadsheetCell(value) {
+  if (typeof value !== "string") return value;
+  if (value.startsWith("'") && spreadsheetUnsafe(value.slice(1))) return value.slice(1);
+  return value;
+}
+
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  const source = text.replace(/^\uFEFF/u, "");
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (quoted) {
+      if (character === '"') {
+        if (source[index + 1] === '"') {
+          cell += '"';
+          index += 1;
+        } else {
+          quoted = false;
+        }
+      } else {
+        cell += character;
+      }
+    } else if (character === '"') {
+      quoted = true;
+    } else if (character === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (character === "\n") {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else if (character !== "\r") {
+      cell += character;
+    }
+  }
+  if (quoted) throw new ScenarioError("Buyer CSV has an unclosed quote.");
+  if (cell.length > 0 || row.length > 0) {
+    row.push(cell);
+    rows.push(row);
+  }
+  return rows.filter((entry) => entry.some((value) => value.trim() !== ""));
+}
+
+export function parseBuyerCsv(text) {
+  if (typeof text !== "string") throw new ScenarioError("Buyer CSV must be text.");
+  if (text.trim() === "") throw new ScenarioError("Buyer CSV is empty.");
+  const rows = parseCsvRows(text);
+  if (rows.length < 2) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
+  const header = rows[0].map((value) => neutralizeSpreadsheetCell(value).trim().toLowerCase().replaceAll("_", " "));
+  const columns = header.map((name) => BUYER_CSV_HEADERS[name] ?? null);
+  if (columns.some((field) => field === null)) {
+    const unknown = rows[0].filter((_, index) => columns[index] === null).map((value) => value.trim() || "(empty)");
+    throw new ScenarioError(`Buyer CSV has unknown column: ${unknown[0]}.`);
+  }
+  for (const required of REQUIRED_BUYER_CSV_FIELDS) {
+    if (!columns.includes(required)) {
+      throw new ScenarioError("Buyer CSV must include label, category, quantity, max unit price, latest delivery days, and variants.");
+    }
+  }
+  const dataRows = rows.slice(1);
+  if (dataRows.length > MAX_BUYERS) throw new ScenarioError(`Buyers must contain 1 to ${MAX_BUYERS} entries.`);
+  return dataRows.map((row, index) => {
+    const prefix = `CSV buyer ${index + 1}`;
+    const record = {};
+    for (const [columnIndex, field] of columns.entries()) {
+      if (!field) continue;
+      record[field] = neutralizeSpreadsheetCell(row[columnIndex] ?? "");
+    }
+    const variants = String(record.allowedVariants ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+    const buyer = {
+      id: `B${String(index + 1).padStart(2, "0")}`,
+      label: record.label,
+      category: record.category,
+      quantity: record.quantity,
+      maxUnitPrice: record.maxUnitPrice,
+      latestDeliveryDays: record.latestDeliveryDays,
+      allowedVariants: variants
+    };
+    const total = String(record.maxOrderTotal ?? "").trim();
+    if (total !== "") buyer.maxOrderTotal = record.maxOrderTotal;
+    try {
+      return validateBuyer(buyer, index);
+    } catch (error) {
+      throw new ScenarioError(`${prefix}: ${error.message.replace(/^Buyer \d+\s/u, "")}`);
+    }
+  });
+}
+
+export function importBuyersFromCsv(rawScenario, text) {
+  const scenario = validateScenario(rawScenario);
+  const buyers = parseBuyerCsv(text);
+  if (buyers.length < 1) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
+  return validateScenario({ ...scenario, buyers });
 }
 
 export function validateScenario(candidate) {

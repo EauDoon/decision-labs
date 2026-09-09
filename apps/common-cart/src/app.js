@@ -7,6 +7,7 @@ import {
   createScenarioHistory,
   createMerchantReport,
   createBuyerCsv,
+  importBuyersFromCsv,
   decodeScenario,
   duplicateEntry,
   encodeScenario,
@@ -225,6 +226,8 @@ function bindStaticEvents() {
 
   document.querySelector("#import-button").addEventListener("click", () => elements.importFile.click());
   elements.importFile.addEventListener("change", importScenario);
+  document.querySelector("#import-buyers").addEventListener("click", () => document.querySelector("#import-buyers-file").click());
+  document.querySelector("#import-buyers-file").addEventListener("change", importBuyersCsv);
   document.querySelector("#export-button").addEventListener("click", exportScenario);
   const shareButton = document.querySelector("#share-button");
   if (window.location.protocol === "file:") {
@@ -864,6 +867,26 @@ async function importScenario(event) {
     setStatus("Scenario imported.", true);
   } catch (error) {
     setStatus(`Import failed: ${messageOf(error)}`);
+  }
+}
+
+async function importBuyersCsv(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (file.size === 0) return setStatus("Buyer CSV import failed: the file is empty.");
+  if (file.size > 250_000) return setStatus("Buyer CSV files must be smaller than 250 KB.");
+  try {
+    const text = await file.text();
+    if (!text.trim()) return setStatus("Buyer CSV import failed: the file is empty.");
+    const imported = importBuyersFromCsv(scenario, text);
+    if (!allowReplaceDraft()) return;
+    scenario = imported;
+    renderEditor();
+    refresh();
+    setStatus(`Imported ${imported.buyers.length} buyers from CSV. Offers were left unchanged.`, true);
+  } catch (error) {
+    setStatus(`Buyer CSV import failed: ${messageOf(error)}`);
   }
 }
 

@@ -211,3 +211,6 @@ export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", 
 export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;
 export function createMerchantReport(rawScenario: unknown): MerchantReport;
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
+export function neutralizeSpreadsheetCell(value: unknown): unknown;
+export function parseBuyerCsv(text: unknown): Buyer[];
+export function importBuyersFromCsv(rawScenario: unknown, text: unknown): Scenario;
