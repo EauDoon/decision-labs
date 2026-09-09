@@ -87,7 +87,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /does not connect to a bank or a live redemption queue/);
   assert.match(html, /href="#whats-new">What's new/);
   assert.match(readme, /What's new/);
-  assert.match(readme, /share-to-hold, residual coverage, veto groups, and the gate Gantt/);
+  assert.match(readme, /share-to-hold, residual\s+coverage, veto groups, and the gate Gantt/);
 });
 
 test('question-mark shortcut toggles an in-page panel and skips inputs', () => {
