@@ -531,6 +531,22 @@ test('deal notes persist, print, and export, and reject overlong or unknown valu
   assert.equal(Object.hasOwn(app.saved().deal, 'notes'), false);
 });
 
+test('participant roster toolbar stays outside the disclosure and defaults to open', async () => {
+  const app = await workbench();
+  const html = await buildStandalone();
+  const form = app.markup().match(/<section class="participant-form"[\s\S]*?<\/section>/)[0];
+  const toolbarAt = form.indexOf('class="participant-toolbar"');
+  const detailsAt = form.indexOf('class="participant-details"');
+  assert.ok(toolbarAt >= 0 && detailsAt > toolbarAt);
+  assert.match(form, /data-action="duplicate-participant"/);
+  assert.match(form, /data-action="move-participant-up"/);
+  assert.match(form, /data-action="move-participant-down"/);
+  assert.match(form, /data-action="remove-participant"/);
+  assert.match(app.markup(), /<details class="participant-details" open>/);
+  assert.match(html, /@media \(max-width: 390px\)/);
+  assert.match(html, /\.participant-toolbar \.button-row/);
+});
+
 test('duplicate and move roster controls keep unique ids and the original share sum', async () => {
   const app = await workbench();
   app.click('duplicate-participant', { index: '0' });

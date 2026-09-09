@@ -49,9 +49,17 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .optional { color: var(--muted); font-size: .67rem; }
 .participant-form { border: 1px solid var(--line); background: var(--paper); padding: .75rem; margin-top: .7rem; }
 .participant-form:first-of-type { margin-top: 0; }
-.participant-header { display: flex; gap: .5rem; align-items: center; justify-content: flex-end; margin: .5rem 0 .7rem; }
-.participant-header strong { font-size: .84rem; }
-.participant-header button { font-size: .75rem; }
+.participant-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: .5rem;
+  margin: 0 0 .55rem;
+}
+.participant-toolbar .button-row {
+  margin-top: 0;
+  width: 100%;
+}
+.participant-toolbar button { font-size: .75rem; min-height: 2.25rem; }
 .participant-roster { margin-top: 0; justify-content: flex-end; }
 .participant-details > summary {
   cursor: pointer;
@@ -64,8 +72,15 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
   .participant-details > summary::-webkit-details-marker,
   .participant-details > summary::marker { display: none; content: none; }
   .participant-details .field-grid { display: grid !important; }
-  .participant-details > .participant-header,
   .participant-details > .button-row { display: flex !important; }
+}
+@media (max-width: 390px) {
+  .participant-toolbar .button-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: .45rem;
+  }
+  .participant-toolbar button { width: 100%; }
 }
 
 .button-row, .preset-row { display: flex; flex-wrap: wrap; gap: .5rem; }

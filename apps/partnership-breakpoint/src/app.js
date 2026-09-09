@@ -349,16 +349,16 @@ function participantDetailsOpen(index) {
 function inputPanel() {
   const participantForms = state.participants.map((participant, index) => `
     <section class="participant-form" aria-labelledby="participant-${index}-title">
+      <div class="participant-toolbar">
+        <div class="button-row participant-roster">
+          <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
+          <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
+          <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
+          <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
+        </div>
+      </div>
       <details class="participant-details"${participantDetailsOpen(index) ? ' open' : ''}>
         <summary id="participant-${index}-title">Participant ${index + 1}: ${escapeAttribute(participant.name)}</summary>
-        <div class="participant-header">
-          <div class="button-row participant-roster">
-            <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
-            <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
-            <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
-            <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
-          </div>
-        </div>
         <div class="field-grid">
         ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text', title: 'Display name, 1 through 80 characters after trimming spaces.' })}
         ${field({ label: 'Revenue share', path: `participants.${index}.revenueShare`, value: participant.revenueShare, min: 0, max: 1, step: '0.0001', title: 'Share of gross fee revenue, 0 through 1. All shares must sum to 1.' })}
