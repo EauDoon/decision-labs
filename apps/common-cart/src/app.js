@@ -771,6 +771,8 @@ function renderEntryCapWarning() {
     ? "This room is at the local matching cap of 40 buyers. That bound keeps the exact allocator responsive. It is not a server quota."
     : "This room is at the local matching cap of 40 offers. That bound keeps the exact allocator responsive. It is not a server quota.";
 }
+
+function applyOfferFulfillmentFilter() {
   let visibleIds;
   try {
     visibleIds = new Set(filterOfferIdsByFulfillment(scenario, offerFulfillmentFilter));
