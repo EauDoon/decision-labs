@@ -2,7 +2,7 @@
 
 ## Units and inputs
 
-All money inputs and outputs are monthly currency units unless a field says per transaction. The application does not select a currency, so use one consistent currency for every input in a case.
+All money inputs and outputs are monthly currency units unless a field says per transaction. An optional `title` (1 to 80 characters after trimming) names the case in the workbench and in exported JSON. An optional `currency` must be exactly three uppercase ASCII letters such as `USD` and is a display prefix only. The model never converts currencies. Omit `currency` to keep the word `units`. Lowercase codes, longer or shorter strings, and non-strings are rejected rather than coerced.
 
 Shared deal inputs:
 
@@ -10,6 +10,8 @@ Shared deal inputs:
 - `feePerTransaction`: gross fee collected per transaction.
 - `addressableVolume`: maximum transactions per month available from addressable demand.
 - `volumeShockPct`: an optional reduction from planned volume, from 0 to 100.
+- `title`: optional case name. If present, it must be a string of 1 to 80 characters after trimming.
+- `currency`: optional 3-letter uppercase display code. If present, it must match `^[A-Z]{3}$`.
 
 Participant inputs:
 

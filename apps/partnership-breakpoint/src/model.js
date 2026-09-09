@@ -7,6 +7,8 @@
  * @property {number} feePerTransaction Gross fee collected per transaction.
  * @property {number} addressableVolume Maximum transactions available from demand.
  * @property {number} [volumeShockPct] Optional reduction from planned volume, 0 through 100.
+ * @property {string} [title] Optional display name, 1 through 80 characters after trimming.
+ * @property {string} [currency] Optional 3-letter uppercase display prefix such as USD. Omitted values keep the word units.
  *
  * @typedef {object} ParticipantInput
  * @property {string} id Unique identifier, at most 64 characters.
@@ -43,7 +45,7 @@ export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
 const CONFIG_KEYS = new Set(['deal', 'participants', 'stress']);
-const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct']);
+const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 /** @type {Readonly<StressSettings>} Illustrative GUI defaults; not forecasts. */
@@ -164,6 +166,18 @@ export function validateConfiguration(config) {
       const shock = own(deal, 'volumeShockPct');
       if (!isFiniteNumber(shock) || shock < 0 || shock > 100) {
         errors.push('Deal volume shock must be a finite percentage from 0 through 100.');
+      }
+    }
+    if (Object.hasOwn(deal, 'title')) {
+      const title = own(deal, 'title');
+      if (typeof title !== 'string' || title.trim() === '' || title.trim().length > 80) {
+        errors.push('Deal title must be a string of 1 to 80 characters after trimming.');
+      }
+    }
+    if (Object.hasOwn(deal, 'currency')) {
+      const currency = own(deal, 'currency');
+      if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) {
+        errors.push('Deal currency must be a 3-letter uppercase code such as USD.');
       }
     }
   }

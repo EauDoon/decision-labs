@@ -30,6 +30,7 @@ let caseLibrary = loadCaseLibrary();
 let removedCase = null;
 let comparisonId = '';
 let stressPreviewId = '';
+let invalidFieldCount = 0;
 const undoHistory = [];
 const redoHistory = [];
 
@@ -213,14 +214,22 @@ function inputValue(value) {
   return value === null || value === undefined || Number.isNaN(value) ? '' : String(value);
 }
 
-function field({ label, path, value, optional = false, min = 0, max = null, step = 'any', wide = false, type = 'number', title = '' }) {
+function field({ label, path, value, optional = false, min = 0, max = null, step = 'any', wide = false, type = 'number', title = '', maxLength = 80, pattern = null }) {
   const optionalText = optional ? '<span class="optional">optional</span>' : '';
   const titleAttr = title ? ` title="${escapeAttribute(title)}"` : '';
   const sharesInvalid = path.endsWith('.revenueShare') && Math.abs(state.participants.reduce((sum, item) => sum + item.revenueShare, 0) - 1) > 1e-9;
-  const invalid = type === 'text' ? !String(value ?? '').trim() : !(optional && value == null) && (!Number.isFinite(value) || value < min || (max !== null && value > max) || sharesInvalid);
+  const textValue = String(value ?? '');
+  const textInvalid = pattern
+    ? (optional ? textValue !== '' && !pattern.test(textValue) : !pattern.test(textValue))
+    : (optional ? textValue !== '' && (textValue.trim() === '' || textValue.trim().length > maxLength) : !textValue.trim() || textValue.trim().length > maxLength);
+  const invalid = type === 'text'
+    ? textInvalid
+    : !(optional && value == null) && (!Number.isFinite(value) || value < min || (max !== null && value > max) || sharesInvalid);
+  if (invalid) invalidFieldCount += 1;
   const inputId = `field-${path.replace(/\./g, '-')}`;
+  const optionalAttr = optional ? ' data-optional="true"' : '';
   const input = type === 'text'
-    ? `<input id="${inputId}" aria-invalid="${invalid}" type="text" data-path="${path}" data-type="text" value="${escapeAttribute(value)}" maxlength="80" required${titleAttr} />`
+    ? `<input id="${inputId}" aria-invalid="${invalid}" type="text" data-path="${path}" data-type="text"${optionalAttr} value="${escapeAttribute(value ?? '')}" maxlength="${maxLength}" ${optional ? '' : 'required '}${titleAttr} />`
     : `<input id="${inputId}" aria-invalid="${invalid}" type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'}${titleAttr} />`;
   return `<div class="field ${wide ? 'wide' : ''}"><label>${label} ${optionalText}${input}</label></div>`;
 }
@@ -234,9 +243,17 @@ function formatNumber(value, digits = 0) {
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: digits, minimumFractionDigits: digits }).format(value);
 }
 
+function currencyPrefix() {
+  return typeof state.deal.currency === 'string' && /^[A-Z]{3}$/.test(state.deal.currency)
+    ? state.deal.currency
+    : '';
+}
+
 function formatMoney(value) {
   if (!Number.isFinite(value)) return 'Impossible';
-  return `${formatNumber(value, 2)} units`;
+  const amount = formatNumber(value, 2);
+  const currency = currencyPrefix();
+  return currency ? `${currency} ${amount}` : `${amount} units`;
 }
 
 function formatPct(value) {
@@ -313,8 +330,10 @@ function inputPanel() {
       <div class="panel-body">
         <section class="input-section" aria-labelledby="deal-inputs-title">
           <h2 id="deal-inputs-title">Shared deal</h2>
-          <p class="notice">Volume shock % is the only baseline volume reduction, 0 through 100. Addressable volume caps realized demand. Empty required fields are not saved.</p>
+          <p class="notice">Volume shock % is the only baseline volume reduction, 0 through 100. Addressable volume caps realized demand. Empty required fields are not saved. An optional title and 3-letter currency code travel with JSON, hash links, and autosave. Currency is a display prefix only; omitted currency keeps the word units.</p>
           <div class="field-grid">
+            ${field({ label: 'Deal title', path: 'deal.title', value: state.deal.title ?? '', optional: true, wide: true, type: 'text', title: 'Optional display name, 1 through 80 characters after trimming. Leave blank to omit.' })}
+            ${field({ label: 'Currency code', path: 'deal.currency', value: state.deal.currency ?? '', optional: true, type: 'text', maxLength: 3, pattern: /^[A-Z]{3}$/, title: 'Optional 3-letter uppercase code such as USD. Leave blank to display units. The model does not convert currencies.' })}
             ${field({ label: 'Monthly volume', path: 'deal.monthlyVolume', value: state.deal.monthlyVolume, step: '1', title: 'Planned transactions per month, zero or greater.' })}
             ${field({ label: 'Fee / transaction', path: 'deal.feePerTransaction', value: state.deal.feePerTransaction, step: '0.0001', title: 'Gross fee collected per transaction, zero or greater.' })}
             ${field({ label: 'Addressable volume', path: 'deal.addressableVolume', value: state.deal.addressableVolume, step: '1', title: 'Maximum transactions available from demand, zero or greater.' })}
@@ -373,12 +392,16 @@ function resultsPanel(result) {
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
+  const identity = [
+    state.deal.title ? escapeAttribute(state.deal.title.trim()) : '',
+    currencyPrefix() ? `Amounts displayed with ${currencyPrefix()} prefix` : '',
+  ].filter(Boolean).join('. ');
   const statusDetail = escapeAttribute(result.viable
     ? `${result.weakestParticipant.name} has the least volume headroom to its ${result.weakestParticipant.bindingConstraint.label} limit.`
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
   return `<section class="results">
     <section class="status-card ${statusClass}" aria-live="polite">
-      <div><span class="eyebrow">Partnership viability</span><h1>${status}</h1><p>${statusDetail}</p></div>
+      <div><span class="eyebrow">Partnership viability</span><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
     </section>
     <section class="metric-strip" aria-label="Deal summary">
@@ -499,6 +522,7 @@ function methodAndLimits() {
 
 function render() {
   const casesOpen = app.querySelector?.('.case-details')?.open;
+  invalidFieldCount = 0;
   let result = null;
   try { result = calculatePartnership(state); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
@@ -549,7 +573,19 @@ function attachEvents() {
     if (input.dataset.action === 'case-name') { caseName = input.value; return; }
     if (input.dataset.path) {
       checkpoint();
-      setPath(input.dataset.path, input.dataset.type === 'text' ? input.value.trim() : numberFromInput(input.value, input.dataset.optional === 'true'));
+      if (input.dataset.type === 'text') {
+        const trimmed = input.value.trim();
+        if (input.dataset.optional === 'true' && trimmed === '') {
+          const keys = input.dataset.path.split('.');
+          const last = keys.pop();
+          const parent = keys.reduce((object, key) => object[key], state);
+          delete parent[last];
+        } else {
+          setPath(input.dataset.path, trimmed);
+        }
+      } else {
+        setPath(input.dataset.path, numberFromInput(input.value, input.dataset.optional === 'true'));
+      }
       activePreset = '';
       const validation = validateConfiguration(state);
       refresh(validation.valid

@@ -429,3 +429,23 @@ test('invalid fields expose accessible state and printing requires a valid case'
  app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
  assert.match(app.markup(), /Case assumptions/);
 });
+
+test('deal title and currency persist, display as a prefix, and reject illegal codes', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-path="deal.title"/);
+  assert.match(app.markup(), /data-path="deal.currency"/);
+  app.edit('deal.title', '  Harbor JV  ', { type: 'text' });
+  app.edit('deal.currency', 'USD', { type: 'text' });
+  assert.equal(app.saved().deal.title, 'Harbor JV');
+  assert.equal(app.saved().deal.currency, 'USD');
+  assert.match(app.markup(), /Harbor JV/);
+  assert.match(app.markup(), /USD 20,000\.00/);
+  assert.doesNotMatch(app.markup(), /20,000\.00 units/);
+  app.edit('deal.currency', 'usd', { type: 'text' });
+  assert.match(app.markup(), /Resolve these inputs/);
+  assert.match(app.notice(), /Deal currency/);
+  assert.equal(app.saved().deal.currency, 'USD');
+  app.edit('deal.currency', '', { type: 'text', optional: 'true' });
+  assert.equal(Object.hasOwn(app.saved().deal, 'currency'), false);
+  assert.match(app.markup(), /20,000\.00 units/);
+});
