@@ -360,6 +360,7 @@ function render() {
   renderGroups();
   $("#clause-filter").value = clauseFilter;
   renderClauses();
+  renderBallot();
   renderResults(currentResult());
 }
 
@@ -386,7 +387,10 @@ function renderClauses() {
     <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
         <label><span class="visually-hidden">Clause title</span><input class="clause-title-input" data-field="clause-title" data-clause-id="${escapeHtml(clause.id)}" value="${escapeHtml(clause.title)}" maxlength="120" aria-label="Clause ${clauseIndex + 1} title"></label>
-        <button class="text-button danger" type="button" data-action="remove-clause" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses.length <= 1 ? "disabled" : ""}>Remove clause</button>
+        <div class="clause-tools">
+          <button class="text-button" type="button" data-action="duplicate-clause" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses.length >= MAX_CLAUSES ? "disabled" : ""}>Duplicate clause</button>
+          <button class="text-button danger" type="button" data-action="remove-clause" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses.length <= 1 ? "disabled" : ""}>Remove clause</button>
+        </div>
       </div>
       <p class="clause-annotation">Cost is an explicit human estimate of disruption, scope expansion, or process burden. It is not a measure of merit.</p>
       <label class="clause-lock">Lock clause to an option
@@ -407,6 +411,11 @@ function renderClauses() {
       </table></div>
       <button class="text-button add-alternative" type="button" data-action="add-option" data-clause-id="${escapeHtml(clause.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Add alternative</button>
     </article>`).join("");
+}
+
+function renderBallot() {
+  const proposal = state.proposal;
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p>${proposal.clauses.map((clause) => `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3><ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`).join("")}`;
 }
 
 function renderResults(result) {
@@ -807,6 +816,11 @@ function changeAndRender(mutator) {
   if (context.action === "add-option") selector = '[data-field="option-label"][data-clause-id="' + context.clauseId + '"][data-option-id="' + clauseById(context.clauseId).options.at(-1).id + '"]';
   if (context.action === "remove-group") selector = '[data-action="add-group"]';
   if (context.action === "remove-clause") selector = '[data-action="add-clause"]';
+  if (context.action === "duplicate-clause") {
+    const sourceIndex = state.proposal.clauses.findIndex((clause) => clause.id === context.clauseId);
+    const copy = state.proposal.clauses[sourceIndex + 1];
+    if (copy) selector = '[data-field="clause-title"][data-clause-id="' + copy.id + '"]';
+  }
   if (context.action === "remove-option") selector = '[data-action="add-option"][data-clause-id="' + context.clauseId + '"]';
   if (selector) $(selector)?.focus();
 }
@@ -948,6 +962,28 @@ document.addEventListener("click", (event) => {
     ] });
   });
   if (action === "remove-clause") changeAndRender(() => { state.proposal.clauses = state.proposal.clauses.filter((clause) => clause.id !== button.dataset.clauseId); });
+  if (action === "duplicate-clause") changeAndRender(() => {
+    if (state.proposal.clauses.length >= MAX_CLAUSES) return;
+    const source = clauseById(button.dataset.clauseId);
+    if (!source) return;
+    const copy = {
+      id: makeId("clause"),
+      title: source.title.length + 7 > 120 ? `${source.title.slice(0, 113)} (copy)` : `${source.title} (copy)`,
+      options: source.options.map((option) => ({
+        id: makeId(option.original ? "original" : "alternative"),
+        label: option.label,
+        original: option.original === true,
+        changeCost: option.changeCost,
+        support: { ...option.support },
+      })),
+    };
+    if (source.lockedOptionId) {
+      const lockedIndex = source.options.findIndex((option) => option.id === source.lockedOptionId);
+      if (lockedIndex >= 0) copy.lockedOptionId = copy.options[lockedIndex].id;
+    }
+    const sourceIndex = state.proposal.clauses.findIndex((clause) => clause.id === source.id);
+    state.proposal.clauses.splice(sourceIndex + 1, 0, copy);
+  });
   if (action === "add-option") changeAndRender(() => {
     const clause = clauseById(button.dataset.clauseId);
     clause.options.push({ id: makeId("alternative"), original: false, label: "New alternative", changeCost: 1, support: { ...defaultSupport(state.proposal.groups) } });

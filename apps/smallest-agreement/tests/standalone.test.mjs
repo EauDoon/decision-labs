@@ -45,6 +45,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="support-drop-range"/u);
+  assert.match(html, /id="printable-ballot"/u);
+  assert.match(html, /Discussion worksheet/u);
+  assert.match(html, /Duplicate clause/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
@@ -97,6 +100,16 @@ async function savedWorkbench(storage, hash = "") {
       const target = element("#clause-filter");
       target.value = value;
       target.events.get("input")({ target });
+    },
+    ballot: () => element("#ballot-body").innerHTML,
+    clickAction: (action, dataset = {}) => {
+      documentEvents.get("click")({
+        target: {
+          closest: (selector) => selector === "[data-action]"
+            ? { disabled: false, dataset: { action, ...dataset } }
+            : null,
+        },
+      });
     },
   };
 }
@@ -297,6 +310,8 @@ test("editor disables add controls at the model's validation caps", async () => 
     id: `extra-${index}`, label: `Extra ${index}`, original: false, changeCost: index + 3, support: { g: 50 },
   })));
   assert.match((await savedWorkbench(new Map([[key, JSON.stringify(optionCapped)]]))).clauses(), /data-action="add-option"[^>]*disabled/u);
+  const duplicateCapped = await savedWorkbench(new Map([[key, JSON.stringify(clauseCapped)]]));
+  assert.match(duplicateCapped.clauses(), /data-action="duplicate-clause"[^>]*disabled/u);
 });
 
 
@@ -404,6 +419,31 @@ test("workplace hybrid preset loads a valid three-group office policy", async ()
   assert.match(app.clauses(), /Core collaboration hours/u);
   assert.match(app.clauses(), /Desk assignment/u);
   assert.match(app.clauses(), /On-site staff|data-group-id="onsite"|onsite/u);
+});
+
+test("printable worksheet lists every clause option without recording a vote", async () => {
+  const app = await savedWorkbench(new Map());
+  assert.match(app.ballot(), /Neighbourhood Plan: the shared green/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  assert.match(app.ballot(), /Close at 20:00 every day \(original\)/u);
+  assert.match(app.ballot(), /ballot-box/u);
+});
+
+test("duplicate clause copies options and locks with new identifiers and supports undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for duplication");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  app.clickAction("duplicate-clause", { clauseId: "hours" });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses.length, before.clauses.length + 1);
+  assert.equal(after.clauses[1].title, "Park access hours (copy)");
+  assert.equal(after.clauses[1].id === "hours", false);
+  assert.equal(after.clauses[1].options[0].id === "hours-original", false);
+  assert.equal(after.clauses[1].options[0].label, before.clauses[0].options[0].label);
+  assert.match(app.clauses(), /Park access hours \(copy\)/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
 });
 
 test("clause title filter hides cards without changing the stored draft", async () => {
