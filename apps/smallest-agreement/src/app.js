@@ -31,6 +31,8 @@ import {
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
+  formatLocksJson,
+  parseLocksJson,
   groupContributions,
   stressPackage,
   compareScenarioInputs,
@@ -1555,6 +1557,37 @@ $("#export-workspace-button").addEventListener("click", () => {
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft and clause card density.");
+});
+$("#export-locks-button").addEventListener("click", () => {
+  const exported = formatLocksJson(state.proposal);
+  if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting locks JSON.");
+  downloadText("smallest-agreement-locks.json", exported.json, "application/json");
+  notifyDraft(exported.locks.length
+    ? `Locks JSON downloaded with ${exported.locks.length} locked clause${exported.locks.length === 1 ? "" : "s"}. Import replaces every lock.`
+    : "Locks JSON downloaded with no locked clauses. Importing it clears every lock.");
+});
+$("#import-locks-button").addEventListener("click", () => $("#locks-import-file").click());
+$("#locks-import-file").addEventListener("change", async (event) => {
+  const sequence = ++importSequence;
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (file.size > 250_000) return notifyDraft("Locks JSON import failed: files must be 250 KB or smaller.");
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    if (sequence !== importSequence) return;
+    return notifyDraft("Locks JSON import failed: the file could not be read.");
+  }
+  if (sequence !== importSequence) return;
+  const parsed = parseLocksJson(text, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Locks JSON import failed (${first.code}): ${first.message}`);
+  }
+  changeAndRender(() => { state.proposal = parsed.proposal; });
+  notifyDraft(`Imported ${parsed.applied} clause lock${parsed.applied === 1 ? "" : "s"}. Every previous lock was replaced. Undo restores the previous draft.`);
 });
 $("#print-button").addEventListener("click", () => window.print());
 $("#worksheet-button").addEventListener("click", () => {

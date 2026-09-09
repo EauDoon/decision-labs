@@ -31,6 +31,8 @@ import {
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
+  formatLocksJson,
+  parseLocksJson,
   groupContributions,
   lockPackage,
   clearAllLocks,
@@ -1518,6 +1520,35 @@ test("workspace JSON persists compact or comfortable clause density and keeps ol
   assert.equal(bare.clauseDensity, null);
   assert.equal(formatWorkspaceJson(input, { clauseDensity: "huge" }).errors[0].code, "invalid_density");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, clauseDensity: "huge", proposal: input })).errors[0].code, "invalid_density");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("locks JSON round-trips current locks and fails closed on unknown ids", () => {
+  const input = proposal({
+    clauses: [
+      { id: "one", title: "One", lockedOptionId: "one-change", options: [
+        option("one-original", true, { g: 50 }), option("one-change", false, { g: 80 }, 1), option("one-other", false, { g: 70 }, 2),
+      ] },
+      { id: "two", title: "Two", lockedOptionId: "two-original", options: [
+        option("two-original", true, { g: 50 }), option("two-change", false, { g: 80 }, 1), option("two-other", false, { g: 70 }, 2),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const exported = formatLocksJson(input);
+  assert.equal(exported.status, "ok");
+  assert.equal(exported.locks.length, 2);
+  const cleared = parseLocksJson(JSON.stringify({ format: "smallest-agreement-locks", version: 1, locks: [{ clauseId: "one", optionId: "one-other" }] }), input);
+  assert.equal(cleared.status, "ok");
+  assert.equal(cleared.proposal.clauses[0].lockedOptionId, "one-other");
+  assert.equal(Object.hasOwn(cleared.proposal.clauses[1], "lockedOptionId"), false);
+  const restored = parseLocksJson(exported.json, cleared.proposal);
+  assert.deepEqual(restored.proposal.clauses.map((clause) => clause.lockedOptionId), ["one-change", "two-original"]);
+  assert.equal(parseLocksJson(JSON.stringify({ format: "smallest-agreement-locks", version: 1, locks: [{ clauseId: "missing", optionId: "one-change" }] }), input).errors[0].code, "unknown_clause");
+  assert.equal(parseLocksJson(JSON.stringify({ format: "smallest-agreement-locks", version: 1, locks: [{ clauseId: "one", optionId: "two-change" }] }), input).errors[0].code, "unknown_option");
+  assert.equal(parseLocksJson(JSON.stringify({ format: "smallest-agreement-locks", version: 1, locks: [{ clauseId: "one", optionId: "one-change" }, { clauseId: "one", optionId: "one-other" }] }), input).errors[0].code, "duplicate_clause");
+  assert.equal(parseLocksJson("{", input).errors[0].code, "invalid_json");
+  assert.equal(parseLocksJson("{}", input).errors[0].code, "invalid_format");
   assert.equal(JSON.stringify(input), before);
 });
 

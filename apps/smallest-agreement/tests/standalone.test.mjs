@@ -77,6 +77,11 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="worksheet-csv-button"/u);
   assert.match(html, /id="export-workspace-button"/u);
   assert.match(html, /Export workspace JSON/u);
+  assert.match(html, /id="export-locks-button"/u);
+  assert.match(html, /Export locks JSON/u);
+  assert.match(html, /id="import-locks-button"/u);
+  assert.match(html, /Import locks JSON/u);
+  assert.match(html, /id="locks-import-file"/u);
   assert.match(html, /id="clause-density"/u);
   assert.match(html, /id="copy-veto-button"/u);
   assert.match(html, /Copy veto blockers/u);
@@ -175,6 +180,13 @@ async function savedWorkbench(storage, hash = "") {
         value: "clauses.csv",
       };
       await element("#clauses-import-file").events.get("change")({ target });
+    },
+    importLocksJson: async (contents, { size } = {}) => {
+      const target = {
+        files: [{ size: size ?? contents.length, text: async () => contents }],
+        value: "locks.json",
+      };
+      await element("#locks-import-file").events.get("change")({ target });
     },
     setTitle: (value) => {
       const target = element("#proposal-title");
@@ -1011,6 +1023,37 @@ test("clauses CSV import replaces options with named errors and supports undo", 
   assert.match(app.message(), /Imported 1 clauses/u);
   app.click("#undo-button");
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+});
+
+test("locks JSON import replaces every lock, fails closed on unknown ids, and can be undone", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for locks JSON");
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  app.clickAction("toggle-clause-lock", { clauseId: "market", optionId: "market-monthly" });
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(before.clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
+  await app.importLocksJson(JSON.stringify({
+    format: "smallest-agreement-locks",
+    version: 1,
+    locks: [{ clauseId: "missing", optionId: "hours-pilot" }],
+  }));
+  assert.match(app.message(), /Locks JSON import failed \(unknown_clause\)/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
+  await app.importLocksJson(JSON.stringify({
+    format: "smallest-agreement-locks",
+    version: 1,
+    locks: [{ clauseId: "path", optionId: "path-warm" }],
+  }));
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses.find((clause) => clause.id === "hours").lockedOptionId, undefined);
+  assert.equal(after.clauses.find((clause) => clause.id === "market").lockedOptionId, undefined);
+  assert.equal(after.clauses.find((clause) => clause.id === "path").lockedOptionId, "path-warm");
+  assert.match(app.message(), /Imported 1 clause lock/u);
+  app.click("#undo-button");
+  const undone = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(undone.clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
+  assert.equal(undone.clauses.find((clause) => clause.id === "market").lockedOptionId, "market-monthly");
 });
 
 test("clause density persists in workspace JSON and local workspace prefs", async () => {

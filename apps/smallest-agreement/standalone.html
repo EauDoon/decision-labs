@@ -238,6 +238,8 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
         <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
         <button class="button button-secondary" type="button" id="export-workspace-button">Export workspace JSON</button>
+        <button class="button button-secondary" type="button" id="export-locks-button">Export locks JSON</button>
+        <button class="button button-secondary" type="button" id="import-locks-button">Import locks JSON</button>
         <button class="button button-secondary" type="button" id="print-button">Print facilitator pack</button>
         <button class="button button-secondary" type="button" id="worksheet-button">Export worksheet</button>
         <button class="button button-secondary" type="button" id="worksheet-csv-button">Export worksheet CSV</button>
@@ -259,6 +261,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-quiet" type="button" id="coach-again">Show workshop tour</button>
         <button class="button button-quiet" type="button" id="reset-button">Reset</button>
         <input id="import-file" type="file" accept="application/json,.json" hidden>
+        <input id="locks-import-file" type="file" accept="application/json,.json" hidden>
         <input id="matrix-import-file" type="file" accept="text/csv,.csv" hidden>
         <input id="groups-import-file" type="file" accept="text/csv,.csv" hidden>
         <input id="clauses-import-file" type="file" accept="text/csv,.csv" hidden>
@@ -2219,6 +2222,66 @@ function parseWorkspaceJson(text) {
   return { status: "ok", kind: "workspace", proposal: proposal.proposal, clauseDensity };
 }
 
+/**
+ * Export the current clause locks as a version-1 document.
+ * Clauses without a lock are omitted. Re-import replaces every lock.
+ */
+function formatLocksJson(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  const locks = proposal.clauses
+    .filter((clause) => Object.hasOwn(clause, "lockedOptionId"))
+    .map((clause) => ({ clauseId: clause.id, optionId: clause.lockedOptionId }));
+  return {
+    status: "ok",
+    locks,
+    json: `${JSON.stringify({
+      format: "smallest-agreement-locks",
+      version: 1,
+      locks,
+    }, null, 2)}\n`,
+  };
+}
+
+/**
+ * Replace every clause lock from a version-1 locks document.
+ * Unknown clause or option ids fail closed. The input proposal is not mutated.
+ */
+function parseLocksJson(text, proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  const parsed = parseJsonObject(text, "locks");
+  if (parsed.status !== "ok") return parsed;
+  const raw = parsed.value;
+  if (raw.format !== "smallest-agreement-locks" || raw.version !== 1) {
+    return { status: "invalid", errors: [namedFileError("invalid_format", "Locks JSON must declare format smallest-agreement-locks version 1.")] };
+  }
+  if (!Array.isArray(raw.locks)) {
+    return { status: "invalid", errors: [namedFileError("invalid_format", "Locks JSON must include a locks array.")] };
+  }
+  const next = canonicalProposal(proposal);
+  for (const clause of next.clauses) delete clause.lockedOptionId;
+  const seen = new Set();
+  for (const [index, row] of raw.locks.entries()) {
+    if (!isPlainObject(row) || typeof row.clauseId !== "string" || typeof row.optionId !== "string") {
+      return { status: "invalid", errors: [namedFileError("invalid_lock", `locks[${index}] must have clauseId and optionId strings.`)] };
+    }
+    if (seen.has(row.clauseId)) {
+      return { status: "invalid", errors: [namedFileError("duplicate_clause", `Clause ${row.clauseId} is locked more than once.`)] };
+    }
+    seen.add(row.clauseId);
+    const clause = next.clauses.find((item) => item.id === row.clauseId);
+    if (!clause) {
+      return { status: "invalid", errors: [namedFileError("unknown_clause", `Unknown clause ${row.clauseId}.`, { clauseId: row.clauseId })] };
+    }
+    if (!clause.options.some((option) => option.id === row.optionId)) {
+      return { status: "invalid", errors: [namedFileError("unknown_option", `Unknown option ${row.optionId} for clause ${row.clauseId}.`, { clauseId: row.clauseId, optionId: row.optionId })] };
+    }
+    clause.lockedOptionId = row.optionId;
+  }
+  return { status: "ok", proposal: next, applied: raw.locks.length };
+}
+
 function parseCsvCost(raw, path) {
   const neutralized = neutralizeCsvCell(raw).trim();
   if (FORMULA_CELL.test(neutralized)) {
@@ -4006,6 +4069,37 @@ $("#export-workspace-button").addEventListener("click", () => {
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft and clause card density.");
+});
+$("#export-locks-button").addEventListener("click", () => {
+  const exported = formatLocksJson(state.proposal);
+  if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting locks JSON.");
+  downloadText("smallest-agreement-locks.json", exported.json, "application/json");
+  notifyDraft(exported.locks.length
+    ? `Locks JSON downloaded with ${exported.locks.length} locked clause${exported.locks.length === 1 ? "" : "s"}. Import replaces every lock.`
+    : "Locks JSON downloaded with no locked clauses. Importing it clears every lock.");
+});
+$("#import-locks-button").addEventListener("click", () => $("#locks-import-file").click());
+$("#locks-import-file").addEventListener("change", async (event) => {
+  const sequence = ++importSequence;
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (file.size > 250_000) return notifyDraft("Locks JSON import failed: files must be 250 KB or smaller.");
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    if (sequence !== importSequence) return;
+    return notifyDraft("Locks JSON import failed: the file could not be read.");
+  }
+  if (sequence !== importSequence) return;
+  const parsed = parseLocksJson(text, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Locks JSON import failed (${first.code}): ${first.message}`);
+  }
+  changeAndRender(() => { state.proposal = parsed.proposal; });
+  notifyDraft(`Imported ${parsed.applied} clause lock${parsed.applied === 1 ? "" : "s"}. Every previous lock was replaced. Undo restores the previous draft.`);
 });
 $("#print-button").addEventListener("click", () => window.print());
 $("#worksheet-button").addEventListener("click", () => {

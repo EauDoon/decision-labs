@@ -45,6 +45,8 @@ const appImport = `import {
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
+  formatLocksJson,
+  parseLocksJson,
   groupContributions,
   stressPackage,
   compareScenarioInputs,

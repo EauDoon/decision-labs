@@ -1729,6 +1729,66 @@ export function parseWorkspaceJson(text) {
   return { status: "ok", kind: "workspace", proposal: proposal.proposal, clauseDensity };
 }
 
+/**
+ * Export the current clause locks as a version-1 document.
+ * Clauses without a lock are omitted. Re-import replaces every lock.
+ */
+export function formatLocksJson(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  const locks = proposal.clauses
+    .filter((clause) => Object.hasOwn(clause, "lockedOptionId"))
+    .map((clause) => ({ clauseId: clause.id, optionId: clause.lockedOptionId }));
+  return {
+    status: "ok",
+    locks,
+    json: `${JSON.stringify({
+      format: "smallest-agreement-locks",
+      version: 1,
+      locks,
+    }, null, 2)}\n`,
+  };
+}
+
+/**
+ * Replace every clause lock from a version-1 locks document.
+ * Unknown clause or option ids fail closed. The input proposal is not mutated.
+ */
+export function parseLocksJson(text, proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  const parsed = parseJsonObject(text, "locks");
+  if (parsed.status !== "ok") return parsed;
+  const raw = parsed.value;
+  if (raw.format !== "smallest-agreement-locks" || raw.version !== 1) {
+    return { status: "invalid", errors: [namedFileError("invalid_format", "Locks JSON must declare format smallest-agreement-locks version 1.")] };
+  }
+  if (!Array.isArray(raw.locks)) {
+    return { status: "invalid", errors: [namedFileError("invalid_format", "Locks JSON must include a locks array.")] };
+  }
+  const next = canonicalProposal(proposal);
+  for (const clause of next.clauses) delete clause.lockedOptionId;
+  const seen = new Set();
+  for (const [index, row] of raw.locks.entries()) {
+    if (!isPlainObject(row) || typeof row.clauseId !== "string" || typeof row.optionId !== "string") {
+      return { status: "invalid", errors: [namedFileError("invalid_lock", `locks[${index}] must have clauseId and optionId strings.`)] };
+    }
+    if (seen.has(row.clauseId)) {
+      return { status: "invalid", errors: [namedFileError("duplicate_clause", `Clause ${row.clauseId} is locked more than once.`)] };
+    }
+    seen.add(row.clauseId);
+    const clause = next.clauses.find((item) => item.id === row.clauseId);
+    if (!clause) {
+      return { status: "invalid", errors: [namedFileError("unknown_clause", `Unknown clause ${row.clauseId}.`, { clauseId: row.clauseId })] };
+    }
+    if (!clause.options.some((option) => option.id === row.optionId)) {
+      return { status: "invalid", errors: [namedFileError("unknown_option", `Unknown option ${row.optionId} for clause ${row.clauseId}.`, { clauseId: row.clauseId, optionId: row.optionId })] };
+    }
+    clause.lockedOptionId = row.optionId;
+  }
+  return { status: "ok", proposal: next, applied: raw.locks.length };
+}
+
 function parseCsvCost(raw, path) {
   const neutralized = neutralizeCsvCell(raw).trim();
   if (FORMULA_CELL.test(neutralized)) {
