@@ -947,6 +947,18 @@ test('two-party 50/50 studio preset loads from the starting-point buttons', asyn
   assert.match(app.notice(), /Two-party 50\/50 studio loaded/);
 });
 
+test('four-party marketplace preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="fourPartyMarketplace"/);
+  assert.match(app.markup(), /Four-party marketplace/);
+  app.click('preset', { preset: 'fourPartyMarketplace' });
+  assert.equal(app.saved().participants.length, 4);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['marketplace', 'seller', 'logistics', 'payments']);
+  assert.equal(app.saved().deal.feePerTransaction, 1.2);
+  assert.equal(app.saved().deal.monthlyVolume, 25000);
+  assert.match(app.notice(), /Four-party marketplace loaded/);
+});
+
 test('visible tour and shortcut buttons reopen coach and help', async () => {
   const app = await workbench();
   app.click('dismiss-coach');

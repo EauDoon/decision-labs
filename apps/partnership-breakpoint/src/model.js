@@ -114,6 +114,16 @@ export const PRESETS = Object.freeze({
       { id: 'distribution-studio', name: 'Distribution studio', revenueShare: 0.5, variableCostPerTransaction: 2.25, fixedMonthlyCost: 6000, minimumAcceptableProfit: 5000, capacity: 12000, minimumCommitment: 0, riskCost: 1500 },
     ],
   },
+  fourPartyMarketplace: {
+    name: 'Four-party marketplace',
+    deal: { monthlyVolume: 25000, feePerTransaction: 1.2, addressableVolume: 40000, volumeShockPct: 0 },
+    participants: [
+      { id: 'marketplace', name: 'Marketplace', revenueShare: 0.28, variableCostPerTransaction: 0.05, fixedMonthlyCost: 2500, minimumAcceptableProfit: 3000, capacity: 38000, minimumCommitment: 0, riskCost: 400 },
+      { id: 'seller', name: 'Seller', revenueShare: 0.42, variableCostPerTransaction: 0.12, fixedMonthlyCost: 1500, minimumAcceptableProfit: 7500, capacity: 45000, minimumCommitment: 5000, riskCost: 300 },
+      { id: 'logistics', name: 'Logistics', revenueShare: 0.18, variableCostPerTransaction: 0.06, fixedMonthlyCost: 1200, minimumAcceptableProfit: 600, capacity: 32000, minimumCommitment: 4000, riskCost: 200 },
+      { id: 'payments', name: 'Payments', revenueShare: 0.12, variableCostPerTransaction: 0.03, fixedMonthlyCost: 500, minimumAcceptableProfit: 1800, capacity: 26000, minimumCommitment: 0, riskCost: 100 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {

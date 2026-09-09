@@ -387,6 +387,28 @@ test('two-party 50/50 studio preset is a distinct even-split starting point', ()
   assert.ok(result.participants.every((item) => item.revenueShare === 0.5));
 });
 
+test('four-party marketplace preset is distinct from two- and three-party starting points', () => {
+  const market = clonePreset('fourPartyMarketplace');
+  assert.equal(PRESETS.fourPartyMarketplace.name, 'Four-party marketplace');
+  assert.equal(market.participants.length, 4);
+  assert.deepEqual(market.participants.map((item) => item.id), ['marketplace', 'seller', 'logistics', 'payments']);
+  assert.deepEqual(market.participants.map((item) => item.revenueShare), [0.28, 0.42, 0.18, 0.12]);
+  assert.equal(market.deal.monthlyVolume, 25000);
+  assert.equal(market.deal.feePerTransaction, 1.2);
+  assert.notEqual(market.participants.length, clonePreset('balanced').participants.length);
+  assert.notEqual(market.participants.length, clonePreset('creatorTakeRate').participants.length);
+  assert.notEqual(market.participants.length, clonePreset('threePartyJv').participants.length);
+  assert.notEqual(market.participants.length, clonePreset('twoPartyStudio').participants.length);
+  assert.notEqual(market.deal.feePerTransaction, clonePreset('balanced').deal.feePerTransaction);
+  assert.notEqual(market.deal.feePerTransaction, clonePreset('creatorTakeRate').deal.feePerTransaction);
+  assert.notEqual(market.deal.feePerTransaction, clonePreset('threePartyJv').deal.feePerTransaction);
+  assert.notEqual(market.deal.feePerTransaction, clonePreset('twoPartyStudio').deal.feePerTransaction);
+  const result = calculatePartnership(market);
+  assert.equal(result.viable, true);
+  assert.equal(result.participants.length, 4);
+  assert.ok(result.participants.every((item) => item.viable));
+});
+
 test('creator take-rate and three-party JV presets calculate interesting first breakpoints', () => {
   const creator = calculatePartnership(clonePreset('creatorTakeRate'));
   assert.equal(creator.participants.length, 2);
