@@ -118,6 +118,16 @@ Blocker counts include every closed gate and exhausted reserve observed in an in
 
 Sensitivity holds other assumptions fixed and scales one supported field by 50%, 75%, 100%, 125% and 150%. Effective values are sanitized and any cap is labeled. Starting from zero gives five zero cases. Increasing reserve cannot repair non-overlapping windows or throughput limits. The pinned baseline is separate from the sensitivity experiment's current-scenario reference.
 
+Hours to first settlement is the 0-based hour offset of the first interval with positive settlement. The dashboard reports "No settlement in 72h" when none of the 72 intervals settle. Comparison deltas for this field are numeric only when both runs settle; a mixed null and number is stored as null rather than coerced through zero.
+
+Hourly limiting-gate attribution counts `limitingGate` at the start of each of the 72 intervals. Closed issuer, bank or payout gates are named before throughput or reserve. The count is an observation, not the marginal effect of changing one assumption. It is separate from overlapping backlog-blocker counts in the diagnostics list.
+
+A window-shift preview adds whole hours to one gate's start and end, then clamps with the existing one-hour minimum window and re-runs the simulation. Peak queue and settled total deltas are relative to the current scenario. Apply is a separate action.
+
+Demand-profile comparison reuses every other current assumption and runs flat, Friday burst and Monday rush. Saved-experiment comparison accepts two or three library copies only. Neither comparison is a forecast.
+
+The gate Gantt plots 72 hours of issuer, bank and payout open/closed state plus weekday versus weekend FX. The selected-hour marker follows the timeline. The first-payout marker is `nextPayoutTime` from hour zero given starting reserve. Printable queue and sensitivity bar SVGs are light-background paths. Reports may inline the Gantt SVG. None of these drawings contain timestamps.
+
 ## Recovery and output boundaries
 
-Workspace v1 stores canonical current and baseline scenarios, bounded notes (4000 characters), target, deadline and selected hour. Imports are size-bounded and atomically decoded before replacing state; computed results are regenerated. The library contains at most 12 canonical scenarios. Scenario undo keeps at most 40 snapshots in memory. Portable reports are static escaped HTML with a restrictive content security policy. CSV contains only fixed headers, model-generated time labels and numeric values, so scenario names cannot inject spreadsheet formulas.
+Workspace v1 stores canonical current and baseline scenarios, bounded notes (4000 characters), target, deadline and selected hour. Imports are size-bounded and atomically decoded before replacing state; computed results are regenerated. The library contains at most 12 canonical scenarios. Scenario undo keeps at most 40 snapshots in memory. Portable reports are static escaped HTML with a restrictive content security policy and may inline the current gate Gantt as SVG. CSV contains only fixed headers, model-generated time labels and numeric values, so scenario names cannot inject spreadsheet formulas.

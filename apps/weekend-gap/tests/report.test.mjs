@@ -21,3 +21,10 @@ test("report inlines the current-scenario gate Gantt as SVG",()=>{
  assert.match(report,/>First payout /);
  assert.match(report,/Selected Sat 12:00/);
 });
+test("report lists hours to first settlement for both scenarios",()=>{
+ const open=reportToHTML(DEFAULT_SCENARIO,DEFAULT_SCENARIO);
+ assert.match(open,/Hours to first settlement/);
+ assert.doesNotMatch(open,/No settlement in 72h/);
+ const closed=reportToHTML({...DEFAULT_SCENARIO,payoutThroughputAudPerHour:0},DEFAULT_SCENARIO);
+ assert.match(closed,/No settlement in 72h/);
+});

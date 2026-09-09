@@ -56,11 +56,12 @@ npm run check
 
 - A deterministic 72-hour Friday-to-Monday simulation.
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
-- Normal Friday, Weekend Rush and Market Stress presets.
-- Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, and next payout time.
-- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, and the number of hourly checkpoints with a backlog.
-- Play, pause and keyboard-accessible timeline scrubber.
-- Canvas chart with a text-equivalent data table.
+- Normal Friday, Weekend Rush, Market Stress, and Thin FX, Tight Windows (synthetic) presets.
+- Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, and hours to first settlement.
+- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, and hours to first settlement (or no settlement in 72 hours).
+- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, undo, redo and export.
+- Canvas chart with a printable SVG queue path and a text-equivalent data table.
+- A 72-hour gate Gantt (SVG plus table) with the current hour and first payout window marked.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
 ## Scenario comparison and reserve planner
@@ -123,7 +124,24 @@ scripts/dev-server.mjs Dependency-free local development server
 
 MIT. See [LICENSE](LICENSE).
 
-## New in v1.3.0: repeatable experiments
+## New in v1.4.0: operating calendar and what-if tools
+
+1. Scrub a 72-hour gate Gantt of issuer, bank, payout and FX state. The solid marker follows the timeline slider. The dashed marker is the first payout window. A table fallback and print styles keep the calendar readable without canvas.
+2. Preview shifting one operating window by whole hours, see peak-queue and settled-total deltas, then apply explicitly.
+3. Count which named limiting gate tagged each of the 72 hours, including a bank-closed fixture in tests. This is an observation count, not a causal ranking.
+4. Compare flat, Friday burst and Monday rush on the same other inputs. Timing redistributes demand; it is not a forecast.
+5. Optionally treat Monday as a public holiday. Older scenario files omit the field and keep a weekday Monday. Settlement cannot occur on a holiday Monday.
+6. Run the five sensitivity cases as SVG bars for settled total or peak queue. The numeric table remains the text equivalent.
+7. A first-run coach explains synthetic assumptions, gates and the Friday-Monday frame. It is skipped on share links and closes with Escape.
+8. Keyboard shortcuts: `?` help, Space play/pause, `U` undo, `R` redo, `E` export. Keys are ignored while typing in an input, textarea or select.
+9. Print a light SVG of queue versus hour. The canvas playhead stays available on screen.
+10. Use the Thin FX, Tight Windows (synthetic) preset for thin depth, compressed hours and a holiday Monday.
+11. Hours to first settlement appear on the dashboard, or "No settlement in 72h" when the chain never pays.
+12. Compare two or three named library copies side by side. Printable reports now inline the current Gantt.
+
+v1.3.0 repeatable-experiment workflows remain: demand timing, pinned baselines, sensitivity apply, diagnostics, library, undo, workspace, HTML report and hourly CSV.
+
+### Repeatable experiment workflows
 
 1. Choose a preset, edit assumptions and select flat, Friday burst or Monday rush demand timing. Timing redistributes the same total demand; it does not introduce randomness.
 2. Pin a baseline and write experiment notes. Compare the current scenario with the detached baseline, then run five sensitivity cases for one assumption. Capped values are labeled. Applying a case keeps the baseline.
@@ -139,7 +157,7 @@ MIT. See [LICENSE](LICENSE).
 | Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour | Workspace import |
 | Analysis JSON | Both scenarios, results, reserve plan and hourly comparison | No, report only |
 | Hourly CSV | All 73 checkpoints, prior-interval flows and next-hour capacity | No, spreadsheet data |
-| Printable HTML | Notes, assumptions, comparison, diagnostics, reserve plan and model limits | No, report only |
+| Printable HTML | Notes, assumptions, comparison including hours to first settlement, diagnostics, inline gate Gantt, reserve plan and model limits | No, report only |
 
 Scenario, workspace and library data stay in browser storage. Nothing syncs to an account or server. A scenario hash takes priority over local recovery at startup. Normal reloads restore the latest workspace, including its baseline and notes. Browser/file-origin storage availability varies, so export important work. Storage failures remain visible while the simulator stays usable. Invalid planner drafts do not replace the last valid target in recovery, and incomplete numeric assumption fields leave the previous simulation intact.
 
