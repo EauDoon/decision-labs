@@ -235,6 +235,21 @@ export function applyBuyerSort(rawScenario, mode) {
   return validateScenario({ ...scenario, buyers: sortedBuyers(scenario.buyers, mode) });
 }
 
+export function restoreRemovedBuyer(rawScenario, rawBuyer) {
+  if (rawBuyer == null || typeof rawBuyer !== "object" || Array.isArray(rawBuyer)) {
+    throw new ScenarioError("A removed buyer is required to restore.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (scenario.buyers.length >= MAX_BUYERS) {
+    throw new ScenarioError(`Buyers must contain at most ${MAX_BUYERS} entries.`);
+  }
+  const buyer = validateBuyer(rawBuyer, scenario.buyers.length);
+  if (scenario.buyers.some((entry) => entry.id === buyer.id)) {
+    throw new ScenarioError(`Buyer ${buyer.id} is already in the room.`);
+  }
+  return validateScenario({ ...scenario, buyers: [...scenario.buyers, buyer] });
+}
+
 function residualCoverageCounts(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   return {

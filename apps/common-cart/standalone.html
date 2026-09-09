@@ -530,6 +530,7 @@ footer {
           <div class="button-row print-chrome">
             <button id="add-buyer" class="primary" type="button">Add buyer</button>
             <button id="import-buyers" type="button">Import buyer CSV</button>
+            <button id="restore-removed-buyer" type="button" disabled>Restore last removed buyer</button>
             <button id="buyer-csv-template" type="button">Download CSV template</button>
             <input id="import-buyers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
@@ -1050,6 +1051,21 @@ function previewBuyerSort(rawScenario, mode) {
 function applyBuyerSort(rawScenario, mode) {
   const scenario = validateScenario(rawScenario);
   return validateScenario({ ...scenario, buyers: sortedBuyers(scenario.buyers, mode) });
+}
+
+function restoreRemovedBuyer(rawScenario, rawBuyer) {
+  if (rawBuyer == null || typeof rawBuyer !== "object" || Array.isArray(rawBuyer)) {
+    throw new ScenarioError("A removed buyer is required to restore.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (scenario.buyers.length >= MAX_BUYERS) {
+    throw new ScenarioError(`Buyers must contain at most ${MAX_BUYERS} entries.`);
+  }
+  const buyer = validateBuyer(rawBuyer, scenario.buyers.length);
+  if (scenario.buyers.some((entry) => entry.id === buyer.id)) {
+    throw new ScenarioError(`Buyer ${buyer.id} is already in the room.`);
+  }
+  return validateScenario({ ...scenario, buyers: [...scenario.buyers, buyer] });
 }
 
 function residualCoverageCounts(rawScenario) {
@@ -2162,6 +2178,7 @@ let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
 let buyerSortPreviewIds = null;
 let offerFulfillmentFilter = "all";
+let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
 refresh();
@@ -2363,6 +2380,20 @@ function bindStaticEvents() {
       refresh();
       setStatus(`${button.textContent} example loaded.`, true);
     });
+  });
+
+  document.querySelector("#restore-removed-buyer").addEventListener("click", () => {
+    try {
+      if (!lastRemovedBuyer) return setStatus("No buyer was removed in this session.");
+      scenario = restoreRemovedBuyer(scenario, lastRemovedBuyer);
+      buyerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Last removed buyer restored. Undo returns to the list without that buyer.", true);
+      elements.buyerRows.querySelector(`[data-id="${lastRemovedBuyer.id}"] input`)?.focus();
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
   });
 
   document.querySelector("#add-buyer").addEventListener("click", () => {
@@ -2682,6 +2713,15 @@ function renderEditor() {
   if (filterSelect) filterSelect.value = offerFulfillmentFilter;
   renderTierEditors();
   applyOfferFulfillmentFilter();
+  const restoreRemoved = document.querySelector("#restore-removed-buyer");
+  if (restoreRemoved) {
+    restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
+    restoreRemoved.title = restoreRemoved.disabled
+      ? lastRemovedBuyer
+        ? "That buyer is already in the room."
+        : "Remove a buyer this session to restore it here."
+      : "Restore the buyer removed most recently in this session.";
+  }
 }
 
 function applyOfferFulfillmentFilter() {
@@ -2743,6 +2783,8 @@ function renderBuyerRow(entry) {
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
     const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
+    const removed = scenario.buyers[index];
+    if (removed) lastRemovedBuyer = JSON.parse(JSON.stringify(removed));
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
     buyerSortPreviewIds = null;
     renderEditor();

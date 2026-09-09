@@ -6,6 +6,7 @@ import {
   applyBuyerSort,
   previewBuyerSort,
   filterOfferIdsByFulfillment,
+  restoreRemovedBuyer,
   clonePreset,
   compareScenarios,
   compareThreeRooms,
@@ -78,6 +79,7 @@ let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
 let buyerSortPreviewIds = null;
 let offerFulfillmentFilter = "all";
+let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
 refresh();
@@ -279,6 +281,20 @@ function bindStaticEvents() {
       refresh();
       setStatus(`${button.textContent} example loaded.`, true);
     });
+  });
+
+  document.querySelector("#restore-removed-buyer").addEventListener("click", () => {
+    try {
+      if (!lastRemovedBuyer) return setStatus("No buyer was removed in this session.");
+      scenario = restoreRemovedBuyer(scenario, lastRemovedBuyer);
+      buyerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Last removed buyer restored. Undo returns to the list without that buyer.", true);
+      elements.buyerRows.querySelector(`[data-id="${lastRemovedBuyer.id}"] input`)?.focus();
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
   });
 
   document.querySelector("#add-buyer").addEventListener("click", () => {
@@ -598,6 +614,15 @@ function renderEditor() {
   if (filterSelect) filterSelect.value = offerFulfillmentFilter;
   renderTierEditors();
   applyOfferFulfillmentFilter();
+  const restoreRemoved = document.querySelector("#restore-removed-buyer");
+  if (restoreRemoved) {
+    restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
+    restoreRemoved.title = restoreRemoved.disabled
+      ? lastRemovedBuyer
+        ? "That buyer is already in the room."
+        : "Remove a buyer this session to restore it here."
+      : "Restore the buyer removed most recently in this session.";
+  }
 }
 
 function applyOfferFulfillmentFilter() {
@@ -659,6 +684,8 @@ function renderBuyerRow(entry) {
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
     const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
+    const removed = scenario.buyers[index];
+    if (removed) lastRemovedBuyer = JSON.parse(JSON.stringify(removed));
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
     buyerSortPreviewIds = null;
     renderEditor();
