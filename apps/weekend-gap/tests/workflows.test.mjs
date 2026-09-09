@@ -28,6 +28,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     node.type = match[0].match(/\btype="([^"]*)"/)?.[1] || "";
     node.checked = /\bchecked\b/.test(match[0]);
     node.hidden = /\shidden(?:\s|>)/.test(match[0]);
+    node.disabled = /\sdisabled(?:\s|>)/.test(match[0]);
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
@@ -297,4 +298,24 @@ test("comparing two scenario JSON files shows queue diffs and honest null settle
   assert.match(ui.nodes.get("file-compare-status").textContent, /Closed payout/);
   const hourRow = ui.nodes.get("file-compare-rows").children[3];
   assert.match(hourRow.children[3].textContent, /Not comparable/);
+});
+
+test("demand timing earlier and later previews apply without randomness", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("demandProfile").value, "flat");
+  assert.equal(ui.nodes.get("apply-demand-step").disabled, true);
+  await ui.nodes.get("preview-demand-later").click();
+  assert.equal(ui.nodes.get("apply-demand-step").disabled, false);
+  assert.match(ui.nodes.get("demand-step-status").textContent, /mondayRush/);
+  assert.match(ui.nodes.get("demand-step-status").textContent, /no randomness/);
+  await ui.nodes.get("apply-demand-step").click();
+  assert.equal(ui.nodes.get("demandProfile").value, "mondayRush");
+  await ui.nodes.get("preview-demand-later").click();
+  assert.equal(ui.nodes.get("apply-demand-step").disabled, true);
+  assert.match(ui.nodes.get("demand-step-status").textContent, /Already at the later end/);
+  await ui.nodes.get("preview-demand-earlier").click();
+  await ui.nodes.get("apply-demand-step").click();
+  assert.equal(ui.nodes.get("demandProfile").value, "flat");
+  await ui.nodes.get("undo-scenario").click();
+  assert.equal(ui.nodes.get("demandProfile").value, "mondayRush");
 });

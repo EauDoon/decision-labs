@@ -888,11 +888,56 @@ export function previewWindowShift(scenarioInput, gate, startDeltaHours, endDelt
 
 export const DEMAND_PROFILES = Object.freeze(["flat", "fridayBurst", "mondayRush"]);
 
+/** Earlier arrivals first: Friday burst, then flat, then Monday rush. */
+export const DEMAND_PROFILE_STEP_ORDER = Object.freeze(["fridayBurst", "flat", "mondayRush"]);
+
 const DEMAND_PROFILE_LABELS = Object.freeze({
   flat: "Even across 72 hours",
   fridayBurst: "Friday burst",
   mondayRush: "Monday rush"
 });
+
+/** Adjacent arrival profile with no randomness. Stays put at either end. */
+export function stepDemandProfile(profile, direction) {
+  if (!DEMAND_PROFILES.includes(profile)) throw new RangeError("Unknown demand profile.");
+  if (direction !== "earlier" && direction !== "later") throw new RangeError("Demand timing steps must be earlier or later.");
+  const index = DEMAND_PROFILE_STEP_ORDER.indexOf(profile);
+  const nextIndex = direction === "earlier" ? Math.max(0, index - 1) : Math.min(DEMAND_PROFILE_STEP_ORDER.length - 1, index + 1);
+  return DEMAND_PROFILE_STEP_ORDER[nextIndex];
+}
+
+/** Re-run after one earlier or later arrival step. Does not mutate the input. */
+export function previewDemandProfileStep(input, direction) {
+  const { scenario } = sanitizeScenario(input);
+  const candidateProfile = stepDemandProfile(scenario.demandProfile, direction);
+  const current = runSimulation(scenario);
+  const applied = { ...scenario, demandProfile: candidateProfile };
+  const candidate = runSimulation(applied);
+  return Object.freeze({
+    direction,
+    currentProfile: scenario.demandProfile,
+    candidateProfile,
+    unchanged: candidateProfile === scenario.demandProfile,
+    applied,
+    current: Object.freeze({
+      peakQueuedAud: current.summary.peakQueuedAud,
+      totalSettledAud: current.summary.totalSettledAud,
+      hoursToFirstSettlement: current.summary.hoursToFirstSettlement
+    }),
+    candidate: Object.freeze({
+      peakQueuedAud: candidate.summary.peakQueuedAud,
+      totalSettledAud: candidate.summary.totalSettledAud,
+      hoursToFirstSettlement: candidate.summary.hoursToFirstSettlement
+    }),
+    deltas: Object.freeze({
+      peakQueuedAud: candidate.summary.peakQueuedAud - current.summary.peakQueuedAud,
+      totalSettledAud: candidate.summary.totalSettledAud - current.summary.totalSettledAud,
+      hoursToFirstSettlement: typeof current.summary.hoursToFirstSettlement === "number" && typeof candidate.summary.hoursToFirstSettlement === "number"
+        ? candidate.summary.hoursToFirstSettlement - current.summary.hoursToFirstSettlement
+        : current.summary.hoursToFirstSettlement === candidate.summary.hoursToFirstSettlement ? 0 : null
+    })
+  });
+}
 
 /** Same other inputs, three arrival timings. Timing experiment, not a forecast. */
 export function compareDemandProfiles(input) {

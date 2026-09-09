@@ -388,6 +388,19 @@ SOFTWARE.
             <p class="eyebrow">Demand timing experiment</p>
             <h2 id="demand-compare-title">Compare flat, Friday burst and Monday rush</h2>
             <p>The three rows reuse every other current assumption and only change when demand joins the queue. Total demand is the same. This is a timing experiment, not a forecast of real redemptions.</p>
+            <div class="planning-actions">
+              <button id="preview-demand-earlier" type="button">Preview earlier arrivals</button>
+              <button id="preview-demand-later" type="button">Preview later arrivals</button>
+              <button id="apply-demand-step" type="button" disabled>Apply previewed timing</button>
+            </div>
+            <p id="demand-step-status" role="status">Preview an adjacent arrival profile. Friday burst is earlier, Monday rush is later, and flat sits between them. Nothing is applied until you confirm. There is no randomness.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Demand timing step preview">
+              <table>
+                <caption>Peak queue, settled total and hours to first settlement after one earlier or later arrival step.</caption>
+                <thead><tr><th scope="col">Metric</th><th scope="col">Current</th><th scope="col">Preview</th><th scope="col">Change</th></tr></thead>
+                <tbody id="demand-step-rows"></tbody>
+              </table>
+            </div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Demand profile comparison">
               <table>
                 <caption>Peak queue, remaining queue, settled total and hours to first settlement for each synthetic arrival profile.</caption>

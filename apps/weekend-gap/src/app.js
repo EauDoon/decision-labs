@@ -18,6 +18,7 @@ import {
   attributeBottlenecks,
   previewWindowShift,
   compareDemandProfiles,
+  previewDemandProfileStep,
   buildGateGanttSvg,
   ganttToCSV,
   buildGateSchedule,
@@ -85,6 +86,7 @@ let baselineScenario = { ...scenario };
 let comparison = compareScenarios(baselineScenario, scenario);
 let reservePlan = null;
 let windowShiftPreview = null;
+let demandStepPreview = null;
 let lastSensitivityRows = [];
 let selectedHour = 0;
 let playing = false;
@@ -162,7 +164,7 @@ function setMessage(message = "") {
   elements.inputMessage.textContent = message;
 }
 
-function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus } = {}) {
+function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus, demandStepStatus } = {}) {
   const cleaned = sanitizeScenario(nextScenario);
   if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
@@ -184,6 +186,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   lastSensitivityRows = [];
   document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
   clearWindowShiftPreview(windowShiftStatus || "Assumptions changed. Preview the window shift again before applying.");
+  clearDemandStepPreview(demandStepStatus || "Assumptions changed. Preview the demand timing step again before applying.");
   if (message) setMessage(message);
   else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
@@ -724,6 +727,52 @@ for (const id of ["window-shift-gate", "window-shift-start", "window-shift-end"]
     clearWindowShiftPreview("Offsets changed. Preview again before applying.");
   });
 }
+
+function clearDemandStepPreview(status = "Preview an adjacent arrival profile. Friday burst is earlier, Monday rush is later, and flat sits between them. Nothing is applied until you confirm. There is no randomness.") {
+  demandStepPreview = null;
+  const apply = document.querySelector("#apply-demand-step");
+  const rows = document.querySelector("#demand-step-rows");
+  const output = document.querySelector("#demand-step-status");
+  if (apply) apply.disabled = true;
+  if (rows) rows.replaceChildren();
+  if (output) output.textContent = status;
+}
+
+function previewDemandStep(direction) {
+  try {
+    demandStepPreview = previewDemandProfileStep(scenario, direction);
+    const preview = demandStepPreview;
+    document.querySelector("#demand-step-rows").replaceChildren(...[
+      ["Arrival profile", preview.currentProfile, preview.candidateProfile, preview.unchanged ? "Already at this end" : preview.direction],
+      ["Peak queue", planningAud(preview.current.peakQueuedAud), planningAud(preview.candidate.peakQueuedAud), signedAud(preview.deltas.peakQueuedAud)],
+      ["Settled total", planningAud(preview.current.totalSettledAud), planningAud(preview.candidate.totalSettledAud), signedAud(preview.deltas.totalSettledAud)],
+      ["Hours to first settlement", formatHoursToFirstSettlement(preview.current.hoursToFirstSettlement), formatHoursToFirstSettlement(preview.candidate.hoursToFirstSettlement), hourDeltaLabel(preview.deltas.hoursToFirstSettlement)]
+    ].map((cells) => {
+      const row = document.createElement("tr");
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      }
+      return row;
+    }));
+    document.querySelector("#apply-demand-step").disabled = preview.unchanged;
+    document.querySelector("#demand-step-status").textContent = preview.unchanged
+      ? `Already at the ${preview.direction} end of the arrival profiles. Total demand is unchanged. There is no randomness.`
+      : `Preview only. Arrival profile becomes ${preview.candidateProfile}. Peak queue change ${signedAud(preview.deltas.peakQueuedAud)}; settled total change ${signedAud(preview.deltas.totalSettledAud)}. Apply to copy this timing into the editor. There is no randomness.`;
+  } catch (error) {
+    clearDemandStepPreview(error instanceof RangeError ? error.message : "Demand timing step could not be previewed.");
+  }
+}
+
+document.querySelector("#preview-demand-earlier").addEventListener("click", () => previewDemandStep("earlier"));
+document.querySelector("#preview-demand-later").addEventListener("click", () => previewDemandStep("later"));
+document.querySelector("#apply-demand-step").addEventListener("click", () => {
+  if (!demandStepPreview || demandStepPreview.unchanged) return;
+  const next = demandStepPreview.applied;
+  const notice = `Applied ${next.demandProfile} demand timing. Other assumptions and the pinned baseline were kept. Undo scenario edit reverts this timing step.`;
+  setScenario(next, { message: notice, demandStepStatus: notice });
+});
 
 async function copyShareLink() {
   const hash = scenarioToHash(scenario);
