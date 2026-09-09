@@ -424,7 +424,23 @@ function handleShortcut(event) {
   if (key === "n") {
     event.preventDefault();
     document.querySelector("#add-buyer").click();
+    return;
   }
+  if (key === "m") {
+    event.preventDefault();
+    focusMerchantInspector();
+  }
+}
+
+function focusMerchantInspector() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (merchantTab?.getAttribute("aria-selected") === "true") {
+    document.querySelector("#merchant-panel")?.focus();
+    return;
+  }
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#merchant-inspector-region")?.focus();
 }
 
 function maybeShowCoach() {

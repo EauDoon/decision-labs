@@ -253,6 +253,10 @@ canvas { display: block; width: 100%; height: 280px; }
 .chart-scroll:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .canvas-note { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.75rem; }
 .inspector-panel { margin-top: 1rem; }
+.inspector-panel:focus-visible, #merchant-panel:focus-visible {
+  outline: 3px solid rgba(243, 111, 61, 0.55);
+  outline-offset: 2px;
+}
 .inspector-heading { display: flex; align-items: end; }
 .inspector-heading h3 { margin-bottom: 0.2rem; }
 .inspector-summary { margin: 0; color: var(--muted); }
@@ -390,6 +394,7 @@ footer {
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON</li>
         <li><kbd>n</kbd> Add a buyer</li>
+        <li><kbd>m</kbd> Focus the merchant inspector region</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -563,7 +568,7 @@ footer {
           </article>
         </div>
 
-        <article class="panel inspector-panel" aria-labelledby="inspector-title">
+        <article class="panel inspector-panel" id="merchant-inspector-region" tabindex="-1" aria-labelledby="inspector-title">
           <div class="panel-heading inspector-heading">
             <div>
               <p class="section-number">Offer inspector</p>
@@ -621,7 +626,7 @@ footer {
         </article>
       </div>
 
-      <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" hidden>
+      <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" tabindex="-1" hidden>
         <div class="snapshot-bar">
           <button id="merchant-report" type="button">Export aggregate merchant report</button>
           <button id="merchant-residual-report" type="button">Export residual coverage (aggregate)</button>
@@ -2315,7 +2320,23 @@ function handleShortcut(event) {
   if (key === "n") {
     event.preventDefault();
     document.querySelector("#add-buyer").click();
+    return;
   }
+  if (key === "m") {
+    event.preventDefault();
+    focusMerchantInspector();
+  }
+}
+
+function focusMerchantInspector() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (merchantTab?.getAttribute("aria-selected") === "true") {
+    document.querySelector("#merchant-panel")?.focus();
+    return;
+  }
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#merchant-inspector-region")?.focus();
 }
 
 function maybeShowCoach() {
