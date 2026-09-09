@@ -601,6 +601,23 @@ test('deal notes persist, print, and export, and reject overlong or unknown valu
   assert.equal(Object.hasOwn(app.saved().deal, 'notes'), false);
 });
 
+test('roster highlights the first listed participant who fails the current baseline', async () => {
+  const app = await workbench();
+  assert.doesNotMatch(app.markup(), /first-fail-label/);
+  const failing = clonePreset('balanced');
+  failing.participants[0].minimumAcceptableProfit = 1_000_000;
+  failing.participants[1].minimumAcceptableProfit = 1_000_000;
+  app.import(failing);
+  assert.match(app.markup(), /class="participant-form first-fail"/);
+  assert.match(app.markup(), /First listed participant who fails an exit test in this baseline/);
+  assert.doesNotMatch(app.markup(), /who will act with a chance/);
+  const firstForm = app.markup().match(/<section class="participant-form first-fail"[\s\S]*?<summary id="participant-0-title">([\s\S]*?)<\/summary>/)[1];
+  assert.match(firstForm, /Platform/);
+  app.click('move-participant-down', { index: '0' });
+  const moved = app.markup().match(/<section class="participant-form first-fail"[\s\S]*?<summary id="participant-0-title">([\s\S]*?)<\/summary>/)[1];
+  assert.match(moved, /Distributor/);
+});
+
 test('participant roster toolbar stays outside the disclosure and defaults to open', async () => {
   const app = await workbench();
   const html = await buildStandalone();

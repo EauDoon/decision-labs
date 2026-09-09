@@ -376,9 +376,10 @@ function participantDetailsOpen(index) {
   return Boolean(nodes[index]?.open);
 }
 
-function inputPanel() {
+function inputPanel(result) {
+  const firstFailId = result?.participants.find((participant) => !participant.viable)?.id ?? null;
   const participantForms = state.participants.map((participant, index) => `
-    <section class="participant-form" aria-labelledby="participant-${index}-title">
+    <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}" aria-labelledby="participant-${index}-title">
       <div class="participant-toolbar">
         <div class="button-row participant-roster">
           <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
@@ -387,6 +388,7 @@ function inputPanel() {
           <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
         </div>
       </div>
+      ${firstFailId === participant.id ? '<p class="first-fail-label">First listed participant who fails an exit test in this baseline. Roster order, not a ranking of who will act.</p>' : ''}
       <details class="participant-details"${participantDetailsOpen(index) ? ' open' : ''}>
         <summary id="participant-${index}-title">Participant ${index + 1}: ${escapeAttribute(participant.name)}</summary>
         <div class="field-grid">
@@ -750,7 +752,7 @@ function render() {
   try { result = calculatePartnership(state); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
   }
-  app.innerHTML = `${coachOverlay()}${helpDialog()}<div class="app-grid">${inputPanel()}${resultsPanel(result)}</div>`;
+  app.innerHTML = `${coachOverlay()}${helpDialog()}<div class="app-grid">${inputPanel(result)}${resultsPanel(result)}</div>`;
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
