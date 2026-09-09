@@ -1420,7 +1420,7 @@ export function sanitizeExportSlug(title) {
 }
 
 /**
- * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'|'participants'|'tornado'} kind
+ * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'|'participants'|'tornado'|'waterfall'} kind
  * @param {unknown} title
  */
 export function exportDownloadName(kind, title) {
@@ -1433,6 +1433,7 @@ export function exportDownloadName(kind, title) {
   if (kind === 'csv-visible') return slug ? `partnership-breakpoint-${slug}-stress-visible.csv` : 'partnership-breakpoint-stress-visible.csv';
   if (kind === 'participants') return slug ? `partnership-breakpoint-${slug}-participants.csv` : 'partnership-breakpoint-participants.csv';
   if (kind === 'tornado') return slug ? `partnership-breakpoint-${slug}-tornado.svg` : 'partnership-breakpoint-tornado.svg';
+  if (kind === 'waterfall') return slug ? `partnership-breakpoint-${slug}-waterfall.svg` : 'partnership-breakpoint-waterfall.svg';
   return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
 }
 

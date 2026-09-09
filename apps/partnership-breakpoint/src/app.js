@@ -732,49 +732,77 @@ function tornadoSection(result) {
   return `<section class="panel print-keep"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
 }
 
-function waterfallSection(result) {
-  const charts = result.participants.map((participant, index) => {
-    const minimum = state.participants[index].minimumAcceptableProfit;
-    const afterVariable = participant.revenue - participant.variableCost;
-    const afterFixed = afterVariable - participant.fixedCost;
-    const columns = [
-      { label: 'Revenue', start: 0, end: participant.revenue, fill: '#1558d6' },
-      { label: 'Variable', start: participant.revenue, end: afterVariable, fill: '#d94f3d' },
-      { label: 'Fixed', start: afterVariable, end: afterFixed, fill: '#d94f3d' },
-      { label: 'Risk', start: afterFixed, end: participant.monthlyProfit, fill: '#d94f3d' },
-      { label: 'Profit', start: 0, end: participant.monthlyProfit, fill: participant.monthlyProfit + 1e-9 >= minimum ? '#0b5c78' : '#d94f3d' },
-    ];
-    const peaks = [0, participant.revenue, afterVariable, afterFixed, participant.monthlyProfit, minimum];
-    const yMin = Math.min(...peaks);
-    const yMax = Math.max(...peaks, 1);
-    const width = 640;
-    const height = 220;
-    const margin = { top: 18, right: 12, bottom: 36, left: 8 };
-    const innerW = width - margin.left - margin.right;
-    const innerH = height - margin.top - margin.bottom;
-    const y = (value) => margin.top + innerH * (1 - (value - yMin) / (yMax - yMin || 1));
-    const gap = 10;
-    const colW = (innerW - gap * (columns.length - 1)) / columns.length;
-    const rects = columns.map((column, columnIndex) => {
-      const x = margin.left + columnIndex * (colW + gap);
-      const top = y(Math.max(column.start, column.end));
-      const bottom = y(Math.min(column.start, column.end));
-      return `<rect x="${x}" y="${top}" width="${colW}" height="${Math.max(1, bottom - top)}" fill="${column.fill}"></rect>
+function waterfallChart(participant) {
+  const minimum = participant.minimumAcceptableProfit;
+  const afterVariable = participant.revenue - participant.variableCost;
+  const afterFixed = afterVariable - participant.fixedCost;
+  const columns = [
+    { label: 'Revenue', start: 0, end: participant.revenue, fill: '#1558d6' },
+    { label: 'Variable', start: participant.revenue, end: afterVariable, fill: '#d94f3d' },
+    { label: 'Fixed', start: afterVariable, end: afterFixed, fill: '#d94f3d' },
+    { label: 'Risk', start: afterFixed, end: participant.monthlyProfit, fill: '#d94f3d' },
+    { label: 'Profit', start: 0, end: participant.monthlyProfit, fill: participant.monthlyProfit + 1e-9 >= minimum ? '#0b5c78' : '#d94f3d' },
+  ];
+  const peaks = [0, participant.revenue, afterVariable, afterFixed, participant.monthlyProfit, minimum];
+  const yMin = Math.min(...peaks);
+  const yMax = Math.max(...peaks, 1);
+  const width = 640;
+  const height = 220;
+  const margin = { top: 18, right: 12, bottom: 36, left: 8 };
+  const innerW = width - margin.left - margin.right;
+  const innerH = height - margin.top - margin.bottom;
+  const y = (value) => margin.top + innerH * (1 - (value - yMin) / (yMax - yMin || 1));
+  const gap = 10;
+  const colW = (innerW - gap * (columns.length - 1)) / columns.length;
+  const rects = columns.map((column, columnIndex) => {
+    const x = margin.left + columnIndex * (colW + gap);
+    const top = y(Math.max(column.start, column.end));
+    const bottom = y(Math.min(column.start, column.end));
+    return `<rect x="${x}" y="${top}" width="${colW}" height="${Math.max(1, bottom - top)}" fill="${column.fill}"></rect>
         <text x="${x + colW / 2}" y="${height - 14}" text-anchor="middle" font-size="11" fill="#1f2328">${column.label}</text>`;
-    }).join('');
-    const zeroY = y(0);
-    const minY = y(minimum);
-    const connectors = columns.slice(0, 4).map((column, columnIndex) => {
-      const x1 = margin.left + columnIndex * (colW + gap) + colW;
-      const x2 = x1 + gap;
-      const y1 = y(column.end);
-      return `<line x1="${x1}" x2="${x2}" y1="${y1}" y2="${y1}" stroke="#5b6269"></line>`;
-    }).join('');
-    const svg = `<svg class="chart-svg" role="img" aria-label="Contribution waterfall for ${escapeAttribute(participant.name)} showing revenue, costs, profit, and the minimum acceptable profit. The table lists the same values." viewBox="0 0 ${width} ${height}" width="100%">
-      <line x1="${margin.left}" x2="${width - margin.right}" y1="${zeroY}" y2="${zeroY}" stroke="#1f2328"></line>
+  }).join('');
+  const zeroY = y(0);
+  const minY = y(minimum);
+  const connectors = columns.slice(0, 4).map((column, columnIndex) => {
+    const x1 = margin.left + columnIndex * (colW + gap) + colW;
+    const x2 = x1 + gap;
+    const y1 = y(column.end);
+    return `<line x1="${x1}" x2="${x2}" y1="${y1}" y2="${y1}" stroke="#5b6269"></line>`;
+  }).join('');
+  const inner = `<line x1="${margin.left}" x2="${width - margin.right}" y1="${zeroY}" y2="${zeroY}" stroke="#1f2328"></line>
       <line x1="${margin.left}" x2="${width - margin.right}" y1="${minY}" y2="${minY}" stroke="#8a5a05" stroke-dasharray="4 3"></line>
       <text x="${width - margin.right}" y="${minY - 4}" text-anchor="end" font-size="10" fill="#8a5a05">Minimum ${escapeAttribute(formatMoney(minimum))}</text>
-      ${connectors}${rects}
+      ${connectors}${rects}`;
+  return { name: participant.name, width, height, inner, minimum };
+}
+
+function waterfallSvgMarkup(result, { standalone = false } = {}) {
+  const charts = result.participants.map((participant) => waterfallChart(participant));
+  const titleBand = 28;
+  const gap = 16;
+  const width = 640;
+  let offset = 0;
+  const groups = charts.map((chart) => {
+    const block = `<text x="8" y="${offset + 18}" font-size="14" fill="#1f2328">${escapeAttribute(chart.name)}</text>
+      <g transform="translate(0 ${offset + titleBand})">${chart.inner}</g>`;
+    offset += titleBand + chart.height + gap;
+    return block;
+  }).join('');
+  const height = Math.max(1, offset - gap);
+  const xmlns = standalone ? ' xmlns="http://www.w3.org/2000/svg"' : '';
+  const role = standalone ? '' : ' class="chart-svg" role="img" aria-label="Contribution waterfall charts for every participant, stacked from revenue through costs to profit. Each on-screen chart has its own table."';
+  return `<svg${xmlns}${role} viewBox="0 0 ${width} ${height}" width="${standalone ? width : '100%'}" height="${standalone ? height : Math.min(height, 720)}">${groups}</svg>`;
+}
+
+function waterfallSvgFile(result) {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n${waterfallSvgMarkup(result, { standalone: true })}\n`;
+}
+
+function waterfallSection(result) {
+  const charts = result.participants.map((participant) => {
+    const chart = waterfallChart(participant);
+    const svg = `<svg class="chart-svg" role="img" aria-label="Contribution waterfall for ${escapeAttribute(participant.name)} showing revenue, costs, profit, and the minimum acceptable profit. The table lists the same values." viewBox="0 0 ${chart.width} ${chart.height}" width="100%">
+      ${chart.inner}
     </svg>`;
     return `<section class="input-section"><h3>${escapeAttribute(participant.name)}</h3>${svg}
       <div class="table-wrap" tabindex="0" role="region" aria-label="Waterfall values for ${escapeAttribute(participant.name)}"><table><caption>Text equivalent for ${escapeAttribute(participant.name)}</caption><thead><tr><th scope="col">Step</th><th scope="col">Amount</th></tr></thead><tbody>
@@ -783,10 +811,10 @@ function waterfallSection(result) {
         <tr><th scope="row">Fixed cost</th><td>${formatMoney(participant.fixedCost)}</td></tr>
         <tr><th scope="row">Risk cost</th><td>${formatMoney(participant.riskCost)}</td></tr>
         <tr><th scope="row">Monthly profit</th><td>${formatMoney(participant.monthlyProfit)}</td></tr>
-        <tr><th scope="row">Minimum acceptable profit</th><td>${formatMoney(minimum)}</td></tr>
+        <tr><th scope="row">Minimum acceptable profit</th><td>${formatMoney(chart.minimum)}</td></tr>
       </tbody></table></div></section>`;
   }).join('');
-  return `<section class="panel print-keep"><div class="panel-heading"><h2>Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p>${charts}</div></section>`;
+  return `<section class="panel print-keep"><div class="panel-heading"><h2>Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p><div class="button-row"><button type="button" data-action="export-waterfall-svg">Download waterfall SVG</button></div>${charts}</div></section>`;
 }
 
 function sensitivityGrid() {
@@ -1063,6 +1091,7 @@ function attachEvents() {
     if (action === 'export-participants-csv') exportParticipantsCsv();
     if (action === 'import-roster-paste') importPastedRoster();
     if (action === 'export-tornado-svg') exportTornadoSvg();
+    if (action === 'export-waterfall-svg') exportWaterfallSvg();
     if (action === 'apply-stress-proposal') {
       try {
         const proposal = applyStressProposal(state);
@@ -1636,6 +1665,17 @@ function exportTornadoSvg() {
   const result = calculatePartnership(state);
   downloadText(tornadoSvgFile(result), 'image/svg+xml;charset=utf-8', exportDownloadName('tornado', caseExportTitle()));
   setNotice('Tornado SVG downloaded. It ranks displayed movements and does not assign probability.');
+}
+
+function exportWaterfallSvg() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before downloading the waterfall SVG. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const result = calculatePartnership(state);
+  downloadText(waterfallSvgFile(result), 'image/svg+xml;charset=utf-8', exportDownloadName('waterfall', caseExportTitle()));
+  setNotice('Waterfall SVG downloaded. It shows contribution steps and does not assign probability.');
 }
 
 function exportParticipantsCsv() {

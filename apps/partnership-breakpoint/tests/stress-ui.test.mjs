@@ -930,10 +930,33 @@ test('contribution waterfall includes an SVG and a text fallback for each partic
   assert.match(app.markup(), /aria-label="Contribution waterfall for Platform/);
   assert.match(app.markup(), /<caption>Text equivalent for Platform<\/caption>/);
   assert.match(app.markup(), /Minimum acceptable profit/);
+  assert.match(app.markup(), /data-action="export-waterfall-svg"/);
   const tornadoAt = app.markup().indexOf('Adverse-shock tornado');
   const waterfallAt = app.markup().indexOf('Contribution waterfall');
   const stressAt = app.markup().indexOf('Compound stress and negotiation');
   assert.equal(tornadoAt > 0 && waterfallAt > tornadoAt && stressAt > waterfallAt, true);
+});
+
+test('waterfall SVG download writes a namespaced file and refuses invalid cases', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export-waterfall-svg');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-waterfall.svg');
+  const text = await file.blob.text();
+  assert.match(text, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
+  assert.match(text, /xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+  assert.match(text, /<svg /);
+  assert.match(text, /Platform/);
+  assert.match(text, /Revenue/);
+  assert.doesNotMatch(text, /probab/i);
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.click('export-waterfall-svg');
+  assert.equal(app.downloads()[1].filename, 'partnership-breakpoint-harbor-jv-waterfall.svg');
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-waterfall-svg');
+  assert.equal(app.downloads().length, 2);
+  assert.match(app.notice(), /Resolve invalid inputs before downloading the waterfall SVG/);
 });
 
 test('two-party 50/50 studio preset loads from the starting-point buttons', async () => {
