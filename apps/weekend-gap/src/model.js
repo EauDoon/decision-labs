@@ -1252,6 +1252,7 @@ export const WEEKEND_REVIEW_TOOLS=Object.freeze([
  {id:'cohorts',title:'Arrival-cohort waiting ledger'},
  {id:'deadlines',title:'Settlement checkpoints'},
  {id:'closures',title:'Complete-chain closure spells'},
+ {id:'overlap',title:'Operating-window overlap'},
 // WG_REVIEW_TOOLS
 ]);
 function validateWeekendReviewScenario(raw){
@@ -1284,6 +1285,12 @@ export function analyzeWeekendReview(rawScenario,tool){
 
  const rows=[];let start=null;for(let hour=0;hour<=72;hour++){const status=hour<72?getOperationalStatus(scenario,hour):null;const closed=status&&!(status.issuerOpen&&status.bankOpen&&status.payoutOpen);if(closed&&start===null)start=hour;if(!closed&&start!==null){const arrived=result.timeline.slice(start+1,hour+1).reduce((sum,p)=>sum+p.demandThisHour,0);rows.push([start,hour,hour-start,result.timeline[start].queuedAud,arrived,result.timeline[hour].queuedAud]);start=null;}}
  return report(['Start hour inclusive','End hour exclusive','Consecutive closed hours','Queue at start AUD','Arrivals during closure AUD','Queue at end AUD'],rows,'A closure means at least one issuer, bank or payout window is closed. Zero reserve and zero throughput are separate constraints. Spells end at the 72-hour horizon; no reopening beyond that horizon is inferred.');
+
+ }
+ case 'overlap':{
+
+ const counts={issuer:0,bank:0,payout:0};let common=0;for(let hour=0;hour<72;hour++){const status=getOperationalStatus(scenario,hour);for(const gate of Object.keys(counts))if(status[gate+'Open'])counts[gate]++;if(status.issuerOpen&&status.bankOpen&&status.payoutOpen)common++;}
+ return report(['Gate','Individually open hours','Complete-chain open hours','Open hours without complete chain'],Object.entries(counts).map(([gate,hours])=>[gate,hours,common,hours-common]),'Hours use operating windows and holidays only. Open hours do not establish available reserve, FX depth, throughput or demand. The lost overlap counts are per gate and must not be summed as unique closure hours.');
 
  }
 // WG_REVIEW_CASES

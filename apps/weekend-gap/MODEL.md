@@ -149,3 +149,7 @@ The optional timing review can compare service progress against both arrived and
 ### Complete-chain closure spells
 
 The optional timing review can locate continuous intervals when operating windows prevent any complete payout chain. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Operating-window overlap
+
+The optional timing review can show individually open hours that cannot form a complete chain. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
