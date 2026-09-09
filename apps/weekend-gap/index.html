@@ -73,6 +73,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="weekendRush">Weekend Rush</button>
               <button type="button" class="preset-button" data-preset="marketStress">Market Stress</button>
               <button type="button" class="preset-button" data-preset="thinFxTightWindows">Thin FX, Tight Windows (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="longWeekendFridayStart">Long-weekend Friday start (synthetic)</button>
             </div>
           </fieldset>
 
@@ -181,6 +182,7 @@ SOFTWARE.
                 Treat Saturday as a public holiday
               </label>
               <p>When selected, Saturday is a non-business day like Sunday. Issuer, bank and payout windows stay closed, and weekend FX thinning applies. Older scenario files omit this field and keep the existing weekend Saturday.</p>
+              <p id="weekend-overlap-notice" role="status" hidden></p>
             </div>
           </form>
 
@@ -218,7 +220,7 @@ SOFTWARE.
             </div>
           </div>
 
-          <div class="metrics" aria-live="polite">
+          <div class="metrics print-keep" aria-live="polite">
             <article class="metric-card card metric-card--primary">
               <p>Immediately redeemable AUD</p>
               <strong id="immediate-value">A$0</strong>
@@ -241,7 +243,7 @@ SOFTWARE.
             </article>
           </div>
 
-          <article class="outcome-card card" aria-labelledby="outcome-title">
+          <article class="outcome-card card print-keep" aria-labelledby="outcome-title">
             <div class="card-heading">
               <div>
                 <p class="eyebrow">Scenario outcome</p>
@@ -284,7 +286,7 @@ SOFTWARE.
               <button id="analysis-export" type="button">Export analysis JSON</button>
             </div>
             <label for="workspace-notes">Experiment notes</label><textarea id="workspace-notes" rows="3" maxlength="4000" placeholder="What assumption are you testing, and why?"></textarea>
-            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
+            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="copy-markdown-report" type="button">Copy Markdown report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
             <p id="workspace-status" role="status">Workspace autosave includes the current scenario, pinned baseline, reserve target, notes and selected hour. Share links contain only a scenario and take priority on reload.</p>
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
@@ -403,6 +405,7 @@ SOFTWARE.
             </div>
             <div class="planning-actions">
               <button id="export-queue-svg" type="button">Download queue SVG</button>
+              <button id="export-queue-csv" type="button">Export queue CSV</button>
             </div>
             <div id="queue-svg" class="queue-svg"></div>
             <p class="chart-print-note">The SVG is a printable queue path. Download saves the same light-background drawing as a file. The canvas keeps a live playhead while you scrub.</p>
@@ -432,10 +435,10 @@ SOFTWARE.
             </article>
           </div>
 
-          <article class="planning-card card gantt-card" aria-labelledby="gantt-title">
+          <article class="planning-card card gantt-card print-keep" aria-labelledby="gantt-title">
             <p class="eyebrow">Operating calendar</p>
-            <h2 id="gantt-title">72-hour gate Gantt</h2>
-            <p>Issuer, bank and payout rows show open (green) versus closed (red) for each hour. FX shows weekday depth (blue) versus weekend thinning (gold). The solid vertical line is the timeline slider hour. The dashed green marker is the first payout window.</p>
+            <h2 id="gantt-title" tabindex="-1">72-hour gate Gantt</h2>
+            <p>Issuer, bank and payout rows show open (solid) versus closed (hatched) for each hour. Color is extra; the hatch marks closed hours. FX shows weekday depth (solid) versus weekend thinning (hatched). The solid vertical line is the timeline slider hour. The dashed marker is the first payout window. A table follows.</p>
             <p id="gantt-payout-note"></p>
             <div class="planning-actions">
               <label for="gantt-density">Show Gantt rows</label>
@@ -445,6 +448,7 @@ SOFTWARE.
                 <option value="open">Hours with any gate open</option>
               </select>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
+              <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
             </div>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
@@ -455,7 +459,7 @@ SOFTWARE.
               </table>
             </div>
             <h3 id="compare-gantt-title">Baseline versus current</h3>
-            <p>Each gate has two rows: current above baseline. Green or blue is open or weekday depth; red or gold is closed or weekend thinning. The solid marker is the selected timeline hour. The table lists hours where the calendars differ and always includes the selected hour.</p>
+            <p>Each gate has two rows: current above baseline. Solid fill is open or weekday depth; hatched fill is closed or weekend thinning. Color is extra. The solid marker is the selected timeline hour. The table lists hours where the calendars differ and always includes the selected hour.</p>
             <p id="compare-gantt-status" role="status"></p>
             <div id="compare-gantt" class="gantt-svg"></div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Baseline versus current Gantt table fallback">
@@ -519,6 +523,8 @@ SOFTWARE.
           <li><kbd>?</kbd> Open or close this help</li>
           <li><kbd>Space</kbd> Play or pause the timeline</li>
           <li><kbd>J</kbd> Jump the timeline to the first settlement</li>
+          <li><kbd>G</kbd> Jump to the gate Gantt</li>
+          <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>
           <li><kbd>R</kbd> Redo a scenario edit</li>
           <li><kbd>E</kbd> Export the current scenario JSON</li>

@@ -114,6 +114,10 @@ test("analysis export is deterministic and carries complete evidence", () => {
   assert.equal(report.reservePlan.deadlineHour, 70);
   assert.equal(report.timeline.at(-1).candidateQueuedAud, report.candidateSummary.finalQueuedAud);
   assert.equal(scenarioFromJSON(output).scenario, null);
+  assert.equal(Object.prototype.hasOwnProperty.call(report, "timestamp"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(report, "createdAt"), false);
+  assert.equal(Object.prototype.hasOwnProperty.call(report, "exportedAt"), false);
+  assert.doesNotMatch(output, /"timestamp"\s*:/);
 });
 
 test("reserve search matches simulation under every demand timing", () => {

@@ -74,6 +74,15 @@ export const PRESETS = Object.freeze({
     payoutOpenEndHour: 14,
     redemptionDemandAud: 2800000,
     mondayHoliday: true
+  }),
+  longWeekendFridayStart: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Long-weekend Friday start (synthetic)",
+    reserveCashAud: 6000000,
+    redemptionDemandAud: 2100000,
+    weekendFxMultiplier: 3,
+    saturdayHoliday: true,
+    mondayHoliday: true
   })
 });
 
@@ -200,6 +209,13 @@ export function isBusinessDay(hourOffset, mondayHoliday = false, saturdayHoliday
   if (mondayHoliday && dayIndex === 1) return false;
   if (saturdayHoliday && dayIndex === 6) return false;
   return dayIndex >= 1 && dayIndex <= 5;
+}
+
+/** Visible when Saturday is a holiday like Sunday, so both weekend days are closed. */
+export function weekendCloseOverlapNotice(scenarioInput) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  if (!scenario.saturdayHoliday) return "";
+  return "Saturday holiday and Sunday-style close overlap. Both weekend days are treated as closed.";
 }
 
 export function isWithinHours(hourOffset, startHour, endHour) {
@@ -594,7 +610,14 @@ export function workspaceFromJSON(text) {
     if (raw?.format !== "weekend-gap-workspace" || raw.version !== 1) throw new Error("Unsupported workspace format.");
     for (const field of ["current", "baseline"]) if (!raw[field] || typeof raw[field] !== "object" || Array.isArray(raw[field])) throw new Error("Workspace requires current and baseline scenario objects.");
     const current = sanitizeScenario(raw.current), baseline = sanitizeScenario(raw.baseline);
-    const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, raw));
+    const options = {
+      targetPercent: raw.targetPercent,
+      deadlineHour: raw.deadlineHour,
+      selectedHour: raw.selectedHour === undefined ? 0 : raw.selectedHour,
+      notes: raw.notes,
+      ganttDensity: raw.ganttDensity === undefined ? "snapshots" : raw.ganttDensity
+    };
+    const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
   } catch (error) { return { workspace: null, errors: [error.message || "Workspace could not be read."] }; }
 }
@@ -619,6 +642,20 @@ export function createScenarioHistory(initial, limit = 40) {
   };
 }
 
+function spreadsheetUnsafeCell(text) {
+  return /^[\s\u0000-\u001f]*[=+@-]/u.test(text);
+}
+
+function csvCell(value) {
+  let text = String(value);
+  if (typeof value === "string" && spreadsheetUnsafeCell(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function csvTable(rows) {
+  return rows.map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n";
+}
+
 /** All 73 checkpoints; demand/settlement columns describe the preceding interval. */
 export function timelineToCSV(current, baseline = current) {
   const comparison = compareScenarios(baseline, current);
@@ -626,6 +663,20 @@ export function timelineToCSV(current, baseline = current) {
   const rows = comparison.candidate.timeline.map((point, index) => [point.hour, point.timeLabel, point.hour === 0 ? "" : point.hour - 1,
     point.demandThisHour, point.settledThisHour, point.settledAud, point.queuedAud, point.reserveRemainingAud, point.immediateAud, comparison.baseline.timeline[index].queuedAud]);
   return [headers, ...rows].map(row => row.join(",")).join("\r\n") + "\r\n";
+}
+
+/** Formula-safe hourly queue path: hour label and queue size at every checkpoint. */
+export function queueToCSV(current, baseline = current) {
+  const comparison = compareScenarios(baseline, current);
+  const headers = ["hour", "time_label", "queued_aud", "baseline_queued_aud", "scenario_name"];
+  const rows = comparison.candidate.timeline.map((point, index) => [
+    point.hour,
+    point.timeLabel,
+    point.queuedAud,
+    comparison.baseline.timeline[index].queuedAud,
+    comparison.candidate.scenario.name
+  ]);
+  return csvTable([headers, ...rows]);
 }
 
 /** Static, script-free report. Escape every user-controlled value before HTML output. */
@@ -647,6 +698,50 @@ export function reportToHTML(current, baseline, options = {}) {
   const bottleneckRows = attributeBottlenecks(workspace.current).rows.map((row) =>
     "<tr><th scope=row>" + escape(row.label) + "</th><td>" + escape(String(row.hours)) + "</td><td>" + escape((row.share * 100).toFixed(1) + "%") + "</td></tr>").join("");
   return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Weekend Gap experiment report</title><style>body{font:16px/1.5 system-ui,sans-serif;color:#172b35;background:white;max-width:1000px;margin:2rem auto;padding:1rem}h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #9aa9b0;padding:.55rem;text-align:left;overflow-wrap:anywhere}th{background:#eff3f5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.notice{border-left:4px solid #54727f;padding:1rem;background:#f2f5f6}@media print{body{margin:0;padding:0;font-size:10pt}h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}}</style></head><body><main><h1>Weekend Gap experiment report</h1><p class="notice">Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations. 72-hour horizon: Friday 15:00 to Monday 15:00, using abstract local time.</p><p>Current: <strong>' + escape(workspace.current.name) + '</strong>. Baseline: <strong>' + escape(workspace.baseline.name) + '</strong>.</p><h2>Experiment notes</h2><pre>' + escape(workspace.notes || "No experiment notes provided.") + '</pre><h2>Outcome comparison</h2><p>AUD display values are rounded to cents. Compare total demand alongside settlement and queue size.</p><table><thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + summaryRows + firstSettlementRow + queueClearRow + '</tbody></table><h2>Queue diagnostics</h2><p>' + diagnostics.backlogIntervals + ' of 72 intervals end with backlog. Longest run: ' + diagnostics.longestBacklogRun + ' hours. End-of-hour queue exposure: ' + escape(money(diagnostics.queueAudHours)) + '·hours.</p><ul>' + diagnostics.blockers.map(item => '<li>' + escape(item.label) + ': ' + item.intervals + ' backlog intervals</li>').join("") + '</ul><p>Concurrent blockers overlap. Counts describe observations, not marginal causal impact.</p><h2>Gate Gantt</h2><p>Open versus closed hours for the current scenario. The green dashed marker is the first hour the payout chain can settle given starting reserve. The solid marker is the selected hour from the workspace.</p>' + buildGateGanttSvg(workspace.current, workspace.selectedHour) + '<h2>Baseline versus current Gantt</h2><p>Paired rows compare current and baseline operating calendars. This is not a forecast.</p>' + buildComparisonGanttSvg(workspace.baseline, workspace.current, workspace.selectedHour) + '<h2>Queue path</h2><p>Printable queued AUD versus hour for the current scenario. The dashed path is the pinned baseline. The vertical line is the selected workspace hour.</p>' + buildQueueChartSvg(workspace.current, workspace.baseline, workspace.selectedHour) + '<h2>Hourly limiting gate</h2><p>Count of the 72 interval-start limitingGate values on the current scenario. Closed issuer, bank or payout gates are named before throughput or reserve. This is an observation count, not a ranking of which change would raise settlement.</p><table><thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of 72h</th></tr></thead><tbody>' + bottleneckRows + '</tbody></table><h2>Reserve experiment</h2><p>Target: ' + workspace.targetPercent + '% of total 72-hour demand by ' + escape(formatTime(workspace.deadlineHour)) + '. ' + escape(planText) + '.</p><p>' + escape(plan.reason) + '</p><h2>Complete assumptions</h2><table><thead><tr><th scope="col">Assumption</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + assumptionRows + '</tbody></table><h2>Method and limits</h2><p>Demand joins once per hour under the selected deterministic arrival profile. Settlement requires all three business-day operating windows to overlap. Capacity is the minimum of issuer throughput, FX depth, payout throughput and remaining starting reserve. No reserve replenishment occurs. Queue exposure sums end-of-hour balances; it is not a customer waiting-time estimate. The optional Monday and Saturday holiday flags are modeled. Other public holidays, time zones, settlement uncertainty and counterparty risk are not modeled. No result is a liquidity recommendation.</p><p>Report format: weekend-gap-report v1. Export the separate workspace JSON for editable inputs and hourly CSV for the complete ledger. Use your browser Print command to save or print this report.</p></main></body></html>';
+}
+
+function hoursToClearLabel(hours, peak) {
+  if (hours === null) return peak > 0 ? "queue remains" : "No queue in 72h";
+  return hours + " hour" + (hours === 1 ? "" : "s");
+}
+
+function peakQueueHourLabel(summary) {
+  if (!(summary.peakQueuedAud > 0)) return "No queue in 72h";
+  return formatTime(summary.peakQueueHour) + " (hour " + summary.peakQueueHour + ")";
+}
+
+function markdownPlain(value) {
+  return String(value).replace(/\r\n?/g, " ").replace(/[|#*`<>]/g, "");
+}
+
+/** Copyable Markdown outcome brief. Includes hours to clear and peak queue hour. */
+export function reportToMarkdown(current, baseline, options = {}) {
+  const workspace = JSON.parse(workspaceToJSON(current, baseline, options));
+  const comparison = compareScenarios(workspace.baseline, workspace.current);
+  const notes = markdownPlain(workspace.notes || "No experiment notes provided.");
+  return [
+    "# Weekend Gap experiment report",
+    "",
+    "Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations.",
+    "",
+    "Current: " + markdownPlain(workspace.current.name),
+    "Baseline: " + markdownPlain(workspace.baseline.name),
+    "",
+    "## Experiment notes",
+    "",
+    notes,
+    "",
+    "## Outcome",
+    "",
+    "| Metric | Baseline | Current |",
+    "| --- | --- | --- |",
+    "| Hours to clear queue | " + hoursToClearLabel(comparison.baseline.summary.hoursToClearQueue, comparison.baseline.summary.peakQueuedAud) + " | " + hoursToClearLabel(comparison.candidate.summary.hoursToClearQueue, comparison.candidate.summary.peakQueuedAud) + " |",
+    "| Peak queue hour | " + peakQueueHourLabel(comparison.baseline.summary) + " | " + peakQueueHourLabel(comparison.candidate.summary) + " |",
+    "| Peak queue | " + comparison.baseline.summary.peakQueuedAud + " | " + comparison.candidate.summary.peakQueuedAud + " |",
+    "",
+    "This is a synthetic comparison, not a liquidity recommendation.",
+    ""
+  ].join("\n");
 }
 
 export const BOTTLENECK_LABELS = Object.freeze([
@@ -768,6 +863,24 @@ function svgEscape(value) {
   }[char]));
 }
 
+function ganttPatternDefs(prefix) {
+  return `<defs>` +
+    `<pattern id="${prefix}-closed" patternUnits="userSpaceOnUse" width="6" height="6">` +
+      `<rect width="6" height="6" fill="#c45c54"/>` +
+      `<path d="M0 6 L6 0 M-1.5 1.5 L1.5 -1.5 M4.5 7.5 L7.5 4.5" stroke="#17324a" stroke-width="1.2"/>` +
+    `</pattern>` +
+    `<pattern id="${prefix}-fx-closed" patternUnits="userSpaceOnUse" width="6" height="6">` +
+      `<rect width="6" height="6" fill="#c9a227"/>` +
+      `<path d="M0 0 L6 6 M-1.5 4.5 L1.5 7.5 M4.5 -1.5 L7.5 1.5" stroke="#17324a" stroke-width="1.2"/>` +
+    `</pattern>` +
+  `</defs>`;
+}
+
+function ganttCellFill(open, openColor, prefix, fx = false) {
+  if (open) return openColor;
+  return `url(#${prefix}-${fx ? "fx-closed" : "closed"})`;
+}
+
 /** Hourly open/closed state for issuer, bank, payout and weekday vs weekend FX. */
 export function buildGateSchedule(input) {
   const { scenario } = sanitizeScenario(input);
@@ -796,10 +909,10 @@ export function buildGateGanttSvg(input, selectedHour = 0) {
   const top = 20;
   const plotWidth = width - labelWidth - 16;
   const rows = [
-    ["Issuer", (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", "#c45c54"],
-    ["Bank", (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", "#c45c54"],
-    ["Payout", (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", "#c45c54"],
-    ["FX", (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", "#c9a227"]
+    ["Issuer", (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", false],
+    ["Bank", (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", false],
+    ["Payout", (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", false],
+    ["FX", (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", true]
   ];
   const height = top + rows.length * rowHeight + 32;
   const hourWidth = plotWidth / SIMULATION_HOURS;
@@ -810,7 +923,7 @@ export function buildGateGanttSvg(input, selectedHour = 0) {
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
       const open = row[1](hour);
       const x = labelWidth + hour * hourWidth;
-      cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${open ? row[2] : row[3]}" />`;
+      cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${ganttCellFill(open, row[2], "wg-gantt", row[3])}" />`;
     }
   });
   const markerX = labelWidth + (markerHour / SIMULATION_HOURS) * plotWidth;
@@ -824,12 +937,33 @@ export function buildGateGanttSvg(input, selectedHour = 0) {
   const payoutMark = payoutX === null ? "" :
     `<line x1="${payoutX.toFixed(2)}" y1="${top}" x2="${payoutX.toFixed(2)}" y2="${top + rows.length * rowHeight}" stroke="#2f9e6b" stroke-width="2" stroke-dasharray="4 3" />` +
     `<text x="${Math.min(width - 80, Math.max(labelWidth, payoutX + 6)).toFixed(1)}" y="${top + 12}" font-size="10" fill="#1f6b49">First payout ${svgEscape(formatTime(firstPayout))}</text>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="72-hour gate Gantt for issuer, bank, payout and FX. Current hour is the solid vertical marker. First payout window is the dashed green marker. A table follows.">` +
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="72-hour gate Gantt for issuer, bank, payout and FX. Solid fill is open or weekday depth. Hatched fill is closed or weekend thinning. Current hour is the solid vertical marker. First payout window is the dashed marker. A table follows.">` +
+    ganttPatternDefs("wg-gantt") +
     `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
+    `<text x="8" y="14" font-size="10" fill="#3e5360">Solid open or weekday. Hatched closed or weekend.</text>` +
     selectedLabel + labels + cells + payoutMark +
     `<line x1="${markerX.toFixed(2)}" y1="${top}" x2="${markerX.toFixed(2)}" y2="${top + rows.length * rowHeight}" stroke="#17324a" stroke-width="2" />` +
     ticks +
     "</svg>";
+}
+
+/** Gate open/closed for the same 72 hours drawn on the Gantt chart. */
+export function ganttToCSV(input) {
+  const schedule = buildGateSchedule(input);
+  const headers = ["hour", "time_label", "issuer", "bank", "payout", "fx"];
+  const rows = [];
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    rows.push([
+      point.hour,
+      point.timeLabel,
+      point.issuerOpen ? "open" : "closed",
+      point.bankOpen ? "open" : "closed",
+      point.payoutOpen ? "open" : "closed",
+      point.fxWeekday ? "weekday" : "weekend"
+    ]);
+  }
+  return csvTable([headers, ...rows]);
 }
 
 /** Hourly current versus baseline gate state. Observation only, not a ranking. */
@@ -880,14 +1014,14 @@ export function buildComparisonGanttSvg(baselineInput, currentInput, selectedHou
   const plotWidth = width - labelWidth - 16;
   const hourWidth = plotWidth / SIMULATION_HOURS;
   const pairs = [
-    ["Issuer current", currentSchedule, (point) => point.issuerOpen, "#2f9e6b", "#c45c54"],
-    ["Issuer baseline", baselineSchedule, (point) => point.issuerOpen, "#2f9e6b", "#c45c54"],
-    ["Bank current", currentSchedule, (point) => point.bankOpen, "#2f9e6b", "#c45c54"],
-    ["Bank baseline", baselineSchedule, (point) => point.bankOpen, "#2f9e6b", "#c45c54"],
-    ["Payout current", currentSchedule, (point) => point.payoutOpen, "#2f9e6b", "#c45c54"],
-    ["Payout baseline", baselineSchedule, (point) => point.payoutOpen, "#2f9e6b", "#c45c54"],
-    ["FX current", currentSchedule, (point) => point.fxWeekday, "#3d7ea6", "#c9a227"],
-    ["FX baseline", baselineSchedule, (point) => point.fxWeekday, "#3d7ea6", "#c9a227"]
+    ["Issuer current", currentSchedule, (point) => point.issuerOpen, "#2f9e6b", false],
+    ["Issuer baseline", baselineSchedule, (point) => point.issuerOpen, "#2f9e6b", false],
+    ["Bank current", currentSchedule, (point) => point.bankOpen, "#2f9e6b", false],
+    ["Bank baseline", baselineSchedule, (point) => point.bankOpen, "#2f9e6b", false],
+    ["Payout current", currentSchedule, (point) => point.payoutOpen, "#2f9e6b", false],
+    ["Payout baseline", baselineSchedule, (point) => point.payoutOpen, "#2f9e6b", false],
+    ["FX current", currentSchedule, (point) => point.fxWeekday, "#3d7ea6", true],
+    ["FX baseline", baselineSchedule, (point) => point.fxWeekday, "#3d7ea6", true]
   ];
   const height = top + pairs.length * rowHeight + 32;
   let cells = "";
@@ -896,7 +1030,7 @@ export function buildComparisonGanttSvg(baselineInput, currentInput, selectedHou
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
       const open = row[2](row[1].hours[hour]);
       const x = labelWidth + hour * hourWidth;
-      cells += `<rect x="${x.toFixed(2)}" y="${y + 4}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 8}" fill="${open ? row[3] : row[4]}" />`;
+      cells += `<rect x="${x.toFixed(2)}" y="${y + 4}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 8}" fill="${ganttCellFill(open, row[3], "wg-compare", row[4])}" />`;
     }
     return `<text x="8" y="${y + 16}" font-size="11" fill="#17324a">${svgEscape(row[0])}</text>`;
   }).join("");
@@ -905,9 +1039,10 @@ export function buildComparisonGanttSvg(baselineInput, currentInput, selectedHou
     const x = labelWidth + (hour / SIMULATION_HOURS) * plotWidth;
     return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
   }).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Two-row gate Gantt comparing current and baseline issuer, bank, payout and FX hours. A table follows.">` +
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Two-row gate Gantt comparing current and baseline issuer, bank, payout and FX hours. Solid fill is open or weekday depth. Hatched fill is closed or weekend thinning. A table follows.">` +
+    ganttPatternDefs("wg-compare") +
     `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
-    `<text x="8" y="16" font-size="12" fill="#17324a">Current versus baseline, paired rows</text>` +
+    `<text x="8" y="16" font-size="12" fill="#17324a">Current versus baseline, paired rows. Solid open, hatched closed.</text>` +
     labels + cells +
     `<line x1="${markerX.toFixed(2)}" y1="${top}" x2="${markerX.toFixed(2)}" y2="${top + pairs.length * rowHeight}" stroke="#17324a" stroke-width="2" />` +
     ticks +

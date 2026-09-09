@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { DEFAULT_SCENARIO, PRESETS, attributeBottlenecks, reportToHTML } from "../src/model.js";
+import { DEFAULT_SCENARIO, PRESETS, attributeBottlenecks, reportToHTML, reportToMarkdown } from "../src/model.js";
 test("report is deterministic, self-contained and escapes imported text",()=>{
  const scenario={...DEFAULT_SCENARIO,name:'<img src=x onerror=alert(1)>'}, options={notes:'</pre><script>alert(1)</script>&"'};
  const report=reportToHTML(scenario,PRESETS.marketStress,options);
@@ -51,4 +51,32 @@ test("report lists hours to clear the queue including residual-queue wording",()
  assert.doesNotMatch(open,/queue remains/);
  const leftover=reportToHTML(PRESETS.marketStress,DEFAULT_SCENARIO);
  assert.match(leftover,/queue remains/);
+});
+
+test("Markdown report copies hours to clear the queue and the peak queue hour",()=>{
+ const open=reportToMarkdown(DEFAULT_SCENARIO,DEFAULT_SCENARIO);
+ assert.equal(open, reportToMarkdown(DEFAULT_SCENARIO,DEFAULT_SCENARIO));
+ assert.match(open,/Hours to clear queue/);
+ assert.match(open,/Peak queue hour/);
+ assert.match(open,/69 hours/);
+ assert.match(open,/Mon 08:00 \(hour 65\)/);
+ assert.doesNotMatch(open,/timestamp|createdAt|exportedAt/i);
+ const leftover=reportToMarkdown(PRESETS.marketStress,DEFAULT_SCENARIO);
+ assert.match(leftover,/queue remains/);
+ assert.match(leftover,/Mon 15:00 \(hour 72\)/);
+ const empty=reportToMarkdown({...DEFAULT_SCENARIO, redemptionDemandAud: 0}, DEFAULT_SCENARIO);
+ assert.match(empty,/No queue in 72h/);
+ const named=reportToMarkdown({...DEFAULT_SCENARIO, name: "A | B <script>"}, DEFAULT_SCENARIO, {notes: "# not a heading"});
+ assert.doesNotMatch(named, /A \| B/);
+ assert.doesNotMatch(named, /<script>/);
+});
+
+test("Markdown report copy control is present beside the printable report", async () => {
+ const { readFile } = await import("node:fs/promises");
+ const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+ const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+ assert.match(html, /id="copy-markdown-report"/);
+ assert.match(html, /Copy Markdown report/);
+ assert.match(app, /reportToMarkdown/);
+ assert.match(app, /hours to clear the queue and the peak queue hour/);
 });
