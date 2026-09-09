@@ -149,3 +149,7 @@ Snapshot libraries hold at most 20 canonical proposals and reject stored payload
 ### Approval margin
 
 The optional package review can separate aggregate approval margin from non-approval constraints. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Group floor and veto slack
+
+The optional package review can show group-specific remaining support above declared floors and veto requirements. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.

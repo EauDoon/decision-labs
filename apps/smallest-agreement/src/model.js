@@ -2085,6 +2085,7 @@ export function parseClauseOptionsCsv(csvText, proposal) {
 
 export const AGREEMENT_REVIEW_TOOLS=Object.freeze([
  {id:'margin',title:'Approval margin'},
+ {id:'floors',title:'Group floor and veto slack'},
 // SA_REVIEW_TOOLS
 ]);
 export function analyzeAgreementReview(rawProposal,tool){
@@ -2096,6 +2097,11 @@ export function analyzeAgreementReview(rawProposal,tool){
  case 'margin':{
 
  return report(['Package','Approval %','Threshold %','Margin points','Change cost','Other constraints'],[[context,selected.approval,proposal.threshold,selected.approval-proposal.threshold,selected.changeCost,selected.constraints.met?'Met':'Not met']],'A positive aggregate margin alone does not pass floors, vetoes, locks or budget. Support scores and weights are declared inputs, not measured votes.');
+
+ }
+ case 'floors':{
+
+ return report(['Group','Package support %','Floor %','Floor slack points','Veto requirement %','Veto slack points'],proposal.groups.map((g,i)=>{const actual=selected.byGroup[i].approval,required=g.veto?Math.max(proposal.threshold,g.minSupport??0):null;return[g.name,actual,g.minSupport??null,g.minSupport===undefined?null:actual-g.minSupport,required,required===null?null:actual-required];}),'Blank means that constraint is not declared. Veto requirements use the greater of the aggregate threshold and any group floor. These rows use the same fixed package as the review context.');
 
  }
 // SA_REVIEW_CASES
