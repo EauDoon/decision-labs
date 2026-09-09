@@ -190,6 +190,16 @@ th { padding: 0.65rem; color: #4f4c5e; background: #eee8dd; text-align: left; fo
 td.empty-state { color: var(--muted); font-style: italic; }
 td { padding: 0.48rem; border-top: 1px solid var(--line); vertical-align: middle; }
 td input { min-width: 86px; border-color: transparent; background: transparent; }
+td select {
+  min-width: 86px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 0.58rem 0.45rem;
+  color: var(--ink);
+  background: transparent;
+}
+td select:hover, td select:focus { border-color: var(--line-strong); background: white; }
 td input:hover, td input:focus { border-color: var(--line-strong); background: white; }
 .unit-input { min-width: 112px; }
 .unit-input input { min-width: 60px; }

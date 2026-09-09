@@ -297,7 +297,7 @@ SOFTWARE.
             <caption class="sr-only">Editable merchant offers</caption>
             <thead>
               <tr>
-                <th scope="col">Merchant</th><th scope="col">Category</th><th scope="col">Variant</th><th scope="col">Unit price</th><th scope="col">Minimum</th><th scope="col">Delivery</th><th scope="col">Capacity</th><th scope="col">Ship / buyer</th><th scope="col"><span class="sr-only">Remove</span></th>
+                <th scope="col">Merchant</th><th scope="col">Category</th><th scope="col">Variant</th><th scope="col">Unit price</th><th scope="col">Minimum</th><th scope="col">Delivery</th><th scope="col">Capacity</th><th scope="col">Ship / buyer</th><th scope="col">Fulfillment</th><th scope="col"><span class="sr-only">Remove</span></th>
               </tr>
             </thead>
             <tbody id="offer-rows"></tbody>
@@ -394,6 +394,12 @@ SOFTWARE.
       <td data-label="Delivery"><span class="unit-input"><input data-field="deliveryDays" type="number" min="0" max="365" step="1" aria-label="Offer delivery in days"><span>days</span></span></td>
       <td data-label="Capacity"><input data-field="capacity" type="number" min="1" max="5000" step="1" aria-label="Offer capacity"></td>
       <td data-label="Ship per buyer"><input data-field="shippingPerBuyer" type="number" min="0" max="1000000" step="0.01" aria-label="Shipping cost per buyer"></td>
+      <td data-label="Fulfillment">
+        <select data-field="fulfillment" aria-label="Offer fulfillment">
+          <option value="shipping">Shipping</option>
+          <option value="pickup">Pickup</option>
+        </select>
+      </td>
       <td><button class="icon-button remove-row" type="button" aria-label="Remove offer">×</button></td>
     </tr>
   </template>

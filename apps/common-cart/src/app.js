@@ -229,7 +229,8 @@ function bindStaticEvents() {
       minimumUnits: 5,
       deliveryDays: 7,
       capacity: 20,
-      shippingPerBuyer: 0
+      shippingPerBuyer: 0,
+      fulfillment: "shipping"
     });
     inspectedOfferId = next;
     renderEditor();
@@ -460,7 +461,7 @@ function renderOfferRow(entry) {
   addDuplicateAction(row, "offers", entry);
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
-    input.value = entry[field];
+    input.value = entry[field] ?? (field === "fulfillment" ? "shipping" : "");
     input.addEventListener("input", () => {
       const target = scenario.offers.find((offer) => offer.id === row.dataset.id);
       target[field] = input.value;
@@ -754,7 +755,7 @@ function renderInspector(market) {
     return;
   }
   elements.inspectorSummary.textContent = result.qualifies
-    ? `${result.deliveredBuyers} buyers and ${result.fulfilledUnits} units are included at ${money(market.scenario.currency).format(result.effectiveUnitPrice)} per item. ${result.activeTierIndex === 0 ? "Base price" : `Tier ${result.activeTierIndex}`} applies to every included unit.`
+    ? `${result.deliveredBuyers} buyers and ${result.fulfilledUnits} units are included at ${money(market.scenario.currency).format(result.effectiveUnitPrice)} per item. ${result.activeTierIndex === 0 ? "Base price" : `Tier ${result.activeTierIndex}`} applies to every included unit. Fulfillment is ${result.offer.fulfillment === "pickup" ? "pickup, so shipping is not charged" : "shipping"}.`
     : "No whole-buyer cohort reaches a valid price band. The table below shows each band's allocation shortfall.";
   const formatter = money(market.scenario.currency);
   elements.tierRows.replaceChildren(...result.tierProgress.map((tier) => {

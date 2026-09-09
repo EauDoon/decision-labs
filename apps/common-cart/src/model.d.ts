@@ -38,8 +38,8 @@ export interface Offer {
   deliveryDays: number;
   capacity: number;
   shippingPerBuyer: number;
-  /** Optional quantity discounts; omitted or empty keeps the base price only. */
-  tiers?: PriceTier[];
+  /** `shipping` or `pickup`. Omitted JSON defaults to shipping. Pickup charges 0 shipping. */
+  fulfillment?: "shipping" | "pickup";
 }
 
 export interface Scenario {

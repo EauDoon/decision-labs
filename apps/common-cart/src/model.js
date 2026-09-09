@@ -5,7 +5,7 @@ const MAX_TIERS = 8;
 const MAX_SHARE_LENGTH = 60_000;
 const SCENARIO_FIELDS = ["title", "currency", "buyers", "offers"];
 const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "maxOrderTotal", "latestDeliveryDays", "allowedVariants"];
-const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers"];
+const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers", "fulfillment"];
 const TIER_FIELDS = ["minimumUnits", "unitPrice"];
 
 export class ScenarioError extends Error {
@@ -379,6 +379,16 @@ function validateOffer(entry, index) {
     capacity: integer(own(entry, "capacity"), `${prefix} capacity`, 1, MAX_UNITS),
     shippingPerBuyer: finite(own(entry, "shippingPerBuyer"), `${prefix} shipping`, 0, 1_000_000)
   };
+  const fulfillmentValue = own(entry, "fulfillment");
+  if (fulfillmentValue === undefined) {
+    normalized.fulfillment = "shipping";
+  } else {
+    const fulfillment = requiredText(fulfillmentValue, `${prefix} fulfillment`, 16);
+    if (fulfillment !== "shipping" && fulfillment !== "pickup") {
+      throw new ScenarioError(`${prefix} fulfillment must be shipping or pickup.`);
+    }
+    normalized.fulfillment = fulfillment;
+  }
   const tiers = own(entry, "tiers");
   if (tiers !== undefined) {
     if (!Array.isArray(tiers) || tiers.length > MAX_TIERS) {
@@ -467,13 +477,14 @@ export function evaluateOffer(rawScenario, rawOffer) {
     ? scenario.offers.find(({ id }) => id === rawOffer)
     : validateOffer(rawOffer, 0);
   if (!offerEntry) throw new ScenarioError("Offer was not found.");
+  const chargedShippingCost = chargedShipping(offerEntry);
 
   const bands = [{ minimumUnits: offerEntry.minimumUnits, unitPrice: offerEntry.unitPrice }, ...(offerEntry.tiers ?? [])];
   const candidates = bands.map((band, index) => {
     const maximumUnits = Math.min(offerEntry.capacity, (bands[index + 1]?.minimumUnits ?? offerEntry.capacity + 1) - 1);
     const compatibility = scenario.buyers.map((entry) => ({
       buyer: entry,
-      reasons: incompatibilityReasons(entry, { ...offerEntry, unitPrice: band.unitPrice })
+      reasons: incompatibilityReasons(entry, { ...offerEntry, unitPrice: band.unitPrice, shippingPerBuyer: chargedShippingCost })
     }));
     const compatible = compatibility.filter(({ reasons }) => reasons.length === 0).map(({ buyer }) => buyer);
     const selected = selectWholeBuyers(compatible, maximumUnits);
@@ -488,7 +499,7 @@ export function evaluateOffer(rawScenario, rawOffer) {
   const qualifies = active.qualifies;
   const deliveredBuyers = qualifies ? selected.length : 0;
   const units = qualifies ? fulfilledUnits : 0;
-  const totalCost = qualifies ? (units * evaluatedUnitPrice) + (deliveredBuyers * offerEntry.shippingPerBuyer) : 0;
+  const totalCost = qualifies ? (units * evaluatedUnitPrice) + (deliveredBuyers * chargedShippingCost) : 0;
   const reservationValue = qualifies
     ? selected.reduce((sum, entry) => sum + (entry.maxUnitPrice * entry.quantity), 0)
     : 0;
@@ -497,11 +508,11 @@ export function evaluateOffer(rawScenario, rawOffer) {
   const selectedIds = new Set(selected.map(({ id }) => id));
   const allocations = qualifies ? selected.map((entry) => {
     const itemsCost = entry.quantity * evaluatedUnitPrice;
-    const totalCost = itemsCost + offerEntry.shippingPerBuyer;
+    const totalCost = itemsCost + chargedShippingCost;
     const ceilingTotal = entry.quantity * entry.maxUnitPrice;
     return {
       buyerId: entry.id, quantity: entry.quantity, unitPrice: evaluatedUnitPrice,
-      itemsCost, shippingCost: offerEntry.shippingPerBuyer, totalCost,
+      itemsCost, shippingCost: chargedShippingCost, totalCost,
       landedUnitCost: totalCost / entry.quantity,
       ceilingTotal, headroom: ceilingTotal - totalCost,
       exceedsCeilingAfterShipping: totalCost > ceilingTotal
@@ -546,6 +557,10 @@ export function evaluateOffer(rawScenario, rawOffer) {
     averageLandedUnitCost: units > 0 ? totalCost / units : null,
     fulfillmentRate: totalRequestedUnits > 0 ? units / totalRequestedUnits : 0
   };
+}
+
+function chargedShipping(offer) {
+  return offer.fulfillment === "pickup" ? 0 : offer.shippingPerBuyer;
 }
 
 function incompatibilityReasons(buyer, offer) {
@@ -721,7 +736,11 @@ export function unitsToNextTier(rawScenario, offerId) {
   const currentIds = new Set(result.selectedBuyerIds);
   const suppliers = scenario.buyers.filter((buyer) => {
     if (currentIds.has(buyer.id)) return false;
-    return incompatibilityReasons(buyer, { ...result.offer, unitPrice: next.unitPrice }).length === 0;
+    return incompatibilityReasons(buyer, {
+      ...result.offer,
+      unitPrice: next.unitPrice,
+      shippingPerBuyer: chargedShipping(result.offer)
+    }).length === 0;
   });
   const supplierUnits = suppliers.reduce((sum, buyer) => sum + buyer.quantity, 0);
   const supplierFields = {

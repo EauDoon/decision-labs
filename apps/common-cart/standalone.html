@@ -223,6 +223,16 @@ th { padding: 0.65rem; color: #4f4c5e; background: #eee8dd; text-align: left; fo
 td.empty-state { color: var(--muted); font-style: italic; }
 td { padding: 0.48rem; border-top: 1px solid var(--line); vertical-align: middle; }
 td input { min-width: 86px; border-color: transparent; background: transparent; }
+td select {
+  min-width: 86px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 0.58rem 0.45rem;
+  color: var(--ink);
+  background: transparent;
+}
+td select:hover, td select:focus { border-color: var(--line-strong); background: white; }
 td input:hover, td input:focus { border-color: var(--line-strong); background: white; }
 .unit-input { min-width: 112px; }
 .unit-input input { min-width: 60px; }
@@ -601,7 +611,7 @@ footer {
             <caption class="sr-only">Editable merchant offers</caption>
             <thead>
               <tr>
-                <th scope="col">Merchant</th><th scope="col">Category</th><th scope="col">Variant</th><th scope="col">Unit price</th><th scope="col">Minimum</th><th scope="col">Delivery</th><th scope="col">Capacity</th><th scope="col">Ship / buyer</th><th scope="col"><span class="sr-only">Remove</span></th>
+                <th scope="col">Merchant</th><th scope="col">Category</th><th scope="col">Variant</th><th scope="col">Unit price</th><th scope="col">Minimum</th><th scope="col">Delivery</th><th scope="col">Capacity</th><th scope="col">Ship / buyer</th><th scope="col">Fulfillment</th><th scope="col"><span class="sr-only">Remove</span></th>
               </tr>
             </thead>
             <tbody id="offer-rows"></tbody>
@@ -698,6 +708,12 @@ footer {
       <td data-label="Delivery"><span class="unit-input"><input data-field="deliveryDays" type="number" min="0" max="365" step="1" aria-label="Offer delivery in days"><span>days</span></span></td>
       <td data-label="Capacity"><input data-field="capacity" type="number" min="1" max="5000" step="1" aria-label="Offer capacity"></td>
       <td data-label="Ship per buyer"><input data-field="shippingPerBuyer" type="number" min="0" max="1000000" step="0.01" aria-label="Shipping cost per buyer"></td>
+      <td data-label="Fulfillment">
+        <select data-field="fulfillment" aria-label="Offer fulfillment">
+          <option value="shipping">Shipping</option>
+          <option value="pickup">Pickup</option>
+        </select>
+      </td>
       <td><button class="icon-button remove-row" type="button" aria-label="Remove offer">×</button></td>
     </tr>
   </template>
@@ -709,7 +725,7 @@ const MAX_TIERS = 8;
 const MAX_SHARE_LENGTH = 60_000;
 const SCENARIO_FIELDS = ["title", "currency", "buyers", "offers"];
 const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "maxOrderTotal", "latestDeliveryDays", "allowedVariants"];
-const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers"];
+const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers", "fulfillment"];
 const TIER_FIELDS = ["minimumUnits", "unitPrice"];
 
 class ScenarioError extends Error {
@@ -1083,6 +1099,16 @@ function validateOffer(entry, index) {
     capacity: integer(own(entry, "capacity"), `${prefix} capacity`, 1, MAX_UNITS),
     shippingPerBuyer: finite(own(entry, "shippingPerBuyer"), `${prefix} shipping`, 0, 1_000_000)
   };
+  const fulfillmentValue = own(entry, "fulfillment");
+  if (fulfillmentValue === undefined) {
+    normalized.fulfillment = "shipping";
+  } else {
+    const fulfillment = requiredText(fulfillmentValue, `${prefix} fulfillment`, 16);
+    if (fulfillment !== "shipping" && fulfillment !== "pickup") {
+      throw new ScenarioError(`${prefix} fulfillment must be shipping or pickup.`);
+    }
+    normalized.fulfillment = fulfillment;
+  }
   const tiers = own(entry, "tiers");
   if (tiers !== undefined) {
     if (!Array.isArray(tiers) || tiers.length > MAX_TIERS) {
@@ -1171,13 +1197,14 @@ function evaluateOffer(rawScenario, rawOffer) {
     ? scenario.offers.find(({ id }) => id === rawOffer)
     : validateOffer(rawOffer, 0);
   if (!offerEntry) throw new ScenarioError("Offer was not found.");
+  const chargedShippingCost = chargedShipping(offerEntry);
 
   const bands = [{ minimumUnits: offerEntry.minimumUnits, unitPrice: offerEntry.unitPrice }, ...(offerEntry.tiers ?? [])];
   const candidates = bands.map((band, index) => {
     const maximumUnits = Math.min(offerEntry.capacity, (bands[index + 1]?.minimumUnits ?? offerEntry.capacity + 1) - 1);
     const compatibility = scenario.buyers.map((entry) => ({
       buyer: entry,
-      reasons: incompatibilityReasons(entry, { ...offerEntry, unitPrice: band.unitPrice })
+      reasons: incompatibilityReasons(entry, { ...offerEntry, unitPrice: band.unitPrice, shippingPerBuyer: chargedShippingCost })
     }));
     const compatible = compatibility.filter(({ reasons }) => reasons.length === 0).map(({ buyer }) => buyer);
     const selected = selectWholeBuyers(compatible, maximumUnits);
@@ -1192,7 +1219,7 @@ function evaluateOffer(rawScenario, rawOffer) {
   const qualifies = active.qualifies;
   const deliveredBuyers = qualifies ? selected.length : 0;
   const units = qualifies ? fulfilledUnits : 0;
-  const totalCost = qualifies ? (units * evaluatedUnitPrice) + (deliveredBuyers * offerEntry.shippingPerBuyer) : 0;
+  const totalCost = qualifies ? (units * evaluatedUnitPrice) + (deliveredBuyers * chargedShippingCost) : 0;
   const reservationValue = qualifies
     ? selected.reduce((sum, entry) => sum + (entry.maxUnitPrice * entry.quantity), 0)
     : 0;
@@ -1201,11 +1228,11 @@ function evaluateOffer(rawScenario, rawOffer) {
   const selectedIds = new Set(selected.map(({ id }) => id));
   const allocations = qualifies ? selected.map((entry) => {
     const itemsCost = entry.quantity * evaluatedUnitPrice;
-    const totalCost = itemsCost + offerEntry.shippingPerBuyer;
+    const totalCost = itemsCost + chargedShippingCost;
     const ceilingTotal = entry.quantity * entry.maxUnitPrice;
     return {
       buyerId: entry.id, quantity: entry.quantity, unitPrice: evaluatedUnitPrice,
-      itemsCost, shippingCost: offerEntry.shippingPerBuyer, totalCost,
+      itemsCost, shippingCost: chargedShippingCost, totalCost,
       landedUnitCost: totalCost / entry.quantity,
       ceilingTotal, headroom: ceilingTotal - totalCost,
       exceedsCeilingAfterShipping: totalCost > ceilingTotal
@@ -1250,6 +1277,10 @@ function evaluateOffer(rawScenario, rawOffer) {
     averageLandedUnitCost: units > 0 ? totalCost / units : null,
     fulfillmentRate: totalRequestedUnits > 0 ? units / totalRequestedUnits : 0
   };
+}
+
+function chargedShipping(offer) {
+  return offer.fulfillment === "pickup" ? 0 : offer.shippingPerBuyer;
 }
 
 function incompatibilityReasons(buyer, offer) {
@@ -1425,7 +1456,11 @@ function unitsToNextTier(rawScenario, offerId) {
   const currentIds = new Set(result.selectedBuyerIds);
   const suppliers = scenario.buyers.filter((buyer) => {
     if (currentIds.has(buyer.id)) return false;
-    return incompatibilityReasons(buyer, { ...result.offer, unitPrice: next.unitPrice }).length === 0;
+    return incompatibilityReasons(buyer, {
+      ...result.offer,
+      unitPrice: next.unitPrice,
+      shippingPerBuyer: chargedShipping(result.offer)
+    }).length === 0;
   });
   const supplierUnits = suppliers.reduce((sum, buyer) => sum + buyer.quantity, 0);
   const supplierFields = {
@@ -1767,7 +1802,8 @@ function bindStaticEvents() {
       minimumUnits: 5,
       deliveryDays: 7,
       capacity: 20,
-      shippingPerBuyer: 0
+      shippingPerBuyer: 0,
+      fulfillment: "shipping"
     });
     inspectedOfferId = next;
     renderEditor();
@@ -1998,7 +2034,7 @@ function renderOfferRow(entry) {
   addDuplicateAction(row, "offers", entry);
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
-    input.value = entry[field];
+    input.value = entry[field] ?? (field === "fulfillment" ? "shipping" : "");
     input.addEventListener("input", () => {
       const target = scenario.offers.find((offer) => offer.id === row.dataset.id);
       target[field] = input.value;
@@ -2292,7 +2328,7 @@ function renderInspector(market) {
     return;
   }
   elements.inspectorSummary.textContent = result.qualifies
-    ? `${result.deliveredBuyers} buyers and ${result.fulfilledUnits} units are included at ${money(market.scenario.currency).format(result.effectiveUnitPrice)} per item. ${result.activeTierIndex === 0 ? "Base price" : `Tier ${result.activeTierIndex}`} applies to every included unit.`
+    ? `${result.deliveredBuyers} buyers and ${result.fulfilledUnits} units are included at ${money(market.scenario.currency).format(result.effectiveUnitPrice)} per item. ${result.activeTierIndex === 0 ? "Base price" : `Tier ${result.activeTierIndex}`} applies to every included unit. Fulfillment is ${result.offer.fulfillment === "pickup" ? "pickup, so shipping is not charged" : "shipping"}.`
     : "No whole-buyer cohort reaches a valid price band. The table below shows each band's allocation shortfall.";
   const formatter = money(market.scenario.currency);
   elements.tierRows.replaceChildren(...result.tierProgress.map((tier) => {
