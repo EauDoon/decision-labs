@@ -29,6 +29,19 @@ for (const file of copy) {
   }
 }
 
+const html = readFileSync(new URL('index.html', root), 'utf8');
+const apps = ['partnership-breakpoint', 'common-cart', 'smallest-agreement', 'weekend-gap'];
+for (const app of apps) {
+  const version = JSON.parse(readFileSync(new URL(`apps/${app}/package.json`, root), 'utf8')).version;
+  const escaped = version.replaceAll('.', '\\.');
+  const listed = new RegExp(`data-app="${app}">\\s*${escaped}\\s*<`).test(html);
+  const card = new RegExp(`data-app-version="${app}">\\s*${escaped}\\s*<`).test(html);
+  if (!listed || !card) {
+    console.error(`index.html: ${app} should show version ${version} on the version list and catalog card.`);
+    failed += 1;
+  }
+}
+
 if (failed) {
   process.exitCode = 1;
 }
