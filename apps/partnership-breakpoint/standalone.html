@@ -1604,6 +1604,8 @@ let feeHoldPreview = null;
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
 let helpOpen = false;
+let dialogOpener = null;
+let dialogNeedsInitialFocus = coachVisible;
 const undoHistory = [];
 const redoHistory = [];
 
@@ -2272,7 +2274,11 @@ function render() {
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
-  if (coachVisible) app.querySelector?.('[data-action="dismiss-coach"]')?.focus();
+  if (dialogNeedsInitialFocus) {
+    dialogNeedsInitialFocus = false;
+    if (coachVisible) app.querySelector?.('[data-action="dismiss-coach"]')?.focus();
+    else if (helpOpen) app.querySelector?.('[data-action="close-help"]')?.focus();
+  }
   if (pendingNotice) {
     const message = pendingNotice;
     pendingNotice = '';
@@ -2352,9 +2358,22 @@ function attachEvents() {
       return;
     }
     if (action === 'dismiss-coach') { dismissCoach(); return; }
-    if (action === 'show-coach') { coachVisible = true; helpOpen = false; render(); return; }
-    if (action === 'open-help') { helpOpen = true; render(); return; }
-    if (action === 'close-help') { helpOpen = false; render(); return; }
+    if (action === 'show-coach') {
+      rememberDialogOpener(button);
+      coachVisible = true;
+      helpOpen = false;
+      dialogNeedsInitialFocus = true;
+      render();
+      return;
+    }
+    if (action === 'open-help') {
+      rememberDialogOpener(button);
+      helpOpen = true;
+      dialogNeedsInitialFocus = true;
+      render();
+      return;
+    }
+    if (action === 'close-help') { closeHelp(); return; }
     if (action === 'print-report') {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
       window.print(); return;
@@ -2617,16 +2636,26 @@ function drawSensitivityChart(grid) {
 }
 
 window.addEventListener('keydown', (event) => {
+  if ((coachVisible || helpOpen) && event.key === 'Tab') {
+    trapDialogTab(event);
+    return;
+  }
   if (event.key === 'Escape') {
-    if (helpOpen) { helpOpen = false; render(); return; }
+    if (helpOpen) { closeHelp(); return; }
     if (coachVisible) { dismissCoach(); return; }
     return;
   }
   const tag = event.target?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
   if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
-    helpOpen = !helpOpen;
-    render();
+    if (coachVisible) return;
+    if (helpOpen) closeHelp();
+    else {
+      rememberDialogOpener(event.target);
+      helpOpen = true;
+      dialogNeedsInitialFocus = true;
+      render();
+    }
     return;
   }
   if (event.key === 'u' || event.key === 'U') { travelHistory('undo'); return; }
@@ -2949,20 +2978,55 @@ function dismissCoach() {
   coachVisible = false;
   try { localStorage.setItem(COACH_KEY, 'dismissed'); } catch { /* The overlay still closes for this visit. */ }
   render();
+  restoreDialogOpener();
   setNotice('Coach dismissed. Enter the deal, then read the weakest participant and First breakpoint.');
+}
+
+function rememberDialogOpener(node) {
+  dialogOpener = node && typeof node.focus === 'function' ? node : document.activeElement;
+}
+
+function restoreDialogOpener() {
+  const opener = dialogOpener;
+  dialogOpener = null;
+  opener?.focus?.();
+}
+
+function closeHelp() {
+  helpOpen = false;
+  render();
+  restoreDialogOpener();
+}
+
+function dialogFocusables(root) {
+  if (!root?.querySelectorAll) return [];
+  return [...root.querySelectorAll('a[href], button:not([disabled]), textarea, input:not([type="hidden"]), select, [tabindex]:not([tabindex="-1"])')];
+}
+
+function trapDialogTab(event) {
+  event.preventDefault?.();
+  const root = app.querySelector?.('[data-focus-trap]') ?? document.querySelector?.('[data-focus-trap]');
+  if (!root) return;
+  const nodes = dialogFocusables(root);
+  if (!nodes.length) return;
+  const current = nodes.indexOf(document.activeElement);
+  const next = event.shiftKey
+    ? (current <= 0 ? nodes.length - 1 : current - 1)
+    : (current === -1 || current >= nodes.length - 1 ? 0 : current + 1);
+  nodes[next]?.focus?.();
 }
 
 function coachOverlay() {
   if (!coachVisible) return '';
-  return `<div class="coach-overlay" role="dialog" aria-modal="true" aria-labelledby="coach-title">
-    <div class="coach-card">
+  return `<div class="coach-overlay" role="dialog" aria-modal="true" aria-labelledby="coach-title" data-focus-trap="dialog">
+    <div class="coach-card" tabindex="-1">
       <h2 id="coach-title">Three steps to a first read</h2>
       <ol>
         <li>Enter the shared deal and each participant's costs and share.</li>
         <li>Read the viability card for the weakest participant by volume headroom.</li>
         <li>Inspect First breakpoint for the smallest adverse percentage move.</li>
       </ol>
-      <p>This is a local decision aid. It does not say who will actually exit. Press Escape to dismiss. Press ? after dismissing for keyboard shortcuts.</p>
+      <p>This is a local decision aid. It does not say who will actually exit. Press Escape to dismiss. Press ? after dismissing for keyboard shortcuts. Tab stays inside this dialog.</p>
       <button type="button" class="primary" data-action="dismiss-coach">Got it</button>
     </div>
   </div>`;
@@ -2970,8 +3034,8 @@ function coachOverlay() {
 
 function helpDialog() {
   if (!helpOpen) return '';
-  return `<div class="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
-    <div class="coach-card">
+  return `<div class="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title" data-focus-trap="dialog">
+    <div class="coach-card" tabindex="-1">
       <h2 id="help-title">Keyboard shortcuts</h2>
       <ul class="shortcut-list">
         <li><kbd>?</kbd> Open or close this help dialog</li>
@@ -2979,8 +3043,9 @@ function helpDialog() {
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON of the current valid case</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
+        <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
-      <p>Shortcuts are ignored while a text or number field is focused, so typing a name or share is never stolen.</p>
+      <p>Shortcuts are ignored while a text or number field is focused, so typing a name or share is never stolen. Tab stays inside this dialog until it is closed.</p>
       <button type="button" data-action="close-help">Close help</button>
     </div>
   </div>`;

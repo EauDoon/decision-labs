@@ -67,11 +67,14 @@ async function workbench(protocol = 'file:', options = {}) {
       events.get('change')({ target: input });
     },
     keydown: (key, extra = {}) => {
+      let prevented = false;
       windowEvents.get('keydown')?.({
         key,
+        shiftKey: Boolean(extra.shiftKey),
         target: extra.target ?? { tagName: extra.tagName ?? 'BODY' },
-        preventDefault() {},
+        preventDefault() { prevented = true; },
       });
+      return prevented;
     },
     stored: (key) => storage.get(key) ?? null,
   };
@@ -622,6 +625,25 @@ test('visible tour and shortcut buttons reopen coach and help', async () => {
   assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
 });
 
+test('coach and help dialogs trap Tab, expose modal markup, and restore on close', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-focus-trap="dialog"/);
+  assert.match(app.markup(), /role="dialog" aria-modal="true"/);
+  assert.match(app.markup(), /class="coach-card" tabindex="-1"/);
+  assert.equal(app.keydown('Tab'), true);
+  app.click('dismiss-coach');
+  assert.equal(app.keydown('Tab'), false);
+  app.click('open-help');
+  assert.match(app.markup(), /help-overlay"[^>]*data-focus-trap="dialog"/);
+  assert.match(app.markup(), /tabindex="-1"/);
+  assert.match(app.markup(), /data-action="close-help"/);
+  assert.equal(app.keydown('Tab'), true);
+  assert.equal(app.keydown('Tab', { shiftKey: true }), true);
+  app.click('close-help');
+  assert.doesNotMatch(app.markup(), /id="help-title"/);
+  assert.equal(app.keydown('Tab'), false);
+});
+
 test('first-run coach explains the three-step flow, dismisses to localStorage, and skips share links', async () => {
   const fresh = await workbench();
   assert.match(fresh.markup(), /Three steps to a first read/);
@@ -644,6 +666,7 @@ test('first-run coach explains the three-step flow, dismisses to localStorage, a
 
 test('keyboard shortcuts open help, undo, redo, and export without stealing from inputs', async () => {
   const app = await workbench();
+  app.click('dismiss-coach');
   app.keydown('?');
   assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
   assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
