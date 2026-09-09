@@ -7,12 +7,15 @@ import {
   calculatePartnership,
   calculateFeeRequirements,
   clonePreset,
+  compareThreeSnapshots,
   duplicateParticipant,
   dropAndReallocate,
   evaluateStressGrid,
+  exportDownloadName,
   makeParticipant,
   materializeStressCase,
   moveParticipant,
+  participantsFromCsv,
   redactConfiguration,
   solveFeeForAllHold,
   solveMinimumShareToHold,
@@ -37,12 +40,17 @@ let caseName = '';
 let caseLibrary = loadCaseLibrary();
 let removedCase = null;
 let comparisonId = '';
+let pinFirstId = '';
+let pinSecondId = '';
 let stressPreviewId = '';
 let shareHoldPreview = null;
 let feeHoldPreview = null;
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
 let helpOpen = false;
+let dialogOpener = null;
+let dialogNeedsInitialFocus = coachVisible;
+const mutedStressIds = new Set();
 const undoHistory = [];
 const redoHistory = [];
 
@@ -89,7 +97,7 @@ function persistLibrary(candidate) {
 }
 
 function libraryPanel() {
-  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="compare-case" data-case-id="${item.id}" aria-pressed="${comparisonId === item.id}">Compare</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
+  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup. Pin first and Pin second, then compare those two snapshots with the current draft.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="compare-case" data-case-id="${item.id}" aria-pressed="${comparisonId === item.id}">Compare</button><button type="button" data-action="pin-first" data-case-id="${item.id}" aria-pressed="${pinFirstId === item.id}">Pin first</button><button type="button" data-action="pin-second" data-case-id="${item.id}" aria-pressed="${pinSecondId === item.id}">Pin second</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
 }
 
 function handleLibraryAction(action, id) {
@@ -109,7 +117,14 @@ function handleLibraryAction(action, id) {
   }
   if (action === 'remove-case') {
     const item = caseLibrary.find((entry) => entry.id === id);
-    if (item && persistLibrary(caseLibrary.filter((entry) => entry.id !== id))) { removedCase = item; render(); setNotice('Snapshot removed. Restore last removed snapshot is available in this tab.'); }
+    if (item && persistLibrary(caseLibrary.filter((entry) => entry.id !== id))) {
+      removedCase = item;
+      if (comparisonId === id) comparisonId = '';
+      if (pinFirstId === id) pinFirstId = '';
+      if (pinSecondId === id) pinSecondId = '';
+      render();
+      setNotice('Snapshot removed. Restore last removed snapshot is available in this tab.');
+    }
   }
   if (action === 'restore-case' && removedCase && caseLibrary.length < 12) {
     if (persistLibrary([...caseLibrary, removedCase])) { removedCase = null; render(); setNotice('Snapshot restored.'); }
@@ -241,15 +256,17 @@ function field({ label, path, value, optional = false, min = 0, max = null, step
   const textInvalid = pattern
     ? (optional ? textValue !== '' && !pattern.test(textValue) : !pattern.test(textValue))
     : (optional ? textValue !== '' && (textValue.trim() === '' || textValue.trim().length > maxLength) : !textValue.trim() || textValue.trim().length > maxLength);
-  const invalid = type === 'text'
+  const invalid = type === 'text' || type === 'textarea'
     ? textInvalid
     : !(optional && value == null) && (!Number.isFinite(value) || value < min || (max !== null && value > max) || sharesInvalid);
   if (invalid) invalidFieldCount += 1;
   const inputId = `field-${path.replace(/\./g, '-')}`;
   const optionalAttr = optional ? ' data-optional="true"' : '';
-  const input = type === 'text'
-    ? `<input id="${inputId}" aria-invalid="${invalid}" type="text" data-path="${path}" data-type="text"${optionalAttr} value="${escapeAttribute(value ?? '')}" maxlength="${maxLength}" ${optional ? '' : 'required '}${titleAttr} />`
-    : `<input id="${inputId}" aria-invalid="${invalid}" type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'}${titleAttr} />`;
+  const input = type === 'textarea'
+    ? `<textarea id="${inputId}" aria-invalid="${invalid}" data-path="${path}" data-type="text"${optionalAttr} maxlength="${maxLength}" rows="4" ${optional ? '' : 'required '}${titleAttr}>${escapeAttribute(value ?? '')}</textarea>`
+    : type === 'text'
+      ? `<input id="${inputId}" aria-invalid="${invalid}" type="text" data-path="${path}" data-type="text"${optionalAttr} value="${escapeAttribute(value ?? '')}" maxlength="${maxLength}" ${optional ? '' : 'required '}${titleAttr} />`
+      : `<input id="${inputId}" aria-invalid="${invalid}" type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'}${titleAttr} />`;
   return `<div class="field ${wide ? 'wide' : ''}"><label>${label} ${optionalText}${input}</label></div>`;
 }
 
@@ -333,16 +350,16 @@ function participantDetailsOpen(index) {
 function inputPanel() {
   const participantForms = state.participants.map((participant, index) => `
     <section class="participant-form" aria-labelledby="participant-${index}-title">
+      <div class="participant-toolbar">
+        <div class="button-row participant-roster">
+          <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
+          <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
+          <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
+          <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
+        </div>
+      </div>
       <details class="participant-details"${participantDetailsOpen(index) ? ' open' : ''}>
         <summary id="participant-${index}-title">Participant ${index + 1}: ${escapeAttribute(participant.name)}</summary>
-        <div class="participant-header">
-          <div class="button-row participant-roster">
-            <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
-            <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
-            <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
-            <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
-          </div>
-        </div>
         <div class="field-grid">
         ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text', title: 'Display name, 1 through 80 characters after trimming spaces.' })}
         ${field({ label: 'Revenue share', path: `participants.${index}.revenueShare`, value: participant.revenueShare, min: 0, max: 1, step: '0.0001', title: 'Share of gross fee revenue, 0 through 1. All shares must sum to 1.' })}
@@ -363,7 +380,7 @@ function inputPanel() {
       <div class="panel-body">
         <section class="input-section" aria-labelledby="deal-inputs-title">
           <h2 id="deal-inputs-title">Shared deal</h2>
-          <p class="notice">Volume shock % is the only baseline volume reduction, 0 through 100. Addressable volume caps realized demand. Empty required fields are not saved. An optional title and 3-letter currency code travel with JSON, hash links, and autosave. Currency is a display prefix only; omitted currency keeps the word units.</p>
+          <p class="notice">Volume shock % is the only baseline volume reduction, 0 through 100. Addressable volume caps realized demand. Empty required fields are not saved. An optional title, notes, and 3-letter currency code travel with JSON, hash links, and autosave. Currency is a display prefix only; omitted currency keeps the word units.</p>
           <div class="field-grid">
             ${field({ label: 'Deal title', path: 'deal.title', value: state.deal.title ?? '', optional: true, wide: true, type: 'text', title: 'Optional display name, 1 through 80 characters after trimming. Leave blank to omit.' })}
             ${field({ label: 'Currency code', path: 'deal.currency', value: state.deal.currency ?? '', optional: true, type: 'text', maxLength: 3, pattern: /^[A-Z]{3}$/, title: 'Optional 3-letter uppercase code such as USD. Leave blank to display units. The model does not convert currencies.' })}
@@ -371,6 +388,7 @@ function inputPanel() {
             ${field({ label: 'Fee / transaction', path: 'deal.feePerTransaction', value: state.deal.feePerTransaction, step: '0.0001', title: 'Gross fee collected per transaction, zero or greater.' })}
             ${field({ label: 'Addressable volume', path: 'deal.addressableVolume', value: state.deal.addressableVolume, step: '1', title: 'Maximum transactions available from demand, zero or greater.' })}
             ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, max: 100, step: '0.1', title: 'Baseline volume reduction, 0 through 100. There is no separate churn field.' })}
+            ${field({ label: 'Deal notes', path: 'deal.notes', value: state.deal.notes ?? '', optional: true, wide: true, type: 'textarea', maxLength: 500, title: 'Optional notes, 1 through 500 characters after trimming. Leave blank to omit. Shown in reports and print.' })}
           </div>
         </section>
         <section class="input-section" aria-labelledby="stress-inputs-title">
@@ -402,10 +420,11 @@ function inputPanel() {
           ${libraryPanel()}
           <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button><button type="button" data-action="open-help">Keyboard shortcuts</button><button type="button" data-action="show-coach">Show tour</button></div>
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
-          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
+          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button><button type="button" data-action="export-csv">Export stress CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
+            <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
             <button type="button" data-action="reset">Reset</button>
           </div>
           <p id="notice" class="notice" aria-live="polite">${standaloneFileMode ? 'Standalone file mode: export JSON to transfer a case. File URLs are not portable.' : ''}</p>
@@ -445,9 +464,12 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
-    <section class="print-only"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
-    <nav class="results-jump" aria-label="Jump in results">
+    <section class="print-only"><h2>Case assumptions</h2>${state.deal.notes ? `<p><strong>Notes:</strong> ${escapeAttribute(state.deal.notes)}</p>` : ''}<p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
+    <nav class="results-jump" aria-label="Jump in results" id="results-jump">
+      <span class="eyebrow">Jump in results</span>
       <a href="#first-breakpoint">First breakpoint</a>
+      <a href="#fee-guidance-title">Fee guide</a>
+      <a href="#three-compare-title">Three-snapshot compare</a>
       <a href="#charts-title">Charts</a>
       <a href="#compound-title">Compound stress</a>
       <a href="#participant-ledger">Participant ledger</a>
@@ -456,6 +478,7 @@ function resultsPanel(result) {
     ${feeHoldPreviewSection()}
     ${shareHoldPreviewSection()}
     ${comparisonSection(result)}
+    ${threeCompareSection(result)}
     ${breakpointSection(result)}
     <h2 id="charts-title" class="visually-hidden">Charts</h2>
     ${tornadoSection(result)}
@@ -484,9 +507,12 @@ function stressSection() {
     feasible: 'A fixed-share proposal passes every tested case. Remaining revenue is distributed in proportion to the current shares. Applying it changes only revenue shares.',
   }[negotiation.status];
   const rows = stress.participants.map((participant, index) => {
+    if (mutedStressIds.has(participant.id)) {
+      return `<tr class="stress-muted"><th scope="row">${escapeAttribute(participant.name)}</th><td colspan="6">Hidden from this table only. Still counted in the ${stress.caseCount} tested cases and any proposal. <button type="button" data-action="unmute-stress-row" data-participant-id="${escapeAttribute(participant.id)}">Show row</button></td></tr>`;
+    }
     const worstCase = stress.scenarios.find((scenario) => scenario.id === participant.worst.scenarioId);
     const operations = negotiation.operationalFailures.filter((failure) => failure.participantId === participant.id);
-    return `<tr><th scope="row">${escapeAttribute(participant.name)}</th>
+    return `<tr><th scope="row">${escapeAttribute(participant.name)}<br><button type="button" data-action="mute-stress-row" data-participant-id="${escapeAttribute(participant.id)}">Hide in table</button></th>
       <td>${participant.passCount} / ${stress.caseCount} hold</td>
       <td>${formatMoney(participant.worst.profitGap)}<br><small>${caseLabel(worstCase)}</small></td>
       <td>${operations.length ? `${operations.length} cases fail capacity or commitment` : 'All operational tests pass'}</td>
@@ -497,15 +523,29 @@ function stressSection() {
   const cases = stress.scenarios.map((scenario) => `<tr><th scope="row">${caseLabel(scenario)}<br><button type="button" data-action="inspect-stress" data-scenario-id="${scenario.id}">Inspect ${scenario.id}</button></th>
     <td>${formatVolume(scenario.volume)}</td><td>${formatNumber(scenario.fee, 4)}</td><td>${formatMoney(scenario.totalProfit)}</td>
     <td class="${scenario.viable ? 'pass-text' : 'failure-text'}">${scenario.viable ? 'All participants hold' : scenario.participants.filter((participant) => !participant.viable).map((participant) => `${escapeAttribute(participant.name)}: ${escapeAttribute(participant.failureReasons.join('; '))}`).join('<br>')}</td></tr>`).join('');
-  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.4.0</span></div>
+  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.4.1</span></div>
     <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
       <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
       <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button></div>
-      <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying.</p></div>
+      <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant.</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
     <details class="case-details"><summary>Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases}</tbody></table></div></details>
     <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
+}
+
+function capacityUtilizationCell(participant) {
+  if (participant.capacity == null || participant.capacityUtilization == null) {
+    return '<td>Unbounded</td>';
+  }
+  if (!Number.isFinite(participant.capacityUtilization)) {
+    return '<td class="failure-text">Exceeds zero capacity</td>';
+  }
+  const pct = participant.capacityUtilization * 100;
+  const capped = Math.max(0, Math.min(100, pct));
+  const over = pct > 100 + 1e-9;
+  const label = `${formatPct(pct)} of capacity`;
+  return `<td><span class="capacity-use"><svg class="capacity-meter" role="img" aria-label="${escapeAttribute(label)}" viewBox="0 0 100 8" width="72" height="8"><rect x="0" y="0" width="100" height="8" fill="#eae7de"></rect><rect x="0" y="0" width="${capped}" height="8" fill="${over ? '#d94f3d' : '#1558d6'}"></rect></svg><span>${escapeAttribute(label)}</span></span></td>`;
 }
 
 function participantTable(result) {
@@ -522,10 +562,11 @@ function participantTable(result) {
       <td>${formatVolume(participant.exitVolume)}</td>
       <td>${participant.headroomToExit === null ? 'Impossible' : formatVolume(participant.headroomToExit)}</td>
       <td>${participant.capacity === null ? 'Unbounded' : formatVolume(participant.capacity)}</td>
+      ${capacityUtilizationCell(participant)}
       <td>${escapeAttribute(participant.bindingConstraint.label)}</td>
       <td class="${participant.viable ? 'pass-text' : 'failure-text'}">${participant.viable ? 'Holds' : escapeAttribute(participant.failureReasons.join('; '))}</td>
     </tr>`).join('');
-  return `<section class="panel" id="participant-ledger"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary.</p></section>`;
+  return `<section class="panel" id="participant-ledger"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Capacity use</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary. Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied.</p></section>`;
 }
 
 function shockCard(label, shock, units) {
@@ -681,7 +722,11 @@ function render() {
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
-  if (coachVisible) app.querySelector?.('[data-action="dismiss-coach"]')?.focus();
+  if (dialogNeedsInitialFocus) {
+    dialogNeedsInitialFocus = false;
+    if (coachVisible) app.querySelector?.('[data-action="dismiss-coach"]')?.focus();
+    else if (helpOpen) app.querySelector?.('[data-action="close-help"]')?.focus();
+  }
   if (pendingNotice) {
     const message = pendingNotice;
     pendingNotice = '';
@@ -707,7 +752,7 @@ function refresh(message = '') {
   saveState();
   render();
   if (focusedPath) {
-    const replacement = [...app.querySelectorAll('input[data-path]')].find((input) => input.dataset.path === focusedPath);
+    const replacement = [...app.querySelectorAll('[data-path]')].find((node) => node.dataset.path === focusedPath);
     replacement?.focus({ preventScroll: true });
   } else if (focusedAction) {
     [...app.querySelectorAll('button[data-action]')].find((button) => button.dataset.action === focusedAction && button.dataset.caseId === focusedCase)?.focus({ preventScroll: true });
@@ -720,7 +765,9 @@ function attachEvents() {
   eventsBound = true;
   app.addEventListener('change', (event) => {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement)) return;
+    const isField = input instanceof HTMLInputElement
+      || (typeof HTMLTextAreaElement === 'function' && input instanceof HTMLTextAreaElement);
+    if (!isField) return;
     if (input.dataset.action === 'case-name') { caseName = input.value; return; }
     if (input.dataset.path) {
       checkpoint();
@@ -745,6 +792,7 @@ function attachEvents() {
       return;
     }
     if (input.dataset.action === 'import' && input.files?.[0]) importFile(input.files[0]);
+    if (input.dataset.action === 'import-participants-csv' && input.files?.[0]) importParticipantCsv(input.files[0]);
   });
   app.addEventListener('click', (event) => {
     const button = event.target.closest('button[data-action]');
@@ -758,9 +806,22 @@ function attachEvents() {
       return;
     }
     if (action === 'dismiss-coach') { dismissCoach(); return; }
-    if (action === 'show-coach') { coachVisible = true; helpOpen = false; render(); return; }
-    if (action === 'open-help') { helpOpen = true; render(); return; }
-    if (action === 'close-help') { helpOpen = false; render(); return; }
+    if (action === 'show-coach') {
+      rememberDialogOpener(button);
+      coachVisible = true;
+      helpOpen = false;
+      dialogNeedsInitialFocus = true;
+      render();
+      return;
+    }
+    if (action === 'open-help') {
+      rememberDialogOpener(button);
+      helpOpen = true;
+      dialogNeedsInitialFocus = true;
+      render();
+      return;
+    }
+    if (action === 'close-help') { closeHelp(); return; }
     if (action === 'print-report') {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
       window.print(); return;
@@ -774,7 +835,30 @@ function attachEvents() {
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
     if (action === 'apply-stress-case') { applyInspectedStressCase(); return; }
+    if (action === 'mute-stress-row') {
+      mutedStressIds.add(button.dataset.participantId);
+      render();
+      return;
+    }
+    if (action === 'unmute-stress-row') {
+      mutedStressIds.delete(button.dataset.participantId);
+      render();
+      return;
+    }
     if (action === 'compare-case') { comparisonId = button.dataset.caseId; render(); document.querySelector('#comparison-title')?.focus(); return; }
+    if (action === 'pin-first') {
+      pinFirstId = pinFirstId === button.dataset.caseId ? '' : button.dataset.caseId;
+      render();
+      document.querySelector('#three-compare-title')?.focus();
+      return;
+    }
+    if (action === 'pin-second') {
+      pinSecondId = pinSecondId === button.dataset.caseId ? '' : button.dataset.caseId;
+      render();
+      document.querySelector('#three-compare-title')?.focus();
+      return;
+    }
+    if (action === 'clear-three-compare') { pinFirstId = ''; pinSecondId = ''; render(); return; }
     if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
     if (['save-case', 'load-case', 'remove-case', 'restore-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
     if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
@@ -835,6 +919,7 @@ function attachEvents() {
     if (action === 'export-redacted') exportRedactedFile();
     if (action === 'export-report') exportReport();
     if (action === 'copy-brief') copyNegotiationBrief();
+    if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv();
     if (action === 'apply-stress-proposal') {
       try {
@@ -857,6 +942,10 @@ function attachEvents() {
   });
 }
 
+function caseExportTitle() {
+  return typeof state.deal.title === 'string' ? state.deal.title : '';
+}
+
 function exportFile() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -867,7 +956,7 @@ function exportFile() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'partnership-breakpoint.json';
+  link.download = exportDownloadName('json', caseExportTitle());
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   setNotice('JSON exported.');
@@ -880,7 +969,7 @@ function exportRedactedFile() {
     return;
   }
   const redacted = redactConfiguration(state);
-  downloadText(`${JSON.stringify(redacted, null, 2)}\n`, 'application/json', 'partnership-breakpoint-redacted.json');
+  downloadText(`${JSON.stringify(redacted, null, 2)}\n`, 'application/json', exportDownloadName('redacted', caseExportTitle()));
   setNotice('Redacted JSON exported. Participant names are Participant 1 through N and the deal title is cleared. Identifiers and economics are unchanged.');
 }
 
@@ -922,6 +1011,42 @@ function importFile(file) {
     if (sequence !== importSequence) return;
     const detail = compactErrorMessage(reader.error);
     setNotice(detail ? `Import rejected: file could not be read (${detail}).` : 'Import rejected: file could not be read.');
+  };
+  reader.readAsText(file);
+}
+
+function importParticipantCsv(file) {
+  const sequence = ++importSequence;
+  if (file.size === 0) {
+    setNotice('Participant CSV rejected: the file is empty.');
+    return;
+  }
+  if (file.size > 250_000) {
+    setNotice('Participant CSV rejected: files must be 250 KB or smaller.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    if (sequence !== importSequence) return;
+    const text = String(reader.result ?? '');
+    try {
+      const participants = participantsFromCsv(text);
+      checkpoint();
+      state.participants = participants;
+      activePreset = '';
+      refresh('Participant roster replaced from CSV. Deal terms are unchanged.');
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        setNotice(`Participant CSV rejected: ${summarizeErrors(error.errors)}`);
+        return;
+      }
+      setNotice(`Participant CSV rejected: ${describeJsonFailure('the file', error)}`);
+    }
+  };
+  reader.onerror = () => {
+    if (sequence !== importSequence) return;
+    const detail = compactErrorMessage(reader.error);
+    setNotice(detail ? `Participant CSV rejected: file could not be read (${detail}).` : 'Participant CSV rejected: file could not be read.');
   };
   reader.readAsText(file);
 }
@@ -974,16 +1099,26 @@ function drawSensitivityChart(grid) {
 }
 
 window.addEventListener('keydown', (event) => {
+  if ((coachVisible || helpOpen) && event.key === 'Tab') {
+    trapDialogTab(event);
+    return;
+  }
   if (event.key === 'Escape') {
-    if (helpOpen) { helpOpen = false; render(); return; }
+    if (helpOpen) { closeHelp(); return; }
     if (coachVisible) { dismissCoach(); return; }
     return;
   }
   const tag = event.target?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
   if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
-    helpOpen = !helpOpen;
-    render();
+    if (coachVisible) return;
+    if (helpOpen) closeHelp();
+    else {
+      rememberDialogOpener(event.target);
+      helpOpen = true;
+      dialogNeedsInitialFocus = true;
+      render();
+    }
     return;
   }
   if (event.key === 'u' || event.key === 'U') { travelHistory('undo'); return; }
@@ -1034,6 +1169,26 @@ function comparisonSection(current) {
   return `<section class="panel" aria-labelledby="comparison-title"><div class="panel-heading"><h2 id="comparison-title" tabindex="-1">Compare with ${escapeAttribute(snapshot.name)}</h2><button type="button" data-action="clear-comparison">Close comparison</button></div><div class="panel-body"><p>Total monthly profit change: <strong class="${profitClass}">${formatMoney(profitDelta)}</strong>. Effective volume change: ${formatNumber(current.effectiveVolume - baseline.effectiveVolume)} txn.</p><p>Snapshot stress cases held: ${baselineStress.passCount} / ${baselineStress.caseCount}. Current: ${currentStress.passCount} / ${currentStress.caseCount}. Each uses its own stress settings, so counts may not be directly comparable. Profit decreases are highlighted; increases use a cooler fill. This is a difference table, not a judgement of which case is better.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Case comparison"><table><caption>Current minus snapshot. Participants matched by stable identifier. Highlighted profit cells changed.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Snapshot profit</th><th scope="col">Current profit</th><th scope="col">Profit change</th><th scope="col">Exit test</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
+function snapshotCell(column) {
+  if (!column) return '<td>Not in this roster</td><td>n/a</td>';
+  return `<td>${formatMoney(column.monthlyProfit)}</td><td class="${column.viable ? 'pass-text' : 'failure-text'}">${column.viable ? 'Holds' : 'Fails'}</td>`;
+}
+
+function threeCompareSection(current) {
+  const firstItem = caseLibrary.find((item) => item.id === pinFirstId);
+  const secondItem = caseLibrary.find((item) => item.id === pinSecondId);
+  if (!firstItem && !secondItem) return '';
+  if (!firstItem || !secondItem) {
+    return `<section class="panel" aria-labelledby="three-compare-title"><div class="panel-heading"><h2 id="three-compare-title" tabindex="-1">Three-snapshot compare</h2><button type="button" data-action="clear-three-compare">Clear pins</button></div><div class="panel-body"><p>Pin two saved snapshots to compare them with the current draft. ${firstItem ? `First pin: ${escapeAttribute(firstItem.name)}.` : 'First pin is empty.'} ${secondItem ? `Second pin: ${escapeAttribute(secondItem.name)}.` : 'Second pin is empty.'}</p></div></section>`;
+  }
+  const compared = compareThreeSnapshots(state, firstItem.config, secondItem.config);
+  const rosterNote = compared.sameRoster
+    ? 'All three cases share the same participant identifiers.'
+    : 'Participant sets differ. Rows that are missing from a case are labeled Not in this roster rather than filled with a zero.';
+  const rows = compared.rows.map((row) => `<tr class="${row.rosterMismatch ? 'diff-changed' : ''}"><th scope="row">${escapeAttribute(row.name)}${row.rosterMismatch ? ' <span class="optional">roster mismatch</span>' : ''}</th>${snapshotCell(row.first)}${snapshotCell(row.second)}${snapshotCell(row.current)}</tr>`).join('');
+  return `<section class="panel" aria-labelledby="three-compare-title"><div class="panel-heading"><h2 id="three-compare-title" tabindex="-1">Three-snapshot compare</h2><button type="button" data-action="clear-three-compare">Clear pins</button></div><div class="panel-body"><p>First pin: <strong>${escapeAttribute(firstItem.name)}</strong> (${compared.firstViable ? 'holds' : 'exits'}, ${formatMoney(compared.firstTotalProfit)} total profit). Second pin: <strong>${escapeAttribute(secondItem.name)}</strong> (${compared.secondViable ? 'holds' : 'exits'}, ${formatMoney(compared.secondTotalProfit)}). Current draft (${compared.currentViable ? 'holds' : 'exits'}, ${formatMoney(compared.currentTotalProfit)}).</p><p>${rosterNote} This is a difference table, not a ranking of which case is better.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Three-snapshot comparison"><table><caption>Profit and hold or fail for two pinned snapshots plus the current draft. Participants matched by identifier.</caption><thead><tr><th scope="col">Participant</th><th scope="col">${escapeAttribute(firstItem.name)} profit</th><th scope="col">${escapeAttribute(firstItem.name)} exit</th><th scope="col">${escapeAttribute(secondItem.name)} profit</th><th scope="col">${escapeAttribute(secondItem.name)} exit</th><th scope="col">Current profit</th><th scope="col">Current exit</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
 function reportText(value) {
   return String(value).replace(/[\r\n\t]/g, ' ').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/[\\`*_[\]{}()#+!|]/g, (character) => '\\' + character);
 }
@@ -1042,6 +1197,7 @@ function decisionReport(config, title = 'Current case') {
   const result = calculatePartnership(config);
   const stress = evaluateStressGrid(config);
   const lines = ['# Partnership Breakpoint decision report', '', 'Case: ' + reportText(title), '',
+    ...(config.deal.notes ? ['Notes: ' + reportText(config.deal.notes), ''] : []),
     'Deterministic monthly contribution analysis. All money uses one consistent currency unit.', '',
     '## Current outcome', '',
     'Partnership: ' + (result.viable ? 'all participants hold' : 'at least one participant exits') + '.',
@@ -1072,7 +1228,7 @@ function downloadText(contents, type, filename) {
 function exportReport() {
   const validation = validateConfiguration(state);
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting a report. ' + summarizeErrors(validation.errors)); return; }
-  downloadText(decisionReport(state, caseName.trim() || 'Current case'), 'text/markdown;charset=utf-8', 'partnership-breakpoint-report.md');
+  downloadText(decisionReport(state, caseName.trim() || 'Current case'), 'text/markdown;charset=utf-8', exportDownloadName('report', caseExportTitle()));
   setNotice('Decision report exported with assumptions and reproducible case JSON.');
 }
 
@@ -1089,6 +1245,7 @@ function negotiationBrief(config, title = 'Current case') {
   return [
     '# Partnership Breakpoint negotiation brief', '',
     'Case: ' + reportText(title), '',
+    ...(config.deal.notes ? ['Notes: ' + reportText(config.deal.notes), ''] : []),
     'Deterministic monthly contribution snapshot. Money uses ' + unit + '. This is not a forecast or a recommendation.', '',
     '## Outcome',
     result.viable ? 'Every participant holds at current inputs.' : 'At least one participant exits at current inputs.',
@@ -1107,6 +1264,30 @@ function negotiationBrief(config, title = 'Current case') {
   ].join('\n');
 }
 
+function copyShareUrl() {
+  if (standaloneFileMode) {
+    setNotice('Share URLs are not available in standalone file mode. Export JSON to transfer this case.');
+    return;
+  }
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice(`Resolve invalid inputs before copying a share URL. ${summarizeErrors(validation.errors)}`);
+    return;
+  }
+  saveState();
+  const url = String(window.location.href || '');
+  const clipboard = globalThis.navigator?.clipboard;
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    Promise.resolve(clipboard.writeText(url)).then(() => {
+      setNotice('Share URL copied. The link loads this case locally; no server stores it.');
+    }).catch(() => {
+      setNotice(`Clipboard unavailable. Share URL: ${url}`);
+    });
+    return;
+  }
+  setNotice(`Clipboard unavailable. Share URL: ${url}`);
+}
+
 function copyNegotiationBrief() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -1120,12 +1301,12 @@ function copyNegotiationBrief() {
     Promise.resolve(clipboard.writeText(text)).then(() => {
       setNotice('Negotiation brief copied as Markdown.');
     }).catch(() => {
-      downloadText(text, 'text/markdown;charset=utf-8', 'partnership-breakpoint-brief.md');
+      downloadText(text, 'text/markdown;charset=utf-8', exportDownloadName('brief', caseExportTitle()));
       setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
     });
     return;
   }
-  downloadText(text, 'text/markdown;charset=utf-8', 'partnership-breakpoint-brief.md');
+  downloadText(text, 'text/markdown;charset=utf-8', exportDownloadName('brief', caseExportTitle()));
   setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
 }
 
@@ -1147,7 +1328,7 @@ function stressCsv(config) {
 function exportStressCsv() {
   const validation = validateConfiguration(state);
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting CSV. ' + summarizeErrors(validation.errors)); return; }
-  downloadText(stressCsv(state), 'text/csv;charset=utf-8', 'partnership-breakpoint-stress.csv');
+  downloadText(stressCsv(state), 'text/csv;charset=utf-8', exportDownloadName('csv', caseExportTitle()));
   setNotice('Stress CSV exported. Each row is one participant in one selected case; case counts are not probabilities.');
 }
 
@@ -1284,20 +1465,55 @@ function dismissCoach() {
   coachVisible = false;
   try { localStorage.setItem(COACH_KEY, 'dismissed'); } catch { /* The overlay still closes for this visit. */ }
   render();
+  restoreDialogOpener();
   setNotice('Coach dismissed. Enter the deal, then read the weakest participant and First breakpoint.');
+}
+
+function rememberDialogOpener(node) {
+  dialogOpener = node && typeof node.focus === 'function' ? node : document.activeElement;
+}
+
+function restoreDialogOpener() {
+  const opener = dialogOpener;
+  dialogOpener = null;
+  opener?.focus?.();
+}
+
+function closeHelp() {
+  helpOpen = false;
+  render();
+  restoreDialogOpener();
+}
+
+function dialogFocusables(root) {
+  if (!root?.querySelectorAll) return [];
+  return [...root.querySelectorAll('a[href], button:not([disabled]), textarea, input:not([type="hidden"]), select, [tabindex]:not([tabindex="-1"])')];
+}
+
+function trapDialogTab(event) {
+  event.preventDefault?.();
+  const root = app.querySelector?.('[data-focus-trap]') ?? document.querySelector?.('[data-focus-trap]');
+  if (!root) return;
+  const nodes = dialogFocusables(root);
+  if (!nodes.length) return;
+  const current = nodes.indexOf(document.activeElement);
+  const next = event.shiftKey
+    ? (current <= 0 ? nodes.length - 1 : current - 1)
+    : (current === -1 || current >= nodes.length - 1 ? 0 : current + 1);
+  nodes[next]?.focus?.();
 }
 
 function coachOverlay() {
   if (!coachVisible) return '';
-  return `<div class="coach-overlay" role="dialog" aria-modal="true" aria-labelledby="coach-title">
-    <div class="coach-card">
+  return `<div class="coach-overlay" role="dialog" aria-modal="true" aria-labelledby="coach-title" data-focus-trap="dialog">
+    <div class="coach-card" tabindex="-1">
       <h2 id="coach-title">Three steps to a first read</h2>
       <ol>
         <li>Enter the shared deal and each participant's costs and share.</li>
         <li>Read the viability card for the weakest participant by volume headroom.</li>
         <li>Inspect First breakpoint for the smallest adverse percentage move.</li>
       </ol>
-      <p>This is a local decision aid. It does not say who will actually exit. Press Escape to dismiss. Press ? after dismissing for keyboard shortcuts.</p>
+      <p>This is a local decision aid. It does not say who will actually exit. Press Escape to dismiss. Press ? after dismissing for keyboard shortcuts. Tab stays inside this dialog.</p>
       <button type="button" class="primary" data-action="dismiss-coach">Got it</button>
     </div>
   </div>`;
@@ -1305,8 +1521,8 @@ function coachOverlay() {
 
 function helpDialog() {
   if (!helpOpen) return '';
-  return `<div class="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
-    <div class="coach-card">
+  return `<div class="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title" data-focus-trap="dialog">
+    <div class="coach-card" tabindex="-1">
       <h2 id="help-title">Keyboard shortcuts</h2>
       <ul class="shortcut-list">
         <li><kbd>?</kbd> Open or close this help dialog</li>
@@ -1314,8 +1530,9 @@ function helpDialog() {
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON of the current valid case</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
+        <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
-      <p>Shortcuts are ignored while a text or number field is focused, so typing a name or share is never stolen.</p>
+      <p>Shortcuts are ignored while a text or number field is focused, so typing a name or share is never stolen. Tab stays inside this dialog until it is closed.</p>
       <button type="button" data-action="close-help">Close help</button>
     </div>
   </div>`;

@@ -170,6 +170,35 @@ test('capacity makes the partnership non-viable even when profit passes', () => 
   assert.match(result.participants[1].failureReasons.join(' '), /exceeds capacity/);
 });
 
+test('capacity utilization is volume over capacity, unbounded, or exceeds zero capacity', () => {
+  const balanced = calculatePartnership(clonePreset('balanced'));
+  assert.equal(balanced.effectiveVolume, 100000);
+  assert.equal(balanced.participants[0].capacityUtilization, 100000 / 130000);
+  assert.ok(balanced.participants[0].capacityUtilization < 1);
+
+  const jv = calculatePartnership(clonePreset('threePartyJv'));
+  const capital = jv.participants.find((item) => item.id === 'capital');
+  assert.equal(capital.capacity, null);
+  assert.equal(capital.capacityUtilization, null);
+
+  const over = clonePreset('balanced');
+  over.participants[0].capacity = 50000;
+  const overResult = calculatePartnership(over);
+  assert.equal(overResult.participants[0].capacityUtilization, 2);
+
+  const zero = clonePreset('balanced');
+  zero.participants[0].capacity = 0;
+  const zeroResult = calculatePartnership(zero);
+  assert.equal(zeroResult.participants[0].capacityUtilization, Number.POSITIVE_INFINITY);
+
+  const idle = clonePreset('balanced');
+  idle.deal.monthlyVolume = 0;
+  idle.deal.addressableVolume = 0;
+  idle.participants.forEach((item) => { item.capacity = 0; item.minimumCommitment = 0; });
+  const idleResult = calculatePartnership(idle);
+  assert.equal(idleResult.participants[0].capacityUtilization, 0);
+});
+
 test('volume, fee, and cost shocks report economically meaningful thresholds', () => {
   const config = clonePreset('balanced');
   const participant = config.participants[0];
@@ -395,4 +424,31 @@ test('optional deal title and currency persist when valid and are rejected when 
     assert.equal(validation.valid, false, String(currency));
     assert.match(validation.errors.join(' '), /Deal currency/);
   }
+});
+
+test('optional deal notes persist when valid and reject unknown abuse', () => {
+  const omitted = clonePreset('balanced');
+  assert.equal(omitted.deal.notes, undefined);
+  assert.equal(validateConfiguration(omitted).valid, true);
+
+  const noted = clonePreset('balanced');
+  noted.deal.notes = 'Harbor counterparty wants a 90-day review.';
+  assert.equal(validateConfiguration(noted).valid, true);
+  assert.equal(calculatePartnership(noted).deal.notes, 'Harbor counterparty wants a 90-day review.');
+
+  noted.deal.notes = 'x'.repeat(500);
+  assert.equal(validateConfiguration(noted).valid, true);
+
+  const invalidNotes = ['', '   ', 'x'.repeat(501), 12, null, true, { text: 'no' }];
+  for (const notes of invalidNotes) {
+    const config = clonePreset('balanced');
+    config.deal.notes = notes;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(notes));
+    assert.match(validation.errors.join(' '), /Deal notes/);
+  }
+
+  const unknown = clonePreset('balanced');
+  unknown.deal.memo = 'secret';
+  assert.match(validateConfiguration(unknown).errors.join(' '), /unknown field: memo/);
 });

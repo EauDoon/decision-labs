@@ -29,9 +29,20 @@ async function workbench(protocol = 'file:', options = {}) {
       else this.onload();
     }
   }
+  const locationState = { protocol, hash: options.hash ?? '', pathname: '/', search: '' };
+  Object.defineProperty(locationState, 'href', {
+    configurable: true,
+    enumerable: true,
+    get() {
+      const host = this.protocol === 'file:' ? '' : '//127.0.0.1';
+      return `${this.protocol}${host}${this.pathname}${this.search}${this.hash}`;
+    },
+  });
   const context = vm.createContext({ console, Blob, setTimeout: (callback) => callback(), URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
-    history: { replaceState() {} },
-    window: { print: () => { prints += 1; }, location: { protocol, hash: options.hash ?? '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
+    history: { replaceState(_state, _title, url) {
+      if (typeof url === 'string' && url.includes('#')) locationState.hash = url.slice(url.indexOf('#'));
+    } },
+    window: { print: () => { prints += 1; }, location: locationState, addEventListener: (name, callback) => windowEvents.set(name, callback) },
     document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
   });
@@ -60,12 +71,21 @@ async function workbench(protocol = 'file:', options = {}) {
       input.files = [{ size: file.size ?? String(contents).length, contents, pending, error }];
       events.get('change')({ target: input });
     },
+    importParticipantsCsv: (csv, pending, error = false, file = {}) => {
+      const contents = Object.hasOwn(file, 'contents') ? file.contents : csv;
+      const input = new Input({ action: 'import-participants-csv' }, '');
+      input.files = [{ size: file.size ?? String(contents).length, contents, pending, error }];
+      events.get('change')({ target: input });
+    },
     keydown: (key, extra = {}) => {
+      let prevented = false;
       windowEvents.get('keydown')?.({
         key,
+        shiftKey: Boolean(extra.shiftKey),
         target: extra.target ?? { tagName: extra.tagName ?? 'BODY' },
-        preventDefault() {},
+        preventDefault() { prevented = true; },
       });
+      return prevented;
     },
     stored: (key) => storage.get(key) ?? null,
   };
@@ -103,6 +123,21 @@ test('standalone displays the complete compound grid with accessible controls an
   assert.match(app.markup(), /<summary>Inspect all 27 compound cases<\/summary>/);
   assert.match(app.markup(), /tabindex="0" role="region" aria-label="Compound case evidence/);
   assert.match(app.markup(), /data-action="apply-stress-proposal" disabled/);
+});
+
+test('results jump nav is sticky, labeled, and keyboard-focusable via in-page links', async () => {
+  const app = await workbench();
+  const html = await buildStandalone();
+  assert.match(app.markup(), /<nav class="results-jump" aria-label="Jump in results" id="results-jump">/);
+  assert.match(app.markup(), /href="#first-breakpoint">First breakpoint<\/a>/);
+  assert.match(app.markup(), /href="#fee-guidance-title">Fee guide<\/a>/);
+  assert.match(app.markup(), /href="#charts-title">Charts<\/a>/);
+  assert.match(app.markup(), /href="#compound-title">Compound stress<\/a>/);
+  assert.match(app.markup(), /href="#participant-ledger">Participant ledger<\/a>/);
+  assert.match(html, /\.results-jump \{[\s\S]*position: sticky;/);
+  assert.match(html, /\.results-jump a:focus-visible/);
+  assert.match(app.markup(), /id="first-breakpoint"/);
+  assert.match(app.markup(), /id="participant-ledger"/);
 });
 
 test('first breakpoint card reports capacity-limited volume growth', async () => {
@@ -373,6 +408,30 @@ test('snapshot comparison reports participant deltas without mutating the curren
   app.click('clear-comparison'); assert.doesNotMatch(app.markup(), /Compare with Baseline/);
 });
 
+test('three-snapshot compare pins two library cases and flags roster mismatches', async () => {
+  const app = await workbench();
+  app.nameCase('Baseline');
+  app.click('save-case');
+  app.click('preset', { preset: 'thinMargin' });
+  app.nameCase('Thin');
+  app.click('save-case');
+  app.click('pin-first', { caseId: 'case-1' });
+  assert.match(app.markup(), /First pin is empty|Second pin is empty|Pin two saved snapshots/);
+  app.click('pin-second', { caseId: 'case-2' });
+  assert.match(app.markup(), /id="three-compare-title"/);
+  assert.match(app.markup(), /All three cases share the same participant identifiers/);
+  assert.match(app.markup(), /Baseline profit/);
+  assert.match(app.markup(), /Thin profit/);
+  assert.match(app.markup(), /Current profit/);
+  assert.match(app.markup(), /Holds/);
+  app.click('preset', { preset: 'creatorTakeRate' });
+  assert.match(app.markup(), /Participant sets differ/);
+  assert.match(app.markup(), /Not in this roster/);
+  assert.match(app.markup(), /roster mismatch/);
+  app.click('clear-three-compare');
+  assert.doesNotMatch(app.markup(), /id="three-compare-title"/);
+});
+
 test('decision report exports reproducible inputs, outcomes, and safe participant prose', async () => {
   const app = await workbench();
   app.edit('participants.0.name', '<img src=x>|Bad', { type: 'text' });
@@ -463,6 +522,42 @@ test('deal title and currency persist, display as a prefix, and reject illegal c
   assert.match(app.markup(), /20,000\.00 units/);
 });
 
+test('deal notes persist, print, and export, and reject overlong or unknown values', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /<textarea[^>]*data-path="deal.notes"/);
+  app.edit('deal.notes', '  Review the capacity clause.  ', { type: 'text', optional: 'true' });
+  assert.equal(app.saved().deal.notes, 'Review the capacity clause.');
+  assert.match(app.markup(), /<strong>Notes:<\/strong> Review the capacity clause\./);
+  app.click('export-report');
+  const report = await app.downloads()[0].blob.text();
+  assert.match(report, /Notes: Review the capacity clause\./);
+  app.click('copy-brief');
+  const brief = await app.downloads()[1].blob.text();
+  assert.match(brief, /Notes: Review the capacity clause\./);
+  app.edit('deal.notes', 'x'.repeat(501), { type: 'text', optional: 'true' });
+  assert.match(app.markup(), /Resolve these inputs/);
+  assert.match(app.notice(), /Deal notes/);
+  assert.equal(app.saved().deal.notes, 'Review the capacity clause.');
+  app.edit('deal.notes', '', { type: 'text', optional: 'true' });
+  assert.equal(Object.hasOwn(app.saved().deal, 'notes'), false);
+});
+
+test('participant roster toolbar stays outside the disclosure and defaults to open', async () => {
+  const app = await workbench();
+  const html = await buildStandalone();
+  const form = app.markup().match(/<section class="participant-form"[\s\S]*?<\/section>/)[0];
+  const toolbarAt = form.indexOf('class="participant-toolbar"');
+  const detailsAt = form.indexOf('class="participant-details"');
+  assert.ok(toolbarAt >= 0 && detailsAt > toolbarAt);
+  assert.match(form, /data-action="duplicate-participant"/);
+  assert.match(form, /data-action="move-participant-up"/);
+  assert.match(form, /data-action="move-participant-down"/);
+  assert.match(form, /data-action="remove-participant"/);
+  assert.match(app.markup(), /<details class="participant-details" open>/);
+  assert.match(html, /@media \(max-width: 390px\)/);
+  assert.match(html, /\.participant-toolbar \.button-row/);
+});
+
 test('duplicate and move roster controls keep unique ids and the original share sum', async () => {
   const app = await workbench();
   app.click('duplicate-participant', { index: '0' });
@@ -510,6 +605,21 @@ test('share-to-hold previews a split and requires an explicit apply', async () =
   assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
 });
 
+test('participant ledger shows capacity utilization as a meter plus text, or unbounded', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /<th>Capacity use<\/th>/);
+  assert.match(app.markup(), /class="capacity-meter"/);
+  assert.match(app.markup(), /aria-label="76.9% of capacity"/);
+  assert.match(app.markup(), /76\.9% of capacity/);
+  const jv = clonePreset('threePartyJv');
+  app.import(jv);
+  assert.match(app.markup(), />Unbounded</);
+  const over = clonePreset('balanced');
+  over.participants[0].capacity = 0;
+  app.import(over);
+  assert.match(app.markup(), /Exceeds zero capacity/);
+});
+
 test('tornado chart includes an SVG and a text-equivalent table', async () => {
   const app = await workbench();
   assert.match(app.markup(), /Adverse-shock tornado/);
@@ -542,6 +652,25 @@ test('visible tour and shortcut buttons reopen coach and help', async () => {
   assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
 });
 
+test('coach and help dialogs trap Tab, expose modal markup, and restore on close', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-focus-trap="dialog"/);
+  assert.match(app.markup(), /role="dialog" aria-modal="true"/);
+  assert.match(app.markup(), /class="coach-card" tabindex="-1"/);
+  assert.equal(app.keydown('Tab'), true);
+  app.click('dismiss-coach');
+  assert.equal(app.keydown('Tab'), false);
+  app.click('open-help');
+  assert.match(app.markup(), /help-overlay"[^>]*data-focus-trap="dialog"/);
+  assert.match(app.markup(), /tabindex="-1"/);
+  assert.match(app.markup(), /data-action="close-help"/);
+  assert.equal(app.keydown('Tab'), true);
+  assert.equal(app.keydown('Tab', { shiftKey: true }), true);
+  app.click('close-help');
+  assert.doesNotMatch(app.markup(), /id="help-title"/);
+  assert.equal(app.keydown('Tab'), false);
+});
+
 test('first-run coach explains the three-step flow, dismisses to localStorage, and skips share links', async () => {
   const fresh = await workbench();
   assert.match(fresh.markup(), /Three steps to a first read/);
@@ -564,6 +693,7 @@ test('first-run coach explains the three-step flow, dismisses to localStorage, a
 
 test('keyboard shortcuts open help, undo, redo, and export without stealing from inputs', async () => {
   const app = await workbench();
+  app.click('dismiss-coach');
   app.keydown('?');
   assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
   assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
@@ -587,7 +717,7 @@ test('redacted export replaces names, clears the title, and keeps identifiers', 
   app.edit('deal.title', 'Secret Alliance', { type: 'text' });
   app.click('export-redacted');
   const file = app.downloads()[0];
-  assert.equal(file.filename, 'partnership-breakpoint-redacted.json');
+  assert.equal(file.filename, 'partnership-breakpoint-secret-alliance-redacted.json');
   const parsed = JSON.parse(await file.blob.text());
   assert.equal(Object.hasOwn(parsed.deal, 'title'), false);
   assert.deepEqual(parsed.participants.map((item) => item.name), ['Participant 1', 'Participant 2', 'Participant 3']);
@@ -629,3 +759,77 @@ test('fee-to-hold previews the floor and requires an explicit apply', async () =
   app.click('undo');
   assert.equal(app.saved().deal.feePerTransaction, original);
 });
+
+test('export filenames include a sanitized deal title and fall back without one', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export');
+  assert.equal(app.downloads()[0].filename, 'partnership-breakpoint.json');
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.click('export');
+  assert.equal(app.downloads()[1].filename, 'partnership-breakpoint-harbor-jv.json');
+  app.click('export-redacted');
+  assert.equal(app.downloads()[2].filename, 'partnership-breakpoint-harbor-jv-redacted.json');
+  app.click('export-report');
+  assert.equal(app.downloads()[3].filename, 'partnership-breakpoint-harbor-jv-report.md');
+  app.click('export-csv');
+  assert.equal(app.downloads()[4].filename, 'partnership-breakpoint-harbor-jv-stress.csv');
+  app.click('copy-brief');
+  assert.equal(app.downloads()[5].filename, 'partnership-breakpoint-harbor-jv-brief.md');
+});
+
+test('participant CSV replaces the roster only after validation and leaves the deal unchanged', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.match(app.markup(), /data-action="import-participants-csv"/);
+  const before = app.saved();
+  app.importParticipantsCsv('name,share\nA,0.5\nB,0.5\n');
+  assert.match(app.notice(), /missing required column: variable cost/);
+  assert.deepEqual(app.saved().participants, before.participants);
+  assert.equal(app.saved().deal.monthlyVolume, before.deal.monthlyVolume);
+
+  const csv = [
+    'name,revenue share,variable cost,fixed cost,min profit,capacity,commitment,risk',
+    'Alpha,0.55,0.01,100,50,90000,,10',
+    'Beta,0.45,0.02,80,40,,1000,5',
+  ].join('\n');
+  app.importParticipantsCsv(csv);
+  const after = app.saved();
+  assert.deepEqual(after.participants.map((item) => item.name), ['Alpha', 'Beta']);
+  assert.equal(after.participants[0].revenueShare, 0.55);
+  assert.equal(after.participants[1].minimumCommitment, 1000);
+  assert.equal(after.deal.monthlyVolume, before.deal.monthlyVolume);
+  assert.equal(after.deal.feePerTransaction, before.deal.feePerTransaction);
+  assert.match(app.notice(), /Deal terms are unchanged/);
+  app.click('undo');
+  assert.deepEqual(app.saved().participants.map((item) => item.id), before.participants.map((item) => item.id));
+});
+
+test('stress grid hide-in-table is display-only and does not change case counts', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
+  app.click('mute-stress-row', { participantId: 'platform' });
+  assert.match(app.markup(), /Hidden from this table only/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="unmute-stress-row" data-participant-id="platform"/);
+  app.click('unmute-stress-row', { participantId: 'platform' });
+  assert.doesNotMatch(app.markup(), /Hidden from this table only/);
+  assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
+});
+
+test('copy share URL is http-only and names clipboard failure without a network request', async () => {
+  const fileApp = await workbench('file:');
+  assert.doesNotMatch(fileApp.markup(), /data-action="copy-share-url"/);
+  const httpApp = await workbench('http:');
+  httpApp.click('dismiss-coach');
+  assert.match(httpApp.markup(), /data-action="copy-share-url"/);
+  httpApp.click('copy-share-url');
+  assert.match(httpApp.notice(), /Share URL/);
+  assert.match(httpApp.notice(), /#deal=/);
+  httpApp.edit('deal.monthlyVolume', '');
+  httpApp.click('copy-share-url');
+  assert.match(httpApp.notice(), /Resolve invalid inputs before copying a share URL/);
+});
+

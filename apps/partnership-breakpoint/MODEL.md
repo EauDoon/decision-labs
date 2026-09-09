@@ -12,6 +12,7 @@ Shared deal inputs:
 - `volumeShockPct`: an optional reduction from planned volume, from 0 to 100.
 - `title`: optional case name. If present, it must be a string of 1 to 80 characters after trimming.
 - `currency`: optional 3-letter uppercase display code. If present, it must match `^[A-Z]{3}$`.
+- `notes`: optional free-text notes. If present, it must be a string of 1 to 500 characters after trimming. Notes travel with JSON, hash links, and autosave, and they appear in printed and Markdown reports. They are not interpreted as formulas or instructions.
 
 Participant inputs:
 
@@ -63,6 +64,8 @@ monthlyProfit >= M
 effectiveVolume >= minimumCommitment
 effectiveVolume <= capacity, when capacity is supplied
 ```
+
+Capacity use is effective volume divided by capacity. When capacity is omitted the ledger reports Unbounded. When capacity is zero and volume is positive the ratio is undefined and the ledger reports that volume exceeds zero capacity. This ratio is a utilization display, not a probability.
 
 The partnership is viable only when every participant holds.
 
@@ -149,8 +152,30 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 ## Redacted export
 
-`redactConfiguration` copies a valid case, deletes `deal.title` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption.
+`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption.
+
+## Participant CSV import
+
+`participantsFromCsv` reads a roster from CSV text and returns participant objects. It does not read deal terms, stress settings, titles, or currency. The workbench replaces the current participants only after the whole file validates.
+
+Required columns, matched case-insensitively after trimming and collapsing spaces: `name`, `revenue share`, `variable cost`, `fixed cost`, `min profit`, and `risk`. Optional columns: `capacity` and `commitment`. Accepted aliases include `share`, `variable cost per transaction`, `fixed monthly cost`, `minimum acceptable profit`, `risk cost`, `minimum commitment`, and underscored forms. Unknown columns, duplicate columns, and missing required columns are named and rejected.
+
+A leading apostrophe is stripped when the remaining cell looks like a spreadsheet formula (`=`, `+`, `-`, or `@`, including after ASCII controls). The remaining text is data. It is not executed. Numbers must be finite decimals; they are not coerced from hex, empty strings, or prose. Empty optional capacity or commitment cells become `null`. Names are trimmed to at most 80 characters. Identifiers are generated from names, kept unique, and limited to 64 characters.
+
+Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validation errors name the row (`Row 3 revenue share`) or the column. A rejected CSV leaves the current roster unchanged.
+
+## Export filenames
+
+`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`). Path separators cannot appear in the slug.
+
+## Three-snapshot compare
+
+`compareThreeSnapshots(current, first, second)` evaluates each valid case and aligns participants by identifier. Each row reports monthly profit and hold or fail for the first snapshot, the second snapshot, and the current draft. If an identifier is missing from a case, that cell is empty rather than filled with zero. `sameRoster` is true only when all three cases have the same identifier set. This is a difference table, not a ranking.
 
 ## Charts
 
 The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.
+
+## Display-only stress mute
+
+Hiding a participant row in the stress ledger is a display filter. Case counts, hold counts, worst profit gaps, operational failures, and any tested proposal still include that participant. Showing the row again does not recalculate the grid.
