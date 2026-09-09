@@ -108,6 +108,23 @@ export const presets = Object.freeze({
       offer("O02", "Inch Works", "Hand tool kit", "Imperial", 156, 6, 10, 12, 10),
       { ...offer("O03", "Yard Pickup Tools", "Hand tool kit", "Metric", 142, 12, 6, 24, 18), fulfillment: "pickup", tiers: [{ minimumUnits: 16, unitPrice: 130 }] }
     ]
+  },
+  garden: {
+    title: "Community garden bulk seed",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Plot twelve", "Garden seed pack", 4, 22, 10, ["Heirloom tomato", "Cover crop"]),
+      buyer("B02", "Allotment row", "Garden seed pack", 8, 18, 8, ["Cover crop"]),
+      buyer("B03", "School beds", "Garden seed pack", 6, 24, 12, ["Heirloom tomato", "Potting soil"]),
+      buyer("B04", "Commons plot", "Garden seed pack", 10, 20, 9, ["Cover crop", "Potting soil"]),
+      buyer("B05", "Raised beds", "Garden seed pack", 3, 16, 6, ["Potting soil"]),
+      buyer("B06", "Volunteer crew", "Garden seed pack", 5, 21, 11, ["Heirloom tomato", "Cover crop", "Potting soil"])
+    ],
+    offers: [
+      offer("O01", "Seed Share Co", "Garden seed pack", "Cover crop", 14, 12, 7, 30, 2),
+      offer("O02", "Heirloom Packet", "Garden seed pack", "Heirloom tomato", 16, 8, 9, 20, 1.5),
+      { ...offer("O03", "Soil Yard Pickup", "Garden seed pack", "Potting soil", 12, 10, 5, 24, 8), fulfillment: "pickup" }
+    ]
   }
 });
 
