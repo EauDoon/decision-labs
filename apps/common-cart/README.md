@@ -8,6 +8,21 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
+## Changelog (1.3.2)
+
+Organizer tools for offer intake, list hygiene, honest compares, and a quieter print page. This remains an offline simulator. Merchant views still receive aggregates and counts only.
+
+- **Offer CSV import.** Import `name, capacity, unit price, shipping, fulfillment, variants`. Formula prefixes are neutralized. Invalid rows name the offer and field. Buyers stay in place.
+- **Buyer sort.** Preview label A-Z or quantity high-low without changing ids or saved order. Apply writes the new order and is undoable.
+- **Overlap CSV copy.** Copy the variant overlap matrix as formula-safe CSV. Cells and totals are counts only.
+- **Keyboard jump.** `o` focuses the offers list when you are not typing. `m` still focuses the merchant inspector.
+- **Fulfillment filter.** Show all, shipping, or pickup offer rows on screen. Saved offers and matching stay unchanged.
+- **Print one-pager.** Hide coach, help, and private buyer rows. Keep the title, winner aggregates, residual or tertiary fill, and heatmap.
+- **Restore last removed buyer.** One session slot. Restore is undoable and keeps the original id when it is free.
+- **Mixed-currency warning.** Compared rooms that use different currencies omit landed totals instead of converting them.
+- **Duplicate room snapshot.** Copy the open room into a named snapshot with a unique `(copy)` title suffix for later compares.
+- **Winner budget leftover.** Organizer-only sum of unused item-ceiling headroom after the winner. Merchant JSON stays aggregates.
+
 ## Changelog (1.3.1)
 
 Organizer and merchant workbench updates for leftover planning, share hygiene, and empty-room recovery. This remains an offline simulator. Residual coverage is still a planning aid, not a dual checkout or split invoice.
@@ -89,17 +104,18 @@ npm run check
 ## What you can do
 
 - Start from coffee, office chair, community pantry, office pantry bulk, hardware tools, or price-ladder examples.
-- Add buyers with a category, quantity, price ceiling, delivery limit, and accepted variants, or import those columns from CSV.
-- Add merchant bids with a price, minimum order, delivery time, capacity, shipping cost, and shipping or pickup fulfillment.
+- Add buyers with a category, quantity, price ceiling, delivery limit, and accepted variants, or import those columns from CSV. Sort the organizer list by label or quantity, then apply when you want that order saved.
+- Add merchant bids with a price, minimum order, delivery time, capacity, shipping cost, and shipping or pickup fulfillment, or import name, capacity, unit price, shipping, fulfillment, and variants from CSV.
+- Filter the on-screen offer list by fulfillment without changing saved bids.
 - Edit quantity price tiers and inspect each band's whole-order feasibility, including units still needed for the next cheaper band.
 - Review item cost, shipping, landed cost, and ceiling headroom per included buyer locally.
 - Compare qualified offers by fulfilled units, group headroom, buyers included, and landed cost.
 - Inspect why each buyer order is included, blocked by the minimum, left out by capacity, or incompatible with an offer, grouped by reason.
 - See leftover demand after the winner, then a second and third distinct offer, as a planning aid, not a second checkout.
 - See which local buyer labels each qualified offer includes; merchant-facing views stay aggregated. Screenshot mode can hide labels. A redacted share link uses Buyer 1 through N.
-- Inspect a merchant view that contains aggregate ranges, a variant overlap matrix, and a delivery heatmap, rather than individual records.
-- Import or export a scenario as JSON, export an organizer briefing, export heatmap CSV, or encode the current scenario in a share link.
-- Recover an empty buyer room with the neighbourhood example; Undo returns to the empty list.
+- Inspect a merchant view that contains aggregate ranges, a variant overlap matrix, and a delivery heatmap, rather than individual records. Copy overlap counts as formula-safe CSV.
+- Import or export a scenario as JSON, duplicate the room as a compare snapshot, export an organizer briefing, export heatmap CSV, or encode the current scenario in a share link.
+- Recover an empty buyer room with the neighbourhood example, or restore the last buyer removed in this session. Undo returns to the previous valid list.
 - Work entirely in the browser with local autosave.
 
 ## How matching works
@@ -129,10 +145,15 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |   |-- residual.test.mjs   Leftover coverage after the winner
 |   |-- next-tier.test.mjs  Units needed for the next cheaper band
 |   |-- csv-import.test.mjs Buyer CSV import
+|   |-- offer-csv.test.mjs  Merchant offer CSV import
 |   |-- overlap.test.mjs    Merchant variant overlap counts
 |   |-- heatmap.test.mjs    Delivery deadline buckets and CSV
 |   |-- empty-room.test.mjs Empty buyer rooms and undoable restore
-|   |-- shortcuts.test.mjs  Keyboard help for the merchant inspector
+|   |-- restore-buyer.test.mjs Last removed buyer restore
+|   |-- buyer-sort.test.mjs Organizer buyer sort preview and apply
+|   |-- duplicate-room.test.mjs Room copy snapshots
+|   |-- print.test.mjs      Print one-pager privacy
+|   |-- shortcuts.test.mjs  Keyboard help for inspector and offers
 |   |-- standalone.test.mjs Single-file build checks
 |-- standalone.html         No-install, single-file GUI
 |-- launch-windows.cmd      One-click Windows GUI launcher
@@ -149,7 +170,7 @@ The [root CI workflow](../../.github/workflows/common-cart.yml) runs this compon
 
 ## Data and privacy
 
-Common Cart makes no network requests. Scenarios are held in browser memory and local storage. Export and link sharing happen only when requested. A share link contains the full scenario, including buyer labels, so review it before sending. Screenshot mode, redacted JSON, and the optional redacted share link replace labels with Buyer 1 through N. Merchant reports, residual coverage JSON, heatmap CSV, variant overlap, and organizer briefings omit private buyer rows.
+Common Cart makes no network requests. Scenarios are held in browser memory and local storage. Export and link sharing happen only when requested. A share link contains the full scenario, including buyer labels, so review it before sending. Screenshot mode, redacted JSON, and the optional redacted share link replace labels with Buyer 1 through N. Merchant reports, residual coverage JSON, heatmap CSV, variant overlap, overlap CSV, and organizer briefings omit private buyer rows. Offer CSV import does not read buyer columns. Winner budget leftover is organizer-only and is not written into merchant JSON.
 
 The merchant view is an interface boundary, not a formal privacy guarantee. Small cohorts and unusual constraints can still reveal information.
 

@@ -3,6 +3,12 @@ import {
   aggregateDemand,
   deliveryHeatmap,
   variantOverlapMatrix,
+  applyBuyerSort,
+  previewBuyerSort,
+  filterOfferIdsByFulfillment,
+  restoreRemovedBuyer,
+  duplicateRoom,
+  winnerBudgetLeftover,
   clonePreset,
   compareScenarios,
   compareThreeRooms,
@@ -12,8 +18,11 @@ import {
   createMerchantResidualReport,
   createBuyerCsv,
   createDeliveryHeatmapCsv,
+  createVariantOverlapCsv,
   importBuyersFromCsv,
+  importOffersFromCsv,
   buyerCsvTemplate,
+  offerCsvTemplate,
   redactBuyerLabels,
   createOrganizerBriefing,
   decodeScenario,
@@ -70,6 +79,9 @@ let baseline = null;
 let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
+let buyerSortPreviewIds = null;
+let offerFulfillmentFilter = "all";
+let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
 refresh();
@@ -101,6 +113,8 @@ function renderWorkspace() {
   document.querySelector("#load-room").disabled = savedRooms.length === 0;
   document.querySelector("#delete-room").disabled = savedRooms.length === 0;
   document.querySelector("#save-room").disabled = workspaceReadFailed || savedRooms.length >= 12;
+  const duplicateRoomButton = document.querySelector("#duplicate-room");
+  if (duplicateRoomButton) duplicateRoomButton.disabled = workspaceReadFailed || savedRooms.length >= 12;
   for (const id of ["compare-room-a", "compare-room-b"]) {
     const select = document.querySelector(`#${id}`);
     if (!select) continue;
@@ -188,6 +202,23 @@ function bindStaticEvents() {
       setStatus("Delivery heatmap CSV exported. It contains aggregate deadline buckets only.", true);
     } catch (error) { setStatus(`Heatmap export failed: ${messageOf(error)}`); }
   });
+  document.querySelector("#overlap-csv").addEventListener("click", () => {
+    try {
+      const csv = createVariantOverlapCsv(scenario);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(csv).then(
+          () => setStatus("Overlap CSV copied. It contains buyer counts only, with formula-like text escaped.", true),
+          () => {
+            downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
+            setStatus("Clipboard was blocked, so the overlap CSV was downloaded instead. Counts only.", true);
+          }
+        );
+        return;
+      }
+      downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
+      setStatus("Overlap CSV downloaded. It contains buyer counts only.", true);
+    } catch (error) { setStatus(`Overlap copy failed: ${messageOf(error)}`); }
+  });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
     catch (error) { setStatus(messageOf(error)); }
@@ -211,6 +242,14 @@ function bindStaticEvents() {
       document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
       setStatus("Named snapshot saved locally. Later edits do not alter it.", true);
     } catch (error) { setStatus(`Could not save snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#duplicate-room").addEventListener("click", () => {
+    try {
+      const copy = duplicateRoom(scenario, savedRooms.map((room) => room.title));
+      storeWorkspace([...savedRooms, copy]);
+      document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
+      setStatus(`Duplicated this room as snapshot "${copy.title}". Compare uses the copy, not live edits.`, true);
+    } catch (error) { setStatus(`Could not duplicate room: ${messageOf(error)}`); }
   });
   document.querySelector("#load-room").addEventListener("click", () => {
     if (!allowReplaceDraft()) return;
@@ -256,6 +295,20 @@ function bindStaticEvents() {
     });
   });
 
+  document.querySelector("#restore-removed-buyer").addEventListener("click", () => {
+    try {
+      if (!lastRemovedBuyer) return setStatus("No buyer was removed in this session.");
+      scenario = restoreRemovedBuyer(scenario, lastRemovedBuyer);
+      buyerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Last removed buyer restored. Undo returns to the list without that buyer.", true);
+      elements.buyerRows.querySelector(`[data-id="${lastRemovedBuyer.id}"] input`)?.focus();
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+
   document.querySelector("#add-buyer").addEventListener("click", () => {
     if (scenario.buyers.length >= 40) return setStatus("A room can have at most 40 buyers.");
     const next = nextId(scenario.buyers, "B");
@@ -268,6 +321,7 @@ function bindStaticEvents() {
       latestDeliveryDays: 7,
       allowedVariants: [scenario.offers[0]?.variant ?? "Standard"]
     });
+    buyerSortPreviewIds = null;
     renderEditor();
     refresh();
     elements.buyerRows.lastElementChild?.querySelector("input")?.focus();
@@ -314,6 +368,49 @@ function bindStaticEvents() {
     setStatus("Buyer CSV template downloaded. Fill the header row, then import.", true);
   });
   document.querySelector("#import-buyers-file").addEventListener("change", importBuyersCsv);
+  document.querySelector("#preview-buyer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#buyer-sort-mode").value;
+      const preview = previewBuyerSort(scenario, mode);
+      buyerSortPreviewIds = preview.map((buyer) => buyer.id);
+      renderEditor();
+      setStatus(mode === "quantity"
+        ? "Previewing quantity high to low. Saved order is unchanged until you apply the sort."
+        : "Previewing labels A to Z. Saved order is unchanged until you apply the sort.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#apply-buyer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#buyer-sort-mode").value;
+      scenario = applyBuyerSort(scenario, mode);
+      buyerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Buyer list order applied. Undo restores the previous saved order. IDs are unchanged.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#import-offers").addEventListener("click", () => document.querySelector("#import-offers-file").click());
+  document.querySelector("#offer-csv-template").addEventListener("click", () => {
+    downloadFile(offerCsvTemplate(), "common-cart-offers-template.csv", "text/csv;charset=utf-8");
+    setStatus("Offer CSV template downloaded. Fill name, capacity, unit price, shipping, fulfillment, and variants, then import.", true);
+  });
+  document.querySelector("#import-offers-file").addEventListener("change", importOffersCsv);
+  document.querySelector("#offer-fulfillment-filter").addEventListener("change", (event) => {
+    offerFulfillmentFilter = event.target.value;
+    try {
+      applyOfferFulfillmentFilter();
+      const shown = filterOfferIdsByFulfillment(scenario, offerFulfillmentFilter).length;
+      setStatus(offerFulfillmentFilter === "all"
+        ? "Showing every offer. Saved order is unchanged."
+        : `Showing ${shown} ${offerFulfillmentFilter} offer${shown === 1 ? "" : "s"}. Saved offers are unchanged.`, true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#export-button").addEventListener("click", exportScenario);
   document.querySelector("#screenshot-mode").addEventListener("click", () => {
     screenshotMode = !screenshotMode;
@@ -442,7 +539,18 @@ function handleShortcut(event) {
   if (key === "m") {
     event.preventDefault();
     focusMerchantInspector();
+    return;
   }
+  if (key === "o") {
+    event.preventDefault();
+    focusOffersList();
+  }
+}
+
+function focusOffersList() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  if (merchantTab) activateTab(merchantTab);
+  document.querySelector("#offers-list")?.focus();
 }
 
 function focusMerchantInspector() {
@@ -492,7 +600,16 @@ function activateTab(active) {
 function renderEditor() {
   elements.title.value = scenario.title;
   elements.currency.value = scenario.currency;
-  elements.buyerRows.replaceChildren(...scenario.buyers.map(renderBuyerRow));
+  if (buyerSortPreviewIds) {
+    const current = new Set(scenario.buyers.map((buyer) => buyer.id));
+    if (buyerSortPreviewIds.length !== scenario.buyers.length || buyerSortPreviewIds.some((id) => !current.has(id))) {
+      buyerSortPreviewIds = null;
+    }
+  }
+  const buyersForDisplay = buyerSortPreviewIds
+    ? buyerSortPreviewIds.map((id) => scenario.buyers.find((buyer) => buyer.id === id)).filter(Boolean)
+    : scenario.buyers;
+  elements.buyerRows.replaceChildren(...buyersForDisplay.map(renderBuyerRow));
   if (scenario.buyers.length === 0) {
     setEmptyState(elements.buyerRows, 8, "No buyers are in this room.");
   }
@@ -505,7 +622,41 @@ function renderEditor() {
   addOffer.disabled = scenario.offers.length >= 40;
   addBuyer.title = addBuyer.disabled ? "A room can have at most 40 buyers." : "";
   addOffer.title = addOffer.disabled ? "A room can have at most 40 offers." : "";
+  const filterSelect = document.querySelector("#offer-fulfillment-filter");
+  if (filterSelect) filterSelect.value = offerFulfillmentFilter;
   renderTierEditors();
+  applyOfferFulfillmentFilter();
+  const restoreRemoved = document.querySelector("#restore-removed-buyer");
+  if (restoreRemoved) {
+    restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
+    restoreRemoved.title = restoreRemoved.disabled
+      ? lastRemovedBuyer
+        ? "That buyer is already in the room."
+        : "Remove a buyer this session to restore it here."
+      : "Restore the buyer removed most recently in this session.";
+  }
+}
+
+function applyOfferFulfillmentFilter() {
+  let visibleIds;
+  try {
+    visibleIds = new Set(filterOfferIdsByFulfillment(scenario, offerFulfillmentFilter));
+  } catch {
+    visibleIds = new Set(scenario.offers.map((offer) => offer.id));
+  }
+  elements.offerRows.querySelectorAll("tr[data-id]").forEach((row) => {
+    row.hidden = !visibleIds.has(row.dataset.id);
+  });
+  const editors = [...elements.tierEditors.querySelectorAll("fieldset")];
+  scenario.offers.forEach((offer, index) => {
+    if (editors[index]) editors[index].hidden = !visibleIds.has(offer.id);
+  });
+  const note = document.querySelector("#offer-filter-note");
+  if (!note) return;
+  const hiddenCount = scenario.offers.length - visibleIds.size;
+  note.textContent = hiddenCount === 0
+    ? "The filter hides rows on screen. Saved offers and matching stay unchanged."
+    : `Showing ${visibleIds.size} of ${scenario.offers.length} offers. Hidden rows stay in the room and still match.`;
 }
 
 function buyerDisplayLabel(buyer) {
@@ -545,7 +696,10 @@ function renderBuyerRow(entry) {
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
     const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
+    const removed = scenario.buyers[index];
+    if (removed) lastRemovedBuyer = JSON.parse(JSON.stringify(removed));
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
+    buyerSortPreviewIds = null;
     renderEditor();
     refresh();
     if (scenario.buyers.length === 0) {
@@ -738,7 +892,8 @@ function renderComparison() {
   for (const values of rows) { const tr = document.createElement("tr"); for (const value of values) addCell(tr, String(value)); body.append(tr); }
   table.append(body);
   const note = document.createElement("p");
-  note.textContent = `${comparison.sameDemand ? "Buyer demand is unchanged." : "Buyer demand changed; cost differences are not like-for-like savings."} ${comparison.sameCurrency ? "Totals may cover different allocated orders." : "Currencies differ; monetary comparisons are omitted."}`;
+  note.textContent = `${comparison.sameDemand ? "Buyer demand is unchanged." : "Buyer demand changed; cost differences are not like-for-like savings."} ${comparison.currencyWarning ?? "Totals may cover different allocated orders."}`;
+  if (comparison.currencyWarning) note.className = "status-short";
   summary.replaceChildren(table, note);
 }
 
@@ -747,9 +902,10 @@ function renderThreeRoomComparison(comparison) {
   if (!host) return;
   const table = document.createElement("table");
   const caption = document.createElement("caption");
-  caption.textContent = comparison.sameCurrency
-    ? "Current room and two snapshots. Landed totals may cover different allocated orders."
-    : "Current room and two snapshots. Currencies differ, so monetary totals are omitted.";
+  caption.textContent = comparison.currencyWarning
+    ?? (comparison.sameCurrency
+      ? "Current room and two snapshots. Landed totals may cover different allocated orders."
+      : "Current room and two snapshots. Currencies differ, so monetary totals are omitted.");
   const head = document.createElement("thead");
   const header = document.createElement("tr");
   for (const text of ["Metric", "Current", "Snapshot A", "Snapshot B"]) {
@@ -844,6 +1000,7 @@ function updateHistoryButtons() {
 }
 
 function restoreHistory(forward) {
+  buyerSortPreviewIds = null;
   scenario = invalidDraft ? history.current() : forward ? history.redo() : history.undo();
   renderEditor();
   refresh();
@@ -931,7 +1088,12 @@ function renderResidualCoverage(rawScenario) {
     appendDetail(list, "Third leftover offer", "No third distinct offer on remaining whole orders");
   }
   appendDetail(list, "Still unfilled", `${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`);
-  summary.replaceChildren(list);
+  const leftover = winnerBudgetLeftover(rawScenario);
+  appendDetail(list, "Unspent item headroom after winner", formatter.format(leftover.unspentHeadroom));
+  const leftoverNote = document.createElement("p");
+  leftoverNote.className = "canvas-note";
+  leftoverNote.textContent = leftover.note;
+  summary.replaceChildren(list, leftoverNote);
 }
 
 function renderInspector(market) {
@@ -1320,6 +1482,27 @@ async function importScenario(event) {
     setStatus("Scenario imported.", true);
   } catch (error) {
     setStatus(`Import failed: ${messageOf(error)}`);
+  }
+}
+
+async function importOffersCsv(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (file.size === 0) return setStatus("Offer CSV import failed: the file is empty.");
+  if (file.size > 250_000) return setStatus("Offer CSV files must be smaller than 250 KB.");
+  try {
+    const text = await file.text();
+    if (!text.trim()) return setStatus("Offer CSV import failed: the file is empty.");
+    const imported = importOffersFromCsv(scenario, text);
+    if (!allowReplaceDraft()) return;
+    scenario = imported;
+    inspectedOfferId = scenario.offers[0]?.id ?? "";
+    renderEditor();
+    refresh();
+    setStatus(`Imported ${imported.offers.length} offers from CSV. Buyers were left unchanged.`, true);
+  } catch (error) {
+    setStatus(`Offer CSV import failed: ${messageOf(error)}`);
   }
 }
 

@@ -46,17 +46,22 @@ SOFTWARE.
             <option value="association-budget">Association Budget</option>
             <option value="protected-access">Protected Access</option>
             <option value="workplace-hybrid">Workplace Hybrid</option>
+            <option value="club-constitution">Club Constitution</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
         <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
         <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
-        <button class="button button-secondary" type="button" id="print-button">Print readout</button>
+        <button class="button button-secondary" type="button" id="print-button">Print facilitator pack</button>
         <button class="button button-secondary" type="button" id="worksheet-button">Export worksheet</button>
+        <button class="button button-secondary" type="button" id="worksheet-csv-button">Export worksheet CSV</button>
         <button class="button button-secondary" type="button" id="csv-button">Export evidence CSV</button>
         <button class="button button-secondary" type="button" id="matrix-export-button">Export support CSV</button>
         <button class="button button-secondary" type="button" id="matrix-import-button">Import support CSV</button>
+        <button class="button button-secondary" type="button" id="groups-export-button">Export groups CSV</button>
+        <button class="button button-secondary" type="button" id="groups-import-button">Import groups CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
+        <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
         <button class="button button-secondary" type="button" id="redo-button" disabled>Redo</button>
@@ -66,6 +71,7 @@ SOFTWARE.
         <button class="button button-quiet" type="button" id="reset-button">Reset</button>
         <input id="import-file" type="file" accept="application/json,.json" hidden>
         <input id="matrix-import-file" type="file" accept="text/csv,.csv" hidden>
+        <input id="groups-import-file" type="file" accept="text/csv,.csv" hidden>
       </div>
     </header>
 
@@ -100,12 +106,13 @@ SOFTWARE.
           <p id="budget-note" class="field-note">Optional hard budget. Leave blank for no limit. Zero permits only zero-cost changes.</p>
         </section>
         <section class="panel-section">
-          <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" data-action="add-group">Add group</button></div>
+          <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" id="add-group" data-action="add-group">Add group</button></div>
           <div id="groups-editor" class="groups-editor"></div>
           <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
           <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
           <p id="veto-note" class="field-note">A veto group must reach the overall threshold (or its higher support floor, if one is set). Old drafts without this mark stay valid. A veto is a numerical constraint, not a legal right.</p>
           <div id="weight-shares"></div>
+          <div id="weight-renorm"></div>
         </section>
       </aside>
 
@@ -119,7 +126,10 @@ SOFTWARE.
         <section aria-labelledby="clauses-heading">
           <div class="section-heading clause-heading">
             <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading" tabindex="-1">What can change?</h2></div>
-            <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
+            <div class="clause-tools">
+              <button class="text-button" type="button" id="clear-locks" data-action="clear-locks">Clear all locks</button>
+              <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
+            </div>
           </div>
           <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
           <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">
@@ -133,6 +143,7 @@ SOFTWARE.
             <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading" tabindex="-1">The smallest agreement</h2></div>
             <p id="search-meta" class="search-meta"></p>
           </div>
+          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes and veto highlights. This is a decision aid, not a recorded vote.</p>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
           <section class="result-card" aria-labelledby="side-by-side-heading">
@@ -216,7 +227,7 @@ SOFTWARE.
         </section>
         <section id="printable-ballot" class="print-only" aria-labelledby="ballot-heading">
           <h2 id="ballot-heading">Discussion worksheet</h2>
-          <p>Use this printed sheet to mark preferred options during conversation. It is a worksheet, not a recorded vote, legal ballot, or collective decision.</p>
+          <p>Use this printed sheet to mark preferred options during conversation. It is a worksheet, not a recorded vote, legal ballot, or collective decision. Facilitator notes and veto highlights from the inspected package are included when present.</p>
           <div id="ballot-body"></div>
         </section>
 
@@ -260,6 +271,7 @@ SOFTWARE.
           <li><kbd>e</kbd> Export JSON</li>
           <li><kbd>s</kbd> Find agreement (jump to the live recommendation)</li>
           <li><kbd>f</kbd> Focus the clause filter</li>
+          <li><kbd>n</kbd> Focus Add group</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>

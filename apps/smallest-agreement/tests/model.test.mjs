@@ -18,11 +18,20 @@ import {
   evaluatePackage,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
+  parseParticipantGroupsCsv,
+  formatParticipantGroupsCsv,
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
+  formatDiscussionWorksheetCsv,
+  formatRecommendedPackageMarkdown,
   groupContributions,
   lockPackage,
+  clearAllLocks,
+  toggleClauseLock,
+  vetoBlockingGroups,
+  previewRenormalizedWeights,
+  applyRenormalizedWeights,
   duplicateParticipantGroup,
   sortPackageGapRows,
   stressPackage,
@@ -794,6 +803,108 @@ test("lockPackage sets every clause lock in one copy and rejects unknown options
   assert.equal(lockPackage(input, ["one-change", "one-change"]).status, "invalid");
 });
 
+test("clearAllLocks removes every clause lock in one copy and rejects invalid drafts", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", lockedOptionId: "one-change", options: [
+        option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", lockedOptionId: "two-original", options: [
+        option("two-original", true, { g: 40 }), option("two-change", false, { g: 90 }, 1), option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const cleared = clearAllLocks(input);
+  assert.equal(cleared.status, "ok");
+  assert.equal(cleared.cleared, 2);
+  assert.equal(cleared.proposal.clauses.every((clause) => Object.hasOwn(clause, "lockedOptionId") === false), true);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(clearAllLocks(cleared.proposal).cleared, 0);
+  assert.equal(clearAllLocks({ title: "" }).status, "invalid");
+});
+
+test("toggleClauseLock locks or unlocks one option on a copy and rejects unknown ids", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [{ id: "one", title: "One", options: [
+      option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const locked = toggleClauseLock(input, "one", "one-change");
+  assert.equal(locked.status, "ok");
+  assert.equal(locked.locked, true);
+  assert.equal(locked.proposal.clauses[0].lockedOptionId, "one-change");
+  assert.equal(JSON.stringify(input), before);
+  const switched = toggleClauseLock(locked.proposal, "one", "one-other");
+  assert.equal(switched.proposal.clauses[0].lockedOptionId, "one-other");
+  const unlocked = toggleClauseLock(switched.proposal, "one", "one-other");
+  assert.equal(unlocked.locked, false);
+  assert.equal(Object.hasOwn(unlocked.proposal.clauses[0], "lockedOptionId"), false);
+  assert.equal(toggleClauseLock(input, "missing", "one-change").status, "invalid");
+  assert.equal(toggleClauseLock(input, "one", "missing").status, "invalid");
+});
+
+test("vetoBlockingGroups names groups whose veto fails on the inspected package", () => {
+  const input = proposal({
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { majority: 90, minority: 20 }),
+      option("alt", false, { majority: 70, minority: 85 }, 1),
+      option("other", false, { majority: 60, minority: 90 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const blocked = vetoBlockingGroups(input, [input.clauses[0].options[0]]);
+  assert.equal(blocked.status, "ok");
+  assert.equal(blocked.groups.length, 1);
+  assert.equal(blocked.groups[0].id, "minority");
+  assert.equal(blocked.groups[0].required, 80);
+  assert.ok(blocked.groups[0].actual < 80);
+  const cleared = vetoBlockingGroups(input, [input.clauses[0].options[1]]);
+  assert.equal(cleared.groups.length, 0);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(vetoBlockingGroups(input, []).status, "invalid");
+});
+
+test("renormalized weights preview then apply so weights sum to 1 and reject invalid weights", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 3 }, { id: "b", name: "B", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const preview = previewRenormalizedWeights(input);
+  assert.equal(preview.status, "ok");
+  assert.equal(preview.total, 4);
+  assert.equal(preview.nextTotal, 1);
+  assert.equal(preview.rows[0].next, 0.75);
+  assert.equal(preview.rows[1].next, 0.25);
+  assert.equal(JSON.stringify(input), before);
+  const applied = applyRenormalizedWeights(input);
+  assert.equal(applied.status, "ok");
+  assert.equal(applied.proposal.groups.reduce((sum, group) => sum + group.weight, 0), 1);
+  assert.equal(applied.proposal.groups[0].weight, 0.75);
+  const uneven = structuredClone(applied.proposal);
+  uneven.groups = [{ id: "a", name: "A", weight: 3 }, { id: "b", name: "B", weight: 2 }, { id: "c", name: "C", weight: 2 }];
+  for (const option of uneven.clauses[0].options) option.support = { a: 50, b: 50, c: 50 };
+  const evened = applyRenormalizedWeights(uneven);
+  assert.equal(evened.proposal.groups.reduce((sum, group) => sum + group.weight, 0), 1);
+  assert.equal(JSON.stringify(input), before);
+  input.groups[0].weight = 0;
+  assert.equal(previewRenormalizedWeights(input).status, "invalid");
+  assert.equal(applyRenormalizedWeights(input).status, "invalid");
+});
+
 
 test("downside stress tests preserve inputs and expose protected-group failures", () => {
   const input = proposal({ threshold: 50, groups: [{ id: "a", name: "A", weight: 9 }, { id: "b", name: "B", weight: 1, minSupport: 70 }], clauses: [{ id: "one", title: "One", options: [
@@ -1039,6 +1150,49 @@ test("support matrix CSV round-trips scores and names formula, identity, and hea
   assert.equal(score.errors[0].code, "invalid_score");
 });
 
+test("participant groups CSV replaces groups with named errors for unknown columns and bad values", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2, minSupport: 40, veto: true }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const csv = formatParticipantGroupsCsv(input);
+  const parsed = parseParticipantGroupsCsv(csv, input);
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.importedGroups, 2);
+  assert.equal(parsed.proposal.groups[0].name, "A");
+  assert.equal(parsed.proposal.groups[1].veto, true);
+  assert.equal(parsed.proposal.groups[1].minSupport, 40);
+  assert.equal(parsed.proposal.clauses[0].options[0].support[parsed.proposal.groups[0].id], 40);
+  assert.equal(JSON.stringify(input), before);
+
+  const replacement = parseParticipantGroupsCsv("name,weight,min_support,veto,one:original,one:alternative,one:other\r\nResidents,3,,yes,90,80,70\r\n", input);
+  assert.equal(replacement.status, "ok");
+  assert.equal(replacement.importedGroups, 1);
+  assert.equal(replacement.proposal.groups[0].id, "residents");
+  assert.equal(replacement.proposal.groups[0].weight, 3);
+  assert.equal(replacement.proposal.groups[0].veto, true);
+  assert.equal(Object.hasOwn(replacement.proposal.groups[0], "minSupport"), false);
+  assert.equal(replacement.proposal.clauses[0].options[0].support.residents, 90);
+
+  const unknown = parseParticipantGroupsCsv("name,weight,hidden,one:original,one:alternative,one:other\r\nA,1,x,1,2,3\r\n", input);
+  assert.equal(unknown.status, "invalid");
+  assert.equal(unknown.errors[0].code, "unknown_column");
+  const missing = parseParticipantGroupsCsv("name,weight\r\nA,1\r\n", input);
+  assert.equal(missing.errors.some((error) => error.code === "missing_support_column"), true);
+  const badWeight = parseParticipantGroupsCsv("name,weight,one:original,one:alternative,one:other\r\nA,0,1,2,3\r\n", input);
+  assert.equal(badWeight.errors[0].code, "invalid_weight");
+  const badVeto = parseParticipantGroupsCsv("name,weight,veto,one:original,one:alternative,one:other\r\nA,1,maybe,1,2,3\r\n", input);
+  assert.equal(badVeto.errors[0].code, "invalid_veto");
+  const formula = parseParticipantGroupsCsv("name,weight,one:original,one:alternative,one:other\r\nA,=SUM(1),1,2,3\r\n", input);
+  assert.equal(formula.errors[0].code, "formula_cell");
+  assert.equal(parseParticipantGroupsCsv("   ", input).errors[0].code, "empty_csv");
+});
+
 test("locking an option for preview re-solves remaining clauses without mutating the draft", () => {
   const input = proposal({
     threshold: 70,
@@ -1155,6 +1309,59 @@ test("discussion worksheet lists every option as unmarked text and rejects inval
   assert.equal(JSON.stringify(input), before);
   const invalid = formatDiscussionWorksheet({ title: "" });
   assert.equal(invalid.status, "invalid");
+});
+
+test("discussion worksheet CSV lists groups, weights, options, and notes as formula-safe text", () => {
+  const input = proposal({
+    groups: [{ id: "g", name: "=SUM(1,2)", weight: 2, minSupport: 40, veto: true }],
+    clauses: [{ id: "one", title: "Hours", lockedOptionId: "one-change", note: "+cmd notes", options: [
+      option("one-original", true, { g: 50 }),
+      option("one-change", false, { g: 80 }, 2),
+      option("one-other", false, { g: 90 }, 3),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const worksheet = formatDiscussionWorksheetCsv(input);
+  assert.equal(worksheet.status, "ok");
+  assert.match(worksheet.csv, /^"row_type","group_id","group_name","weight","min_support","veto","clause_id","clause_title","clause_note","option_id","option_label","original","change_cost","locked"/u);
+  assert.ok(worksheet.csv.includes('"group","g","\'=SUM(1,2)","2","40","yes"'));
+  assert.ok(worksheet.csv.includes('"option","","","","","","one","Hours","\'+cmd notes","one-change","one-change","no","2","yes"'));
+  assert.ok(worksheet.csv.includes('"one-original","one-original","yes","0","no"'));
+  assert.doesNotMatch(worksheet.csv, /,"support"/u);
+  assert.equal(worksheet.csv, formatDiscussionWorksheetCsv(input).csv);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(formatDiscussionWorksheetCsv({ title: "" }).status, "invalid");
+});
+
+test("recommended package Markdown copies selected options without claiming legitimacy", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("one-original", true, { g: 50 }),
+      option("one-change", false, { g: 90 }, 2),
+      option("one-other", false, { g: 60 }, 4),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const result = findSmallestAgreement(input);
+  const markdown = formatRecommendedPackageMarkdown(input, result);
+  assert.equal(markdown.status, "ok");
+  assert.match(markdown.text, /^# Recommended package\n/u);
+  assert.match(markdown.text, /Proposal: Test proposal/u);
+  assert.match(markdown.text, /not a recorded vote or a claim of legitimacy/u);
+  assert.match(markdown.text, /Hours: "one-change" \(cost 2\.0\)/u);
+  assert.doesNotMatch(markdown.text, /[\u2014\u2013]/u);
+  assert.equal(markdown.text, formatRecommendedPackageMarkdown(input, result).text);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(formatRecommendedPackageMarkdown({ title: "" }).status, "invalid");
+  const infeasible = proposal({
+    threshold: 99,
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("one-original", true, { g: 10 }),
+      option("one-change", false, { g: 11 }, 1),
+      option("one-other", false, { g: 12 }, 2),
+    ] }],
+  });
+  assert.equal(formatRecommendedPackageMarkdown(infeasible).status, "unavailable");
 });
 
 test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {
