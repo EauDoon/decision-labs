@@ -656,3 +656,21 @@ export function makeParticipant(id) {
     riskCost: 0,
   };
 }
+
+/** Fee floors at current effective volume and fixed shares, not a demand forecast. */
+export function calculateFeeRequirements(config) {
+  assertValidConfiguration(config);
+  const volume = effectiveVolume(config.deal);
+  const participants = config.participants.map((participant) => {
+    const requiredRevenue = volume * participant.variableCostPerTransaction + participant.fixedMonthlyCost + participant.riskCost + participant.minimumAcceptableProfit;
+    const denominator = volume * participant.revenueShare;
+    const floor = requiredRevenue === 0 ? 0 : denominator > 0 ? requiredRevenue / denominator : null;
+    const requiredFee = floor !== null && Number.isFinite(floor) && floor <= MAX_NUMERIC_INPUT ? floor : null;
+    const operationalFailures = [];
+    if (volume < (participant.minimumCommitment ?? 0)) operationalFailures.push('minimum commitment');
+    if (participant.capacity != null && volume > participant.capacity) operationalFailures.push('capacity');
+    return { id: participant.id, name: participant.name, requiredFee, operationalFailures };
+  });
+  const requiredFee = participants.some((item) => item.requiredFee === null) ? null : Math.max(...participants.map((item) => item.requiredFee));
+  return { volume, requiredFee, operationallyFeasible: participants.every((item) => !item.operationalFailures.length), participants };
+}

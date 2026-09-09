@@ -863,6 +863,24 @@ function makeParticipant(id) {
   };
 }
 
+/** Fee floors at current effective volume and fixed shares, not a demand forecast. */
+function calculateFeeRequirements(config) {
+  assertValidConfiguration(config);
+  const volume = effectiveVolume(config.deal);
+  const participants = config.participants.map((participant) => {
+    const requiredRevenue = volume * participant.variableCostPerTransaction + participant.fixedMonthlyCost + participant.riskCost + participant.minimumAcceptableProfit;
+    const denominator = volume * participant.revenueShare;
+    const floor = requiredRevenue === 0 ? 0 : denominator > 0 ? requiredRevenue / denominator : null;
+    const requiredFee = floor !== null && Number.isFinite(floor) && floor <= MAX_NUMERIC_INPUT ? floor : null;
+    const operationalFailures = [];
+    if (volume < (participant.minimumCommitment ?? 0)) operationalFailures.push('minimum commitment');
+    if (participant.capacity != null && volume > participant.capacity) operationalFailures.push('capacity');
+    return { id: participant.id, name: participant.name, requiredFee, operationalFailures };
+  });
+  const requiredFee = participants.some((item) => item.requiredFee === null) ? null : Math.max(...participants.map((item) => item.requiredFee));
+  return { volume, requiredFee, operationallyFeasible: participants.every((item) => !item.operationalFailures.length), participants };
+}
+
 const STORAGE_KEY = 'partnership-breakpoint.v1';
 const MAX_HASH_LENGTH = 60_000;
 const app = document.querySelector('#workbench');
@@ -1230,6 +1248,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
+    ${feeRequirementsSection()}
     ${comparisonSection(result)}
     ${breakpointSection(result)}
     ${stressSection()}
@@ -1653,6 +1672,11 @@ function exportStressCsv() {
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting CSV. ' + summarizeErrors(validation.errors)); return; }
   downloadText(stressCsv(state), 'text/csv;charset=utf-8', 'partnership-breakpoint-stress.csv');
   setNotice('Stress CSV exported. Each row is one participant in one selected case; case counts are not probabilities.');
+}
+
+function feeRequirementsSection() {
+  const guidance = calculateFeeRequirements(state);
+  return `<section class="panel" aria-labelledby="fee-guidance-title"><div class="panel-heading"><h2 id="fee-guidance-title">Fee negotiation guide</h2><span class="optional">fixed volume and shares</span></div><div class="panel-body"><p>At ${formatVolume(guidance.volume)}, the mathematical fee floor for all participant profit requirements is <strong>${guidance.requiredFee === null ? 'unavailable within the input limits' : formatNumber(guidance.requiredFee, 6) + ' units / transaction'}</strong>.</p><p>${guidance.operationallyFeasible ? 'Current capacity and commitment tests hold.' : 'Fee changes cannot repair the capacity or commitment failures below.'} A rounded floor is a guide; recheck the full model after changing a fee. Demand response and compound stress are not included in this floor.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Participant fee requirements"><table><caption>Fee needed to meet each minimum monthly profit</caption><thead><tr><th scope="col">Participant</th><th scope="col">Fee floor</th><th scope="col">Operational restrictions</th></tr></thead><tbody>${guidance.participants.map((item) => `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${item.requiredFee === null ? 'No bounded fee can fund this share' : formatNumber(item.requiredFee, 6)}</td><td>${item.operationalFailures.length ? escapeAttribute(item.operationalFailures.join(', ')) : 'None at current volume'}</td></tr>`).join('')}</tbody></table></div></section>`;
 }
 </script>
   </body>

@@ -9,6 +9,7 @@ const appImport = `import {
   ValidationError,
   applyStressProposal,
   calculatePartnership,
+  calculateFeeRequirements,
   clonePreset,
   evaluateStressGrid,
   makeParticipant,
