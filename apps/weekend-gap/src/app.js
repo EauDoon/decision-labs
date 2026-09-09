@@ -31,7 +31,8 @@ import {
   createScenarioHistory,
   timelineToCSV,
   queueToCSV,
-  reportToHTML
+  reportToHTML,
+  reportToMarkdown
 } from "./model.js";
 
 let workspaceReady = false;
@@ -1077,6 +1078,22 @@ document.querySelector("#export-report").addEventListener("click",()=>{
     downloadText(reportToHTML(saved.current,saved.baseline,saved),"weekend-gap-report.html","text/html;charset=utf-8");
     document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
   } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+document.querySelector("#copy-markdown-report").addEventListener("click", async () => {
+  try {
+    const saved = JSON.parse(currentWorkspace());
+    const text = reportToMarkdown(saved.current, saved.baseline, saved);
+    const clipboard = globalThis.navigator?.clipboard;
+    if (clipboard && typeof clipboard.writeText === "function") {
+      await clipboard.writeText(text);
+      document.querySelector("#workspace-status").textContent = "Markdown report copied. It includes hours to clear the queue and the peak queue hour.";
+      return;
+    }
+    downloadText(text, "weekend-gap-report.md", "text/markdown;charset=utf-8");
+    document.querySelector("#workspace-status").textContent = "Clipboard unavailable. Markdown report downloaded instead.";
+  } catch (error) {
+    document.querySelector("#workspace-status").textContent = error.message;
+  }
 });
 
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) setPlaying(false); });
