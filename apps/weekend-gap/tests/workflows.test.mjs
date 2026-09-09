@@ -92,11 +92,13 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   await ui.edit("timeline-range", 65);
   const persisted = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
   assert.equal(persisted.current.name, "Market Stress"); assert.equal(persisted.selectedHour, 65);
+  assert.equal(persisted.ganttDensity, "all");
   const reloaded = await boot(ui.storage);
   assert.equal(reloaded.nodes.get("scenario-title").textContent, "Market Stress");
   assert.equal(reloaded.nodes.get("baseline-name").textContent, "Normal Friday");
   assert.equal(reloaded.nodes.get("workspace-notes").value, "Keep this baseline");
   assert.equal(reloaded.nodes.get("timeline-range").value, "65");
+  assert.equal(reloaded.nodes.get("gantt-density").value, "all");
   assert.equal(reloaded.nodes.get("scenario-library").children.length, 1);
 });
 
