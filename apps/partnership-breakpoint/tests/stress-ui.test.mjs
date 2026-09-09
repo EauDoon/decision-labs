@@ -1044,6 +1044,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>n<\/kbd> Focus Add participant/);
   assert.match(app.markup(), /<kbd>s<\/kbd> Jump to share-to-hold/);
   assert.match(app.markup(), /<kbd>c<\/kbd> Jump to snapshot or imported JSON compare/);
+  assert.match(app.markup(), /<kbd>p<\/kbd> Print the one-pager/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1132,6 +1133,26 @@ test('keyboard c jumps to snapshot or imported compare unless a field is focused
   app.keydown('c');
   assert.ok(app.focused().includes('#imported-compare-title'));
   assert.ok(app.focused().includes('scroll:#imported-compare-title'));
+});
+
+test('keyboard p prints the one-pager when valid and ignores focused inputs', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.equal(app.prints(), 0);
+  app.keydown('p');
+  assert.equal(app.prints(), 1);
+  const before = app.prints();
+  app.keydown('p', { tagName: 'INPUT' });
+  assert.equal(app.prints(), before);
+  app.keydown('p', { tagName: 'TEXTAREA' });
+  assert.equal(app.prints(), before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('p');
+  assert.equal(app.prints(), before);
+  assert.match(app.notice(), /Resolve invalid inputs before printing/);
+  app.click('undo');
+  app.keydown('p');
+  assert.equal(app.prints(), before + 1);
 });
 
 test('redacted export replaces names, clears the title, and keeps identifiers', async () => {

@@ -989,9 +989,8 @@ function attachEvents() {
     }
     if (action === 'close-help') { closeHelp(); return; }
     if (action === 'print-report') {
-      if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
-      printRedacted = false;
-      window.print(); return;
+      printOnePager();
+      return;
     }
     if (action === 'print-redacted') {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing a redacted report.'); return; }
@@ -1158,6 +1157,12 @@ function attachEvents() {
 
 function caseExportTitle() {
   return typeof state.deal.title === 'string' ? state.deal.title : '';
+}
+
+function printOnePager() {
+  if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
+  printRedacted = false;
+  window.print();
 }
 
 function exportFile() {
@@ -1430,6 +1435,7 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'p' || event.key === 'P') printOnePager();
 });
 
 window.addEventListener('resize', () => {
@@ -2068,6 +2074,7 @@ function helpDialog() {
         <li><kbd>n</kbd> Focus Add participant, or add one if that control is missing</li>
         <li><kbd>s</kbd> Jump to share-to-hold (preview if open, otherwise the first solver)</li>
         <li><kbd>c</kbd> Jump to snapshot or imported JSON compare heading</li>
+        <li><kbd>p</kbd> Print the one-pager when the case is valid</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
