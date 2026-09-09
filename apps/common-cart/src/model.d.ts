@@ -38,8 +38,8 @@ export interface Offer {
   deliveryDays: number;
   capacity: number;
   shippingPerBuyer: number;
-  /** Optional quantity discounts; omitted or empty keeps the base price only. */
-  tiers?: PriceTier[];
+  /** `shipping` or `pickup`. Omitted JSON defaults to shipping. Pickup charges 0 shipping. */
+  fulfillment?: "shipping" | "pickup";
 }
 
 export interface Scenario {
@@ -135,13 +135,95 @@ export const presets: Readonly<{
   studio: Scenario;
   tiers: Scenario;
   pantry: Scenario;
+  officePantry: Scenario;
+  hardware: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
 export function validateScenario(candidate: unknown): Scenario;
 export function evaluateOffer(rawScenario: unknown, rawOffer: string | Offer): OfferEvaluation;
 export function evaluateMarket(rawScenario: unknown): MarketEvaluation;
+
+export interface CoverageOfferSummary {
+  offerId: string;
+  merchant: string;
+  category: string;
+  variant: string;
+  fulfilledUnits: number;
+  deliveredBuyers: number;
+  totalCost: number;
+  selectedBuyerIds?: string[];
+}
+
+export interface ResidualCoverage {
+  planningAid: true;
+  note: string;
+  primary: CoverageOfferSummary | null;
+  secondary: CoverageOfferSummary | null;
+  leftoverBuyerCount: number;
+  leftoverUnits: number;
+  leftoverBuyerIds: string[];
+  unfilledBuyerCount: number;
+  unfilledUnits: number;
+}
+
+export function computeResidualCoverage(rawScenario: unknown): ResidualCoverage;
+
+export interface NextTierGap {
+  offerId: string;
+  merchant: string;
+  currentUnits: number;
+  currentTierIndex: number | null;
+  nextMinimum: number | null;
+  nextPrice: number | null;
+  compatibleUnitsAtNext: number | null;
+  allocatedUnitsAtNext: number | null;
+  unitsNeeded: number | null;
+  reachable: boolean;
+  reason: string;
+  supplierBuyerIds: string[];
+  supplierBuyerCount: number;
+  supplierUnits: number;
+}
+
+export function unitsToNextTier(rawScenario: unknown, offerId: string): NextTierGap;
+
+export interface CapacityBar {
+  offerId: string;
+  merchant: string;
+  filledUnits: number;
+  capacity: number;
+  minimumUnits: number;
+  nextTierThreshold: number | null;
+  leftoverUnits: number;
+  qualifies: boolean;
+}
+
+export function capacityBar(rawScenario: unknown, offerId: string): CapacityBar;
+
+export type ExclusionGroupCode = "price" | "delivery" | "variant" | "category" | "budget" | "capacity_leftover" | "quantity_vs_capacity" | "minimum";
+export interface ExclusionGroup {
+  code: ExclusionGroupCode;
+  count: number;
+  buyerIds: string[];
+}
+export function groupExclusionReasons(rawScenario: unknown, offerId: string): ExclusionGroup[];
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
+
+export interface DeliveryBucket {
+  key: string;
+  label: string;
+  min: number;
+  max: number;
+  buyerCount: number;
+  units: number;
+}
+export interface DeliveryHeatmap {
+  buyerCount: number;
+  units: number;
+  buckets: DeliveryBucket[];
+}
+export function deliveryHeatmap(rawScenario: unknown): DeliveryHeatmap;
 export function encodeScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;
 
@@ -159,11 +241,36 @@ export interface ScenarioComparison { baseline: ComparisonMetrics; current: Comp
 export interface MerchantReport {
   report: string; version: number; currency: string; limitations: string;
   requestedUnits: number; buyerCount: number;
-  offers: Array<{ merchant: string; category: string; variant: string; status: string; fulfilledUnits: number; includedBuyerCount: number; itemPrice: number | null; landedTotal: number | null; deliveryDays: number }>;
+  offers: Array<{ merchant: string; category: string; variant: string; fulfillment: "shipping" | "pickup"; status: string; fulfilledUnits: number; includedBuyerCount: number; itemPrice: number | null; landedTotal: number | null; deliveryDays: number }>;
+}
+export interface MerchantResidualReport {
+  report: string; version: number; currency: string; limitations: string;
+  primary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
+  secondary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
+  leftoverBuyerCount: number; leftoverUnits: number; unfilledBuyerCount: number; unfilledUnits: number;
 }
 export function createScenarioHistory(initial: unknown): ScenarioHistory;
 export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
 export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", id: string): Scenario;
+export function copyOfferAsNewTierSet(rawScenario: unknown, offerId: string): Scenario;
 export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;
+export interface ThreeRoomRow {
+  title: string;
+  currency: string;
+  requested: number;
+  fulfilled: number;
+  buyers: number;
+  cost: number | null;
+  winner: string;
+}
+export interface ThreeRoomComparison { sameCurrency: boolean; rooms: ThreeRoomRow[]; }
+export function compareThreeRooms(first: unknown, second: unknown, third: unknown): ThreeRoomComparison;
 export function createMerchantReport(rawScenario: unknown): MerchantReport;
+export function createMerchantResidualReport(rawScenario: unknown): MerchantResidualReport;
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
+export function neutralizeSpreadsheetCell(value: unknown): unknown;
+export function parseBuyerCsv(text: unknown): Buyer[];
+export function importBuyersFromCsv(rawScenario: unknown, text: unknown): Scenario;
+export function buyerCsvTemplate(): string;
+export function redactBuyerLabels(rawScenario: unknown): Scenario;
+export function createOrganizerBriefing(rawScenario: unknown): string;

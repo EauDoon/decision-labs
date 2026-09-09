@@ -33,6 +33,44 @@ SOFTWARE.
 </head>
 <body>
   <a class="skip-link" href="#workspace">Skip to workspace</a>
+  <dialog id="coach-dialog" aria-labelledby="coach-title">
+    <form method="dialog" class="coach-card">
+      <p class="section-number">First run</p>
+      <h2 id="coach-title">How this pooled-purchase room works</h2>
+      <ol class="coach-steps">
+        <li>
+          <strong>Pool buyers.</strong>
+          Add private constraints: category, whole quantity, price ceiling, delivery limit, and accepted variants. Labels stay in this browser.
+        </li>
+        <li>
+          <strong>Compare offers.</strong>
+          Merchants set a price, minimum, capacity, and optional quantity ladder. The room shows which offer a cohort can actually unlock.
+        </li>
+        <li>
+          <strong>Inspect who is excluded and why.</strong>
+          Open the offer inspector for price, delivery, variant, budget, and capacity reasons. The merchant table still shows aggregates only.
+        </li>
+      </ol>
+      <p class="canvas-note">This is a local planning aid, not a checkout. You can reopen this guide from the header.</p>
+      <button id="coach-dismiss" class="primary" value="dismiss" type="submit">Got it</button>
+    </form>
+  </dialog>
+  <dialog id="shortcut-help" aria-labelledby="shortcut-help-title">
+    <div class="coach-card">
+      <p class="section-number">Keyboard</p>
+      <h2 id="shortcut-help-title">Shortcuts</h2>
+      <ul class="shortcut-list">
+        <li><kbd>?</kbd> Open this help</li>
+        <li><kbd>u</kbd> Undo the last valid change</li>
+        <li><kbd>r</kbd> Redo</li>
+        <li><kbd>e</kbd> Export JSON</li>
+        <li><kbd>n</kbd> Add a buyer</li>
+        <li><kbd>Esc</kbd> Close help or the first-run guide</li>
+      </ul>
+      <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
+      <button id="shortcut-help-close" class="primary" type="button">Close</button>
+    </div>
+  </dialog>
   <header class="masthead">
     <div class="brand-lockup">
       <span class="brand-mark" aria-hidden="true">CC</span>
@@ -42,11 +80,14 @@ SOFTWARE.
       </div>
     </div>
     <nav class="header-actions" aria-label="Scenario actions">
+      <button class="quiet" id="show-coach" type="button">How this room works</button>
       <button class="quiet" id="undo-button" type="button" disabled>Undo</button>
       <button class="quiet" id="redo-button" type="button" disabled>Redo</button>
       <button class="quiet" id="import-button" type="button">Import</button>
       <input id="import-file" type="file" accept="application/json" hidden>
       <button class="quiet" id="export-button" type="button">Export</button>
+      <button class="quiet" id="screenshot-mode" type="button" aria-pressed="false">Screenshot mode</button>
+      <button class="quiet" id="export-redacted" type="button">Export redacted JSON</button>
       <button class="quiet" id="share-button" type="button">Copy share link</button>
     </nav>
   </header>
@@ -67,6 +108,8 @@ SOFTWARE.
           <button class="preset active" data-preset="neighbourhood" type="button">Coffee run</button>
           <button class="preset" data-preset="studio" type="button">Studio chairs</button>
           <button class="preset" data-preset="pantry" type="button">Pantry staples</button>
+          <button class="preset" data-preset="officePantry" type="button">Office pantry</button>
+          <button class="preset" data-preset="hardware" type="button">Hardware tools</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -124,6 +167,10 @@ SOFTWARE.
           <h2 id="comparison-heading">Compare a decision</h2>
           <button id="pin-baseline" type="button">Pin current as baseline</button>
           <button id="clear-baseline" type="button" disabled>Clear baseline</button>
+          <button id="compare-three" type="button">Compare current with two snapshots</button>
+          <label>First snapshot <select id="compare-room-a"></select></label>
+          <label>Second snapshot <select id="compare-room-b"></select></label>
+          <div id="three-room-summary" class="table-shell"></div>
           <div id="comparison-summary" class="table-shell"></div>
         </section>
         <div class="section-heading">
@@ -132,7 +179,12 @@ SOFTWARE.
             <h2>Describe acceptable purchases</h2>
             <p>Labels stay inside this browser. Merchant-facing views use grouped ranges only. Empty or invalid fields are named in the status line until they are corrected.</p>
           </div>
-          <button id="add-buyer" class="primary" type="button">Add buyer</button>
+          <div class="button-row">
+            <button id="add-buyer" class="primary" type="button">Add buyer</button>
+            <button id="import-buyers" type="button">Import buyer CSV</button>
+            <button id="buyer-csv-template" type="button">Download CSV template</button>
+            <input id="import-buyers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
+          </div>
         </div>
         <div class="table-shell">
           <table>
@@ -152,7 +204,7 @@ SOFTWARE.
             <tbody id="buyer-rows"></tbody>
           </table>
         </div>
-        <p id="variants-help" class="canvas-note">Accepted variants are a comma-separated list. At least one name is required.</p>
+        <p id="variants-help" class="canvas-note">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
 
         <div class="result-grid">
           <article class="panel chart-panel">
@@ -203,10 +255,35 @@ SOFTWARE.
               <tbody id="inspector-rows"></tbody>
             </table>
           </div>
+          <h4>Why excluded, grouped</h4>
+          <div class="table-shell compact">
+            <table>
+              <caption class="sr-only">Exclusion counts by reason for the inspected offer</caption>
+              <thead><tr><th scope="col">Reason</th><th scope="col">Buyers</th><th scope="col">What this means</th></tr></thead>
+              <tbody id="exclusion-groups"></tbody>
+            </table>
+          </div>
           <p class="canvas-note">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
+          <article class="panel residual-panel" aria-labelledby="residual-title">
+            <div class="panel-heading">
+              <div>
+                <p class="section-number">Unfilled after winner</p>
+                <h3 id="residual-title">Residual coverage on leftover demand</h3>
+              </div>
+            </div>
+            <p id="residual-note" class="canvas-note"></p>
+            <div id="residual-summary" class="residual-summary"></div>
+          </article>
           <button id="buyer-report" type="button">Export private buyer report (CSV)</button>
+          <button id="organizer-briefing" type="button">Export organizer briefing</button>
           <p class="canvas-note">Exports the inspected offer, including buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
           <p class="canvas-note">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
+          <h4>Capacity leftover</h4>
+          <p id="capacity-bar-text" class="canvas-note"></p>
+          <svg id="capacity-bar" class="capacity-bar" viewBox="0 0 400 48" role="img" aria-labelledby="capacity-bar-text"></svg>
+          <h4>Units to the next cheaper tier</h4>
+          <div id="next-tier-summary" class="residual-summary"></div>
+          <p id="next-tier-buyers" class="canvas-note"></p>
           <h4>Price-band feasibility</h4>
           <div class="table-shell compact">
             <table>
@@ -221,6 +298,7 @@ SOFTWARE.
       <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" hidden>
         <div class="snapshot-bar">
           <button id="merchant-report" type="button">Export aggregate merchant report</button>
+          <button id="merchant-residual-report" type="button">Export residual coverage (aggregate)</button>
           <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information.</p>
         </div>
         <div class="section-heading">
@@ -236,7 +314,7 @@ SOFTWARE.
             <caption class="sr-only">Editable merchant offers</caption>
             <thead>
               <tr>
-                <th scope="col">Merchant</th><th scope="col">Category</th><th scope="col">Variant</th><th scope="col">Unit price</th><th scope="col">Minimum</th><th scope="col">Delivery</th><th scope="col">Capacity</th><th scope="col">Ship / buyer</th><th scope="col"><span class="sr-only">Remove</span></th>
+                <th scope="col">Merchant</th><th scope="col">Category</th><th scope="col">Variant</th><th scope="col">Unit price</th><th scope="col">Minimum</th><th scope="col">Delivery</th><th scope="col">Capacity</th><th scope="col">Ship / buyer</th><th scope="col">Fulfillment</th><th scope="col"><span class="sr-only">Remove</span></th>
               </tr>
             </thead>
             <tbody id="offer-rows"></tbody>
@@ -250,8 +328,8 @@ SOFTWARE.
         </section>
         <div class="table-shell">
           <table>
-            <caption>Aggregate offer outcomes, no buyer labels or individual allocations</caption>
-            <thead><tr><th scope="col">Merchant</th><th scope="col">Status</th><th scope="col">Units</th><th scope="col">Buyers</th><th scope="col">Item price</th><th scope="col">Landed total</th></tr></thead>
+            <caption>Aggregate offer outcomes, no buyer labels, IDs, or individual allocations. Next-tier gap uses unit counts only.</caption>
+            <thead><tr><th scope="col">Merchant</th><th scope="col">Status</th><th scope="col">Units</th><th scope="col">Buyers</th><th scope="col">Item price</th><th scope="col">Landed total</th><th scope="col">Next-tier gap</th></tr></thead>
             <tbody id="merchant-result-rows"></tbody>
           </table>
         </div>
@@ -260,6 +338,9 @@ SOFTWARE.
           <article class="panel">
             <div class="panel-heading"><div><p class="section-number">Aggregate signal</p><h3>Demand merchants may see</h3></div></div>
             <div id="demand-groups" class="demand-groups"></div>
+            <h4>Delivery deadline heatmap</h4>
+            <p id="delivery-heatmap-text" class="canvas-note"></p>
+            <svg id="delivery-heatmap" class="capacity-bar" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>
@@ -279,8 +360,8 @@ SOFTWARE.
           <article>
             <p class="section-number">03 / method</p>
             <h2>One transparent matching rule</h2>
-            <p>An offer is compatible when its category and variant are accepted, its unit price is within the buyer's ceiling, and delivery is no later than the buyer's limit.</p>
-            <p>Whole buyer quantities are selected within merchant capacity. The offer unlocks only if those units meet its minimum. Qualified offers rank by fulfilled units, group headroom, buyers included, landed cost, then offer ID.</p>
+            <p>An offer is compatible when its category and variant are accepted, its unit price is within the buyer's ceiling, and delivery is no later than the buyer's limit. Pickup offers still carry a stored shipping amount, but matching charges 0 shipping.</p>
+            <p>Whole buyer quantities are selected within merchant capacity. The offer unlocks only if those units meet its minimum. Qualified offers rank by fulfilled units, group headroom, buyers included, landed cost, then offer ID. Leftover whole orders may be shown against a second offer as a planning aid, not a dual checkout.</p>
             <p>For quantity discounts, each price is tested inside its own unit range. The next tier's minimum ends the preceding band. Only actually allocated whole orders count toward a tier. The feasible band with the most units wins.</p>
           </article>
           <article>
@@ -306,7 +387,7 @@ SOFTWARE.
   </main>
 
   <footer>
-    <p>Open-source educational simulator. Synthetic examples only.</p>
+    <p>Open-source educational simulator. Synthetic examples only. Press ? for keyboard shortcuts. Use the browser print dialog for a paper copy of the open tabs.</p>
     <p><a href="./MODEL.md">Model notes</a> <span aria-hidden="true">·</span> <a href="./SECURITY.md">Security</a></p>
   </footer>
 
@@ -333,6 +414,12 @@ SOFTWARE.
       <td data-label="Delivery"><span class="unit-input"><input data-field="deliveryDays" type="number" min="0" max="365" step="1" aria-label="Offer delivery in days"><span>days</span></span></td>
       <td data-label="Capacity"><input data-field="capacity" type="number" min="1" max="5000" step="1" aria-label="Offer capacity"></td>
       <td data-label="Ship per buyer"><input data-field="shippingPerBuyer" type="number" min="0" max="1000000" step="0.01" aria-label="Shipping cost per buyer"></td>
+      <td data-label="Fulfillment">
+        <select data-field="fulfillment" aria-label="Offer fulfillment">
+          <option value="shipping">Shipping</option>
+          <option value="pickup">Pickup</option>
+        </select>
+      </td>
       <td><button class="icon-button remove-row" type="button" aria-label="Remove offer">×</button></td>
     </tr>
   </template>

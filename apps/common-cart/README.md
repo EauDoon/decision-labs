@@ -8,7 +8,23 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
-## Decision workspace improvements (09-09-2026)
+## Changelog (1.3.0)
+
+Pooled-purchase workbench updates for organizers who need leftover fill, quantity-ladder planning, and private-label hygiene. This remains an offline simulator. Residual coverage is a planning aid, not a dual checkout.
+
+- **Residual coverage.** After the winning offer is chosen, leftover whole-buyer demand can be tested against the next-best other offer with the same exact allocator. A buyer's quantity is never split. The buyer room shows Unfilled after winner, and merchant JSON keeps only aggregates.
+- **Units to the next cheaper tier.** The inspector reports additional whole units, and which excluded buyers could supply them. Merchant-facing tables show counts only. Unreachable bands name capacity or compatibility limits.
+- **Buyer CSV import.** Import `label, category, quantity, max unit price, latest delivery days, variants`, with optional max order total. Spreadsheet formula prefixes are neutralized like CSV export. Invalid rows name the buyer and field.
+- **Screenshot mode.** Replace organizer labels with Buyer 1 through N without changing the saved room. Export redacted JSON when you need a shareable copy without private names.
+- **First-run coach and shortcuts.** A dismissible overlay (skipped for share links) explains pooling, comparing, and inspecting exclusions. `?` opens help, `u`/`r` undo and redo, `e` exports JSON, `n` adds a buyer. Keys are ignored while typing.
+- **Capacity leftover bar and delivery heatmap.** SVG plus text equivalents for filled units versus capacity versus the next-tier mark, and aggregate delivery-deadline buckets.
+- **Pickup or shipping.** Offer field `fulfillment` is `shipping` or `pickup`. Legacy JSON without the field still ships. Pickup charges zero shipping in matching, budgets, and landed totals. Unknown values are rejected. Quantity `tiers` are unchanged.
+- **Organizer briefing.** Markdown export of title, currency, winner aggregates, excluded count, next-tier gap, and residual coverage, without private buyer rows.
+- **Office pantry and hardware tools presets.** Distinct categories and variants, including a pickup hardware offer.
+- **Exclusion grouping.** Inspector counts price, delivery, variant, budget, capacity leftover, and quantity-versus-capacity reasons while keeping per-buyer detail.
+- **Workbench extras.** Compare the open room with two snapshots, copy an offer as a new tier set, and export merchant-safe residual coverage.
+
+### Decision workspace improvements (09-09-2026)
 
 - Set an optional **Max order total** for each buyer to include shipping in eligibility. Blank preserves the existing item-only budget. Each tier checks this ceiling independently.
 - **Undo / Redo** preserves up to 50 valid room states during the session. Invalid edits are not saved; Undo restores the last valid state. A new valid edit clears the redo branch.
@@ -60,17 +76,17 @@ npm run check
 
 ## What you can do
 
-- Start from coffee, office chair, community pantry, or price-ladder examples.
-- Add buyers with a category, quantity, price ceiling, delivery limit, and accepted variants.
-- Add merchant bids with a price, minimum order, delivery time, capacity, and shipping cost.
-- Edit quantity price tiers and inspect each band's whole-order feasibility.
+- Start from coffee, office chair, community pantry, office pantry bulk, hardware tools, or price-ladder examples.
+- Add buyers with a category, quantity, price ceiling, delivery limit, and accepted variants, or import those columns from CSV.
+- Add merchant bids with a price, minimum order, delivery time, capacity, shipping cost, and shipping or pickup fulfillment.
+- Edit quantity price tiers and inspect each band's whole-order feasibility, including units still needed for the next cheaper band.
 - Review item cost, shipping, landed cost, and ceiling headroom per included buyer locally.
 - Compare qualified offers by fulfilled units, group headroom, buyers included, and landed cost.
-- Inspect why each buyer order is included, blocked by the minimum, left out by capacity, or incompatible with an offer.
-- See which local buyer labels each qualified offer includes; merchant-facing views stay aggregated.
+- Inspect why each buyer order is included, blocked by the minimum, left out by capacity, or incompatible with an offer, grouped by reason.
+- See leftover demand after the winner as a planning aid, not a second checkout.
+- See which local buyer labels each qualified offer includes; merchant-facing views stay aggregated. Screenshot mode can hide labels.
 - Inspect a merchant view that contains aggregate ranges rather than individual records.
-- Import or export a scenario as JSON.
-- Encode the current scenario in a share link.
+- Import or export a scenario as JSON, export an organizer briefing, or encode the current scenario in a share link.
 - Work entirely in the browser with local autosave.
 
 ## How matching works
@@ -82,7 +98,7 @@ A buyer is compatible with an offer only when all four tests pass:
 3. The unit price is no higher than the buyer's ceiling.
 4. Delivery is no later than the buyer's limit.
 
-The allocator performs an exact bounded search for the greatest whole-buyer quantity within merchant capacity. For tiered offers, each price is evaluated inside its own quantity band. The selected cohort must reach that band's minimum without reaching the next band's threshold. The feasible band with the most units wins. Buyers' ceilings cover item prices, not shipping; landed-cost overruns are shown separately without changing legacy eligibility. See [MODEL.md](./MODEL.md) for formulas, bounds, ranking rules, and limitations.
+The allocator performs an exact bounded search for the greatest whole-buyer quantity within merchant capacity. For tiered offers, each price is evaluated inside its own quantity band. The selected cohort must reach that band's minimum without reaching the next band's threshold. The feasible band with the most units wins. Buyers' ceilings cover item prices, not shipping; pickup fulfillment charges 0 shipping during matching. Landed-cost overruns are shown separately without changing legacy eligibility. See [MODEL.md](./MODEL.md) for formulas, bounds, ranking rules, residual coverage, and limitations.
 
 ## Repository map
 
@@ -97,7 +113,10 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |-- tests/
 |   |-- model.test.mjs      Deterministic matching and validation tests
 |   |-- tiers.test.mjs      Quantity-band allocator tests
-|   `-- standalone.test.mjs Single-file build checks
+|   |-- residual.test.mjs   Leftover coverage after the winner
+|   |-- next-tier.test.mjs  Units needed for the next cheaper band
+|   |-- csv-import.test.mjs Buyer CSV import
+|   |-- standalone.test.mjs Single-file build checks
 |-- standalone.html         No-install, single-file GUI
 |-- launch-windows.cmd      One-click Windows GUI launcher
 |-- scripts/build-standalone.mjs  Deterministic single-file builder
@@ -113,7 +132,7 @@ The [root CI workflow](../../.github/workflows/common-cart.yml) runs this compon
 
 ## Data and privacy
 
-Common Cart makes no network requests. Scenarios are held in browser memory and local storage. Export and link sharing happen only when requested. A share link contains the full scenario, including buyer labels, so review it before sending.
+Common Cart makes no network requests. Scenarios are held in browser memory and local storage. Export and link sharing happen only when requested. A share link contains the full scenario, including buyer labels, so review it before sending. Screenshot mode and redacted JSON replace labels with Buyer 1 through N. Merchant reports, residual coverage JSON, and organizer briefings omit private buyer rows.
 
 The merchant view is an interface boundary, not a formal privacy guarantee. Small cohorts and unusual constraints can still reveal information.
 
