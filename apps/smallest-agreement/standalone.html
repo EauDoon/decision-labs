@@ -165,6 +165,11 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 
 .workshop-guide { max-width: 1400px; margin: 1rem auto; padding: 0 clamp(1rem, 4vw, 3rem); color: var(--ink-soft); }
 .workshop-guide li { margin: .5rem 0; line-height: 1.5; }
+.coach-overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 1rem; background: #19352dcc; }
+.coach-overlay[hidden] { display: none; }
+.coach-dialog { width: min(32rem, 100%); padding: 1.4rem; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+.coach-dialog h2 { margin: 0 0 .75rem; font-size: 1.4rem; font-weight: 500; }
+.coach-highlight { outline: 3px solid var(--pencil); outline-offset: 4px; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
   .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .manual-options, .autosave-status, button, #comparison-select { display: none !important; }
@@ -235,7 +240,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
           <div class="scenario-actions"><button class="text-button" id="load-scenario" type="button">Load snapshot</button> <button class="text-button danger" id="delete-scenario" type="button">Delete snapshot</button></div>
           <p id="scenario-count" class="field-note"></p>
         </section>
-        <section class="panel-section threshold-panel">
+        <section class="panel-section threshold-panel" id="threshold-setup">
           <div class="label-row"><label for="threshold">Approval threshold</label><output id="threshold-output"></output></div>
           <input id="threshold" type="range" min="0" max="100" step="any">
           <label for="threshold-number">Exact threshold (%)</label><input id="threshold-number" type="number" min="0" max="100" step="any" required>
@@ -354,6 +359,17 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
       </section>
     </main>
     <footer class="site-footer">Local only. Your draft is stored in this browser unless you export or share it.</footer>
+    <div id="coach-overlay" class="coach-overlay" hidden>
+      <div class="coach-dialog" role="dialog" aria-modal="true" aria-labelledby="coach-title" tabindex="-1">
+        <h2 id="coach-title">Workshop tour</h2>
+        <p id="coach-copy"></p>
+        <p id="coach-step" class="field-note"></p>
+        <div class="scenario-actions">
+          <button class="button button-secondary" type="button" id="coach-skip">Skip tour</button>
+          <button class="button button-brick" type="button" id="coach-next">Next</button>
+        </div>
+      </div>
+    </div>
     <script type="module">
 /**
  * Pure, deterministic agreement calculations.
@@ -1245,6 +1261,7 @@ function leaveOneGroupOut(proposal, options) {
 
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
+const COACH_KEY = "smallest-agreement:coach:v1";
 const MAX_SCENARIOS = 20;
 let libraryBlocked = false;
 let libraryRaw = null;
@@ -2329,7 +2346,71 @@ window.addEventListener("resize", () => {
   if (result.baseline) drawCoalition(result.baseline, result.agreement);
 });
 
+const coachSteps = [
+  { title: "Set the approval threshold", copy: "The solver looks for the lowest-cost package that reaches this number and every constraint. The threshold is a working rule you chose, not a recorded vote.", highlight: "#threshold-setup" },
+  { title: "Lock clauses that are not open", copy: "A lock keeps that option in every searched combination. Unlock an option before removing it. Locks shrink the search; they do not grant authority.", highlight: "#clauses-heading" },
+  { title: "Optionally cap total change cost", copy: "Leave the budget blank for no limit. Zero is a real limit that only allows zero-cost changes.", highlight: "#max-change-cost" },
+  { title: "Review the recommendation", copy: "Search runs as you edit. Read the constraint checks, near misses, and contribution table before taking the package to a human discussion.", highlight: "#results-heading" },
+];
+let coachIndex = 0;
+let coachOpen = false;
+
+function setCoachHighlight(selector) {
+  for (const id of ["#threshold-setup", "#clauses-heading", "#max-change-cost", "#results-heading"]) {
+    const node = $(id);
+    if (!node || !node.classList) continue;
+    node.classList.toggle("coach-highlight", selector === id);
+  }
+}
+
+function dismissCoach() {
+  coachOpen = false;
+  const overlay = $("#coach-overlay");
+  if (overlay) overlay.hidden = true;
+  setCoachHighlight("");
+  try { localStorage.setItem(COACH_KEY, "dismissed"); } catch { /* storage may be unavailable */ }
+}
+
+function showCoachStep() {
+  const step = coachSteps[coachIndex];
+  $("#coach-title").textContent = step.title;
+  $("#coach-copy").textContent = step.copy;
+  $("#coach-step").textContent = `Step ${coachIndex + 1} of ${coachSteps.length}`;
+  $("#coach-next").textContent = coachIndex === coachSteps.length - 1 ? "Done" : "Next";
+  setCoachHighlight(step.highlight);
+  const overlay = $("#coach-overlay");
+  overlay.hidden = false;
+  coachOpen = true;
+  $("#coach-skip")?.focus?.();
+}
+
+function startCoachIfNeeded() {
+  if (initialLoadMessage === "Loaded proposal from the share link.") return;
+  try {
+    if (localStorage.getItem(COACH_KEY) === "dismissed") return;
+  } catch {
+    return;
+  }
+  coachIndex = 0;
+  showCoachStep();
+}
+
+$("#coach-skip").addEventListener("click", dismissCoach);
+$("#coach-next").addEventListener("click", () => {
+  if (coachIndex >= coachSteps.length - 1) dismissCoach();
+  else {
+    coachIndex += 1;
+    showCoachStep();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (!coachOpen || event.key !== "Escape") return;
+  event.preventDefault();
+  dismissCoach();
+});
+
 render();
+startCoachIfNeeded();
 </script>
   </body>
 </html>

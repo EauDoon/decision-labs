@@ -83,7 +83,7 @@ SOFTWARE.
           <div class="scenario-actions"><button class="text-button" id="load-scenario" type="button">Load snapshot</button> <button class="text-button danger" id="delete-scenario" type="button">Delete snapshot</button></div>
           <p id="scenario-count" class="field-note"></p>
         </section>
-        <section class="panel-section threshold-panel">
+        <section class="panel-section threshold-panel" id="threshold-setup">
           <div class="label-row"><label for="threshold">Approval threshold</label><output id="threshold-output"></output></div>
           <input id="threshold" type="range" min="0" max="100" step="any">
           <label for="threshold-number">Exact threshold (%)</label><input id="threshold-number" type="number" min="0" max="100" step="any" required>
@@ -202,6 +202,17 @@ SOFTWARE.
       </section>
     </main>
     <footer class="site-footer">Local only. Your draft is stored in this browser unless you export or share it.</footer>
+    <div id="coach-overlay" class="coach-overlay" hidden>
+      <div class="coach-dialog" role="dialog" aria-modal="true" aria-labelledby="coach-title" tabindex="-1">
+        <h2 id="coach-title">Workshop tour</h2>
+        <p id="coach-copy"></p>
+        <p id="coach-step" class="field-note"></p>
+        <div class="scenario-actions">
+          <button class="button button-secondary" type="button" id="coach-skip">Skip tour</button>
+          <button class="button button-brick" type="button" id="coach-next">Next</button>
+        </div>
+      </div>
+    </div>
     <script type="module" src="src/app.js"></script>
   </body>
 </html>

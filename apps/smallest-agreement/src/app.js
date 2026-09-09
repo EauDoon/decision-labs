@@ -22,6 +22,7 @@ import {
 
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
+const COACH_KEY = "smallest-agreement:coach:v1";
 const MAX_SCENARIOS = 20;
 let libraryBlocked = false;
 let libraryRaw = null;
@@ -1106,4 +1107,68 @@ window.addEventListener("resize", () => {
   if (result.baseline) drawCoalition(result.baseline, result.agreement);
 });
 
+const coachSteps = [
+  { title: "Set the approval threshold", copy: "The solver looks for the lowest-cost package that reaches this number and every constraint. The threshold is a working rule you chose, not a recorded vote.", highlight: "#threshold-setup" },
+  { title: "Lock clauses that are not open", copy: "A lock keeps that option in every searched combination. Unlock an option before removing it. Locks shrink the search; they do not grant authority.", highlight: "#clauses-heading" },
+  { title: "Optionally cap total change cost", copy: "Leave the budget blank for no limit. Zero is a real limit that only allows zero-cost changes.", highlight: "#max-change-cost" },
+  { title: "Review the recommendation", copy: "Search runs as you edit. Read the constraint checks, near misses, and contribution table before taking the package to a human discussion.", highlight: "#results-heading" },
+];
+let coachIndex = 0;
+let coachOpen = false;
+
+function setCoachHighlight(selector) {
+  for (const id of ["#threshold-setup", "#clauses-heading", "#max-change-cost", "#results-heading"]) {
+    const node = $(id);
+    if (!node || !node.classList) continue;
+    node.classList.toggle("coach-highlight", selector === id);
+  }
+}
+
+function dismissCoach() {
+  coachOpen = false;
+  const overlay = $("#coach-overlay");
+  if (overlay) overlay.hidden = true;
+  setCoachHighlight("");
+  try { localStorage.setItem(COACH_KEY, "dismissed"); } catch { /* storage may be unavailable */ }
+}
+
+function showCoachStep() {
+  const step = coachSteps[coachIndex];
+  $("#coach-title").textContent = step.title;
+  $("#coach-copy").textContent = step.copy;
+  $("#coach-step").textContent = `Step ${coachIndex + 1} of ${coachSteps.length}`;
+  $("#coach-next").textContent = coachIndex === coachSteps.length - 1 ? "Done" : "Next";
+  setCoachHighlight(step.highlight);
+  const overlay = $("#coach-overlay");
+  overlay.hidden = false;
+  coachOpen = true;
+  $("#coach-skip")?.focus?.();
+}
+
+function startCoachIfNeeded() {
+  if (initialLoadMessage === "Loaded proposal from the share link.") return;
+  try {
+    if (localStorage.getItem(COACH_KEY) === "dismissed") return;
+  } catch {
+    return;
+  }
+  coachIndex = 0;
+  showCoachStep();
+}
+
+$("#coach-skip").addEventListener("click", dismissCoach);
+$("#coach-next").addEventListener("click", () => {
+  if (coachIndex >= coachSteps.length - 1) dismissCoach();
+  else {
+    coachIndex += 1;
+    showCoachStep();
+  }
+});
+document.addEventListener("keydown", (event) => {
+  if (!coachOpen || event.key !== "Escape") return;
+  event.preventDefault();
+  dismissCoach();
+});
+
 render();
+startCoachIfNeeded();

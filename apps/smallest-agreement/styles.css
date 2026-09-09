@@ -133,6 +133,11 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 
 .workshop-guide { max-width: 1400px; margin: 1rem auto; padding: 0 clamp(1rem, 4vw, 3rem); color: var(--ink-soft); }
 .workshop-guide li { margin: .5rem 0; line-height: 1.5; }
+.coach-overlay { position: fixed; inset: 0; z-index: 20; display: grid; place-items: center; padding: 1rem; background: #19352dcc; }
+.coach-overlay[hidden] { display: none; }
+.coach-dialog { width: min(32rem, 100%); padding: 1.4rem; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
+.coach-dialog h2 { margin: 0 0 .75rem; font-size: 1.4rem; font-weight: 500; }
+.coach-highlight { outline: 3px solid var(--pencil); outline-offset: 4px; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
   .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .manual-options, .autosave-status, button, #comparison-select { display: none !important; }
