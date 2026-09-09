@@ -356,6 +356,17 @@ SOFTWARE.
           </label>
           <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged.</p>
         </div>
+        <div class="snapshot-bar print-chrome" aria-label="Offer list order">
+          <label>Sort offers
+            <select id="offer-sort-mode">
+              <option value="unitPrice">Unit price low-high</option>
+              <option value="capacity">Capacity high-low</option>
+            </select>
+          </label>
+          <button id="preview-offer-sort" type="button">Preview sort</button>
+          <button id="apply-offer-sort" type="button">Apply sort</button>
+          <p>Preview changes the list on screen only. Apply rewrites saved order and is undoable. Offer IDs stay the same.</p>
+        </div>
         <div class="table-shell print-chrome" id="offers-list" tabindex="-1" role="region" aria-label="Merchant offers list">
           <table>
             <caption class="sr-only">Editable merchant offers</caption>

@@ -5,6 +5,8 @@ import {
   variantOverlapMatrix,
   applyBuyerSort,
   previewBuyerSort,
+  previewOfferSort,
+  applyOfferSort,
   filterOfferIdsByFulfillment,
   acceptedVariantFilterOptions,
   filterBuyerIdsByAcceptedVariant,
@@ -83,6 +85,7 @@ let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
 let buyerSortPreviewIds = null;
+let offerSortPreviewIds = null;
 let offerFulfillmentFilter = "all";
 let buyerVariantFilter = "all";
 let lastRemovedBuyer = null;
@@ -359,6 +362,7 @@ function bindStaticEvents() {
       fulfillment: "shipping"
     });
     inspectedOfferId = next;
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     elements.offerRows.lastElementChild?.querySelector("input")?.focus();
@@ -393,6 +397,31 @@ function bindStaticEvents() {
       renderEditor();
       refresh();
       setStatus("Buyer list order applied. Undo restores the previous saved order. IDs are unchanged.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#preview-offer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#offer-sort-mode").value;
+      const preview = previewOfferSort(scenario, mode);
+      offerSortPreviewIds = preview.map((offer) => offer.id);
+      renderEditor();
+      setStatus(mode === "capacity"
+        ? "Previewing capacity high to low. Saved order is unchanged until you apply the sort."
+        : "Previewing unit price low to high. Saved order is unchanged until you apply the sort.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#apply-offer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#offer-sort-mode").value;
+      scenario = applyOfferSort(scenario, mode);
+      offerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Offer list order applied. Undo restores the previous saved order. IDs are unchanged.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -648,7 +677,16 @@ function renderEditor() {
   if (scenario.buyers.length === 0) {
     setEmptyState(elements.buyerRows, 8, "No buyers are in this room.");
   }
-  elements.offerRows.replaceChildren(...scenario.offers.map(renderOfferRow));
+  if (offerSortPreviewIds) {
+    const current = new Set(scenario.offers.map((offer) => offer.id));
+    if (offerSortPreviewIds.length !== scenario.offers.length || offerSortPreviewIds.some((id) => !current.has(id))) {
+      offerSortPreviewIds = null;
+    }
+  }
+  const offersForDisplay = offerSortPreviewIds
+    ? offerSortPreviewIds.map((id) => scenario.offers.find((offer) => offer.id === id)).filter(Boolean)
+    : scenario.offers;
+  elements.offerRows.replaceChildren(...offersForDisplay.map(renderOfferRow));
   const recovery = document.querySelector("#empty-buyer-recovery");
   if (recovery) recovery.hidden = scenario.buyers.length > 0;
   const addBuyer = document.querySelector("#add-buyer");
@@ -812,6 +850,7 @@ function renderOfferRow(entry) {
     if (scenario.offers.length === 1) return setStatus("A room needs at least one offer.");
     const index = scenario.offers.findIndex(({ id }) => id === row.dataset.id);
     scenario.offers = scenario.offers.filter(({ id }) => id !== row.dataset.id);
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     elements.offerRows.children[Math.min(index, scenario.offers.length - 1)]?.querySelector("input")?.focus();
@@ -1082,6 +1121,7 @@ function updateHistoryButtons() {
 
 function restoreHistory(forward) {
   buyerSortPreviewIds = null;
+  offerSortPreviewIds = null;
   scenario = invalidDraft ? history.current() : forward ? history.redo() : history.undo();
   renderEditor();
   refresh();
@@ -1558,6 +1598,8 @@ async function importScenario(event) {
     if (!allowReplaceDraft()) return;
     scenario = imported;
     inspectedOfferId = scenario.offers[0]?.id ?? "";
+    buyerSortPreviewIds = null;
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     setStatus("Scenario imported.", true);
@@ -1579,6 +1621,7 @@ async function importOffersCsv(event) {
     if (!allowReplaceDraft()) return;
     scenario = imported;
     inspectedOfferId = scenario.offers[0]?.id ?? "";
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     setStatus(`Imported ${imported.offers.length} offers from CSV. Buyers were left unchanged.`, true);

@@ -291,6 +291,8 @@ export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenar
 export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "all" | "shipping" | "pickup"): string[];
 export function acceptedVariantFilterOptions(rawScenario: unknown): string[];
 export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: string): string[];
+export function previewOfferSort(rawScenario: unknown, mode: "unitPrice" | "capacity"): Offer[];
+export function applyOfferSort(rawScenario: unknown, mode: "unitPrice" | "capacity"): Scenario;
 export function previewBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Buyer[];
 export function applyBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Scenario;
 export function restoreRemovedBuyer(rawScenario: unknown, rawBuyer: unknown): Scenario;

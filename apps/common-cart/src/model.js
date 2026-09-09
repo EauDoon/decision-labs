@@ -237,6 +237,31 @@ export function filterBuyerIdsByAcceptedVariant(rawScenario, variant) {
     .map((buyer) => buyer.id);
 }
 
+function sortedOffers(offers, mode) {
+  if (mode !== "unitPrice" && mode !== "capacity") {
+    throw new ScenarioError("Offer sort must be unit price or capacity.");
+  }
+  return [...offers].sort((left, right) => {
+    if (mode === "unitPrice") {
+      return left.unitPrice - right.unitPrice || compareText(left.id, right.id);
+    }
+    return right.capacity - left.capacity || compareText(left.id, right.id);
+  });
+}
+
+export function previewOfferSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return sortedOffers(scenario.offers, mode).map((offer) => ({
+    ...offer,
+    tiers: offer.tiers ? offer.tiers.map((tier) => ({ ...tier })) : offer.tiers
+  }));
+}
+
+export function applyOfferSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return validateScenario({ ...scenario, offers: sortedOffers(scenario.offers, mode) });
+}
+
 function sortedBuyers(buyers, mode) {
   if (mode !== "label" && mode !== "quantity") {
     throw new ScenarioError("Buyer sort must be label or quantity.");
