@@ -153,3 +153,7 @@ The optional timing review can locate continuous intervals when operating window
 ### Operating-window overlap
 
 The optional timing review can show individually open hours that cannot form a complete chain. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Reserve needed by service target
+
+The optional timing review can compare minimum whole-cent reserves for four full-horizon settlement targets. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.

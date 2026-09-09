@@ -1253,6 +1253,7 @@ export const WEEKEND_REVIEW_TOOLS=Object.freeze([
  {id:'deadlines',title:'Settlement checkpoints'},
  {id:'closures',title:'Complete-chain closure spells'},
  {id:'overlap',title:'Operating-window overlap'},
+ {id:'reserve',title:'Reserve needed by service target'},
 // WG_REVIEW_TOOLS
 ]);
 function validateWeekendReviewScenario(raw){
@@ -1291,6 +1292,11 @@ export function analyzeWeekendReview(rawScenario,tool){
 
  const counts={issuer:0,bank:0,payout:0};let common=0;for(let hour=0;hour<72;hour++){const status=getOperationalStatus(scenario,hour);for(const gate of Object.keys(counts))if(status[gate+'Open'])counts[gate]++;if(status.issuerOpen&&status.bankOpen&&status.payoutOpen)common++;}
  return report(['Gate','Individually open hours','Complete-chain open hours','Open hours without complete chain'],Object.entries(counts).map(([gate,hours])=>[gate,hours,common,hours-common]),'Hours use operating windows and holidays only. Open hours do not establish available reserve, FX depth, throughput or demand. The lost overlap counts are per gate and must not be summed as unique closure hours.');
+
+ }
+ case 'reserve':{
+
+ return report(['Target of total demand %','Target AUD','Status','Minimum starting reserve AUD','Change from current AUD','Maximum possible settlement AUD'],[25,50,75,100].map(target=>{const p=planReserve(scenario,target,72);return[target,p.targetAud,p.status,p.minimumReserveAud,p.reserveChangeAud,p.maximumSettledAud];}),'Four targets at hour 72 use the existing whole-cent reserve planner. All gates, throughput and demand timing stay fixed. Unreachable means reserve alone cannot meet that target within nominal liquidity. Synthetic calculation only; no funding action or recommendation.');
 
  }
 // WG_REVIEW_CASES
