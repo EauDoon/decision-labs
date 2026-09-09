@@ -1662,6 +1662,28 @@ function setShortcutOpen(open) {
   if (overlay) overlay.hidden = !open;
   if (open) $("#shortcut-close")?.focus?.();
 }
+function jumpToLocks() {
+  const firstLocked = state.proposal.clauses.find((clause) => clause.lockedOptionId !== undefined);
+  if (!firstLocked) {
+    $("#clear-locks")?.focus?.();
+    notifyDraft("No clause is locked. Use the lock control on a clause card to pin an option.");
+    return;
+  }
+  const query = clauseFilter.trim().toLowerCase();
+  if (!clauseMatchesFilter(firstLocked, query)) {
+    clauseFilter = "";
+    const filter = $("#clause-filter");
+    if (filter) filter.value = "";
+    renderClauses();
+  }
+  const selector = `[data-field="clause-lock"][data-clause-id="${firstLocked.id}"]`;
+  const target = $(selector);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#clear-locks")?.focus?.();
+}
 function findAgreement() {
   $("#results-heading")?.focus?.();
   notifyDraft("Search already runs as you edit. Review the recommendation below.");
@@ -1707,6 +1729,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "n" || event.key === "N") {
     event.preventDefault();
     $("#add-group")?.focus?.();
+  } else if (event.key === "l" || event.key === "L") {
+    event.preventDefault();
+    jumpToLocks();
   }
 });
 

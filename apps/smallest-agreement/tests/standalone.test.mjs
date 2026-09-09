@@ -46,6 +46,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="shortcut-overlay"/u);
   assert.match(html, /Focus the clause filter/u);
   assert.match(html, /Focus Add group/u);
+  assert.match(html, /Jump to the first locked clause/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -559,6 +560,21 @@ test("keyboard n focuses Add group unless an input is active", async () => {
   assert.equal(app.focused(), "");
   app.keydown("N");
   assert.equal(app.focused(), "#add-group");
+});
+
+test("keyboard l jumps to the first locked clause unless an input is active", async () => {
+  const app = await savedWorkbench(new Map());
+  app.keydown("l");
+  assert.equal(app.focused(), "#clear-locks");
+  app.clearFocus();
+  app.keydown("l", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("l", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  app.clearFocus();
+  app.keydown("L");
+  assert.equal(app.focused(), '[data-field="clause-lock"][data-clause-id="hours"]');
 });
 
 test("show workshop tour reopens the first-run coach after it was dismissed", async () => {
