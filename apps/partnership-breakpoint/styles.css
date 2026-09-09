@@ -266,9 +266,9 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
   text-align: center;
 }
 @media print {
-  @page { size: landscape; margin: 12mm; }
+  @page { size: portrait; margin: 12mm; }
   body { background: white; color: black; font-size: 10pt; }
-  .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview, .coach-overlay, .help-overlay, .results-jump { display: none !important; }
+  .skip-link, .site-header, .site-footer, .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview, .coach-overlay, .help-overlay, .results-jump, .status-card, .metric-strip, .print-hide, .panel:not(.print-keep) { display: none !important; }
   .app-grid, .results, .disclosure-grid { display: block; }
   .panel, .status-card { box-shadow: none; border-color: #777; margin-bottom: 12pt; }
   .table-wrap { overflow: visible; }
@@ -276,6 +276,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
   th, td { white-space: normal !important; overflow-wrap: anywhere; padding: 4pt; }
   tr { break-inside: avoid; }
   .print-only { display: block; }
+  .print-only.print-hide { display: none !important; }
   .print-only pre { white-space: pre-wrap; columns: 2; font-size: 7pt; }
   .sensitivity-layout { display: block; }
   a { color: black; }

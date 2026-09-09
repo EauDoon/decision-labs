@@ -511,6 +511,22 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
+test('print one-pager keeps tornado, waterfall, ledger, and notes and hides chrome', async () => {
+  const app = await workbench();
+  const html = await buildStandalone();
+  assert.match(app.markup(), /class="panel print-keep"[^>]*id="participant-ledger"|id="participant-ledger"[^>]*class="panel print-keep"/);
+  assert.match(app.markup(), /class="panel print-keep"/);
+  assert.match(app.markup(), /Adverse-shock tornado/);
+  assert.match(app.markup(), /Contribution waterfall/);
+  assert.match(app.markup(), /class="print-only print-keep"/);
+  assert.match(app.markup(), /<h2>Deal notes<\/h2>/);
+  assert.match(html, /@media print/);
+  assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
+  assert.match(html, /\.panel:not\(\.print-keep\)/);
+  assert.match(html, /@page \{ size: portrait;/);
+  assert.match(html, /\.coach-overlay, \.help-overlay/);
+});
+
 test('invalid fields expose accessible state and printing requires a valid case', async () => {
  const app = await workbench();
  app.click('print-report'); assert.equal(app.prints(), 1);
@@ -549,7 +565,7 @@ test('deal notes persist, print, and export, and reject overlong or unknown valu
   assert.match(app.markup(), /<textarea[^>]*data-path="deal.notes"/);
   app.edit('deal.notes', '  Review the capacity clause.  ', { type: 'text', optional: 'true' });
   assert.equal(app.saved().deal.notes, 'Review the capacity clause.');
-  assert.match(app.markup(), /<strong>Notes:<\/strong> Review the capacity clause\./);
+  assert.match(app.markup(), /<h2>Deal notes<\/h2><p>Review the capacity clause\.<\/p>/);
   app.click('export-report');
   const report = await app.downloads()[0].blob.text();
   assert.match(report, /Notes: Review the capacity clause\./);
