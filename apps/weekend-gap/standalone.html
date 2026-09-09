@@ -739,10 +739,19 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
             <h2 id="gantt-title">72-hour gate Gantt</h2>
             <p>Issuer, bank and payout rows show open (green) versus closed (red) for each hour. FX shows weekday depth (blue) versus weekend thinning (gold). The solid vertical line is the timeline slider hour. The dashed green marker is the first payout window.</p>
             <p id="gantt-payout-note"></p>
+            <div class="planning-actions">
+              <label for="gantt-density">Show Gantt rows</label>
+              <select id="gantt-density">
+                <option value="snapshots">Every six hours</option>
+                <option value="all">Every hour</option>
+                <option value="open">Hours with any gate open</option>
+              </select>
+              <button id="export-gantt" type="button">Download Gantt SVG</button>
+            </div>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
               <table>
-                <caption>Text equivalent of the Gantt. Every six hours plus the selected hour. FX weekday means the weekend multiplier is not applied.</caption>
+                <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
                 <thead><tr><th scope="col">Time</th><th scope="col">Issuer</th><th scope="col">Bank</th><th scope="col">Payout</th><th scope="col">FX</th></tr></thead>
                 <tbody id="gantt-table"></tbody>
               </table>
@@ -1991,8 +2000,14 @@ function renderTable() {
 function renderGantt() {
   document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour);
   const schedule = buildGateSchedule(scenario);
+  const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([0, selectedHour, SIMULATION_HOURS]);
-  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 6) rowIndexes.add(hour);
+  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    if (mode === "all" || (mode === "snapshots" && hour % 6 === 0) || (mode === "open" && (point.issuerOpen || point.bankOpen || point.payoutOpen))) {
+      rowIndexes.add(hour);
+    }
+  }
   const fragment = document.createDocumentFragment();
   [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
     const point = schedule.hours[hour];
@@ -2597,6 +2612,11 @@ document.querySelector("#redo-scenario").addEventListener("click",()=>{
 scenarioHistory=createScenarioHistory(scenario);renderHistory();
 
 document.querySelector("#table-density").addEventListener("change",renderTable);
+document.querySelector("#gantt-density").addEventListener("change",renderGantt);
+document.querySelector("#export-gantt").addEventListener("click",()=>{
+  downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
+  setMessage("Gantt SVG downloaded. It is a synthetic operating calendar, not a live market chart.");
+});
 document.querySelector("#jump-peak").addEventListener("click",()=>{
   selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
 });

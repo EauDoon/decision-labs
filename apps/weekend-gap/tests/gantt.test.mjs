@@ -48,9 +48,14 @@ test("Gantt SVG is deterministic, light-background, and marks the selected hour"
 test("Gantt markup includes a table fallback and print styles", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="gate-gantt"/);
   assert.match(html, /id="gantt-table"/);
   assert.match(html, /Text equivalent of the Gantt/);
+  assert.match(html, /id="gantt-density"/);
+  assert.match(html, /id="export-gantt"/);
   assert.match(css, /@media print/);
   assert.match(css, /\.gantt-svg/);
+  assert.match(app, /weekend-gap-gantt\.svg/);
+  assert.match(app, /gantt-density/);
 });

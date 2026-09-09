@@ -72,6 +72,8 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   await ui.edit("table-density", "all", "change");
   assert.equal(ui.nodes.get("timeline-table").children.length, 73);
   assert.equal(ui.nodes.get("timeline-table").children[0].children.length, 9);
+  await ui.edit("gantt-density", "all", "change");
+  assert.equal(ui.nodes.get("gantt-table").children.length, 73);
   await ui.edit("timeline-range", 65);
   const persisted = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
   assert.equal(persisted.current.name, "Market Stress"); assert.equal(persisted.selectedHour, 65);

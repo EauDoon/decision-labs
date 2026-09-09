@@ -426,10 +426,19 @@ SOFTWARE.
             <h2 id="gantt-title">72-hour gate Gantt</h2>
             <p>Issuer, bank and payout rows show open (green) versus closed (red) for each hour. FX shows weekday depth (blue) versus weekend thinning (gold). The solid vertical line is the timeline slider hour. The dashed green marker is the first payout window.</p>
             <p id="gantt-payout-note"></p>
+            <div class="planning-actions">
+              <label for="gantt-density">Show Gantt rows</label>
+              <select id="gantt-density">
+                <option value="snapshots">Every six hours</option>
+                <option value="all">Every hour</option>
+                <option value="open">Hours with any gate open</option>
+              </select>
+              <button id="export-gantt" type="button">Download Gantt SVG</button>
+            </div>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
               <table>
-                <caption>Text equivalent of the Gantt. Every six hours plus the selected hour. FX weekday means the weekend multiplier is not applied.</caption>
+                <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
                 <thead><tr><th scope="col">Time</th><th scope="col">Issuer</th><th scope="col">Bank</th><th scope="col">Payout</th><th scope="col">FX</th></tr></thead>
                 <tbody id="gantt-table"></tbody>
               </table>

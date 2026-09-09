@@ -304,8 +304,14 @@ function renderTable() {
 function renderGantt() {
   document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour);
   const schedule = buildGateSchedule(scenario);
+  const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([0, selectedHour, SIMULATION_HOURS]);
-  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 6) rowIndexes.add(hour);
+  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    if (mode === "all" || (mode === "snapshots" && hour % 6 === 0) || (mode === "open" && (point.issuerOpen || point.bankOpen || point.payoutOpen))) {
+      rowIndexes.add(hour);
+    }
+  }
   const fragment = document.createDocumentFragment();
   [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
     const point = schedule.hours[hour];
@@ -910,6 +916,11 @@ document.querySelector("#redo-scenario").addEventListener("click",()=>{
 scenarioHistory=createScenarioHistory(scenario);renderHistory();
 
 document.querySelector("#table-density").addEventListener("change",renderTable);
+document.querySelector("#gantt-density").addEventListener("change",renderGantt);
+document.querySelector("#export-gantt").addEventListener("click",()=>{
+  downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
+  setMessage("Gantt SVG downloaded. It is a synthetic operating calendar, not a live market chart.");
+});
 document.querySelector("#jump-peak").addEventListener("click",()=>{
   selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
 });
