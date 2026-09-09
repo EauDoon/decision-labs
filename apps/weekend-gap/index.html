@@ -487,6 +487,7 @@ SOFTWARE.
             <h2 id="gantt-title" tabindex="-1">72-hour gate Gantt</h2>
             <p>Issuer, bank and payout rows show open (solid) versus closed (hatched) for each hour. Color is extra; the hatch marks closed hours. FX shows weekday depth (solid) versus weekend thinning (hatched). The solid vertical line is the timeline slider hour. The dashed marker is the first payout window. A table follows.</p>
             <p id="gantt-payout-note"></p>
+            <p id="gantt-filter-note" role="status"></p>
             <div class="planning-actions">
               <label for="gantt-density">Show Gantt rows</label>
               <select id="gantt-density">
@@ -494,6 +495,10 @@ SOFTWARE.
                 <option value="all">Every hour</option>
                 <option value="open">Hours with any gate open</option>
               </select>
+              <label class="checkbox-label" for="gantt-closed-only">
+                <input id="gantt-closed-only" type="checkbox">
+                Show only hours closed on at least one gate
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>

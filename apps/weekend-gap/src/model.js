@@ -1022,10 +1022,17 @@ export function firstClosedGanttHour(input) {
   return closedGate ? closedGate.hour : null;
 }
 
+/** True when issuer, bank or payout is closed, or FX is weekend-thinned. */
+export function ganttHourClosedOnAnyGate(point) {
+  if (!point || typeof point !== "object") return false;
+  return !point.issuerOpen || !point.bankOpen || !point.payoutOpen || !point.fxWeekday;
+}
+
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
-export function buildGateGanttSvg(input, selectedHour = 0) {
+export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const schedule = buildGateSchedule(input);
   const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const closedOnly = options.closedOnly === true;
   const width = 720;
   const rowHeight = 28;
   const labelWidth = 88;
@@ -1044,6 +1051,7 @@ export function buildGateGanttSvg(input, selectedHour = 0) {
   rows.forEach((row, rowIndex) => {
     const y = top + rowIndex * rowHeight;
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+      if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[1](hour);
       const x = labelWidth + hour * hourWidth;
       cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${ganttCellFill(open, row[2], "wg-gantt", row[3])}" />`;

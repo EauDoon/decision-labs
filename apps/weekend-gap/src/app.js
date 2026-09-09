@@ -27,6 +27,7 @@ import {
   ganttToCSV,
   selectedGanttHourToMarkdown,
   firstClosedGanttHour,
+  ganttHourClosedOnAnyGate,
   buildGateSchedule,
   compareGateSchedules,
   buildComparisonGanttSvg,
@@ -354,12 +355,21 @@ function renderTable() {
 }
 
 function renderGantt() {
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour);
+  const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
-  const rowIndexes = new Set([0, selectedHour, SIMULATION_HOURS]);
+  const rowIndexes = new Set([selectedHour]);
+  if (!closedOnly) {
+    rowIndexes.add(0);
+    rowIndexes.add(SIMULATION_HOURS);
+  }
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
     const point = schedule.hours[hour];
+    if (closedOnly) {
+      if (ganttHourClosedOnAnyGate(point)) rowIndexes.add(hour);
+      continue;
+    }
     if (mode === "all" || (mode === "snapshots" && hour % 6 === 0) || (mode === "open" && (point.issuerOpen || point.bankOpen || point.payoutOpen))) {
       rowIndexes.add(hour);
     }
@@ -387,6 +397,13 @@ function renderGantt() {
   document.querySelector("#gantt-payout-note").textContent = firstOpen === null
     ? "No first payout window was found in the modeled search period."
     : `First payout window: ${formatTime(firstOpen)} (hour ${firstOpen}). The dashed green marker on the Gantt uses this hour.`;
+  const filterNote = document.querySelector("#gantt-filter-note");
+  if (filterNote) {
+    const closedCount = schedule.hours.filter((point) => point.hour < SIMULATION_HOURS && ganttHourClosedOnAnyGate(point)).length;
+    filterNote.textContent = closedOnly
+      ? `Showing hours closed on at least one gate (${closedCount} of ${SIMULATION_HOURS} chart hours). The model still contains ${SIMULATION_HOURS} hours. This table and chart are a local drawing.`
+      : `All ${SIMULATION_HOURS} model hours remain available. Use the closed-hours filter to hide fully open hours in this local drawing.`;
+  }
 }
 
 function gateCellLabel(open, fx = false) {
@@ -1157,6 +1174,9 @@ document.querySelector("#table-density").addEventListener("change",renderTable);
 document.querySelector("#gantt-density").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
+});
+document.querySelector("#gantt-closed-only").addEventListener("change",()=>{
+  renderGantt();
 });
 document.querySelector("#selected-chart").addEventListener("change",()=>{
   const view = document.querySelector("#selected-chart").value;
