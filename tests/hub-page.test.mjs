@@ -218,6 +218,18 @@ test('copy catalog address control exists and stays hidden off http', () => {
   assert.match(html, /The control stays hidden if you open the page from a file/);
 });
 
+test('keys 1-4 remember last launched workbench in this browser', () => {
+  assert.match(html, /decision-labs\.last-workbench/);
+  assert.match(html, /localStorage\.setItem\(LAST_WORKBENCH_KEY, event\.key\)/);
+  assert.match(html, /localStorage\.getItem\(LAST_WORKBENCH_KEY\)/);
+  assert.match(html, /lastWorkbench === '1' \|\| lastWorkbench === '2' \|\| lastWorkbench === '3' \|\| lastWorkbench === '4'/);
+  assert.match(html, /Last launched in this browser/);
+  assert.match(html, /not a cloud recency/);
+  assert.match(html, /Missing or unreadable storage shows nothing/);
+  assert.equal([...html.matchAll(/class="last-launched" data-last-workbench="[1-4]" hidden/g)].length, 4);
+  assert.match(html, /window\.location\.assign\(link\.href\)/);
+});
+
 test('load focuses skip-link hash targets', () => {
   assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'\]/);
   assert.match(html, /hashTargets\.includes\(location\.hash\)/);
