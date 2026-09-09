@@ -23,6 +23,7 @@ import {
   formatDiscussionWorksheet,
   groupContributions,
   lockPackage,
+  sortPackageGapRows,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -902,6 +903,31 @@ test("package gap explorer names cheaper misses and the next packages over thres
   assert.ok(over.nextOverThreshold.length >= 1);
   assert.ok(over.nextOverThreshold.every((row) => row.meetsThreshold && row.approvalGap <= 0));
   assert.ok(over.nextOverThreshold.every((row) => row.costVsRecommended > 0 || row.changedClauseCount > 0));
+});
+
+test("near-miss rows can be sorted by approval gap or change cost without mutating the list", () => {
+  const input = proposal({
+    threshold: 90,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 40 }),
+      option("cheap", false, { g: 50 }, 1),
+      option("near", false, { g: 80 }, 5),
+    ] }],
+  });
+  const result = findSmallestAgreement(input);
+  const gaps = explorePackageGaps(input, result);
+  const snapshot = JSON.stringify(gaps.closestMisses);
+  const byGap = sortPackageGapRows(gaps.closestMisses, "approval_gap");
+  const byCost = sortPackageGapRows(gaps.closestMisses, "change_cost");
+  assert.equal(byGap.status, "ok");
+  assert.equal(byCost.status, "ok");
+  assert.equal(byGap.rows[0].changeCost, 5);
+  assert.equal(byGap.rows[0].approval, 80);
+  assert.equal(byCost.rows[0].changeCost, 0);
+  assert.ok(byCost.rows.findIndex((row) => row.changeCost === 1) < byCost.rows.findIndex((row) => row.changeCost === 5));
+  assert.equal(JSON.stringify(gaps.closestMisses), snapshot);
+  assert.equal(sortPackageGapRows(gaps.closestMisses, "fairness").status, "invalid");
+  assert.equal(sortPackageGapRows(null, "approval_gap").status, "invalid");
 });
 
 test("veto groups require threshold support and leave old JSON valid without the field", () => {

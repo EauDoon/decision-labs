@@ -303,6 +303,30 @@ export function compareNearMisses(threshold, a, b) {
   return compareAgreements(a, b);
 }
 
+/**
+ * Reorder described near-miss rows for display.
+ * Does not change which combinations the solver retained.
+ */
+export function sortPackageGapRows(rows, sortBy = "approval_gap") {
+  if (!Array.isArray(rows)) return { status: "invalid", errors: ["Near-miss rows must be an array."] };
+  if (sortBy !== "approval_gap" && sortBy !== "change_cost") {
+    return { status: "invalid", errors: ["sortBy must be approval_gap or change_cost."] };
+  }
+  const ordered = [...rows].sort((left, right) => {
+    if (sortBy === "change_cost") {
+      if (Math.abs((left.changeCost ?? 0) - (right.changeCost ?? 0)) > EPSILON) return left.changeCost - right.changeCost;
+      if (Math.abs((left.approvalGap ?? 0) - (right.approvalGap ?? 0)) > EPSILON) return left.approvalGap - right.approvalGap;
+    } else {
+      if (Math.abs((left.approvalGap ?? 0) - (right.approvalGap ?? 0)) > EPSILON) return left.approvalGap - right.approvalGap;
+      if (Math.abs((left.changeCost ?? 0) - (right.changeCost ?? 0)) > EPSILON) return left.changeCost - right.changeCost;
+    }
+    if ((left.changedClauseCount ?? 0) !== (right.changedClauseCount ?? 0)) return left.changedClauseCount - right.changedClauseCount;
+    if (Math.abs((left.approval ?? 0) - (right.approval ?? 0)) > EPSILON) return right.approval - left.approval;
+    return compareText(String(left.labels ?? ""), String(right.labels ?? ""));
+  });
+  return { status: "ok", sortBy, rows: ordered };
+}
+
 function samePackage(a, b) {
   if (!a || !b || a.options.length !== b.options.length) return false;
   return a.options.every((option, index) => option.id === b.options[index].id);

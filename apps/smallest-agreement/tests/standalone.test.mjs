@@ -43,6 +43,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
+  assert.match(html, /id="near-miss-sort"/u);
   assert.match(html, /Lock this package/u);
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /id="clause-filter"/u);
@@ -119,6 +120,11 @@ async function savedWorkbench(storage, hash = "") {
     shares: () => element("#weight-shares").innerHTML,
     sideBySide: () => element("#side-by-side").innerHTML,
     nearMisses: () => element("#near-misses-list").innerHTML,
+    sortNearMisses: (value) => {
+      const target = element("#near-miss-sort");
+      target.value = value;
+      target.events.get("change")({ target });
+    },
     coachHidden: () => element("#coach-overlay").hidden,
     clickAction: (action, dataset = {}) => {
       documentEvents.get("click")({
@@ -567,4 +573,27 @@ test("locking a package applies every clause lock in one undoable step", async (
   app.clickAction("lock-package", { optionIds: "missing" });
   assert.match(app.message(), /Could not lock that package/u);
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.every((clause) => clause.lockedOptionId === undefined), true);
+});
+
+test("near-miss explorer can sort closest misses by cost or approval gap", async () => {
+  const key = "smallest-agreement:proposal:v1";
+  const draft = {
+    title: "Near miss sort workshop",
+    threshold: 90,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { g: 40 } },
+      { id: "cheap", label: "Cheap miss", original: false, changeCost: 1, support: { g: 50 } },
+      { id: "near", label: "Near miss", original: false, changeCost: 5, support: { g: 80 } },
+    ] }],
+  };
+  const app = await savedWorkbench(new Map([[key, JSON.stringify(draft)]]));
+  const byGap = app.nearMisses();
+  assert.match(byGap, /Closest misses/u);
+  assert.ok(byGap.indexOf("Near miss") < byGap.indexOf("Cheap miss"));
+  app.sortNearMisses("change_cost");
+  const byCost = app.nearMisses();
+  assert.ok(byCost.indexOf("Cheap miss") < byCost.indexOf("Near miss"));
+  app.sortNearMisses("approval_gap");
+  assert.ok(app.nearMisses().indexOf("Near miss") < app.nearMisses().indexOf("Cheap miss"));
 });

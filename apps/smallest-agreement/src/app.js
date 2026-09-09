@@ -9,6 +9,7 @@ import {
   explorePackageGaps,
   evaluatePackage,
   lockPackage,
+  sortPackageGapRows,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
   previewLockedOption,
@@ -193,6 +194,7 @@ let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
 let lockPreview = null;
 let clauseFilter = "";
+let nearMissSort = "approval_gap";
 let cachedResultKey;
 let cachedResult;
 const savedResults = new WeakMap();
@@ -750,24 +752,31 @@ function packageGapRow(row, kind) {
   return `<div class="miss-item"><span class="miss-score">${formatPercent(row.approval)}</span><span>${escapeHtml(row.labels)}<br><small>${escapeHtml(kind)} ${approvalNote} ${costNote}</small>${lockPackageButton(row.optionIds, "Lock this package")}</span></div>`;
 }
 
+function orderedGapRows(rows) {
+  const sorted = sortPackageGapRows(rows, nearMissSort);
+  return sorted.status === "ok" ? sorted.rows : rows;
+}
+
 function renderNearMissExplorer(result) {
   const gaps = explorePackageGaps(state.proposal, result);
   if (gaps.status !== "ok") {
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near-miss comparison is unavailable for this search result.</p>';
     return;
   }
+  const cheaperMisses = orderedGapRows(gaps.cheaperMisses);
+  const closestMisses = orderedGapRows(gaps.closestMisses);
   const parts = [];
-  if (gaps.cheaperMisses.length) {
+  if (cheaperMisses.length) {
     parts.push("<h4>Cheaper packages that miss the threshold</h4>");
     parts.push("<p>These combinations cost less than the recommended package and remain below the threshold. They are not adoptable under the current rules.</p>");
-    parts.push(gaps.cheaperMisses.map((row) => packageGapRow(row, "Cheaper miss.")).join(""));
+    parts.push(cheaperMisses.map((row) => packageGapRow(row, "Cheaper miss.")).join(""));
   } else {
     parts.push('<p class="empty-state">No cheaper constraint-compliant package in the near-miss list falls below the threshold.</p>');
   }
-  if (gaps.closestMisses.length) {
+  if (closestMisses.length) {
     parts.push("<h4>Closest misses</h4>");
-    parts.push("<p>Ranked by smallest approval gap among constraint-compliant combinations that miss the threshold.</p>");
-    parts.push(gaps.closestMisses.map((row) => packageGapRow(row, "Closest miss.")).join(""));
+    parts.push("<p>Ranked by the selected sort among constraint-compliant combinations that miss the threshold. Sorting changes display order only; the solver still keeps the closest misses.</p>");
+    parts.push(closestMisses.map((row) => packageGapRow(row, "Closest miss.")).join(""));
   }
   if (gaps.nextOverThreshold.length) {
     parts.push("<h4>Next packages over the threshold</h4>");
@@ -918,6 +927,10 @@ document.addEventListener("input", (event) => {
 $("#clause-filter").addEventListener("input", (event) => {
   clauseFilter = event.target.value;
   renderClauses();
+});
+$("#near-miss-sort").addEventListener("change", (event) => {
+  nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
+  renderNearMissExplorer(currentResult());
 });
 
 $("#proposal-title").addEventListener("input", (event) => {

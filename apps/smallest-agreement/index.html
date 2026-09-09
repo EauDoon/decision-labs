@@ -204,6 +204,12 @@ SOFTWARE.
           <section class="near-misses" aria-labelledby="near-misses-heading">
             <div class="section-heading"><div><p class="eyebrow">Alternatives</p><h3 id="near-misses-heading">Near-miss explorer</h3></div></div>
             <p>Near misses meet every configured constraint but miss the overall threshold. Cheaper misses cost less than the recommended package. Next packages over the threshold are later passing combinations, not a fairness ranking. Gaps are in approval points and change cost only. Lock this package applies every clause lock in one undoable step.</p>
+            <label class="near-miss-sort-label" for="near-miss-sort">Sort near misses
+              <select id="near-miss-sort">
+                <option value="approval_gap">By approval gap</option>
+                <option value="change_cost">By change cost</option>
+              </select>
+            </label>
             <div id="near-misses-list"></div>
           </section>
         </section>
