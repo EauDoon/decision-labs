@@ -1,4 +1,6 @@
 import {
+  AGREEMENT_REVIEW_TOOLS,
+  analyzeAgreementReview,
   MAX_CLAUSES,
   MAX_COMBINATIONS,
   MAX_GROUPS,
@@ -469,6 +471,7 @@ function formatMargin(value) {
 }
 
 function render() {
+  clearAgreementReview();
   const proposal = state.proposal;
   $("[data-action=\"add-group\"]").disabled = proposal.groups.length >= MAX_GROUPS;
   $("[data-action=\"add-clause\"]").disabled = proposal.clauses.length >= MAX_CLAUSES;
@@ -2010,3 +2013,20 @@ document.addEventListener("keydown", (event) => {
 clauseDensity = loadClauseDensity();
 render();
 startCoachIfNeeded();
+
+function clearAgreementReview(){const output=document.querySelector('#agreement-review-output');if(output)output.textContent='Run a review for the current valid proposal. Results clear when inputs change.';}
+function showAgreementReview(review) {
+ const output=document.querySelector('#agreement-review-output');output.replaceChildren();
+ const title=document.createElement('h2');title.textContent=review.title;const note=document.createElement('p');note.textContent=review.note;output.append(title,note);
+ const scroll=document.createElement('div');scroll.className='review-scroll';scroll.tabIndex=0;
+ const table=document.createElement('table');const caption=document.createElement('caption');caption.textContent='Declared-input review. Monetary values use '+review.currency+'. Blank cells mean unavailable or unbounded as explained above.';table.append(caption);
+ const head=document.createElement('thead');const headings=document.createElement('tr');for(const label of review.columns){const th=document.createElement('th');th.scope='col';th.textContent=label;headings.append(th);}head.append(headings);table.append(head);
+ const body=document.createElement('tbody');for(const values of review.rows){const row=document.createElement('tr');for(const value of values){const cell=document.createElement('td');cell.textContent=value===null?'':typeof value==='number'?new Intl.NumberFormat('en-US',{maximumSignificantDigits:10}).format(value):value;row.append(cell);}body.append(row);}table.append(body);scroll.append(table);output.append(scroll);
+}
+function initializeAgreementReview(){
+ const select=document.querySelector('#agreement-review-tool');if(!select)return;
+ for(const tool of AGREEMENT_REVIEW_TOOLS){const option=document.createElement('option');option.value=tool.id;option.textContent=tool.title;select.append(option);}
+ select.value='margin';select.addEventListener('change',clearAgreementReview);
+ document.querySelector('#agreement-review-run').addEventListener('click',()=>{try{showAgreementReview(analyzeAgreementReview(state.proposal,select.value));}catch(error){clearAgreementReview();document.querySelector('#agreement-review-output').textContent='Review unavailable. '+error.message;}});
+}
+initializeAgreementReview();

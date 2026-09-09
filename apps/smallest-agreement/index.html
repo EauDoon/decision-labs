@@ -86,6 +86,13 @@ SOFTWARE.
 
     <nav class="workshop-nav" aria-label="Workshop sections"><a href="#workspace">Setup</a><a href="#clauses-heading">Clauses</a><a href="#results-heading">Recommendation</a><a href="#manual-heading">Custom package</a><a href="#comparison-heading">Compare rounds</a></nav>
     <details class="workshop-guide"><summary>Run a useful negotiation round</summary><ol><li>Agree who is represented and how weights, scores, and costs were obtained. Presets contain synthetic assumptions.</li><li>Set an exact threshold, group floors, a cost budget, and any non-negotiable clause choices.</li><li>Save a named snapshot before changing assumptions. Undo restores up to 50 edits within this tab.</li><li>Compare passing packages and inspect who loses support. Try a custom package and test downside support.</li><li>Compare the working draft against an earlier snapshot. Take the changed assumptions back to participants.</li><li>Export JSON for reopening, CSV for all input evidence, and a brief or printed readout for discussion. Print readout includes a discussion worksheet with unmarked option boxes. It is a worksheet, not a recorded vote. Human participants decide next steps.</li></ol><p>Custom choices and support-drop settings are temporary analysis controls. JSON, CSV, and the Markdown brief describe the working proposal and optimized recommendation. Print includes the visible custom comparison, downside result, and discussion worksheet.</p></details>
+    <details class="agreement-review" id="agreement-review">
+      <summary>Review the package before discussion</summary>
+      <p>Choose one question about the recommended package, or the original when no recommendation is available. Review calculations do not edit the proposal.</p>
+      <label for="agreement-review-tool">Review question</label>
+      <div class="review-controls"><select id="agreement-review-tool"></select><button id="agreement-review-run" type="button">Run review</button></div>
+      <div id="agreement-review-output" aria-live="polite"></div>
+    </details>
     <main id="workspace" class="workspace">
       <aside class="control-panel" aria-label="Proposal controls">
         <div class="margin-note"><span>01</span> Shape the room before you ask it to decide.</div>

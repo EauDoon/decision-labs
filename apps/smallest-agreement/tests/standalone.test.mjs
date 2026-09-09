@@ -117,6 +117,9 @@ async function savedWorkbench(storage, hash = "") {
         innerHTML: "",
         className: "",
         clientWidth: 400,
+        append() {},
+        replaceChildren() {},
+        setAttribute() {},
         events: new Map(),
         addEventListener(name, callback) { this.events.set(name, callback); },
         getContext: () => canvasContext,
@@ -138,6 +141,7 @@ async function savedWorkbench(storage, hash = "") {
   const context = vm.createContext({ console, TextDecoder, Uint8Array, atob,
     document: {
       querySelector: element,
+      createElement: (tag) => element(Symbol(tag)),
       querySelectorAll: () => [],
       addEventListener: (name, callback) => documentEvents.set(name, callback),
     },

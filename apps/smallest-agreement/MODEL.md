@@ -145,3 +145,7 @@ Use the result to focus a human conversation. Establish process rules, evidence 
 - `resetGroupSupport(proposal, groupId)` copies the proposal and blanks that group's support scores. The copy is invalid until those cells are filled. Unknown group ids fail closed. It does not mutate the input.
 
 Snapshot libraries hold at most 20 canonical proposals and reject stored payloads over 5,000,000 characters. Single-draft JSON import remains bounded at 250 KB. Undo keeps at most 50 prior draft states in memory; undo history, custom choices, near-miss sort, and downside settings are not part of the proposal schema. Optional clause notes are part of the proposal schema and are ignored by search.
+
+### Approval margin
+
+The optional package review can separate aggregate approval margin from non-approval constraints. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.

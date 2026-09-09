@@ -213,6 +213,16 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
 .ballot-clause ul { list-style: none; padding: 0; }
 .ballot-clause li { margin: .4rem 0; line-height: 1.4; }
 .ballot-box { display: inline-block; width: .85rem; height: .85rem; margin-right: .5rem; border: 1px solid #19352d; vertical-align: -1px; }
+
+.agreement-review { margin: 1rem auto; padding: 1rem; max-width: 1400px; border: 1px solid #888; border-radius: .5rem; background: var(--panel, #fff); }
+.agreement-review summary { cursor: pointer; font-weight: 700; min-height: 44px; }
+.review-controls { display: flex; gap: .7rem; flex-wrap: wrap; margin: .8rem 0; }
+.review-controls select { min-width: 0; max-width: 100%; flex: 1 1 240px; }
+.review-controls button, .review-controls select { min-height: 44px; }
+.review-scroll { max-width: 100%; overflow: auto; max-height: 28rem; }
+.review-scroll table { min-width: 40rem; width: 100%; }
+.review-scroll th, .review-scroll td { padding: .7rem; text-align: left; }
+@media print { .agreement-review { display: none; } }
 </style>
   </head>
   <body>
@@ -271,6 +281,13 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
 
     <nav class="workshop-nav" aria-label="Workshop sections"><a href="#workspace">Setup</a><a href="#clauses-heading">Clauses</a><a href="#results-heading">Recommendation</a><a href="#manual-heading">Custom package</a><a href="#comparison-heading">Compare rounds</a></nav>
     <details class="workshop-guide"><summary>Run a useful negotiation round</summary><ol><li>Agree who is represented and how weights, scores, and costs were obtained. Presets contain synthetic assumptions.</li><li>Set an exact threshold, group floors, a cost budget, and any non-negotiable clause choices.</li><li>Save a named snapshot before changing assumptions. Undo restores up to 50 edits within this tab.</li><li>Compare passing packages and inspect who loses support. Try a custom package and test downside support.</li><li>Compare the working draft against an earlier snapshot. Take the changed assumptions back to participants.</li><li>Export JSON for reopening, CSV for all input evidence, and a brief or printed readout for discussion. Print readout includes a discussion worksheet with unmarked option boxes. It is a worksheet, not a recorded vote. Human participants decide next steps.</li></ol><p>Custom choices and support-drop settings are temporary analysis controls. JSON, CSV, and the Markdown brief describe the working proposal and optimized recommendation. Print includes the visible custom comparison, downside result, and discussion worksheet.</p></details>
+    <details class="agreement-review" id="agreement-review">
+      <summary>Review the package before discussion</summary>
+      <p>Choose one question about the recommended package, or the original when no recommendation is available. Review calculations do not edit the proposal.</p>
+      <label for="agreement-review-tool">Review question</label>
+      <div class="review-controls"><select id="agreement-review-tool"></select><button id="agreement-review-run" type="button">Run review</button></div>
+      <div id="agreement-review-output" aria-live="polite"></div>
+    </details>
     <main id="workspace" class="workspace">
       <aside class="control-panel" aria-label="Proposal controls">
         <div class="margin-note"><span>01</span> Shape the room before you ask it to decide.</div>
@@ -2578,6 +2595,26 @@ function parseClauseOptionsCsv(csvText, proposal) {
   return { status: "ok", proposal: canonicalProposal(next), importedClauses: next.clauses.length, importedOptions: next.clauses.reduce((sum, clause) => sum + clause.options.length, 0) };
 }
 
+const AGREEMENT_REVIEW_TOOLS=Object.freeze([
+ {id:'margin',title:'Approval margin'},
+// SA_REVIEW_TOOLS
+]);
+function analyzeAgreementReview(rawProposal,tool){
+ const proposal=canonicalProposal(rawProposal);const selectedTool=AGREEMENT_REVIEW_TOOLS.find(entry=>entry.id===tool);if(!selectedTool)throw new TypeError('Unknown agreement review.');
+ const solved=findSmallestAgreement(proposal);const selected=solved.agreement??selectionSummary(proposal,getOriginalOptions(proposal));
+ const context=solved.agreement?'Recommended package':'Original package ('+solved.status+')';
+ const report=(columns,rows,note)=>({tool,title:selectedTool.title,currency:'declared cost units',columns,rows,note:note+' Context: '+context+'.'});
+ switch(tool){
+ case 'margin':{
+
+ return report(['Package','Approval %','Threshold %','Margin points','Change cost','Other constraints'],[[context,selected.approval,proposal.threshold,selected.approval-proposal.threshold,selected.changeCost,selected.constraints.met?'Met':'Not met']],'A positive aggregate margin alone does not pass floors, vetoes, locks or budget. Support scores and weights are declared inputs, not measured votes.');
+
+ }
+// SA_REVIEW_CASES
+ default:throw new TypeError('Unavailable agreement review.');
+ }
+}
+
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const COACH_KEY = "smallest-agreement:coach:v1";
@@ -3003,6 +3040,7 @@ function formatMargin(value) {
 }
 
 function render() {
+  clearAgreementReview();
   const proposal = state.proposal;
   $("[data-action=\"add-group\"]").disabled = proposal.groups.length >= MAX_GROUPS;
   $("[data-action=\"add-clause\"]").disabled = proposal.clauses.length >= MAX_CLAUSES;
@@ -4544,6 +4582,23 @@ document.addEventListener("keydown", (event) => {
 clauseDensity = loadClauseDensity();
 render();
 startCoachIfNeeded();
+
+function clearAgreementReview(){const output=document.querySelector('#agreement-review-output');if(output)output.textContent='Run a review for the current valid proposal. Results clear when inputs change.';}
+function showAgreementReview(review) {
+ const output=document.querySelector('#agreement-review-output');output.replaceChildren();
+ const title=document.createElement('h2');title.textContent=review.title;const note=document.createElement('p');note.textContent=review.note;output.append(title,note);
+ const scroll=document.createElement('div');scroll.className='review-scroll';scroll.tabIndex=0;
+ const table=document.createElement('table');const caption=document.createElement('caption');caption.textContent='Declared-input review. Monetary values use '+review.currency+'. Blank cells mean unavailable or unbounded as explained above.';table.append(caption);
+ const head=document.createElement('thead');const headings=document.createElement('tr');for(const label of review.columns){const th=document.createElement('th');th.scope='col';th.textContent=label;headings.append(th);}head.append(headings);table.append(head);
+ const body=document.createElement('tbody');for(const values of review.rows){const row=document.createElement('tr');for(const value of values){const cell=document.createElement('td');cell.textContent=value===null?'':typeof value==='number'?new Intl.NumberFormat('en-US',{maximumSignificantDigits:10}).format(value):value;row.append(cell);}body.append(row);}table.append(body);scroll.append(table);output.append(scroll);
+}
+function initializeAgreementReview(){
+ const select=document.querySelector('#agreement-review-tool');if(!select)return;
+ for(const tool of AGREEMENT_REVIEW_TOOLS){const option=document.createElement('option');option.value=tool.id;option.textContent=tool.title;select.append(option);}
+ select.value='margin';select.addEventListener('change',clearAgreementReview);
+ document.querySelector('#agreement-review-run').addEventListener('click',()=>{try{showAgreementReview(analyzeAgreementReview(state.proposal,select.value));}catch(error){clearAgreementReview();document.querySelector('#agreement-review-output').textContent='Review unavailable. '+error.message;}});
+}
+initializeAgreementReview();
 </script>
   </body>
 </html>

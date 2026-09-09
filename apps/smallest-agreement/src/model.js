@@ -2082,3 +2082,23 @@ export function parseClauseOptionsCsv(csvText, proposal) {
   if (!imported.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", imported.errors[0])] };
   return { status: "ok", proposal: canonicalProposal(next), importedClauses: next.clauses.length, importedOptions: next.clauses.reduce((sum, clause) => sum + clause.options.length, 0) };
 }
+
+export const AGREEMENT_REVIEW_TOOLS=Object.freeze([
+ {id:'margin',title:'Approval margin'},
+// SA_REVIEW_TOOLS
+]);
+export function analyzeAgreementReview(rawProposal,tool){
+ const proposal=canonicalProposal(rawProposal);const selectedTool=AGREEMENT_REVIEW_TOOLS.find(entry=>entry.id===tool);if(!selectedTool)throw new TypeError('Unknown agreement review.');
+ const solved=findSmallestAgreement(proposal);const selected=solved.agreement??selectionSummary(proposal,getOriginalOptions(proposal));
+ const context=solved.agreement?'Recommended package':'Original package ('+solved.status+')';
+ const report=(columns,rows,note)=>({tool,title:selectedTool.title,currency:'declared cost units',columns,rows,note:note+' Context: '+context+'.'});
+ switch(tool){
+ case 'margin':{
+
+ return report(['Package','Approval %','Threshold %','Margin points','Change cost','Other constraints'],[[context,selected.approval,proposal.threshold,selected.approval-proposal.threshold,selected.changeCost,selected.constraints.met?'Met':'Not met']],'A positive aggregate margin alone does not pass floors, vetoes, locks or budget. Support scores and weights are declared inputs, not measured votes.');
+
+ }
+// SA_REVIEW_CASES
+ default:throw new TypeError('Unavailable agreement review.');
+ }
+}
