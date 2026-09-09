@@ -83,6 +83,17 @@ export const PRESETS = Object.freeze({
     weekendFxMultiplier: 3,
     saturdayHoliday: true,
     mondayHoliday: true
+  }),
+  compressedFridayClose: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Compressed Friday close (synthetic)",
+    demandProfile: "fridayBurst",
+    issuerOpenEndHour: 16,
+    bankOpenEndHour: 16,
+    payoutOpenEndHour: 16,
+    reserveCashAud: 5800000,
+    redemptionDemandAud: 1800000,
+    weekendFxMultiplier: 3.2
   })
 });
 
