@@ -20,11 +20,20 @@ import {
   parseSupportMatrixCsv,
   parseParticipantGroupsCsv,
   formatParticipantGroupsCsv,
+  parseClauseOptionsCsv,
+  formatClauseOptionsCsv,
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
+  formatVetoBlockersMarkdown,
+  compareWorkshopFiles,
+  formatWorkspaceJson,
+  parseWorkspaceJson,
+  formatLocksJson,
+  parseLocksJson,
+  resetGroupSupport,
   groupContributions,
   lockPackage,
   clearAllLocks,
@@ -1193,6 +1202,58 @@ test("participant groups CSV replaces groups with named errors for unknown colum
   assert.equal(parseParticipantGroupsCsv("   ", input).errors[0].code, "empty_csv");
 });
 
+test("clause options CSV replaces clauses with named errors and keeps matching support scores", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2 }],
+    clauses: [{ id: "one", title: "One", lockedOptionId: "alternative", note: "Ask first", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const csv = formatClauseOptionsCsv(input);
+  assert.equal(csv.status, "ok");
+  const parsed = parseClauseOptionsCsv(csv.csv, input);
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.importedClauses, 1);
+  assert.equal(parsed.importedOptions, 3);
+  assert.equal(parsed.proposal.clauses[0].title, "One");
+  assert.equal(parsed.proposal.clauses[0].lockedOptionId, "alternative");
+  assert.equal(parsed.proposal.clauses[0].note, "Ask first");
+  assert.equal(parsed.proposal.clauses[0].options[0].support.a, 40);
+  assert.equal(JSON.stringify(input), before);
+
+  const renamed = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost,note,locked\r\none,original,Hours,Keep close,yes,0,Check lighting,no\r\none,alternative,Hours,Seasonal,no,2,,yes\r\none,other,Hours,Pilot,no,3,,no\r\n", input);
+  assert.equal(renamed.status, "ok");
+  assert.equal(renamed.proposal.clauses[0].title, "Hours");
+  assert.equal(renamed.proposal.clauses[0].options[1].label, "Seasonal");
+  assert.equal(renamed.proposal.clauses[0].options[1].changeCost, 2);
+  assert.equal(renamed.proposal.clauses[0].lockedOptionId, "alternative");
+  assert.equal(renamed.proposal.clauses[0].options[0].support.b, 50);
+  assert.equal(renamed.proposal.clauses[0].note, "Check lighting");
+
+  const fresh = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\ntwo,keep,Path,Keep lamps,yes,0\r\ntwo,warm,Path,Warm lights,no,3\r\ntwo,motion,Path,Motion lights,no,4\r\n", input);
+  assert.equal(fresh.status, "ok");
+  assert.equal(fresh.proposal.clauses[0].id, "two");
+  assert.equal(fresh.proposal.clauses[0].options[1].support.a, 50);
+  assert.equal(fresh.proposal.groups.length, 2);
+
+  const unknown = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost,hidden\r\none,original,One,original,yes,0,x\r\n", input);
+  assert.equal(unknown.status, "invalid");
+  assert.equal(unknown.errors[0].code, "unknown_column");
+  const formula = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\none,original,=SUM(1),Keep,yes,0\r\none,alternative,One,Alt,no,1\r\none,other,One,Other,no,2\r\n", input);
+  assert.equal(formula.errors[0].code, "formula_cell");
+  const missingOriginal = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\none,original,One,Keep,no,0\r\none,alternative,One,Alt,no,1\r\none,other,One,Other,no,2\r\n", input);
+  assert.equal(missingOriginal.errors[0].code, "missing_original");
+  const originalCost = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\none,original,One,Keep,yes,1\r\none,alternative,One,Alt,no,1\r\none,other,One,Other,no,2\r\n", input);
+  assert.equal(originalCost.errors[0].code, "invalid_cost");
+  const few = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\none,original,One,Keep,yes,0\r\none,alternative,One,Alt,no,1\r\n", input);
+  assert.equal(few.errors[0].code, "too_few_options");
+  assert.equal(parseClauseOptionsCsv("   ", input).errors[0].code, "empty_csv");
+  assert.equal(formatClauseOptionsCsv({ title: "" }).status, "invalid");
+});
+
 test("locking an option for preview re-solves remaining clauses without mutating the draft", () => {
   const input = proposal({
     threshold: 70,
@@ -1362,6 +1423,154 @@ test("recommended package Markdown copies selected options without claiming legi
     ] }],
   });
   assert.equal(formatRecommendedPackageMarkdown(infeasible).status, "unavailable");
+});
+
+test("veto-blocker Markdown lists unmet veto constraints without claiming legitimacy", () => {
+  const input = proposal({
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("original", true, { majority: 90, minority: 10 }),
+      option("mid", false, { majority: 88, minority: 20 }, 1),
+      option("other", false, { majority: 85, minority: 30 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const listed = formatVetoBlockersMarkdown(input, [input.clauses[0].options[0]]);
+  assert.equal(listed.status, "ok");
+  assert.match(listed.text, /^# Veto constraint list\n/u);
+  assert.match(listed.text, /numerical constraint list, not a legal veto or a claim of legitimacy/u);
+  assert.match(listed.text, /Minority: 10\.0% against required 80\.0%/u);
+  assert.doesNotMatch(listed.text, /[\u2014\u2013]/u);
+  assert.equal(listed.groups.length, 1);
+  assert.equal(JSON.stringify(input), before);
+  const clear = proposal({
+    groups: [{ id: "g", name: "Group", weight: 1, veto: true }],
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("original", true, { g: 90 }),
+      option("alt", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const met = formatVetoBlockersMarkdown(clear, [clear.clauses[0].options[0]]);
+  assert.match(met.text, /Every marked veto group meets its required average/u);
+  assert.equal(formatVetoBlockersMarkdown({ title: "" }).status, "invalid");
+  assert.equal(formatVetoBlockersMarkdown(input, null).status, "unavailable");
+});
+
+test("workshop file compare lists identifier mismatches instead of inventing zeros", () => {
+  const left = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const right = proposal({
+    groups: [{ id: "a", name: "A", weight: 3 }, { id: "c", name: "C", weight: 1 }],
+    clauses: [{ id: "two", title: "Two", options: [
+      option("original", true, { a: 40, c: 50 }),
+      option("alternative", false, { a: 70, c: 80 }, 1),
+      option("other", false, { a: 10, c: 20 }, 2),
+    ] }],
+  });
+  const beforeLeft = JSON.stringify(left);
+  const beforeRight = JSON.stringify(right);
+  const compared = compareWorkshopFiles(JSON.stringify(left), JSON.stringify(right));
+  assert.equal(compared.status, "ok");
+  assert.equal(compared.aligned, false);
+  assert.deepEqual(compared.groups.onlyLeft.map((row) => row.id), ["b"]);
+  assert.deepEqual(compared.groups.onlyRight.map((row) => row.id), ["c"]);
+  assert.equal(compared.groups.fieldChanges.some((row) => row.id === "a" && row.field === "weight" && row.left === 1 && row.right === 3), true);
+  assert.deepEqual(compared.clauses.onlyLeft.map((row) => row.id), ["one"]);
+  assert.deepEqual(compared.clauses.onlyRight.map((row) => row.id), ["two"]);
+  assert.equal(compared.clauses.fieldChanges.some((row) => row.field === "option.support" && row.groupId === "c"), false);
+  assert.equal(JSON.stringify(left), beforeLeft);
+  assert.equal(JSON.stringify(right), beforeRight);
+  const same = compareWorkshopFiles(JSON.stringify(left), JSON.stringify(left));
+  assert.equal(same.aligned, true);
+  assert.equal(same.groups.fieldChanges.length, 0);
+  assert.equal(compareWorkshopFiles("{", "{}").errors[0].code, "invalid_json");
+  assert.equal(compareWorkshopFiles("{}", "{}").errors[0].code, "invalid_proposal");
+});
+
+test("workspace JSON persists compact or comfortable clause density and keeps old proposal files valid", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 50 }),
+      option("alternative", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const exported = formatWorkspaceJson(input, { clauseDensity: "compact" });
+  assert.equal(exported.status, "ok");
+  const parsed = parseWorkspaceJson(exported.json);
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.kind, "workspace");
+  assert.equal(parsed.clauseDensity, "compact");
+  assert.deepEqual(parsed.proposal, canonicalProposal(input));
+  const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
+  assert.equal(omitted.clauseDensity, "comfortable");
+  const bare = parseWorkspaceJson(JSON.stringify(input));
+  assert.equal(bare.kind, "proposal");
+  assert.equal(bare.clauseDensity, null);
+  assert.equal(formatWorkspaceJson(input, { clauseDensity: "huge" }).errors[0].code, "invalid_density");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, clauseDensity: "huge", proposal: input })).errors[0].code, "invalid_density");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("locks JSON round-trips current locks and fails closed on unknown ids", () => {
+  const input = proposal({
+    clauses: [
+      { id: "one", title: "One", lockedOptionId: "one-change", options: [
+        option("one-original", true, { g: 50 }), option("one-change", false, { g: 80 }, 1), option("one-other", false, { g: 70 }, 2),
+      ] },
+      { id: "two", title: "Two", lockedOptionId: "two-original", options: [
+        option("two-original", true, { g: 50 }), option("two-change", false, { g: 80 }, 1), option("two-other", false, { g: 70 }, 2),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const exported = formatLocksJson(input);
+  assert.equal(exported.status, "ok");
+  assert.equal(exported.locks.length, 2);
+  const cleared = parseLocksJson(JSON.stringify({ format: "smallest-agreement-locks", version: 1, locks: [{ clauseId: "one", optionId: "one-other" }] }), input);
+  assert.equal(cleared.status, "ok");
+  assert.equal(cleared.proposal.clauses[0].lockedOptionId, "one-other");
+  assert.equal(Object.hasOwn(cleared.proposal.clauses[1], "lockedOptionId"), false);
+  const restored = parseLocksJson(exported.json, cleared.proposal);
+  assert.deepEqual(restored.proposal.clauses.map((clause) => clause.lockedOptionId), ["one-change", "two-original"]);
+  assert.equal(parseLocksJson(JSON.stringify({ format: "smallest-agreement-locks", version: 1, locks: [{ clauseId: "missing", optionId: "one-change" }] }), input).errors[0].code, "unknown_clause");
+  assert.equal(parseLocksJson(JSON.stringify({ format: "smallest-agreement-locks", version: 1, locks: [{ clauseId: "one", optionId: "two-change" }] }), input).errors[0].code, "unknown_option");
+  assert.equal(parseLocksJson(JSON.stringify({ format: "smallest-agreement-locks", version: 1, locks: [{ clauseId: "one", optionId: "one-change" }, { clauseId: "one", optionId: "one-other" }] }), input).errors[0].code, "duplicate_clause");
+  assert.equal(parseLocksJson("{", input).errors[0].code, "invalid_json");
+  assert.equal(parseLocksJson("{}", input).errors[0].code, "invalid_format");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("resetGroupSupport blanks one group's scores without mutating the draft", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 80 }),
+      option("alternative", false, { a: 70, b: 60 }, 1),
+      option("other", false, { a: 90, b: 50 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const reset = resetGroupSupport(input, "a");
+  assert.equal(reset.status, "ok");
+  assert.equal(reset.cleared, 3);
+  assert.equal(reset.proposal.clauses[0].options[0].support.a, null);
+  assert.equal(reset.proposal.clauses[0].options[0].support.b, 80);
+  assert.equal(validateProposal(reset.proposal).valid, false);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(resetGroupSupport(input, "missing").errors[0], "Unknown group.");
 });
 
 test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {

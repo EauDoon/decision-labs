@@ -21,4 +21,3 @@ test('pending packet imports cannot overwrite newer runs, clears, imports or err
 test('download uses the identical bounded serialized packet representation',()=>{
  const {nodes,context,download}=harness();nodes.get('#partnership-review-run').handlers.click();nodes.get('#partnership-review-export').handlers.click();assert.equal(download(),JSON.stringify(context.partnershipReviewPacket));assert.ok(Buffer.byteLength(download())<=1048576);
 });
-

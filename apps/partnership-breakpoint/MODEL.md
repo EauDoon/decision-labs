@@ -158,7 +158,7 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 ## Redacted export
 
-`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption.
+`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case.
 
 ## Participant CSV import
 
@@ -170,23 +170,33 @@ A leading apostrophe is stripped when the remaining cell looks like a spreadshee
 
 Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validation errors name the row (`Row 3 revenue share`) or the column. A rejected CSV leaves the current roster unchanged.
 
+`participantsFromRosterText` accepts pasted CSV or TSV. If the first line contains a tab, rows are parsed as TSV and converted to CSV, then validated by `participantsFromCsv`. Otherwise the text is CSV. Deal terms are not read.
+
+`participantsToCsv` writes those same columns in header order, using formula-safe cells. Empty optional capacity and commitment values become blank cells so a later import restores `null`. Identifiers are omitted because import regenerates them from names. Deal terms are not written.
+
 ## Export filenames
 
-`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`, `partnership-breakpoint-stress-visible.csv`). Path separators cannot appear in the slug.
+`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`, `partnership-breakpoint-stress-visible.csv`, `partnership-breakpoint-participants.csv`, `partnership-breakpoint-tornado.svg`). Path separators cannot appear in the slug.
 
 ## Stress-grid CSV
 
 `escapeCsvCell` quotes every field and prefixes string values that look like spreadsheet formulas with an apostrophe. Negative numbers are not treated as formulas.
 
-`stressGridCsv(config, options)` writes one row per participant in each selected case. Omit `options` or omit `scenarioIds` to include every tested case. `scenarioIds` is an optional array of case identifiers; grid order is preserved; unknown identifiers are skipped. Unknown option keys and reserved keys (`__proto__`, `constructor`, `prototype`) are rejected. Row counts describe selected cases, not likelihoods. The GUI Export visible stress CSV uses the currently displayed cases, including after collapsing all-hold rows.
+`stressGridCsv(config, options)` writes one row per participant in each selected case. Omit `options` or omit `scenarioIds` to include every tested case. `scenarioIds` is an optional array of case identifiers; grid order is preserved; unknown identifiers are skipped. Unknown option keys and reserved keys (`__proto__`, `constructor`, `prototype`) are rejected. Row counts describe selected cases, not likelihoods. The GUI Export visible stress CSV uses the currently displayed cases, including after collapsing all-hold rows. Copy visible cases CSV copies that same visible subset to the clipboard, or to a textarea when the clipboard is unavailable. It does not replace the download control.
 
 ## Three-snapshot compare
 
 `compareThreeSnapshots(current, first, second)` evaluates each valid case and aligns participants by identifier. Each row reports monthly profit and hold or fail for the first snapshot, the second snapshot, and the current draft. If an identifier is missing from a case, that cell is empty rather than filled with zero. `sameRoster` is true only when all three cases have the same identifier set. This is a difference table, not a ranking.
 
+`compareImportedCase(current, imported)` does the same alignment for the current draft versus one imported JSON case. Missing identifiers are labeled rather than filled with zeros. The GUI compare does not replace the current case.
+
+## Duplicate display names
+
+`duplicateDisplayNames` returns trimmed names that appear on more than one participant, with roster indexes. It does not change validation. A shared display name is a label collision, not a claim that the parties are the same or that the case is invalid.
+
 ## Charts
 
-The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.
+The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. Download tornado SVG writes that same chart as a standalone SVG file with an XML declaration and SVG namespace. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.
 
 ## Display-only stress mute
 

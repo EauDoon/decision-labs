@@ -93,6 +93,12 @@
       font-weight: 650;
       color: var(--brand-deep);
     }
+    .last-launched {
+      margin-top: 8px;
+      margin-bottom: 0;
+      font-size: 14px;
+      color: var(--brand-deep);
+    }
     .index {
       font-family: Georgia, "Times New Roman", serif;
       font-size: 28px;
@@ -134,6 +140,8 @@
     .skip:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
     #whats-new:focus-visible,
     #workbenches:focus-visible,
+    #how-it-works:focus,
+    #how-it-works:focus-visible,
     #catalog-heading:focus,
     #catalog-heading:focus-visible,
     #shortcuts:focus,
@@ -222,7 +230,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url {
+    .copy-catalog-url, .copy-versions {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -236,17 +244,32 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status {
+    .copy-catalog-status, .copy-versions-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
+    .copy-versions-tools { margin: 12px 0 0; }
+    .copy-versions-fallback {
+      display: block;
+      width: 100%;
+      max-width: 46rem;
+      margin-top: 10px;
+      min-height: 6rem;
+      padding: 10px 12px;
+      font: 15px/1.5 ui-monospace, monospace;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--ink);
+    }
+    .copy-versions-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -288,7 +311,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -316,8 +339,10 @@
     @media print {
       body { background: white; color: #000; border-top-width: 2px; }
       .skip, .skips, .keys-note, .how, .site-nav, .shortcuts, .shortcuts-open { display: none !important; }
-      .catalog-url-tools { display: none !important; }
+      .catalog-url-tools, .copy-versions-tools, .copy-versions-fallback { display: none !important; }
       .whats-new, .workbench .version, .version-line, .trust { display: block !important; }
+      #how-it-works, .guide { display: block !important; }
+      #how-it-works, #how-it-works h2, #how-it-works h3, #how-it-works p { color: #000; }
       .shell { max-width: none; padding-inline: 0; }
       .hero, .whats-new, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
       .whats-new {
@@ -349,6 +374,7 @@
   <nav class="skips" aria-label="Skip">
     <a class="skip" href="#whats-new">Skip to what's new</a>
     <a class="skip" href="#workbenches">Skip to workbenches</a>
+    <a class="skip" href="#how-it-works">Skip to How it works</a>
     <a class="skip" href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts</a>
     <a class="skip" href="#trust">Skip to Trust and limits</a>
   </nav>
@@ -386,6 +412,10 @@
           <p>Solve the minimum volume at which a named participant holds, export the stress grid as CSV, duplicate the case, and start from a two-party 50/50 studio. The solver is local arithmetic. It does not quote a market or predict who will stay.</p>
         </li>
         <li>
+          <h3>Roster export, file compare, and marketplace preset in Partnership Breakpoint 1.4.3</h3>
+          <p>Export or paste a participant roster, compare the open case with an imported JSON file, download the tornado chart, and start from a four-party marketplace. Duplicate names are flagged as labels you typed, not as a claim about who is the same person.</p>
+        </li>
+        <li>
           <h3>Residual coverage in Common Cart</h3>
           <p>After a winning offer is chosen, leftover whole-buyer demand can be tested against the next-best other offer. Merchant export stays aggregate. This is a planning view, not checkout, inventory, or a second live order.</p>
         </li>
@@ -414,6 +444,10 @@
           <p>Export a worksheet CSV, import groups, renormalize weights, lock one clause or clear every lock, and print a facilitator pack. Veto highlights are numbers you entered, not a legal right or a recorded vote.</p>
         </li>
         <li>
+          <h3>Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1.4.3</h3>
+          <p>Import clause options from CSV, filter groups to veto-only, compare two workshop JSON files, export locks, and start from a Library Quiet Hours preset. A veto here is a number you entered, not a legal right or a recorded vote.</p>
+        </li>
+        <li>
           <h3>Gate Gantt in Weekend Gap</h3>
           <p>Scrub 72 hours of issuer, bank, payout, and FX windows on the synthetic calendar, with a table fallback. The drawing does not connect to a bank or a live redemption queue.</p>
         </li>
@@ -436,10 +470,10 @@
       <ul id="workbench-versions" hidden>
         <li data-app="partnership-breakpoint">1.5.0</li>
         <li data-app="common-cart">1.4.0</li>
-        <li data-app="smallest-agreement">1.4.2</li>
+        <li data-app="smallest-agreement">1.4.3</li>
         <li data-app="weekend-gap">1.4.3</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>t</kbd> to focus Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>c</kbd> to copy the catalog address on http. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -448,7 +482,11 @@
           <dt><kbd>3</kbd></dt><dd>Open The Smallest Agreement</dd>
           <dt><kbd>4</kbd></dt><dd>Open Weekend Gap</dd>
           <dt><kbd>h</kbd></dt><dd>Focus the catalog heading</dd>
+          <dt><kbd>n</kbd></dt><dd>Focus What's new</dd>
+          <dt><kbd>w</kbd></dt><dd>Focus the workbenches</dd>
+          <dt><kbd>k</kbd></dt><dd>Focus How it works</dd>
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
+          <dt><kbd>c</kbd></dt><dd>Copy catalog address when this page is served over http</dd>
           <dt><kbd>?</kbd></dt><dd>Show or hide this list</dd>
           <dt><kbd>Esc</kbd></dt><dd>Hide this list</dd>
         </dl>
@@ -460,6 +498,7 @@
         <div>
           <h3>Partnership Breakpoint</h3>
           <p class="version">Version <span data-app-version="partnership-breakpoint">1.5.0</span></p>
+          <p class="last-launched" data-last-workbench="1" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p>Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move.</p>
           <p class="sample">You will see <strong>Balanced</strong>, the built-in synthetic starting point: a shared-revenue case with participant costs and exit floors already filled in.</p>
         </div>
@@ -473,6 +512,7 @@
         <div>
           <h3>Common Cart</h3>
           <p class="version">Version <span data-app-version="common-cart">1.4.0</span></p>
+          <p class="last-launched" data-last-workbench="2" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p>Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view.</p>
           <p class="sample">You will see the built-in synthetic <strong>coffee</strong> scenario (Neighbourhood coffee run): pooled buyers and conditional merchant offers for coffee beans.</p>
         </div>
@@ -485,7 +525,8 @@
         <span class="index" aria-hidden="true">3</span>
         <div>
           <h3>The Smallest Agreement</h3>
-          <p class="version">Version <span data-app-version="smallest-agreement">1.4.2</span></p>
+          <p class="version">Version <span data-app-version="smallest-agreement">1.4.3</span></p>
+          <p class="last-launched" data-last-workbench="3" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p>Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget.</p>
           <p class="sample">You will see <strong>Neighbourhood Plan</strong>, the built-in synthetic neighborhood-plan scenario: clause alternatives, an approval threshold, and a change-cost budget.</p>
         </div>
@@ -499,6 +540,7 @@
         <div>
           <h3>Weekend Gap</h3>
           <p class="version">Version <span data-app-version="weekend-gap">1.4.3</span></p>
+          <p class="last-launched" data-last-workbench="4" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p>Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed.</p>
           <p class="sample">You will see <strong>Normal Friday</strong>, the built-in 72-hour synthetic redemption case from Friday afternoon through Monday.</p>
         </div>
@@ -508,17 +550,19 @@
         </div>
       </article>
     </section>
-    <section class="guide" id="how-it-works" aria-labelledby="how-title">
+    <section class="guide" id="how-it-works" tabindex="-1" aria-labelledby="how-title">
       <h2 id="how-title">How it works</h2>
       <p>This page is a catalog. Each Open workbench link loads one generated file from this repository. You can also open that file from disk. Node.js is only required if you want the loopback launcher or to run tests.</p>
       <h3>Standalone files</h3>
       <p>Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</p>
       <h3>Loopback catalog address</h3>
       <p>When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</p>
+      <h3>Catalog versions</h3>
+      <p>Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</p>
       <h3>JSON export</h3>
       <p>Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</p>
       <h3>Independent workbenches</h3>
-      <p>The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository.</p>
+      <p>The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository. Keys 1 to 4 can leave a Last launched in this browser note on that card. The note is storage in this browser, not a cloud recency. Missing or unreadable storage shows nothing.</p>
     </section>
     <section class="trust" id="trust" tabindex="-1" aria-labelledby="trust-title">
       <h2 id="trust-title">Trust and limits</h2>
@@ -533,7 +577,12 @@
     </section>
   </main>
   <footer class="shell site-footer">
-    <p class="version-line">Partnership Breakpoint 1.5.0, Common Cart 1.4.0, The Smallest Agreement 1.4.2, Weekend Gap 1.4.3. Each workbench versions itself.</p>
+    <p class="version-line">Partnership Breakpoint 1.5.0, Common Cart 1.4.0, The Smallest Agreement 1.4.3, Weekend Gap 1.4.3. Each workbench versions itself.</p>
+    <p class="copy-versions-tools" id="copy-versions-tools">
+      <button type="button" class="copy-versions" id="copy-versions">Copy versions</button>
+      <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
+    </p>
+    <textarea id="copy-versions-fallback" class="copy-versions-fallback" hidden readonly rows="4" aria-label="Workbench versions as Markdown"></textarea>
     <p>This page is the catalog. It is not a combined product version. Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap each ship their own version and changelog.</p>
     <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
   </footer>
@@ -550,14 +599,30 @@
         const version = versions[node.getAttribute('data-app-version')];
         if (version) node.textContent = version;
       });
+      const LAST_WORKBENCH_KEY = 'decision-labs.last-workbench';
+      let lastWorkbench = null;
+      try {
+        lastWorkbench = localStorage.getItem(LAST_WORKBENCH_KEY);
+      } catch {
+        lastWorkbench = null;
+      }
+      if (lastWorkbench === '1' || lastWorkbench === '2' || lastWorkbench === '3' || lastWorkbench === '4') {
+        const note = document.querySelector('.last-launched[data-last-workbench="' + lastWorkbench + '"]');
+        if (note) note.hidden = false;
+      }
       const inEditable = (node) => !!(node && (node.closest?.('input, textarea, select, [contenteditable="true"]') || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName || '')));
       const urlTools = document.getElementById('catalog-url-tools');
       const copyBtn = document.getElementById('copy-catalog-url');
       const copyStatus = document.getElementById('copy-catalog-status');
-      if (urlTools && /^https?:$/.test(location.protocol)) {
+      const catalogIsHttp = () => /^https?:$/.test(location.protocol);
+      if (urlTools && catalogIsHttp()) {
         urlTools.hidden = false;
       }
       copyBtn?.addEventListener('click', async () => {
+        if (!catalogIsHttp()) {
+          if (copyStatus) copyStatus.textContent = '';
+          return;
+        }
         const url = location.href;
         try {
           if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
@@ -565,6 +630,33 @@
           if (copyStatus) copyStatus.textContent = 'Copied the catalog address.';
         } catch {
           if (copyStatus) copyStatus.textContent = 'Could not copy. Select the address bar instead.';
+        }
+      });
+      const versionsBtn = document.getElementById('copy-versions');
+      const versionsStatus = document.getElementById('copy-versions-status');
+      const versionsFallback = document.getElementById('copy-versions-fallback');
+      const versionsMarkdown = () => {
+        const line = document.querySelector('.version-line')?.textContent ?? '';
+        const listed = line.replace(/\s*Each workbench versions itself\.?\s*$/i, '').replace(/\.\s*$/, '');
+        const parts = listed.split(',').map((part) => part.trim()).filter(Boolean);
+        if (parts.length) return parts.map((part) => `- ${part}`).join('\n');
+        return [...document.querySelectorAll('#workbench-versions [data-app]')].map((item) => `- ${item.getAttribute('data-app')} ${item.textContent.trim()}`).join('\n');
+      };
+      versionsBtn?.addEventListener('click', async () => {
+        const markdown = versionsMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (versionsFallback) versionsFallback.hidden = true;
+          if (versionsStatus) versionsStatus.textContent = 'Copied names and versions from this catalog page as Markdown. Not a live product version.';
+        } catch {
+          if (versionsFallback) {
+            versionsFallback.hidden = false;
+            versionsFallback.value = markdown;
+            versionsFallback.focus();
+            versionsFallback.select();
+          }
+          if (versionsStatus) versionsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product version.';
         }
       });
       const setOpen = (open, options = {}) => {
@@ -581,6 +673,12 @@
       document.getElementById('skip-shortcuts')?.addEventListener('click', () => {
         setOpen(true, { focus: false });
       });
+      const hashTargets = ['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'];
+      if (hashTargets.includes(location.hash)) {
+        const id = location.hash.slice(1);
+        if (id === 'shortcuts') setOpen(true, { focus: false });
+        document.getElementById(id)?.focus();
+      }
       document.addEventListener('keydown', (event) => {
         if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
         if (inEditable(event.target)) return;
@@ -594,9 +692,29 @@
           document.getElementById('catalog-heading')?.focus();
           return;
         }
+        if (event.key === 'n') {
+          event.preventDefault();
+          document.getElementById('whats-new')?.focus();
+          return;
+        }
+        if (event.key === 'w') {
+          event.preventDefault();
+          document.getElementById('workbenches')?.focus();
+          return;
+        }
+        if (event.key === 'k') {
+          event.preventDefault();
+          document.getElementById('how-it-works')?.focus();
+          return;
+        }
         if (event.key === 't') {
           event.preventDefault();
           document.getElementById('trust')?.focus();
+          return;
+        }
+        if (event.key === 'c') {
+          event.preventDefault();
+          if (catalogIsHttp()) copyBtn?.click();
           return;
         }
         if (event.key === 'Escape' && shortcuts && !shortcuts.hidden) {
@@ -612,6 +730,11 @@
         const link = document.querySelectorAll('#workbenches a.open')[index];
         if (!link) return;
         event.preventDefault();
+        try {
+          localStorage.setItem(LAST_WORKBENCH_KEY, event.key);
+        } catch {
+          /* Storage may be unavailable. Opening the workbench still proceeds. */
+        }
         window.location.assign(link.href);
       });
     })();

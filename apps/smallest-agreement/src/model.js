@@ -1536,3 +1536,549 @@ export function formatRecommendedPackageMarkdown(proposal, result = findSmallest
   lines.push("", "Scores, weights, and costs remain human inputs.");
   return { status: "ok", text: `${lines.join("\n")}\n` };
 }
+
+/**
+ * Markdown list of veto groups whose average misses the required value.
+ * This is a constraint readout, not a legal veto or a legitimacy claim.
+ */
+export function formatVetoBlockersMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "unavailable", text: "No inspected package is available, so there is no veto constraint list to copy.\n" };
+  }
+  const blocking = vetoBlockingGroups(proposal, options);
+  if (blocking.status !== "ok") return blocking;
+  const p = canonicalProposal(proposal);
+  const lines = [
+    "# Veto constraint list",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This list names groups whose veto constraint is not met on the inspected package. It is a numerical constraint list, not a legal veto or a claim of legitimacy.",
+    "",
+  ];
+  const marked = p.groups.filter((group) => group.veto === true);
+  if (!marked.length) {
+    lines.push("No veto groups are marked on this proposal.");
+  } else if (!blocking.groups.length) {
+    lines.push("Every marked veto group meets its required average on this package.");
+  } else {
+    lines.push("## Groups below the veto requirement", "");
+    for (const group of blocking.groups) {
+      lines.push(`- ${briefText(group.name)}: ${formatPercent(group.actual)} against required ${formatPercent(group.required)}`);
+    }
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n`, groups: blocking.groups };
+}
+
+function namedFileError(code, message, extra = {}) {
+  return { code, message, ...extra };
+}
+
+function parseJsonObject(text, side) {
+  try {
+    const raw = JSON.parse(String(text ?? "").replace(/^\uFEFF/u, ""));
+    if (!isPlainObject(raw)) return { status: "invalid", errors: [namedFileError("invalid_json", `The ${side} file must be a JSON object.`, { side })] };
+    return { status: "ok", value: raw };
+  } catch {
+    return { status: "invalid", errors: [namedFileError("invalid_json", `The ${side} file is not valid JSON.`, { side })] };
+  }
+}
+
+/** Accept a canonical proposal or a version-1 workspace wrapper. */
+export function proposalFromWorkshopDocument(raw) {
+  if (!isPlainObject(raw)) return { status: "invalid", errors: [namedFileError("invalid_json", "Workshop JSON must be an object.")] };
+  let proposal = raw;
+  if (Object.hasOwn(raw, "format")) {
+    if (raw.format !== "smallest-agreement-workspace") {
+      return { status: "invalid", errors: [namedFileError("invalid_format", "Unsupported workshop file format.")] };
+    }
+    if (raw.version !== 1 || !isPlainObject(raw.proposal)) {
+      return { status: "invalid", errors: [namedFileError("invalid_format", "Workspace JSON must be version 1 with a proposal object.")] };
+    }
+    proposal = raw.proposal;
+  }
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  return { status: "ok", proposal: canonicalProposal(proposal) };
+}
+
+/**
+ * Compare two workshop JSON files by group and clause identifiers.
+ * Missing identifiers are listed. Support scores are not invented as zeros
+ * for groups or options that exist on only one side.
+ */
+export function compareWorkshopFiles(leftText, rightText) {
+  const leftJson = parseJsonObject(leftText, "first");
+  if (leftJson.status !== "ok") return leftJson;
+  const rightJson = parseJsonObject(rightText, "second");
+  if (rightJson.status !== "ok") return rightJson;
+  const left = proposalFromWorkshopDocument(leftJson.value);
+  if (left.status !== "ok") {
+    return { status: "invalid", errors: left.errors.map((error) => ({ ...error, side: "left" })) };
+  }
+  const right = proposalFromWorkshopDocument(rightJson.value);
+  if (right.status !== "ok") {
+    return { status: "invalid", errors: right.errors.map((error) => ({ ...error, side: "right" })) };
+  }
+  const leftGroups = new Map(left.proposal.groups.map((group) => [group.id, group]));
+  const rightGroups = new Map(right.proposal.groups.map((group) => [group.id, group]));
+  const onlyLeftGroups = [...leftGroups.keys()].filter((id) => !rightGroups.has(id)).map((id) => ({ id, name: leftGroups.get(id).name }));
+  const onlyRightGroups = [...rightGroups.keys()].filter((id) => !leftGroups.has(id)).map((id) => ({ id, name: rightGroups.get(id).name }));
+  const sharedGroupIds = [...leftGroups.keys()].filter((id) => rightGroups.has(id));
+  const groupChanges = [];
+  for (const id of sharedGroupIds) {
+    const a = leftGroups.get(id);
+    const b = rightGroups.get(id);
+    if (a.name !== b.name) groupChanges.push({ id, field: "name", left: a.name, right: b.name });
+    if (a.weight !== b.weight) groupChanges.push({ id, field: "weight", left: a.weight, right: b.weight });
+    if (a.minSupport !== b.minSupport) groupChanges.push({ id, field: "minSupport", left: a.minSupport, right: b.minSupport });
+    if ((a.veto === true) !== (b.veto === true)) groupChanges.push({ id, field: "veto", left: a.veto === true, right: b.veto === true });
+  }
+  const leftClauses = new Map(left.proposal.clauses.map((clause) => [clause.id, clause]));
+  const rightClauses = new Map(right.proposal.clauses.map((clause) => [clause.id, clause]));
+  const onlyLeftClauses = [...leftClauses.keys()].filter((id) => !rightClauses.has(id)).map((id) => ({ id, title: leftClauses.get(id).title }));
+  const onlyRightClauses = [...rightClauses.keys()].filter((id) => !leftClauses.has(id)).map((id) => ({ id, title: rightClauses.get(id).title }));
+  const sharedClauseIds = [...leftClauses.keys()].filter((id) => rightClauses.has(id));
+  const clauseChanges = [];
+  for (const id of sharedClauseIds) {
+    const a = leftClauses.get(id);
+    const b = rightClauses.get(id);
+    if (a.title !== b.title) clauseChanges.push({ id, field: "title", left: a.title, right: b.title });
+    if (a.note !== b.note) clauseChanges.push({ id, field: "note", left: a.note, right: b.note });
+    if (a.lockedOptionId !== b.lockedOptionId) clauseChanges.push({ id, field: "lockedOptionId", left: a.lockedOptionId, right: b.lockedOptionId });
+    const leftOptions = new Map(a.options.map((option) => [option.id, option]));
+    const rightOptions = new Map(b.options.map((option) => [option.id, option]));
+    for (const optionId of leftOptions.keys()) {
+      if (!rightOptions.has(optionId)) clauseChanges.push({ id, field: "option", optionId, left: optionId, right: undefined });
+    }
+    for (const optionId of rightOptions.keys()) {
+      if (!leftOptions.has(optionId)) clauseChanges.push({ id, field: "option", optionId, left: undefined, right: optionId });
+    }
+    for (const optionId of leftOptions.keys()) {
+      if (!rightOptions.has(optionId)) continue;
+      const leftOption = leftOptions.get(optionId);
+      const rightOption = rightOptions.get(optionId);
+      if (leftOption.label !== rightOption.label) clauseChanges.push({ id, field: "option.label", optionId, left: leftOption.label, right: rightOption.label });
+      if (leftOption.original !== rightOption.original) clauseChanges.push({ id, field: "option.original", optionId, left: leftOption.original, right: rightOption.original });
+      if (leftOption.changeCost !== rightOption.changeCost) clauseChanges.push({ id, field: "option.changeCost", optionId, left: leftOption.changeCost, right: rightOption.changeCost });
+      for (const groupId of sharedGroupIds) {
+        const leftScore = leftOption.support[groupId];
+        const rightScore = rightOption.support[groupId];
+        if (leftScore !== rightScore) clauseChanges.push({ id, field: "option.support", optionId, groupId, left: leftScore, right: rightScore });
+      }
+    }
+  }
+  const leftOrder = left.proposal.clauses.map((clause) => clause.id).join(",");
+  const rightOrder = right.proposal.clauses.map((clause) => clause.id).join(",");
+  const aligned = onlyLeftGroups.length === 0 && onlyRightGroups.length === 0 && onlyLeftClauses.length === 0 && onlyRightClauses.length === 0;
+  return {
+    status: "ok",
+    leftTitle: left.proposal.title,
+    rightTitle: right.proposal.title,
+    aligned,
+    groups: { onlyLeft: onlyLeftGroups, onlyRight: onlyRightGroups, shared: sharedGroupIds, fieldChanges: groupChanges },
+    clauses: { onlyLeft: onlyLeftClauses, onlyRight: onlyRightClauses, shared: sharedClauseIds, fieldChanges: clauseChanges },
+    clauseOrderChanged: leftOrder !== rightOrder,
+  };
+}
+
+/**
+ * Workspace JSON carries the canonical proposal plus clause card density.
+ * Older proposal-only files remain valid and do not change density.
+ */
+export function formatWorkspaceJson(proposal, prefs = {}) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  const clauseDensity = Object.hasOwn(prefs, "clauseDensity") ? prefs.clauseDensity : "comfortable";
+  if (clauseDensity !== "compact" && clauseDensity !== "comfortable") {
+    return { status: "invalid", errors: [namedFileError("invalid_density", "clauseDensity must be compact or comfortable.")] };
+  }
+  return {
+    status: "ok",
+    clauseDensity,
+    json: `${JSON.stringify({
+      format: "smallest-agreement-workspace",
+      version: 1,
+      clauseDensity,
+      proposal: canonicalProposal(proposal),
+    }, null, 2)}\n`,
+  };
+}
+
+export function parseWorkspaceJson(text) {
+  const parsed = parseJsonObject(text, "workspace");
+  if (parsed.status !== "ok") return parsed;
+  const raw = parsed.value;
+  if (!Object.hasOwn(raw, "format")) {
+    const proposal = proposalFromWorkshopDocument(raw);
+    if (proposal.status !== "ok") return proposal;
+    return { status: "ok", kind: "proposal", proposal: proposal.proposal, clauseDensity: null };
+  }
+  const proposal = proposalFromWorkshopDocument(raw);
+  if (proposal.status !== "ok") return proposal;
+  let clauseDensity = "comfortable";
+  if (Object.hasOwn(raw, "clauseDensity")) {
+    if (raw.clauseDensity !== "compact" && raw.clauseDensity !== "comfortable") {
+      return { status: "invalid", errors: [namedFileError("invalid_density", "clauseDensity must be compact or comfortable.")] };
+    }
+    clauseDensity = raw.clauseDensity;
+  }
+  return { status: "ok", kind: "workspace", proposal: proposal.proposal, clauseDensity };
+}
+
+/**
+ * Export the current clause locks as a version-1 document.
+ * Clauses without a lock are omitted. Re-import replaces every lock.
+ */
+export function formatLocksJson(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  const locks = proposal.clauses
+    .filter((clause) => Object.hasOwn(clause, "lockedOptionId"))
+    .map((clause) => ({ clauseId: clause.id, optionId: clause.lockedOptionId }));
+  return {
+    status: "ok",
+    locks,
+    json: `${JSON.stringify({
+      format: "smallest-agreement-locks",
+      version: 1,
+      locks,
+    }, null, 2)}\n`,
+  };
+}
+
+/**
+ * Replace every clause lock from a version-1 locks document.
+ * Unknown clause or option ids fail closed. The input proposal is not mutated.
+ */
+export function parseLocksJson(text, proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  const parsed = parseJsonObject(text, "locks");
+  if (parsed.status !== "ok") return parsed;
+  const raw = parsed.value;
+  if (raw.format !== "smallest-agreement-locks" || raw.version !== 1) {
+    return { status: "invalid", errors: [namedFileError("invalid_format", "Locks JSON must declare format smallest-agreement-locks version 1.")] };
+  }
+  if (!Array.isArray(raw.locks)) {
+    return { status: "invalid", errors: [namedFileError("invalid_format", "Locks JSON must include a locks array.")] };
+  }
+  const next = canonicalProposal(proposal);
+  for (const clause of next.clauses) delete clause.lockedOptionId;
+  const seen = new Set();
+  for (const [index, row] of raw.locks.entries()) {
+    if (!isPlainObject(row) || typeof row.clauseId !== "string" || typeof row.optionId !== "string") {
+      return { status: "invalid", errors: [namedFileError("invalid_lock", `locks[${index}] must have clauseId and optionId strings.`)] };
+    }
+    if (seen.has(row.clauseId)) {
+      return { status: "invalid", errors: [namedFileError("duplicate_clause", `Clause ${row.clauseId} is locked more than once.`)] };
+    }
+    seen.add(row.clauseId);
+    const clause = next.clauses.find((item) => item.id === row.clauseId);
+    if (!clause) {
+      return { status: "invalid", errors: [namedFileError("unknown_clause", `Unknown clause ${row.clauseId}.`, { clauseId: row.clauseId })] };
+    }
+    if (!clause.options.some((option) => option.id === row.optionId)) {
+      return { status: "invalid", errors: [namedFileError("unknown_option", `Unknown option ${row.optionId} for clause ${row.clauseId}.`, { clauseId: row.clauseId, optionId: row.optionId })] };
+    }
+    clause.lockedOptionId = row.optionId;
+  }
+  return { status: "ok", proposal: next, applied: raw.locks.length };
+}
+
+/**
+ * Clear one group's support scores to blank on a copy of the proposal.
+ * The copy is invalid until those cells are filled. Does not mutate the input.
+ */
+export function resetGroupSupport(proposal, groupId) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof groupId !== "string" || !proposal.groups.some((group) => group.id === groupId)) {
+    return { status: "invalid", errors: ["Unknown group."] };
+  }
+  const next = canonicalProposal(proposal);
+  let cleared = 0;
+  for (const clause of next.clauses) {
+    for (const option of clause.options) {
+      option.support[groupId] = null;
+      cleared += 1;
+    }
+  }
+  return { status: "ok", proposal: next, cleared, groupId };
+}
+
+function parseCsvCost(raw, path) {
+  const neutralized = neutralizeCsvCell(raw).trim();
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  if (!neutralized || !/^[+-]?(?:\d+\.?\d*|\.\d+)$/u.test(neutralized)) {
+    return { error: namedCsvError("invalid_cost", `${path} must be a number from 0 through ${MAX_CHANGE_COST}.`, { path }) };
+  }
+  const changeCost = Number(neutralized);
+  if (!Number.isFinite(changeCost) || changeCost < 0 || changeCost > MAX_CHANGE_COST) {
+    return { error: namedCsvError("invalid_cost", `${path} must be a number from 0 through ${MAX_CHANGE_COST}.`, { path, value: neutralized }) };
+  }
+  return { changeCost };
+}
+
+function parseCsvFlag(raw, path, code, message) {
+  const neutralized = neutralizeCsvCell(raw).trim().toLowerCase();
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  if (neutralized === "" || neutralized === "no" || neutralized === "false" || neutralized === "0") return { value: false };
+  if (neutralized === "yes" || neutralized === "true" || neutralized === "1") return { value: true };
+  return { error: namedCsvError(code, message, { path, value: neutralized }) };
+}
+
+function parseCsvIdentifier(raw, path) {
+  const neutralized = neutralizeCsvCell(raw).trim();
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  if (!ID_PATTERN.test(neutralized) || RESERVED_IDS.has(neutralized)) {
+    return { error: namedCsvError("invalid_id", `${path} must be 1 to 64 safe identifier characters.`, { path, value: neutralized }) };
+  }
+  return { id: neutralized };
+}
+
+function parseCsvLabel(raw, path, code, maxLength) {
+  const neutralized = neutralizeCsvCell(raw);
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  const text = neutralized.trim();
+  if (!text || text.length > maxLength) {
+    return { error: namedCsvError(code, `${path} must be a non-empty string no longer than ${maxLength} characters.`, { path }) };
+  }
+  return { text };
+}
+
+/**
+ * Export clause titles, option labels, original flags, costs, optional notes, and locks.
+ * Support scores are omitted; import copies matching scores or fills 50.
+ */
+export function formatClauseOptionsCsv(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
+  const p = canonicalProposal(proposal);
+  const rows = [["clause_id", "option_id", "clause_title", "option_label", "original", "change_cost", "note", "locked"]];
+  for (const clause of p.clauses) {
+    for (const option of clause.options) {
+      rows.push([
+        clause.id,
+        option.id,
+        clause.title,
+        option.label,
+        option.original ? "yes" : "no",
+        option.changeCost,
+        clause.note ?? "",
+        clause.lockedOptionId === option.id ? "yes" : "no",
+      ]);
+    }
+  }
+  return { status: "ok", csv: serializeCsv(rows) };
+}
+
+/**
+ * Replace clauses from a CSV of clause_id, option_id, clause_title, option_label,
+ * original, and change_cost. Optional note and locked columns are accepted.
+ * Unknown columns are rejected. Groups stay. Matching clause and option ids keep
+ * their support scores; new options receive 50 for every group.
+ * Does not mutate the supplied proposal.
+ */
+export function parseClauseOptionsCsv(csvText, proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
+  const parsed = parseCsvRecords(csvText);
+  if (parsed.status !== "ok") return parsed;
+  const [header, ...body] = parsed.records;
+  if (!header || header.length < 6) {
+    return { status: "invalid", errors: [namedCsvError("missing_header", "CSV needs a header row with clause_id, option_id, clause_title, option_label, original, and change_cost.")] };
+  }
+  const columns = header.map((name) => neutralizeCsvCell(name).trim());
+  if (columns.some((column) => FORMULA_CELL.test(column))) {
+    return { status: "invalid", errors: [namedCsvError("formula_cell", "Header cells must not look like spreadsheet formulas.")] };
+  }
+  const errors = [];
+  const seenHeaders = new Set();
+  for (const column of columns) {
+    if (seenHeaders.has(column)) errors.push(namedCsvError("duplicate_column", `Column ${column} is repeated.`, { column }));
+    seenHeaders.add(column);
+  }
+  if (columns[0] !== "clause_id") errors.push(namedCsvError("missing_clause_id_column", "The first column must be clause_id."));
+  if (columns[1] !== "option_id") errors.push(namedCsvError("missing_option_id_column", "The second column must be option_id."));
+  const allowed = new Set(["clause_id", "option_id", "clause_title", "option_label", "original", "change_cost", "note", "locked"]);
+  const indexOf = (name) => columns.indexOf(name);
+  for (const column of columns) {
+    if (!allowed.has(column)) errors.push(namedCsvError("unknown_column", `Unknown column: ${column}.`, { column }));
+  }
+  for (const required of ["clause_title", "option_label", "original", "change_cost"]) {
+    if (!seenHeaders.has(required)) errors.push(namedCsvError("missing_column", `Missing column: ${required}.`, { column: required }));
+  }
+  if (body.length === 0) errors.push(namedCsvError("empty_csv", "CSV has a header but no option rows."));
+  const titleIndex = indexOf("clause_title");
+  const labelIndex = indexOf("option_label");
+  const originalIndex = indexOf("original");
+  const costIndex = indexOf("change_cost");
+  const noteIndex = indexOf("note");
+  const lockedIndex = indexOf("locked");
+  const clauseOrder = [];
+  const clauseMap = new Map();
+  const seenPairs = new Set();
+  body.forEach((record, index) => {
+    const rowNumber = index + 2;
+    if (record.length !== columns.length) {
+      errors.push(namedCsvError("truncated_row", `Row ${rowNumber} has ${record.length} cells, expected ${columns.length}.`, { row: rowNumber }));
+      return;
+    }
+    const parsedClauseId = parseCsvIdentifier(record[0], `row ${rowNumber} clause_id`);
+    if (parsedClauseId.error) {
+      errors.push(parsedClauseId.error);
+      return;
+    }
+    const parsedOptionId = parseCsvIdentifier(record[1], `row ${rowNumber} option_id`);
+    if (parsedOptionId.error) {
+      errors.push(parsedOptionId.error);
+      return;
+    }
+    const pair = `${parsedClauseId.id}\0${parsedOptionId.id}`;
+    if (seenPairs.has(pair)) {
+      errors.push(namedCsvError("duplicate_row", `Row ${rowNumber} repeats clause ${parsedClauseId.id} option ${parsedOptionId.id}.`, { row: rowNumber, clauseId: parsedClauseId.id, optionId: parsedOptionId.id }));
+      return;
+    }
+    seenPairs.add(pair);
+    if (titleIndex < 0 || labelIndex < 0 || originalIndex < 0 || costIndex < 0) return;
+    const parsedTitle = parseCsvLabel(record[titleIndex], `row ${rowNumber} clause_title`, "invalid_title", 120);
+    if (parsedTitle.error) {
+      errors.push(parsedTitle.error);
+      return;
+    }
+    const parsedLabel = parseCsvLabel(record[labelIndex], `row ${rowNumber} option_label`, "invalid_label", 240);
+    if (parsedLabel.error) {
+      errors.push(parsedLabel.error);
+      return;
+    }
+    const parsedOriginal = parseCsvFlag(record[originalIndex], `row ${rowNumber} original`, "invalid_original", `${`row ${rowNumber} original`} must be yes, no, true, false, 1, 0, or blank.`);
+    if (parsedOriginal.error) {
+      errors.push(parsedOriginal.error);
+      return;
+    }
+    const parsedCost = parseCsvCost(record[costIndex], `row ${rowNumber} change_cost`);
+    if (parsedCost.error) {
+      errors.push(parsedCost.error);
+      return;
+    }
+    if (parsedOriginal.value === true && parsedCost.changeCost !== 0) {
+      errors.push(namedCsvError("invalid_cost", `Row ${rowNumber} original option must have zero change cost.`, { row: rowNumber }));
+      return;
+    }
+    let note;
+    if (noteIndex >= 0) {
+      const noteRaw = neutralizeCsvCell(record[noteIndex]);
+      if (FORMULA_CELL.test(noteRaw)) {
+        errors.push(namedCsvError("formula_cell", `Row ${rowNumber} note looks like a spreadsheet formula.`, { row: rowNumber }));
+        return;
+      }
+      if (noteRaw !== "") {
+        if (noteRaw.length < 1 || noteRaw.length > 240) {
+          errors.push(namedCsvError("invalid_note", `Row ${rowNumber} note must be 1 to 240 characters, or blank.`, { row: rowNumber }));
+          return;
+        }
+        note = noteRaw;
+      }
+    }
+    let locked = false;
+    if (lockedIndex >= 0) {
+      const parsedLock = parseCsvFlag(record[lockedIndex], `row ${rowNumber} locked`, "invalid_lock", `Row ${rowNumber} locked must be yes, no, true, false, 1, 0, or blank.`);
+      if (parsedLock.error) {
+        errors.push(parsedLock.error);
+        return;
+      }
+      locked = parsedLock.value;
+    }
+    let clause = clauseMap.get(parsedClauseId.id);
+    if (!clause) {
+      if (clauseOrder.length >= MAX_CLAUSES) {
+        errors.push(namedCsvError("too_many_clauses", `Between 1 and ${MAX_CLAUSES} clauses are required.`));
+        return;
+      }
+      clause = { id: parsedClauseId.id, title: parsedTitle.text, options: [], note, lockedOptionId: undefined };
+      clauseMap.set(parsedClauseId.id, clause);
+      clauseOrder.push(clause);
+    } else {
+      if (clause.title !== parsedTitle.text) {
+        errors.push(namedCsvError("inconsistent_title", `Row ${rowNumber} clause_title does not match earlier rows for ${parsedClauseId.id}.`, { row: rowNumber, clauseId: parsedClauseId.id }));
+        return;
+      }
+      if (note !== undefined && clause.note !== undefined && clause.note !== note) {
+        errors.push(namedCsvError("inconsistent_note", `Row ${rowNumber} note does not match earlier rows for ${parsedClauseId.id}.`, { row: rowNumber, clauseId: parsedClauseId.id }));
+        return;
+      }
+      if (note !== undefined && clause.note === undefined) clause.note = note;
+    }
+    if (clause.options.some((option) => option.id === parsedOptionId.id)) {
+      errors.push(namedCsvError("duplicate_row", `Row ${rowNumber} repeats option ${parsedOptionId.id} in clause ${parsedClauseId.id}.`, { row: rowNumber }));
+      return;
+    }
+    if (clause.options.length >= MAX_OPTIONS_PER_CLAUSE) {
+      errors.push(namedCsvError("too_many_options", `Clause ${parsedClauseId.id} needs 3 to ${MAX_OPTIONS_PER_CLAUSE} options, including one original.`, { clauseId: parsedClauseId.id }));
+      return;
+    }
+    if (locked) {
+      if (clause.lockedOptionId !== undefined) {
+        errors.push(namedCsvError("duplicate_lock", `Row ${rowNumber} adds a second lock on clause ${parsedClauseId.id}.`, { row: rowNumber, clauseId: parsedClauseId.id }));
+        return;
+      }
+      clause.lockedOptionId = parsedOptionId.id;
+    }
+    const previousClause = proposal.clauses.find((item) => item.id === parsedClauseId.id);
+    const previousOption = previousClause?.options.find((item) => item.id === parsedOptionId.id);
+    const support = previousOption
+      ? Object.fromEntries(proposal.groups.map((group) => [group.id, previousOption.support[group.id]]))
+      : Object.fromEntries(proposal.groups.map((group) => [group.id, 50]));
+    clause.options.push({
+      id: parsedOptionId.id,
+      label: parsedLabel.text,
+      original: parsedOriginal.value,
+      changeCost: parsedCost.changeCost,
+      support,
+    });
+  });
+  if (!errors.length) {
+    if (clauseOrder.length < 1) errors.push(namedCsvError("empty_csv", "CSV has a header but no option rows."));
+    for (const clause of clauseOrder) {
+      if (clause.options.length < 3) {
+        errors.push(namedCsvError("too_few_options", `Clause ${clause.id} needs 3 to ${MAX_OPTIONS_PER_CLAUSE} options, including one original.`, { clauseId: clause.id }));
+      }
+      if (clause.options.length > MAX_OPTIONS_PER_CLAUSE) {
+        errors.push(namedCsvError("too_many_options", `Clause ${clause.id} needs 3 to ${MAX_OPTIONS_PER_CLAUSE} options, including one original.`, { clauseId: clause.id }));
+      }
+      const originals = clause.options.filter((option) => option.original === true);
+      if (originals.length === 0) errors.push(namedCsvError("missing_original", `Clause ${clause.id} must have exactly one original option.`, { clauseId: clause.id }));
+      if (originals.length > 1) errors.push(namedCsvError("extra_original", `Clause ${clause.id} must have exactly one original option.`, { clauseId: clause.id }));
+    }
+  }
+  if (errors.length) return { status: "invalid", errors };
+  const next = canonicalProposal(proposal);
+  next.clauses = clauseOrder.map((clause) => ({
+    id: clause.id,
+    title: clause.title,
+    ...(clause.lockedOptionId !== undefined ? { lockedOptionId: clause.lockedOptionId } : {}),
+    ...(clause.note ? { note: clause.note } : {}),
+    options: clause.options.map((option) => ({
+      id: option.id,
+      label: option.label,
+      original: option.original === true,
+      changeCost: option.changeCost,
+      support: option.support,
+    })),
+  }));
+  const imported = validateProposal(next);
+  if (!imported.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", imported.errors[0])] };
+  return { status: "ok", proposal: canonicalProposal(next), importedClauses: next.clauses.length, importedOptions: next.clauses.reduce((sum, clause) => sum + clause.options.length, 0) };
+}

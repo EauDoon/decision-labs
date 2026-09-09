@@ -46,12 +46,21 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .field input, .field textarea { width: 100%; min-width: 0; border: 1px solid #5d625d; border-radius: 2px; background: white; color: var(--ink); padding: .42rem .48rem; }
 .field textarea { min-height: 5rem; resize: vertical; }
 .brief-copy-label { display: block; font-size: .73rem; color: var(--muted); margin-bottom: .25rem; }
-#brief-copy-text { width: 100%; min-height: 12rem; font: inherit; padding: .5rem; border: 1px solid var(--line); background: white; }
+#roster-paste { width: 100%; min-height: 7rem; font: inherit; padding: .5rem; border: 1px solid var(--line); background: white; }
+.roster-paste-label { display: block; font-size: .73rem; color: var(--muted); margin: .75rem 0 .25rem; }
+#brief-copy-text, #csv-copy-text { width: 100%; min-height: 12rem; font: inherit; padding: .5rem; border: 1px solid var(--line); background: white; }
 .field input:invalid, .field textarea:invalid { border-color: var(--coral); }
 .optional { color: var(--muted); font-size: .67rem; }
 .participant-form { border: 1px solid var(--line); background: var(--paper); padding: .75rem; margin-top: .7rem; }
 .participant-form.first-fail { border-color: var(--coral); background: var(--coral-pale); }
-.first-fail-label { margin: 0 0 .55rem; font-size: .78rem; color: #75251d; }
+.duplicate-name-warning {
+  margin: 0 0 .7rem;
+  padding: .65rem .75rem;
+  border: 1px solid var(--warning);
+  background: #fff6e0;
+  color: var(--warning);
+  font-size: .78rem;
+}
 .participant-form:first-of-type { margin-top: 0; }
 .participant-toolbar {
   display: flex;
@@ -282,6 +291,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
   font-weight: 700;
   text-align: center;
 }
+.participant-redacted-name { display: none; }
 @media print {
   @page { size: portrait; margin: 12mm; }
   body { background: white; color: black; font-size: 10pt; }
@@ -297,6 +307,8 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
   .print-only pre { white-space: pre-wrap; columns: 2; font-size: 7pt; }
   .sensitivity-layout { display: block; }
   a { color: black; }
+  .print-redacted .participant-live-name { display: none !important; }
+  .print-redacted .participant-redacted-name { display: inline !important; }
 }
 
 .partnership-review { margin: 1rem auto; padding: 1rem; max-width: 1400px; border: 1px solid #888; border-radius: .5rem; background: var(--panel, #fff); }

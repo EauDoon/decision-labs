@@ -4,6 +4,7 @@ import {
   MAX_PARTICIPANTS,
   clonePreset,
   dropAndReallocate,
+  duplicateDisplayNames,
   duplicateParticipant,
   moveParticipant,
   nextUnusedParticipantId,
@@ -96,4 +97,16 @@ test('dropping a participant reallocates their share and restores an exact sum o
     assert.match(error.errors.join(' '), /At least two participants must remain/);
     return true;
   });
+});
+
+test('duplicateDisplayNames lists trimmed collisions without invalidating the case', () => {
+  const config = clonePreset('balanced');
+  assert.deepEqual(duplicateDisplayNames(config.participants), []);
+  config.participants[1].name = ' Platform ';
+  const dupes = duplicateDisplayNames(config.participants);
+  assert.equal(dupes.length, 1);
+  assert.equal(dupes[0].name, 'Platform');
+  assert.deepEqual(dupes[0].indexes, [0, 1]);
+  assert.equal(validateConfiguration(config).valid, true);
+  assert.deepEqual(duplicateDisplayNames(null), []);
 });
