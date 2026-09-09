@@ -19,6 +19,7 @@ import {
   redactConfiguration,
   solveFeeForAllHold,
   solveMinimumShareToHold,
+  solveMinimumVolumeToHold,
   validateConfiguration,
 } from './model.js';
 
@@ -45,6 +46,7 @@ let pinSecondId = '';
 let stressPreviewId = '';
 let shareHoldPreview = null;
 let feeHoldPreview = null;
+let volumeHoldPreview = null;
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
 let helpOpen = false;
@@ -58,6 +60,7 @@ function checkpoint() {
   stressPreviewId = '';
   shareHoldPreview = null;
   feeHoldPreview = null;
+  volumeHoldPreview = null;
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -73,6 +76,7 @@ function travelHistory(direction) {
   stressPreviewId = '';
   shareHoldPreview = null;
   feeHoldPreview = null;
+  volumeHoldPreview = null;
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -370,7 +374,7 @@ function inputPanel() {
         ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1', title: 'Leave blank for no commitment. Blank and zero are equivalent here.' })}
         ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
       </div>
-      <div class="button-row"><button type="button" data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button></div>
+      <div class="button-row"><button type="button" data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
       </details>
     </section>`).join('');
 
@@ -477,6 +481,7 @@ function resultsPanel(result) {
     ${feeRequirementsSection()}
     ${feeHoldPreviewSection()}
     ${shareHoldPreviewSection()}
+    ${volumeHoldPreviewSection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${breakpointSection(result)}
@@ -708,7 +713,7 @@ function sensitivitySection() {
 }
 
 function methodAndLimits() {
-  return `<section class="disclosure-grid"><section class="panel"><div class="panel-heading"><h2>Method</h2></div><div class="panel-body"><p>Revenue equals effective monthly volume times fee per transaction times revenue share. Monthly profit equals revenue less variable cost, fixed monthly cost, and risk cost. Effective volume is post-shock monthly volume capped by addressable volume.</p><p>A participant holds only when monthly profit meets its minimum acceptable profit, volume meets any minimum commitment, and volume does not exceed capacity.</p><p>The viability card names the participant with the least volume headroom. First breakpoint ranks bounded shocks by percentage movement and can name a different participant. Share-to-hold and fee-to-hold are deterministic floors with preview-then-apply. They do not assign probability.</p></div></section><section class="panel"><div class="panel-heading"><h2>Limits</h2></div><div class="panel-body"><p>This is a deterministic monthly contribution model, not a forecast or valuation. It does not prove legal enforceability, participant behavior, credit performance, demand response, tax treatment, timing of cash flows, or the completeness of cost inputs.</p><p>Shock thresholds show the boundary under unchanged inputs. Compound case counts describe only the selected discrete combinations. Neither assigns probability or cause. Currency codes are display prefixes only and are not converted.</p></div></section></section>`;
+  return `<section class="disclosure-grid"><section class="panel"><div class="panel-heading"><h2>Method</h2></div><div class="panel-body"><p>Revenue equals effective monthly volume times fee per transaction times revenue share. Monthly profit equals revenue less variable cost, fixed monthly cost, and risk cost. Effective volume is post-shock monthly volume capped by addressable volume.</p><p>A participant holds only when monthly profit meets its minimum acceptable profit, volume meets any minimum commitment, and volume does not exceed capacity.</p><p>The viability card names the participant with the least volume headroom. First breakpoint ranks bounded shocks by percentage movement and can name a different participant. Share-to-hold, volume-to-hold, and fee-to-hold are deterministic floors with preview-then-apply. They do not assign probability.</p></div></section><section class="panel"><div class="panel-heading"><h2>Limits</h2></div><div class="panel-body"><p>This is a deterministic monthly contribution model, not a forecast or valuation. It does not prove legal enforceability, participant behavior, credit performance, demand response, tax treatment, timing of cash flows, or the completeness of cost inputs.</p><p>Shock thresholds show the boundary under unchanged inputs. Compound case counts describe only the selected discrete combinations. Neither assigns probability or cause. Currency codes are display prefixes only and are not converted.</p></div></section></section>`;
 }
 
 function render() {
@@ -831,6 +836,9 @@ function attachEvents() {
     if (action === 'solve-share-hold') { previewShareHold(button.dataset.participantId); return; }
     if (action === 'apply-share-hold') { applyShareHold(); return; }
     if (action === 'close-share-hold') { shareHoldPreview = null; render(); return; }
+    if (action === 'solve-volume-hold') { previewVolumeHold(button.dataset.participantId); return; }
+    if (action === 'apply-volume-hold') { applyVolumeHold(); return; }
+    if (action === 'close-volume-hold') { volumeHoldPreview = null; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1403,6 +1411,45 @@ function applyShareHold() {
   shareHoldPreview = null;
   activePreset = '';
   refresh(`Applied minimum hold share of ${formatPct(share * 100)}. Remaining participants kept their relative leftover. Undo restores the previous allocation.`);
+}
+
+function previewVolumeHold(participantId) {
+  if (!validateConfiguration(state).valid) {
+    setNotice('Resolve invalid inputs before solving a hold volume.');
+    return;
+  }
+  try {
+    volumeHoldPreview = solveMinimumVolumeToHold(state, participantId);
+    render();
+    document.querySelector('#volume-hold-title')?.focus();
+  } catch (error) {
+    if (!(error instanceof ValidationError)) throw error;
+    setNotice(`Volume-to-hold solver rejected: ${summarizeErrors(error.errors)}`);
+  }
+}
+
+function applyVolumeHold() {
+  if (!volumeHoldPreview || volumeHoldPreview.status !== 'possible' || volumeHoldPreview.monthlyVolume == null) {
+    setNotice('No volume-to-hold proposal is available to apply.');
+    return;
+  }
+  const monthlyVolume = volumeHoldPreview.monthlyVolume;
+  checkpoint();
+  state.deal.monthlyVolume = monthlyVolume;
+  volumeHoldPreview = null;
+  activePreset = '';
+  refresh(`Applied hold volume of ${formatVolume(monthlyVolume)}. Fee and shares are unchanged. Undo restores the previous volume.`);
+}
+
+function volumeHoldPreviewSection() {
+  if (!volumeHoldPreview) return '';
+  const solved = volumeHoldPreview;
+  const target = state.participants.find((item) => item.id === solved.participantId);
+  const name = escapeAttribute(target?.name ?? solved.participantId);
+  if (solved.status === 'impossible') {
+    return `<section class="panel" aria-labelledby="volume-hold-title"><div class="panel-heading"><h2 id="volume-hold-title" tabindex="-1">Volume-to-hold preview</h2><button type="button" data-action="close-volume-hold">Close preview</button></div><div class="panel-body"><p>${escapeAttribute(solved.reason)}</p><p class="output-note">This is a deterministic solvability result, not a forecast of demand or of who will stay.</p></div></section>`;
+  }
+  return `<section class="panel" aria-labelledby="volume-hold-title"><div class="panel-heading"><h2 id="volume-hold-title" tabindex="-1">Volume-to-hold preview</h2><button type="button" data-action="close-volume-hold">Close preview</button></div><div class="panel-body"><p><strong>${name}</strong> holds at a minimum monthly volume of <strong>${formatVolume(solved.monthlyVolume)}</strong> (effective ${formatVolume(solved.effectiveVolume)}). Current monthly volume: ${formatVolume(state.deal.monthlyVolume)}. Apply is required; fee, shares, addressable demand, and volume shock stay unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p><div class="button-row"><button type="button" class="primary" data-action="apply-volume-hold">Apply hold volume</button><button type="button" data-action="close-volume-hold">Keep current volume</button></div></div></section>`;
 }
 
 function shareHoldPreviewSection() {

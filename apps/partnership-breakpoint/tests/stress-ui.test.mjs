@@ -605,6 +605,37 @@ test('share-to-hold previews a split and requires an explicit apply', async () =
   assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
 });
 
+test('volume-to-hold previews a floor and requires an explicit apply', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-action="solve-volume-hold" data-participant-id="liquidity-partner"/);
+  app.click('solve-volume-hold', { participantId: 'liquidity-partner' });
+  assert.match(app.markup(), /Volume-to-hold preview/);
+  assert.match(app.markup(), /Apply hold volume/);
+  const originalVolume = 100000;
+  const originalFee = 0.2;
+  const originalShares = [0.4, 0.35, 0.25];
+  app.click('close-volume-hold');
+  assert.doesNotMatch(app.markup(), /Volume-to-hold preview/);
+  app.click('solve-volume-hold', { participantId: 'liquidity-partner' });
+  app.click('apply-volume-hold');
+  assert.ok(app.saved().deal.monthlyVolume < originalVolume);
+  assert.ok(Math.abs(app.saved().deal.monthlyVolume - 90000) < 1e-4);
+  assert.equal(app.saved().deal.feePerTransaction, originalFee);
+  assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
+  app.click('undo');
+  assert.equal(app.saved().deal.monthlyVolume, originalVolume);
+
+  const blocked = clonePreset('balanced');
+  blocked.participants[2].minimumAcceptableProfit = 1_000_000;
+  app.import(blocked);
+  app.click('solve-volume-hold', { participantId: 'liquidity-partner' });
+  assert.match(app.markup(), /No monthly volume/);
+  assert.doesNotMatch(app.markup(), /data-action="apply-volume-hold"/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('solve-volume-hold', { participantId: 'liquidity-partner' });
+  assert.match(app.notice(), /Resolve invalid inputs before solving a hold volume/);
+});
+
 test('participant ledger shows capacity utilization as a meter plus text, or unbounded', async () => {
   const app = await workbench();
   assert.match(app.markup(), /<th>Capacity use<\/th>/);

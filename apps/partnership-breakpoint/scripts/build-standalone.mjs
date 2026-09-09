@@ -23,6 +23,7 @@ const appImport = `import {
   redactConfiguration,
   solveFeeForAllHold,
   solveMinimumShareToHold,
+  solveMinimumVolumeToHold,
   validateConfiguration,
 } from './model.js';
 
