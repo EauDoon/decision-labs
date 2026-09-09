@@ -11,6 +11,7 @@ import {
   createMerchantResidualReport,
   createBuyerCsv,
   importBuyersFromCsv,
+  buyerCsvTemplate,
   redactBuyerLabels,
   createOrganizerBriefing,
   decodeScenario,
@@ -286,6 +287,10 @@ function bindStaticEvents() {
   document.querySelector("#import-button").addEventListener("click", () => elements.importFile.click());
   elements.importFile.addEventListener("change", importScenario);
   document.querySelector("#import-buyers").addEventListener("click", () => document.querySelector("#import-buyers-file").click());
+  document.querySelector("#buyer-csv-template").addEventListener("click", () => {
+    downloadFile(buyerCsvTemplate(), "common-cart-buyers-template.csv", "text/csv;charset=utf-8");
+    setStatus("Buyer CSV template downloaded. Fill the header row, then import.", true);
+  });
   document.querySelector("#import-buyers-file").addEventListener("change", importBuyersCsv);
   document.querySelector("#export-button").addEventListener("click", exportScenario);
   document.querySelector("#screenshot-mode").addEventListener("click", () => {

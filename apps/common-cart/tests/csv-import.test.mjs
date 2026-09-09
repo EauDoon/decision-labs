@@ -2,6 +2,7 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import {
   ScenarioError,
+  buyerCsvTemplate,
   clonePreset,
   importBuyersFromCsv,
   neutralizeSpreadsheetCell,
@@ -61,4 +62,13 @@ test("buyer CSV import does not mutate the source scenario until validation succ
   assert.equal(ok.buyers.length, 1);
   assert.equal(original.buyers.length, 4);
   validateScenario(ok);
+});
+
+test("buyer CSV template is a valid header for a later import", () => {
+  const template = buyerCsvTemplate();
+  assert.match(template, /^label,category,quantity,max unit price,latest delivery days,variants,max order total\r\n$/);
+  const row = `${template}Hall,Coffee beans,2,30,7,Medium roast,\r\n`;
+  const buyers = parseBuyerCsv(row);
+  assert.equal(buyers.length, 1);
+  assert.equal(buyers[0].label, "Hall");
 });

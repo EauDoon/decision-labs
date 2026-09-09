@@ -412,6 +412,10 @@ export function importBuyersFromCsv(rawScenario, text) {
   return validateScenario({ ...scenario, buyers });
 }
 
+export function buyerCsvTemplate() {
+  return "label,category,quantity,max unit price,latest delivery days,variants,max order total\r\n";
+}
+
 export function createOrganizerBriefing(rawScenario) {
   const market = evaluateMarket(rawScenario);
   const residual = computeResidualCoverage(rawScenario);

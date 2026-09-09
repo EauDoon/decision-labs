@@ -507,6 +507,7 @@ footer {
           <div class="button-row">
             <button id="add-buyer" class="primary" type="button">Add buyer</button>
             <button id="import-buyers" type="button">Import buyer CSV</button>
+            <button id="buyer-csv-template" type="button">Download CSV template</button>
             <input id="import-buyers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
         </div>
@@ -1160,6 +1161,10 @@ function importBuyersFromCsv(rawScenario, text) {
   const buyers = parseBuyerCsv(text);
   if (buyers.length < 1) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
   return validateScenario({ ...scenario, buyers });
+}
+
+function buyerCsvTemplate() {
+  return "label,category,quantity,max unit price,latest delivery days,variants,max order total\r\n";
 }
 
 function createOrganizerBriefing(rawScenario) {
@@ -2091,6 +2096,10 @@ function bindStaticEvents() {
   document.querySelector("#import-button").addEventListener("click", () => elements.importFile.click());
   elements.importFile.addEventListener("change", importScenario);
   document.querySelector("#import-buyers").addEventListener("click", () => document.querySelector("#import-buyers-file").click());
+  document.querySelector("#buyer-csv-template").addEventListener("click", () => {
+    downloadFile(buyerCsvTemplate(), "common-cart-buyers-template.csv", "text/csv;charset=utf-8");
+    setStatus("Buyer CSV template downloaded. Fill the header row, then import.", true);
+  });
   document.querySelector("#import-buyers-file").addEventListener("change", importBuyersCsv);
   document.querySelector("#export-button").addEventListener("click", exportScenario);
   document.querySelector("#screenshot-mode").addEventListener("click", () => {

@@ -271,5 +271,6 @@ export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
 export function neutralizeSpreadsheetCell(value: unknown): unknown;
 export function parseBuyerCsv(text: unknown): Buyer[];
 export function importBuyersFromCsv(rawScenario: unknown, text: unknown): Scenario;
+export function buyerCsvTemplate(): string;
 export function redactBuyerLabels(rawScenario: unknown): Scenario;
 export function createOrganizerBriefing(rawScenario: unknown): string;
