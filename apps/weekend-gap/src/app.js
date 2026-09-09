@@ -1149,12 +1149,7 @@ document.querySelector("#selected-chart").addEventListener("change",()=>{
   const view = document.querySelector("#selected-chart").value;
   saveWorkspace();
   if (view === "gantt") jumpToGantt();
-  else {
-    const heading = document.querySelector("#chart-title");
-    heading?.setAttribute("tabindex", "-1");
-    heading?.focus();
-    heading?.scrollIntoView?.({ block: "start" });
-  }
+  else jumpToQueueChart();
 });
 document.querySelector("#export-gantt").addEventListener("click",()=>{
   downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
@@ -1208,6 +1203,15 @@ function rememberChart(view) {
   if (!select || (view !== "queue" && view !== "gantt")) return;
   if (select.value !== view) select.value = view;
   saveWorkspace();
+}
+function jumpToQueueChart() {
+  const heading = document.querySelector("#chart-title");
+  if (!heading) return false;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  rememberChart("queue");
+  return true;
 }
 function jumpToGantt() {
   const heading = document.querySelector("#gantt-title");
@@ -1346,6 +1350,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "d" || event.key === "D") {
     event.preventDefault();
     jumpToDashboard();
+    return;
+  }
+  if (event.key === "q" || event.key === "Q") {
+    event.preventDefault();
+    jumpToQueueChart();
     return;
   }
   if (event.key === "g" || event.key === "G") {

@@ -253,6 +253,22 @@ test("keyboard d jumps to the outcome summary and ignores the key while typing",
   assert.equal(ui.nodes.get("outcome-title").focused, false);
 });
 
+test("keyboard q jumps to the queue chart and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.edit("selected-chart", "gantt", "change");
+  await ui.keydown("q");
+  assert.equal(ui.nodes.get("chart-title").focused, true);
+  assert.equal(ui.nodes.get("chart-title").attributes.tabindex, "-1");
+  assert.equal(ui.nodes.get("selected-chart").value, "queue");
+  ui.nodes.get("chart-title").focused = false;
+  await ui.keydown("Q", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("chart-title").focused, false);
+  await ui.keydown("q", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("chart-title").focused, false);
+  await ui.keydown("q", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("chart-title").focused, false);
+});
+
 test("keyboard g jumps to the Gantt heading and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);
