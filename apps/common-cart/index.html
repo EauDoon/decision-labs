@@ -127,6 +127,7 @@ SOFTWARE.
                 <th scope="col">Category</th>
                 <th scope="col">Qty</th>
                 <th scope="col">Max item price</th>
+                <th scope="col">Max order total <span class="th-note">optional</span></th>
                 <th scope="col">Delivery by</th>
                 <th scope="col">Variants <span class="th-note">comma-separated</span></th>
                 <th scope="col"><span class="sr-only">Remove</span></th>
@@ -185,7 +186,7 @@ SOFTWARE.
             </table>
           </div>
           <p class="canvas-note">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
-          <p class="canvas-note">The price ceiling covers items only, as in earlier scenarios. Shipping can put the landed total above that ceiling. Any excess is flagged above and does not exclude the buyer.</p>
+          <p class="canvas-note">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
           <h4>Price-band feasibility</h4>
           <div class="table-shell compact">
             <table>
@@ -291,6 +292,7 @@ SOFTWARE.
       <td data-label="Category"><input data-field="category" maxlength="60" aria-label="Buyer category" placeholder="Required"></td>
       <td data-label="Quantity"><input data-field="quantity" type="number" min="1" max="5000" step="1" aria-label="Buyer quantity"></td>
       <td data-label="Max item price"><input data-field="maxUnitPrice" type="number" min="0" max="1000000" step="0.01" aria-label="Buyer maximum unit price"></td>
+      <td data-label="Max order total"><input data-field="maxOrderTotal" type="number" min="0" max="5001000000" step="0.01" aria-label="Buyer maximum order total including shipping" placeholder="No limit"></td>
       <td data-label="Delivery by"><span class="unit-input"><input data-field="latestDeliveryDays" type="number" min="0" max="365" step="1" aria-label="Latest delivery in days"><span>days</span></span></td>
       <td data-label="Variants"><input data-field="allowedVariants" maxlength="300" placeholder="Medium roast, Dark roast" aria-label="Allowed variants, comma separated" aria-describedby="variants-help"></td>
       <td><button class="icon-button remove-row" type="button" aria-label="Remove buyer">×</button></td>

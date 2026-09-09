@@ -200,9 +200,14 @@ function renderBuyerRow(entry) {
   row.dataset.id = entry.id;
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
-    input.value = field === "allowedVariants" ? entry[field].join(", ") : entry[field];
+    input.value = field === "allowedVariants" ? entry[field].join(", ") : entry[field] ?? "";
     input.addEventListener("input", () => {
       const target = scenario.buyers.find((buyer) => buyer.id === row.dataset.id);
+      if (field === "maxOrderTotal" && input.value === "") {
+        delete target.maxOrderTotal;
+        refresh();
+        return;
+      }
       target[field] = field === "allowedVariants"
         ? input.value.split(",").map((value) => value.trim()).filter(Boolean)
         : input.value;
@@ -452,6 +457,7 @@ function outcomePresentation(outcome) {
     category: "category differs",
     variant: "variant is not accepted",
     price: "unit price exceeds the ceiling",
+    budget: "items plus shipping exceed the order budget",
     delivery: "delivery exceeds the limit"
   };
   return {
