@@ -570,6 +570,42 @@ export function compareScenarioFiles(leftText, rightText) {
   });
 }
 
+/** Side-by-side summaries for three scenario JSON files. Null hours stay null. Does not load a scenario. */
+export function compareThreeScenarioFiles(baselineText, currentText, importedText) {
+  const baseline = scenarioFromJSON(baselineText);
+  const current = scenarioFromJSON(currentText);
+  const imported = scenarioFromJSON(importedText);
+  const errors = [...baseline.errors, ...current.errors, ...imported.errors];
+  if (!baseline.scenario || !current.scenario || !imported.scenario) {
+    return Object.freeze({
+      runs: null,
+      errors: Object.freeze(errors.length ? errors : ["Compare failed. Choose three valid Weekend Gap scenario JSON files."])
+    });
+  }
+  const pack = (role, scenario) => {
+    const result = runSimulation(scenario);
+    const queued = result.summary.peakQueuedAud > 0;
+    return Object.freeze({
+      role,
+      name: result.scenario.name,
+      peakQueuedAud: result.summary.peakQueuedAud,
+      finalQueuedAud: result.summary.finalQueuedAud,
+      totalSettledAud: result.summary.totalSettledAud,
+      hoursToFirstSettlement: result.summary.hoursToFirstSettlement,
+      hoursToClearQueue: result.summary.hoursToClearQueue,
+      peakQueueHour: queued ? result.summary.peakQueueHour : null
+    });
+  };
+  return Object.freeze({
+    runs: Object.freeze([
+      pack("baseline", baseline.scenario),
+      pack("current", current.scenario),
+      pack("imported", imported.scenario)
+    ]),
+    errors: Object.freeze(errors)
+  });
+}
+
 /** End-of-interval exposure and simultaneous blockers, never causal attribution. */
 export function analyzeTimeline(input) {
   const result = runSimulation(input);

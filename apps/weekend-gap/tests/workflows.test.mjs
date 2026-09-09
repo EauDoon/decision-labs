@@ -354,6 +354,26 @@ test("comparing two scenario JSON files shows queue diffs and honest null settle
   assert.match(hourRow.children[3].textContent, /Not comparable/);
 });
 
+test("comparing three scenario JSON files keeps honest nulls and does not replace the open scenario", async () => {
+  const { scenarioToJSON, DEFAULT_SCENARIO, PRESETS } = await import(new URL("../src/model.js", import.meta.url));
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  const openName = ui.nodes.get("scenario-title").textContent;
+  const baseline = scenarioToJSON(DEFAULT_SCENARIO);
+  const closed = scenarioToJSON({ ...DEFAULT_SCENARIO, payoutThroughputAudPerHour: 0, name: "Closed payout" });
+  const empty = scenarioToJSON({ ...DEFAULT_SCENARIO, redemptionDemandAud: 0, name: "No demand" });
+  ui.nodes.get("compare-file-baseline").files = [{ size: baseline.length, text: async () => baseline }];
+  ui.nodes.get("compare-file-current").files = [{ size: closed.length, text: async () => closed }];
+  ui.nodes.get("compare-file-imported").files = [{ size: empty.length, text: async () => empty }];
+  await ui.nodes.get("compare-three-scenario-files").click();
+  assert.equal(ui.nodes.get("scenario-title").textContent, openName);
+  assert.equal(ui.nodes.get("three-file-compare-rows").children.length, 7);
+  assert.match(ui.nodes.get("three-file-compare-status").textContent, /was not replaced/);
+  const settleRow = ui.nodes.get("three-file-compare-rows").children[4];
+  assert.match(settleRow.children[2].textContent, /No settlement in 72h/);
+  const peakHourRow = ui.nodes.get("three-file-compare-rows").children[6];
+  assert.equal(peakHourRow.children[3].textContent, "");
+});
+
 test("demand timing earlier and later previews apply without randomness", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("demandProfile").value, "flat");

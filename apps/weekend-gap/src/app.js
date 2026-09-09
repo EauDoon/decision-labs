@@ -44,7 +44,8 @@ import {
   reportToHTML,
   reportToMarkdown,
   dashboardToMarkdown,
-  compareScenarioFiles
+  compareScenarioFiles,
+  compareThreeScenarioFiles
 } from "./model.js";
 
 let workspaceReady = false;
@@ -702,6 +703,53 @@ document.querySelector("#compare-scenario-files").addEventListener("click", asyn
     status.textContent = `Compared ${leftName} (file A) with ${rightName} (file B). Mixed settlement or queue-clear hours stay not comparable. This is not a ranking of issuers.`;
   } catch {
     status.textContent = "Compare failed. Choose two readable scenario JSON files.";
+    body.replaceChildren();
+  }
+});
+
+document.querySelector("#compare-three-scenario-files").addEventListener("click", async () => {
+  const baselineFile = document.querySelector("#compare-file-baseline").files?.[0];
+  const currentFile = document.querySelector("#compare-file-current").files?.[0];
+  const importedFile = document.querySelector("#compare-file-imported").files?.[0];
+  const status = document.querySelector("#three-file-compare-status");
+  const body = document.querySelector("#three-file-compare-rows");
+  if (!baselineFile || !currentFile || !importedFile) {
+    status.textContent = "Choose three scenario JSON files before comparing.";
+    return;
+  }
+  if (baselineFile.size > 250000 || currentFile.size > 250000 || importedFile.size > 250000) {
+    status.textContent = "Compare failed. Each scenario file must be 250 KB or smaller.";
+    body.replaceChildren();
+    return;
+  }
+  try {
+    const result = compareThreeScenarioFiles(await baselineFile.text(), await currentFile.text(), await importedFile.text());
+    if (!result.runs) {
+      status.textContent = "Compare failed: " + result.errors.join(" ");
+      body.replaceChildren();
+      return;
+    }
+    const peakHour = (run) => run.peakQueueHour === null ? "" : formatTime(run.peakQueueHour);
+    body.replaceChildren(...[
+      ["Name", result.runs[0].name, result.runs[1].name, result.runs[2].name],
+      ["Peak queue", planningAud(result.runs[0].peakQueuedAud), planningAud(result.runs[1].peakQueuedAud), planningAud(result.runs[2].peakQueuedAud)],
+      ["Remaining queue", planningAud(result.runs[0].finalQueuedAud), planningAud(result.runs[1].finalQueuedAud), planningAud(result.runs[2].finalQueuedAud)],
+      ["Settled total", planningAud(result.runs[0].totalSettledAud), planningAud(result.runs[1].totalSettledAud), planningAud(result.runs[2].totalSettledAud)],
+      ["Hours to first settlement", formatHoursToFirstSettlement(result.runs[0].hoursToFirstSettlement), formatHoursToFirstSettlement(result.runs[1].hoursToFirstSettlement), formatHoursToFirstSettlement(result.runs[2].hoursToFirstSettlement)],
+      ["Hours to clear queue", formatHoursToClearQueue(result.runs[0].hoursToClearQueue, result.runs[0].peakQueuedAud), formatHoursToClearQueue(result.runs[1].hoursToClearQueue, result.runs[1].peakQueuedAud), formatHoursToClearQueue(result.runs[2].hoursToClearQueue, result.runs[2].peakQueuedAud)],
+      ["Peak queue hour", peakHour(result.runs[0]), peakHour(result.runs[1]), peakHour(result.runs[2])]
+    ].map((cells) => {
+      const row = document.createElement("tr");
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      }
+      return row;
+    }));
+    status.textContent = `Compared ${result.runs[0].name}, ${result.runs[1].name} and ${result.runs[2].name}. The open scenario was not replaced. Null queue or settlement hours stay empty rather than treated as zero.`;
+  } catch {
+    status.textContent = "Compare failed. Choose three readable scenario JSON files.";
     body.replaceChildren();
   }
 });

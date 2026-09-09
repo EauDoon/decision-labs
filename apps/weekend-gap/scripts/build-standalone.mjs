@@ -77,7 +77,8 @@ const appImportMarker = `import {
   reportToHTML,
   reportToMarkdown,
   dashboardToMarkdown,
-  compareScenarioFiles
+  compareScenarioFiles,
+  compareThreeScenarioFiles
 } from "./model.js";`;
 const exportedNames = Object.freeze([
   "SIMULATION_HOURS",
@@ -113,6 +114,7 @@ const exportedNames = Object.freeze([
   "scenarioToJSON",
   "scenarioFromJSON",
   "compareScenarioFiles",
+  "compareThreeScenarioFiles",
   "analyzeTimeline",
   "runSensitivity",
   "libraryFromJSON",
