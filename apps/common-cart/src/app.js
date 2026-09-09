@@ -30,6 +30,7 @@ import {
   createBuyerCsv,
   createDeliveryHeatmapCsv,
   createVariantOverlapCsv,
+  createVariantOverlapMarkdown,
   importBuyersFromCsv,
   importBuyersFromTable,
   importOffersFromCsv,
@@ -251,6 +252,23 @@ function bindStaticEvents() {
       downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
       setStatus("Overlap CSV downloaded. It contains buyer counts only.", true);
     } catch (error) { setStatus(`Overlap copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#overlap-markdown").addEventListener("click", () => {
+    try {
+      const markdown = createVariantOverlapMarkdown(scenario);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(markdown).then(
+          () => setStatus("Overlap Markdown copied. It contains buyer counts only. Labels, IDs, budgets, and allocations are omitted.", true),
+          () => {
+            downloadFile(markdown, "common-cart-variant-overlap.md", "text/markdown;charset=utf-8");
+            setStatus("Clipboard was blocked, so the overlap Markdown was downloaded instead. Counts only.", true);
+          }
+        );
+        return;
+      }
+      downloadFile(markdown, "common-cart-variant-overlap.md", "text/markdown;charset=utf-8");
+      setStatus("Overlap Markdown downloaded. It contains buyer counts only.", true);
+    } catch (error) { setStatus(`Overlap Markdown copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#copy-winner-aggregates").addEventListener("click", () => {
     try {

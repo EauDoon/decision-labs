@@ -1648,6 +1648,43 @@ export function createVariantOverlapCsv(rawScenario) {
   return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
 }
 
+function markdownTableCell(value) {
+  return String(value).replaceAll("|", "\\|").replaceAll("\n", " ");
+}
+
+/** Merchant-facing overlap counts as Markdown. Labels, IDs, budgets, and allocations are omitted. */
+export function createVariantOverlapMarkdown(rawScenario) {
+  const matrix = variantOverlapMatrix(rawScenario);
+  const header = ["Accepted variant", ...matrix.variants.map((entry) => entry.variant)].map(markdownTableCell);
+  const divider = header.map(() => "---");
+  const body = matrix.cells.map((row, index) => [
+    markdownTableCell(matrix.variants[index].variant),
+    ...row.map((cell) => String(cell.buyerCount))
+  ]);
+  const totalsHeader = ["Variant", "Offers", "Buyers", "Units"];
+  const totals = matrix.variants.map((entry) => [
+    markdownTableCell(entry.variant),
+    String(entry.offerCount),
+    String(entry.buyerCount),
+    String(entry.units)
+  ]);
+  const lines = [
+    `# Common Cart variant overlap`,
+    ``,
+    `Buyer counts whose accepted variants include each offered variant. Pairwise cells are overlaps. Labels, IDs, budgets, and allocations are omitted.`,
+    ``,
+    `| ${header.join(" | ")} |`,
+    `| ${divider.join(" | ")} |`,
+    ...body.map((row) => `| ${row.join(" | ")} |`),
+    ``,
+    `| ${totalsHeader.join(" | ")} |`,
+    `| ${totalsHeader.map(() => "---").join(" | ")} |`,
+    ...totals.map((row) => `| ${row.join(" | ")} |`),
+    ``
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 export function encodeScenario(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const bytes = new TextEncoder().encode(JSON.stringify(scenario));
