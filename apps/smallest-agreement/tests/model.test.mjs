@@ -27,6 +27,7 @@ import {
   formatDiscussionWorksheet,
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
+  formatVetoBlockersMarkdown,
   groupContributions,
   lockPackage,
   clearAllLocks,
@@ -1416,6 +1417,42 @@ test("recommended package Markdown copies selected options without claiming legi
     ] }],
   });
   assert.equal(formatRecommendedPackageMarkdown(infeasible).status, "unavailable");
+});
+
+test("veto-blocker Markdown lists unmet veto constraints without claiming legitimacy", () => {
+  const input = proposal({
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("original", true, { majority: 90, minority: 10 }),
+      option("mid", false, { majority: 88, minority: 20 }, 1),
+      option("other", false, { majority: 85, minority: 30 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const listed = formatVetoBlockersMarkdown(input, [input.clauses[0].options[0]]);
+  assert.equal(listed.status, "ok");
+  assert.match(listed.text, /^# Veto constraint list\n/u);
+  assert.match(listed.text, /numerical constraint list, not a legal veto or a claim of legitimacy/u);
+  assert.match(listed.text, /Minority: 10\.0% against required 80\.0%/u);
+  assert.doesNotMatch(listed.text, /[\u2014\u2013]/u);
+  assert.equal(listed.groups.length, 1);
+  assert.equal(JSON.stringify(input), before);
+  const clear = proposal({
+    groups: [{ id: "g", name: "Group", weight: 1, veto: true }],
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("original", true, { g: 90 }),
+      option("alt", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const met = formatVetoBlockersMarkdown(clear, [clear.clauses[0].options[0]]);
+  assert.match(met.text, /Every marked veto group meets its required average/u);
+  assert.equal(formatVetoBlockersMarkdown({ title: "" }).status, "invalid");
+  assert.equal(formatVetoBlockersMarkdown(input, null).status, "unavailable");
 });
 
 test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {

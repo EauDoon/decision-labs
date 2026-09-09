@@ -245,6 +245,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="clauses-import-button">Import clauses CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
+        <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
         <button class="button button-secondary" type="button" id="redo-button" disabled>Redo</button>
@@ -2005,6 +2006,42 @@ function formatRecommendedPackageMarkdown(proposal, result = findSmallestAgreeme
   return { status: "ok", text: `${lines.join("\n")}\n` };
 }
 
+/**
+ * Markdown list of veto groups whose average misses the required value.
+ * This is a constraint readout, not a legal veto or a legitimacy claim.
+ */
+function formatVetoBlockersMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "unavailable", text: "No inspected package is available, so there is no veto constraint list to copy.\n" };
+  }
+  const blocking = vetoBlockingGroups(proposal, options);
+  if (blocking.status !== "ok") return blocking;
+  const p = canonicalProposal(proposal);
+  const lines = [
+    "# Veto constraint list",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This list names groups whose veto constraint is not met on the inspected package. It is a numerical constraint list, not a legal veto or a claim of legitimacy.",
+    "",
+  ];
+  const marked = p.groups.filter((group) => group.veto === true);
+  if (!marked.length) {
+    lines.push("No veto groups are marked on this proposal.");
+  } else if (!blocking.groups.length) {
+    lines.push("Every marked veto group meets its required average on this package.");
+  } else {
+    lines.push("## Groups below the veto requirement", "");
+    for (const group of blocking.groups) {
+      lines.push(`- ${briefText(group.name)}: ${formatPercent(group.actual)} against required ${formatPercent(group.required)}`);
+    }
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n`, groups: blocking.groups };
+}
+
 function parseCsvCost(raw, path) {
   const neutralized = neutralizeCsvCell(raw).trim();
   if (FORMULA_CELL.test(neutralized)) {
@@ -2808,6 +2845,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -3777,6 +3815,18 @@ $("#copy-package-button").addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(packaged.text);
     notifyDraft("Recommended package copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    notifyDraft("Could not copy to the clipboard. Export the brief instead.");
+  }
+});
+$("#copy-veto-button").addEventListener("click", async () => {
+  const options = inspectedPackage(currentResult());
+  const listed = formatVetoBlockersMarkdown(state.proposal, options);
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the veto constraint list.");
+  if (listed.status !== "ok") return notifyDraft(listed.text.trim());
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Veto constraint list copied as Markdown. It is a numerical constraint list, not a legitimacy claim.");
   } catch {
     notifyDraft("Could not copy to the clipboard. Export the brief instead.");
   }

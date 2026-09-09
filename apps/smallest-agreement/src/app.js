@@ -27,6 +27,7 @@ import {
   formatDiscussionWorksheet,
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
+  formatVetoBlockersMarkdown,
   groupContributions,
   stressPackage,
   compareScenarioInputs,
@@ -567,6 +568,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -1536,6 +1538,18 @@ $("#copy-package-button").addEventListener("click", async () => {
   try {
     await navigator.clipboard.writeText(packaged.text);
     notifyDraft("Recommended package copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    notifyDraft("Could not copy to the clipboard. Export the brief instead.");
+  }
+});
+$("#copy-veto-button").addEventListener("click", async () => {
+  const options = inspectedPackage(currentResult());
+  const listed = formatVetoBlockersMarkdown(state.proposal, options);
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the veto constraint list.");
+  if (listed.status !== "ok") return notifyDraft(listed.text.trim());
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Veto constraint list copied as Markdown. It is a numerical constraint list, not a legitimacy claim.");
   } catch {
     notifyDraft("Could not copy to the clipboard. Export the brief instead.");
   }

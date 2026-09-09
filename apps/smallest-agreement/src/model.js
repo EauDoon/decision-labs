@@ -1537,6 +1537,42 @@ export function formatRecommendedPackageMarkdown(proposal, result = findSmallest
   return { status: "ok", text: `${lines.join("\n")}\n` };
 }
 
+/**
+ * Markdown list of veto groups whose average misses the required value.
+ * This is a constraint readout, not a legal veto or a legitimacy claim.
+ */
+export function formatVetoBlockersMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "unavailable", text: "No inspected package is available, so there is no veto constraint list to copy.\n" };
+  }
+  const blocking = vetoBlockingGroups(proposal, options);
+  if (blocking.status !== "ok") return blocking;
+  const p = canonicalProposal(proposal);
+  const lines = [
+    "# Veto constraint list",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This list names groups whose veto constraint is not met on the inspected package. It is a numerical constraint list, not a legal veto or a claim of legitimacy.",
+    "",
+  ];
+  const marked = p.groups.filter((group) => group.veto === true);
+  if (!marked.length) {
+    lines.push("No veto groups are marked on this proposal.");
+  } else if (!blocking.groups.length) {
+    lines.push("Every marked veto group meets its required average on this package.");
+  } else {
+    lines.push("## Groups below the veto requirement", "");
+    for (const group of blocking.groups) {
+      lines.push(`- ${briefText(group.name)}: ${formatPercent(group.actual)} against required ${formatPercent(group.required)}`);
+    }
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n`, groups: blocking.groups };
+}
+
 function parseCsvCost(raw, path) {
   const neutralized = neutralizeCsvCell(raw).trim();
   if (FORMULA_CELL.test(neutralized)) {

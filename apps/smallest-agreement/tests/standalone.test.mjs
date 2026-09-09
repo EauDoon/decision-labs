@@ -76,6 +76,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /id="worksheet-csv-button"/u);
   assert.match(html, /id="copy-package-button"/u);
+  assert.match(html, /id="copy-veto-button"/u);
+  assert.match(html, /Copy veto blockers/u);
   assert.match(html, /id="coach-again"/u);
   assert.match(html, /Duplicate option/u);
   assert.match(html, /Move up/u);
@@ -872,6 +874,29 @@ test("copy recommended package writes Markdown to the clipboard", async () => {
   assert.match(app.clipboardText(), /Neighbourhood Plan: the shared green/u);
   assert.match(app.clipboardText(), /not a recorded vote or a claim of legitimacy/u);
   assert.match(app.message(), /Recommended package copied as Markdown/u);
+});
+
+test("copy veto blockers writes a constraint list rather than a legitimacy claim", async () => {
+  const key = "smallest-agreement:proposal:v1";
+  const draft = {
+    title: "Veto copy workshop",
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { majority: 90, minority: 10 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { majority: 88, minority: 20 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { majority: 85, minority: 30 } },
+    ] }],
+  };
+  const app = await savedWorkbench(new Map([[key, JSON.stringify(draft)]]));
+  await app.click("#copy-veto-button");
+  assert.match(app.clipboardText(), /^# Veto constraint list\n/u);
+  assert.match(app.clipboardText(), /numerical constraint list, not a legal veto or a claim of legitimacy/u);
+  assert.match(app.clipboardText(), /Minority: 10\.0% against required 80\.0%/u);
+  assert.match(app.message(), /not a legitimacy claim/u);
 });
 
 test("groups CSV import replaces the roster with named errors and supports undo", async () => {
