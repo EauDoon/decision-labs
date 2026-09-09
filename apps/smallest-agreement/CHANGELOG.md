@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.4.1 - 2026-09-09
+
+A workshop follow-up. The solver is still a decision aid, not a decision maker.
+
+### Added
+
+- Three-column package pin: original selections, solver recommendation, and the custom package, with matching group scores.
+- Lock a whole package (the recommendation or a near-miss row) onto every clause in one undoable step.
+- Sort displayed near misses by approval gap or change cost. Sorting does not change which combinations the solver retained.
+- Live region when the clause filter matches zero cards. Hidden cards still count in the model.
+- Duplicate a participant group with a unique id, copied weight, optional floor and veto, and copied support scores.
+- Optional `clauses[].note`: a 1 to 240 character facilitator reminder. The solver ignores it. The discussion worksheet and print readout show it. Omitted notes keep old JSON valid.
+- Keyboard `f` focuses the clause filter when focus is not in an input, select, or text area.
+
 ## 1.4.0 - 2026-09-09
 
 A deliberation workshop release. Passing packages remain a decision aid, not a collective decision, legal agreement, or claim of optimal politics.
