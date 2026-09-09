@@ -1055,6 +1055,16 @@ export function deliveryHeatmap(rawScenario) {
   };
 }
 
+export function createDeliveryHeatmapCsv(rawScenario) {
+  const map = deliveryHeatmap(rawScenario);
+  const rows = [["Bucket", "Earliest day", "Latest day", "Buyers", "Units"]];
+  for (const bucket of map.buckets) {
+    rows.push([bucket.label, bucket.min, bucket.max, bucket.buyerCount, bucket.units]);
+  }
+  rows.push(["All buckets", "", "", map.buyerCount, map.units]);
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
 function buyerAcceptsVariant(buyer, variantKey) {
   return buyer.allowedVariants.some((variant) => normalizeText(variant) === variantKey);
 }

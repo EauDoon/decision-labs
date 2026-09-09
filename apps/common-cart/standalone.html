@@ -667,6 +667,7 @@ footer {
             <h4>Delivery deadline heatmap</h4>
             <p id="delivery-heatmap-text" class="canvas-note"></p>
             <svg id="delivery-heatmap" class="capacity-bar" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
+            <button id="heatmap-csv" type="button">Export heatmap CSV</button>
             <h4>Offered variant overlap</h4>
             <p id="variant-overlap-note" class="canvas-note"></p>
             <div class="table-shell compact">
@@ -1816,6 +1817,16 @@ function deliveryHeatmap(rawScenario) {
   };
 }
 
+function createDeliveryHeatmapCsv(rawScenario) {
+  const map = deliveryHeatmap(rawScenario);
+  const rows = [["Bucket", "Earliest day", "Latest day", "Buyers", "Units"]];
+  for (const bucket of map.buckets) {
+    rows.push([bucket.label, bucket.min, bucket.max, bucket.buyerCount, bucket.units]);
+  }
+  rows.push(["All buckets", "", "", map.buyerCount, map.units]);
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
 function buyerAcceptsVariant(buyer, variantKey) {
   return buyer.allowedVariants.some((variant) => normalizeText(variant) === variantKey);
 }
@@ -2060,6 +2071,12 @@ function bindStaticEvents() {
       downloadFile(`${JSON.stringify(createMerchantResidualReport(scenario), null, 2)}\n`, "common-cart-residual-coverage.json", "application/json");
       setStatus("Residual coverage exported as aggregates. Buyer IDs and labels are omitted. This is not a dual checkout.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#heatmap-csv").addEventListener("click", () => {
+    try {
+      downloadFile(createDeliveryHeatmapCsv(scenario), "common-cart-delivery-heatmap.csv", "text/csv;charset=utf-8");
+      setStatus("Delivery heatmap CSV exported. It contains aggregate deadline buckets only.", true);
+    } catch (error) { setStatus(`Heatmap export failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }

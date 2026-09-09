@@ -225,6 +225,7 @@ export interface DeliveryHeatmap {
   buckets: DeliveryBucket[];
 }
 export function deliveryHeatmap(rawScenario: unknown): DeliveryHeatmap;
+export function createDeliveryHeatmapCsv(rawScenario: unknown): string;
 
 export interface VariantOverlapCount {
   variant: string;

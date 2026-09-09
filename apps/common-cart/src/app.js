@@ -11,6 +11,7 @@ import {
   createMerchantReport,
   createMerchantResidualReport,
   createBuyerCsv,
+  createDeliveryHeatmapCsv,
   importBuyersFromCsv,
   buyerCsvTemplate,
   redactBuyerLabels,
@@ -179,6 +180,12 @@ function bindStaticEvents() {
       downloadFile(`${JSON.stringify(createMerchantResidualReport(scenario), null, 2)}\n`, "common-cart-residual-coverage.json", "application/json");
       setStatus("Residual coverage exported as aggregates. Buyer IDs and labels are omitted. This is not a dual checkout.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#heatmap-csv").addEventListener("click", () => {
+    try {
+      downloadFile(createDeliveryHeatmapCsv(scenario), "common-cart-delivery-heatmap.csv", "text/csv;charset=utf-8");
+      setStatus("Delivery heatmap CSV exported. It contains aggregate deadline buckets only.", true);
+    } catch (error) { setStatus(`Heatmap export failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
