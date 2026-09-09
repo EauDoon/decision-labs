@@ -277,6 +277,8 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
 
 select { width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #57717b; border-radius: .5rem; background: #12232d; color: #eef4f5; font: inherit; }
 
+textarea { width: 100%; padding: .7rem; resize: vertical; color: #eef4f5; background: #12232d; border: 1px solid #57717b; border-radius: .5rem; font: inherit; }
+
 </style>
   </head>
   <body>
@@ -492,12 +494,15 @@ select { width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #57717
           <article class="planning-card card" aria-labelledby="comparison-title">
             <p class="eyebrow">Scenario comparison</p>
             <h2 id="comparison-title">Hold a baseline. Test a change.</h2>
-            <p>Baseline: <strong id="baseline-name"></strong>. It starts from the scenario loaded in this tab and stays in memory until you replace it or close the page.</p>
+            <p>Baseline: <strong id="baseline-name"></strong>. It starts from the loaded scenario and is saved with your local workspace.</p>
             <div class="planning-actions">
               <button id="pin-baseline" type="button">Pin current as baseline</button>
               <button id="restore-baseline" type="button">Restore baseline</button>
               <button id="analysis-export" type="button">Export analysis JSON</button>
             </div>
+            <label for="workspace-notes">Experiment notes</label><textarea id="workspace-notes" rows="3" maxlength="4000" placeholder="What assumption are you testing, and why?"></textarea>
+            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
+            <p id="workspace-status" role="status">Workspace autosave includes the current scenario, pinned baseline, reserve target, notes and selected hour. Share links contain only a scenario and take priority on reload.</p>
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
               <table>
@@ -1123,12 +1128,34 @@ function libraryFromJSON(text) {
   } catch (error) { return { scenarios: null, errors: [error.message || "Library could not be read."] }; }
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON };
+/** Portable editing state; computed results are always regenerated on restore. */
+function workspaceToJSON(current, baseline, options = {}) {
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "" } = options;
+  if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
+  if (typeof notes !== "string" || notes.length > 4000) throw new RangeError("Workspace notes must be 4000 characters or fewer.");
+  return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes }, null, 2);
+}
+function workspaceFromJSON(text) {
+  try {
+    if (typeof text !== "string" || text.length > 250000) throw new Error("Workspace must be 250 KB or smaller.");
+    const raw = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+    if (raw?.format !== "weekend-gap-workspace" || raw.version !== 1) throw new Error("Unsupported workspace format.");
+    for (const field of ["current", "baseline"]) if (!raw[field] || typeof raw[field] !== "object" || Array.isArray(raw[field])) throw new Error("Workspace requires current and baseline scenario objects.");
+    const current = sanitizeScenario(raw.current), baseline = sanitizeScenario(raw.baseline);
+    const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, raw));
+    return { workspace, errors: [...current.errors, ...baseline.errors] };
+  } catch (error) { return { workspace: null, errors: [error.message || "Workspace could not be read."] }; }
+}
+
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON } = window.__WeekendGapModel;
 
+let workspaceReady = false;
+const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
 const form = document.querySelector("#scenario-form");
@@ -1503,12 +1530,13 @@ document.querySelector("#pin-baseline").addEventListener("click", () => {
   baselineScenario = { ...scenario };
   comparison = compareScenarios(baselineScenario, scenario);
   renderPlanning(); render();
+  saveWorkspace();
 });
 document.querySelector("#restore-baseline").addEventListener("click", () => {
   setScenario(baselineScenario, { message: "Baseline restored to the scenario editor." });
 });
 for (const id of ["reserve-target", "reserve-deadline"]) {
-  document.getElementById(id).addEventListener("input", renderPlanning);
+  document.getElementById(id).addEventListener("input", () => { renderPlanning(); saveWorkspace(); });
 }
 document.querySelector("#apply-reserve").addEventListener("click", () => {
   if (reservePlan?.status !== "reachable") return;
@@ -1700,6 +1728,55 @@ try {
   }
 } catch { document.querySelector("#library-status").textContent="Saved library could not be read. Existing browser data was kept."; }
 renderLibrary();
+
+function currentWorkspace() {
+  return workspaceToJSON(scenario,baselineScenario,{ targetPercent:document.querySelector("#reserve-target").valueAsNumber,
+    deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value });
+}
+function saveWorkspace() {
+  if(!workspaceReady) return;
+  try { localStorage.setItem(WORKSPACE_KEY,currentWorkspace()); document.querySelector("#workspace-status").textContent="Workspace autosaved locally, including the baseline, notes and reserve target."; }
+  catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Check the target fields or export a valid workspace; edits remain in this tab."; }
+}
+function applyWorkspace(saved) {
+  baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour;setPlaying(false);
+  document.querySelector("#reserve-target").value=String(saved.targetPercent);
+  document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
+  document.querySelector("#workspace-notes").value=saved.notes;
+  setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
+}
+function downloadText(text,filename,type) {
+  const url=URL.createObjectURL(new Blob([text],{type})),link=document.createElement("a");
+  link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();
+  window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+document.querySelector("#workspace-notes").addEventListener("input",saveWorkspace);
+document.querySelector("#export-workspace").addEventListener("click",()=>{
+  try { downloadText(currentWorkspace(),"weekend-gap-workspace.json","application/json");document.querySelector("#workspace-status").textContent="Workspace exported. Includes baseline, current assumptions, notes, target and selected hour."; }
+  catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+document.querySelector("#import-workspace").addEventListener("click",()=>document.querySelector("#workspace-file").click());
+document.querySelector("#workspace-file").addEventListener("change",async(event)=>{
+  const file=event.target.files?.[0];event.target.value="";if(!file) return;
+  if(file.size>250000) { document.querySelector("#workspace-status").textContent="Import failed. Workspace must be 250 KB or smaller.";return; }
+  try {
+    const result=workspaceFromJSON(await file.text());
+    if(!result.workspace) { document.querySelector("#workspace-status").textContent="Import failed: "+result.errors.join(" ");return; }
+    applyWorkspace(result.workspace);
+    if(result.errors.length) document.querySelector("#workspace-status").textContent="Workspace imported with adjustments: "+result.errors.join(" ");
+  } catch { document.querySelector("#workspace-status").textContent="Import failed. Choose a readable workspace JSON file."; }
+});
+if(!window.location.hash) {
+  try {
+    const raw=localStorage.getItem(WORKSPACE_KEY);
+    if(raw) {
+      const result=workspaceFromJSON(raw);
+      if(result.workspace) applyWorkspace(result.workspace);
+      document.querySelector("#workspace-status").textContent=result.errors.length ? "Saved workspace: "+result.errors.join(" ") : "Restored the previous local workspace.";
+    }
+  } catch { document.querySelector("#workspace-status").textContent="Saved workspace could not be read. Current scenario was kept."; }
+}
+workspaceReady=true;
 
 </script>
   </body>

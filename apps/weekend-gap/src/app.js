@@ -14,6 +14,8 @@ import {
   analysisToJSON
 } from "./model.js";
 
+let workspaceReady = false;
+const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
 const form = document.querySelector("#scenario-form");
@@ -388,12 +390,13 @@ document.querySelector("#pin-baseline").addEventListener("click", () => {
   baselineScenario = { ...scenario };
   comparison = compareScenarios(baselineScenario, scenario);
   renderPlanning(); render();
+  saveWorkspace();
 });
 document.querySelector("#restore-baseline").addEventListener("click", () => {
   setScenario(baselineScenario, { message: "Baseline restored to the scenario editor." });
 });
 for (const id of ["reserve-target", "reserve-deadline"]) {
-  document.getElementById(id).addEventListener("input", renderPlanning);
+  document.getElementById(id).addEventListener("input", () => { renderPlanning(); saveWorkspace(); });
 }
 document.querySelector("#apply-reserve").addEventListener("click", () => {
   if (reservePlan?.status !== "reachable") return;
@@ -585,3 +588,52 @@ try {
   }
 } catch { document.querySelector("#library-status").textContent="Saved library could not be read. Existing browser data was kept."; }
 renderLibrary();
+
+function currentWorkspace() {
+  return workspaceToJSON(scenario,baselineScenario,{ targetPercent:document.querySelector("#reserve-target").valueAsNumber,
+    deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value });
+}
+function saveWorkspace() {
+  if(!workspaceReady) return;
+  try { localStorage.setItem(WORKSPACE_KEY,currentWorkspace()); document.querySelector("#workspace-status").textContent="Workspace autosaved locally, including the baseline, notes and reserve target."; }
+  catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Check the target fields or export a valid workspace; edits remain in this tab."; }
+}
+function applyWorkspace(saved) {
+  baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour;setPlaying(false);
+  document.querySelector("#reserve-target").value=String(saved.targetPercent);
+  document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
+  document.querySelector("#workspace-notes").value=saved.notes;
+  setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
+}
+function downloadText(text,filename,type) {
+  const url=URL.createObjectURL(new Blob([text],{type})),link=document.createElement("a");
+  link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();
+  window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+document.querySelector("#workspace-notes").addEventListener("input",saveWorkspace);
+document.querySelector("#export-workspace").addEventListener("click",()=>{
+  try { downloadText(currentWorkspace(),"weekend-gap-workspace.json","application/json");document.querySelector("#workspace-status").textContent="Workspace exported. Includes baseline, current assumptions, notes, target and selected hour."; }
+  catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+document.querySelector("#import-workspace").addEventListener("click",()=>document.querySelector("#workspace-file").click());
+document.querySelector("#workspace-file").addEventListener("change",async(event)=>{
+  const file=event.target.files?.[0];event.target.value="";if(!file) return;
+  if(file.size>250000) { document.querySelector("#workspace-status").textContent="Import failed. Workspace must be 250 KB or smaller.";return; }
+  try {
+    const result=workspaceFromJSON(await file.text());
+    if(!result.workspace) { document.querySelector("#workspace-status").textContent="Import failed: "+result.errors.join(" ");return; }
+    applyWorkspace(result.workspace);
+    if(result.errors.length) document.querySelector("#workspace-status").textContent="Workspace imported with adjustments: "+result.errors.join(" ");
+  } catch { document.querySelector("#workspace-status").textContent="Import failed. Choose a readable workspace JSON file."; }
+});
+if(!window.location.hash) {
+  try {
+    const raw=localStorage.getItem(WORKSPACE_KEY);
+    if(raw) {
+      const result=workspaceFromJSON(raw);
+      if(result.workspace) applyWorkspace(result.workspace);
+      document.querySelector("#workspace-status").textContent=result.errors.length ? "Saved workspace: "+result.errors.join(" ") : "Restored the previous local workspace.";
+    }
+  } catch { document.querySelector("#workspace-status").textContent="Saved workspace could not be read. Current scenario was kept."; }
+}
+workspaceReady=true;

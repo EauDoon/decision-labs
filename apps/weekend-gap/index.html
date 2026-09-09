@@ -243,12 +243,15 @@ SOFTWARE.
           <article class="planning-card card" aria-labelledby="comparison-title">
             <p class="eyebrow">Scenario comparison</p>
             <h2 id="comparison-title">Hold a baseline. Test a change.</h2>
-            <p>Baseline: <strong id="baseline-name"></strong>. It starts from the scenario loaded in this tab and stays in memory until you replace it or close the page.</p>
+            <p>Baseline: <strong id="baseline-name"></strong>. It starts from the loaded scenario and is saved with your local workspace.</p>
             <div class="planning-actions">
               <button id="pin-baseline" type="button">Pin current as baseline</button>
               <button id="restore-baseline" type="button">Restore baseline</button>
               <button id="analysis-export" type="button">Export analysis JSON</button>
             </div>
+            <label for="workspace-notes">Experiment notes</label><textarea id="workspace-notes" rows="3" maxlength="4000" placeholder="What assumption are you testing, and why?"></textarea>
+            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
+            <p id="workspace-status" role="status">Workspace autosave includes the current scenario, pinned baseline, reserve target, notes and selected hour. Share links contain only a scenario and take priority on reload.</p>
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
               <table>

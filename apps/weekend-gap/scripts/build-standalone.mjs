@@ -77,7 +77,9 @@ const exportedNames = Object.freeze([
   "scenarioFromJSON",
   "analyzeTimeline",
   "runSensitivity",
-  "libraryFromJSON"
+  "libraryFromJSON",
+  "workspaceToJSON",
+  "workspaceFromJSON"
 ]);
 
 function normaliseLf(text) {

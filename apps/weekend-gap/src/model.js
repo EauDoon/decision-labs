@@ -514,3 +514,23 @@ export function libraryFromJSON(text) {
     return { scenarios, errors };
   } catch (error) { return { scenarios: null, errors: [error.message || "Library could not be read."] }; }
 }
+
+/** Portable editing state; computed results are always regenerated on restore. */
+export function workspaceToJSON(current, baseline, options = {}) {
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "" } = options;
+  if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
+  if (typeof notes !== "string" || notes.length > 4000) throw new RangeError("Workspace notes must be 4000 characters or fewer.");
+  return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes }, null, 2);
+}
+export function workspaceFromJSON(text) {
+  try {
+    if (typeof text !== "string" || text.length > 250000) throw new Error("Workspace must be 250 KB or smaller.");
+    const raw = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+    if (raw?.format !== "weekend-gap-workspace" || raw.version !== 1) throw new Error("Unsupported workspace format.");
+    for (const field of ["current", "baseline"]) if (!raw[field] || typeof raw[field] !== "object" || Array.isArray(raw[field])) throw new Error("Workspace requires current and baseline scenario objects.");
+    const current = sanitizeScenario(raw.current), baseline = sanitizeScenario(raw.baseline);
+    const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, raw));
+    return { workspace, errors: [...current.errors, ...baseline.errors] };
+  } catch (error) { return { workspace: null, errors: [error.message || "Workspace could not be read."] }; }
+}

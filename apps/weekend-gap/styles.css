@@ -244,3 +244,5 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
 }
 
 select { width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #57717b; border-radius: .5rem; background: #12232d; color: #eef4f5; font: inherit; }
+
+textarea { width: 100%; padding: .7rem; resize: vertical; color: #eef4f5; background: #12232d; border: 1px solid #57717b; border-radius: .5rem; font: inherit; }
