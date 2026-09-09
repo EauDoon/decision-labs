@@ -188,6 +188,10 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 
 `compareImportedCase(current, imported)` does the same alignment for the current draft versus one imported JSON case. Missing identifiers are labeled rather than filled with zeros. The GUI compare does not replace the current case.
 
+## Duplicate display names
+
+`duplicateDisplayNames` returns trimmed names that appear on more than one participant, with roster indexes. It does not change validation. A shared display name is a label collision, not a claim that the parties are the same or that the case is invalid.
+
 ## Charts
 
 The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. Download tornado SVG writes that same chart as a standalone SVG file with an XML declaration and SVG namespace. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.

@@ -676,6 +676,20 @@ test('deal notes persist, print, and export, and reject overlong or unknown valu
   assert.equal(Object.hasOwn(app.saved().deal, 'notes'), false);
 });
 
+test('duplicate display names warn without blocking edits', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.doesNotMatch(app.markup(), /duplicate-name-warning/);
+  app.edit('participants.1.name', 'Platform', { type: 'text' });
+  assert.match(app.markup(), /class="duplicate-name-warning"/);
+  assert.match(app.markup(), /2 participants share the name Platform/);
+  assert.match(app.markup(), /does not claim they are the same party/);
+  assert.match(app.markup(), /does not block editing/);
+  assert.match(app.markup(), /tested cases hold/);
+  app.edit('participants.1.name', 'Distributor', { type: 'text' });
+  assert.doesNotMatch(app.markup(), /duplicate-name-warning/);
+});
+
 test('roster highlights the first listed participant who fails the current baseline', async () => {
   const app = await workbench();
   assert.doesNotMatch(app.markup(), /first-fail-label/);

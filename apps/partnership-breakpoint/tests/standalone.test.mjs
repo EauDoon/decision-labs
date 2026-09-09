@@ -14,6 +14,7 @@ const appImport = `import {
   clonePreset,
   compareImportedCase,
   compareThreeSnapshots,
+  duplicateDisplayNames,
   duplicateParticipant,
   dropAndReallocate,
   evaluateStressGrid,

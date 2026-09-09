@@ -741,6 +741,27 @@ export function duplicateParticipant(participants, index) {
 }
 
 /**
+ * Names that appear more than once after trimming. This is a label warning,
+ * not a claim that the parties are the same or that the case is invalid.
+ * @param {ParticipantInput[]} participants
+ * @returns {{name: string, indexes: number[]}[]}
+ */
+export function duplicateDisplayNames(participants) {
+  if (!Array.isArray(participants)) return [];
+  const groups = new Map();
+  participants.forEach((item, index) => {
+    if (!isPlainObject(item)) return;
+    const name = typeof item.name === 'string' ? item.name.trim() : '';
+    if (!name) return;
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(index);
+  });
+  return [...groups.entries()]
+    .filter(([, indexes]) => indexes.length > 1)
+    .map(([name, indexes]) => ({ name, indexes: indexes.slice() }));
+}
+
+/**
  * Reorders one participant. Out-of-range moves return a shallow copy unchanged.
  * @param {ParticipantInput[]} participants
  * @param {number} index
