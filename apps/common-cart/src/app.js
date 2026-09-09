@@ -9,6 +9,7 @@ import {
   createBuyerCsv,
   importBuyersFromCsv,
   redactBuyerLabels,
+  createOrganizerBriefing,
   decodeScenario,
   duplicateEntry,
   encodeScenario,
@@ -135,6 +136,12 @@ function bindStaticEvents() {
       downloadFile(createBuyerCsv(scenario, inspectedOfferId), "common-cart-private-buyer-report.csv", "text/csv;charset=utf-8");
       setStatus("Private buyer report exported for the inspected offer. It contains labels and individual allocations.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#organizer-briefing").addEventListener("click", () => {
+    try {
+      downloadFile(createOrganizerBriefing(scenario), "common-cart-organizer-briefing.md", "text/markdown;charset=utf-8");
+      setStatus("Organizer briefing exported. It uses aggregates only and omits private buyer rows.", true);
+    } catch (error) { setStatus(`Briefing failed: ${messageOf(error)}`); }
   });
   document.querySelector("#merchant-report").addEventListener("click", () => {
     try {

@@ -311,6 +311,63 @@ export function importBuyersFromCsv(rawScenario, text) {
   return validateScenario({ ...scenario, buyers });
 }
 
+export function createOrganizerBriefing(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const residual = computeResidualCoverage(rawScenario);
+  const winner = market.winner;
+  const gap = winner ? unitsToNextTier(rawScenario, winner.offer.id) : null;
+  const excludedCount = winner
+    ? winner.buyerOutcomes.filter((outcome) => outcome.status !== "included").length
+    : market.buyerCount;
+  const lines = [
+    `# Common Cart organizer briefing`,
+    ``,
+    `- Room: ${market.scenario.title}`,
+    `- Currency: ${market.scenario.currency}`,
+    `- Requested units: ${market.totalRequestedUnits}`,
+    `- Buyers in the room: ${market.buyerCount}`,
+    `- Categories: ${market.categoryCount}`,
+    ``,
+    `## Winning offer`,
+    winner
+      ? [
+        `- Merchant: ${winner.offer.merchant}`,
+        `- Category: ${winner.offer.category}`,
+        `- Variant: ${winner.offer.variant}`,
+        `- Fulfillment: ${winner.offer.fulfillment}`,
+        `- Fulfilled units: ${winner.fulfilledUnits}`,
+        `- Included buyers: ${winner.deliveredBuyers}`,
+        `- Item price: ${winner.effectiveUnitPrice}`,
+        `- Landed total: ${winner.totalCost}`,
+        `- Group headroom: ${winner.savings}`,
+        `- Excluded buyers: ${excludedCount}`
+      ].join("\n")
+      : `- No qualifying offer. ${excludedCount} buyers remain unfilled.`,
+    ``,
+    `## Next cheaper tier`,
+    gap
+      ? [
+        `- Reachable with current buyers: ${gap.reachable ? "yes" : "no"}`,
+        `- Units still needed: ${gap.unitsNeeded === null ? "none" : gap.unitsNeeded}`,
+        `- Next minimum: ${gap.nextMinimum === null ? "none" : gap.nextMinimum}`,
+        `- Excluded buyers who could add units: ${gap.supplierBuyerCount} (${gap.supplierUnits} units)`,
+        `- Note: ${gap.reason}`
+      ].join("\n")
+      : `- No winning offer to inspect.`,
+    ``,
+    `## Residual coverage`,
+    `- ${residual.note}`,
+    residual.secondary
+      ? `- Leftover fill: ${residual.secondary.merchant} / ${residual.secondary.variant}, ${residual.secondary.fulfilledUnits} units, ${residual.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
+    `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
+    ``,
+    `This briefing is a planning aid. It omits private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 export function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {
