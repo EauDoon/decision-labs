@@ -1003,6 +1003,20 @@ test('four-party marketplace preset loads from the starting-point buttons', asyn
   assert.match(app.notice(), /Four-party marketplace loaded/);
 });
 
+test('licensor and distributor preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="licensorDistributor"/);
+  assert.match(app.markup(), /Licensor and distributor/);
+  app.click('preset', { preset: 'licensorDistributor' });
+  assert.equal(app.saved().participants.length, 2);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['ip-licensor', 'territory-distributor']);
+  assert.equal(app.saved().deal.feePerTransaction, 22);
+  assert.equal(app.saved().participants[0].variableCostPerTransaction, 0.25);
+  assert.equal(app.saved().participants[1].variableCostPerTransaction, 6.5);
+  assert.match(app.notice(), /Licensor and distributor loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+});
+
 test('visible tour and shortcut buttons reopen coach and help', async () => {
   const app = await workbench();
   app.click('dismiss-coach');

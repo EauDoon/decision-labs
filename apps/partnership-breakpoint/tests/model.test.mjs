@@ -409,6 +409,26 @@ test('four-party marketplace preset is distinct from two- and three-party starti
   assert.ok(result.participants.every((item) => item.viable));
 });
 
+test('licensor and distributor preset is a distinct two-party IP starting point', () => {
+  const license = clonePreset('licensorDistributor');
+  assert.equal(PRESETS.licensorDistributor.name, 'Licensor and distributor');
+  assert.equal(license.participants.length, 2);
+  assert.deepEqual(license.participants.map((item) => item.id), ['ip-licensor', 'territory-distributor']);
+  assert.deepEqual(license.participants.map((item) => item.revenueShare), [0.4, 0.6]);
+  assert.equal(license.deal.feePerTransaction, 22);
+  assert.equal(license.deal.monthlyVolume, 9000);
+  assert.notEqual(license.participants[0].variableCostPerTransaction, license.participants[1].variableCostPerTransaction);
+  assert.notEqual(license.participants[0].fixedMonthlyCost, license.participants[1].fixedMonthlyCost);
+  assert.notEqual(license.deal.feePerTransaction, clonePreset('creatorTakeRate').deal.feePerTransaction);
+  assert.notEqual(license.deal.feePerTransaction, clonePreset('twoPartyStudio').deal.feePerTransaction);
+  assert.notEqual(license.participants.map((item) => item.id).join(','), clonePreset('twoPartyStudio').participants.map((item) => item.id).join(','));
+  assert.notEqual(license.participants.length, clonePreset('threePartyJv').participants.length);
+  assert.notEqual(license.participants.length, clonePreset('fourPartyMarketplace').participants.length);
+  const result = calculatePartnership(license);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.viable));
+});
+
 test('creator take-rate and three-party JV presets calculate interesting first breakpoints', () => {
   const creator = calculatePartnership(clonePreset('creatorTakeRate'));
   assert.equal(creator.participants.length, 2);

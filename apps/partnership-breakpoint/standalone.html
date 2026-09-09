@@ -503,6 +503,14 @@ const PRESETS = Object.freeze({
       { id: 'payments', name: 'Payments', revenueShare: 0.12, variableCostPerTransaction: 0.03, fixedMonthlyCost: 500, minimumAcceptableProfit: 1800, capacity: 26000, minimumCommitment: 0, riskCost: 100 },
     ],
   },
+  licensorDistributor: {
+    name: 'Licensor and distributor',
+    deal: { monthlyVolume: 9000, feePerTransaction: 22, addressableVolume: 14000, volumeShockPct: 0 },
+    participants: [
+      { id: 'ip-licensor', name: 'IP licensor', revenueShare: 0.4, variableCostPerTransaction: 0.25, fixedMonthlyCost: 3500, minimumAcceptableProfit: 20000, capacity: null, minimumCommitment: 0, riskCost: 1500 },
+      { id: 'territory-distributor', name: 'Territory distributor', revenueShare: 0.6, variableCostPerTransaction: 6.5, fixedMonthlyCost: 14000, minimumAcceptableProfit: 9000, capacity: 11000, minimumCommitment: 2500, riskCost: 2800 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
