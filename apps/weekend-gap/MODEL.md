@@ -137,3 +137,7 @@ Workspace v1 stores canonical current and baseline scenarios, bounded notes (400
 ### Queue exposure by day
 
 The optional timing review can decompose end-of-hour queue exposure and demand across the four partial calendar days. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Arrival-cohort waiting ledger
+
+The optional timing review can attribute hourly settlement to earliest arrivals using an explicit FIFO assumption. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.

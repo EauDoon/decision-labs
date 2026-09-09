@@ -2182,6 +2182,7 @@ function compareSavedExperiments(scenarios) {
 
 const WEEKEND_REVIEW_TOOLS=Object.freeze([
  {id:'days',title:'Queue exposure by day'},
+ {id:'cohorts',title:'Arrival-cohort waiting ledger'},
 // WG_REVIEW_TOOLS
 ]);
 function validateWeekendReviewScenario(raw){
@@ -2197,6 +2198,12 @@ function analyzeWeekendReview(rawScenario,tool){
 
  const days=new Map();for(let hour=0;hour<72;hour++){const name=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayAndHourAt(hour).dayIndex];if(!days.has(name))days.set(name,[name,0,0,0,0,0]);const row=days.get(name),point=result.timeline[hour+1];row[1]++;row[2]+=point.demandThisHour;row[3]+=point.settledThisHour;row[4]+=point.queuedAud;row[5]=Math.max(row[5],point.queuedAud);}
  return report(['Day','Modeled hours','Demand arrived AUD','Settled AUD','Queue AUD-hours','Peak end-hour queue AUD'],[...days.values()],'Queue AUD-hours sums the queue after each hourly step, multiplied by one hour. Friday and Monday are partial days. It measures modeled backlog exposure, not a charge or real customer waiting time.');
+
+ }
+ case 'cohorts':{
+
+ const cohorts=[];let front=0;for(let hour=0;hour<72;hour++){const point=result.timeline[hour+1];cohorts.push({hour,arrived:point.demandThisHour,remaining:point.demandThisHour,settled:0,wait:0});let available=point.settledThisHour;while(available>0&&front<cohorts.length){const cohort=cohorts[front],amount=Math.min(available,cohort.remaining);cohort.remaining=Math.max(0,cohort.remaining-amount);available=Math.max(0,available-amount);cohort.settled+=amount;cohort.wait+=amount*(hour-cohort.hour);if(cohort.remaining===0)front++;else break;}}
+ return report(['Arrival hour','Arrived AUD','Settled by hour 72 AUD','Remaining AUD','Mean completed wait hours','Unfinished wait AUD-hours'],cohorts.map(c=>[c.hour,c.arrived,c.settled,c.remaining,c.settled>0?c.wait/c.settled:null,c.remaining*(72-c.hour)]),'Analytical FIFO attribution only: the core model has no customer priority. Same-step settlement has zero completed wait. Remaining amounts accumulate wait through hour 72 and have no assumed later payout. Means exclude unfinished amounts.');
 
  }
 // WG_REVIEW_CASES
