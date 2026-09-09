@@ -1491,6 +1491,42 @@ test('collapsing all-hold stress cases is display-only and expand restores the r
   assert.match(app.markup(), /27 of 27 rows are visible/);
 });
 
+test('collapse all-hold preference round-trips on saved JSON and defaults to expanded', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'collapseAllHoldCases'), false);
+  app.click('collapse-all-hold-cases');
+  assert.equal(app.saved().collapseAllHoldCases, true);
+  assert.doesNotMatch(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  app.click('export');
+  const collapsed = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(collapsed.collapseAllHoldCases, true);
+  app.click('expand-all-hold-cases');
+  assert.equal(Object.hasOwn(app.saved(), 'collapseAllHoldCases'), false);
+  app.click('export');
+  const expandedFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(expandedFile, 'collapseAllHoldCases'), false);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+
+  const imported = clonePreset('balanced');
+  imported.collapseAllHoldCases = true;
+  app.import(imported);
+  assert.equal(app.saved().collapseAllHoldCases, true);
+  assert.doesNotMatch(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'collapseAllHoldCases'), false);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+
+  const invalid = clonePreset('balanced');
+  invalid.collapseAllHoldCases = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+});
+
 test('copy share URL is http-only and names clipboard failure without a network request', async () => {
   const fileApp = await workbench('file:');
   assert.doesNotMatch(fileApp.markup(), /data-action="copy-share-url"/);

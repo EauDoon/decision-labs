@@ -99,6 +99,7 @@ function travelHistory(direction) {
   if (!source.length) return;
   destination.push(clone(state));
   state = source.pop();
+  readCollapsePreference();
   stressPreviewId = '';
   shareHoldPreview = null;
   feeHoldPreview = null;
@@ -167,7 +168,7 @@ function handleLibraryAction(action, id) {
   if (action === 'load-case') {
     const item = caseLibrary.find((entry) => entry.id === id);
     if (!item) return;
-    checkpoint(); state = withStress(clone(item.config)); activePreset = ''; caseName = item.name;
+    checkpoint(); state = withStress(clone(item.config)); readCollapsePreference(); activePreset = ''; caseName = item.name;
     refresh(`Loaded snapshot: ${item.name}. Undo restores your prior draft.`);
   }
   if (action === 'remove-case') {
@@ -205,6 +206,15 @@ function printSafeName(index, name) {
 
 function withStress(config) {
   return { ...config, stress: { ...(config.stress ?? DEFAULT_STRESS) } };
+}
+
+function readCollapsePreference() {
+  collapseAllHoldCases = state.collapseAllHoldCases === true;
+}
+
+function writeCollapsePreference() {
+  if (collapseAllHoldCases) state.collapseAllHoldCases = true;
+  else delete state.collapseAllHoldCases;
 }
 
 function compactErrorMessage(error) {
@@ -1035,11 +1045,15 @@ function attachEvents() {
     }
     if (action === 'collapse-all-hold-cases') {
       collapseAllHoldCases = true;
+      writeCollapsePreference();
+      saveState();
       render();
       return;
     }
     if (action === 'expand-all-hold-cases') {
       collapseAllHoldCases = false;
+      writeCollapsePreference();
+      saveState();
       render();
       return;
     }
@@ -1082,6 +1096,7 @@ function attachEvents() {
       checkpoint();
       activePreset = button.dataset.preset;
       state = withStress(clonePreset(activePreset));
+      readCollapsePreference();
       refresh(`${PRESETS[activePreset].name} loaded.`);
     }
     if (action === 'add-participant' && state.participants.length < MAX_PARTICIPANTS) {
@@ -1156,6 +1171,7 @@ function attachEvents() {
         const proposal = applyStressProposal(state);
         checkpoint();
         state = proposal;
+        writeCollapsePreference();
         activePreset = '';
         refresh('Tested revenue split applied. Every selected compound case was rechecked.');
       } catch (error) {
@@ -1167,6 +1183,7 @@ function attachEvents() {
       checkpoint();
       activePreset = 'balanced';
       state = withStress(clonePreset('balanced'));
+      readCollapsePreference();
       refresh('Reset to Balanced.');
     }
   });
@@ -1233,6 +1250,7 @@ function importFile(file) {
       if (!validation.valid) throw new ValidationError(validation.errors);
       checkpoint();
       state = withStress(candidate);
+      readCollapsePreference();
       activePreset = '';
       refresh('JSON imported.');
     } catch (error) {
@@ -1472,10 +1490,12 @@ window.addEventListener('hashchange', () => {
   importSequence += 1;
   checkpoint();
   state = withStress(shared.config);
+  readCollapsePreference();
   activePreset = '';
   refresh('Shared case loaded.');
 });
 
+readCollapsePreference();
 render();
 
 function comparisonSection(current) {
@@ -1953,7 +1973,7 @@ function stressCasePreview(stress) {
 function applyInspectedStressCase() {
   try {
     const candidate = materializeStressCase(state, stressPreviewId);
-    checkpoint(); state = withStress(candidate); activePreset = '';
+    checkpoint(); state = withStress(candidate); readCollapsePreference(); activePreset = '';
     refresh('Inspected stress case applied as the new baseline. Undo restores the prior inputs.');
   } catch (error) {
     if (!(error instanceof ValidationError)) throw error;

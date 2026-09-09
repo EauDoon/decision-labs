@@ -508,3 +508,30 @@ test('optional deal notes persist when valid and reject unknown abuse', () => {
   unknown.deal.memo = 'secret';
   assert.match(validateConfiguration(unknown).errors.join(' '), /unknown field: memo/);
 });
+
+test('optional collapseAllHoldCases is a boolean and older files omit it', () => {
+  const omitted = clonePreset('balanced');
+  assert.equal(Object.hasOwn(omitted, 'collapseAllHoldCases'), false);
+  assert.equal(validateConfiguration(omitted).valid, true);
+
+  const collapsed = clonePreset('balanced');
+  collapsed.collapseAllHoldCases = true;
+  assert.equal(validateConfiguration(collapsed).valid, true);
+
+  const expanded = clonePreset('balanced');
+  expanded.collapseAllHoldCases = false;
+  assert.equal(validateConfiguration(expanded).valid, true);
+
+  for (const value of ['true', 1, 0, null, 'yes', {}]) {
+    const config = clonePreset('balanced');
+    config.collapseAllHoldCases = value;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(value));
+    assert.match(validation.errors.join(' '), /boolean/);
+  }
+
+  const extra = clonePreset('balanced');
+  extra.collapseAllHoldCases = true;
+  extra.unexpected = true;
+  assert.match(validateConfiguration(extra).errors.join(' '), /unknown field: unexpected/);
+});

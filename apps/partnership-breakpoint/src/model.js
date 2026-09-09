@@ -32,6 +32,7 @@
  * @property {Deal} deal
  * @property {ParticipantInput[]} participants
  * @property {StressSettings} [stress] Optional. Legacy cases omit this object.
+ * @property {boolean} [collapseAllHoldCases] Optional display preference. Omitted files default to expanded.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -45,7 +46,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -183,6 +184,12 @@ export function validateConfiguration(config) {
     return { valid: false, errors: ['Configuration must be an object.'] };
   }
   rejectUnknownKeys(config, CONFIG_KEYS, 'Configuration', errors);
+  if (Object.hasOwn(config, 'collapseAllHoldCases')) {
+    const collapse = own(config, 'collapseAllHoldCases');
+    if (collapse !== true && collapse !== false) {
+      errors.push('Collapse all-hold cases must be a boolean.');
+    }
+  }
   if (Object.hasOwn(config, 'stress')) {
     const stress = own(config, 'stress');
     if (!isPlainObject(stress)) {
