@@ -4,6 +4,7 @@ import {
   SIMULATION_HOURS,
   formatTime,
   weekendCloseOverlapNotice,
+  mondaySaturdayHolidayNotice,
   runSimulation,
   sanitizeScenario,
   scenarioFromHash,
@@ -17,6 +18,7 @@ import {
   attributeBottlenecks,
   previewWindowShift,
   compareDemandProfiles,
+  previewDemandProfileStep,
   buildGateGanttSvg,
   ganttToCSV,
   buildGateSchedule,
@@ -33,11 +35,13 @@ import {
   timelineToCSV,
   queueToCSV,
   reportToHTML,
-  reportToMarkdown
+  reportToMarkdown,
+  dashboardToMarkdown,
+  compareScenarioFiles
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0 };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, selectedChart: "queue" };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -82,6 +86,7 @@ let baselineScenario = { ...scenario };
 let comparison = compareScenarios(baselineScenario, scenario);
 let reservePlan = null;
 let windowShiftPreview = null;
+let demandStepPreview = null;
 let lastSensitivityRows = [];
 let selectedHour = 0;
 let playing = false;
@@ -159,7 +164,7 @@ function setMessage(message = "") {
   elements.inputMessage.textContent = message;
 }
 
-function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus } = {}) {
+function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus, demandStepStatus } = {}) {
   const cleaned = sanitizeScenario(nextScenario);
   if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
@@ -181,6 +186,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   lastSensitivityRows = [];
   document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
   clearWindowShiftPreview(windowShiftStatus || "Assumptions changed. Preview the window shift again before applying.");
+  clearDemandStepPreview(demandStepStatus || "Assumptions changed. Preview the demand timing step again before applying.");
   if (message) setMessage(message);
   else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
@@ -276,6 +282,12 @@ function render() {
     overlapNode.hidden = !overlapNotice;
     overlapNode.textContent = overlapNotice;
   }
+  const mondaySaturdayNotice = mondaySaturdayHolidayNotice(scenario);
+  const mondaySaturdayNode = document.querySelector("#monday-saturday-holiday-notice");
+  if (mondaySaturdayNode) {
+    mondaySaturdayNode.hidden = !mondaySaturdayNotice;
+    mondaySaturdayNode.textContent = mondaySaturdayNotice;
+  }
 
   for (const button of document.querySelectorAll("[data-preset]")) {
     button.classList.toggle("is-selected", Object.keys(PRESETS[button.dataset.preset]).every(key => PRESETS[button.dataset.preset][key] === scenario[key]));
@@ -289,7 +301,10 @@ function render() {
 
 function renderTable() {
   const mode = document.querySelector("#table-density").value;
+  const peakHour = simulation.summary.peakQueueHour;
+  const peakQueuedAud = simulation.summary.peakQueuedAud;
   const rowIndexes = new Set([selectedHour]);
+  if (peakQueuedAud > 0) rowIndexes.add(peakHour);
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
     if(mode === "all" || (mode === "backlog" && simulation.timeline[hour].queuedAud > 0) || (mode === "snapshots" && hour % 6 === 0)) rowIndexes.add(hour);
   }
@@ -297,9 +312,10 @@ function renderTable() {
   [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
     const point = simulation.timeline[hour];
     const row = document.createElement("tr");
-    if (hour === selectedHour) row.className = "is-current";
+    const isPeak = peakQueuedAud > 0 && hour === peakHour;
+    row.className = [hour === selectedHour ? "is-current" : "", isPeak ? "is-peak-queue" : ""].filter(Boolean).join(" ");
     const cells = [
-      point.timeLabel,
+      isPeak ? `${point.timeLabel} Peak queue` : point.timeLabel,
       formatAud(point.immediateAud),
       formatAud(point.queuedAud),
       formatPercent(point.liquidityRatio),
@@ -318,6 +334,12 @@ function renderTable() {
     fragment.append(row);
   });
   elements.table.replaceChildren(fragment);
+  const note = document.querySelector("#peak-queue-row-note");
+  if (note) {
+    note.textContent = peakQueuedAud > 0
+      ? `The highlighted row is the peak queue checkpoint at ${formatTime(peakHour)} (hour ${peakHour}).`
+      : "No peak queue row is highlighted because demand never queued.";
+  }
 }
 
 function renderGantt() {
@@ -605,6 +627,57 @@ document.querySelector("#analysis-export").addEventListener("click", () => {
   setMessage("Analysis exported with both scenarios, changed assumptions, hourly queue comparison, and reserve plan.");
 });
 
+function hourDeltaLabel(delta) {
+  return delta === null ? "Not comparable" : `${delta >= 0 ? "+" : ""}${delta}`;
+}
+
+document.querySelector("#compare-scenario-files").addEventListener("click", async () => {
+  const fileA = document.querySelector("#compare-file-a").files?.[0];
+  const fileB = document.querySelector("#compare-file-b").files?.[0];
+  const status = document.querySelector("#file-compare-status");
+  const body = document.querySelector("#file-compare-rows");
+  if (!fileA || !fileB) {
+    status.textContent = "Choose two scenario JSON files before comparing.";
+    return;
+  }
+  if (fileA.size > 250000 || fileB.size > 250000) {
+    status.textContent = "Compare failed. Each scenario file must be 250 KB or smaller.";
+    body.replaceChildren();
+    return;
+  }
+  try {
+    const result = compareScenarioFiles(await fileA.text(), await fileB.text());
+    if (!result.comparison) {
+      status.textContent = "Compare failed: " + result.errors.join(" ");
+      body.replaceChildren();
+      return;
+    }
+    const left = result.comparison.baseline.summary;
+    const right = result.comparison.candidate.summary;
+    body.replaceChildren(...[
+      ["Peak queue", planningAud(left.peakQueuedAud), planningAud(right.peakQueuedAud), signedAud(result.deltas.peakQueuedAud)],
+      ["Remaining queue", planningAud(left.finalQueuedAud), planningAud(right.finalQueuedAud), signedAud(result.deltas.finalQueuedAud)],
+      ["Settled total", planningAud(left.totalSettledAud), planningAud(right.totalSettledAud), signedAud(result.deltas.totalSettledAud)],
+      ["Hours to first settlement", formatHoursToFirstSettlement(left.hoursToFirstSettlement), formatHoursToFirstSettlement(right.hoursToFirstSettlement), hourDeltaLabel(result.deltas.hoursToFirstSettlement)],
+      ["Hours to clear queue", formatHoursToClearQueue(left.hoursToClearQueue, left.peakQueuedAud), formatHoursToClearQueue(right.hoursToClearQueue, right.peakQueuedAud), hourDeltaLabel(result.deltas.hoursToClearQueue)]
+    ].map((cells) => {
+      const row = document.createElement("tr");
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      }
+      return row;
+    }));
+    const leftName = result.comparison.baseline.scenario.name;
+    const rightName = result.comparison.candidate.scenario.name;
+    status.textContent = `Compared ${leftName} (file A) with ${rightName} (file B). Mixed settlement or queue-clear hours stay not comparable. This is not a ranking of issuers.`;
+  } catch {
+    status.textContent = "Compare failed. Choose two readable scenario JSON files.";
+    body.replaceChildren();
+  }
+});
+
 function clearWindowShiftPreview(status = "Choose a gate and whole-hour offsets, then preview. Nothing is applied until you confirm.") {
   windowShiftPreview = null;
   const apply = document.querySelector("#apply-window-shift");
@@ -664,6 +737,52 @@ for (const id of ["window-shift-gate", "window-shift-start", "window-shift-end"]
     clearWindowShiftPreview("Offsets changed. Preview again before applying.");
   });
 }
+
+function clearDemandStepPreview(status = "Preview an adjacent arrival profile. Friday burst is earlier, Monday rush is later, and flat sits between them. Nothing is applied until you confirm. There is no randomness.") {
+  demandStepPreview = null;
+  const apply = document.querySelector("#apply-demand-step");
+  const rows = document.querySelector("#demand-step-rows");
+  const output = document.querySelector("#demand-step-status");
+  if (apply) apply.disabled = true;
+  if (rows) rows.replaceChildren();
+  if (output) output.textContent = status;
+}
+
+function previewDemandStep(direction) {
+  try {
+    demandStepPreview = previewDemandProfileStep(scenario, direction);
+    const preview = demandStepPreview;
+    document.querySelector("#demand-step-rows").replaceChildren(...[
+      ["Arrival profile", preview.currentProfile, preview.candidateProfile, preview.unchanged ? "Already at this end" : preview.direction],
+      ["Peak queue", planningAud(preview.current.peakQueuedAud), planningAud(preview.candidate.peakQueuedAud), signedAud(preview.deltas.peakQueuedAud)],
+      ["Settled total", planningAud(preview.current.totalSettledAud), planningAud(preview.candidate.totalSettledAud), signedAud(preview.deltas.totalSettledAud)],
+      ["Hours to first settlement", formatHoursToFirstSettlement(preview.current.hoursToFirstSettlement), formatHoursToFirstSettlement(preview.candidate.hoursToFirstSettlement), hourDeltaLabel(preview.deltas.hoursToFirstSettlement)]
+    ].map((cells) => {
+      const row = document.createElement("tr");
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      }
+      return row;
+    }));
+    document.querySelector("#apply-demand-step").disabled = preview.unchanged;
+    document.querySelector("#demand-step-status").textContent = preview.unchanged
+      ? `Already at the ${preview.direction} end of the arrival profiles. Total demand is unchanged. There is no randomness.`
+      : `Preview only. Arrival profile becomes ${preview.candidateProfile}. Peak queue change ${signedAud(preview.deltas.peakQueuedAud)}; settled total change ${signedAud(preview.deltas.totalSettledAud)}. Apply to copy this timing into the editor. There is no randomness.`;
+  } catch (error) {
+    clearDemandStepPreview(error instanceof RangeError ? error.message : "Demand timing step could not be previewed.");
+  }
+}
+
+document.querySelector("#preview-demand-earlier").addEventListener("click", () => previewDemandStep("earlier"));
+document.querySelector("#preview-demand-later").addEventListener("click", () => previewDemandStep("later"));
+document.querySelector("#apply-demand-step").addEventListener("click", () => {
+  if (!demandStepPreview || demandStepPreview.unchanged) return;
+  const next = demandStepPreview.applied;
+  const notice = `Applied ${next.demandProfile} demand timing. Other assumptions and the pinned baseline were kept. Undo scenario edit reverts this timing step.`;
+  setScenario(next, { message: notice, demandStepStatus: notice });
+});
 
 async function copyShareLink() {
   const hash = scenarioToHash(scenario);
@@ -944,7 +1063,8 @@ renderLibrary();
 function currentWorkspace() {
   return workspaceToJSON(scenario,baselineScenario,{ targetPercent:document.querySelector("#reserve-target").valueAsNumber,
     deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value,
-    ganttDensity: document.querySelector("#gantt-density").value });
+    ganttDensity: document.querySelector("#gantt-density").value,
+    selectedChart: document.querySelector("#selected-chart").value });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -954,7 +1074,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, selectedChart: saved.selectedChart };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -966,12 +1086,13 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0 };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue" };
   baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
   document.querySelector("#workspace-notes").value=saved.notes;
   document.querySelector("#gantt-density").value = saved.ganttDensity || "snapshots";
+  document.querySelector("#selected-chart").value = saved.selectedChart || "queue";
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -1024,6 +1145,12 @@ document.querySelector("#gantt-density").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
+document.querySelector("#selected-chart").addEventListener("change",()=>{
+  const view = document.querySelector("#selected-chart").value;
+  saveWorkspace();
+  if (view === "gantt") jumpToGantt();
+  else jumpToQueueChart();
+});
 document.querySelector("#export-gantt").addEventListener("click",()=>{
   downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
   setMessage("Gantt SVG downloaded. It is a synthetic operating calendar, not a live market chart.");
@@ -1063,12 +1190,36 @@ function jumpToFirstSettlement() {
 document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
   jumpToFirstSettlement();
 });
+function jumpToDashboard() {
+  const heading = document.querySelector("#outcome-title");
+  if (!heading) return false;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  return true;
+}
+function rememberChart(view) {
+  const select = document.querySelector("#selected-chart");
+  if (!select || (view !== "queue" && view !== "gantt")) return;
+  if (select.value !== view) select.value = view;
+  saveWorkspace();
+}
+function jumpToQueueChart() {
+  const heading = document.querySelector("#chart-title");
+  if (!heading) return false;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  rememberChart("queue");
+  return true;
+}
 function jumpToGantt() {
   const heading = document.querySelector("#gantt-title");
   if (!heading) return false;
   heading.setAttribute("tabindex", "-1");
   heading.focus();
   heading.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
   return true;
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
@@ -1085,6 +1236,21 @@ document.querySelector("#export-report").addEventListener("click",()=>{
     downloadText(reportToHTML(saved.current,saved.baseline,saved),"weekend-gap-report.html","text/html;charset=utf-8");
     document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
   } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+document.querySelector("#copy-dashboard-markdown").addEventListener("click", async () => {
+  try {
+    const text = dashboardToMarkdown(scenario);
+    const clipboard = globalThis.navigator?.clipboard;
+    if (clipboard && typeof clipboard.writeText === "function") {
+      await clipboard.writeText(text);
+      document.querySelector("#workspace-status").textContent = "Dashboard numbers copied as Markdown. Hours to clear, peak hour and first settlement are included.";
+      return;
+    }
+    downloadText(text, "weekend-gap-dashboard.md", "text/markdown;charset=utf-8");
+    document.querySelector("#workspace-status").textContent = "Clipboard unavailable. Dashboard Markdown downloaded instead.";
+  } catch (error) {
+    document.querySelector("#workspace-status").textContent = error.message;
+  }
 });
 document.querySelector("#copy-markdown-report").addEventListener("click", async () => {
   try {
@@ -1179,6 +1345,16 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "j" || event.key === "J") {
     event.preventDefault();
     jumpToFirstSettlement();
+    return;
+  }
+  if (event.key === "d" || event.key === "D") {
+    event.preventDefault();
+    jumpToDashboard();
+    return;
+  }
+  if (event.key === "q" || event.key === "Q") {
+    event.preventDefault();
+    jumpToQueueChart();
     return;
   }
   if (event.key === "g" || event.key === "G") {

@@ -74,6 +74,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="marketStress">Market Stress</button>
               <button type="button" class="preset-button" data-preset="thinFxTightWindows">Thin FX, Tight Windows (synthetic)</button>
               <button type="button" class="preset-button" data-preset="longWeekendFridayStart">Long-weekend Friday start (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="compressedFridayClose">Compressed Friday close (synthetic)</button>
             </div>
           </fieldset>
 
@@ -183,6 +184,7 @@ SOFTWARE.
               </label>
               <p>When selected, Saturday is a non-business day like Sunday. Issuer, bank and payout windows stay closed, and weekend FX thinning applies. Older scenario files omit this field and keep the existing weekend Saturday.</p>
               <p id="weekend-overlap-notice" role="status" hidden></p>
+              <p id="monday-saturday-holiday-notice" role="status" hidden></p>
             </div>
           </form>
 
@@ -247,9 +249,12 @@ SOFTWARE.
             <div class="card-heading">
               <div>
                 <p class="eyebrow">Scenario outcome</p>
-                <h2 id="outcome-title">What this run leaves behind</h2>
+                <h2 id="outcome-title" tabindex="-1">What this run leaves behind</h2>
               </div>
-              <p id="outcome-summary" class="gate-summary">Calculating</p>
+              <div class="planning-actions">
+                <p id="outcome-summary" class="gate-summary">Calculating</p>
+                <button id="copy-dashboard-markdown" type="button">Copy dashboard numbers</button>
+              </div>
             </div>
             <dl class="outcome-grid">
               <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
@@ -294,6 +299,21 @@ SOFTWARE.
                 <caption>Current minus baseline. Parentheses indicate decreases. Hours to first settlement uses hour offsets; mixed settlement and no-settlement runs are not subtracted.</caption>
                 <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th><th scope="col">Change</th></tr></thead>
                 <tbody id="comparison-rows"></tbody>
+              </table>
+            </div>
+            <h3 id="file-compare-title">Compare two scenario files</h3>
+            <p>File B minus file A. Mixed hours-to-first-settlement or hours-to-clear values stay blank rather than treated as zero. Analysis reports are not scenario files.</p>
+            <label for="compare-file-a">Scenario file A</label>
+            <input id="compare-file-a" type="file" accept="application/json,.json">
+            <label for="compare-file-b">Scenario file B</label>
+            <input id="compare-file-b" type="file" accept="application/json,.json">
+            <div class="planning-actions"><button id="compare-scenario-files" type="button">Compare scenario files</button></div>
+            <p id="file-compare-status" role="status">Choose two scenario JSON files. This compares synthetic runs, not real issuers.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario file comparison">
+              <table>
+                <caption>Queue and settlement differences. Mixed settlement or queue-clear hours are not subtracted.</caption>
+                <thead><tr><th scope="col">Metric</th><th scope="col">File A</th><th scope="col">File B</th><th scope="col">Change</th></tr></thead>
+                <tbody id="file-compare-rows"></tbody>
               </table>
             </div>
           </article>
@@ -369,6 +389,19 @@ SOFTWARE.
             <p class="eyebrow">Demand timing experiment</p>
             <h2 id="demand-compare-title">Compare flat, Friday burst and Monday rush</h2>
             <p>The three rows reuse every other current assumption and only change when demand joins the queue. Total demand is the same. This is a timing experiment, not a forecast of real redemptions.</p>
+            <div class="planning-actions">
+              <button id="preview-demand-earlier" type="button">Preview earlier arrivals</button>
+              <button id="preview-demand-later" type="button">Preview later arrivals</button>
+              <button id="apply-demand-step" type="button" disabled>Apply previewed timing</button>
+            </div>
+            <p id="demand-step-status" role="status">Preview an adjacent arrival profile. Friday burst is earlier, Monday rush is later, and flat sits between them. Nothing is applied until you confirm. There is no randomness.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Demand timing step preview">
+              <table>
+                <caption>Peak queue, settled total and hours to first settlement after one earlier or later arrival step.</caption>
+                <thead><tr><th scope="col">Metric</th><th scope="col">Current</th><th scope="col">Preview</th><th scope="col">Change</th></tr></thead>
+                <tbody id="demand-step-rows"></tbody>
+              </table>
+            </div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Demand profile comparison">
               <table>
                 <caption>Peak queue, remaining queue, settled total and hours to first settlement for each synthetic arrival profile.</caption>
@@ -396,7 +429,7 @@ SOFTWARE.
             <div class="card-heading chart-heading">
               <div>
                 <p class="eyebrow">72-hour ledger</p>
-                <h2 id="chart-title">Queue and redeemable capacity</h2>
+                <h2 id="chart-title" tabindex="-1">Queue and redeemable capacity</h2>
               </div>
               <p id="gate-summary" class="gate-summary">Checking gates</p>
             </div>
@@ -406,6 +439,11 @@ SOFTWARE.
             <div class="planning-actions">
               <button id="export-queue-svg" type="button">Download queue SVG</button>
               <button id="export-queue-csv" type="button">Export queue CSV</button>
+              <label for="selected-chart">Last chart view</label>
+              <select id="selected-chart">
+                <option value="queue">Queue chart</option>
+                <option value="gantt">Gate Gantt</option>
+              </select>
             </div>
             <div id="queue-svg" class="queue-svg"></div>
             <p class="chart-print-note">The SVG is a printable queue path. Download saves the same light-background drawing as a file. The canvas keeps a live playhead while you scrub.</p>
@@ -480,6 +518,7 @@ SOFTWARE.
               <p>Checkpoint balances, preceding interval flows and next-hour capacity</p>
             </div>
             <div class="planning-actions"><label for="table-density">Show checkpoints</label><select id="table-density"><option value="snapshots">Every six hours</option><option value="all">Every hour</option><option value="backlog">Hours ending with backlog</option></select><button id="jump-peak" type="button">Jump to peak queue</button><button id="jump-first-settlement" type="button">Jump to first settlement</button><button id="jump-monday" type="button">Jump to Monday 08:00</button><button id="export-timeline" type="button">Export hourly CSV</button></div>
+            <p id="peak-queue-row-note" role="status"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly simulation data">
               <table><caption>The selected hour is always included. Arrived and settled refer to the hour ending at this checkpoint; immediate capacity is available for the following hour. Displayed AUD is rounded.</caption>
                 <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th><th scope="col">Arrived in prior hour</th><th scope="col">Settled in prior hour</th></tr></thead>
@@ -523,6 +562,8 @@ SOFTWARE.
           <li><kbd>?</kbd> Open or close this help</li>
           <li><kbd>Space</kbd> Play or pause the timeline</li>
           <li><kbd>J</kbd> Jump the timeline to the first settlement</li>
+          <li><kbd>D</kbd> Jump to the dashboard outcome summary</li>
+          <li><kbd>Q</kbd> Jump to the queue chart</li>
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>

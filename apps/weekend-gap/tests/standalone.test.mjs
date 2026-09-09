@@ -19,21 +19,20 @@ test("standalone build is self-contained, LF-only, and deterministic", async () 
   assert.doesNotMatch(first, /\r/);
 });
 
-test("release 1.4.2 ships queue CSV, Gantt tools and the long-weekend preset", async () => {
+test("release 1.4.3 ships dashboard copy, file compare and compressed Friday close", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.4.2");
-  assert.match(readme, /New in v1\.4\.2/);
-  assert.match(readme, /Long-weekend Friday start/);
-  assert.match(html, /id="export-queue-csv"/);
-  assert.match(html, /id="export-gantt-csv"/);
-  assert.match(html, /id="copy-markdown-report"/);
-  assert.match(html, /id="weekend-overlap-notice"/);
-  assert.match(html, /data-preset="longWeekendFridayStart"/);
-  assert.match(html, /event\.key === "g"/);
-  assert.match(html, /event\.key === "p"/);
-  assert.match(html, /ganttPatternDefs\("wg-gantt"\)/);
-  assert.match(html, /Hatched fill is closed/);
-  assert.match(html, /queue remains/);
+  assert.equal(pkg.version, "1.4.3");
+  assert.match(readme, /New in v1\.4\.3/);
+  assert.match(readme, /Compressed Friday close/);
+  assert.match(html, /id="copy-dashboard-markdown"/);
+  assert.match(html, /event\.key === "d"/);
+  assert.match(html, /id="compare-scenario-files"/);
+  assert.match(html, /id="monday-saturday-holiday-notice"/);
+  assert.match(html, /id="preview-demand-earlier"/);
+  assert.match(html, /id="selected-chart"/);
+  assert.match(html, /id="peak-queue-row-note"/);
+  assert.match(html, /event\.key === "q"/);
+  assert.match(html, /data-preset="compressedFridayClose"/);
 });
