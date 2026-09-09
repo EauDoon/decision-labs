@@ -1246,3 +1246,27 @@ export function compareSavedExperiments(scenarios) {
   }));
 }
 
+
+export const WEEKEND_REVIEW_TOOLS=Object.freeze([
+ {id:'days',title:'Queue exposure by day'},
+// WG_REVIEW_TOOLS
+]);
+function validateWeekendReviewScenario(raw){
+ const fields=Object.keys(DEFAULT_SCENARIO);
+ if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).length!==fields.length||!fields.every(field=>Object.hasOwn(raw,field)&&typeof raw[field]===typeof DEFAULT_SCENARIO[field]))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ const cleaned=sanitizeScenario(raw);if(cleaned.errors.length)throw new TypeError(cleaned.errors.join(' '));return cleaned.scenario;
+}
+export function analyzeWeekendReview(rawScenario,tool){
+ const scenario=validateWeekendReviewScenario(rawScenario);const selected=WEEKEND_REVIEW_TOOLS.find(entry=>entry.id===tool);if(!selected)throw new TypeError('Unknown weekend review.');
+ const result=runSimulation(scenario);const report=(columns,rows,note)=>({tool,title:selected.title,currency:'AUD',columns,rows,note});
+ switch(tool){
+ case 'days':{
+
+ const days=new Map();for(let hour=0;hour<72;hour++){const name=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayAndHourAt(hour).dayIndex];if(!days.has(name))days.set(name,[name,0,0,0,0,0]);const row=days.get(name),point=result.timeline[hour+1];row[1]++;row[2]+=point.demandThisHour;row[3]+=point.settledThisHour;row[4]+=point.queuedAud;row[5]=Math.max(row[5],point.queuedAud);}
+ return report(['Day','Modeled hours','Demand arrived AUD','Settled AUD','Queue AUD-hours','Peak end-hour queue AUD'],[...days.values()],'Queue AUD-hours sums the queue after each hourly step, multiplied by one hour. Friday and Monday are partial days. It measures modeled backlog exposure, not a charge or real customer waiting time.');
+
+ }
+// WG_REVIEW_CASES
+ default:throw new TypeError('Unavailable weekend review.');
+ }
+}

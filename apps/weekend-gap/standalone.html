@@ -363,6 +363,16 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
   font-size: 0.78rem;
 }
 
+.weekend-review { margin: 1rem auto; padding: 1rem; max-width: 1400px; border: 1px solid #888; border-radius: .5rem; background: var(--panel, #fff); }
+.weekend-review summary { cursor: pointer; font-weight: 700; min-height: 44px; }
+.review-controls { display: flex; gap: .7rem; flex-wrap: wrap; margin: .8rem 0; }
+.review-controls select { min-width: 0; max-width: 100%; flex: 1 1 240px; }
+.review-controls button, .review-controls select { min-height: 44px; }
+.review-scroll { max-width: 100%; overflow: auto; max-height: 28rem; }
+.review-scroll table { min-width: 40rem; width: 100%; }
+.review-scroll th, .review-scroll td { padding: .7rem; text-align: left; }
+@media print { .weekend-review { display: none; } }
+
 </style>
   </head>
   <body>
@@ -380,6 +390,13 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
       </div>
     </header>
 
+    <details class="weekend-review" id="weekend-review">
+      <summary>Review the timing behind the queue</summary>
+      <p>Choose a question about the current 72-hour scenario. These analytical reviews do not change assumptions or move funds.</p>
+      <label for="weekend-review-tool">Review question</label>
+      <div class="review-controls"><select id="weekend-review-tool"></select><button id="weekend-review-run" type="button">Run review</button></div>
+      <div id="weekend-review-output" aria-live="polite"></div>
+    </details>
     <main id="dashboard" class="page-shell">
       <section class="intro" aria-labelledby="intro-title">
         <p class="eyebrow">Friday afternoon to Monday afternoon</p>
@@ -2163,11 +2180,35 @@ function compareSavedExperiments(scenarios) {
 }
 
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, BOTTLENECK_LABELS, attributeBottlenecks, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, buildGateSchedule, buildGateGanttSvg, ganttToCSV, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments };
+const WEEKEND_REVIEW_TOOLS=Object.freeze([
+ {id:'days',title:'Queue exposure by day'},
+// WG_REVIEW_TOOLS
+]);
+function validateWeekendReviewScenario(raw){
+ const fields=Object.keys(DEFAULT_SCENARIO);
+ if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).length!==fields.length||!fields.every(field=>Object.hasOwn(raw,field)&&typeof raw[field]===typeof DEFAULT_SCENARIO[field]))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ const cleaned=sanitizeScenario(raw);if(cleaned.errors.length)throw new TypeError(cleaned.errors.join(' '));return cleaned.scenario;
+}
+function analyzeWeekendReview(rawScenario,tool){
+ const scenario=validateWeekendReviewScenario(rawScenario);const selected=WEEKEND_REVIEW_TOOLS.find(entry=>entry.id===tool);if(!selected)throw new TypeError('Unknown weekend review.');
+ const result=runSimulation(scenario);const report=(columns,rows,note)=>({tool,title:selected.title,currency:'AUD',columns,rows,note});
+ switch(tool){
+ case 'days':{
+
+ const days=new Map();for(let hour=0;hour<72;hour++){const name=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayAndHourAt(hour).dayIndex];if(!days.has(name))days.set(name,[name,0,0,0,0,0]);const row=days.get(name),point=result.timeline[hour+1];row[1]++;row[2]+=point.demandThisHour;row[3]+=point.settledThisHour;row[4]+=point.queuedAud;row[5]=Math.max(row[5],point.queuedAud);}
+ return report(['Day','Modeled hours','Demand arrived AUD','Settled AUD','Queue AUD-hours','Peak end-hour queue AUD'],[...days.values()],'Queue AUD-hours sums the queue after each hourly step, multiplied by one hour. Friday and Monday are partial days. It measures modeled backlog exposure, not a charge or real customer waiting time.');
+
+ }
+// WG_REVIEW_CASES
+ default:throw new TypeError('Unavailable weekend review.');
+ }
+}
+
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, BOTTLENECK_LABELS, attributeBottlenecks, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, buildGateSchedule, buildGateGanttSvg, ganttToCSV, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, BOTTLENECK_LABELS, attributeBottlenecks, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, buildGateSchedule, buildGateGanttSvg, ganttToCSV, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, BOTTLENECK_LABELS, attributeBottlenecks, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, buildGateSchedule, buildGateGanttSvg, ganttToCSV, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview } = window.__WeekendGapModel;
 
 let workspaceReady = false;
 let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, selectedChart: "queue" };
@@ -2294,6 +2335,7 @@ function setMessage(message = "") {
 }
 
 function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus, demandStepStatus } = {}) {
+  clearWeekendReview();
   const cleaned = sanitizeScenario(nextScenario);
   if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
@@ -3516,6 +3558,23 @@ document.addEventListener("keydown", (event) => {
   }
 });
 maybeShowCoach();
+
+function clearWeekendReview(){const output=document.querySelector('#weekend-review-output');if(output)output.textContent='Run a review for the current scenario. Results clear when assumptions change.';}
+function showWeekendReview(review) {
+ const output=document.querySelector('#weekend-review-output');output.replaceChildren();
+ const title=document.createElement('h2');title.textContent=review.title;const note=document.createElement('p');note.textContent=review.note;output.append(title,note);
+ const scroll=document.createElement('div');scroll.className='review-scroll';scroll.tabIndex=0;
+ const table=document.createElement('table');const caption=document.createElement('caption');caption.textContent='Declared-input review. Monetary values use '+review.currency+'. Blank cells mean unavailable or unbounded as explained above.';table.append(caption);
+ const head=document.createElement('thead');const headings=document.createElement('tr');for(const label of review.columns){const th=document.createElement('th');th.scope='col';th.textContent=label;headings.append(th);}head.append(headings);table.append(head);
+ const body=document.createElement('tbody');for(const values of review.rows){const row=document.createElement('tr');for(const value of values){const cell=document.createElement('td');cell.textContent=value===null?'':typeof value==='number'?new Intl.NumberFormat('en-US',{maximumSignificantDigits:10}).format(value):value;row.append(cell);}body.append(row);}table.append(body);scroll.append(table);output.append(scroll);
+}
+function initializeWeekendReview(){
+ const select=document.querySelector('#weekend-review-tool');if(!select)return;
+ for(const tool of WEEKEND_REVIEW_TOOLS){const option=document.createElement('option');option.value=tool.id;option.textContent=tool.title;select.append(option);}
+ select.value='days';select.addEventListener('change',clearWeekendReview);
+ document.querySelector('#weekend-review-run').addEventListener('click',()=>{try{showWeekendReview(analyzeWeekendReview(scenario,select.value));}catch(error){clearWeekendReview();document.querySelector('#weekend-review-output').textContent='Review unavailable. '+error.message;}});
+}
+initializeWeekendReview();
 
 </script>
   </body>

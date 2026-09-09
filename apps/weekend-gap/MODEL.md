@@ -133,3 +133,7 @@ The gate Gantt plots 72 hours of issuer, bank and payout open/closed state plus 
 ## Recovery and output boundaries
 
 Workspace v1 stores canonical current and baseline scenarios, bounded notes (4000 characters), target, deadline, selected hour, Gantt table density (`snapshots`, `all` or `open`) and selected chart (`queue` or `gantt`). Older workspace files without density restore to six-hour snapshots. Older files without selected hour restore hour zero. Older files without selected chart restore the queue chart. Imports are size-bounded and atomically decoded before replacing state; computed results are regenerated. The library contains at most 12 canonical scenarios. Scenario undo keeps at most 40 snapshots in memory. Portable reports are static escaped HTML with a restrictive content security policy and may inline the current gate Gantt, the baseline-versus-current Gantt, queue path and limiting-gate counts. Formula-safe queue and Gantt CSVs quote cells and prefix formula-like text. The hourly ledger CSV contains only fixed headers, model-generated time labels and numeric values, so scenario names cannot inject spreadsheet formulas. Analysis JSON has no timestamp.
+
+### Queue exposure by day
+
+The optional timing review can decompose end-of-hour queue exposure and demand across the four partial calendar days. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.

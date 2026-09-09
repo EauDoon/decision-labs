@@ -1,4 +1,6 @@
 import {
+  WEEKEND_REVIEW_TOOLS,
+  analyzeWeekendReview,
   DEFAULT_SCENARIO,
   PRESETS,
   SIMULATION_HOURS,
@@ -165,6 +167,7 @@ function setMessage(message = "") {
 }
 
 function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus, demandStepStatus } = {}) {
+  clearWeekendReview();
   const cleaned = sanitizeScenario(nextScenario);
   if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
@@ -1387,3 +1390,20 @@ document.addEventListener("keydown", (event) => {
   }
 });
 maybeShowCoach();
+
+function clearWeekendReview(){const output=document.querySelector('#weekend-review-output');if(output)output.textContent='Run a review for the current scenario. Results clear when assumptions change.';}
+function showWeekendReview(review) {
+ const output=document.querySelector('#weekend-review-output');output.replaceChildren();
+ const title=document.createElement('h2');title.textContent=review.title;const note=document.createElement('p');note.textContent=review.note;output.append(title,note);
+ const scroll=document.createElement('div');scroll.className='review-scroll';scroll.tabIndex=0;
+ const table=document.createElement('table');const caption=document.createElement('caption');caption.textContent='Declared-input review. Monetary values use '+review.currency+'. Blank cells mean unavailable or unbounded as explained above.';table.append(caption);
+ const head=document.createElement('thead');const headings=document.createElement('tr');for(const label of review.columns){const th=document.createElement('th');th.scope='col';th.textContent=label;headings.append(th);}head.append(headings);table.append(head);
+ const body=document.createElement('tbody');for(const values of review.rows){const row=document.createElement('tr');for(const value of values){const cell=document.createElement('td');cell.textContent=value===null?'':typeof value==='number'?new Intl.NumberFormat('en-US',{maximumSignificantDigits:10}).format(value):value;row.append(cell);}body.append(row);}table.append(body);scroll.append(table);output.append(scroll);
+}
+function initializeWeekendReview(){
+ const select=document.querySelector('#weekend-review-tool');if(!select)return;
+ for(const tool of WEEKEND_REVIEW_TOOLS){const option=document.createElement('option');option.value=tool.id;option.textContent=tool.title;select.append(option);}
+ select.value='days';select.addEventListener('change',clearWeekendReview);
+ document.querySelector('#weekend-review-run').addEventListener('click',()=>{try{showWeekendReview(analyzeWeekendReview(scenario,select.value));}catch(error){clearWeekendReview();document.querySelector('#weekend-review-output').textContent='Review unavailable. '+error.message;}});
+}
+initializeWeekendReview();
