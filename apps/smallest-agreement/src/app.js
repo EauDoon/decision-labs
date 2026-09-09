@@ -5,8 +5,12 @@ import {
   MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
   clauseContributions,
+  comparePinnedPackages,
   explorePackageGaps,
   evaluatePackage,
+  lockPackage,
+  duplicateParticipantGroup,
+  sortPackageGapRows,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
   previewLockedOption,
@@ -191,6 +195,7 @@ let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
 let lockPreview = null;
 let clauseFilter = "";
+let nearMissSort = "approval_gap";
 let cachedResultKey;
 let cachedResult;
 const savedResults = new WeakMap();
@@ -371,6 +376,7 @@ function renderGroups() {
     <div class="group-row">
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
+      <button class="text-button" type="button" data-action="duplicate-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length >= MAX_GROUPS ? "disabled" : ""}>Duplicate group</button>
       <button class="text-button danger" type="button" data-action="remove-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length <= 1 ? "disabled" : ""}>Remove</button>
       <label class="group-floor">Minimum support (%)<input data-field="group-floor" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" value="${group.minSupport ?? ""}" placeholder="No floor" aria-label="${escapeHtml(group.name)} minimum support" aria-describedby="floor-note"></label>
       <label class="group-veto"><input data-field="group-veto" data-group-id="${escapeHtml(group.id)}" type="checkbox" ${group.veto === true ? "checked" : ""} aria-describedby="veto-note" aria-label="${escapeHtml(group.name)} veto"> Veto group (average support must meet the threshold)</label>
@@ -393,10 +399,14 @@ function renderClauses() {
   const { groups } = state.proposal;
   const query = clauseFilter.trim().toLowerCase();
   const visible = state.proposal.clauses.filter((clause) => clauseMatchesFilter(clause, query));
+  const status = $("#clause-filter-status");
   if (!visible.length) {
-    $("#clauses-editor").innerHTML = '<p class="empty-state">No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.</p>';
+    const message = "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
+    if (status) status.textContent = message;
+    $("#clauses-editor").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
+  if (status) status.textContent = query === "" ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
   $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
@@ -415,6 +425,9 @@ function renderClauses() {
           ${clause.options.map((option) => `<option value="${escapeHtml(option.id)}" ${clause.lockedOptionId === option.id ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
         </select>
       </label>
+      <label class="clause-note">Facilitator note (optional)
+        <input data-field="clause-note" data-clause-id="${escapeHtml(clause.id)}" type="text" maxlength="240" value="${escapeHtml(clause.note ?? "")}" placeholder="Not used by the solver" aria-label="${escapeHtml(clause.title)} facilitator note">
+      </label>
       <div class="options-table-wrap"><table class="options-table">
         <thead><tr><th scope="col">Option</th><th scope="col">Change cost</th>${groups.map((group) => `<th scope="col">${escapeHtml(group.name)}<br>support</th>`).join("")}<th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
         <tbody>${clause.options.map((option) => `
@@ -431,7 +444,7 @@ function renderClauses() {
 
 function renderBallot() {
   const proposal = state.proposal;
-  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p>${proposal.clauses.map((clause) => `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3><ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`).join("")}`;
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p>${proposal.clauses.map((clause) => `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`).join("")}`;
 }
 
 function renderResults(result) {
@@ -594,6 +607,7 @@ $("#use-recommendation").addEventListener("click", () => {
   if (!result.agreement) return;
   manualSelection = Object.fromEntries(state.proposal.clauses.map((clause, index) => [clause.id, result.agreement.options[index].id]));
   renderManualPackage(result);
+  renderSideBySide(result);
 });
 
 function renderAlternatives(result) {
@@ -663,22 +677,38 @@ function renderGroupContribution(result) {
   $("#group-contribution").innerHTML = `<p>Inspecting the ${source}. Overall approval ${formatPercent(analysis.overallApproval)}. Original ${formatPercent(analysis.originalApproval)}. Method: weight share times group average. Pulls sum to the change in overall approval.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight share</th><th scope="col">Selected support</th><th scope="col">Original support</th><th scope="col">Contribution</th><th scope="col">Pull on overall approval</th></tr></thead><tbody>${analysis.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${(row.share * 100).toFixed(1)}%</td><td>${formatPercent(row.selectedApproval)}</td><td>${formatPercent(row.originalApproval)}</td><td>${formatPercent(row.contribution)}</td><td class="${row.overallPull > 0.0001 ? "positive" : row.overallPull < -0.0001 ? "negative" : ""}">${formatMargin(row.overallPull)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
+function customOptionIds() {
+  return state.proposal.clauses.map((clause) => {
+    if (clause.options.some((option) => option.id === manualSelection[clause.id])) return manualSelection[clause.id];
+    return clause.options.find((option) => option.original)?.id;
+  });
+}
+
+function choiceCell(choice, note = "") {
+  if (!choice) return "Not set";
+  return `${escapeHtml(choice.label)}<br><small>Cost ${choice.changeCost.toFixed(1)}${note}</small>`;
+}
+
 function renderSideBySide(result) {
   const current = result.baseline;
-  const agreement = result.agreement;
   if (!current) {
     $("#side-by-side").innerHTML = '<p class="empty-state">Side-by-side comparison needs a valid original package.</p>';
     return;
   }
-  const recommended = agreement ?? null;
-  const clauseRows = state.proposal.clauses.map((clause, index) => {
-    const original = current.options[index];
-    const next = recommended?.options[index];
-    const changed = next && next.id !== original.id;
-    return `<tr><th scope="row">${escapeHtml(clause.title)}</th><td>${escapeHtml(original.label)}<br><small>Cost ${original.changeCost.toFixed(1)}</small></td><td>${next ? `${escapeHtml(next.label)}<br><small>Cost ${next.changeCost.toFixed(1)}${changed ? " (changed)" : ""}</small>` : "No recommendation"}</td></tr>`;
+  const recommendedIds = result.agreement ? result.agreement.options.map((option) => option.id) : null;
+  const comparison = comparePinnedPackages(state.proposal, recommendedIds, customOptionIds());
+  if (comparison.status !== "ok") {
+    $("#side-by-side").innerHTML = `<p class="empty-state">${escapeHtml(comparison.errors[0])}</p>`;
+    return;
+  }
+  const clauseRows = comparison.clauses.map((row) => {
+    const changed = row.recommended && row.recommended.optionId !== row.original.optionId;
+    const customNote = row.custom && row.custom.optionId !== row.original.optionId ? " (custom)" : "";
+    return `<tr><th scope="row">${escapeHtml(row.clauseTitle)}</th><td>${choiceCell(row.original)}</td><td>${row.recommended ? choiceCell(row.recommended, changed ? " (changed)" : "") : "No recommendation"}</td><td>${choiceCell(row.custom, customNote)}</td></tr>`;
   }).join("");
-  const groupRows = current.byGroup.map((group, index) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.approval)}</td><td>${recommended ? formatPercent(recommended.byGroup[index].approval) : "No recommendation"}</td></tr>`).join("");
-  $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(current.approval)}. Recommended ${recommended ? formatPercent(recommended.approval) : "not found"}. Original cost ${current.changeCost.toFixed(1)}. Recommended cost ${recommended ? recommended.changeCost.toFixed(1) : "not found"}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
+  const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
+  const recommendedLock = recommendedIds ? `<p>${lockPackageButton(recommendedIds, "Lock recommended package")} Applying locks is one draft edit, so undo restores the previous locks. Locked search still reports a deliberation aid, not a decision.</p>` : "";
+  $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(comparison.originalApproval)}. Recommended ${comparison.recommendedApproval == null ? "not found" : formatPercent(comparison.recommendedApproval)}. Custom ${formatPercent(comparison.customApproval)}. Original cost ${comparison.originalCost.toFixed(1)}. Recommended cost ${comparison.recommendedCost == null ? "not found" : comparison.recommendedCost.toFixed(1)}. Custom cost ${comparison.customCost.toFixed(1)}.</p>${recommendedLock}<div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th><th scope="col">Custom package</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th><th scope="col">Custom approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
 }
 
 function renderConstraints(result) {
@@ -711,6 +741,11 @@ function renderChanges(agreement, current) {
   shifts.innerHTML = deltas.length ? deltas.map((group) => `<div class="shift-item"><strong>${escapeHtml(group.name)}</strong> <span class="${group.delta > 0 ? "positive" : "negative"}">${group.delta > 0 ? "+" : ""}${group.delta.toFixed(1)} points</span><br><span>${formatPercent(group.before)} to ${formatPercent(group.after)}</span></div>`).join("") : '<p class="empty-state">No group support changes.</p>';
 }
 
+function lockPackageButton(optionIds, label) {
+  if (!Array.isArray(optionIds) || !optionIds.length) return "";
+  return ` <button class="text-button" type="button" data-action="lock-package" data-option-ids="${escapeHtml(optionIds.join("|"))}">${escapeHtml(label)}</button>`;
+}
+
 function packageGapRow(row, kind) {
   const gap = row.approvalGap;
   const approvalNote = row.meetsThreshold
@@ -723,7 +758,12 @@ function packageGapRow(row, kind) {
       : row.costVsRecommended < 0
         ? `Costs ${(-row.costVsRecommended).toFixed(1)} less than the recommendation (cost ${row.changeCost.toFixed(1)}).`
         : `Costs ${row.costVsRecommended.toFixed(1)} more than the recommendation (cost ${row.changeCost.toFixed(1)}).`;
-  return `<div class="miss-item"><span class="miss-score">${formatPercent(row.approval)}</span><span>${escapeHtml(row.labels)}<br><small>${escapeHtml(kind)} ${approvalNote} ${costNote}</small></span></div>`;
+  return `<div class="miss-item"><span class="miss-score">${formatPercent(row.approval)}</span><span>${escapeHtml(row.labels)}<br><small>${escapeHtml(kind)} ${approvalNote} ${costNote}</small>${lockPackageButton(row.optionIds, "Lock this package")}</span></div>`;
+}
+
+function orderedGapRows(rows) {
+  const sorted = sortPackageGapRows(rows, nearMissSort);
+  return sorted.status === "ok" ? sorted.rows : rows;
 }
 
 function renderNearMissExplorer(result) {
@@ -732,18 +772,20 @@ function renderNearMissExplorer(result) {
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near-miss comparison is unavailable for this search result.</p>';
     return;
   }
+  const cheaperMisses = orderedGapRows(gaps.cheaperMisses);
+  const closestMisses = orderedGapRows(gaps.closestMisses);
   const parts = [];
-  if (gaps.cheaperMisses.length) {
+  if (cheaperMisses.length) {
     parts.push("<h4>Cheaper packages that miss the threshold</h4>");
     parts.push("<p>These combinations cost less than the recommended package and remain below the threshold. They are not adoptable under the current rules.</p>");
-    parts.push(gaps.cheaperMisses.map((row) => packageGapRow(row, "Cheaper miss.")).join(""));
+    parts.push(cheaperMisses.map((row) => packageGapRow(row, "Cheaper miss.")).join(""));
   } else {
     parts.push('<p class="empty-state">No cheaper constraint-compliant package in the near-miss list falls below the threshold.</p>');
   }
-  if (gaps.closestMisses.length) {
+  if (closestMisses.length) {
     parts.push("<h4>Closest misses</h4>");
-    parts.push("<p>Ranked by smallest approval gap among constraint-compliant combinations that miss the threshold.</p>");
-    parts.push(gaps.closestMisses.map((row) => packageGapRow(row, "Closest miss.")).join(""));
+    parts.push("<p>Ranked by the selected sort among constraint-compliant combinations that miss the threshold. Sorting changes display order only; the solver still keeps the closest misses.</p>");
+    parts.push(closestMisses.map((row) => packageGapRow(row, "Closest miss.")).join(""));
   }
   if (gaps.nextOverThreshold.length) {
     parts.push("<h4>Next packages over the threshold</h4>");
@@ -852,6 +894,11 @@ function changeAndRender(mutator) {
   if (context.action === "add-clause") selector = '[data-field="clause-title"][data-clause-id="' + state.proposal.clauses.at(-1).id + '"]';
   if (context.action === "add-option" || context.action === "duplicate-option") selector = '[data-field="option-label"][data-clause-id="' + context.clauseId + '"][data-option-id="' + clauseById(context.clauseId).options.at(-1).id + '"]';
   if (context.action === "remove-group") selector = '[data-action="add-group"]';
+  if (context.action === "duplicate-group") {
+    const sourceIndex = state.proposal.groups.findIndex((group) => group.id === context.groupId);
+    const copy = state.proposal.groups[sourceIndex + 1];
+    if (copy) selector = '[data-field="group-name"][data-group-id="' + copy.id + '"]';
+  }
   if (context.action === "remove-clause") selector = '[data-action="add-clause"]';
   if (context.action === "duplicate-clause") {
     const sourceIndex = state.proposal.clauses.findIndex((clause) => clause.id === context.clauseId);
@@ -876,6 +923,11 @@ document.addEventListener("input", (event) => {
   if (field === "group-name") groupById(target.dataset.groupId).name = target.value;
   if (field === "group-weight") groupById(target.dataset.groupId).weight = target.valueAsNumber;
   if (field === "clause-title") clauseById(target.dataset.clauseId).title = target.value;
+  if (field === "clause-note") {
+    const clause = clauseById(target.dataset.clauseId);
+    if (target.value === "") delete clause.note;
+    else clause.note = target.value;
+  }
   if (field === "option-label") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).label = target.value;
   if (field === "option-label") {
     const select = [...document.querySelectorAll('[data-field="clause-lock"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId);
@@ -888,12 +940,17 @@ document.addEventListener("input", (event) => {
   save();
   $("#proposal-heading").textContent = state.proposal.title;
   $("#autosave-status").textContent = state.saveMessage;
+  renderBallot();
   renderResults(currentResult());
 });
 
 $("#clause-filter").addEventListener("input", (event) => {
   clauseFilter = event.target.value;
   renderClauses();
+});
+$("#near-miss-sort").addEventListener("change", (event) => {
+  nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
+  renderNearMissExplorer(currentResult());
 });
 
 $("#proposal-title").addEventListener("input", (event) => {
@@ -940,7 +997,9 @@ document.addEventListener("change", (event) => {
   }
   if (target.dataset.field === "manual-option") {
     manualSelection[target.dataset.clauseId] = target.value;
-    renderManualPackage(currentResult());
+    const result = currentResult();
+    renderManualPackage(result);
+    renderSideBySide(result);
     [...document.querySelectorAll('[data-field="manual-option"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId)?.focus();
     return;
   }
@@ -962,6 +1021,19 @@ document.addEventListener("click", (event) => {
     lockPreview = previewLockedOption(state.proposal, button.dataset.clauseId, button.dataset.optionId, { maxCombinations: MAX_COMBINATIONS, alternativesLimit: 5 });
     renderLockPreview();
     $("#lock-preview-heading").focus?.();
+    return;
+  }
+  if (action === "lock-package") {
+    const optionIds = typeof button.dataset.optionIds === "string" && button.dataset.optionIds
+      ? button.dataset.optionIds.split("|")
+      : [];
+    const locked = lockPackage(state.proposal, optionIds);
+    if (locked.status !== "ok") {
+      notifyDraft(`Could not lock that package: ${locked.errors[0]}`);
+      return;
+    }
+    changeAndRender(() => { state.proposal = locked.proposal; });
+    notifyDraft("Locked every clause to that package. Undo restores the previous draft.");
     return;
   }
   if (action === "dismiss-lock-preview") {
@@ -991,6 +1063,10 @@ document.addEventListener("click", (event) => {
     state.proposal.groups = state.proposal.groups.filter((group) => group.id !== id);
     state.proposal.clauses.forEach((clause) => clause.options.forEach((option) => { delete option.support[id]; }));
   });
+  if (action === "duplicate-group") changeAndRender(() => {
+    const duplicated = duplicateParticipantGroup(state.proposal, button.dataset.groupId);
+    if (duplicated.status === "ok") state.proposal = duplicated.proposal;
+  });
   if (action === "add-clause") changeAndRender(() => {
     const support = defaultSupport(state.proposal.groups);
     state.proposal.clauses.push({ id: makeId("clause"), title: "New clause", options: [
@@ -1015,6 +1091,7 @@ document.addEventListener("click", (event) => {
     const copy = {
       id: makeId("clause"),
       title: source.title.length + 7 > 120 ? `${source.title.slice(0, 113)} (copy)` : `${source.title} (copy)`,
+      ...(source.note ? { note: source.note } : {}),
       options: source.options.map((option) => ({
         id: makeId(option.original ? "original" : "alternative"),
         label: option.label,
@@ -1400,6 +1477,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "s" || event.key === "S") {
     event.preventDefault();
     findAgreement();
+  } else if (event.key === "f" || event.key === "F") {
+    event.preventDefault();
+    $("#clause-filter")?.focus?.();
   }
 });
 

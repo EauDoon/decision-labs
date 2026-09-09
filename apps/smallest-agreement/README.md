@@ -66,7 +66,7 @@ npm run check
 4. Optionally set a minimum average support for any group, mark a veto group, a maximum total change cost, and an option lock on a clause. Blank budget and floor inputs mean no limit. Zero is an active limit. Unlock an option before removing it. A veto is a numerical constraint, not a legal right.
 5. Save a named snapshot before changing assumptions. The local library holds up to 20 independent snapshots. Loading, importing, resetting, and editing can be undone through up to 50 in-tab changes; a new edit clears redo.
 6. Review up to five ranked passing packages, their lowest group support, and groups losing support. If no package satisfies every requirement, inspect constraint checks and near misses. Clause contribution and group contribution explain the arithmetic; they are not bargaining power.
-7. Try a custom package, preview locking an option, start from the recommendation, and inspect every violated constraint. Reduce support by a chosen number of points to test the recommendation under a deterministic downside scenario. Leave-one-group-out omits a group's weight from the average as a sensitivity check, not a forecast.
+7. Try a custom package and pin it beside the original and the solver recommendation. Preview locking an option, or lock a whole recommended or near-miss package in one undoable step. Reduce support by a chosen number of points to test the recommendation under a deterministic downside scenario. Leave-one-group-out omits a group's weight from the average as a sensitivity check, not a forecast.
 8. Compare the working draft with a saved snapshot. Review changed inputs before comparing output metrics, especially when groups, weights, or clauses differ.
 9. Export JSON to reopen the draft, CSV for all modeled input evidence, a support-matrix CSV of scores only, or a Markdown brief with ranked packages. Print readout and the discussion worksheet are conversation aids, not recorded votes. When served, Share link places the draft in the URL hash.
 
@@ -92,7 +92,16 @@ See [MODEL.md](MODEL.md) for the formula, deterministic ordering, assumptions, a
 
 A score can be incomplete, a weight can be contested, and a low numerical change cost can mask a large semantic shift. A passing result cannot confer legitimacy, consent, representation, fairness, legal validity, or authority to adopt the proposal. Keep deliberation, governing rules, and accountable human judgment outside the calculation.
 
-Support floors and veto marks protect only the numerical averages you enter. They do not establish consent, a legal veto, or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority.
+Support floors and veto marks protect only the numerical averages you enter. They do not establish consent, a legal veto, or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority. Optional clause notes are facilitator reminders only.
+
+## v1.4.1, 09-09-2026
+
+- Added a three-column pin of original, solver, and custom packages.
+- Added one-step package locks from the recommendation or a near-miss row. Undo restores the previous locks.
+- Added user-controlled near-miss display sort by approval gap or change cost.
+- Added a live region when the clause filter has no matches, group duplication with copied support scores, optional 240-character clause notes ignored by the solver, and keyboard `f` to focus the clause filter.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ## v1.4.0, 09-09-2026
 

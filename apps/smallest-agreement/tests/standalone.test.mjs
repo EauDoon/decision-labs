@@ -40,13 +40,21 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Leave one group out/u);
   assert.match(html, /id="coach-overlay"/u);
   assert.match(html, /id="shortcut-overlay"/u);
+  assert.match(html, /Focus the clause filter/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
+  assert.match(html, /Lock recommended package/u);
+  assert.match(html, /id="near-miss-sort"/u);
+  assert.match(html, /Lock this package/u);
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /id="clause-filter"/u);
+  assert.match(html, /id="clause-filter-status"/u);
+  assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /id="printable-ballot"/u);
   assert.match(html, /Discussion worksheet/u);
+  assert.match(html, /Facilitator note \(optional\)/u);
+  assert.match(html, /Duplicate group/u);
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /id="coach-again"/u);
@@ -64,14 +72,19 @@ async function savedWorkbench(storage, hash = "") {
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/u)[1];
   const elements = new Map();
   const documentEvents = new Map();
+  let focusedSelector = "";
   const canvasContext = { setTransform() {}, clearRect() {}, fillRect() {}, fillText() {} };
   const element = (selector) => {
     if (!elements.has(selector)) elements.set(selector, { value: "", textContent: "", innerHTML: "", clientWidth: 400,
-      events: new Map(), addEventListener(name, callback) { this.events.set(name, callback); }, getContext: () => canvasContext });
+      events: new Map(), addEventListener(name, callback) { this.events.set(name, callback); }, getContext: () => canvasContext, focus() { focusedSelector = selector; } });
     return elements.get(selector);
   };
   const context = vm.createContext({ console, TextDecoder, Uint8Array, atob,
-    document: { querySelector: element, addEventListener: (name, callback) => documentEvents.set(name, callback) },
+    document: {
+      querySelector: element,
+      querySelectorAll: () => [],
+      addEventListener: (name, callback) => documentEvents.set(name, callback),
+    },
     window: { devicePixelRatio: 1, addEventListener() {} },
     location: { hash, protocol: "file:" },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
@@ -85,6 +98,7 @@ async function savedWorkbench(storage, hash = "") {
     alert: () => element("#result-alert").textContent,
     summary: () => element("#result-summary").innerHTML,
     clauses: () => element("#clauses-editor").innerHTML,
+    groups: () => element("#groups-editor").innerHTML,
     disabled: (selector) => element(selector).disabled,
     click: (selector) => element(selector).events.get("click")(),
     importJson: async (contents, { size, read } = {}) => {
@@ -109,8 +123,16 @@ async function savedWorkbench(storage, hash = "") {
       target.value = value;
       target.events.get("input")({ target });
     },
+    filterStatus: () => element("#clause-filter-status").textContent,
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
+    sideBySide: () => element("#side-by-side").innerHTML,
+    nearMisses: () => element("#near-misses-list").innerHTML,
+    sortNearMisses: (value) => {
+      const target = element("#near-miss-sort");
+      target.value = value;
+      target.events.get("change")({ target });
+    },
     coachHidden: () => element("#coach-overlay").hidden,
     clickAction: (action, dataset = {}) => {
       documentEvents.get("click")({
@@ -119,6 +141,23 @@ async function savedWorkbench(storage, hash = "") {
             ? { disabled: false, dataset: { action, ...dataset } }
             : null,
         },
+      });
+    },
+    changeManual: (clauseId, optionId) => {
+      documentEvents.get("change")({
+        target: { dataset: { field: "manual-option", clauseId }, value: optionId },
+      });
+    },
+    focused: () => focusedSelector,
+    clearFocus: () => { focusedSelector = ""; },
+    keydown: (key, target = { tagName: "BODY", isContentEditable: false }) => {
+      documentEvents.get("keydown")({
+        key,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        preventDefault() {},
+        target,
       });
     },
   };
@@ -309,7 +348,9 @@ test("editor disables add controls at the model's validation caps", async () => 
   const groupCapped = structuredClone(base);
   groupCapped.groups = Array.from({ length: 24 }, (_, index) => ({ id: `g${index}`, name: `Group ${index}`, weight: 1 }));
   for (const option of groupCapped.clauses[0].options) option.support = Object.fromEntries(groupCapped.groups.map(({ id }) => [id, 50]));
-  assert.equal((await savedWorkbench(new Map([[key, JSON.stringify(groupCapped)]]))).disabled('[data-action="add-group"]'), true);
+  const cappedGroups = await savedWorkbench(new Map([[key, JSON.stringify(groupCapped)]]));
+  assert.equal(cappedGroups.disabled('[data-action="add-group"]'), true);
+  assert.match(cappedGroups.groups(), /data-action="duplicate-group"[^>]*disabled/u);
 
   const clauseCapped = structuredClone(base);
   clauseCapped.clauses = Array.from({ length: 20 }, (_, index) => ({ ...structuredClone(base.clauses[0]), id: `clause-${index}` }));
@@ -440,6 +481,19 @@ test("workplace hybrid preset loads a valid three-group office policy", async ()
   assert.match(app.clauses(), /On-site staff|data-group-id="onsite"|onsite/u);
 });
 
+test("keyboard f focuses the clause filter unless an input is active", async () => {
+  const app = await savedWorkbench(new Map());
+  app.keydown("f");
+  assert.equal(app.focused(), "#clause-filter");
+  app.clearFocus();
+  app.keydown("f", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("f", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("F");
+  assert.equal(app.focused(), "#clause-filter");
+});
+
 test("show workshop tour reopens the first-run coach after it was dismissed", async () => {
   const storage = new Map([["smallest-agreement:coach:v1", "dismissed"]]);
   const app = await savedWorkbench(storage);
@@ -449,6 +503,19 @@ test("show workshop tour reopens the first-run coach after it was dismissed", as
   app.click("#coach-skip");
   assert.equal(app.coachHidden(), true);
   assert.equal(storage.get("smallest-agreement:coach:v1"), "dismissed");
+});
+
+test("clause notes persist on the worksheet and can be undone without changing search inputs otherwise", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for clause notes");
+  app.edit("clause-note", "Ask about lighting.", { field: "clause-note", clauseId: "path" });
+  const saved = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(saved.clauses.find((clause) => clause.id === "path").note, "Ask about lighting.");
+  assert.match(app.clauses(), /Facilitator note/u);
+  assert.match(app.ballot(), /Facilitator note: Ask about lighting\./u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.find((clause) => clause.id === "path").note, undefined);
 });
 
 test("printable worksheet lists every clause option without recording a vote", async () => {
@@ -491,6 +558,25 @@ test("duplicate option copies an alternative's scores and cost with a new identi
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].options.length, before.clauses[0].options.length);
 });
 
+test("duplicate group copies weight and support scores with a unique id and supports undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for group copies");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const source = before.groups[0];
+  app.clickAction("duplicate-group", { groupId: source.id });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.groups.length, before.groups.length + 1);
+  const copy = after.groups[1];
+  assert.equal(copy.id === source.id, false);
+  assert.equal(copy.name, `${source.name} (copy)`);
+  assert.equal(copy.weight, source.weight);
+  assert.equal(after.clauses[0].options[0].support[copy.id], before.clauses[0].options[0].support[source.id]);
+  assert.match(app.groups(), /Duplicate group/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.length, before.groups.length);
+});
+
 test("duplicate clause copies options and locks with new identifiers and supports undo", async () => {
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -514,12 +600,81 @@ test("clause filter matches title or option labels without changing the stored d
   const before = storage.get("smallest-agreement:proposal:v1");
   app.filterClauses("zzzz-no-match");
   assert.match(app.clauses(), /No clauses match this filter/u);
+  assert.match(app.filterStatus(), /No clauses match this filter/u);
   assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
   app.filterClauses("Park access");
   assert.match(app.clauses(), /Park access hours/u);
   assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.match(app.filterStatus(), /Showing 1 of 3 clauses/u);
   app.filterClauses("clean-up bond");
   assert.match(app.clauses(), /Weekend market use/u);
   assert.doesNotMatch(app.clauses(), /Park access hours/u);
   assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+});
+
+test("clause filter live region announces when no clauses match", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="clause-filter-status"[^>]*role="status"/u);
+  assert.match(html, /id="clause-filter-status"[^>]*aria-live="polite"/u);
+  const app = await savedWorkbench(new Map());
+  assert.equal(app.filterStatus(), "");
+  app.filterClauses("no-such-clause-zzzz");
+  assert.match(app.filterStatus(), /No clauses match this filter/u);
+  app.filterClauses("");
+  assert.equal(app.filterStatus(), "");
+});
+
+test("side-by-side pins original, solver, and custom package columns", async () => {
+  const app = await savedWorkbench(new Map());
+  assert.match(app.sideBySide(), /Current original/u);
+  assert.match(app.sideBySide(), /Solver recommendation/u);
+  assert.match(app.sideBySide(), /Custom package/u);
+  assert.match(app.sideBySide(), /Custom approval/u);
+  assert.match(app.sideBySide(), /Close at 20:00 every day/u);
+  assert.match(app.sideBySide(), /Lock recommended package/u);
+  app.changeManual("hours", "hours-pilot");
+  assert.match(app.sideBySide(), /Trial a 21:00 Friday close for three months/u);
+  assert.match(app.sideBySide(), /\(custom\)/u);
+});
+
+test("locking a package applies every clause lock in one undoable step", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for package locks");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(before.clauses.every((clause) => clause.lockedOptionId === undefined), true);
+  const optionIds = before.clauses.map((clause) => clause.options[1].id);
+  app.clickAction("lock-package", { optionIds: optionIds.join("|") });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.deepEqual(after.clauses.map((clause) => clause.lockedOptionId), optionIds);
+  assert.match(app.message(), /Locked every clause to that package/u);
+  app.click("#undo-button");
+  const restored = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(restored.clauses.every((clause) => clause.lockedOptionId === undefined), true);
+  app.clickAction("lock-package", { optionIds: "missing" });
+  assert.match(app.message(), /Could not lock that package/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.every((clause) => clause.lockedOptionId === undefined), true);
+});
+
+test("near-miss explorer can sort closest misses by cost or approval gap", async () => {
+  const key = "smallest-agreement:proposal:v1";
+  const draft = {
+    title: "Near miss sort workshop",
+    threshold: 90,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { g: 40 } },
+      { id: "cheap", label: "Cheap miss", original: false, changeCost: 1, support: { g: 50 } },
+      { id: "near", label: "Near miss", original: false, changeCost: 5, support: { g: 80 } },
+    ] }],
+  };
+  const app = await savedWorkbench(new Map([[key, JSON.stringify(draft)]]));
+  const byGap = app.nearMisses();
+  assert.match(byGap, /Closest misses/u);
+  assert.ok(byGap.indexOf("Near miss") < byGap.indexOf("Cheap miss"));
+  app.sortNearMisses("change_cost");
+  const byCost = app.nearMisses();
+  assert.ok(byCost.indexOf("Cheap miss") < byCost.indexOf("Near miss"));
+  app.sortNearMisses("approval_gap");
+  assert.ok(app.nearMisses().indexOf("Near miss") < app.nearMisses().indexOf("Cheap miss"));
 });

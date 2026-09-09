@@ -124,6 +124,7 @@ SOFTWARE.
           <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
           <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">
           <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order.</p>
+          <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <div id="clauses-editor" class="clauses-editor"></div>
         </section>
 
@@ -136,7 +137,7 @@ SOFTWARE.
           <div id="result-summary" class="result-summary"></div>
           <section class="result-card" aria-labelledby="side-by-side-heading">
             <h3 id="side-by-side-heading">Side-by-side package</h3>
-            <p>Pin the current original selections against the solver recommendation. Each row is one clause. Group scores and overall approval use the same formula as the rest of the workshop.</p>
+            <p>Pin the current original selections, the solver recommendation, and your custom package in three columns. Each row is one clause. Group scores and overall approval use the same formula as the rest of the workshop. This comparison is a readout, not a vote.</p>
             <div id="side-by-side"></div>
           </section>
           <section class="result-card constraint-card" aria-labelledby="constraints-heading">
@@ -203,7 +204,13 @@ SOFTWARE.
           </section>
           <section class="near-misses" aria-labelledby="near-misses-heading">
             <div class="section-heading"><div><p class="eyebrow">Alternatives</p><h3 id="near-misses-heading">Near-miss explorer</h3></div></div>
-            <p>Near misses meet every configured constraint but miss the overall threshold. Cheaper misses cost less than the recommended package. Next packages over the threshold are later passing combinations, not a fairness ranking. Gaps are in approval points and change cost only.</p>
+            <p>Near misses meet every configured constraint but miss the overall threshold. Cheaper misses cost less than the recommended package. Next packages over the threshold are later passing combinations, not a fairness ranking. Gaps are in approval points and change cost only. Lock this package applies every clause lock in one undoable step.</p>
+            <label class="near-miss-sort-label" for="near-miss-sort">Sort near misses
+              <select id="near-miss-sort">
+                <option value="approval_gap">By approval gap</option>
+                <option value="change_cost">By change cost</option>
+              </select>
+            </label>
             <div id="near-misses-list"></div>
           </section>
         </section>
@@ -252,6 +259,7 @@ SOFTWARE.
           <li><kbd>r</kbd> Redo</li>
           <li><kbd>e</kbd> Export JSON</li>
           <li><kbd>s</kbd> Find agreement (jump to the live recommendation)</li>
+          <li><kbd>f</kbd> Focus the clause filter</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
