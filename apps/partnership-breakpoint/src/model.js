@@ -1493,6 +1493,7 @@ export const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
   {id:'slack',title:'Constraint slack ledger'},
   {id:'fixed',title:'Fixed-cost allowance'},
   {id:'variable',title:'Variable-cost allowance'},
+  {id:'shares',title:'Revenue-share funding needs'},
 // PB_REVIEW_TOOLS
 ]);
 
@@ -1532,6 +1533,15 @@ export function analyzePartnershipReview(rawConfig, tool) {
  case 'variable': {
 
  return report(['Participant','Current variable cost','Maximum variable cost / transaction','Change allowance / transaction','Interpretation'],result.participants.map(p=>{const maximum=p.volume>0?p.revenueShare*config.deal.feePerTransaction-(p.fixedMonthlyCost+p.riskCost+p.minimumAcceptableProfit)/p.volume:null;return[p.name,p.variableCostPerTransaction,maximum===null||maximum<0?null:Math.min(MAX_NUMERIC_INPUT,maximum),p.volume>0?(p.monthlyProfit-p.minimumAcceptableProfit)/p.volume:null,maximum===null?'No transactions; variable cost has no effect':maximum<0?'Zero variable cost is insufficient':'Profit-only ceiling'];}),'Current effective volume, fee, shares and monthly costs stay fixed. Blank means no nonnegative ceiling can be calculated. This does not model demand response or negotiated cost changes.');
+
+ }
+ case 'shares': {
+
+ const gross=result.effectiveVolume*config.deal.feePerTransaction;
+ const rows=result.participants.map(p=>{const needs=p.variableCost+p.fixedCost+p.riskCost+p.minimumAcceptableProfit;const share=gross>0?needs/gross:needs===0?0:null;return[p.name,p.revenueShare,share,share===null?null:p.revenueShare-share];});
+ const total=rows.every(r=>r[2]!==null)?rows.reduce((sum,r)=>sum+r[2],0):null;
+ rows.push(['Total funding need',config.participants.reduce((sum,p)=>sum+p.revenueShare,0),total,total===null?null:1-total]);
+ return report(['Participant','Current share','Minimum funding share','Share above requirement'],rows,'Shares are fractions of the same revenue pool, not independent offers. A total requirement above 1 cannot be funded at these terms. Blank means positive obligations with no gross revenue. Operational constraints are not repaired by a split.');
 
  }
 // PB_REVIEW_CASES

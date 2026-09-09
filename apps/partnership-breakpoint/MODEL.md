@@ -209,3 +209,7 @@ The optional review can show the maximum monthly fixed cost each current split c
 ### Variable-cost allowance
 
 The optional review can translate profit slack into a per-transaction cost ceiling. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Revenue-share funding needs
+
+The optional review can compare individual funding needs against the single shared revenue pool. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
