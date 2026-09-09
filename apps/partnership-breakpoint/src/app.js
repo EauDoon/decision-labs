@@ -47,6 +47,7 @@ function travelHistory(direction) {
   if (!source.length) return;
   destination.push(clone(state));
   state = source.pop();
+  stressPreviewId = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -427,7 +428,7 @@ function stressSection() {
   const cases = stress.scenarios.map((scenario) => `<tr><th scope="row">${caseLabel(scenario)}<br><button type="button" data-action="inspect-stress" data-scenario-id="${scenario.id}">Inspect ${scenario.id}</button></th>
     <td>${formatVolume(scenario.volume)}</td><td>${formatNumber(scenario.fee, 4)}</td><td>${formatMoney(scenario.totalProfit)}</td>
     <td class="${scenario.viable ? 'pass-text' : 'failure-text'}">${scenario.viable ? 'All participants hold' : scenario.participants.filter((participant) => !participant.viable).map((participant) => `${escapeAttribute(participant.name)}: ${escapeAttribute(participant.failureReasons.join('; '))}`).join('<br>')}</td></tr>`).join('');
-  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.2.0</span></div>
+  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.3.0</span></div>
     <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
       <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
       <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button></div>
@@ -497,12 +498,14 @@ function methodAndLimits() {
 }
 
 function render() {
+  const casesOpen = app.querySelector?.('.case-details')?.open;
   let result = null;
   try { result = calculatePartnership(state); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
   }
   app.innerHTML = `<div class="app-grid">${inputPanel()}${resultsPanel(result)}</div>`;
   attachEvents();
+  if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
   if (pendingNotice) {
     const message = pendingNotice;
@@ -565,10 +568,10 @@ function attachEvents() {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
       window.print(); return;
     }
-    if (action === 'inspect-stress') { stressPreviewId = button.dataset.scenarioId; render(); return; }
+    if (action === 'inspect-stress') { stressPreviewId = button.dataset.scenarioId; render(); document.querySelector('#stress-preview-title')?.focus(); return; }
     if (action === 'close-stress-preview') { stressPreviewId = ''; render(); return; }
     if (action === 'apply-stress-case') { applyInspectedStressCase(); return; }
-    if (action === 'compare-case') { comparisonId = button.dataset.caseId; render(); return; }
+    if (action === 'compare-case') { comparisonId = button.dataset.caseId; render(); document.querySelector('#comparison-title')?.focus(); return; }
     if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
     if (['save-case', 'load-case', 'remove-case', 'restore-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
     if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
@@ -759,7 +762,7 @@ function comparisonSection(current) {
     const after = current.participants.find((item) => item.id === id);
     return `<tr><th scope="row">${escapeAttribute(after?.name ?? before.name)}</th><td>${before ? formatMoney(before.monthlyProfit) : 'Added'}</td><td>${after ? formatMoney(after.monthlyProfit) : 'Removed'}</td><td>${before && after ? formatMoney(after.monthlyProfit - before.monthlyProfit) : 'n/a'}</td><td>${before ? before.viable ? 'Holds' : 'Exits' : 'n/a'} to ${after ? after.viable ? 'Holds' : 'Exits' : 'n/a'}</td></tr>`;
   }).join('');
-  return `<section class="panel" aria-labelledby="comparison-title"><div class="panel-heading"><h2 id="comparison-title">Compare with ${escapeAttribute(snapshot.name)}</h2><button type="button" data-action="clear-comparison">Close comparison</button></div><div class="panel-body"><p>Total monthly profit change: <strong>${formatMoney(current.totalProfit - baseline.totalProfit)}</strong>. Effective volume change: ${formatNumber(current.effectiveVolume - baseline.effectiveVolume)} txn.</p><p>Snapshot stress cases held: ${baselineStress.passCount} / ${baselineStress.caseCount}. Current: ${currentStress.passCount} / ${currentStress.caseCount}. Each uses its own stress settings, so counts may not be directly comparable.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Case comparison"><table><caption>Current minus snapshot. Participants matched by stable identifier.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Snapshot profit</th><th scope="col">Current profit</th><th scope="col">Profit change</th><th scope="col">Exit test</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  return `<section class="panel" aria-labelledby="comparison-title"><div class="panel-heading"><h2 id="comparison-title" tabindex="-1">Compare with ${escapeAttribute(snapshot.name)}</h2><button type="button" data-action="clear-comparison">Close comparison</button></div><div class="panel-body"><p>Total monthly profit change: <strong>${formatMoney(current.totalProfit - baseline.totalProfit)}</strong>. Effective volume change: ${formatNumber(current.effectiveVolume - baseline.effectiveVolume)} txn.</p><p>Snapshot stress cases held: ${baselineStress.passCount} / ${baselineStress.caseCount}. Current: ${currentStress.passCount} / ${currentStress.caseCount}. Each uses its own stress settings, so counts may not be directly comparable.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Case comparison"><table><caption>Current minus snapshot. Participants matched by stable identifier.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Snapshot profit</th><th scope="col">Current profit</th><th scope="col">Profit change</th><th scope="col">Exit test</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 function reportText(value) {
@@ -856,7 +859,7 @@ function reconcileShares(action) {
 function stressCasePreview(stress) {
   const scenario = stress.scenarios.find((item) => item.id === stressPreviewId);
   if (!scenario) return '';
-  return `<section class="panel-body stress-preview" aria-labelledby="stress-preview-title"><h3 id="stress-preview-title">Inspect ${scenario.id} as a new baseline</h3><p>Monthly volume becomes ${formatNumber(scenario.volume)}; fee becomes ${formatNumber(scenario.fee, 6)}; each variable cost increases by ${formatPct(scenario.variableCostRisePct)}. Baseline volume shock resets to zero to avoid counting it twice. Shares, fixed costs, capacity and commitments stay unchanged.</p><p>Applying creates a new baseline. The existing compound stress settings will then test additional shocks from that baseline.</p><div class="button-row"><button type="button" data-action="apply-stress-case">Apply inspected case</button><button type="button" data-action="close-stress-preview">Close preview</button></div></section>`;
+  return `<section class="panel-body stress-preview" aria-labelledby="stress-preview-title"><h3 id="stress-preview-title" tabindex="-1">Inspect ${scenario.id} as a new baseline</h3><p>Monthly volume becomes ${formatNumber(scenario.volume)}; fee becomes ${formatNumber(scenario.fee, 6)}; each variable cost increases by ${formatPct(scenario.variableCostRisePct)}. Baseline volume shock resets to zero to avoid counting it twice. Shares, fixed costs, capacity and commitments stay unchanged.</p><p>Applying creates a new baseline. The existing compound stress settings will then test additional shocks from that baseline.</p><div class="button-row"><button type="button" data-action="apply-stress-case">Apply inspected case</button><button type="button" data-action="close-stress-preview">Close preview</button></div></section>`;
 }
 
 function applyInspectedStressCase() {

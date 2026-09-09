@@ -6,7 +6,7 @@ test('fee floor matches independent participant arithmetic and satisfies profit 
  const config = clonePreset('balanced');
  const guide = calculateFeeRequirements(config);
  const expected = Math.max(...config.participants.map((p) => (100000 * p.variableCostPerTransaction + p.fixedMonthlyCost + p.riskCost + p.minimumAcceptableProfit) / (100000 * p.revenueShare)));
- assert.equal(guide.requiredFee, expected);
+ assert.ok(Math.abs(guide.requiredFee - expected) < 1e-15);
  config.deal.feePerTransaction = expected * (1 + 1e-12);
  assert.ok(calculatePartnership(config).viable);
 });
@@ -19,4 +19,12 @@ test('zero shares, zero volume and operational failures are not represented as f
  const capacity = clonePreset('balanced'); capacity.participants[0].capacity = 0;
  assert.equal(calculateFeeRequirements(capacity).operationallyFeasible, false);
  assert.deepEqual(calculateFeeRequirements(capacity).participants[0].operationalFailures, ['capacity']);
+});
+
+test('subnormal volume does not underflow a positive variable-cost fee floor to zero', () => {
+ const config = clonePreset('balanced'); config.deal.monthlyVolume = Number.MIN_VALUE;
+ config.participants.forEach((p) => { p.fixedMonthlyCost = 0; p.riskCost = 0; p.minimumAcceptableProfit = 0; p.minimumCommitment = 0; });
+ const guide = calculateFeeRequirements(config);
+ assert.ok(guide.requiredFee > 0);
+ assert.equal(guide.participants[0].requiredFee, config.participants[0].variableCostPerTransaction / config.participants[0].revenueShare);
 });

@@ -662,9 +662,10 @@ export function calculateFeeRequirements(config) {
   assertValidConfiguration(config);
   const volume = effectiveVolume(config.deal);
   const participants = config.participants.map((participant) => {
-    const requiredRevenue = volume * participant.variableCostPerTransaction + participant.fixedMonthlyCost + participant.riskCost + participant.minimumAcceptableProfit;
-    const denominator = volume * participant.revenueShare;
-    const floor = requiredRevenue === 0 ? 0 : denominator > 0 ? requiredRevenue / denominator : null;
+    const overhead = participant.fixedMonthlyCost + participant.riskCost + participant.minimumAcceptableProfit;
+    const needsRevenue = overhead > 0 || (volume > 0 && participant.variableCostPerTransaction > 0);
+    const floor = !needsRevenue ? 0 : volume > 0 && participant.revenueShare > 0
+      ? (participant.variableCostPerTransaction + overhead / volume) / participant.revenueShare : null;
     const requiredFee = floor !== null && Number.isFinite(floor) && floor <= MAX_NUMERIC_INPUT ? floor : null;
     const operationalFailures = [];
     if (volume < (participant.minimumCommitment ?? 0)) operationalFailures.push('minimum commitment');
