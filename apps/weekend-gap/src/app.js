@@ -1064,6 +1064,14 @@ function jumpToFirstSettlement() {
 document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
   jumpToFirstSettlement();
 });
+function jumpToDashboard() {
+  const heading = document.querySelector("#outcome-title");
+  if (!heading) return false;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  return true;
+}
 function jumpToGantt() {
   const heading = document.querySelector("#gantt-title");
   if (!heading) return false;
@@ -1195,6 +1203,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "j" || event.key === "J") {
     event.preventDefault();
     jumpToFirstSettlement();
+    return;
+  }
+  if (event.key === "d" || event.key === "D") {
+    event.preventDefault();
+    jumpToDashboard();
     return;
   }
   if (event.key === "g" || event.key === "G") {
