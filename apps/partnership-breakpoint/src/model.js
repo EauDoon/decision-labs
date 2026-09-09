@@ -791,6 +791,19 @@ export function moveParticipant(participants, index, direction) {
 }
 
 /**
+ * Swaps two adjacent participants at `index` and `index + 1`. Identifiers and
+ * shares stay with each participant. Out-of-range indexes return a shallow copy.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+export function swapAdjacentParticipants(participants, index) {
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length - 1) {
+    return Array.isArray(participants) ? participants.map((item) => ({ ...item })) : [];
+  }
+  return moveParticipant(participants, index, 'down');
+}
+
+/**
  * Removes one participant and reallocates that share across whoever remains.
  * Remaining participants keep their relative weights. The last remaining
  * participant absorbs floating-point remainder so a previously valid split

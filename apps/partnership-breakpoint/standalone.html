@@ -1170,6 +1170,19 @@ function moveParticipant(participants, index, direction) {
 }
 
 /**
+ * Swaps two adjacent participants at `index` and `index + 1`. Identifiers and
+ * shares stay with each participant. Out-of-range indexes return a shallow copy.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+function swapAdjacentParticipants(participants, index) {
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length - 1) {
+    return Array.isArray(participants) ? participants.map((item) => ({ ...item })) : [];
+  }
+  return moveParticipant(participants, index, 'down');
+}
+
+/**
  * Removes one participant and reallocates that share across whoever remains.
  * Remaining participants keep their relative weights. The last remaining
  * participant absorbs floating-point remainder so a previously valid split
@@ -2538,6 +2551,7 @@ function inputPanel(result) {
           <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
           <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
           <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
+          <button type="button" data-action="swap-participant-next" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Swap with next</button>
           <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
         </div>
       </div>
@@ -3207,6 +3221,15 @@ function attachEvents() {
       state.participants = next;
       activePreset = '';
       refresh(direction === 'up' ? 'Participant moved up. Shares are unchanged.' : 'Participant moved down. Shares are unchanged.');
+    }
+    if (action === 'swap-participant-next') {
+      const next = swapAdjacentParticipants(state.participants, Number(button.dataset.index));
+      const unchanged = next.every((item, index) => item.id === state.participants[index].id);
+      if (unchanged) return;
+      checkpoint();
+      state.participants = next;
+      activePreset = '';
+      refresh('Adjacent participants swapped. Identifiers and shares stayed with each participant.');
     }
     if (action === 'remove-participant' && state.participants.length > 2) {
       try {

@@ -8,6 +8,7 @@ import {
   duplicateParticipant,
   moveParticipant,
   nextUnusedParticipantId,
+  swapAdjacentParticipants,
   validateConfiguration,
 } from '../src/model.js';
 
@@ -72,6 +73,22 @@ test('move up and down reorder participants without changing shares or ids', () 
   const blockedLast = moveParticipant(config.participants, 2, 'down');
   assert.deepEqual(blockedLast.map((item) => item.id), originalIds);
   assert.notEqual(blocked[0], config.participants[0]);
+});
+
+test('swap adjacent participants keeps ids and shares with each person', () => {
+  const config = clonePreset('balanced');
+  const originalSum = shareSum(config.participants);
+  const original = config.participants.map((item) => ({ id: item.id, revenueShare: item.revenueShare }));
+  const swapped = swapAdjacentParticipants(config.participants, 0);
+  assert.deepEqual(swapped.map((item) => item.id), ['distributor', 'platform', 'liquidity-partner']);
+  assert.equal(swapped[0].revenueShare, original[1].revenueShare);
+  assert.equal(swapped[1].revenueShare, original[0].revenueShare);
+  assert.equal(shareSum(swapped), originalSum);
+  const blockedLast = swapAdjacentParticipants(config.participants, 2);
+  assert.deepEqual(blockedLast.map((item) => item.id), original.map((item) => item.id));
+  const blockedNegative = swapAdjacentParticipants(config.participants, -1);
+  assert.deepEqual(blockedNegative.map((item) => item.id), original.map((item) => item.id));
+  assert.notEqual(swapped[0], config.participants[0]);
 });
 
 test('dropping a participant reallocates their share and restores an exact sum of 1', () => {

@@ -796,6 +796,7 @@ test('participant roster toolbar stays outside the disclosure and defaults to op
   assert.match(form, /data-action="duplicate-participant"/);
   assert.match(form, /data-action="move-participant-up"/);
   assert.match(form, /data-action="move-participant-down"/);
+  assert.match(form, /data-action="swap-participant-next"/);
   assert.match(form, /data-action="remove-participant"/);
   assert.match(app.markup(), /<details class="participant-details"[^>]* open/);
   assert.match(html, /@media \(max-width: 390px\)/);
@@ -817,6 +818,24 @@ test('duplicate and move roster controls keep unique ids and the original share 
   app.click('move-participant-up', { index: '1' });
   assert.deepEqual(app.saved().participants.map((item) => item.id), duplicated.participants.map((item) => item.id));
   assert.equal(app.saved().participants.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+});
+
+test('swap with next reorders adjacent participants and can be undone', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  const original = ['platform', 'distributor', 'liquidity-partner'];
+  assert.deepEqual(app.saved().participants.map((item) => item.id), original);
+  const originalShares = app.saved().participants.map((item) => item.revenueShare);
+  app.click('swap-participant-next', { index: '0' });
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['distributor', 'platform', 'liquidity-partner']);
+  assert.equal(app.saved().participants[0].revenueShare, originalShares[1]);
+  assert.equal(app.saved().participants[1].revenueShare, originalShares[0]);
+  assert.match(app.notice(), /Adjacent participants swapped/);
+  app.click('undo');
+  assert.deepEqual(app.saved().participants.map((item) => item.id), original);
+  app.click('swap-participant-next', { index: '2' });
+  assert.deepEqual(app.saved().participants.map((item) => item.id), original);
 });
 
 test('removing a participant reallocates their share and blocks dropping the last two', async () => {

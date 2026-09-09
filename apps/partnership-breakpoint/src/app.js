@@ -21,6 +21,7 @@ import {
   makeParticipant,
   materializeStressCase,
   moveParticipant,
+  swapAdjacentParticipants,
   participantsFromCsv,
   participantsFromRosterText,
   participantsToCsv,
@@ -436,6 +437,7 @@ function inputPanel(result) {
           <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
           <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
           <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
+          <button type="button" data-action="swap-participant-next" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Swap with next</button>
           <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
         </div>
       </div>
@@ -1105,6 +1107,15 @@ function attachEvents() {
       state.participants = next;
       activePreset = '';
       refresh(direction === 'up' ? 'Participant moved up. Shares are unchanged.' : 'Participant moved down. Shares are unchanged.');
+    }
+    if (action === 'swap-participant-next') {
+      const next = swapAdjacentParticipants(state.participants, Number(button.dataset.index));
+      const unchanged = next.every((item, index) => item.id === state.participants[index].id);
+      if (unchanged) return;
+      checkpoint();
+      state.participants = next;
+      activePreset = '';
+      refresh('Adjacent participants swapped. Identifiers and shares stayed with each participant.');
     }
     if (action === 'remove-participant' && state.participants.length > 2) {
       try {
