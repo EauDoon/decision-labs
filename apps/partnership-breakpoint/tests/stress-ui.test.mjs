@@ -344,3 +344,15 @@ test('library refuses invalid unnamed snapshots and reports blocked persistence'
   assert.match(blocked.notice(), /could not be saved/);
   assert.equal(blocked.library().length, 0);
 });
+
+test('snapshot comparison reports participant deltas without mutating the current case', async () => {
+  const app = await workbench(); app.nameCase('Baseline'); app.click('save-case');
+  app.edit('participants.0.fixedMonthlyCost', '1900');
+  const current = app.saved();
+  app.click('compare-case', { caseId: 'case-1' });
+  assert.match(app.markup(), /Compare with Baseline/);
+  assert.match(app.markup(), /-100.00 units/);
+  assert.match(app.markup(), /matched by stable identifier/);
+  assert.deepEqual(app.saved(), current);
+  app.click('clear-comparison'); assert.doesNotMatch(app.markup(), /Compare with Baseline/);
+});

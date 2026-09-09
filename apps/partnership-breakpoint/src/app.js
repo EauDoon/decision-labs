@@ -26,6 +26,7 @@ const LIBRARY_KEY = 'partnership-breakpoint.cases.v1';
 let caseName = '';
 let caseLibrary = loadCaseLibrary();
 let removedCase = null;
+let comparisonId = '';
 const undoHistory = [];
 const redoHistory = [];
 
@@ -66,7 +67,7 @@ function persistLibrary(candidate) {
 }
 
 function libraryPanel() {
-  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
+  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="compare-case" data-case-id="${item.id}" aria-pressed="${comparisonId === item.id}">Compare</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
 }
 
 function handleLibraryAction(action, id) {
@@ -377,6 +378,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
+    ${comparisonSection(result)}
     ${breakpointSection(result)}
     ${stressSection()}
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
@@ -544,6 +546,8 @@ function attachEvents() {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
     const action = button.dataset.action;
+    if (action === 'compare-case') { comparisonId = button.dataset.caseId; render(); return; }
+    if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
     if (['save-case', 'load-case', 'remove-case', 'restore-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
     if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
     if (action === 'edit-stress-settings') {
@@ -717,3 +721,18 @@ window.addEventListener('hashchange', () => {
 });
 
 render();
+
+function comparisonSection(current) {
+  const snapshot = caseLibrary.find((item) => item.id === comparisonId);
+  if (!snapshot) return '';
+  const baseline = calculatePartnership(snapshot.config);
+  const baselineStress = evaluateStressGrid(snapshot.config);
+  const currentStress = evaluateStressGrid(state);
+  const ids = [...new Set([...baseline.participants.map((item) => item.id), ...current.participants.map((item) => item.id)])];
+  const rows = ids.map((id) => {
+    const before = baseline.participants.find((item) => item.id === id);
+    const after = current.participants.find((item) => item.id === id);
+    return `<tr><th scope="row">${escapeAttribute(after?.name ?? before.name)}</th><td>${before ? formatMoney(before.monthlyProfit) : 'Added'}</td><td>${after ? formatMoney(after.monthlyProfit) : 'Removed'}</td><td>${before && after ? formatMoney(after.monthlyProfit - before.monthlyProfit) : 'n/a'}</td><td>${before ? before.viable ? 'Holds' : 'Exits' : 'n/a'} to ${after ? after.viable ? 'Holds' : 'Exits' : 'n/a'}</td></tr>`;
+  }).join('');
+  return `<section class="panel" aria-labelledby="comparison-title"><div class="panel-heading"><h2 id="comparison-title">Compare with ${escapeAttribute(snapshot.name)}</h2><button type="button" data-action="clear-comparison">Close comparison</button></div><div class="panel-body"><p>Total monthly profit change: <strong>${formatMoney(current.totalProfit - baseline.totalProfit)}</strong>. Effective volume change: ${formatNumber(current.effectiveVolume - baseline.effectiveVolume)} txn.</p><p>Snapshot stress cases held: ${baselineStress.passCount} / ${baselineStress.caseCount}. Current: ${currentStress.passCount} / ${currentStress.caseCount}. Each uses its own stress settings, so counts may not be directly comparable.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Case comparison"><table><caption>Current minus snapshot. Participants matched by stable identifier.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Snapshot profit</th><th scope="col">Current profit</th><th scope="col">Profit change</th><th scope="col">Exit test</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
