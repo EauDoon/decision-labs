@@ -23,6 +23,7 @@ import {
   formatDiscussionWorksheet,
   groupContributions,
   lockPackage,
+  duplicateParticipantGroup,
   sortPackageGapRows,
   stressPackage,
   compareScenarioInputs,
@@ -729,6 +730,44 @@ test("pinned package comparison shows original, solver, and custom columns witho
   assert.equal(JSON.stringify(input), before);
 });
 
+
+test("duplicateParticipantGroup copies weight, constraints, and support keys with a unique id", () => {
+  const input = proposal({
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, minSupport: 60, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { majority: 80, minority: 10 }),
+      option("cheap", false, { majority: 90, minority: 30 }, 1),
+      option("balanced", false, { majority: 75, minority: 75 }, 3),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const duplicated = duplicateParticipantGroup(input, "minority");
+  assert.equal(duplicated.status, "ok");
+  assert.equal(duplicated.proposal.groups.length, 3);
+  const copy = duplicated.proposal.groups[2];
+  assert.equal(copy.id, "group-copy-1");
+  assert.equal(copy.id === "minority", false);
+  assert.equal(copy.name, "Minority (copy)");
+  assert.equal(copy.weight, 1);
+  assert.equal(copy.minSupport, 60);
+  assert.equal(copy.veto, true);
+  for (const option of duplicated.proposal.clauses[0].options) {
+    assert.equal(option.support[copy.id], option.support.minority);
+    assert.equal(Object.hasOwn(option.support, copy.id), true);
+  }
+  assert.equal(validateProposal(duplicated.proposal).valid, true);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(duplicateParticipantGroup(input, "missing").status, "invalid");
+  const capped = structuredClone(input);
+  capped.groups = Array.from({ length: MAX_GROUPS }, (_, index) => ({ id: `g${index}`, name: `Group ${index}`, weight: 1 }));
+  for (const option of capped.clauses[0].options) {
+    option.support = Object.fromEntries(capped.groups.map((group) => [group.id, 50]));
+  }
+  assert.equal(duplicateParticipantGroup(capped, "g0").status, "invalid");
+});
 
 test("lockPackage sets every clause lock in one copy and rejects unknown options", () => {
   const input = proposal({

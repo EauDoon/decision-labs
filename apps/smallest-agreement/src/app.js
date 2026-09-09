@@ -9,6 +9,7 @@ import {
   explorePackageGaps,
   evaluatePackage,
   lockPackage,
+  duplicateParticipantGroup,
   sortPackageGapRows,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
@@ -375,6 +376,7 @@ function renderGroups() {
     <div class="group-row">
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
+      <button class="text-button" type="button" data-action="duplicate-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length >= MAX_GROUPS ? "disabled" : ""}>Duplicate group</button>
       <button class="text-button danger" type="button" data-action="remove-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length <= 1 ? "disabled" : ""}>Remove</button>
       <label class="group-floor">Minimum support (%)<input data-field="group-floor" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" value="${group.minSupport ?? ""}" placeholder="No floor" aria-label="${escapeHtml(group.name)} minimum support" aria-describedby="floor-note"></label>
       <label class="group-veto"><input data-field="group-veto" data-group-id="${escapeHtml(group.id)}" type="checkbox" ${group.veto === true ? "checked" : ""} aria-describedby="veto-note" aria-label="${escapeHtml(group.name)} veto"> Veto group (average support must meet the threshold)</label>
@@ -889,6 +891,11 @@ function changeAndRender(mutator) {
   if (context.action === "add-clause") selector = '[data-field="clause-title"][data-clause-id="' + state.proposal.clauses.at(-1).id + '"]';
   if (context.action === "add-option" || context.action === "duplicate-option") selector = '[data-field="option-label"][data-clause-id="' + context.clauseId + '"][data-option-id="' + clauseById(context.clauseId).options.at(-1).id + '"]';
   if (context.action === "remove-group") selector = '[data-action="add-group"]';
+  if (context.action === "duplicate-group") {
+    const sourceIndex = state.proposal.groups.findIndex((group) => group.id === context.groupId);
+    const copy = state.proposal.groups[sourceIndex + 1];
+    if (copy) selector = '[data-field="group-name"][data-group-id="' + copy.id + '"]';
+  }
   if (context.action === "remove-clause") selector = '[data-action="add-clause"]';
   if (context.action === "duplicate-clause") {
     const sourceIndex = state.proposal.clauses.findIndex((clause) => clause.id === context.clauseId);
@@ -1046,6 +1053,10 @@ document.addEventListener("click", (event) => {
     const id = button.dataset.groupId;
     state.proposal.groups = state.proposal.groups.filter((group) => group.id !== id);
     state.proposal.clauses.forEach((clause) => clause.options.forEach((option) => { delete option.support[id]; }));
+  });
+  if (action === "duplicate-group") changeAndRender(() => {
+    const duplicated = duplicateParticipantGroup(state.proposal, button.dataset.groupId);
+    if (duplicated.status === "ok") state.proposal = duplicated.proposal;
   });
   if (action === "add-clause") changeAndRender(() => {
     const support = defaultSupport(state.proposal.groups);

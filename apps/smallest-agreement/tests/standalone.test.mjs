@@ -52,6 +52,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /id="printable-ballot"/u);
   assert.match(html, /Discussion worksheet/u);
+  assert.match(html, /Duplicate group/u);
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /id="coach-again"/u);
@@ -94,6 +95,7 @@ async function savedWorkbench(storage, hash = "") {
     alert: () => element("#result-alert").textContent,
     summary: () => element("#result-summary").innerHTML,
     clauses: () => element("#clauses-editor").innerHTML,
+    groups: () => element("#groups-editor").innerHTML,
     disabled: (selector) => element(selector).disabled,
     click: (selector) => element(selector).events.get("click")(),
     importJson: async (contents, { size, read } = {}) => {
@@ -331,7 +333,9 @@ test("editor disables add controls at the model's validation caps", async () => 
   const groupCapped = structuredClone(base);
   groupCapped.groups = Array.from({ length: 24 }, (_, index) => ({ id: `g${index}`, name: `Group ${index}`, weight: 1 }));
   for (const option of groupCapped.clauses[0].options) option.support = Object.fromEntries(groupCapped.groups.map(({ id }) => [id, 50]));
-  assert.equal((await savedWorkbench(new Map([[key, JSON.stringify(groupCapped)]]))).disabled('[data-action="add-group"]'), true);
+  const cappedGroups = await savedWorkbench(new Map([[key, JSON.stringify(groupCapped)]]));
+  assert.equal(cappedGroups.disabled('[data-action="add-group"]'), true);
+  assert.match(cappedGroups.groups(), /data-action="duplicate-group"[^>]*disabled/u);
 
   const clauseCapped = structuredClone(base);
   clauseCapped.clauses = Array.from({ length: 20 }, (_, index) => ({ ...structuredClone(base.clauses[0]), id: `clause-${index}` }));
@@ -511,6 +515,25 @@ test("duplicate option copies an alternative's scores and cost with a new identi
   assert.deepEqual(copy.support, source.support);
   app.click("#undo-button");
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].options.length, before.clauses[0].options.length);
+});
+
+test("duplicate group copies weight and support scores with a unique id and supports undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for group copies");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const source = before.groups[0];
+  app.clickAction("duplicate-group", { groupId: source.id });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.groups.length, before.groups.length + 1);
+  const copy = after.groups[1];
+  assert.equal(copy.id === source.id, false);
+  assert.equal(copy.name, `${source.name} (copy)`);
+  assert.equal(copy.weight, source.weight);
+  assert.equal(after.clauses[0].options[0].support[copy.id], before.clauses[0].options[0].support[source.id]);
+  assert.match(app.groups(), /Duplicate group/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.length, before.groups.length);
 });
 
 test("duplicate clause copies options and locks with new identifiers and supports undo", async () => {

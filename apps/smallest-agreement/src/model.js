@@ -684,6 +684,47 @@ export function lockPackage(proposal, optionIds) {
   return { status: "ok", proposal: next };
 }
 
+/**
+ * Copy a participant group, including weight, optional floor, veto, and every option's support score.
+ * The copy receives a unique id. The solver still treats it as a separate supplied group.
+ */
+export function duplicateParticipantGroup(proposal, groupId) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof groupId !== "string") return { status: "invalid", errors: ["Unknown group."] };
+  if (proposal.groups.length >= MAX_GROUPS) {
+    return { status: "invalid", errors: [`Between 1 and ${MAX_GROUPS} participant groups are required.`] };
+  }
+  const sourceIndex = proposal.groups.findIndex((group) => group.id === groupId);
+  if (sourceIndex < 0) return { status: "invalid", errors: ["Unknown group."] };
+  const next = canonicalProposal(proposal);
+  const source = next.groups[sourceIndex];
+  const used = new Set([
+    ...next.groups.map((group) => group.id),
+    ...next.clauses.flatMap((clause) => [clause.id, ...clause.options.map((option) => option.id)]),
+  ]);
+  let serial = 1;
+  let copyId = `group-copy-${serial}`;
+  while (used.has(copyId)) {
+    serial += 1;
+    copyId = `group-copy-${serial}`;
+  }
+  const copy = {
+    id: copyId,
+    name: source.name.length + 7 > 80 ? `${source.name.slice(0, 73)} (copy)` : `${source.name} (copy)`,
+    weight: source.weight,
+    ...(source.minSupport !== undefined ? { minSupport: source.minSupport } : {}),
+    ...(source.veto === true ? { veto: true } : {}),
+  };
+  next.groups.splice(sourceIndex + 1, 0, copy);
+  for (const clause of next.clauses) {
+    for (const option of clause.options) {
+      option.support[copyId] = option.support[source.id];
+    }
+  }
+  return { status: "ok", proposal: next, groupId: copyId };
+}
+
 
 /** A deterministic downside scenario, not a probability estimate or a new optimization. */
 export function stressPackage(proposal, optionIds, supportDrop) {
