@@ -218,6 +218,14 @@ test('copy catalog address control exists and stays hidden off http', () => {
   assert.match(html, /The control stays hidden if you open the page from a file/);
 });
 
+test('print CSS keeps How it works and hides skip links', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.skips[\s\S]*display: none !important/);
+  assert.match(print, /\.skip, \.skips, \.keys-note, \.how, \.site-nav, \.shortcuts, \.shortcuts-open \{ display: none !important; \}/);
+  assert.match(html, /id="how-it-works"/);
+});
+
 test('keys 1-4 remember last launched workbench in this browser', () => {
   assert.match(html, /decision-labs\.last-workbench/);
   assert.match(html, /localStorage\.setItem\(LAST_WORKBENCH_KEY, event\.key\)/);
