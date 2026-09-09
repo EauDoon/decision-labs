@@ -127,6 +127,7 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--pencil); outli
 #save-scenario { margin: .5rem 0 1rem; }
 .scenario-actions { display: flex; gap: 1rem; flex-wrap: wrap; }
 #support-drop { max-width: 10rem; display: block; margin: .5rem 0; }
+.stress-controls { display: grid; gap: .35rem; max-width: 28rem; margin: .75rem 0; }
 summary { cursor: pointer; padding: .75rem 0; font-weight: 700; }
 input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }

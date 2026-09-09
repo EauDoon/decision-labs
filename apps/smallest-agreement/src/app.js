@@ -504,24 +504,36 @@ function renderScenarioComparison(result) {
 $("#comparison-select").addEventListener("change", () => renderScenarioComparison(currentResult()));
 
 function renderStressTest(result) {
+  const input = $("#support-drop");
+  const slider = $("#support-drop-range");
+  const drop = input.value === "" ? NaN : Number(input.value);
+  if (Number.isFinite(drop)) {
+    slider.value = Math.min(100, Math.max(0, drop));
+    $("#support-drop-output").textContent = `${drop} points`;
+  } else {
+    $("#support-drop-output").textContent = "Invalid drop";
+  }
   if (!result.agreement) {
     $("#stress-result").textContent = "A passing recommendation is needed before testing its resilience.";
     return;
   }
-  const input = $("#support-drop");
-  const drop = input.value === "" ? NaN : Number(input.value);
   const stressed = stressPackage(state.proposal, result.agreement.options.map((option) => option.id), drop);
   if (stressed.status === "invalid") {
     $("#stress-result").textContent = stressed.errors[0];
     return;
   }
   const summary = stressed.summary;
-  $("#stress-result").innerHTML = '<p><strong>' + (stressed.status === 'passing' ? 'The same recommendation still passes this downside scenario.' : 'The recommendation fails this downside scenario.') + '</strong> Approval: ' + formatPercent(summary.approval) + ', threshold margin: ' + formatMargin(summary.approval - state.proposal.threshold) + '.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Entered support</th><th scope="col">Downside support</th><th scope="col">Floor</th></tr></thead><tbody>' + summary.byGroup.map((group, index) => {
+  const original = stressed.original;
+  $("#stress-result").innerHTML = `<div class="result-summary"><div class="metric"><span class="metric-label">Entered approval</span><strong>${formatPercent(original.approval)}</strong></div><div class="metric"><span class="metric-label">Downside approval</span><strong>${formatPercent(summary.approval)}</strong></div><div class="metric"><span class="metric-label">Downside margin</span><strong class="${summary.approval + 1e-9 >= state.proposal.threshold ? "positive" : "negative"}">${formatMargin(summary.approval - state.proposal.threshold)}</strong></div><div class="metric cost"><span class="metric-label">Drop applied</span><strong>${drop} points</strong></div></div><p><strong>${stressed.status === "passing" ? "The same recommendation still passes this downside scenario." : "The recommendation fails this downside scenario."}</strong> Every score was reduced by ${drop} points and stopped at zero. This is not a probability of consent.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Entered support</th><th scope="col">Downside support</th><th scope="col">Floor</th></tr></thead><tbody>${summary.byGroup.map((group, index) => {
     const floor = summary.constraints.floors.find((row) => row.id === group.id);
-    return '<tr><th scope="row">' + escapeHtml(group.name) + '</th><td>' + formatPercent(stressed.original.byGroup[index].approval) + '</td><td>' + formatPercent(group.approval) + '</td><td>' + (floor ? floor.minimum + '%: ' + (floor.met ? 'met' : 'not met') : 'None') + '</td></tr>';
-  }).join('') + '</tbody></table></div>';
+    return `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(original.byGroup[index].approval)}</td><td>${formatPercent(group.approval)}</td><td>${floor ? `${floor.minimum}%: ${floor.met ? "met" : "not met"}` : "None"}</td></tr>`;
+  }).join("")}</tbody></table></div>`;
 }
 $("#support-drop").addEventListener("input", () => renderStressTest(currentResult()));
+$("#support-drop-range").addEventListener("input", (event) => {
+  $("#support-drop").value = event.target.value;
+  renderStressTest(currentResult());
+});
 
 function renderManualPackage(result) {
   const valid = result.status !== "invalid";

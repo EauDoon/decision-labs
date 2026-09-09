@@ -180,7 +180,12 @@ SOFTWARE.
           <section class="result-card" aria-labelledby="stress-heading">
             <h3 id="stress-heading">Stress-test the recommendation</h3>
             <p>Reduce every entered support score by the same number of percentage points, stopping at zero. Test the same package against the same threshold and group floors. Costs and locks stay fixed. This is a hypothetical downside scenario, not a forecast or a probability of consent.</p>
-            <label for="support-drop">Support drop (percentage points)</label><input id="support-drop" type="number" min="0" max="100" step="any" value="5">
+            <div class="stress-controls">
+              <label for="support-drop-range">Support drop slider</label>
+              <input id="support-drop-range" type="range" min="0" max="100" step="1" value="5" aria-describedby="support-drop-output">
+              <div class="label-row"><label for="support-drop">Exact drop (percentage points)</label><output id="support-drop-output">5 points</output></div>
+              <input id="support-drop" type="number" min="0" max="100" step="any" value="5">
+            </div>
             <div id="stress-result" role="status" aria-live="polite"></div>
           </section>
           <section class="result-card" aria-labelledby="comparison-heading">

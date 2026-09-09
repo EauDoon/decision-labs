@@ -44,6 +44,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /id="clause-filter"/u);
+  assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
