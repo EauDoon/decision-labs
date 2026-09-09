@@ -8,6 +8,20 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
+## Changelog (1.3.3)
+
+Organizer tools for merchant-safe offer export, list hygiene, empty-offer recovery, and honest local caps. This remains an offline simulator. Merchant views, JSON, CSV, overlap, briefing, and winner markdown still receive aggregates and counts only.
+
+- **Offer CSV export.** Write `name, capacity, unit price, shipping, fulfillment, variants`. Formula prefixes are escaped. Buyer labels, IDs, budgets, and allocations stay out. Quantity tiers stay in JSON export.
+- **Keyboard jump.** `b` focuses the buyer list when you are not typing. `o` still focuses offers. `w` focuses the winner and inspector summary.
+- **Buyer variant filter.** Show organizer buyer rows by an accepted variant. Saved buyers and matching stay unchanged. Merchant views still show counts only.
+- **Offer sort.** Preview unit price low-high or capacity high-low without changing ids. Apply writes the new order and is undoable.
+- **Winner aggregates copy.** Copy merchant, units, included-buyer counts, and residual fills as Markdown. The room title and private buyer rows stay out.
+- **Empty-offer recovery.** Deleting every offer leaves a valid empty list. Restore example offers reloads neighbourhood bids, keeps buyers, and is undoable.
+- **Local matching cap.** Organizer warning at 40 buyers or 40 offers. That bound keeps the exact allocator responsive. It is not a server quota.
+- **Buyers by variant.** Organizer counts of who accepts each variant, with units. Merchant views still show counts only.
+- **Fulfillment filter memory.** The last all/shipping/pickup choice is stored in workspace JSON. Older files that omit it still open as all.
+
 ## Changelog (1.3.2)
 
 Organizer tools for offer intake, list hygiene, honest compares, and a quieter print page. This remains an offline simulator. Merchant views still receive aggregates and counts only.
@@ -104,18 +118,18 @@ npm run check
 ## What you can do
 
 - Start from coffee, office chair, community pantry, office pantry bulk, hardware tools, or price-ladder examples.
-- Add buyers with a category, quantity, price ceiling, delivery limit, and accepted variants, or import those columns from CSV. Sort the organizer list by label or quantity, then apply when you want that order saved.
-- Add merchant bids with a price, minimum order, delivery time, capacity, shipping cost, and shipping or pickup fulfillment, or import name, capacity, unit price, shipping, fulfillment, and variants from CSV.
-- Filter the on-screen offer list by fulfillment without changing saved bids.
+- Add buyers with a category, quantity, price ceiling, delivery limit, and accepted variants, or import those columns from CSV. Sort the organizer list by label or quantity, then apply when you want that order saved. Filter the organizer list by accepted variant without changing matching.
+- Add merchant bids with a price, minimum order, delivery time, capacity, shipping cost, and shipping or pickup fulfillment, or import and export name, capacity, unit price, shipping, fulfillment, and variants as CSV. Sort offers by unit price or capacity, then apply when you want that order saved.
+- Filter the on-screen offer list by fulfillment without changing saved bids. The last fulfillment filter is kept with local snapshots.
 - Edit quantity price tiers and inspect each band's whole-order feasibility, including units still needed for the next cheaper band.
 - Review item cost, shipping, landed cost, and ceiling headroom per included buyer locally.
 - Compare qualified offers by fulfilled units, group headroom, buyers included, and landed cost.
 - Inspect why each buyer order is included, blocked by the minimum, left out by capacity, or incompatible with an offer, grouped by reason.
 - See leftover demand after the winner, then a second and third distinct offer, as a planning aid, not a second checkout.
 - See which local buyer labels each qualified offer includes; merchant-facing views stay aggregated. Screenshot mode can hide labels. A redacted share link uses Buyer 1 through N.
-- Inspect a merchant view that contains aggregate ranges, a variant overlap matrix, and a delivery heatmap, rather than individual records. Copy overlap counts as formula-safe CSV.
-- Import or export a scenario as JSON, duplicate the room as a compare snapshot, export an organizer briefing, export heatmap CSV, or encode the current scenario in a share link.
-- Recover an empty buyer room with the neighbourhood example, or restore the last buyer removed in this session. Undo returns to the previous valid list.
+- Inspect a merchant view that contains aggregate ranges, a variant overlap matrix, and a delivery heatmap, rather than individual records. Copy overlap counts as formula-safe CSV. Copy winner aggregates as Markdown.
+- Import or export a scenario as JSON, duplicate the room as a compare snapshot, export an organizer briefing, export heatmap CSV, export offer CSV, or encode the current scenario in a share link.
+- Recover an empty buyer room with the neighbourhood example, restore example offers without changing buyers, or restore the last buyer removed in this session. Undo returns to the previous valid list.
 - Work entirely in the browser with local autosave.
 
 ## How matching works
@@ -145,15 +159,21 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |   |-- residual.test.mjs   Leftover coverage after the winner
 |   |-- next-tier.test.mjs  Units needed for the next cheaper band
 |   |-- csv-import.test.mjs Buyer CSV import
-|   |-- offer-csv.test.mjs  Merchant offer CSV import
+|   |-- offer-csv.test.mjs  Merchant offer CSV import and export
 |   |-- overlap.test.mjs    Merchant variant overlap counts
 |   |-- heatmap.test.mjs    Delivery deadline buckets and CSV
 |   |-- empty-room.test.mjs Empty buyer rooms and undoable restore
+|   |-- empty-offers.test.mjs Empty offer lists and example restore
 |   |-- restore-buyer.test.mjs Last removed buyer restore
 |   |-- buyer-sort.test.mjs Organizer buyer sort preview and apply
+|   |-- offer-sort.test.mjs Offer sort by unit price or capacity
+|   |-- buyer-variant-filter.test.mjs Organizer accepted-variant filter
+|   |-- buyer-variant-counts.test.mjs Organizer variant counts
+|   |-- winner-markdown.test.mjs Winner aggregate Markdown copy
+|   |-- entry-cap.test.mjs  Local 40-buyer and 40-offer cap warning
 |   |-- duplicate-room.test.mjs Room copy snapshots
 |   |-- print.test.mjs      Print one-pager privacy
-|   |-- shortcuts.test.mjs  Keyboard help for inspector and offers
+|   |-- shortcuts.test.mjs  Keyboard help for inspector, offers, buyers, and winner
 |   |-- standalone.test.mjs Single-file build checks
 |-- standalone.html         No-install, single-file GUI
 |-- launch-windows.cmd      One-click Windows GUI launcher
@@ -170,7 +190,7 @@ The [root CI workflow](../../.github/workflows/common-cart.yml) runs this compon
 
 ## Data and privacy
 
-Common Cart makes no network requests. Scenarios are held in browser memory and local storage. Export and link sharing happen only when requested. A share link contains the full scenario, including buyer labels, so review it before sending. Screenshot mode, redacted JSON, and the optional redacted share link replace labels with Buyer 1 through N. Merchant reports, residual coverage JSON, heatmap CSV, variant overlap, overlap CSV, and organizer briefings omit private buyer rows. Offer CSV import does not read buyer columns. Winner budget leftover is organizer-only and is not written into merchant JSON.
+Common Cart makes no network requests. Scenarios are held in browser memory and local storage. Export and link sharing happen only when requested. A share link contains the full scenario, including buyer labels, so review it before sending. Screenshot mode, redacted JSON, and the optional redacted share link replace labels with Buyer 1 through N. Merchant reports, residual coverage JSON, heatmap CSV, variant overlap, overlap CSV, offer CSV export, winner aggregate Markdown, and organizer briefings omit private buyer rows. Offer CSV import does not read buyer columns. Winner budget leftover is organizer-only and is not written into merchant JSON. Organizer buyer-variant counts are counts only; merchant views still show counts only.
 
 The merchant view is an interface boundary, not a formal privacy guarantee. Small cohorts and unusual constraints can still reveal information.
 

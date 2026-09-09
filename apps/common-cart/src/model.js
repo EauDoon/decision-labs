@@ -149,8 +149,16 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms"], "Workspace");
-  return { version: 1, rooms: candidate.rooms.map(validateScenario) };
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter"], "Workspace");
+  const fulfillmentFilter = own(candidate, "fulfillmentFilter");
+  let filter = "all";
+  if (fulfillmentFilter !== undefined) {
+    if (fulfillmentFilter !== "all" && fulfillmentFilter !== "shipping" && fulfillmentFilter !== "pickup") {
+      throw new ScenarioError("Fulfillment filter must be all, shipping, or pickup.");
+    }
+    filter = fulfillmentFilter;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -210,6 +218,74 @@ export function filterOfferIdsByFulfillment(rawScenario, fulfillment) {
   return scenario.offers.filter((offer) => offer.fulfillment === fulfillment).map((offer) => offer.id);
 }
 
+export function acceptedVariantFilterOptions(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const seen = new Map();
+  for (const buyer of scenario.buyers) {
+    for (const variant of buyer.allowedVariants) {
+      const key = normalizeText(variant);
+      if (!seen.has(key)) seen.set(key, variant);
+    }
+  }
+  return [...seen.values()].sort((left, right) => compareText(normalizeText(left), normalizeText(right)) || compareText(left, right));
+}
+
+export function filterBuyerIdsByAcceptedVariant(rawScenario, variant) {
+  if (typeof variant !== "string") {
+    throw new ScenarioError("Buyer variant filter must be all or an accepted variant name.");
+  }
+  if (variant !== "all" && variant.trim() === "") {
+    throw new ScenarioError("Buyer variant filter must be all or an accepted variant name.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (variant === "all") return scenario.buyers.map((buyer) => buyer.id);
+  const key = normalizeText(variant);
+  return scenario.buyers
+    .filter((buyer) => buyer.allowedVariants.some((entry) => normalizeText(entry) === key))
+    .map((buyer) => buyer.id);
+}
+
+/** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
+export function organizerBuyerVariantCounts(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const groups = new Map();
+  for (const buyer of scenario.buyers) {
+    for (const variant of buyer.allowedVariants) {
+      const key = normalizeText(variant);
+      const current = groups.get(key) ?? { variant, buyerCount: 0, units: 0 };
+      current.buyerCount += 1;
+      current.units += buyer.quantity;
+      groups.set(key, current);
+    }
+  }
+  return [...groups.values()].sort((left, right) => compareText(normalizeText(left.variant), normalizeText(right.variant)) || compareText(left.variant, right.variant));
+}
+
+function sortedOffers(offers, mode) {
+  if (mode !== "unitPrice" && mode !== "capacity") {
+    throw new ScenarioError("Offer sort must be unit price or capacity.");
+  }
+  return [...offers].sort((left, right) => {
+    if (mode === "unitPrice") {
+      return left.unitPrice - right.unitPrice || compareText(left.id, right.id);
+    }
+    return right.capacity - left.capacity || compareText(left.id, right.id);
+  });
+}
+
+export function previewOfferSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return sortedOffers(scenario.offers, mode).map((offer) => ({
+    ...offer,
+    tiers: offer.tiers ? offer.tiers.map((tier) => ({ ...tier })) : offer.tiers
+  }));
+}
+
+export function applyOfferSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return validateScenario({ ...scenario, offers: sortedOffers(scenario.offers, mode) });
+}
+
 function sortedBuyers(buyers, mode) {
   if (mode !== "label" && mode !== "quantity") {
     throw new ScenarioError("Buyer sort must be label or quantity.");
@@ -248,6 +324,17 @@ export function restoreRemovedBuyer(rawScenario, rawBuyer) {
     throw new ScenarioError(`Buyer ${buyer.id} is already in the room.`);
   }
   return validateScenario({ ...scenario, buyers: [...scenario.buyers, buyer] });
+}
+
+export function restoreExampleOffers(rawScenario, name = "neighbourhood") {
+  const scenario = validateScenario(rawScenario);
+  const example = clonePreset(name);
+  return validateScenario({
+    title: scenario.title,
+    currency: scenario.currency,
+    buyers: scenario.buyers,
+    offers: example.offers
+  });
 }
 
 export function uniqueCopyTitle(title, existingTitles = []) {
@@ -653,6 +740,23 @@ export function offerCsvTemplate() {
   return "name,capacity,unit price,shipping,fulfillment,variants\r\n";
 }
 
+/** Merchant-facing offer rows. Formula-safe. Omits buyer IDs, labels, budgets, and allocations. */
+export function createOfferCsv(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const rows = [["name", "capacity", "unit price", "shipping", "fulfillment", "variants"]];
+  for (const offer of scenario.offers) {
+    rows.push([
+      offer.merchant,
+      offer.capacity,
+      offer.unitPrice,
+      offer.shippingPerBuyer,
+      offer.fulfillment,
+      offer.variant
+    ]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
 export function createOrganizerBriefing(rawScenario) {
   const market = evaluateMarket(rawScenario);
   const residual = computeResidualCoverage(rawScenario);
@@ -716,6 +820,50 @@ export function createOrganizerBriefing(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Merchant-safe winner totals. Aggregates only. Omits buyer IDs, labels, budgets, and allocations. */
+export function createWinnerAggregatesMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const residual = computeResidualCoverage(rawScenario);
+  const winner = market.winner;
+  const lines = [
+    `# Common Cart winner aggregates`,
+    ``,
+    `- Currency: ${market.scenario.currency}`,
+    `- Requested units: ${market.totalRequestedUnits}`,
+    `- Buyers in the room: ${market.buyerCount}`,
+    `- Categories: ${market.categoryCount}`,
+    ``,
+    `## Winning offer`,
+    winner
+      ? [
+        `- Merchant: ${winner.offer.merchant}`,
+        `- Category: ${winner.offer.category}`,
+        `- Variant: ${winner.offer.variant}`,
+        `- Fulfillment: ${winner.offer.fulfillment}`,
+        `- Fulfilled units: ${winner.fulfilledUnits}`,
+        `- Included buyers: ${winner.deliveredBuyers}`,
+        `- Item price: ${winner.effectiveUnitPrice}`,
+        `- Landed total: ${winner.totalCost}`,
+        `- Group headroom: ${winner.savings}`,
+        `- Fulfillment rate: ${winner.fulfillmentRate}`
+      ].join("\n")
+      : `- No qualifying offer.`,
+    ``,
+    `## Residual coverage`,
+    `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
+    `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
+    residual.secondary
+      ? `- Leftover fill: ${residual.secondary.merchant} / ${residual.secondary.variant}, ${residual.secondary.fulfilledUnits} units, ${residual.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    residual.tertiary
+      ? `- Tertiary fill: ${residual.tertiary.merchant} / ${residual.tertiary.variant}, ${residual.tertiary.fulfilledUnits} units, ${residual.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
+    ``,
+    `These aggregates omit private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 export function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {
@@ -739,8 +887,8 @@ export function validateScenario(candidate) {
   if (!Array.isArray(buyers) || buyers.length > MAX_BUYERS) {
     throw new ScenarioError(`Buyers must contain at most ${MAX_BUYERS} entries.`);
   }
-  if (!Array.isArray(offers) || offers.length < 1 || offers.length > MAX_OFFERS) {
-    throw new ScenarioError(`Offers must contain 1 to ${MAX_OFFERS} entries.`);
+  if (!Array.isArray(offers) || offers.length > MAX_OFFERS) {
+    throw new ScenarioError(`Offers must contain at most ${MAX_OFFERS} entries.`);
   }
   const normalizedBuyers = buyers.map((entry, index) => validateBuyer(entry, index));
   const normalizedOffers = offers.map((entry, index) => validateOffer(entry, index));
