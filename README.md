@@ -25,20 +25,25 @@ Every workbench:
 
 ## The workbenches
 
-| Workbench | Job to be done | Built-in synthetic example |
-| --- | --- | --- |
-| [Partnership Breakpoint](apps/partnership-breakpoint/) | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
-| [Common Cart](apps/common-cart/) | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
-| [The Smallest Agreement](apps/smallest-agreement/) | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
+| Workbench | Version | Job to be done | Built-in synthetic example |
+| --- | --- | --- | --- |
+| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.4.1 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
+| [Common Cart](apps/common-cart/) | 1.3.1 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
+| [The Smallest Agreement](apps/smallest-agreement/) | 1.4.1 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
+| [Weekend Gap](apps/weekend-gap/) | 1.4.1 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
-workbench / How it works actions, in-page trust notes, and a What's new
-section. What's new names current in-workbench tools (share-to-hold, residual
-coverage, veto groups, and the gate Gantt) without implying live services.
-Each app also ships a `MODEL.md` (formulas and conventions), `CONTRIBUTING.md`,
-`SECURITY.md`, and its own `LICENSE`. The loopback launcher does not serve those
-markdown files; open the app folder or the workbench itself to read them.
+workbench / How it works actions, in-page trust notes, card versions, and a
+What's new section. What's new names current in-workbench tools (share-to-hold,
+residual coverage, veto groups, and the gate Gantt) without implying live
+services. It also names the local 1.4.1 and 1.3.1 extras now on main: Partnership
+Breakpoint CSV roster, capacity, and notes; Common Cart leftover/tertiary fill
+and overlap counts; The Smallest Agreement package pin, locks, and notes; and
+Weekend Gap queue-clear hours and Gantt compare. These are browser tools on the
+case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
+conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
+loopback launcher does not serve those markdown files; open the app folder or
+the workbench itself to read them.
 
 ## Quick start
 
@@ -60,7 +65,10 @@ local drafts. A path outside that set still returns HTTP 404; the body is a
 Decision Labs page that points back to the catalog rather than a blank
 "Not found" line. Set `PORT` to an integer from 1 through 65535 to choose another
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
-an input. Press `?` on the catalog for the in-page shortcut list.
+an input. Press `h` to focus the catalog heading. Press `?` on the catalog for
+the in-page shortcut list. The branded 404 page still returns HTTP 404 and links
+back to the catalog by name for Partnership Breakpoint, Common Cart, The
+Smallest Agreement, and Weekend Gap.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
