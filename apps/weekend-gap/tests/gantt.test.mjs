@@ -48,6 +48,20 @@ test("Gantt SVG is deterministic, light-background, and marks the selected hour"
   assert.doesNotMatch(closed, />First payout /);
 });
 
+test("Gantt SVG uses hatch patterns so open and closed are not color-only", () => {
+  const svg = buildGateGanttSvg(DEFAULT_SCENARIO, 21);
+  assert.match(svg, /<pattern id="wg-gantt-closed"/);
+  assert.match(svg, /<pattern id="wg-gantt-fx-closed"/);
+  assert.match(svg, /url\(#wg-gantt-closed\)/);
+  assert.match(svg, /url\(#wg-gantt-fx-closed\)/);
+  assert.match(svg, /Hatched fill is closed/);
+  assert.match(svg, /Solid open or weekday/);
+  const compared = buildComparisonGanttSvg(DEFAULT_SCENARIO, { ...DEFAULT_SCENARIO, mondayHoliday: true }, 65);
+  assert.match(compared, /<pattern id="wg-compare-closed"/);
+  assert.match(compared, /url\(#wg-compare-closed\)/);
+  assert.match(compared, /Solid open, hatched closed/);
+});
+
 test("Gantt markup includes a table fallback and print styles", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
@@ -57,6 +71,7 @@ test("Gantt markup includes a table fallback and print styles", async () => {
   assert.match(html, /Text equivalent of the Gantt/);
   assert.match(html, /id="gantt-density"/);
   assert.match(html, /id="export-gantt"/);
+  assert.match(html, /hatched/);
   assert.match(css, /@media print/);
   assert.match(css, /\.gantt-svg/);
   assert.match(app, /weekend-gap-gantt\.svg/);

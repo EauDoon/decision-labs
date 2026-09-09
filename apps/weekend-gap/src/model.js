@@ -863,6 +863,24 @@ function svgEscape(value) {
   }[char]));
 }
 
+function ganttPatternDefs(prefix) {
+  return `<defs>` +
+    `<pattern id="${prefix}-closed" patternUnits="userSpaceOnUse" width="6" height="6">` +
+      `<rect width="6" height="6" fill="#c45c54"/>` +
+      `<path d="M0 6 L6 0 M-1.5 1.5 L1.5 -1.5 M4.5 7.5 L7.5 4.5" stroke="#17324a" stroke-width="1.2"/>` +
+    `</pattern>` +
+    `<pattern id="${prefix}-fx-closed" patternUnits="userSpaceOnUse" width="6" height="6">` +
+      `<rect width="6" height="6" fill="#c9a227"/>` +
+      `<path d="M0 0 L6 6 M-1.5 4.5 L1.5 7.5 M4.5 -1.5 L7.5 1.5" stroke="#17324a" stroke-width="1.2"/>` +
+    `</pattern>` +
+  `</defs>`;
+}
+
+function ganttCellFill(open, openColor, prefix, fx = false) {
+  if (open) return openColor;
+  return `url(#${prefix}-${fx ? "fx-closed" : "closed"})`;
+}
+
 /** Hourly open/closed state for issuer, bank, payout and weekday vs weekend FX. */
 export function buildGateSchedule(input) {
   const { scenario } = sanitizeScenario(input);
@@ -891,10 +909,10 @@ export function buildGateGanttSvg(input, selectedHour = 0) {
   const top = 20;
   const plotWidth = width - labelWidth - 16;
   const rows = [
-    ["Issuer", (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", "#c45c54"],
-    ["Bank", (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", "#c45c54"],
-    ["Payout", (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", "#c45c54"],
-    ["FX", (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", "#c9a227"]
+    ["Issuer", (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", false],
+    ["Bank", (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", false],
+    ["Payout", (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", false],
+    ["FX", (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", true]
   ];
   const height = top + rows.length * rowHeight + 32;
   const hourWidth = plotWidth / SIMULATION_HOURS;
@@ -905,7 +923,7 @@ export function buildGateGanttSvg(input, selectedHour = 0) {
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
       const open = row[1](hour);
       const x = labelWidth + hour * hourWidth;
-      cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${open ? row[2] : row[3]}" />`;
+      cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${ganttCellFill(open, row[2], "wg-gantt", row[3])}" />`;
     }
   });
   const markerX = labelWidth + (markerHour / SIMULATION_HOURS) * plotWidth;
@@ -919,8 +937,10 @@ export function buildGateGanttSvg(input, selectedHour = 0) {
   const payoutMark = payoutX === null ? "" :
     `<line x1="${payoutX.toFixed(2)}" y1="${top}" x2="${payoutX.toFixed(2)}" y2="${top + rows.length * rowHeight}" stroke="#2f9e6b" stroke-width="2" stroke-dasharray="4 3" />` +
     `<text x="${Math.min(width - 80, Math.max(labelWidth, payoutX + 6)).toFixed(1)}" y="${top + 12}" font-size="10" fill="#1f6b49">First payout ${svgEscape(formatTime(firstPayout))}</text>`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="72-hour gate Gantt for issuer, bank, payout and FX. Current hour is the solid vertical marker. First payout window is the dashed green marker. A table follows.">` +
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="72-hour gate Gantt for issuer, bank, payout and FX. Solid fill is open or weekday depth. Hatched fill is closed or weekend thinning. Current hour is the solid vertical marker. First payout window is the dashed marker. A table follows.">` +
+    ganttPatternDefs("wg-gantt") +
     `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
+    `<text x="8" y="14" font-size="10" fill="#3e5360">Solid open or weekday. Hatched closed or weekend.</text>` +
     selectedLabel + labels + cells + payoutMark +
     `<line x1="${markerX.toFixed(2)}" y1="${top}" x2="${markerX.toFixed(2)}" y2="${top + rows.length * rowHeight}" stroke="#17324a" stroke-width="2" />` +
     ticks +
@@ -994,14 +1014,14 @@ export function buildComparisonGanttSvg(baselineInput, currentInput, selectedHou
   const plotWidth = width - labelWidth - 16;
   const hourWidth = plotWidth / SIMULATION_HOURS;
   const pairs = [
-    ["Issuer current", currentSchedule, (point) => point.issuerOpen, "#2f9e6b", "#c45c54"],
-    ["Issuer baseline", baselineSchedule, (point) => point.issuerOpen, "#2f9e6b", "#c45c54"],
-    ["Bank current", currentSchedule, (point) => point.bankOpen, "#2f9e6b", "#c45c54"],
-    ["Bank baseline", baselineSchedule, (point) => point.bankOpen, "#2f9e6b", "#c45c54"],
-    ["Payout current", currentSchedule, (point) => point.payoutOpen, "#2f9e6b", "#c45c54"],
-    ["Payout baseline", baselineSchedule, (point) => point.payoutOpen, "#2f9e6b", "#c45c54"],
-    ["FX current", currentSchedule, (point) => point.fxWeekday, "#3d7ea6", "#c9a227"],
-    ["FX baseline", baselineSchedule, (point) => point.fxWeekday, "#3d7ea6", "#c9a227"]
+    ["Issuer current", currentSchedule, (point) => point.issuerOpen, "#2f9e6b", false],
+    ["Issuer baseline", baselineSchedule, (point) => point.issuerOpen, "#2f9e6b", false],
+    ["Bank current", currentSchedule, (point) => point.bankOpen, "#2f9e6b", false],
+    ["Bank baseline", baselineSchedule, (point) => point.bankOpen, "#2f9e6b", false],
+    ["Payout current", currentSchedule, (point) => point.payoutOpen, "#2f9e6b", false],
+    ["Payout baseline", baselineSchedule, (point) => point.payoutOpen, "#2f9e6b", false],
+    ["FX current", currentSchedule, (point) => point.fxWeekday, "#3d7ea6", true],
+    ["FX baseline", baselineSchedule, (point) => point.fxWeekday, "#3d7ea6", true]
   ];
   const height = top + pairs.length * rowHeight + 32;
   let cells = "";
@@ -1010,7 +1030,7 @@ export function buildComparisonGanttSvg(baselineInput, currentInput, selectedHou
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
       const open = row[2](row[1].hours[hour]);
       const x = labelWidth + hour * hourWidth;
-      cells += `<rect x="${x.toFixed(2)}" y="${y + 4}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 8}" fill="${open ? row[3] : row[4]}" />`;
+      cells += `<rect x="${x.toFixed(2)}" y="${y + 4}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 8}" fill="${ganttCellFill(open, row[3], "wg-compare", row[4])}" />`;
     }
     return `<text x="8" y="${y + 16}" font-size="11" fill="#17324a">${svgEscape(row[0])}</text>`;
   }).join("");
@@ -1019,9 +1039,10 @@ export function buildComparisonGanttSvg(baselineInput, currentInput, selectedHou
     const x = labelWidth + (hour / SIMULATION_HOURS) * plotWidth;
     return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
   }).join("");
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Two-row gate Gantt comparing current and baseline issuer, bank, payout and FX hours. A table follows.">` +
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Two-row gate Gantt comparing current and baseline issuer, bank, payout and FX hours. Solid fill is open or weekday depth. Hatched fill is closed or weekend thinning. A table follows.">` +
+    ganttPatternDefs("wg-compare") +
     `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
-    `<text x="8" y="16" font-size="12" fill="#17324a">Current versus baseline, paired rows</text>` +
+    `<text x="8" y="16" font-size="12" fill="#17324a">Current versus baseline, paired rows. Solid open, hatched closed.</text>` +
     labels + cells +
     `<line x1="${markerX.toFixed(2)}" y1="${top}" x2="${markerX.toFixed(2)}" y2="${top + pairs.length * rowHeight}" stroke="#17324a" stroke-width="2" />` +
     ticks +
