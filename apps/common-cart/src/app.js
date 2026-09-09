@@ -637,6 +637,11 @@ function handleShortcut(event) {
   if (key === "b") {
     event.preventDefault();
     focusBuyersList();
+    return;
+  }
+  if (key === "w") {
+    event.preventDefault();
+    focusWinnerSummary();
   }
 }
 
@@ -644,6 +649,17 @@ function focusBuyersList() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#buyers-list")?.focus();
+}
+
+function focusWinnerSummary() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const summary = document.querySelector("#winner-summary");
+  if (summary) {
+    summary.focus();
+    return;
+  }
+  document.querySelector("#inspector-summary")?.focus();
 }
 
 function focusOffersList() {

@@ -62,7 +62,7 @@ body {
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible,
-#offers-list:focus, #buyers-list:focus, #merchant-inspector-region:focus {
+#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
 }
@@ -413,6 +413,7 @@ footer {
         <li><kbd>m</kbd> Focus the merchant inspector region</li>
         <li><kbd>o</kbd> Focus the offers list</li>
         <li><kbd>b</kbd> Focus the buyer list</li>
+        <li><kbd>w</kbd> Focus the winner and inspector summary</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -483,7 +484,7 @@ footer {
       <p id="snapshot-help">Up to 12 local snapshots, named by the room title. Export JSON for a portable backup. Browser data can be cleared.</p>
     </section>
 
-    <section class="scoreboard print-keep" aria-label="Market summary">
+    <section class="scoreboard print-keep" id="winner-summary" tabindex="-1" aria-label="Market summary">
       <article class="metric feature">
         <span class="metric-label">Best available offer</span>
         <strong id="metric-winner">Not unlocked</strong>
@@ -633,7 +634,7 @@ footer {
             <div>
               <p class="section-number">Offer inspector</p>
               <h3 id="inspector-title">Why each order is included or excluded</h3>
-              <p id="inspector-summary" class="inspector-summary"></p>
+              <p id="inspector-summary" class="inspector-summary" tabindex="-1"></p>
             </div>
             <label class="inspector-picker print-chrome">Inspect offer
               <select id="offer-inspector"></select>
@@ -2988,6 +2989,11 @@ function handleShortcut(event) {
   if (key === "b") {
     event.preventDefault();
     focusBuyersList();
+    return;
+  }
+  if (key === "w") {
+    event.preventDefault();
+    focusWinnerSummary();
   }
 }
 
@@ -2995,6 +3001,17 @@ function focusBuyersList() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#buyers-list")?.focus();
+}
+
+function focusWinnerSummary() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const summary = document.querySelector("#winner-summary");
+  if (summary) {
+    summary.focus();
+    return;
+  }
+  document.querySelector("#inspector-summary")?.focus();
 }
 
 function focusOffersList() {

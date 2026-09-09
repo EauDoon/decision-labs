@@ -46,3 +46,19 @@ test("keyboard handler jumps to the buyer list when not typing", async () => {
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.match(app, /#buyer-tab/u);
 });
+
+test("shortcut help documents the winner summary jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>w<\/kbd> Focus the winner and inspector summary/u);
+  assert.match(html, /id="winner-summary"[^>]*tabindex="-1"/u);
+  assert.match(html, /id="inspector-summary"[^>]*tabindex="-1"/u);
+});
+
+test("keyboard handler jumps to the winner summary when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "w"\)/u);
+  assert.match(app, /function focusWinnerSummary\(/u);
+  assert.match(app, /#winner-summary/u);
+  assert.match(app, /#inspector-summary/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
