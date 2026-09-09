@@ -19,12 +19,14 @@ let participantSequence = 0;
 let importSequence = 0;
 let activePreset = 'balanced';
 let pendingNotice = '';
+let persistenceWarning = '';
 let state = withStress(loadInitialState());
 let eventsBound = false;
 const undoHistory = [];
 const redoHistory = [];
 
 function checkpoint() {
+  importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
   redoHistory.length = 0;
@@ -95,9 +97,14 @@ function encodeHash(config) {
 
 function loadStoredState() {
   try {
-    const parsed = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return validateConfiguration(parsed).valid ? parsed : null;
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw === null) return null;
+    if (raw.length > 250_000) throw new Error('Oversized saved case');
+    const parsed = JSON.parse(raw);
+    if (!validateConfiguration(parsed).valid) throw new Error('Invalid saved case');
+    return parsed;
   } catch {
+    pendingNotice = 'The previous local case could not be read. Showing Balanced; import an exported JSON backup to recover.';
     return null;
   }
 }
@@ -119,18 +126,25 @@ function loadInitialState() {
 
 function setNotice(message) {
   const notice = document.querySelector('#notice');
-  if (notice) notice.textContent = message;
+  if (notice) notice.textContent = persistenceWarning ? `${message.replace(/Saved locally(?: and updated the shareable URL)?\.?/, 'Updated in this tab.')} ${persistenceWarning}`.trim() : message;
 }
 
 function saveState() {
   const validation = validateConfiguration(state);
   if (!validation.valid) return;
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch { /* Storage is optional. */ }
+  persistenceWarning = '';
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); } catch {
+    persistenceWarning = 'Local saving is unavailable. Export JSON before closing this tab.';
+  }
   if (standaloneFileMode) return;
   const hash = encodeHash(state);
-  history.replaceState(null, '', hash.length <= MAX_HASH_LENGTH
-    ? `${window.location.pathname}${window.location.search}${hash}`
-    : `${window.location.pathname}${window.location.search}`);
+  try {
+    history.replaceState(null, '', hash.length <= MAX_HASH_LENGTH
+      ? `${window.location.pathname}${window.location.search}${hash}`
+      : `${window.location.pathname}${window.location.search}`);
+  } catch {
+    persistenceWarning += ' The share URL could not be updated. Export JSON to transfer this case.';
+  }
 }
 
 function numberFromInput(value, optional = false) {

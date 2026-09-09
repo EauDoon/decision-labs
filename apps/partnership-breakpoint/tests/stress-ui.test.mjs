@@ -29,7 +29,7 @@ async function workbench(protocol = 'file:', options = {}) {
     history: { replaceState() {} },
     window: { location: { protocol, hash: options.hash ?? '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
     document: { activeElement: null, querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
-    localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
+    localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
   });
   new vm.Script(script).runInContext(context, { timeout: 2000 });
   return {
@@ -299,4 +299,24 @@ test('undo restores edits and invalid drafts; redo restores the edit and resets 
   assert.match(app.markup(), /data-action="redo" disabled/);
   app.click('undo');
   assert.equal(app.saved().deal.monthlyVolume, 80000);
+});
+
+test('local saving failures are visible and do not claim persistence', async () => {
+  const app = await workbench('file:', { blockStorage: true });
+  app.edit('deal.monthlyVolume', '80000');
+  assert.match(app.notice(), /Local saving is unavailable/);
+  assert.doesNotMatch(app.notice(), /Saved locally/);
+  assert.match(app.markup(), /value="80000"/);
+});
+test('edits and resets supersede a pending import', async () => {
+  for (const action of ['edit', 'reset']) {
+    const app = await workbench();
+    const pending = [];
+    const imported = clonePreset('thinMargin');
+    app.import(imported, pending);
+    if (action === 'edit') app.edit('deal.monthlyVolume', '70000'); else app.click('reset');
+    pending[0]();
+    assert.equal(app.saved().deal.monthlyVolume, action === 'edit' ? 70000 : 100000);
+    assert.equal(app.saved().deal.feePerTransaction, 0.2);
+  }
 });
