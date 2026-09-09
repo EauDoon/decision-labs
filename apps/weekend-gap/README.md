@@ -57,11 +57,11 @@ npm run check
 - A deterministic 72-hour Friday-to-Monday simulation.
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
 - Normal Friday, Weekend Rush, Market Stress, and Thin FX, Tight Windows (synthetic) presets.
-- Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, and hours to first settlement.
-- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, and hours to first settlement (or no settlement in 72 hours).
-- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, undo, redo and export.
-- Canvas chart with a printable SVG queue path and a text-equivalent data table.
-- A 72-hour gate Gantt (SVG plus table) with the current hour and first payout window marked.
+- Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, hours to first settlement, and hours to clear the queue.
+- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains).
+- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, first settlement, undo, redo and export.
+- Canvas chart with a printable SVG queue path that can be downloaded as a file, and a text-equivalent data table.
+- A 72-hour gate Gantt (SVG plus table) with the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
 ## Scenario comparison and reserve planner
@@ -124,6 +124,19 @@ scripts/dev-server.mjs Dependency-free local development server
 
 MIT. See [LICENSE](LICENSE).
 
+## New in v1.4.1: queue files, calendar compare and holiday Saturday
+
+1. Download the printable queue SVG as a file, using the same helper and synthetic-not-live notice as the Gantt download.
+2. Press `J` to jump the timeline to the first settlement checkpoint. The key is ignored while typing in an input, textarea or select, and when no interval settles.
+3. Hours to clear the queue appear on the dashboard: the first checkpoint where queued AUD is 0 after it has been positive, or "queue remains" if it never clears.
+4. Workspace JSON stores Gantt table density. Older files without the field restore to six-hour snapshots.
+5. Optionally treat Saturday as a public holiday like Sunday. Older scenario files omit the field and keep the existing weekend Saturday.
+6. Applying a window shift still records one undo step. After apply, a notice says Undo scenario edit reverts that window.
+7. Compare baseline and current operating calendars with a paired-row Gantt (current above baseline) and a table of hours that differ. Matching hours stay omitted except the selected hour.
+8. Reports inline hours to clear the queue and the comparison Gantt. MODEL.md records the new semantics.
+
+v1.4.0 operating-calendar tools remain below.
+
 ## New in v1.4.0: operating calendar and what-if tools
 
 1. Scrub a 72-hour gate Gantt of issuer, bank, payout and FX state. The solid marker follows the timeline slider. The dashed marker is the first payout window. A table fallback and print styles keep the calendar readable without canvas.
@@ -133,7 +146,7 @@ MIT. See [LICENSE](LICENSE).
 5. Optionally treat Monday as a public holiday. Older scenario files omit the field and keep a weekday Monday. Settlement cannot occur on a holiday Monday.
 6. Run the five sensitivity cases as SVG bars for settled total or peak queue. The numeric table remains the text equivalent.
 7. A first-run coach explains synthetic assumptions, gates and the Friday-Monday frame. It is skipped on share links and closes with Escape.
-8. Keyboard shortcuts: `?` help, Space play/pause, `U` undo, `R` redo, `E` export. Keys are ignored while typing in an input, textarea or select.
+8. Keyboard shortcuts: `?` help, Space play/pause, `J` first settlement, `U` undo, `R` redo, `E` export. Keys are ignored while typing in an input, textarea or select.
 9. Print a light SVG of queue versus hour. The canvas playhead stays available on screen.
 10. Use the Thin FX, Tight Windows (synthetic) preset for thin depth, compressed hours and a holiday Monday.
 11. Hours to first settlement appear on the dashboard, or "No settlement in 72h" when the chain never pays.
@@ -154,10 +167,10 @@ v1.3.0 repeatable-experiment workflows remain: demand timing, pinned baselines, 
 | Export | Contents | Importable here |
 | --- | --- | --- |
 | Scenario JSON / share link | Current editable scenario | Scenario import / URL hash |
-| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour | Workspace import |
+| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour, Gantt density | Workspace import |
 | Analysis JSON | Both scenarios, results, reserve plan and hourly comparison | No, report only |
 | Hourly CSV | All 73 checkpoints, prior-interval flows and next-hour capacity | No, spreadsheet data |
-| Printable HTML | Notes, assumptions, comparison including hours to first settlement, diagnostics, inline gate Gantt, queue path, limiting-gate counts, reserve plan and model limits | No, report only |
+| Printable HTML | Notes, assumptions, comparison including hours to first settlement and hours to clear the queue, diagnostics, inline gate Gantt, baseline versus current Gantt, queue path, limiting-gate counts, reserve plan and model limits | No, report only |
 
 Scenario, workspace and library data stay in browser storage. Nothing syncs to an account or server. A scenario hash takes priority over local recovery at startup. Normal reloads restore the latest workspace, including its baseline and notes. Browser/file-origin storage availability varies, so export important work. Storage failures remain visible while the simulator stays usable. Invalid planner drafts do not replace the last valid target in recovery, and incomplete numeric assumption fields leave the previous simulation intact.
 

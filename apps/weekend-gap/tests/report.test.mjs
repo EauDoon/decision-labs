@@ -21,6 +21,13 @@ test("report inlines the current-scenario gate Gantt as SVG",()=>{
  assert.match(report,/>First payout /);
  assert.match(report,/Selected Sat 12:00/);
 });
+test("report inlines the paired baseline versus current Gantt",()=>{
+ const report=reportToHTML({...DEFAULT_SCENARIO,mondayHoliday:true},DEFAULT_SCENARIO,{selectedHour:65});
+ assert.match(report,/Baseline versus current Gantt/);
+ assert.match(report,/Issuer current/);
+ assert.match(report,/Issuer baseline/);
+ assert.match(report,/paired rows/);
+});
 test("report lists hours to first settlement for both scenarios",()=>{
  const open=reportToHTML(DEFAULT_SCENARIO,DEFAULT_SCENARIO);
  assert.match(open,/Hours to first settlement/);
@@ -37,4 +44,11 @@ test("report inlines the queue path and hourly limiting-gate table",()=>{
  assert.match(report,/Share of 72h/);
  const hours=attributeBottlenecks(PRESETS.weekendRush).rows.find((row)=>row.label==="none").hours;
  assert.match(report,new RegExp(">"+String(hours)+"<"));
+});
+test("report lists hours to clear the queue including residual-queue wording",()=>{
+ const open=reportToHTML(DEFAULT_SCENARIO,DEFAULT_SCENARIO);
+ assert.match(open,/Hours to clear queue/);
+ assert.doesNotMatch(open,/queue remains/);
+ const leftover=reportToHTML(PRESETS.marketStress,DEFAULT_SCENARIO);
+ assert.match(leftover,/queue remains/);
 });
