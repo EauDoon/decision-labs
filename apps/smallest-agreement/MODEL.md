@@ -161,3 +161,7 @@ The optional package review can find within-clause alternatives that improve eve
 ### Single-clause substitutions
 
 The optional package review can review every one-clause alternative around the fixed package. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Rollback contribution
+
+The optional package review can show what is lost when each recommended change returns to its original option. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.

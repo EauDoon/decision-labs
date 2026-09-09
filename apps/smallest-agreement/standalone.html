@@ -2600,6 +2600,7 @@ const AGREEMENT_REVIEW_TOOLS=Object.freeze([
  {id:'floors',title:'Group floor and veto slack'},
  {id:'dominance',title:'Option support and cost dominance'},
  {id:'substitutions',title:'Single-clause substitutions'},
+ {id:'rollback',title:'Rollback contribution'},
 // SA_REVIEW_TOOLS
 ]);
 function analyzeAgreementReview(rawProposal,tool){
@@ -2628,6 +2629,12 @@ function analyzeAgreementReview(rawProposal,tool){
 
  const rows=[];proposal.clauses.forEach((clause,index)=>{for(const option of clause.options){if(option.id===selected.options[index].id)continue;const options=[...selected.options];options[index]=option;const tested=selectionSummary(proposal,options);rows.push([clause.title,option.label,tested.approval,tested.approval-selected.approval,tested.changeCost,tested.approval+EPSILON>=proposal.threshold&&tested.constraints.met?'Pass':'Does not pass']);}});
  return report(['Changed clause','Alternative','Approval %','Approval change points','Package cost','All tests'],rows,'One clause changes at a time, all other selected options stay fixed. Lock, budget, floor and veto failures remain failures. At most 460 alternatives; this local neighborhood is not a complete package search.');
+
+ }
+ case 'rollback':{
+
+ const rows=[];proposal.clauses.forEach((clause,index)=>{const original=clause.options.find(o=>o.original);if(original.id===selected.options[index].id)return;const options=[...selected.options];options[index]=original;const tested=selectionSummary(proposal,options);rows.push([clause.title,selected.options[index].label,selected.approval-tested.approval,selected.changeCost-tested.changeCost,tested.approval,tested.approval+EPSILON>=proposal.threshold&&tested.constraints.met?'Still passes':'Does not pass']);});
+ return report(['Rolled-back clause','Selected change','Approval lost points','Cost removed','Approval after rollback %','All tests after rollback'],rows,'Each row separately restores one original option. This is a fixed-package accounting exercise, not proof that a clause causes real approval. No rows means the context package has no changes.');
 
  }
 // SA_REVIEW_CASES
