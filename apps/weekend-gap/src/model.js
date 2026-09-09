@@ -534,3 +534,23 @@ export function workspaceFromJSON(text) {
     return { workspace, errors: [...current.errors, ...baseline.errors] };
   } catch (error) { return { workspace: null, errors: [error.message || "Workspace could not be read."] }; }
 }
+
+/** In-memory, bounded scenario recovery. Returned values cannot mutate history. */
+export function createScenarioHistory(initial, limit = 40) {
+  if (!Number.isInteger(limit) || limit < 2 || limit > 100) throw new RangeError("History limit must be 2 to 100.");
+  let entries = [sanitizeScenario(initial).scenario], index = 0;
+  const copy = () => ({ ...entries[index] });
+  return {
+    record(next) {
+      const scenario = sanitizeScenario(next).scenario;
+      if (JSON.stringify(scenario) === JSON.stringify(entries[index])) return copy();
+      entries = entries.slice(0,index + 1); entries.push(scenario);
+      if (entries.length > limit) entries.shift();
+      index = entries.length - 1; return copy();
+    },
+    undo() { if (index > 0) index -= 1; return copy(); },
+    redo() { if (index < entries.length - 1) index += 1; return copy(); },
+    get canUndo() { return index > 0; }, get canRedo() { return index < entries.length - 1; },
+    get size() { return entries.length; }
+  };
+}

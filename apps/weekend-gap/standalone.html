@@ -314,6 +314,8 @@ textarea { width: 100%; padding: .7rem; resize: vertical; color: #eef4f5; backgr
             <button class="text-button" id="reset-button" type="button">Reset</button>
           </div>
 
+          <div class="scenario-actions"><button id="undo-scenario" type="button" disabled>Undo scenario edit</button><button id="redo-scenario" type="button" disabled>Redo scenario edit</button></div>
+          <p>Recover up to 39 scenario edits in this tab. Baseline, notes and saved copies are separate.</p>
           <fieldset class="preset-set" aria-label="Scenario presets">
             <legend>Preset</legend>
             <div class="preset-grid">
@@ -1148,11 +1150,31 @@ function workspaceFromJSON(text) {
   } catch (error) { return { workspace: null, errors: [error.message || "Workspace could not be read."] }; }
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON };
+/** In-memory, bounded scenario recovery. Returned values cannot mutate history. */
+function createScenarioHistory(initial, limit = 40) {
+  if (!Number.isInteger(limit) || limit < 2 || limit > 100) throw new RangeError("History limit must be 2 to 100.");
+  let entries = [sanitizeScenario(initial).scenario], index = 0;
+  const copy = () => ({ ...entries[index] });
+  return {
+    record(next) {
+      const scenario = sanitizeScenario(next).scenario;
+      if (JSON.stringify(scenario) === JSON.stringify(entries[index])) return copy();
+      entries = entries.slice(0,index + 1); entries.push(scenario);
+      if (entries.length > limit) entries.shift();
+      index = entries.length - 1; return copy();
+    },
+    undo() { if (index > 0) index -= 1; return copy(); },
+    redo() { if (index < entries.length - 1) index += 1; return copy(); },
+    get canUndo() { return index > 0; }, get canRedo() { return index < entries.length - 1; },
+    get size() { return entries.length; }
+  };
+}
+
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON, createScenarioHistory };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON, createScenarioHistory } = window.__WeekendGapModel;
 
 let workspaceReady = false;
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
@@ -1190,6 +1212,7 @@ const elements = {
 };
 
 let scenario = { ...DEFAULT_SCENARIO };
+let scenarioHistory = createScenarioHistory(scenario);
 let simulation = runSimulation(scenario);
 let baselineScenario = { ...scenario };
 let comparison = compareScenarios(baselineScenario, scenario);
@@ -1262,9 +1285,11 @@ function setMessage(message = "") {
   elements.inputMessage.textContent = message;
 }
 
-function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false } = {}) {
+function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true } = {}) {
   const cleaned = sanitizeScenario(nextScenario);
+  if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
+  renderHistory();
   simulation = runSimulation(scenario);
   comparison = compareScenarios(baselineScenario, scenario);
   selectedHour = Math.min(selectedHour, SIMULATION_HOURS);
@@ -1777,6 +1802,18 @@ if(!window.location.hash) {
   } catch { document.querySelector("#workspace-status").textContent="Saved workspace could not be read. Current scenario was kept."; }
 }
 workspaceReady=true;
+
+function renderHistory() {
+  document.querySelector("#undo-scenario").disabled=!scenarioHistory.canUndo;
+  document.querySelector("#redo-scenario").disabled=!scenarioHistory.canRedo;
+}
+document.querySelector("#undo-scenario").addEventListener("click",()=>{
+  setPlaying(false);setScenario(scenarioHistory.undo(),{recordHistory:false,message:"Previous scenario edit restored. Baseline and notes were kept."});
+});
+document.querySelector("#redo-scenario").addEventListener("click",()=>{
+  setPlaying(false);setScenario(scenarioHistory.redo(),{recordHistory:false,message:"Scenario edit reapplied. Baseline and notes were kept."});
+});
+scenarioHistory=createScenarioHistory(scenario);renderHistory();
 
 </script>
   </body>

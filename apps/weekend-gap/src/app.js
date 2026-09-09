@@ -50,6 +50,7 @@ const elements = {
 };
 
 let scenario = { ...DEFAULT_SCENARIO };
+let scenarioHistory = createScenarioHistory(scenario);
 let simulation = runSimulation(scenario);
 let baselineScenario = { ...scenario };
 let comparison = compareScenarios(baselineScenario, scenario);
@@ -122,9 +123,11 @@ function setMessage(message = "") {
   elements.inputMessage.textContent = message;
 }
 
-function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false } = {}) {
+function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true } = {}) {
   const cleaned = sanitizeScenario(nextScenario);
+  if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
+  renderHistory();
   simulation = runSimulation(scenario);
   comparison = compareScenarios(baselineScenario, scenario);
   selectedHour = Math.min(selectedHour, SIMULATION_HOURS);
@@ -637,3 +640,15 @@ if(!window.location.hash) {
   } catch { document.querySelector("#workspace-status").textContent="Saved workspace could not be read. Current scenario was kept."; }
 }
 workspaceReady=true;
+
+function renderHistory() {
+  document.querySelector("#undo-scenario").disabled=!scenarioHistory.canUndo;
+  document.querySelector("#redo-scenario").disabled=!scenarioHistory.canRedo;
+}
+document.querySelector("#undo-scenario").addEventListener("click",()=>{
+  setPlaying(false);setScenario(scenarioHistory.undo(),{recordHistory:false,message:"Previous scenario edit restored. Baseline and notes were kept."});
+});
+document.querySelector("#redo-scenario").addEventListener("click",()=>{
+  setPlaying(false);setScenario(scenarioHistory.redo(),{recordHistory:false,message:"Scenario edit reapplied. Baseline and notes were kept."});
+});
+scenarioHistory=createScenarioHistory(scenario);renderHistory();
