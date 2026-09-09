@@ -4,6 +4,7 @@ import {
   SIMULATION_HOURS,
   formatTime,
   weekendCloseOverlapNotice,
+  mondaySaturdayHolidayNotice,
   runSimulation,
   sanitizeScenario,
   scenarioFromHash,
@@ -277,6 +278,12 @@ function render() {
   if (overlapNode) {
     overlapNode.hidden = !overlapNotice;
     overlapNode.textContent = overlapNotice;
+  }
+  const mondaySaturdayNotice = mondaySaturdayHolidayNotice(scenario);
+  const mondaySaturdayNode = document.querySelector("#monday-saturday-holiday-notice");
+  if (mondaySaturdayNode) {
+    mondaySaturdayNode.hidden = !mondaySaturdayNotice;
+    mondaySaturdayNode.textContent = mondaySaturdayNotice;
   }
 
   for (const button of document.querySelectorAll("[data-preset]")) {

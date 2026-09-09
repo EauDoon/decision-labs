@@ -175,6 +175,11 @@ test("holiday Saturday checkbox labels Saturday like Sunday and restores from wo
   assert.match(reloaded.nodes.get("fx-gate").textContent, /Holiday Saturday/);
   assert.equal(reloaded.nodes.get("weekend-overlap-notice").hidden, false);
   assert.match(reloaded.nodes.get("weekend-overlap-notice").textContent, /Both weekend days are treated as closed/);
+  assert.equal(reloaded.nodes.get("monday-saturday-holiday-notice").hidden, true);
+  reloaded.nodes.get("mondayHoliday").checked = true;
+  await reloaded.nodes.get("scenario-form").emit("change");
+  assert.equal(reloaded.nodes.get("monday-saturday-holiday-notice").hidden, false);
+  assert.match(reloaded.nodes.get("monday-saturday-holiday-notice").textContent, /Monday holiday and Saturday holiday are both on/);
 });
 test("applying a window shift notices that undo reverts it", async () => {
   const ui = await boot();

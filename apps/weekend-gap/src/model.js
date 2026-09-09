@@ -218,6 +218,13 @@ export function weekendCloseOverlapNotice(scenarioInput) {
   return "Saturday holiday and Sunday-style close overlap. Both weekend days are treated as closed.";
 }
 
+/** Visible when Monday and Saturday holidays are both selected. */
+export function mondaySaturdayHolidayNotice(scenarioInput) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  if (!(scenario.mondayHoliday && scenario.saturdayHoliday)) return "";
+  return "Monday holiday and Saturday holiday are both on. Saturday, Sunday and Monday stay closed under Sunday-style rules.";
+}
+
 export function isWithinHours(hourOffset, startHour, endHour) {
   const { localHour } = dayAndHourAt(hourOffset);
   return localHour >= startHour && localHour < endHour;
