@@ -49,6 +49,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
+  assert.match(html, /id="coach-again"/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
@@ -103,6 +104,7 @@ async function savedWorkbench(storage, hash = "") {
       target.events.get("input")({ target });
     },
     ballot: () => element("#ballot-body").innerHTML,
+    coachHidden: () => element("#coach-overlay").hidden,
     clickAction: (action, dataset = {}) => {
       documentEvents.get("click")({
         target: {
@@ -420,6 +422,17 @@ test("workplace hybrid preset loads a valid three-group office policy", async ()
   assert.match(app.clauses(), /Core collaboration hours/u);
   assert.match(app.clauses(), /Desk assignment/u);
   assert.match(app.clauses(), /On-site staff|data-group-id="onsite"|onsite/u);
+});
+
+test("show workshop tour reopens the first-run coach after it was dismissed", async () => {
+  const storage = new Map([["smallest-agreement:coach:v1", "dismissed"]]);
+  const app = await savedWorkbench(storage);
+  assert.equal(app.coachHidden(), true);
+  app.click("#coach-again");
+  assert.equal(app.coachHidden(), false);
+  app.click("#coach-skip");
+  assert.equal(app.coachHidden(), true);
+  assert.equal(storage.get("smallest-agreement:coach:v1"), "dismissed");
 });
 
 test("printable worksheet lists every clause option without recording a vote", async () => {

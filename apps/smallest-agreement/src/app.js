@@ -1268,6 +1268,8 @@ function showCoachStep() {
 }
 
 function startCoachIfNeeded() {
+  const overlay = $("#coach-overlay");
+  if (overlay) overlay.hidden = true;
   if (initialLoadMessage === "Loaded proposal from the share link.") return;
   try {
     if (localStorage.getItem(COACH_KEY) === "dismissed") return;
@@ -1279,6 +1281,10 @@ function startCoachIfNeeded() {
 }
 
 $("#coach-skip").addEventListener("click", dismissCoach);
+$("#coach-again").addEventListener("click", () => {
+  coachIndex = 0;
+  showCoachStep();
+});
 $("#coach-next").addEventListener("click", () => {
   if (coachIndex >= coachSteps.length - 1) dismissCoach();
   else {

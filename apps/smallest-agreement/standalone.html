@@ -233,6 +233,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="redo-button" disabled>Redo</button>
         <button class="button button-secondary" type="button" id="find-agreement">Find agreement</button>
         <button class="button button-secondary" type="button" id="shortcut-help-button">Keyboard shortcuts</button>
+        <button class="button button-quiet" type="button" id="coach-again">Show workshop tour</button>
         <button class="button button-quiet" type="button" id="reset-button">Reset</button>
         <input id="import-file" type="file" accept="application/json,.json" hidden>
         <input id="matrix-import-file" type="file" accept="text/csv,.csv" hidden>
@@ -2596,6 +2597,8 @@ function showCoachStep() {
 }
 
 function startCoachIfNeeded() {
+  const overlay = $("#coach-overlay");
+  if (overlay) overlay.hidden = true;
   if (initialLoadMessage === "Loaded proposal from the share link.") return;
   try {
     if (localStorage.getItem(COACH_KEY) === "dismissed") return;
@@ -2607,6 +2610,10 @@ function startCoachIfNeeded() {
 }
 
 $("#coach-skip").addEventListener("click", dismissCoach);
+$("#coach-again").addEventListener("click", () => {
+  coachIndex = 0;
+  showCoachStep();
+});
 $("#coach-next").addEventListener("click", () => {
   if (coachIndex >= coachSteps.length - 1) dismissCoach();
   else {
