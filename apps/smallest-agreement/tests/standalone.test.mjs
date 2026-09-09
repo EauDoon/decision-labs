@@ -50,6 +50,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /id="coach-again"/u);
+  assert.match(html, /Duplicate option/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
@@ -441,6 +442,25 @@ test("printable worksheet lists every clause option without recording a vote", a
   assert.match(app.ballot(), /Park access hours/u);
   assert.match(app.ballot(), /Close at 20:00 every day \(original\)/u);
   assert.match(app.ballot(), /ballot-box/u);
+});
+
+test("duplicate option copies an alternative's scores and cost with a new identifier", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for option copies");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const source = before.clauses[0].options[1];
+  app.clickAction("duplicate-option", { clauseId: "hours", optionId: source.id });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const copy = after.clauses[0].options.at(-1);
+  assert.equal(after.clauses[0].options.length, before.clauses[0].options.length + 1);
+  assert.equal(copy.original, false);
+  assert.equal(copy.id === source.id, false);
+  assert.equal(copy.label, `${source.label} (copy)`);
+  assert.equal(copy.changeCost, source.changeCost);
+  assert.deepEqual(copy.support, source.support);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].options.length, before.clauses[0].options.length);
 });
 
 test("duplicate clause copies options and locks with new identifiers and supports undo", async () => {
