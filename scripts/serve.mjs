@@ -35,7 +35,13 @@ export function notFoundPage() {
     .eyebrow { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0a4439; }
     h1 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; font-size: 2rem; line-height: 1.2; margin: 0 0 14px; }
     p { line-height: 1.6; color: #0e1f23; }
-    a { color: #0a4439; font-weight: 650; }
+    a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      color: #0a4439;
+      font-weight: 650;
+    }
     a:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
   </style>
 </head>
@@ -44,7 +50,7 @@ export function notFoundPage() {
     <p class="eyebrow">Decision Labs</p>
     <h1>This path is not in the catalog</h1>
     <p>The local launcher serves only the Decision Labs catalog page and the four workbenches. It does not serve source, notes, or drafts.</p>
-    <p><a href="/">Open the Decision Labs catalog</a></p>
+    <p><a href="/">Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap</a></p>
   </main>
 </body>
 </html>`;
