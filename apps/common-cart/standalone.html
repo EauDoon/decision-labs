@@ -2425,6 +2425,7 @@ function jsonSyntaxHint(error) {
 
 
 const CART_REVIEW_TOOLS = Object.freeze([
+  { id: "capacity", title: "Capacity increase previews" },
   { id: "delivery", title: "Delivery slack by included order" },
   { id: "shipping", title: "Shipping exposure and headroom" },
   { id: "withdrawal", title: "Winner withdrawal stress" },
@@ -2495,6 +2496,15 @@ function analyzeCartReview(rawScenario, tool) {
         const buyer = scenario.buyers.find((entry) => entry.id === allocation.buyerId);
         return [result.offer.merchant, buyer.label, buyer.quantity, result.offer.deliveryDays, buyer.latestDeliveryDays, buyer.latestDeliveryDays - result.offer.deliveryDays];
       })), 'Slack is the declared buyer deadline minus promised delivery for included orders. Zero slack means no modeled delay tolerance; this is not a delivery reliability estimate.');
+    }
+    case "capacity": {
+      return report(['Merchant', 'Current capacity', 'Preview capacity', 'Current fulfilled units', 'Preview fulfilled units', 'Unit difference'], market.ranked.slice(0, 5).flatMap((original) => {
+        const capacities = [...new Set([0.1, 0.25, 0.5].map((factor) => Math.min(MAX_UNITS, original.offer.capacity + Math.max(1, Math.ceil(original.offer.capacity * factor)))))] .filter((capacity) => capacity > original.offer.capacity);
+        return capacities.map((capacity) => {
+          const result = evaluateOffer(scenario, { ...original.offer, capacity });
+          return [original.offer.merchant, original.offer.capacity, capacity, original.fulfilledUnits, result.fulfilledUnits, result.fulfilledUnits - original.fulfilledUnits];
+        });
+      }), 'Preview the first five currently ranked offers at capacity increases of 10%, 25%, and 50%, rounded up and capped at 5,000. Duplicate capacities are omitted. Prices, tiers, demand, and all other terms stay fixed; no merchant capacity is verified.');
     }
     default: throw new ScenarioError('Review is unavailable.');
   }
