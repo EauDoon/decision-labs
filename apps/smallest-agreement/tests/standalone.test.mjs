@@ -60,6 +60,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /id="printable-ballot"/u);
+  assert.match(html, /Print facilitator pack/u);
+  assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
   assert.match(html, /Duplicate group/u);
@@ -559,6 +561,21 @@ test("printable worksheet lists every clause option without recording a vote", a
   assert.match(app.ballot(), /Park access hours/u);
   assert.match(app.ballot(), /Close at 20:00 every day \(original\)/u);
   assert.match(app.ballot(), /ballot-box/u);
+});
+
+test("print facilitator pack keeps pin columns, notes, and veto highlights while hiding the coach", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /Print facilitator pack/u);
+  assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
+  assert.match(html, /#coach-again, #shortcut-overlay \{ display: none !important; \}/u);
+  assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for print notes");
+  app.edit("clause-note", "Ask about lighting.", { field: "clause-note", clauseId: "path" });
+  assert.match(app.sideBySide(), /Facilitator note: Ask about lighting\./u);
+  assert.match(app.ballot(), /Facilitator note: Ask about lighting\./u);
+  assert.equal(app.coachHidden(), false);
 });
 
 test("moving a clause changes documented tie-breaker order and supports undo", async () => {

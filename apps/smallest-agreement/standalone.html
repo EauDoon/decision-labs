@@ -182,7 +182,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay, #coach-again, #shortcut-overlay { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -198,7 +198,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
   .ballot-clause { break-inside: avoid; }
   .site-footer { padding: 1rem 0; }
   .veto-blocking { background: #faeee9 !important; outline: 2px solid #a64431; }
-  .veto-blocking-note { color: #a64431; }
+  .veto-blocking-note { color: #a64431; display: block !important; }
+  #side-by-side, #printable-ballot, #constraint-checks, #coalition-table { display: block !important; }
+  .facilitator-pack-kicker { display: block !important; margin: 0 0 1rem; font-size: .9rem; }
 }
 .print-only { display: none; }
 .ballot-clause { margin: 1rem 0; }
@@ -228,7 +230,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
         <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
         <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
-        <button class="button button-secondary" type="button" id="print-button">Print readout</button>
+        <button class="button button-secondary" type="button" id="print-button">Print facilitator pack</button>
         <button class="button button-secondary" type="button" id="worksheet-button">Export worksheet</button>
         <button class="button button-secondary" type="button" id="worksheet-csv-button">Export worksheet CSV</button>
         <button class="button button-secondary" type="button" id="csv-button">Export evidence CSV</button>
@@ -318,6 +320,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading" tabindex="-1">The smallest agreement</h2></div>
             <p id="search-meta" class="search-meta"></p>
           </div>
+          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes and veto highlights. This is a decision aid, not a recorded vote.</p>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
           <section class="result-card" aria-labelledby="side-by-side-heading">
@@ -401,7 +404,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         </section>
         <section id="printable-ballot" class="print-only" aria-labelledby="ballot-heading">
           <h2 id="ballot-heading">Discussion worksheet</h2>
-          <p>Use this printed sheet to mark preferred options during conversation. It is a worksheet, not a recorded vote, legal ballot, or collective decision.</p>
+          <p>Use this printed sheet to mark preferred options during conversation. It is a worksheet, not a recorded vote, legal ballot, or collective decision. Facilitator notes and veto highlights from the inspected package are included when present.</p>
           <div id="ballot-body"></div>
         </section>
 
@@ -2643,7 +2646,9 @@ function renderSideBySide(result) {
   const clauseRows = comparison.clauses.map((row) => {
     const changed = row.recommended && row.recommended.optionId !== row.original.optionId;
     const customNote = row.custom && row.custom.optionId !== row.original.optionId ? " (custom)" : "";
-    return `<tr><th scope="row">${escapeHtml(row.clauseTitle)}</th><td>${choiceCell(row.original)}</td><td>${row.recommended ? choiceCell(row.recommended, changed ? " (changed)" : "") : "No recommendation"}</td><td>${choiceCell(row.custom, customNote)}</td></tr>`;
+    const note = state.proposal.clauses.find((clause) => clause.id === row.clauseId)?.note;
+    const title = `${escapeHtml(row.clauseTitle)}${note ? `<br><small>Facilitator note: ${escapeHtml(note)}</small>` : ""}`;
+    return `<tr><th scope="row">${title}</th><td>${choiceCell(row.original)}</td><td>${row.recommended ? choiceCell(row.recommended, changed ? " (changed)" : "") : "No recommendation"}</td><td>${choiceCell(row.custom, customNote)}</td></tr>`;
   }).join("");
   const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
   const recommendedLock = recommendedIds ? `<p>${lockPackageButton(recommendedIds, "Lock recommended package")} Applying locks is one draft edit, so undo restores the previous locks. Locked search still reports a deliberation aid, not a decision.</p>` : "";

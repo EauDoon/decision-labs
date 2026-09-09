@@ -150,7 +150,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay, #coach-again, #shortcut-overlay { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -166,7 +166,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
   .ballot-clause { break-inside: avoid; }
   .site-footer { padding: 1rem 0; }
   .veto-blocking { background: #faeee9 !important; outline: 2px solid #a64431; }
-  .veto-blocking-note { color: #a64431; }
+  .veto-blocking-note { color: #a64431; display: block !important; }
+  #side-by-side, #printable-ballot, #constraint-checks, #coalition-table { display: block !important; }
+  .facilitator-pack-kicker { display: block !important; margin: 0 0 1rem; font-size: .9rem; }
 }
 .print-only { display: none; }
 .ballot-clause { margin: 1rem 0; }

@@ -734,7 +734,9 @@ function renderSideBySide(result) {
   const clauseRows = comparison.clauses.map((row) => {
     const changed = row.recommended && row.recommended.optionId !== row.original.optionId;
     const customNote = row.custom && row.custom.optionId !== row.original.optionId ? " (custom)" : "";
-    return `<tr><th scope="row">${escapeHtml(row.clauseTitle)}</th><td>${choiceCell(row.original)}</td><td>${row.recommended ? choiceCell(row.recommended, changed ? " (changed)" : "") : "No recommendation"}</td><td>${choiceCell(row.custom, customNote)}</td></tr>`;
+    const note = state.proposal.clauses.find((clause) => clause.id === row.clauseId)?.note;
+    const title = `${escapeHtml(row.clauseTitle)}${note ? `<br><small>Facilitator note: ${escapeHtml(note)}</small>` : ""}`;
+    return `<tr><th scope="row">${title}</th><td>${choiceCell(row.original)}</td><td>${row.recommended ? choiceCell(row.recommended, changed ? " (changed)" : "") : "No recommendation"}</td><td>${choiceCell(row.custom, customNote)}</td></tr>`;
   }).join("");
   const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
   const recommendedLock = recommendedIds ? `<p>${lockPackageButton(recommendedIds, "Lock recommended package")} Applying locks is one draft edit, so undo restores the previous locks. Locked search still reports a deliberation aid, not a decision.</p>` : "";
