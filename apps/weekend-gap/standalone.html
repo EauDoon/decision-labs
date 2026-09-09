@@ -502,6 +502,13 @@ select { width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #57717
             </div>
           </article>
 
+          <article class="planning-card card" aria-labelledby="sensitivity-title">
+            <p class="eyebrow">Sensitivity experiment</p><h2 id="sensitivity-title">Change one assumption at a time</h2>
+            <label for="sensitivity-field">Assumption to vary</label>
+            <select id="sensitivity-field"><option value="reserveCashAud">Starting reserve</option><option value="redemptionDemandAud">Total demand</option><option value="issuerThroughputAudPerHour">Issuer hourly throughput</option><option value="fxDepthAudPerHour">FX hourly depth</option><option value="payoutThroughputAudPerHour">Payout hourly throughput</option></select>
+            <button id="run-sensitivity" type="button">Run five cases</button><p id="sensitivity-status" role="status">Test 50%, 75%, 100%, 125% and 150% of the current value. This is an experiment, not a recommended setting.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Sensitivity results"><table><caption>Values are capped by the scenario bounds. A zero starting value remains zero in every case.</caption><thead><tr><th scope="col">Factor</th><th scope="col">Effective assumption (AUD)</th><th scope="col">Settled</th><th scope="col">Final queue</th><th scope="col">Settlement change</th><th scope="col">Action</th></tr></thead><tbody id="sensitivity-rows"></tbody></table></div>
+          </article>
           <article class="planning-card card" aria-labelledby="reserve-title">
             <p class="eyebrow">Reserve sizing</p>
             <h2 id="reserve-title">Can reserve alone meet the target?</h2>
@@ -1081,11 +1088,25 @@ function analyzeTimeline(input) {
     peakQueueHour: result.summary.peakQueueHour };
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline };
+/** A bounded one-factor experiment, with effective values after model caps. */
+function runSensitivity(input, field) {
+  const fields = ["reserveCashAud", "redemptionDemandAud", "issuerThroughputAudPerHour", "fxDepthAudPerHour", "payoutThroughputAudPerHour"];
+  if (!fields.includes(field)) throw new RangeError("Choose a supported sensitivity assumption.");
+  const base = runSimulation(input);
+  return [0.5, 0.75, 1, 1.25, 1.5].map(multiplier => {
+    const requestedValue = base.scenario[field] * multiplier;
+    const candidate = runSimulation({ ...base.scenario, [field]: requestedValue });
+    return { multiplier, requestedValue, effectiveValue: candidate.scenario[field],
+      adjusted: requestedValue !== candidate.scenario[field], scenario: candidate.scenario,
+      summary: candidate.summary, settlementDeltaAud: candidate.summary.totalSettledAud - base.summary.totalSettledAud };
+  });
+}
+
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity } = window.__WeekendGapModel;
 
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -1596,6 +1617,27 @@ function renderDiagnostics() {
   ].map(([label,hour])=>label + ": " + (hour === null ? "not observed" : formatTime(hour))).join(". ");
 }
 renderDiagnostics();
+
+document.querySelector("#run-sensitivity").addEventListener("click", () => {
+  const field = document.querySelector("#sensitivity-field").value;
+  const rows = runSensitivity(scenario, field);
+  document.querySelector("#sensitivity-rows").replaceChildren(...rows.map(result => {
+    const row = document.createElement("tr");
+    for (const value of [result.multiplier * 100 + "%", planningAud(result.effectiveValue) + (result.adjusted ? " (capped)" : ""),
+      planningAud(result.summary.totalSettledAud), planningAud(result.summary.finalQueuedAud), signedAud(result.settlementDeltaAud)]) {
+      const cell=document.createElement("td");cell.textContent=value;row.append(cell);
+    }
+    const cell=document.createElement("td"), button=document.createElement("button");
+    button.type="button";button.textContent="Apply " + result.multiplier * 100 + "%";
+    button.addEventListener("click",()=>setScenario(result.scenario,{message:"Sensitivity case applied. The pinned baseline was kept."}));
+    cell.append(button);row.append(cell);return row;
+  }));
+  document.querySelector("#sensitivity-status").textContent = "Five cases around the current scenario. All other assumptions held fixed. Changes are relative to the current scenario, not the pinned baseline.";
+});
+document.querySelector("#sensitivity-field").addEventListener("change",()=>{
+  document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-status").textContent="Run the experiment for the selected assumption.";
+});
 
 </script>
   </body>

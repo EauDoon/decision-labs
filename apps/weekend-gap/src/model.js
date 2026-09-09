@@ -485,3 +485,17 @@ export function analyzeTimeline(input) {
     lastSettlementHour: result.timeline.findLast(point => point.settledThisHour > 0)?.hour ?? null,
     peakQueueHour: result.summary.peakQueueHour };
 }
+
+/** A bounded one-factor experiment, with effective values after model caps. */
+export function runSensitivity(input, field) {
+  const fields = ["reserveCashAud", "redemptionDemandAud", "issuerThroughputAudPerHour", "fxDepthAudPerHour", "payoutThroughputAudPerHour"];
+  if (!fields.includes(field)) throw new RangeError("Choose a supported sensitivity assumption.");
+  const base = runSimulation(input);
+  return [0.5, 0.75, 1, 1.25, 1.5].map(multiplier => {
+    const requestedValue = base.scenario[field] * multiplier;
+    const candidate = runSimulation({ ...base.scenario, [field]: requestedValue });
+    return { multiplier, requestedValue, effectiveValue: candidate.scenario[field],
+      adjusted: requestedValue !== candidate.scenario[field], scenario: candidate.scenario,
+      summary: candidate.summary, settlementDeltaAud: candidate.summary.totalSettledAud - base.summary.totalSettledAud };
+  });
+}

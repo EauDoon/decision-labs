@@ -523,3 +523,24 @@ function renderDiagnostics() {
   ].map(([label,hour])=>label + ": " + (hour === null ? "not observed" : formatTime(hour))).join(". ");
 }
 renderDiagnostics();
+
+document.querySelector("#run-sensitivity").addEventListener("click", () => {
+  const field = document.querySelector("#sensitivity-field").value;
+  const rows = runSensitivity(scenario, field);
+  document.querySelector("#sensitivity-rows").replaceChildren(...rows.map(result => {
+    const row = document.createElement("tr");
+    for (const value of [result.multiplier * 100 + "%", planningAud(result.effectiveValue) + (result.adjusted ? " (capped)" : ""),
+      planningAud(result.summary.totalSettledAud), planningAud(result.summary.finalQueuedAud), signedAud(result.settlementDeltaAud)]) {
+      const cell=document.createElement("td");cell.textContent=value;row.append(cell);
+    }
+    const cell=document.createElement("td"), button=document.createElement("button");
+    button.type="button";button.textContent="Apply " + result.multiplier * 100 + "%";
+    button.addEventListener("click",()=>setScenario(result.scenario,{message:"Sensitivity case applied. The pinned baseline was kept."}));
+    cell.append(button);row.append(cell);return row;
+  }));
+  document.querySelector("#sensitivity-status").textContent = "Five cases around the current scenario. All other assumptions held fixed. Changes are relative to the current scenario, not the pinned baseline.";
+});
+document.querySelector("#sensitivity-field").addEventListener("change",()=>{
+  document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-status").textContent="Run the experiment for the selected assumption.";
+});
