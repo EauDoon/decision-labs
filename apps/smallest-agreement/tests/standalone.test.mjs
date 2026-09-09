@@ -75,7 +75,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /id="worksheet-csv-button"/u);
-  assert.match(html, /id="copy-package-button"/u);
+  assert.match(html, /id="export-workspace-button"/u);
+  assert.match(html, /Export workspace JSON/u);
+  assert.match(html, /id="clause-density"/u);
   assert.match(html, /id="copy-veto-button"/u);
   assert.match(html, /Copy veto blockers/u);
   assert.match(html, /id="file-compare-heading"/u);
@@ -99,8 +101,28 @@ async function savedWorkbench(storage, hash = "") {
   let focusedSelector = "";
   const canvasContext = { setTransform() {}, clearRect() {}, fillRect() {}, fillText() {} };
   const element = (selector) => {
-    if (!elements.has(selector)) elements.set(selector, { value: "", textContent: "", innerHTML: "", clientWidth: 400,
-      events: new Map(), addEventListener(name, callback) { this.events.set(name, callback); }, getContext: () => canvasContext, focus() { focusedSelector = selector; } });
+    if (!elements.has(selector)) {
+      const node = {
+        value: "",
+        textContent: "",
+        innerHTML: "",
+        className: "",
+        clientWidth: 400,
+        events: new Map(),
+        addEventListener(name, callback) { this.events.set(name, callback); },
+        getContext: () => canvasContext,
+        focus() { focusedSelector = selector; },
+        classList: {
+          toggle(name, force) {
+            const names = new Set((node.className || "").split(/\s+/u).filter(Boolean));
+            if (force) names.add(name);
+            else names.delete(name);
+            node.className = [...names].join(" ");
+          },
+        },
+      };
+      elements.set(selector, node);
+    }
     return elements.get(selector);
   };
   const clipboard = { text: "", writeText(value) { this.text = value; return Promise.resolve(); } };
@@ -124,6 +146,12 @@ async function savedWorkbench(storage, hash = "") {
     alert: () => element("#result-alert").textContent,
     summary: () => element("#result-summary").innerHTML,
     clauses: () => element("#clauses-editor").innerHTML,
+    clauseDensityClass: () => element("#clauses-editor").className || "",
+    setDensity: (value) => {
+      const target = element("#clause-density");
+      target.value = value;
+      target.events.get("change")({ target: { value } });
+    },
     groups: () => element("#groups-editor").innerHTML,
     disabled: (selector) => element(selector).disabled,
     click: (selector) => element(selector).events.get("click")(),
@@ -983,6 +1011,25 @@ test("clauses CSV import replaces options with named errors and supports undo", 
   assert.match(app.message(), /Imported 1 clauses/u);
   app.click("#undo-button");
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+});
+
+test("clause density persists in workspace JSON and local workspace prefs", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for density");
+  app.setDensity("compact");
+  assert.match(app.clauseDensityClass(), /clause-density-compact/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).clauseDensity, "compact");
+  const proposal = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const workspace = JSON.stringify({
+    format: "smallest-agreement-workspace",
+    version: 1,
+    clauseDensity: "compact",
+    proposal,
+  });
+  await app.importJson(workspace);
+  assert.match(app.message(), /Imported workspace/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).clauseDensity, "compact");
 });
 
 test("renormalize weights requires a preview then apply and can be undone", async () => {

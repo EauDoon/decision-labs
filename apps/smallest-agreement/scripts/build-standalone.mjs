@@ -43,6 +43,8 @@ const appImport = `import {
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
   compareWorkshopFiles,
+  formatWorkspaceJson,
+  parseWorkspaceJson,
   groupContributions,
   stressPackage,
   compareScenarioInputs,

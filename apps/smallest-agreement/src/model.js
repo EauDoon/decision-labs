@@ -1685,6 +1685,50 @@ export function compareWorkshopFiles(leftText, rightText) {
   };
 }
 
+/**
+ * Workspace JSON carries the canonical proposal plus clause card density.
+ * Older proposal-only files remain valid and do not change density.
+ */
+export function formatWorkspaceJson(proposal, prefs = {}) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  const clauseDensity = Object.hasOwn(prefs, "clauseDensity") ? prefs.clauseDensity : "comfortable";
+  if (clauseDensity !== "compact" && clauseDensity !== "comfortable") {
+    return { status: "invalid", errors: [namedFileError("invalid_density", "clauseDensity must be compact or comfortable.")] };
+  }
+  return {
+    status: "ok",
+    clauseDensity,
+    json: `${JSON.stringify({
+      format: "smallest-agreement-workspace",
+      version: 1,
+      clauseDensity,
+      proposal: canonicalProposal(proposal),
+    }, null, 2)}\n`,
+  };
+}
+
+export function parseWorkspaceJson(text) {
+  const parsed = parseJsonObject(text, "workspace");
+  if (parsed.status !== "ok") return parsed;
+  const raw = parsed.value;
+  if (!Object.hasOwn(raw, "format")) {
+    const proposal = proposalFromWorkshopDocument(raw);
+    if (proposal.status !== "ok") return proposal;
+    return { status: "ok", kind: "proposal", proposal: proposal.proposal, clauseDensity: null };
+  }
+  const proposal = proposalFromWorkshopDocument(raw);
+  if (proposal.status !== "ok") return proposal;
+  let clauseDensity = "comfortable";
+  if (Object.hasOwn(raw, "clauseDensity")) {
+    if (raw.clauseDensity !== "compact" && raw.clauseDensity !== "comfortable") {
+      return { status: "invalid", errors: [namedFileError("invalid_density", "clauseDensity must be compact or comfortable.")] };
+    }
+    clauseDensity = raw.clauseDensity;
+  }
+  return { status: "ok", kind: "workspace", proposal: proposal.proposal, clauseDensity };
+}
+
 function parseCsvCost(raw, path) {
   const neutralized = neutralizeCsvCell(raw).trim();
   if (FORMULA_CELL.test(neutralized)) {

@@ -29,6 +29,8 @@ import {
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
   compareWorkshopFiles,
+  formatWorkspaceJson,
+  parseWorkspaceJson,
   groupContributions,
   lockPackage,
   clearAllLocks,
@@ -1491,6 +1493,32 @@ test("workshop file compare lists identifier mismatches instead of inventing zer
   assert.equal(same.groups.fieldChanges.length, 0);
   assert.equal(compareWorkshopFiles("{", "{}").errors[0].code, "invalid_json");
   assert.equal(compareWorkshopFiles("{}", "{}").errors[0].code, "invalid_proposal");
+});
+
+test("workspace JSON persists compact or comfortable clause density and keeps old proposal files valid", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 50 }),
+      option("alternative", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const exported = formatWorkspaceJson(input, { clauseDensity: "compact" });
+  assert.equal(exported.status, "ok");
+  const parsed = parseWorkspaceJson(exported.json);
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.kind, "workspace");
+  assert.equal(parsed.clauseDensity, "compact");
+  assert.deepEqual(parsed.proposal, canonicalProposal(input));
+  const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
+  assert.equal(omitted.clauseDensity, "comfortable");
+  const bare = parseWorkspaceJson(JSON.stringify(input));
+  assert.equal(bare.kind, "proposal");
+  assert.equal(bare.clauseDensity, null);
+  assert.equal(formatWorkspaceJson(input, { clauseDensity: "huge" }).errors[0].code, "invalid_density");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, clauseDensity: "huge", proposal: input })).errors[0].code, "invalid_density");
+  assert.equal(JSON.stringify(input), before);
 });
 
 test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {

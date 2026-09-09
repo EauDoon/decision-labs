@@ -29,6 +29,8 @@ import {
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
   compareWorkshopFiles,
+  formatWorkspaceJson,
+  parseWorkspaceJson,
   groupContributions,
   stressPackage,
   compareScenarioInputs,
@@ -42,6 +44,7 @@ import {
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const COACH_KEY = "smallest-agreement:coach:v1";
+const WORKSPACE_KEY = "smallest-agreement:workspace:v1";
 const MAX_SCENARIOS = 20;
 let libraryBlocked = false;
 let libraryRaw = null;
@@ -240,6 +243,7 @@ let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
 let lockPreview = null;
 let clauseFilter = "";
+let clauseDensity = "comfortable";
 let vetoGroupsOnly = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
@@ -256,6 +260,36 @@ function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
 function firstProposalError(proposal) {
   return validateProposal(proposal).errors[0];
+}
+
+function loadClauseDensity() {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_KEY);
+    if (!raw) return "comfortable";
+    const parsed = JSON.parse(raw);
+    if (parsed?.clauseDensity === "compact" || parsed?.clauseDensity === "comfortable") return parsed.clauseDensity;
+  } catch {
+    return "comfortable";
+  }
+  return "comfortable";
+}
+
+function persistClauseDensity() {
+  try {
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity }));
+  } catch {
+    /* storage may be unavailable */
+  }
+}
+
+function applyClauseDensity() {
+  const editor = $("#clauses-editor");
+  if (editor) {
+    editor.classList.toggle("clause-density-compact", clauseDensity === "compact");
+    editor.classList.toggle("clause-density-comfortable", clauseDensity === "comfortable");
+  }
+  const select = $("#clause-density");
+  if (select) select.value = clauseDensity;
 }
 
 function parseProposalJson(text) {
@@ -419,6 +453,7 @@ function render() {
   renderWeightPreview();
   $("#clause-filter").value = clauseFilter;
   renderClauses();
+  applyClauseDensity();
   renderBallot(vetoBlocks);
   renderResults(result, vetoBlocks);
 }
@@ -562,6 +597,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   const alert = $("#result-alert");
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
+  $("#export-workspace-button").disabled = result.status === "invalid";
   $("#csv-button").disabled = result.status === "invalid";
   $("#matrix-export-button").disabled = result.status === "invalid";
   $("#groups-export-button").disabled = result.status === "invalid";
@@ -1155,6 +1191,12 @@ document.addEventListener("input", (event) => {
 $("#clause-filter").addEventListener("input", (event) => {
   clauseFilter = event.target.value;
   renderClauses();
+  applyClauseDensity();
+});
+$("#clause-density").addEventListener("change", (event) => {
+  clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
+  persistClauseDensity();
+  applyClauseDensity();
 });
 $("#veto-groups-only").addEventListener("change", (event) => {
   vetoGroupsOnly = event.target.checked === true;
@@ -1508,6 +1550,12 @@ $("#export-button").addEventListener("click", () => {
   }
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
+$("#export-workspace-button").addEventListener("click", () => {
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity });
+  if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
+  downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
+  notifyDraft("Workspace JSON downloaded with the current draft and clause card density.");
+});
 $("#print-button").addEventListener("click", () => window.print());
 $("#worksheet-button").addEventListener("click", () => {
   const worksheet = formatDiscussionWorksheet(state.proposal);
@@ -1668,6 +1716,25 @@ $("#import-file").addEventListener("change", async (event) => {
     return;
   }
   if (sequence !== importSequence) return;
+  const workspace = parseWorkspaceJson(text);
+  if (workspace.status === "ok") {
+    state.proposal = workspace.proposal;
+    if (workspace.clauseDensity) {
+      clauseDensity = workspace.clauseDensity;
+      persistClauseDensity();
+    }
+    save();
+    state.saveMessage = workspace.kind === "workspace"
+      ? "Imported workspace and saved locally."
+      : "Imported and saved locally.";
+    render();
+    return;
+  }
+  if (workspace.errors?.[0]?.code === "invalid_density" || workspace.errors?.[0]?.code === "invalid_format") {
+    state.saveMessage = `Import failed (${workspace.errors[0].code}): ${workspace.errors[0].message}`;
+    $("#autosave-status").textContent = state.saveMessage;
+    return;
+  }
   const parsed = parseProposalJson(text);
   if (parsed.cause) {
     state.saveMessage = `Import failed: ${parsed.cause}`;
@@ -1675,8 +1742,8 @@ $("#import-file").addEventListener("change", async (event) => {
     return;
   }
   state.proposal = parsed.proposal;
-  state.saveMessage = "Imported and saved locally.";
   save();
+  state.saveMessage = "Imported and saved locally.";
   render();
 });
 $("#share-button").addEventListener("click", async () => {
@@ -1862,5 +1929,6 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
+clauseDensity = loadClauseDensity();
 render();
 startCoachIfNeeded();
