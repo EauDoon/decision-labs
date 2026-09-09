@@ -149,6 +149,20 @@ test("dashboard reports hours to clear the queue or that the queue remains", asy
   await ui.nodes.get("scenario-form").emit("change");
   assert.equal(ui.nodes.get("queue-clear-value").textContent, "No queue in 72h");
 });
+test("holiday Saturday checkbox labels Saturday like Sunday and restores from workspace", async () => {
+  const ui = await boot();
+  await ui.edit("timeline-range", 21);
+  assert.match(ui.nodes.get("fx-gate").textContent, /Weekend/);
+  ui.nodes.get("saturdayHoliday").checked = true;
+  await ui.nodes.get("scenario-form").emit("change");
+  await ui.edit("timeline-range", 21);
+  assert.match(ui.nodes.get("fx-gate").textContent, /Holiday Saturday/);
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).current.saturdayHoliday, true);
+  const reloaded = await boot(ui.storage);
+  assert.equal(reloaded.nodes.get("saturdayHoliday").checked, true);
+  await reloaded.edit("timeline-range", 21);
+  assert.match(reloaded.nodes.get("fx-gate").textContent, /Holiday Saturday/);
+});
 test("reduced motion advances a single hour instead of starting playback",async()=>{
   const ui=await boot(new Map(),{reduced:true});assert.equal(ui.nodes.get("play-button").textContent,"Step hour");
   await ui.nodes.get("play-button").click();assert.equal(ui.nodes.get("timeline-range").value,"1");assert.equal(ui.nodes.get("play-button").attributes["aria-pressed"],"false");

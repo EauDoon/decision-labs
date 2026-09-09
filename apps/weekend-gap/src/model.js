@@ -28,7 +28,8 @@ export const DEFAULT_SCENARIO = Object.freeze({
   payoutOpenStartHour: 8,
   payoutOpenEndHour: 17,
   redemptionDemandAud: 1200000,
-  mondayHoliday: false
+  mondayHoliday: false,
+  saturdayHoliday: false
 });
 
 export const PRESETS = Object.freeze({
@@ -93,7 +94,8 @@ const FIELD_RULES = Object.freeze({
   payoutOpenStartHour: { min: 0, max: 23, integer: true },
   payoutOpenEndHour: { min: 1, max: 24, integer: true },
   redemptionDemandAud: { min: 0, max: 5000000000 },
-  mondayHoliday: { type: "boolean" }
+  mondayHoliday: { type: "boolean" },
+  saturdayHoliday: { type: "boolean" }
 });
 
 export function finiteNumber(value, fallback) {
@@ -193,9 +195,10 @@ export function formatTime(hourOffset) {
   return `${days[dayIndex]} ${String(localHour).padStart(2, "0")}:00`;
 }
 
-export function isBusinessDay(hourOffset, mondayHoliday = false) {
+export function isBusinessDay(hourOffset, mondayHoliday = false, saturdayHoliday = false) {
   const { dayIndex } = dayAndHourAt(hourOffset);
   if (mondayHoliday && dayIndex === 1) return false;
+  if (saturdayHoliday && dayIndex === 6) return false;
   return dayIndex >= 1 && dayIndex <= 5;
 }
 
@@ -204,16 +207,16 @@ export function isWithinHours(hourOffset, startHour, endHour) {
   return localHour >= startHour && localHour < endHour;
 }
 
-export function isOperational(hourOffset, startHour, endHour, mondayHoliday = false) {
-  return isBusinessDay(hourOffset, mondayHoliday) && isWithinHours(hourOffset, startHour, endHour);
+export function isOperational(hourOffset, startHour, endHour, mondayHoliday = false, saturdayHoliday = false) {
+  return isBusinessDay(hourOffset, mondayHoliday, saturdayHoliday) && isWithinHours(hourOffset, startHour, endHour);
 }
 
 export function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
-  const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday);
-  const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday);
-  const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday);
-  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday);
+  const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
+  const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
+  const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
+  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
   const fxMultiplier = weekend ? scenario.weekendFxMultiplier : 1;
   return {
     issuerOpen,

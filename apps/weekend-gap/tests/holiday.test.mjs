@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   DEFAULT_SCENARIO,
   formatTime,
@@ -53,4 +54,68 @@ test("weekday Monday still settles when the holiday flag is off", () => {
   const result = runSimulation({ ...DEFAULT_SCENARIO, mondayHoliday: false });
   assert.ok(result.timeline[66].settledThisHour > 0);
   assert.equal(result.timeline[66].timeLabel, "Mon 09:00");
+});
+
+test("older scenario JSON without saturdayHoliday keeps a weekend Saturday", () => {
+  assert.equal(DEFAULT_SCENARIO.saturdayHoliday, false);
+  assert.equal(sanitizeScenario({}).scenario.saturdayHoliday, false);
+  assert.equal(sanitizeScenario({ name: "Legacy Saturday" }).errors.length, 0);
+  assert.equal(sanitizeScenario({ saturdayHoliday: "true" }).scenario.saturdayHoliday, false);
+  assert.ok(sanitizeScenario({ saturdayHoliday: "true" }).errors.some((error) => error.includes("saturdayHoliday")));
+  const imported = scenarioFromJSON(JSON.stringify({
+    format: "weekend-gap-scenario",
+    version: 1,
+    scenario: { name: "Legacy Saturday file", redemptionDemandAud: 1000 }
+  }));
+  assert.equal(imported.scenario.saturdayHoliday, false);
+  assert.equal(imported.scenario.mondayHoliday, false);
+});
+
+test("holiday Saturday is a non-business day like Sunday", () => {
+  assert.equal(formatTime(21), "Sat 12:00");
+  assert.equal(formatTime(33), "Sun 00:00");
+  assert.equal(isBusinessDay(21), false);
+  assert.equal(isBusinessDay(21, false, false), false);
+  assert.equal(isBusinessDay(21, false, true), false);
+  assert.equal(isBusinessDay(33, false, true), false);
+  assert.equal(isBusinessDay(65, false, true), true);
+
+  const result = runSimulation({ ...DEFAULT_SCENARIO, saturdayHoliday: true });
+  assert.equal(result.scenario.saturdayHoliday, true);
+  const saturdayPoints = result.timeline.filter((point) => point.timeLabel.startsWith("Sat"));
+  const sundayPoints = result.timeline.filter((point) => point.timeLabel.startsWith("Sun"));
+  assert.ok(saturdayPoints.length > 0);
+  assert.ok(sundayPoints.length > 0);
+  for (const point of saturdayPoints) {
+    assert.equal(point.issuerOpen, false);
+    assert.equal(point.bankOpen, false);
+    assert.equal(point.payoutOpen, false);
+    assert.equal(point.immediateAud, 0);
+    assert.equal(point.weekend, true);
+  }
+  for (const point of sundayPoints) {
+    assert.equal(point.issuerOpen, false);
+    assert.equal(point.weekend, true);
+  }
+  assert.ok(result.timeline[1].settledThisHour > 0);
+  assert.ok(result.timeline[66].settledThisHour > 0);
+});
+
+test("Saturday without the holiday flag remains a weekend like Sunday", () => {
+  const result = runSimulation({ ...DEFAULT_SCENARIO, saturdayHoliday: false });
+  assert.equal(result.timeline[21].timeLabel, "Sat 12:00");
+  assert.equal(result.timeline[21].issuerOpen, false);
+  assert.equal(result.timeline[21].weekend, true);
+  assert.equal(getOperationalStatus(result.scenario, 21).payoutOpen, false);
+  assert.equal(getOperationalStatus(result.scenario, 33).payoutOpen, false);
+});
+
+test("holiday Saturday toggle is optional in the editor and labels Saturday like Sunday", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="saturdayHoliday"/);
+  assert.match(html, /Treat Saturday as a public holiday/);
+  assert.match(html, /Older scenario files omit this field and keep the existing weekend Saturday/);
+  assert.match(app, /Holiday Saturday/);
+  assert.match(app, /saturdayHoliday && point\.timeLabel\.startsWith\("Sat"\)/);
 });
