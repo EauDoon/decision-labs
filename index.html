@@ -224,7 +224,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url {
+    .copy-catalog-url, .copy-versions {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -238,17 +238,32 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status {
+    .copy-catalog-status, .copy-versions-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
+    .copy-versions-tools { margin: 12px 0 0; }
+    .copy-versions-fallback {
+      display: block;
+      width: 100%;
+      max-width: 46rem;
+      margin-top: 10px;
+      min-height: 6rem;
+      padding: 10px 12px;
+      font: 15px/1.5 ui-monospace, monospace;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--ink);
+    }
+    .copy-versions-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -290,7 +305,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -318,7 +333,7 @@
     @media print {
       body { background: white; color: #000; border-top-width: 2px; }
       .skip, .skips, .keys-note, .how, .site-nav, .shortcuts, .shortcuts-open { display: none !important; }
-      .catalog-url-tools { display: none !important; }
+      .catalog-url-tools, .copy-versions-tools, .copy-versions-fallback { display: none !important; }
       .whats-new, .workbench .version, .version-line, .trust { display: block !important; }
       .shell { max-width: none; padding-inline: 0; }
       .hero, .whats-new, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
@@ -530,6 +545,8 @@
       <p>Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</p>
       <h3>Loopback catalog address</h3>
       <p>When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</p>
+      <h3>Catalog versions</h3>
+      <p>Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</p>
       <h3>JSON export</h3>
       <p>Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</p>
       <h3>Independent workbenches</h3>
@@ -549,6 +566,11 @@
   </main>
   <footer class="shell site-footer">
     <p class="version-line">Partnership Breakpoint 1.4.3, Common Cart 1.3.3, The Smallest Agreement 1.4.3, Weekend Gap 1.4.3. Each workbench versions itself.</p>
+    <p class="copy-versions-tools" id="copy-versions-tools">
+      <button type="button" class="copy-versions" id="copy-versions">Copy versions</button>
+      <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
+    </p>
+    <textarea id="copy-versions-fallback" class="copy-versions-fallback" hidden readonly rows="4" aria-label="Workbench versions as Markdown"></textarea>
     <p>This page is the catalog. It is not a combined product version. Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap each ship their own version and changelog.</p>
     <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
   </footer>
@@ -585,6 +607,33 @@
           if (copyStatus) copyStatus.textContent = 'Copied the catalog address.';
         } catch {
           if (copyStatus) copyStatus.textContent = 'Could not copy. Select the address bar instead.';
+        }
+      });
+      const versionsBtn = document.getElementById('copy-versions');
+      const versionsStatus = document.getElementById('copy-versions-status');
+      const versionsFallback = document.getElementById('copy-versions-fallback');
+      const versionsMarkdown = () => {
+        const line = document.querySelector('.version-line')?.textContent ?? '';
+        const listed = line.replace(/\s*Each workbench versions itself\.?\s*$/i, '').replace(/\.\s*$/, '');
+        const parts = listed.split(',').map((part) => part.trim()).filter(Boolean);
+        if (parts.length) return parts.map((part) => `- ${part}`).join('\n');
+        return [...document.querySelectorAll('#workbench-versions [data-app]')].map((item) => `- ${item.getAttribute('data-app')} ${item.textContent.trim()}`).join('\n');
+      };
+      versionsBtn?.addEventListener('click', async () => {
+        const markdown = versionsMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (versionsFallback) versionsFallback.hidden = true;
+          if (versionsStatus) versionsStatus.textContent = 'Copied names and versions from this catalog page as Markdown. Not a live product version.';
+        } catch {
+          if (versionsFallback) {
+            versionsFallback.hidden = false;
+            versionsFallback.value = markdown;
+            versionsFallback.focus();
+            versionsFallback.select();
+          }
+          if (versionsStatus) versionsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product version.';
         }
       });
       const setOpen = (open, options = {}) => {

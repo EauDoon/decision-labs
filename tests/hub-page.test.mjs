@@ -214,8 +214,26 @@ test('copy catalog address control exists and stays hidden off http', () => {
   assert.match(html, /urlTools\.hidden = false/);
   assert.match(html, /navigator\.clipboard\?\.writeText/);
   assert.match(html, /\.copy-catalog-url:focus-visible/);
-  assert.match(html, /@media print[\s\S]*\.catalog-url-tools \{ display: none !important; \}/);
+  assert.match(html, /@media print[\s\S]*\.catalog-url-tools[\s\S]*display: none !important;/);
   assert.match(html, /The control stays hidden if you open the page from a file/);
+});
+
+test('copy versions copies catalog names as Markdown with a visible fallback', () => {
+  assert.match(html, /id="copy-versions"/);
+  assert.match(html, />Copy versions</);
+  assert.match(html, /id="copy-versions-fallback"/);
+  assert.match(html, /class="copy-versions-fallback"/);
+  assert.match(html, /textarea id="copy-versions-fallback"/);
+  assert.match(html, /versionsMarkdown/);
+  assert.match(html, /querySelector\('\.version-line'\)/);
+  assert.match(html, /#workbench-versions \[data-app\]/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /versionsFallback\.hidden = false/);
+  assert.match(html, /versionsFallback\.select\(\)/);
+  assert.match(html, /Not a live product version/);
+  assert.match(html, /It is not a live product version and it does not call a registry/);
+  assert.match(html, /@media print[\s\S]*\.copy-versions-tools/);
+  assert.doesNotMatch(html, /hosted API/i);
 });
 
 test('keyboard c copies the catalog address on http through the same control', () => {
