@@ -201,6 +201,31 @@ export function copyOfferAsPickup(rawScenario, offerId) {
   return validateScenario(clean);
 }
 
+function sortedBuyers(buyers, mode) {
+  if (mode !== "label" && mode !== "quantity") {
+    throw new ScenarioError("Buyer sort must be label or quantity.");
+  }
+  return [...buyers].sort((left, right) => {
+    if (mode === "label") {
+      return compareText(normalizeText(left.label), normalizeText(right.label)) || compareText(left.id, right.id);
+    }
+    return right.quantity - left.quantity || compareText(left.id, right.id);
+  });
+}
+
+export function previewBuyerSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return sortedBuyers(scenario.buyers, mode).map((buyer) => ({
+    ...buyer,
+    allowedVariants: [...buyer.allowedVariants]
+  }));
+}
+
+export function applyBuyerSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return validateScenario({ ...scenario, buyers: sortedBuyers(scenario.buyers, mode) });
+}
+
 function residualCoverageCounts(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   return {

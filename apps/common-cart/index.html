@@ -188,6 +188,16 @@ SOFTWARE.
             <input id="import-buyers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
         </div>
+        <div class="snapshot-bar" aria-label="Buyer list order">
+          <label>Sort buyers
+            <select id="buyer-sort-mode">
+              <option value="label">Label A-Z</option>
+              <option value="quantity">Quantity high-low</option>
+            </select>
+          </label>
+          <button id="preview-buyer-sort" type="button">Preview sort</button>
+          <button id="apply-buyer-sort" type="button">Apply sort</button>
+          <p>Preview changes the list on screen only. Apply rewrites saved order and is undoable. Buyer IDs stay the same.</p>
         <div class="table-shell">
           <table>
             <caption class="sr-only">Editable buyer constraints</caption>

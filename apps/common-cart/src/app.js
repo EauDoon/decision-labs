@@ -3,6 +3,8 @@ import {
   aggregateDemand,
   deliveryHeatmap,
   variantOverlapMatrix,
+  applyBuyerSort,
+  previewBuyerSort,
   clonePreset,
   compareScenarios,
   compareThreeRooms,
@@ -72,6 +74,7 @@ let baseline = null;
 let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
+let buyerSortPreviewIds = null;
 let saveTimer;
 renderEditor();
 refresh();
@@ -270,6 +273,7 @@ function bindStaticEvents() {
       latestDeliveryDays: 7,
       allowedVariants: [scenario.offers[0]?.variant ?? "Standard"]
     });
+    buyerSortPreviewIds = null;
     renderEditor();
     refresh();
     elements.buyerRows.lastElementChild?.querySelector("input")?.focus();
@@ -316,6 +320,31 @@ function bindStaticEvents() {
     setStatus("Buyer CSV template downloaded. Fill the header row, then import.", true);
   });
   document.querySelector("#import-buyers-file").addEventListener("change", importBuyersCsv);
+  document.querySelector("#preview-buyer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#buyer-sort-mode").value;
+      const preview = previewBuyerSort(scenario, mode);
+      buyerSortPreviewIds = preview.map((buyer) => buyer.id);
+      renderEditor();
+      setStatus(mode === "quantity"
+        ? "Previewing quantity high to low. Saved order is unchanged until you apply the sort."
+        : "Previewing labels A to Z. Saved order is unchanged until you apply the sort.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#apply-buyer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#buyer-sort-mode").value;
+      scenario = applyBuyerSort(scenario, mode);
+      buyerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Buyer list order applied. Undo restores the previous saved order. IDs are unchanged.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#import-offers").addEventListener("click", () => document.querySelector("#import-offers-file").click());
   document.querySelector("#offer-csv-template").addEventListener("click", () => {
     downloadFile(offerCsvTemplate(), "common-cart-offers-template.csv", "text/csv;charset=utf-8");
@@ -500,7 +529,16 @@ function activateTab(active) {
 function renderEditor() {
   elements.title.value = scenario.title;
   elements.currency.value = scenario.currency;
-  elements.buyerRows.replaceChildren(...scenario.buyers.map(renderBuyerRow));
+  if (buyerSortPreviewIds) {
+    const current = new Set(scenario.buyers.map((buyer) => buyer.id));
+    if (buyerSortPreviewIds.length !== scenario.buyers.length || buyerSortPreviewIds.some((id) => !current.has(id))) {
+      buyerSortPreviewIds = null;
+    }
+  }
+  const buyersForDisplay = buyerSortPreviewIds
+    ? buyerSortPreviewIds.map((id) => scenario.buyers.find((buyer) => buyer.id === id)).filter(Boolean)
+    : scenario.buyers;
+  elements.buyerRows.replaceChildren(...buyersForDisplay.map(renderBuyerRow));
   if (scenario.buyers.length === 0) {
     setEmptyState(elements.buyerRows, 8, "No buyers are in this room.");
   }
@@ -554,6 +592,7 @@ function renderBuyerRow(entry) {
   row.querySelector(".remove-row").addEventListener("click", () => {
     const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
+    buyerSortPreviewIds = null;
     renderEditor();
     refresh();
     if (scenario.buyers.length === 0) {
@@ -852,6 +891,7 @@ function updateHistoryButtons() {
 }
 
 function restoreHistory(forward) {
+  buyerSortPreviewIds = null;
   scenario = invalidDraft ? history.current() : forward ? history.redo() : history.undo();
   renderEditor();
   refresh();
