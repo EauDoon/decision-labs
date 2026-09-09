@@ -542,3 +542,23 @@ test('first-run coach explains the three-step flow, dismisses to localStorage, a
   escapeApp.keydown('Escape');
   assert.doesNotMatch(escapeApp.markup(), /Three steps to a first read/);
 });
+
+test('keyboard shortcuts open help, undo, redo, and export without stealing from inputs', async () => {
+  const app = await workbench();
+  app.keydown('?');
+  assert.match(app.markup(), /Keyboard shortcuts/);
+  assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
+  assert.match(app.markup(), /ignored while a text or number field is focused/);
+  app.keydown('Escape');
+  assert.doesNotMatch(app.markup(), /Keyboard shortcuts/);
+  app.edit('deal.monthlyVolume', '80000');
+  app.keydown('u');
+  assert.equal(app.saved().deal.monthlyVolume, 100000);
+  app.keydown('r');
+  assert.equal(app.saved().deal.monthlyVolume, 80000);
+  app.keydown('e');
+  assert.equal(app.downloads()[0].filename, 'partnership-breakpoint.json');
+  app.edit('deal.monthlyVolume', '70000');
+  app.keydown('u', { tagName: 'INPUT' });
+  assert.equal(app.saved().deal.monthlyVolume, 70000);
+});

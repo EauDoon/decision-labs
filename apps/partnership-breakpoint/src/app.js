@@ -39,6 +39,7 @@ let stressPreviewId = '';
 let shareHoldPreview = null;
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
+let helpOpen = false;
 const undoHistory = [];
 const redoHistory = [];
 
@@ -654,7 +655,7 @@ function render() {
   try { result = calculatePartnership(state); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
   }
-  app.innerHTML = `${coachOverlay()}<div class="app-grid">${inputPanel()}${resultsPanel(result)}</div>`;
+  app.innerHTML = `${coachOverlay()}${helpDialog()}<div class="app-grid">${inputPanel()}${resultsPanel(result)}</div>`;
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
@@ -729,6 +730,7 @@ function attachEvents() {
     const action = button.dataset.action;
     if (action === 'focus-invalid') { app.querySelector('input[aria-invalid="true"]')?.focus(); return; }
     if (action === 'dismiss-coach') { dismissCoach(); return; }
+    if (action === 'close-help') { helpOpen = false; render(); return; }
     if (action === 'print-report') {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
       window.print(); return;
@@ -926,7 +928,21 @@ function drawSensitivityChart(grid) {
 }
 
 window.addEventListener('keydown', (event) => {
-  if (event.key === 'Escape' && coachVisible) dismissCoach();
+  if (event.key === 'Escape') {
+    if (helpOpen) { helpOpen = false; render(); return; }
+    if (coachVisible) { dismissCoach(); return; }
+    return;
+  }
+  const tag = event.target?.tagName;
+  if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
+  if (event.key === '?') {
+    helpOpen = !helpOpen;
+    render();
+    return;
+  }
+  if (event.key === 'u' || event.key === 'U') { travelHistory('undo'); return; }
+  if (event.key === 'r' || event.key === 'R') { travelHistory('redo'); return; }
+  if (event.key === 'e' || event.key === 'E') exportFile();
 });
 
 window.addEventListener('resize', () => {
@@ -1140,8 +1156,26 @@ function coachOverlay() {
         <li>Read the viability card for the weakest participant by volume headroom.</li>
         <li>Inspect First breakpoint for the smallest adverse percentage move.</li>
       </ol>
-      <p>This is a local decision aid. It does not say who will actually exit. Press Escape to dismiss.</p>
+      <p>This is a local decision aid. It does not say who will actually exit. Press Escape to dismiss. Press ? after dismissing for keyboard shortcuts.</p>
       <button type="button" class="primary" data-action="dismiss-coach">Got it</button>
+    </div>
+  </div>`;
+}
+
+function helpDialog() {
+  if (!helpOpen) return '';
+  return `<div class="help-overlay" role="dialog" aria-modal="true" aria-labelledby="help-title">
+    <div class="coach-card">
+      <h2 id="help-title">Keyboard shortcuts</h2>
+      <ul class="shortcut-list">
+        <li><kbd>?</kbd> Open or close this help dialog</li>
+        <li><kbd>u</kbd> Undo the last edit in this tab (up to 50)</li>
+        <li><kbd>r</kbd> Redo</li>
+        <li><kbd>e</kbd> Export JSON of the current valid case</li>
+        <li><kbd>Escape</kbd> Close help or the first-run coach</li>
+      </ul>
+      <p>Shortcuts are ignored while a text or number field is focused, so typing a name or share is never stolen.</p>
+      <button type="button" data-action="close-help">Close help</button>
     </div>
   </div>`;
 }
