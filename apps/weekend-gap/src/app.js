@@ -228,6 +228,10 @@ function render() {
   elements.firstSettlement.textContent = hoursToFirstSettlement === null
     ? "No settlement in 72h"
     : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
+  const jumpFirst = document.querySelector("#jump-first-settlement");
+  if (jumpFirst) {
+    jumpFirst.disabled = hoursToFirstSettlement === null;
+  }
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
     : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
@@ -907,6 +911,11 @@ scenarioHistory=createScenarioHistory(scenario);renderHistory();
 document.querySelector("#table-density").addEventListener("change",renderTable);
 document.querySelector("#jump-peak").addEventListener("click",()=>{
   selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
+  const hours=simulation.summary.hoursToFirstSettlement;
+  if(hours===null) return;
+  selectedHour=hours+1;setPlaying(false);render();saveWorkspace();
 });
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
