@@ -4,6 +4,7 @@ import {
   clonePreset,
   compareScenarios,
   createScenarioHistory,
+  createMerchantReport,
   decodeScenario,
   duplicateEntry,
   encodeScenario,
@@ -115,6 +116,12 @@ function loadInitialScenario() {
 }
 
 function bindStaticEvents() {
+  document.querySelector("#merchant-report").addEventListener("click", () => {
+    try {
+      downloadFile(`${JSON.stringify(createMerchantReport(scenario), null, 2)}\n`, "common-cart-merchant-report.json", "application/json");
+      setStatus("Aggregate merchant report exported. It omits buyer labels, budgets, IDs, and individual allocations.", true);
+    } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
     catch (error) { setStatus(messageOf(error)); }
@@ -742,6 +749,14 @@ function exportScenario() {
   } catch (error) {
     setStatus(`Export failed: ${messageOf(error)}`);
   }
+}
+
+function downloadFile(content, filename, type) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([content], { type }));
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
 async function shareScenario() {

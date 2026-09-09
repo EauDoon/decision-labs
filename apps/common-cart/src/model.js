@@ -154,6 +154,22 @@ export function compareScenarios(before, after) {
     sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
 }
 
+/** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
+export function createMerchantReport(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  return {
+    report: "Common Cart aggregate merchant report", version: 1, currency: market.scenario.currency,
+    limitations: "Synthetic simulation, not a quote or purchase. Aggregate counts can disclose information about small groups. Buyer identities, budgets and allocations are omitted.",
+    requestedUnits: market.totalRequestedUnits, buyerCount: market.buyerCount,
+    offers: market.ranked.map(result => ({
+      merchant: result.offer.merchant, category: result.offer.category, variant: result.offer.variant,
+      status: result.qualifies ? "Unlocked" : "Locked", fulfilledUnits: result.fulfilledUnits,
+      includedBuyerCount: result.deliveredBuyers, itemPrice: result.effectiveUnitPrice,
+      landedTotal: result.qualifies ? result.totalCost : null, deliveryDays: result.offer.deliveryDays
+    }))
+  };
+}
+
 export function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");

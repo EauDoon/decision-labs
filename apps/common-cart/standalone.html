@@ -484,6 +484,10 @@ footer {
       </div>
 
       <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" hidden>
+        <div class="snapshot-bar">
+          <button id="merchant-report" type="button">Export aggregate merchant report</button>
+          <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information.</p>
+        </div>
         <div class="section-heading">
           <div>
             <p class="section-number">02 / merchants</p>
@@ -752,6 +756,22 @@ function compareScenarios(before, after) {
   });
   return { baseline: metrics(baseline), current: metrics(current), sameCurrency,
     sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
+}
+
+/** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
+function createMerchantReport(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  return {
+    report: "Common Cart aggregate merchant report", version: 1, currency: market.scenario.currency,
+    limitations: "Synthetic simulation, not a quote or purchase. Aggregate counts can disclose information about small groups. Buyer identities, budgets and allocations are omitted.",
+    requestedUnits: market.totalRequestedUnits, buyerCount: market.buyerCount,
+    offers: market.ranked.map(result => ({
+      merchant: result.offer.merchant, category: result.offer.category, variant: result.offer.variant,
+      status: result.qualifies ? "Unlocked" : "Locked", fulfilledUnits: result.fulfilledUnits,
+      includedBuyerCount: result.deliveredBuyers, itemPrice: result.effectiveUnitPrice,
+      landedTotal: result.qualifies ? result.totalCost : null, deliveryDays: result.offer.deliveryDays
+    }))
+  };
 }
 
 function validateScenario(candidate) {
@@ -1227,6 +1247,12 @@ function loadInitialScenario() {
 }
 
 function bindStaticEvents() {
+  document.querySelector("#merchant-report").addEventListener("click", () => {
+    try {
+      downloadFile(`${JSON.stringify(createMerchantReport(scenario), null, 2)}\n`, "common-cart-merchant-report.json", "application/json");
+      setStatus("Aggregate merchant report exported. It omits buyer labels, budgets, IDs, and individual allocations.", true);
+    } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
     catch (error) { setStatus(messageOf(error)); }
@@ -1854,6 +1880,14 @@ function exportScenario() {
   } catch (error) {
     setStatus(`Export failed: ${messageOf(error)}`);
   }
+}
+
+function downloadFile(content, filename, type) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([content], { type }));
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
 async function shareScenario() {
