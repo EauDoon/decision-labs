@@ -973,6 +973,27 @@ test('stress grid hide-in-table is display-only and does not change case counts'
   assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
 });
 
+test('collapsing all-hold stress cases is display-only and expand restores the rows', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  assert.match(app.markup(), /Inspect all 27 compound cases/);
+  app.click('collapse-all-hold-cases');
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /1 all-hold case is hidden from this table/);
+  assert.match(app.markup(), /Counts are unchanged/);
+  assert.match(app.markup(), /26 of 27 rows are visible/);
+  assert.doesNotMatch(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-2"/);
+  assert.match(app.markup(), /Inspect all 27 compound cases/);
+  const collapseNote = app.markup().match(/[0-9]+ all-hold case is hidden from this table[^.]*\./)[0];
+  assert.doesNotMatch(collapseNote, /probab/i);
+  app.click('expand-all-hold-cases');
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  assert.match(app.markup(), /27 of 27 rows are visible/);
+});
+
 test('copy share URL is http-only and names clipboard failure without a network request', async () => {
   const fileApp = await workbench('file:');
   assert.doesNotMatch(fileApp.markup(), /data-action="copy-share-url"/);
