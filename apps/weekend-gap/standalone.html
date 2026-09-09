@@ -2183,6 +2183,7 @@ function compareSavedExperiments(scenarios) {
 const WEEKEND_REVIEW_TOOLS=Object.freeze([
  {id:'days',title:'Queue exposure by day'},
  {id:'cohorts',title:'Arrival-cohort waiting ledger'},
+ {id:'deadlines',title:'Settlement checkpoints'},
 // WG_REVIEW_TOOLS
 ]);
 function validateWeekendReviewScenario(raw){
@@ -2204,6 +2205,11 @@ function analyzeWeekendReview(rawScenario,tool){
 
  const cohorts=[];let front=0;for(let hour=0;hour<72;hour++){const point=result.timeline[hour+1];cohorts.push({hour,arrived:point.demandThisHour,remaining:point.demandThisHour,settled:0,wait:0});let available=point.settledThisHour;while(available>0&&front<cohorts.length){const cohort=cohorts[front],amount=Math.min(available,cohort.remaining);cohort.remaining=Math.max(0,cohort.remaining-amount);available=Math.max(0,available-amount);cohort.settled+=amount;cohort.wait+=amount*(hour-cohort.hour);if(cohort.remaining===0)front++;else break;}}
  return report(['Arrival hour','Arrived AUD','Settled by hour 72 AUD','Remaining AUD','Mean completed wait hours','Unfinished wait AUD-hours'],cohorts.map(c=>[c.hour,c.arrived,c.settled,c.remaining,c.settled>0?c.wait/c.settled:null,c.remaining*(72-c.hour)]),'Analytical FIFO attribution only: the core model has no customer priority. Same-step settlement has zero completed wait. Remaining amounts accumulate wait through hour 72 and have no assumed later payout. Means exclude unfinished amounts.');
+
+ }
+ case 'deadlines':{
+
+ return report(['Checkpoint hour','Arrived AUD','Settled AUD','Queued AUD','Settled / arrived %','Settled / total demand %'],[12,24,36,48,60,72].map(hour=>{const p=result.timeline[hour];return[hour,p.demandArrivedAud,p.settledAud,p.queuedAud,p.demandArrivedAud>0?p.settledAud/p.demandArrivedAud*100:null,scenario.redemptionDemandAud>0?p.settledAud/scenario.redemptionDemandAud*100:null];}),'Six fixed checkpoints. The total-demand denominator includes future arrivals, while arrived demand includes only arrivals by that checkpoint. Blank percentage means zero demand, not a promised service level.');
 
  }
 // WG_REVIEW_CASES

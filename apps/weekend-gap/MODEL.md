@@ -141,3 +141,7 @@ The optional timing review can decompose end-of-hour queue exposure and demand a
 ### Arrival-cohort waiting ledger
 
 The optional timing review can attribute hourly settlement to earliest arrivals using an explicit FIFO assumption. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Settlement checkpoints
+
+The optional timing review can compare service progress against both arrived and full-horizon demand. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
