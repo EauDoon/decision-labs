@@ -2090,6 +2090,7 @@ export const AGREEMENT_REVIEW_TOOLS=Object.freeze([
  {id:'substitutions',title:'Single-clause substitutions'},
  {id:'rollback',title:'Rollback contribution'},
  {id:'thresholds',title:'Threshold scenarios'},
+ {id:'budgets',title:'Budget scenarios'},
 // SA_REVIEW_TOOLS
 ]);
 export function analyzeAgreementReview(rawProposal,tool){
@@ -2131,6 +2132,13 @@ export function analyzeAgreementReview(rawProposal,tool){
  const levels=[...new Set([-10,-5,0,5,10].map(delta=>Math.max(0,Math.min(100,proposal.threshold+delta))))];
  const rows=levels.map(threshold=>{const r=findSmallestAgreement({...proposal,threshold},{maxCombinations:10000});return[threshold,r.status,r.agreement?.changeCost??null,r.agreement?.approval??null,r.agreement?.options.map(o=>o.id).join(', ')??'Unavailable'];});
  return report(['Threshold %','Search status','Least passing cost','Approval %','Option IDs in clause order'],rows,'Up to five thresholds within 0 to 100. Veto requirements change with the threshold. Every counterfactual search is capped at 10,000 combinations; too_large is unavailable, not infeasible. Other inputs stay fixed.');
+
+ }
+ case 'budgets':{
+
+ const maximum=proposal.clauses.reduce((sum,c)=>sum+Math.max(...c.options.map(o=>o.changeCost)),0);const reference=proposal.maxChangeCost??selected.changeCost;const levels=[...new Set([0,reference/2,reference,Math.min(maximum,reference*1.5),maximum])].sort((a,b)=>a-b);
+ const rows=levels.map(maxChangeCost=>{const r=findSmallestAgreement({...proposal,maxChangeCost},{maxCombinations:10000});return[maxChangeCost,r.status,r.agreement?.changeCost??null,r.agreement?.approval??null,r.agreement?.options.map(o=>o.id).join(', ')??'Unavailable'];});
+ return report(['Tested maximum cost','Search status','Least passing cost','Approval %','Option IDs in clause order'],rows,'At most five discrete budgets around the current budget or selected cost, plus the maximum sum of clause costs. This is not a continuous frontier. Each search is capped at 10,000 combinations; too_large means unavailable.');
 
  }
 // SA_REVIEW_CASES
