@@ -8,7 +8,21 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
-## v1.2.0, quantity price ladders (27-08-2026)
+## Decision workspace improvements (09-09-2026)
+
+- Set an optional **Max order total** for each buyer to include shipping in eligibility. Blank preserves the existing item-only budget. Each tier checks this ceiling independently.
+- **Undo / Redo** preserves up to 50 valid room states during the session. Invalid edits are not saved; Undo restores the last valid state. A new valid edit clears the redo branch.
+- Save up to **12 named snapshots** using the room title. Snapshots are independent of current edits and survive reload when browser storage is available. Export individual rooms as JSON for portable backups. Corrupt snapshot storage is preserved and snapshot writes are disabled for that session.
+- **Copy** buyers or offers to create independent alternatives, including variants and tiers, with unique IDs.
+- Pin a **baseline**, then adjust a room or load a snapshot. Compare participation, winning merchant, and landed totals. Different demand is explicitly flagged; different currencies suppress cost comparisons. A lower total for fewer buyers is not savings.
+- Export the **aggregate merchant report** as JSON, without buyer IDs, labels, budgets, or allocations. Export a separate **private buyer CSV** for the inspected offer, including excluded orders and reasons. Formula-like text is escaped; numeric results retain up to eight decimal places.
+- The offer chart scrolls with readable rows for all 40 offers and marks the selected price band's minimum. Keyboard users can scroll the chart and retain focus after removing rows.
+
+Autosave status remains visible. Storage failures require JSON export before closing. Replacing an invalid draft asks before discarding it; valid preset, import, and reset replacements can be undone. Undo history and the pinned baseline are session-only. Share links and full scenario JSON contain private buyer records, unlike the aggregate report. This remains an offline simulator without live inventory, checkout, or merchant authentication.
+
+The standalone module also fixes a duplicate helper declaration that previously prevented the generated GUI from starting. Its generated script now receives a real JavaScript module syntax check in the test suite.
+
+### Earlier quantity price ladders (27-08-2026)
 
 Merchant offers now support up to eight quantity discounts. The exact allocator checks each price at a quantity that can actually be filled, including buyers who can afford only the discounted price. Demand that does not fit capacity cannot unlock a discount.
 

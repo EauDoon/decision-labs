@@ -46,8 +46,10 @@ const elements = {
 let scenario = loadInitialScenario();
 const history = createScenarioHistory(scenario);
 let invalidDraft = false;
+let workspaceReadFailed = false;
 let savedRooms = loadWorkspace();
 let baseline = null;
+let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
@@ -61,6 +63,7 @@ function loadWorkspace() {
     if (!raw) return [];
     return validateWorkspace(JSON.parse(raw)).rooms;
   } catch (error) {
+    workspaceReadFailed = true;
     queueMicrotask(() => setStatus(`Saved rooms could not be opened: ${messageOf(error)} Export your current room before closing.`));
     return [];
   }
@@ -77,7 +80,7 @@ function renderWorkspace() {
   picker.disabled = savedRooms.length === 0;
   document.querySelector("#load-room").disabled = savedRooms.length === 0;
   document.querySelector("#delete-room").disabled = savedRooms.length === 0;
-  document.querySelector("#save-room").disabled = savedRooms.length >= 12;
+  document.querySelector("#save-room").disabled = workspaceReadFailed || savedRooms.length >= 12;
 }
 
 function storeWorkspace(rooms) {
@@ -144,6 +147,7 @@ function bindStaticEvents() {
     } catch (error) { setStatus(`Could not save snapshot: ${messageOf(error)}`); }
   });
   document.querySelector("#load-room").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
     const room = savedRooms[Number(document.querySelector("#saved-rooms").value)];
     if (!room) return;
     scenario = validateScenario(room);
@@ -167,6 +171,7 @@ function bindStaticEvents() {
 
   document.querySelectorAll("[data-preset]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (!allowReplaceDraft()) return;
       scenario = clonePreset(button.dataset.preset);
       inspectedOfferId = scenario.offers[0]?.id ?? "";
       document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry === button));
@@ -225,9 +230,9 @@ function bindStaticEvents() {
     shareButton.addEventListener("click", shareScenario);
   }
   document.querySelector("#reset-button").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
     scenario = clonePreset();
     inspectedOfferId = scenario.offers[0]?.id ?? "";
-    localStorage.removeItem(STORAGE_KEY);
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry.dataset.preset === "neighbourhood"));
     renderEditor();
@@ -252,6 +257,15 @@ function bindStaticEvents() {
   window.addEventListener("resize", () => {
     try { drawChart(evaluateMarket(scenario)); } catch { /* Invalid edits already have a visible message. */ }
   });
+  window.addEventListener("beforeunload", event => {
+    if (invalidDraft || savedState === "failed" || savedState === "pending") {
+      event.preventDefault(); event.returnValue = "";
+    }
+  });
+}
+
+function allowReplaceDraft() {
+  return !invalidDraft || window.confirm("Discard the current invalid draft? Undo restores only the last valid room.");
 }
 
 function activateTab(active) {
@@ -408,6 +422,7 @@ function refresh() {
   try {
     const market = evaluateMarket(scenario);
     scenario = market.scenario;
+    if (window.location.hash.startsWith("#scenario=")) window.history.replaceState(null, "", window.location.pathname + window.location.search);
     invalidDraft = false;
     history.record(scenario);
     updateHistoryButtons();
@@ -421,6 +436,7 @@ function refresh() {
     setStatus("");
   } catch (error) {
     invalidDraft = true;
+    document.querySelector("#save-state").textContent = "Invalid draft, not autosaved. Undo restores the last valid room.";
     document.querySelector("#comparison-summary").textContent = "Correct invalid inputs to compare this room.";
     updateHistoryButtons();
     clearTimeout(saveTimer);
@@ -722,8 +738,18 @@ function trimLabel(value, limit) {
 
 function scheduleSave(cleanScenario) {
   clearTimeout(saveTimer);
+  savedState = "pending";
+  document.querySelector("#save-state").textContent = "Saving locally…";
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanScenario)); } catch { setStatus("This browser could not autosave the room."); }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanScenario));
+      savedState = "saved";
+      document.querySelector("#save-state").textContent = "Current valid room saved in this browser.";
+    } catch {
+      savedState = "failed";
+      document.querySelector("#save-state").textContent = "Autosave unavailable. Export JSON before closing this page.";
+      setStatus("This browser could not autosave the room.");
+    }
   }, 180);
 }
 
@@ -734,6 +760,7 @@ async function importScenario(event) {
   if (file.size === 0) return setStatus("Import failed: the file is empty.");
   if (file.size > 250_000) return setStatus("Import files must be smaller than 250 KB.");
   try {
+    const beforeRead = JSON.stringify(scenario);
     const text = await file.text();
     if (!text.trim()) return setStatus("Import failed: the file is empty.");
     let parsed;
@@ -742,7 +769,10 @@ async function importScenario(event) {
     } catch (error) {
       return setStatus(`Import failed: the file is not valid JSON${appJsonSyntaxHint(error)}.`);
     }
-    scenario = validateScenario(parsed);
+    const imported = validateScenario(parsed);
+    if (beforeRead !== JSON.stringify(scenario) && !window.confirm("The room changed while the file was read. Replace it with the imported room? Undo keeps the previous valid room.")) return;
+    if (!allowReplaceDraft()) return;
+    scenario = imported;
     inspectedOfferId = scenario.offers[0]?.id ?? "";
     renderEditor();
     refresh();
@@ -755,12 +785,7 @@ async function importScenario(event) {
 function exportScenario() {
   try {
     const clean = validateScenario(scenario);
-    const blob = new Blob([`${JSON.stringify(clean, null, 2)}\n`], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "common-cart-scenario.json";
-    link.click();
-    URL.revokeObjectURL(link.href);
+    downloadFile(`${JSON.stringify(clean, null, 2)}\n`, "common-cart-scenario.json", "application/json");
     setStatus("Scenario exported.", true);
   } catch (error) {
     setStatus(`Export failed: ${messageOf(error)}`);

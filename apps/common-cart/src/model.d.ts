@@ -144,3 +144,26 @@ export function evaluateMarket(rawScenario: unknown): MarketEvaluation;
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
 export function encodeScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;
+
+export interface ScenarioHistory {
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  record(value: unknown): void;
+  current(): Scenario;
+  undo(): Scenario;
+  redo(): Scenario;
+}
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; }
+export interface ComparisonMetrics { requested: number; fulfilled: number; buyers: number; cost: number | null; winner: string; }
+export interface ScenarioComparison { baseline: ComparisonMetrics; current: ComparisonMetrics; sameCurrency: boolean; sameDemand: boolean; }
+export interface MerchantReport {
+  report: string; version: number; currency: string; limitations: string;
+  requestedUnits: number; buyerCount: number;
+  offers: Array<{ merchant: string; category: string; variant: string; status: string; fulfilledUnits: number; includedBuyerCount: number; itemPrice: number | null; landedTotal: number | null; deliveryDays: number }>;
+}
+export function createScenarioHistory(initial: unknown): ScenarioHistory;
+export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
+export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", id: string): Scenario;
+export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;
+export function createMerchantReport(rawScenario: unknown): MerchantReport;
+export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
