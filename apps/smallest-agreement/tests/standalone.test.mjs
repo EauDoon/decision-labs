@@ -66,6 +66,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
   assert.match(html, /Show veto groups only/u);
+  assert.match(html, /id="locked-clauses-only"/u);
+  assert.match(html, /Show locked clauses only/u);
   assert.match(html, /id="veto-groups-status"/u);
   assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
@@ -219,6 +221,11 @@ async function savedWorkbench(storage, hash = "") {
       target.events.get("change")({ target: { checked } });
     },
     vetoGroupsStatus: () => element("#veto-groups-status").textContent,
+    filterLockedClauses: (checked) => {
+      const target = element("#locked-clauses-only");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
     coalition: () => element("#coalition-table").innerHTML,
@@ -720,6 +727,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
   assert.match(html, /#coach-again, #shortcut-overlay \{ display: none !important; \}/u);
+  assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -826,6 +834,34 @@ test("clause filter live region announces when no clauses match", async () => {
   assert.match(app.filterStatus(), /No clauses match this filter/u);
   app.filterClauses("");
   assert.equal(app.filterStatus(), "");
+});
+
+test("locked-clause filter hides unlocked cards without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="locked-clauses-only"/u);
+  assert.match(html, /Show locked clauses only/u);
+  assert.match(html, /draft choice, not a recorded vote/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterLockedClauses(true);
+  assert.match(app.clauses(), /No locked clauses match this filter/u);
+  assert.match(app.filterStatus(), /No locked clauses match this filter/u);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  assert.match(app.ballot(), /Weekend market use/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.filterLockedClauses(false);
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  app.filterLockedClauses(true);
+  assert.match(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.doesNotMatch(app.clauses(), /Path lighting/u);
+  assert.match(app.filterStatus(), /Showing 1 of 3 clauses/u);
+  assert.match(app.ballot(), /Weekend market use/u);
+  const saved = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(saved.clauses.length, 3);
+  assert.equal(saved.clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
 });
 
 test("veto-only group filter hides non-veto cards without changing the stored draft", async () => {

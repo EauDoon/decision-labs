@@ -104,6 +104,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .clause-heading { margin: 2.2rem 0 1rem; }
 .clause-filter-label { display: block; margin: 0 0 .35rem; font-size: .88rem; font-weight: 700; }
 #clause-filter { max-width: 28rem; margin-bottom: .35rem; }
+.locked-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
+.locked-clauses-filter input { width: auto; }
 .clause-density-label { display: grid; gap: .35rem; max-width: 16rem; margin: 0 0 .75rem; font-size: .88rem; font-weight: 700; }
 #clauses-editor.clause-density-compact { gap: .45rem; }
 #clauses-editor.clause-density-compact .clause-card { padding: .55rem .7rem; }
@@ -188,7 +190,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -349,13 +351,15 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           </div>
           <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
           <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">
+          <label class="locked-clauses-filter" for="locked-clauses-only"><input id="locked-clauses-only" type="checkbox"> Show locked clauses only</label>
+          <p id="locked-clauses-filter-note" class="field-note">The filter hides unlocked clause cards. Every clause still participates in search and export. A lock is a draft choice, not a recorded vote.</p>
           <label class="clause-density-label" for="clause-density">Clause card density
             <select id="clause-density">
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
           </label>
-          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, or that have no lock when Show locked clauses only is on. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <div id="clauses-editor" class="clauses-editor"></div>
         </section>
@@ -2933,6 +2937,7 @@ let lockPreview = null;
 let clauseFilter = "";
 let clauseDensity = "comfortable";
 let vetoGroupsOnly = false;
+let lockedClausesOnly = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
 let weightPreviewKey = "";
@@ -3226,15 +3231,22 @@ function clauseMatchesFilter(clause, query) {
 function renderClauses() {
   const { groups } = state.proposal;
   const query = clauseFilter.trim().toLowerCase();
-  const visible = state.proposal.clauses.filter((clause) => clauseMatchesFilter(clause, query));
+  const checkbox = $("#locked-clauses-only");
+  if (checkbox) checkbox.checked = lockedClausesOnly;
+  const visible = state.proposal.clauses.filter((clause) => {
+    if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
+    return clauseMatchesFilter(clause, query);
+  });
   const status = $("#clause-filter-status");
   if (!visible.length) {
-    const message = "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
+    const message = lockedClausesOnly && query === ""
+      ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
+      : "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
     if (status) status.textContent = message;
     $("#clauses-editor").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
-  if (status) status.textContent = query === "" ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
+  if (status) status.textContent = query === "" && !lockedClausesOnly ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
   $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
@@ -3881,6 +3893,11 @@ document.addEventListener("input", (event) => {
 
 $("#clause-filter").addEventListener("input", (event) => {
   clauseFilter = event.target.value;
+  renderClauses();
+  applyClauseDensity();
+});
+$("#locked-clauses-only").addEventListener("change", (event) => {
+  lockedClausesOnly = event.target.checked === true;
   renderClauses();
   applyClauseDensity();
 });

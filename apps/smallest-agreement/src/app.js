@@ -286,6 +286,7 @@ let lockPreview = null;
 let clauseFilter = "";
 let clauseDensity = "comfortable";
 let vetoGroupsOnly = false;
+let lockedClausesOnly = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
 let weightPreviewKey = "";
@@ -579,15 +580,22 @@ function clauseMatchesFilter(clause, query) {
 function renderClauses() {
   const { groups } = state.proposal;
   const query = clauseFilter.trim().toLowerCase();
-  const visible = state.proposal.clauses.filter((clause) => clauseMatchesFilter(clause, query));
+  const checkbox = $("#locked-clauses-only");
+  if (checkbox) checkbox.checked = lockedClausesOnly;
+  const visible = state.proposal.clauses.filter((clause) => {
+    if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
+    return clauseMatchesFilter(clause, query);
+  });
   const status = $("#clause-filter-status");
   if (!visible.length) {
-    const message = "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
+    const message = lockedClausesOnly && query === ""
+      ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
+      : "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
     if (status) status.textContent = message;
     $("#clauses-editor").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
-  if (status) status.textContent = query === "" ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
+  if (status) status.textContent = query === "" && !lockedClausesOnly ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
   $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
@@ -1234,6 +1242,11 @@ document.addEventListener("input", (event) => {
 
 $("#clause-filter").addEventListener("input", (event) => {
   clauseFilter = event.target.value;
+  renderClauses();
+  applyClauseDensity();
+});
+$("#locked-clauses-only").addEventListener("change", (event) => {
+  lockedClausesOnly = event.target.checked === true;
   renderClauses();
   applyClauseDensity();
 });
