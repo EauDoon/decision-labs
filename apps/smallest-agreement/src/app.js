@@ -277,6 +277,38 @@ const presets = {
       },
     ],
   },
+  "sports-fixture-night": {
+    title: "Sports Fixture Night: match end-time, floodlights, and parking",
+    threshold: 70,
+    groups: [
+      { id: "members", name: "Members", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "rangers", name: "Council rangers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "endtime", title: "Match end-time", options: [
+          { id: "endtime-original", original: true, label: "Kick off at 19:30 and finish by 21:15", changeCost: 0, support: { members: 82, neighbours: 38, rangers: 64 } },
+          { id: "endtime-early", original: false, label: "Kick off at 18:30 and finish by 20:15", changeCost: 2, support: { members: 58, neighbours: 84, rangers: 78 } },
+          { id: "endtime-weekend", original: false, label: "Move the fixture to Saturday afternoon", changeCost: 4, support: { members: 46, neighbours: 90, rangers: 72 } },
+        ],
+      },
+      {
+        id: "floodlights", title: "Floodlights", options: [
+          { id: "floodlights-original", original: true, label: "Keep floodlights on until 22:00", changeCost: 0, support: { members: 88, neighbours: 28, rangers: 52 } },
+          { id: "floodlights-curfew", original: false, label: "Switch floodlights off at 21:00", changeCost: 2, support: { members: 70, neighbours: 76, rangers: 80 } },
+          { id: "floodlights-baffles", original: false, label: "Keep 22:00 with baffled lamps and a cut-off", changeCost: 3, support: { members: 80, neighbours: 68, rangers: 74 } },
+        ],
+      },
+      {
+        id: "parking", title: "Match-night parking", options: [
+          { id: "parking-original", original: true, label: "Allow unmanaged street parking", changeCost: 0, support: { members: 74, neighbours: 32, rangers: 40 } },
+          { id: "parking-stewards", original: false, label: "Steward the club car park until 21:30", changeCost: 2, support: { members: 84, neighbours: 72, rangers: 82 } },
+          { id: "parking-shuttle", original: false, label: "Use off-site overflow and a shuttle", changeCost: 4, support: { members: 62, neighbours: 86, rangers: 70 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
