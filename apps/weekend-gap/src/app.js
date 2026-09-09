@@ -20,6 +20,7 @@ import {
   buildGateSchedule,
   buildQueueChartSvg,
   buildSensitivityBarsSvg,
+  compareSavedExperiments,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -764,18 +765,49 @@ function persistLibrary() {
   } catch { document.querySelector("#library-status").textContent = "Library changes are in memory only. Browser storage is unavailable; export important scenarios."; }
 }
 function renderLibrary() {
-  const select = document.querySelector("#scenario-library");
-  select.replaceChildren(...scenarioLibrary.map((item,index)=>{
+  const makeOptions = () => scenarioLibrary.map((item,index)=>{
     const option=document.createElement("option");option.value=String(index);option.textContent=(index+1)+". "+item.name;return option;
-  }));
+  });
+  document.querySelector("#scenario-library").replaceChildren(...makeOptions());
+  document.querySelector("#experiment-picks").replaceChildren(...makeOptions());
   document.querySelector("#load-library").disabled = scenarioLibrary.length === 0;
   document.querySelector("#delete-library").disabled = scenarioLibrary.length === 0;
   document.querySelector("#save-library").disabled = scenarioLibrary.length >= 12;
+  document.querySelector("#compare-experiments").disabled = scenarioLibrary.length < 2;
 }
 document.querySelector("#save-library").addEventListener("click",()=>{
   if(scenarioLibrary.length>=12) return;
   scenarioLibrary.push({...scenario});persistLibrary();renderLibrary();
   document.querySelector("#scenario-library").value=String(scenarioLibrary.length-1);
+});
+document.querySelector("#compare-experiments").addEventListener("click",()=>{
+  const picked = [...document.querySelector("#experiment-picks").children].filter((option) => option.selected).map((option) => Number(option.value));
+  const unique = [...new Set(picked)].filter((index) => Number.isInteger(index) && index >= 0 && index < scenarioLibrary.length);
+  if (unique.length < 2 || unique.length > 3) {
+    document.querySelector("#experiment-compare-status").textContent = "Select two or three library copies, then compare.";
+    return;
+  }
+  try {
+    const rows = compareSavedExperiments(unique.map((index) => scenarioLibrary[index]));
+    document.querySelector("#experiment-compare-rows").replaceChildren(...rows.map((item) => {
+      const tr = document.createElement("tr");
+      for (const value of [
+        item.name,
+        planningAud(item.peakQueuedAud),
+        planningAud(item.finalQueuedAud),
+        planningAud(item.totalSettledAud),
+        item.hoursToFirstSettlement === null ? "No settlement in 72h" : `${item.hoursToFirstSettlement} hour${item.hoursToFirstSettlement === 1 ? "" : "s"}`
+      ]) {
+        const td = document.createElement("td");
+        td.textContent = value;
+        tr.append(td);
+      }
+      return tr;
+    }));
+    document.querySelector("#experiment-compare-status").textContent = `Compared ${rows.length} synthetic library copies. This is not a ranking of real issuers.`;
+  } catch (error) {
+    document.querySelector("#experiment-compare-status").textContent = error instanceof RangeError ? error.message : "The selected copies could not be compared.";
+  }
 });
 document.querySelector("#load-library").addEventListener("click",()=>{
   const saved=scenarioLibrary[Number(document.querySelector("#scenario-library").value)];

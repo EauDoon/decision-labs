@@ -869,3 +869,20 @@ export function buildSensitivityBarsSvg(rows, metric = "totalSettledAud") {
     "</svg>";
 }
 
+/** Compare two or three canonical scenarios. Observation only, not a ranking. */
+export function compareSavedExperiments(scenarios) {
+  if (!Array.isArray(scenarios) || scenarios.length < 2 || scenarios.length > 3) {
+    throw new RangeError("Compare two or three saved experiments.");
+  }
+  return Object.freeze(scenarios.map((input) => {
+    const result = runSimulation(input);
+    return Object.freeze({
+      name: result.scenario.name,
+      peakQueuedAud: result.summary.peakQueuedAud,
+      finalQueuedAud: result.summary.finalQueuedAud,
+      totalSettledAud: result.summary.totalSettledAud,
+      hoursToFirstSettlement: result.summary.hoursToFirstSettlement
+    });
+  }));
+}
+

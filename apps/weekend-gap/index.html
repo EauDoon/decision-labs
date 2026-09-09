@@ -182,6 +182,10 @@ SOFTWARE.
             <label for="scenario-library">Local scenario library</label><select id="scenario-library"></select>
             <div class="scenario-actions"><button id="save-library" type="button">Save a copy</button><button id="load-library" type="button" disabled>Load selected</button><button id="delete-library" type="button" disabled>Delete selected copy</button></div>
             <p id="library-status" role="status">No saved copies yet. Browser data can be cleared; export important scenarios.</p>
+            <label for="experiment-picks">Select 2 or 3 copies to compare</label>
+            <select id="experiment-picks" multiple size="4" aria-describedby="experiment-compare-status"></select>
+            <div class="scenario-actions"><button id="compare-experiments" type="button" disabled>Compare selected copies</button></div>
+            <p id="experiment-compare-status" role="status">Save at least two named copies, then select them. This compares synthetic runs, not real issuers.</p>
           </section>
           <p id="storage-status" role="status"></p>
           <p id="input-message" class="input-message" role="status" aria-live="polite"></p>
@@ -363,6 +367,19 @@ SOFTWARE.
               </table>
             </div>
             <p id="demand-compare-status">The highlighted row matches the demand timing currently selected in the scenario editor.</p>
+          </article>
+
+          <article class="planning-card card" aria-labelledby="experiment-compare-title">
+            <p class="eyebrow">Saved experiment comparison</p>
+            <h2 id="experiment-compare-title">Compare two or three library copies</h2>
+            <p>Use the library selector in the scenario panel. Results are side-by-side observations of synthetic runs, not a forecast or ranking of issuers.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Saved experiment comparison">
+              <table>
+                <caption>Peak queue, remaining queue, settled total and hours to first settlement for the selected library copies.</caption>
+                <thead><tr><th scope="col">Copy</th><th scope="col">Peak queue</th><th scope="col">Final queue</th><th scope="col">Settled</th><th scope="col">Hours to first settlement</th></tr></thead>
+                <tbody id="experiment-compare-rows"></tbody>
+              </table>
+            </div>
           </article>
 
           <article class="chart-card card" aria-labelledby="chart-title">
