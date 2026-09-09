@@ -117,6 +117,9 @@ export function validateProposal(proposal) {
       if (isPlainObject(clause) && Object.hasOwn(clause, "lockedOptionId") && (typeof clause.lockedOptionId !== "string" || !clause.options.some((option) => option?.id === clause.lockedOptionId))) {
         errors.push(`clauses[${clauseIndex}].lockedOptionId must identify an option in that clause, or be omitted.`);
       }
+      if (isPlainObject(clause) && Object.hasOwn(clause, "note") && (typeof clause.note !== "string" || clause.note.length < 1 || clause.note.length > 240)) {
+        errors.push(`clauses[${clauseIndex}].note must be a string of 1 to 240 characters, or omitted.`);
+      }
     });
   }
   return { valid: errors.length === 0, errors };
@@ -142,6 +145,7 @@ export function canonicalProposal(proposal) {
       id: clause.id,
       title: clause.title,
       ...(Object.hasOwn(clause, "lockedOptionId") ? { lockedOptionId: clause.lockedOptionId } : {}),
+      ...(Object.hasOwn(clause, "note") ? { note: clause.note } : {}),
       options: clause.options.map((option) => ({
         id: option.id,
         label: option.label,
@@ -303,6 +307,30 @@ export function compareNearMisses(threshold, a, b) {
   return compareAgreements(a, b);
 }
 
+/**
+ * Reorder described near-miss rows for display.
+ * Does not change which combinations the solver retained.
+ */
+export function sortPackageGapRows(rows, sortBy = "approval_gap") {
+  if (!Array.isArray(rows)) return { status: "invalid", errors: ["Near-miss rows must be an array."] };
+  if (sortBy !== "approval_gap" && sortBy !== "change_cost") {
+    return { status: "invalid", errors: ["sortBy must be approval_gap or change_cost."] };
+  }
+  const ordered = [...rows].sort((left, right) => {
+    if (sortBy === "change_cost") {
+      if (Math.abs((left.changeCost ?? 0) - (right.changeCost ?? 0)) > EPSILON) return left.changeCost - right.changeCost;
+      if (Math.abs((left.approvalGap ?? 0) - (right.approvalGap ?? 0)) > EPSILON) return left.approvalGap - right.approvalGap;
+    } else {
+      if (Math.abs((left.approvalGap ?? 0) - (right.approvalGap ?? 0)) > EPSILON) return left.approvalGap - right.approvalGap;
+      if (Math.abs((left.changeCost ?? 0) - (right.changeCost ?? 0)) > EPSILON) return left.changeCost - right.changeCost;
+    }
+    if ((left.changedClauseCount ?? 0) !== (right.changedClauseCount ?? 0)) return left.changedClauseCount - right.changedClauseCount;
+    if (Math.abs((left.approval ?? 0) - (right.approval ?? 0)) > EPSILON) return right.approval - left.approval;
+    return compareText(String(left.labels ?? ""), String(right.labels ?? ""));
+  });
+  return { status: "ok", sortBy, rows: ordered };
+}
+
 function samePackage(a, b) {
   if (!a || !b || a.options.length !== b.options.length) return false;
   return a.options.every((option, index) => option.id === b.options[index].id);
@@ -334,6 +362,7 @@ export function explorePackageGaps(proposal, result) {
     cheaperThanRecommended: recommended ? summary.changeCost + EPSILON < recommended.changeCost : true,
     meetsThreshold: summary.approval + EPSILON >= proposal.threshold,
     labels: summary.options.map((option, index) => `${proposal.clauses[index].title}: ${option.label}`).join("; "),
+    optionIds: summary.options.map((option) => option.id),
   });
   const closestMisses = (result.nearMisses ?? []).map(describe);
   const cheaperMisses = closestMisses.filter((row) => row.cheaperThanRecommended);
@@ -587,6 +616,119 @@ export function evaluatePackage(proposal, optionIds) {
   return { status: summary.constraints.met && summary.approval + EPSILON >= proposal.threshold ? "passing" : "not_passing", summary };
 }
 
+function packageChoice(summary, index) {
+  if (!summary) return null;
+  const option = summary.options[index];
+  return { optionId: option.id, label: option.label, changeCost: option.changeCost };
+}
+
+/**
+ * Pin original, solver, and custom packages side by side for inspection.
+ * This is a readout of three supplied packages, not a vote or a new optimization.
+ */
+export function comparePinnedPackages(proposal, recommendedIds, customIds) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const originalSummary = selectionSummary(proposal, getOriginalOptions(proposal));
+  let recommendedSummary = null;
+  if (recommendedIds != null) {
+    const recommended = evaluatePackage(proposal, recommendedIds);
+    if (recommended.status === "invalid") return recommended;
+    recommendedSummary = recommended.summary;
+  }
+  let customSummary = null;
+  if (customIds != null) {
+    const custom = evaluatePackage(proposal, customIds);
+    if (custom.status === "invalid") return custom;
+    customSummary = custom.summary;
+  }
+  return {
+    status: "ok",
+    originalApproval: originalSummary.approval,
+    recommendedApproval: recommendedSummary ? recommendedSummary.approval : null,
+    customApproval: customSummary ? customSummary.approval : null,
+    originalCost: originalSummary.changeCost,
+    recommendedCost: recommendedSummary ? recommendedSummary.changeCost : null,
+    customCost: customSummary ? customSummary.changeCost : null,
+    clauses: proposal.clauses.map((clause, index) => ({
+      clauseId: clause.id,
+      clauseTitle: clause.title,
+      original: packageChoice(originalSummary, index),
+      recommended: packageChoice(recommendedSummary, index),
+      custom: packageChoice(customSummary, index),
+    })),
+    groups: proposal.groups.map((group, index) => ({
+      id: group.id,
+      name: group.name,
+      original: originalSummary.byGroup[index].approval,
+      recommended: recommendedSummary ? recommendedSummary.byGroup[index].approval : null,
+      custom: customSummary ? customSummary.byGroup[index].approval : null,
+    })),
+  };
+}
+
+/**
+ * Lock every clause to the given option IDs in one copy.
+ * Does not mutate the supplied proposal. Invalid identifiers fail closed.
+ */
+export function lockPackage(proposal, optionIds) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(optionIds) || optionIds.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const next = canonicalProposal(proposal);
+  for (let index = 0; index < next.clauses.length; index += 1) {
+    const optionId = optionIds[index];
+    if (typeof optionId !== "string" || !next.clauses[index].options.some((option) => option.id === optionId)) {
+      return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+    }
+    next.clauses[index].lockedOptionId = optionId;
+  }
+  return { status: "ok", proposal: next };
+}
+
+/**
+ * Copy a participant group, including weight, optional floor, veto, and every option's support score.
+ * The copy receives a unique id. The solver still treats it as a separate supplied group.
+ */
+export function duplicateParticipantGroup(proposal, groupId) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof groupId !== "string") return { status: "invalid", errors: ["Unknown group."] };
+  if (proposal.groups.length >= MAX_GROUPS) {
+    return { status: "invalid", errors: [`Between 1 and ${MAX_GROUPS} participant groups are required.`] };
+  }
+  const sourceIndex = proposal.groups.findIndex((group) => group.id === groupId);
+  if (sourceIndex < 0) return { status: "invalid", errors: ["Unknown group."] };
+  const next = canonicalProposal(proposal);
+  const source = next.groups[sourceIndex];
+  const used = new Set([
+    ...next.groups.map((group) => group.id),
+    ...next.clauses.flatMap((clause) => [clause.id, ...clause.options.map((option) => option.id)]),
+  ]);
+  let serial = 1;
+  let copyId = `group-copy-${serial}`;
+  while (used.has(copyId)) {
+    serial += 1;
+    copyId = `group-copy-${serial}`;
+  }
+  const copy = {
+    id: copyId,
+    name: source.name.length + 7 > 80 ? `${source.name.slice(0, 73)} (copy)` : `${source.name} (copy)`,
+    weight: source.weight,
+    ...(source.minSupport !== undefined ? { minSupport: source.minSupport } : {}),
+    ...(source.veto === true ? { veto: true } : {}),
+  };
+  next.groups.splice(sourceIndex + 1, 0, copy);
+  for (const clause of next.clauses) {
+    for (const option of clause.options) {
+      option.support[copyId] = option.support[source.id];
+    }
+  }
+  return { status: "ok", proposal: next, groupId: copyId };
+}
+
 
 /** A deterministic downside scenario, not a probability estimate or a new optimization. */
 export function stressPackage(proposal, optionIds, supportDrop) {
@@ -619,6 +761,7 @@ export function compareScenarioInputs(before, after) {
       const prefix = "Clause " + clause.id + ": ";
       fields.set(prefix + "title", clause.title);
       fields.set(prefix + "locked option", clause.lockedOptionId);
+      fields.set(prefix + "facilitator note", clause.note);
       for (const option of clause.options) {
         const optionPrefix = prefix + option.id + ": ";
         fields.set(optionPrefix + "label", option.label);
@@ -958,6 +1101,7 @@ export function formatDiscussionWorksheet(proposal) {
   lines.push("");
   for (const clause of p.clauses) {
     lines.push(clause.title + (clause.lockedOptionId ? " [locked]" : ""));
+    if (clause.note) lines.push(`Facilitator note: ${clause.note.replace(/[\r\n]+/gu, " ")}`);
     for (const option of clause.options) {
       const tags = [];
       if (option.original === true) tags.push("original");

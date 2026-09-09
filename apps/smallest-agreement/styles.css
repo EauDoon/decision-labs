@@ -58,6 +58,7 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .group-veto { grid-column: 1 / -1; display: flex; align-items: center; gap: .5rem; font-size: .82rem; padding-bottom: .65rem; border-bottom: 1px solid var(--line); }
 .group-veto input { width: auto; }
 .clause-lock { display: grid; gap: .4rem; margin: .75rem 0; font-size: .82rem; }
+.clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
 .constraint-card { margin-bottom: 1rem; }
 
 .workbench { padding: clamp(1.4rem, 4vw, 3.7rem); min-width: 0; }
@@ -104,6 +105,7 @@ canvas { display: block; width: 100%; height: auto; min-height: 190px; margin-to
 .change-item span, .shift-item span, .miss-item small { color: var(--ink-soft); font-size: .82rem; }
 .positive { color: #286842 !important; }.negative { color: var(--brick) !important; }
 .near-misses h4 { margin: 1rem 0 .35rem; font-size: .95rem; font-weight: 600; }
+.near-miss-sort-label { display: grid; gap: .35rem; max-width: 18rem; margin: .75rem 0; font-size: .88rem; font-weight: 700; }
 .miss-item { display: grid; grid-template-columns: auto 1fr; gap: .8rem; }
 .miss-score { color: var(--brick); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 800; }
 .empty-state { color: var(--ink-soft); font-style: italic; }
@@ -146,7 +148,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }

@@ -13,6 +13,7 @@ import {
   canonicalProposal,
   clauseContributions,
   clauseWeightedSupport,
+  comparePinnedPackages,
   explorePackageGaps,
   evaluatePackage,
   formatSupportMatrixCsv,
@@ -21,6 +22,9 @@ import {
   leaveOneGroupOut,
   formatDiscussionWorksheet,
   groupContributions,
+  lockPackage,
+  duplicateParticipantGroup,
+  sortPackageGapRows,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -696,6 +700,101 @@ test("custom packages evaluate all constraints without changing the draft", () =
 });
 
 
+test("pinned package comparison shows original, solver, and custom columns without mutating the draft", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("original", true, { g: 40 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 75 }, 1),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const pinned = comparePinnedPackages(input, ["better"], ["cheap"]);
+  assert.equal(pinned.status, "ok");
+  assert.equal(pinned.clauses[0].original.optionId, "original");
+  assert.equal(pinned.clauses[0].recommended.optionId, "better");
+  assert.equal(pinned.clauses[0].custom.optionId, "cheap");
+  assert.equal(pinned.originalCost, 0);
+  assert.equal(pinned.recommendedCost, 2);
+  assert.equal(pinned.customCost, 1);
+  assert.equal(pinned.recommendedApproval, 90);
+  assert.equal(pinned.customApproval, 75);
+  assert.equal(pinned.groups[0].original, 40);
+  assert.equal(pinned.groups[0].recommended, 90);
+  assert.equal(pinned.groups[0].custom, 75);
+  const withoutRecommended = comparePinnedPackages(input, null, ["original"]);
+  assert.equal(withoutRecommended.status, "ok");
+  assert.equal(withoutRecommended.clauses[0].recommended, null);
+  assert.equal(withoutRecommended.recommendedApproval, null);
+  assert.equal(comparePinnedPackages(input, ["missing"], ["original"]).status, "invalid");
+  assert.equal(comparePinnedPackages(input, ["better"], ["missing"]).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+});
+
+
+test("duplicateParticipantGroup copies weight, constraints, and support keys with a unique id", () => {
+  const input = proposal({
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, minSupport: 60, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { majority: 80, minority: 10 }),
+      option("cheap", false, { majority: 90, minority: 30 }, 1),
+      option("balanced", false, { majority: 75, minority: 75 }, 3),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const duplicated = duplicateParticipantGroup(input, "minority");
+  assert.equal(duplicated.status, "ok");
+  assert.equal(duplicated.proposal.groups.length, 3);
+  const copy = duplicated.proposal.groups[2];
+  assert.equal(copy.id, "group-copy-1");
+  assert.equal(copy.id === "minority", false);
+  assert.equal(copy.name, "Minority (copy)");
+  assert.equal(copy.weight, 1);
+  assert.equal(copy.minSupport, 60);
+  assert.equal(copy.veto, true);
+  for (const option of duplicated.proposal.clauses[0].options) {
+    assert.equal(option.support[copy.id], option.support.minority);
+    assert.equal(Object.hasOwn(option.support, copy.id), true);
+  }
+  assert.equal(validateProposal(duplicated.proposal).valid, true);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(duplicateParticipantGroup(input, "missing").status, "invalid");
+  const capped = structuredClone(input);
+  capped.groups = Array.from({ length: MAX_GROUPS }, (_, index) => ({ id: `g${index}`, name: `Group ${index}`, weight: 1 }));
+  for (const option of capped.clauses[0].options) {
+    option.support = Object.fromEntries(capped.groups.map((group) => [group.id, 50]));
+  }
+  assert.equal(duplicateParticipantGroup(capped, "g0").status, "invalid");
+});
+
+test("lockPackage sets every clause lock in one copy and rejects unknown options", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 40 }), option("two-change", false, { g: 90 }, 1), option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const locked = lockPackage(input, ["one-change", "two-change"]);
+  assert.equal(locked.status, "ok");
+  assert.deepEqual(locked.proposal.clauses.map((clause) => clause.lockedOptionId), ["one-change", "two-change"]);
+  assert.equal(JSON.stringify(input), before);
+  const searched = findSmallestAgreement(locked.proposal);
+  assert.equal(searched.possibleCombinations, 1);
+  assert.deepEqual(searched.agreement.options.map((option) => option.id), ["one-change", "two-change"]);
+  assert.equal(lockPackage(input, ["one-change"]).status, "invalid");
+  assert.equal(lockPackage(input, ["missing", "two-change"]).status, "invalid");
+  assert.equal(lockPackage(input, ["one-change", "one-change"]).status, "invalid");
+});
+
+
 test("downside stress tests preserve inputs and expose protected-group failures", () => {
   const input = proposal({ threshold: 50, groups: [{ id: "a", name: "A", weight: 9 }, { id: "b", name: "B", weight: 1, minSupport: 70 }], clauses: [{ id: "one", title: "One", options: [
     option("original", true, { a: 90, b: 80 }), option("other", false, { a: 80, b: 80 }, 1), option("third", false, { a: 70, b: 75 }, 2),
@@ -827,6 +926,7 @@ test("package gap explorer names cheaper misses and the next packages over thres
   assert.equal(gaps.status, "ok");
   assert.equal(gaps.recommended.changeCost, 3);
   assert.ok(gaps.cheaperMisses.some((row) => row.labels.includes("near") && row.approvalGap > 0 && row.changeCost === 1));
+  assert.ok(gaps.cheaperMisses.every((row) => Array.isArray(row.optionIds) && row.optionIds.length === 1));
   assert.ok(gaps.closestMisses.every((row) => row.approvalGap > 0 && row.meetsThreshold === false));
   assert.equal(gaps.nextOverThreshold.length, 0);
   const extra = proposal({
@@ -842,6 +942,31 @@ test("package gap explorer names cheaper misses and the next packages over thres
   assert.ok(over.nextOverThreshold.length >= 1);
   assert.ok(over.nextOverThreshold.every((row) => row.meetsThreshold && row.approvalGap <= 0));
   assert.ok(over.nextOverThreshold.every((row) => row.costVsRecommended > 0 || row.changedClauseCount > 0));
+});
+
+test("near-miss rows can be sorted by approval gap or change cost without mutating the list", () => {
+  const input = proposal({
+    threshold: 90,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 40 }),
+      option("cheap", false, { g: 50 }, 1),
+      option("near", false, { g: 80 }, 5),
+    ] }],
+  });
+  const result = findSmallestAgreement(input);
+  const gaps = explorePackageGaps(input, result);
+  const snapshot = JSON.stringify(gaps.closestMisses);
+  const byGap = sortPackageGapRows(gaps.closestMisses, "approval_gap");
+  const byCost = sortPackageGapRows(gaps.closestMisses, "change_cost");
+  assert.equal(byGap.status, "ok");
+  assert.equal(byCost.status, "ok");
+  assert.equal(byGap.rows[0].changeCost, 5);
+  assert.equal(byGap.rows[0].approval, 80);
+  assert.equal(byCost.rows[0].changeCost, 0);
+  assert.ok(byCost.rows.findIndex((row) => row.changeCost === 1) < byCost.rows.findIndex((row) => row.changeCost === 5));
+  assert.equal(JSON.stringify(gaps.closestMisses), snapshot);
+  assert.equal(sortPackageGapRows(gaps.closestMisses, "fairness").status, "invalid");
+  assert.equal(sortPackageGapRows(null, "approval_gap").status, "invalid");
 });
 
 test("veto groups require threshold support and leave old JSON valid without the field", () => {
@@ -1030,4 +1155,32 @@ test("discussion worksheet lists every option as unmarked text and rejects inval
   assert.equal(JSON.stringify(input), before);
   const invalid = formatDiscussionWorksheet({ title: "" });
   assert.equal(invalid.status, "invalid");
+});
+
+test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "Hours", options: [
+    option("original", true, { g: 50 }), option("alternative", false, { g: 80 }, 1), option("other", false, { g: 70 }, 2),
+  ] }] });
+  assert.equal(Object.hasOwn(canonicalProposal(input).clauses[0], "note"), false);
+  input.clauses[0].note = "Ask who closes the park.";
+  const before = JSON.stringify(input);
+  const clean = canonicalProposal(input);
+  assert.equal(clean.clauses[0].note, "Ask who closes the park.");
+  const withNote = findSmallestAgreement(input);
+  const withoutNote = findSmallestAgreement(canonicalProposal({ ...input, clauses: input.clauses.map((clause) => { const { note, ...rest } = clause; return rest; }) }));
+  assert.equal(withNote.status, withoutNote.status);
+  assert.deepEqual(withNote.agreement.options.map((option) => option.id), withoutNote.agreement.options.map((option) => option.id));
+  const worksheet = formatDiscussionWorksheet(input);
+  assert.match(worksheet.text, /Facilitator note: Ask who closes the park\./u);
+  const stripped = canonicalProposal({ ...input, clauses: input.clauses.map((clause) => { const { note, ...rest } = clause; return rest; }) });
+  const changes = compareScenarioInputs(stripped, input);
+  assert.ok(changes.some((row) => row.field.includes("facilitator note") && row.after === "Ask who closes the park."));
+  for (const value of ["", 1, null, {}, "x".repeat(241)]) {
+    const bad = proposal({ clauses: [{ id: "one", title: "Hours", options: [
+      option("original", true, { g: 50 }), option("alternative", false, { g: 80 }, 1), option("other", false, { g: 70 }, 2),
+    ] }] });
+    bad.clauses[0].note = value;
+    assert.equal(validateProposal(bad).valid, false, `note ${String(value).slice(0, 20)}`);
+  }
+  assert.equal(JSON.stringify(input), before);
 });
