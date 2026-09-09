@@ -366,6 +366,8 @@ test('snapshot comparison reports participant deltas without mutating the curren
   app.click('compare-case', { caseId: 'case-1' });
   assert.match(app.markup(), /Compare with Baseline/);
   assert.match(app.markup(), /-100.00 units/);
+  assert.match(app.markup(), /class="diff-down"/);
+  assert.match(app.markup(), /Highlighted profit cells changed/);
   assert.match(app.markup(), /matched by stable identifier/);
   assert.deepEqual(app.saved(), current);
   app.click('clear-comparison'); assert.doesNotMatch(app.markup(), /Compare with Baseline/);

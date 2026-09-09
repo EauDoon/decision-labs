@@ -174,7 +174,9 @@ canvas { width: 100%; height: auto; display: block; border: 1px solid var(--line
 .error-box { border: 1px solid var(--coral); background: var(--coral-pale); padding: .75rem 1rem; color: #75251d; }
 .error-box h2 { font-size: .85rem; margin: 0 0 .3rem; }
 .error-box ul { margin: 0; padding-left: 1.1rem; font-size: .82rem; }
-.invalid-count { color: #75251d; font-weight: 650; margin: 0 0 .5rem; }
+.diff-up { background: var(--cobalt-pale); color: #062e74; }
+.diff-down { background: var(--coral-pale); color: #8c291e; }
+tr.diff-changed td:last-child { font-weight: 750; }
 .notice { min-height: 1.25rem; margin: 0; font-size: .78rem; color: var(--muted); }
 .compound-panel { border-left: 6px solid var(--cobalt); padding-bottom: 1rem; }
 .compound-panel p { line-height: 1.45; }
@@ -2200,9 +2202,14 @@ function comparisonSection(current) {
   const rows = ids.map((id) => {
     const before = baseline.participants.find((item) => item.id === id);
     const after = current.participants.find((item) => item.id === id);
-    return `<tr><th scope="row">${escapeAttribute(after?.name ?? before.name)}</th><td>${before ? formatMoney(before.monthlyProfit) : 'Added'}</td><td>${after ? formatMoney(after.monthlyProfit) : 'Removed'}</td><td>${before && after ? formatMoney(after.monthlyProfit - before.monthlyProfit) : 'n/a'}</td><td>${before ? before.viable ? 'Holds' : 'Exits' : 'n/a'} to ${after ? after.viable ? 'Holds' : 'Exits' : 'n/a'}</td></tr>`;
+    const delta = before && after ? after.monthlyProfit - before.monthlyProfit : null;
+    const deltaClass = delta == null || Math.abs(delta) <= 1e-9 ? '' : delta > 0 ? 'diff-up' : 'diff-down';
+    const viabilityChanged = Boolean(before && after && before.viable !== after.viable);
+    return `<tr class="${viabilityChanged ? 'diff-changed' : ''}"><th scope="row">${escapeAttribute(after?.name ?? before.name)}</th><td>${before ? formatMoney(before.monthlyProfit) : 'Added'}</td><td>${after ? formatMoney(after.monthlyProfit) : 'Removed'}</td><td class="${deltaClass}">${before && after ? formatMoney(delta) : 'n/a'}</td><td>${before ? before.viable ? 'Holds' : 'Exits' : 'n/a'} to ${after ? after.viable ? 'Holds' : 'Exits' : 'n/a'}</td></tr>`;
   }).join('');
-  return `<section class="panel" aria-labelledby="comparison-title"><div class="panel-heading"><h2 id="comparison-title" tabindex="-1">Compare with ${escapeAttribute(snapshot.name)}</h2><button type="button" data-action="clear-comparison">Close comparison</button></div><div class="panel-body"><p>Total monthly profit change: <strong>${formatMoney(current.totalProfit - baseline.totalProfit)}</strong>. Effective volume change: ${formatNumber(current.effectiveVolume - baseline.effectiveVolume)} txn.</p><p>Snapshot stress cases held: ${baselineStress.passCount} / ${baselineStress.caseCount}. Current: ${currentStress.passCount} / ${currentStress.caseCount}. Each uses its own stress settings, so counts may not be directly comparable.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Case comparison"><table><caption>Current minus snapshot. Participants matched by stable identifier.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Snapshot profit</th><th scope="col">Current profit</th><th scope="col">Profit change</th><th scope="col">Exit test</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+  const profitDelta = current.totalProfit - baseline.totalProfit;
+  const profitClass = Math.abs(profitDelta) <= 1e-9 ? '' : profitDelta > 0 ? 'diff-up' : 'diff-down';
+  return `<section class="panel" aria-labelledby="comparison-title"><div class="panel-heading"><h2 id="comparison-title" tabindex="-1">Compare with ${escapeAttribute(snapshot.name)}</h2><button type="button" data-action="clear-comparison">Close comparison</button></div><div class="panel-body"><p>Total monthly profit change: <strong class="${profitClass}">${formatMoney(profitDelta)}</strong>. Effective volume change: ${formatNumber(current.effectiveVolume - baseline.effectiveVolume)} txn.</p><p>Snapshot stress cases held: ${baselineStress.passCount} / ${baselineStress.caseCount}. Current: ${currentStress.passCount} / ${currentStress.caseCount}. Each uses its own stress settings, so counts may not be directly comparable. Profit decreases are highlighted; increases use a cooler fill. This is a difference table, not a judgement of which case is better.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Case comparison"><table><caption>Current minus snapshot. Participants matched by stable identifier. Highlighted profit cells changed.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Snapshot profit</th><th scope="col">Current profit</th><th scope="col">Profit change</th><th scope="col">Exit test</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 function reportText(value) {
