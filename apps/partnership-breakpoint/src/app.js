@@ -19,6 +19,9 @@ import {
   redactConfiguration,
   solveFeeForAllHold,
   solveMinimumShareToHold,
+  solveMinimumVolumeToHold,
+  stressGridCsv,
+  uniqueCopyName,
   validateConfiguration,
 } from './model.js';
 
@@ -45,12 +48,15 @@ let pinSecondId = '';
 let stressPreviewId = '';
 let shareHoldPreview = null;
 let feeHoldPreview = null;
+let volumeHoldPreview = null;
+let briefCopyText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
 let helpOpen = false;
 let dialogOpener = null;
 let dialogNeedsInitialFocus = coachVisible;
 const mutedStressIds = new Set();
+let collapseAllHoldCases = false;
 const undoHistory = [];
 const redoHistory = [];
 
@@ -58,6 +64,8 @@ function checkpoint() {
   stressPreviewId = '';
   shareHoldPreview = null;
   feeHoldPreview = null;
+  volumeHoldPreview = null;
+  briefCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -73,6 +81,8 @@ function travelHistory(direction) {
   stressPreviewId = '';
   shareHoldPreview = null;
   feeHoldPreview = null;
+  volumeHoldPreview = null;
+  briefCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -97,7 +107,7 @@ function persistLibrary(candidate) {
 }
 
 function libraryPanel() {
-  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup. Pin first and Pin second, then compare those two snapshots with the current draft.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="compare-case" data-case-id="${item.id}" aria-pressed="${comparisonId === item.id}">Compare</button><button type="button" data-action="pin-first" data-case-id="${item.id}" aria-pressed="${pinFirstId === item.id}">Pin first</button><button type="button" data-action="pin-second" data-case-id="${item.id}" aria-pressed="${pinSecondId === item.id}">Pin second</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
+  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup. Pin first and Pin second, then compare those two snapshots with the current draft.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="duplicate-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Duplicate current case as snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="compare-case" data-case-id="${item.id}" aria-pressed="${comparisonId === item.id}">Compare</button><button type="button" data-action="pin-first" data-case-id="${item.id}" aria-pressed="${pinFirstId === item.id}">Pin first</button><button type="button" data-action="pin-second" data-case-id="${item.id}" aria-pressed="${pinSecondId === item.id}">Pin second</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
 }
 
 function handleLibraryAction(action, id) {
@@ -108,6 +118,27 @@ function handleLibraryAction(action, id) {
     let sequence = 1;
     while (caseLibrary.some((item) => item.id === `case-${sequence}`) || removedCase?.id === `case-${sequence}`) sequence += 1;
     if (persistLibrary([...caseLibrary, { id: `case-${sequence}`, name: caseName.trim(), config: clone(state) }])) { render(); setNotice('Named snapshot saved locally.'); }
+  }
+  if (action === 'duplicate-case') {
+    if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before duplicating the case.'); return; }
+    if (caseLibrary.length >= 12) { setNotice('The library holds 12 snapshots. Remove one before duplicating.'); return; }
+    const base = (typeof state.deal.title === 'string' && state.deal.title.trim()) || caseName.trim() || 'Current case';
+    let name;
+    try {
+      name = uniqueCopyName(base, caseLibrary.map((item) => item.name));
+    } catch (error) {
+      if (!(error instanceof ValidationError)) throw error;
+      setNotice(`Duplicate rejected: ${summarizeErrors(error.errors)}`);
+      return;
+    }
+    let sequence = 1;
+    while (caseLibrary.some((item) => item.id === `case-${sequence}`) || removedCase?.id === `case-${sequence}`) sequence += 1;
+    const config = clone(state);
+    config.deal.title = name;
+    if (persistLibrary([...caseLibrary, { id: `case-${sequence}`, name, config }])) {
+      render();
+      setNotice(`Independent snapshot saved as ${name}. Later edits to the current draft do not change it.`);
+    }
   }
   if (action === 'load-case') {
     const item = caseLibrary.find((entry) => entry.id === id);
@@ -347,9 +378,10 @@ function participantDetailsOpen(index) {
   return Boolean(nodes[index]?.open);
 }
 
-function inputPanel() {
+function inputPanel(result) {
+  const firstFailId = result?.participants.find((participant) => !participant.viable)?.id ?? null;
   const participantForms = state.participants.map((participant, index) => `
-    <section class="participant-form" aria-labelledby="participant-${index}-title">
+    <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}" aria-labelledby="participant-${index}-title">
       <div class="participant-toolbar">
         <div class="button-row participant-roster">
           <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
@@ -358,6 +390,7 @@ function inputPanel() {
           <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
         </div>
       </div>
+      ${firstFailId === participant.id ? '<p class="first-fail-label">First listed participant who fails an exit test in this baseline. Roster order, not a ranking of who will act.</p>' : ''}
       <details class="participant-details"${participantDetailsOpen(index) ? ' open' : ''}>
         <summary id="participant-${index}-title">Participant ${index + 1}: ${escapeAttribute(participant.name)}</summary>
         <div class="field-grid">
@@ -370,7 +403,7 @@ function inputPanel() {
         ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1', title: 'Leave blank for no commitment. Blank and zero are equivalent here.' })}
         ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
       </div>
-      <div class="button-row"><button type="button" data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button></div>
+      <div class="button-row"><button type="button" data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
       </details>
     </section>`).join('');
 
@@ -422,7 +455,7 @@ function inputPanel() {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
             <button type="button" data-action="reset">Reset</button>
@@ -436,13 +469,19 @@ function inputPanel() {
 function errorBox(errors) {
   const count = invalidFieldCount;
   const countText = count === 1 ? '1 field needs attention.' : `${count} fields need attention.`;
-  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><p class="invalid-count" aria-live="polite">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
+  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><p class="invalid-count">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
+}
+
+function invalidSummary() {
+  if (invalidFieldCount === 0) return '';
+  const countText = invalidFieldCount === 1 ? '1 field needs attention.' : `${invalidFieldCount} fields need attention.`;
+  return `<div class="invalid-summary" role="status"><p class="invalid-count" aria-live="polite">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button></div>`;
 }
 
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results">${errorBox(errors)}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -453,7 +492,7 @@ function resultsPanel(result) {
   const statusDetail = escapeAttribute(result.viable
     ? `${result.weakestParticipant.name} has the least volume headroom to its ${result.weakestParticipant.bindingConstraint.label} limit.`
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
-  return `<section class="results">
+  return `<section class="results" id="results-start">
     <section class="status-card ${statusClass}" aria-live="polite">
       <div><span class="eyebrow">Partnership viability</span><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
@@ -464,8 +503,9 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
-    <section class="print-only"><h2>Case assumptions</h2>${state.deal.notes ? `<p><strong>Notes:</strong> ${escapeAttribute(state.deal.notes)}</p>` : ''}<p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
-    <nav class="results-jump" aria-label="Jump in results" id="results-jump">
+    <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
+    <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
+    <nav class="results-jump" aria-label="Jump in results" id="results-jump" tabindex="-1">
       <span class="eyebrow">Jump in results</span>
       <a href="#first-breakpoint">First breakpoint</a>
       <a href="#fee-guidance-title">Fee guide</a>
@@ -477,6 +517,8 @@ function resultsPanel(result) {
     ${feeRequirementsSection()}
     ${feeHoldPreviewSection()}
     ${shareHoldPreviewSection()}
+    ${volumeHoldPreviewSection()}
+    ${briefCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${breakpointSection(result)}
@@ -494,6 +536,11 @@ function resultsPanel(result) {
 
 function caseLabel(scenario) {
   return `${scenario.id}: volume ${formatPct(scenario.volumeChangePct)}, fee cut ${formatPct(scenario.feeDropPct)}, cost rise ${formatPct(scenario.variableCostRisePct)}`;
+}
+
+function visibleStressScenarios(stress) {
+  if (!collapseAllHoldCases) return stress.scenarios;
+  return stress.scenarios.filter((scenario) => !scenario.viable);
 }
 
 function stressSection() {
@@ -520,17 +567,22 @@ function stressSection() {
       <td>${participant.requiredShare === null ? 'No finite share' : formatPct(participant.requiredShare * 100)}<br><small>${participant.requiredShareScenarioId}</small></td>
       <td>${negotiation.proposal ? formatPct(negotiation.proposal[index].revenueShare * 100) : 'Not available'}</td></tr>`;
   }).join('');
-  const cases = stress.scenarios.map((scenario) => `<tr><th scope="row">${caseLabel(scenario)}<br><button type="button" data-action="inspect-stress" data-scenario-id="${scenario.id}">Inspect ${scenario.id}</button></th>
+  const visibleCases = visibleStressScenarios(stress);
+  const hiddenHoldCount = stress.scenarios.length - visibleCases.length;
+  const cases = visibleCases.map((scenario) => `<tr><th scope="row">${caseLabel(scenario)}<br><button type="button" data-action="inspect-stress" data-scenario-id="${scenario.id}">Inspect ${scenario.id}</button></th>
     <td>${formatVolume(scenario.volume)}</td><td>${formatNumber(scenario.fee, 4)}</td><td>${formatMoney(scenario.totalProfit)}</td>
     <td class="${scenario.viable ? 'pass-text' : 'failure-text'}">${scenario.viable ? 'All participants hold' : scenario.participants.filter((participant) => !participant.viable).map((participant) => `${escapeAttribute(participant.name)}: ${escapeAttribute(participant.failureReasons.join('; '))}`).join('<br>')}</td></tr>`).join('');
-  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.4.1</span></div>
+  const collapseNote = collapseAllHoldCases
+    ? `${hiddenHoldCount} all-hold ${hiddenHoldCount === 1 ? 'case is' : 'cases are'} hidden from this table. ${stress.passCount} of ${stress.caseCount} tested cases still hold. Counts are unchanged.`
+    : 'Collapse cases every participant holds to hide those rows from this table only. Counts stay the same.';
+  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.4.2</span></div>
     <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
       <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
-      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button></div>
-      <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant.</p></div>
+      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button><button type="button" data-action="export-csv">Export all cases CSV</button><button type="button" data-action="export-visible-csv">Export visible cases CSV</button></div>
+      <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant. ${collapseNote}</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
-    <details class="case-details"><summary>Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases}</tbody></table></div></details>
+    <details class="case-details"><summary>Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods. ${visibleCases.length} of ${stress.caseCount} rows are visible.</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases || `<tr><td colspan="5">Every displayed case currently holds. ${stress.passCount} of ${stress.caseCount} tested cases hold. Expand to inspect all-hold rows. Counts are unchanged.</td></tr>`}</tbody></table></div></details>
     <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
 }
 
@@ -566,7 +618,7 @@ function participantTable(result) {
       <td>${escapeAttribute(participant.bindingConstraint.label)}</td>
       <td class="${participant.viable ? 'pass-text' : 'failure-text'}">${participant.viable ? 'Holds' : escapeAttribute(participant.failureReasons.join('; '))}</td>
     </tr>`).join('');
-  return `<section class="panel" id="participant-ledger"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Capacity use</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary. Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied.</p></section>`;
+  return `<section class="panel print-keep" id="participant-ledger"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Capacity use</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary. Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied.</p></section>`;
 }
 
 function shockCard(label, shock, units) {
@@ -623,7 +675,7 @@ function tornadoSection(result) {
       <text x="${left + Math.max(0, barWidth) + 6}" y="${y + 13}" font-size="11" fill="#1f2328">${escapeAttribute(row.display)}</text>`;
   }).join('');
   const tableRows = rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('');
-  return `<section class="panel"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="chart-frame">${`<svg class="chart-svg" role="img" aria-label="Tornado chart of smallest bounded adverse percentage shocks by participant. The table lists the same values." viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(height, 520)}">${bars}</svg>`}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${tableRows}</tbody></table></div></section>`;
+  return `<section class="panel print-keep"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="chart-frame">${`<svg class="chart-svg" role="img" aria-label="Tornado chart of smallest bounded adverse percentage shocks by participant. The table lists the same values." viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(height, 520)}">${bars}</svg>`}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${tableRows}</tbody></table></div></section>`;
 }
 
 function waterfallSection(result) {
@@ -680,7 +732,7 @@ function waterfallSection(result) {
         <tr><th scope="row">Minimum acceptable profit</th><td>${formatMoney(minimum)}</td></tr>
       </tbody></table></div></section>`;
   }).join('');
-  return `<section class="panel"><div class="panel-heading"><h2>Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p>${charts}</div></section>`;
+  return `<section class="panel print-keep"><div class="panel-heading"><h2>Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p>${charts}</div></section>`;
 }
 
 function sensitivityGrid() {
@@ -708,7 +760,7 @@ function sensitivitySection() {
 }
 
 function methodAndLimits() {
-  return `<section class="disclosure-grid"><section class="panel"><div class="panel-heading"><h2>Method</h2></div><div class="panel-body"><p>Revenue equals effective monthly volume times fee per transaction times revenue share. Monthly profit equals revenue less variable cost, fixed monthly cost, and risk cost. Effective volume is post-shock monthly volume capped by addressable volume.</p><p>A participant holds only when monthly profit meets its minimum acceptable profit, volume meets any minimum commitment, and volume does not exceed capacity.</p><p>The viability card names the participant with the least volume headroom. First breakpoint ranks bounded shocks by percentage movement and can name a different participant. Share-to-hold and fee-to-hold are deterministic floors with preview-then-apply. They do not assign probability.</p></div></section><section class="panel"><div class="panel-heading"><h2>Limits</h2></div><div class="panel-body"><p>This is a deterministic monthly contribution model, not a forecast or valuation. It does not prove legal enforceability, participant behavior, credit performance, demand response, tax treatment, timing of cash flows, or the completeness of cost inputs.</p><p>Shock thresholds show the boundary under unchanged inputs. Compound case counts describe only the selected discrete combinations. Neither assigns probability or cause. Currency codes are display prefixes only and are not converted.</p></div></section></section>`;
+  return `<section class="disclosure-grid"><section class="panel"><div class="panel-heading"><h2>Method</h2></div><div class="panel-body"><p>Revenue equals effective monthly volume times fee per transaction times revenue share. Monthly profit equals revenue less variable cost, fixed monthly cost, and risk cost. Effective volume is post-shock monthly volume capped by addressable volume.</p><p>A participant holds only when monthly profit meets its minimum acceptable profit, volume meets any minimum commitment, and volume does not exceed capacity.</p><p>The viability card names the participant with the least volume headroom. First breakpoint ranks bounded shocks by percentage movement and can name a different participant. Share-to-hold, volume-to-hold, and fee-to-hold are deterministic floors with preview-then-apply. They do not assign probability.</p></div></section><section class="panel"><div class="panel-heading"><h2>Limits</h2></div><div class="panel-body"><p>This is a deterministic monthly contribution model, not a forecast or valuation. It does not prove legal enforceability, participant behavior, credit performance, demand response, tax treatment, timing of cash flows, or the completeness of cost inputs.</p><p>Shock thresholds show the boundary under unchanged inputs. Compound case counts describe only the selected discrete combinations. Neither assigns probability or cause. Currency codes are display prefixes only and are not converted.</p></div></section></section>`;
 }
 
 function render() {
@@ -718,7 +770,9 @@ function render() {
   try { result = calculatePartnership(state); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
   }
-  app.innerHTML = `${coachOverlay()}${helpDialog()}<div class="app-grid">${inputPanel()}${resultsPanel(result)}</div>`;
+  const inputs = inputPanel(result);
+  const results = resultsPanel(result);
+  app.innerHTML = `${coachOverlay()}${helpDialog()}${invalidSummary()}<div class="app-grid">${inputs}${results}</div>`;
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
@@ -831,6 +885,10 @@ function attachEvents() {
     if (action === 'solve-share-hold') { previewShareHold(button.dataset.participantId); return; }
     if (action === 'apply-share-hold') { applyShareHold(); return; }
     if (action === 'close-share-hold') { shareHoldPreview = null; render(); return; }
+    if (action === 'solve-volume-hold') { previewVolumeHold(button.dataset.participantId); return; }
+    if (action === 'apply-volume-hold') { applyVolumeHold(); return; }
+    if (action === 'close-volume-hold') { volumeHoldPreview = null; render(); return; }
+    if (action === 'close-brief-copy') { briefCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -842,6 +900,16 @@ function attachEvents() {
     }
     if (action === 'unmute-stress-row') {
       mutedStressIds.delete(button.dataset.participantId);
+      render();
+      return;
+    }
+    if (action === 'collapse-all-hold-cases') {
+      collapseAllHoldCases = true;
+      render();
+      return;
+    }
+    if (action === 'expand-all-hold-cases') {
+      collapseAllHoldCases = false;
       render();
       return;
     }
@@ -860,7 +928,7 @@ function attachEvents() {
     }
     if (action === 'clear-three-compare') { pinFirstId = ''; pinSecondId = ''; render(); return; }
     if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
-    if (['save-case', 'load-case', 'remove-case', 'restore-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
+    if (['save-case', 'load-case', 'remove-case', 'restore-case', 'duplicate-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
     if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
     if (action === 'edit-stress-settings') {
       app.querySelector('input[data-path="stress.volumeDropPct"]')?.focus();
@@ -920,7 +988,8 @@ function attachEvents() {
     if (action === 'export-report') exportReport();
     if (action === 'copy-brief') copyNegotiationBrief();
     if (action === 'copy-share-url') copyShareUrl();
-    if (action === 'export-csv') exportStressCsv();
+    if (action === 'export-csv') exportStressCsv(false);
+    if (action === 'export-visible-csv') exportStressCsv(true);
     if (action === 'apply-stress-proposal') {
       try {
         const proposal = applyStressProposal(state);
@@ -1124,6 +1193,12 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'u' || event.key === 'U') { travelHistory('undo'); return; }
   if (event.key === 'r' || event.key === 'R') { travelHistory('redo'); return; }
   if (event.key === 'e' || event.key === 'E') exportFile();
+  if (event.key === 'g' || event.key === 'G') {
+    const jump = document.querySelector('#results-jump');
+    const start = jump ?? document.querySelector('#results-start');
+    start?.focus?.({ preventScroll: false });
+    start?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -1288,6 +1363,18 @@ function copyShareUrl() {
   setNotice(`Clipboard unavailable. Share URL: ${url}`);
 }
 
+function showBriefCopyFallback(text, message) {
+  briefCopyText = text;
+  render();
+  document.querySelector('#brief-copy-text')?.focus();
+  setNotice(message);
+}
+
+function briefCopySection() {
+  if (!briefCopyText) return '';
+  return `<section class="panel" aria-labelledby="brief-copy-title"><div class="panel-heading"><h2 id="brief-copy-title">Negotiation brief</h2><button type="button" data-action="close-brief-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it.</p><label class="brief-copy-label" for="brief-copy-text">Markdown negotiation brief</label><textarea id="brief-copy-text" readonly rows="16">${escapeAttribute(briefCopyText)}</textarea></div></section>`;
+}
+
 function copyNegotiationBrief() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -1298,38 +1385,43 @@ function copyNegotiationBrief() {
   const text = negotiationBrief(state, title);
   const clipboard = globalThis.navigator?.clipboard;
   if (clipboard && typeof clipboard.writeText === 'function') {
-    Promise.resolve(clipboard.writeText(text)).then(() => {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          briefCopyText = '';
+          render();
+          setNotice('Negotiation brief copied as Markdown.');
+        }).catch(() => {
+          showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+        });
+        return;
+      }
+      briefCopyText = '';
+      render();
       setNotice('Negotiation brief copied as Markdown.');
-    }).catch(() => {
-      downloadText(text, 'text/markdown;charset=utf-8', exportDownloadName('brief', caseExportTitle()));
-      setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
-    });
-    return;
+      return;
+    } catch {
+      showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+      return;
+    }
   }
-  downloadText(text, 'text/markdown;charset=utf-8', exportDownloadName('brief', caseExportTitle()));
-  setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
+  showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
 }
 
-function csvCell(value) {
-  let text = String(value ?? '');
-  if (typeof value === 'string' && /^[\s\u0000-\u001f]*[=+@-]/.test(text)) text = "'" + text;
-  return '"' + text.replace(/"/g, '""') + '"';
-}
-
-function stressCsv(config) {
-  const stress = evaluateStressGrid(config);
-  const rows = [['Case', 'Volume change percent', 'Fee reduction percent', 'Variable cost increase percent', 'Effective volume', 'Fee per transaction', 'Participant ID', 'Participant', 'Revenue share', 'Revenue', 'Variable cost', 'Fixed cost', 'Risk cost', 'Monthly profit', 'Minimum profit', 'Profit gap', 'Participant holds', 'Failure reasons']];
-  for (const scenario of stress.scenarios) {
-    scenario.participants.forEach((participant, index) => rows.push([scenario.id, scenario.volumeChangePct, scenario.feeDropPct, scenario.variableCostRisePct, scenario.volume, scenario.fee, participant.id, participant.name, config.participants[index].revenueShare, participant.revenue, participant.variableCost, participant.fixedCost, participant.riskCost, participant.monthlyProfit, config.participants[index].minimumAcceptableProfit, participant.monthlyProfit - config.participants[index].minimumAcceptableProfit, participant.viable, participant.failureReasons.join('; ')]));
-  }
-  return rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
-}
-
-function exportStressCsv() {
+function exportStressCsv(visibleOnly = false) {
   const validation = validateConfiguration(state);
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting CSV. ' + summarizeErrors(validation.errors)); return; }
-  downloadText(stressCsv(state), 'text/csv;charset=utf-8', exportDownloadName('csv', caseExportTitle()));
-  setNotice('Stress CSV exported. Each row is one participant in one selected case; case counts are not probabilities.');
+  const stress = evaluateStressGrid(state);
+  const visible = visibleStressScenarios(stress);
+  const options = visibleOnly ? { scenarioIds: visible.map((scenario) => scenario.id) } : undefined;
+  const kind = visibleOnly ? 'csv-visible' : 'csv';
+  downloadText(stressGridCsv(state, options), 'text/csv;charset=utf-8', exportDownloadName(kind, caseExportTitle()));
+  if (visibleOnly) {
+    setNotice(`Visible stress CSV exported. ${visible.length} of ${stress.caseCount} tested cases included. Case counts are not probabilities.`);
+  } else {
+    setNotice('Stress CSV exported. Each row is one participant in one selected case; case counts are not probabilities.');
+  }
 }
 
 function feeRequirementsSection() {
@@ -1403,6 +1495,45 @@ function applyShareHold() {
   shareHoldPreview = null;
   activePreset = '';
   refresh(`Applied minimum hold share of ${formatPct(share * 100)}. Remaining participants kept their relative leftover. Undo restores the previous allocation.`);
+}
+
+function previewVolumeHold(participantId) {
+  if (!validateConfiguration(state).valid) {
+    setNotice('Resolve invalid inputs before solving a hold volume.');
+    return;
+  }
+  try {
+    volumeHoldPreview = solveMinimumVolumeToHold(state, participantId);
+    render();
+    document.querySelector('#volume-hold-title')?.focus();
+  } catch (error) {
+    if (!(error instanceof ValidationError)) throw error;
+    setNotice(`Volume-to-hold solver rejected: ${summarizeErrors(error.errors)}`);
+  }
+}
+
+function applyVolumeHold() {
+  if (!volumeHoldPreview || volumeHoldPreview.status !== 'possible' || volumeHoldPreview.monthlyVolume == null) {
+    setNotice('No volume-to-hold proposal is available to apply.');
+    return;
+  }
+  const monthlyVolume = volumeHoldPreview.monthlyVolume;
+  checkpoint();
+  state.deal.monthlyVolume = monthlyVolume;
+  volumeHoldPreview = null;
+  activePreset = '';
+  refresh(`Applied hold volume of ${formatVolume(monthlyVolume)}. Fee and shares are unchanged. Undo restores the previous volume.`);
+}
+
+function volumeHoldPreviewSection() {
+  if (!volumeHoldPreview) return '';
+  const solved = volumeHoldPreview;
+  const target = state.participants.find((item) => item.id === solved.participantId);
+  const name = escapeAttribute(target?.name ?? solved.participantId);
+  if (solved.status === 'impossible') {
+    return `<section class="panel" aria-labelledby="volume-hold-title"><div class="panel-heading"><h2 id="volume-hold-title" tabindex="-1">Volume-to-hold preview</h2><button type="button" data-action="close-volume-hold">Close preview</button></div><div class="panel-body"><p>${escapeAttribute(solved.reason)}</p><p class="output-note">This is a deterministic solvability result, not a forecast of demand or of who will stay.</p></div></section>`;
+  }
+  return `<section class="panel" aria-labelledby="volume-hold-title"><div class="panel-heading"><h2 id="volume-hold-title" tabindex="-1">Volume-to-hold preview</h2><button type="button" data-action="close-volume-hold">Close preview</button></div><div class="panel-body"><p><strong>${name}</strong> holds at a minimum monthly volume of <strong>${formatVolume(solved.monthlyVolume)}</strong> (effective ${formatVolume(solved.effectiveVolume)}). Current monthly volume: ${formatVolume(state.deal.monthlyVolume)}. Apply is required; fee, shares, addressable demand, and volume shock stay unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p><div class="button-row"><button type="button" class="primary" data-action="apply-volume-hold">Apply hold volume</button><button type="button" data-action="close-volume-hold">Keep current volume</button></div></div></section>`;
 }
 
 function shareHoldPreviewSection() {
@@ -1529,6 +1660,7 @@ function helpDialog() {
         <li><kbd>u</kbd> Undo the last edit in this tab (up to 50)</li>
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON of the current valid case</li>
+        <li><kbd>g</kbd> Jump to the results nav or the first results heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

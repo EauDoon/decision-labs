@@ -138,9 +138,15 @@ At current effective volume V, the fee floor for participant i is (V times varia
 
 Applying a compound case copies its realized volume, shocked fee and participant variable costs to a new baseline. It resets baseline volume shock to zero, keeps addressable demand and other inputs, and validates the result against input bounds. Stress settings remain the same, so the next grid represents additional shocks from the new baseline.
 
+## Volume-to-hold solver
+
+`solveMinimumVolumeToHold(config, participantId)` binary-searches the minimum monthly volume at which that participant holds, with fee, shares, addressable demand, and volume shock held fixed. The search high bound is the monthly volume that reaches `min(addressableVolume, capacity)` after shock, so a capacity breach at a larger volume cannot hide a lower holding volume. If the participant holds at volume 0, the result is 0. If they still fail at that high bound, the result is `impossible` with the failing tests named. This is a solvability result, not a probability. Applying a proposal is an explicit GUI action and changes only `monthlyVolume`.
+
 ## Roster edits
 
 `duplicateParticipant` copies costs and constraints, assigns `nextUnusedParticipantId`, appends ` copy` to the name (trimmed to 80 characters), and sets `revenueShare` to 0 so the original allocation still sums to the same total. `moveParticipant` swaps two adjacent rows without changing shares. `dropAndReallocate` removes one participant when more than two remain and spreads that share across whoever remains in proportion to their current weights. If remaining weights are all zero, the dropped share is split equally. The last remaining participant absorbs floating-point remainder so a previously valid split still sums to 1.
+
+`uniqueCopyName` appends ` copy`, then ` copy 2`, and so on, staying within 80 characters. The GUI uses it when duplicating the current case as an independent snapshot. The copy receives its own title and library entry. Later draft edits do not change the snapshot.
 
 ## Share-to-hold solver
 
@@ -166,7 +172,13 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 
 ## Export filenames
 
-`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`). Path separators cannot appear in the slug.
+`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`, `partnership-breakpoint-stress-visible.csv`). Path separators cannot appear in the slug.
+
+## Stress-grid CSV
+
+`escapeCsvCell` quotes every field and prefixes string values that look like spreadsheet formulas with an apostrophe. Negative numbers are not treated as formulas.
+
+`stressGridCsv(config, options)` writes one row per participant in each selected case. Omit `options` or omit `scenarioIds` to include every tested case. `scenarioIds` is an optional array of case identifiers; grid order is preserved; unknown identifiers are skipped. Unknown option keys and reserved keys (`__proto__`, `constructor`, `prototype`) are rejected. Row counts describe selected cases, not likelihoods. The GUI Export visible stress CSV uses the currently displayed cases, including after collapsing all-hold rows.
 
 ## Three-snapshot compare
 
@@ -179,3 +191,5 @@ The tornado chart plots each participant's smallest bounded adverse percentage s
 ## Display-only stress mute
 
 Hiding a participant row in the stress ledger is a display filter. Case counts, hold counts, worst profit gaps, operational failures, and any tested proposal still include that participant. Showing the row again does not recalculate the grid.
+
+Collapsing cases every participant holds hides those case-evidence rows from the inspect table only. Expand restores them. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking.

@@ -106,6 +106,14 @@ export const PRESETS = Object.freeze({
       { id: 'ip-owner', name: 'IP Owner', revenueShare: 0.2, variableCostPerTransaction: 1.5, fixedMonthlyCost: 8000, minimumAcceptableProfit: 20000, capacity: 20000, minimumCommitment: 5000, riskCost: 2000 },
     ],
   },
+  twoPartyStudio: {
+    name: 'Two-party 50/50 studio',
+    deal: { monthlyVolume: 6000, feePerTransaction: 18, addressableVolume: 9000, volumeShockPct: 0 },
+    participants: [
+      { id: 'production-studio', name: 'Production studio', revenueShare: 0.5, variableCostPerTransaction: 4.5, fixedMonthlyCost: 12000, minimumAcceptableProfit: 8000, capacity: 7500, minimumCommitment: 1500, riskCost: 2000 },
+      { id: 'distribution-studio', name: 'Distribution studio', revenueShare: 0.5, variableCostPerTransaction: 2.25, fixedMonthlyCost: 6000, minimumAcceptableProfit: 5000, capacity: 12000, minimumCommitment: 0, riskCost: 1500 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -1254,7 +1262,7 @@ export function sanitizeExportSlug(title) {
 }
 
 /**
- * @param {'json'|'redacted'|'report'|'brief'|'csv'} kind
+ * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'} kind
  * @param {unknown} title
  */
 export function exportDownloadName(kind, title) {
@@ -1264,6 +1272,7 @@ export function exportDownloadName(kind, title) {
   if (kind === 'report') return slug ? `partnership-breakpoint-${slug}-report.md` : 'partnership-breakpoint-report.md';
   if (kind === 'brief') return slug ? `partnership-breakpoint-${slug}-brief.md` : 'partnership-breakpoint-brief.md';
   if (kind === 'csv') return slug ? `partnership-breakpoint-${slug}-stress.csv` : 'partnership-breakpoint-stress.csv';
+  if (kind === 'csv-visible') return slug ? `partnership-breakpoint-${slug}-stress-visible.csv` : 'partnership-breakpoint-stress-visible.csv';
   return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
 }
 
@@ -1294,4 +1303,187 @@ export function solveFeeForAllHold(config) {
     fee: guide.requiredFee,
     reason: 'Minimum fee per transaction at which every participant holds, with volume and shares held fixed. Demand response is not included.',
   };
+}
+
+function targetHoldsAtMonthlyVolume(config, participantId, monthlyVolume) {
+  const participant = config.participants.find((item) => item.id === participantId);
+  const deal = { ...config.deal, monthlyVolume };
+  return evaluateParticipant(participant, deal).viable;
+}
+
+/**
+ * Highest monthly volume searched for a hold. Effective volume stays inside
+ * addressable demand and, when supplied, that participant's capacity, so a
+ * capacity breach at a larger volume cannot hide a lower holding volume.
+ * @param {PartnershipConfig} config
+ * @param {ParticipantInput} participant
+ */
+export function maxMonthlyVolumeForHoldSearch(config, participant) {
+  const shock = config.deal.volumeShockPct ?? 0;
+  const factor = 1 - shock / 100;
+  const demand = config.deal.addressableVolume;
+  const capacity = participant.capacity;
+  const maxEffective = capacity == null ? demand : Math.min(demand, capacity);
+  if (factor <= EPSILON) return 0;
+  const needed = maxEffective / factor;
+  if (!Number.isFinite(needed) || needed < 0) return 0;
+  return needed > MAX_NUMERIC_INPUT ? MAX_NUMERIC_INPUT : needed;
+}
+
+/**
+ * Binary-searches the minimum monthly volume at which `participantId` holds,
+ * with fee, shares, addressable demand, and volume shock held fixed. The search
+ * is deterministic and does not assign probability. Capacity and addressable
+ * demand cap the search so an upper-bound failure cannot hide a lower hold.
+ * @param {PartnershipConfig} config
+ * @param {string} participantId
+ */
+export function solveMinimumVolumeToHold(config, participantId) {
+  assertValidConfiguration(config);
+  const participant = config.participants.find((item) => item.id === participantId);
+  if (!participant) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  if (targetHoldsAtMonthlyVolume(config, participantId, 0)) {
+    const deal = { ...config.deal, monthlyVolume: 0 };
+    return {
+      status: 'possible',
+      monthlyVolume: 0,
+      effectiveVolume: effectiveVolume(deal),
+      participantId,
+      reason: 'This participant holds even at zero monthly volume under the current fee, shares, costs, capacity, and commitment.',
+    };
+  }
+  const highBound = maxMonthlyVolumeForHoldSearch(config, participant);
+  if (!targetHoldsAtMonthlyVolume(config, participantId, highBound)) {
+    const deal = { ...config.deal, monthlyVolume: highBound };
+    const atHigh = evaluateParticipant(participant, deal);
+    const detail = atHigh.failureReasons.length ? atHigh.failureReasons.join('; ') : 'fee revenue cannot fund the profit floor';
+    return {
+      status: 'impossible',
+      monthlyVolume: null,
+      effectiveVolume: null,
+      participantId,
+      reason: `No monthly volume at or below the addressable and capacity limits can make this participant hold (${detail}). Fee and shares stay fixed.`,
+    };
+  }
+  let low = 0;
+  let high = highBound;
+  for (let step = 0; step < 60; step += 1) {
+    const mid = (low + high) / 2;
+    if (targetHoldsAtMonthlyVolume(config, participantId, mid)) high = mid;
+    else low = mid;
+  }
+  const monthlyVolume = targetHoldsAtMonthlyVolume(config, participantId, high) ? high : highBound;
+  const deal = { ...config.deal, monthlyVolume };
+  return {
+    status: 'possible',
+    monthlyVolume,
+    effectiveVolume: effectiveVolume(deal),
+    participantId,
+    reason: 'Minimum monthly volume at which this participant holds, with fee and shares held fixed. Addressable demand and volume shock stay unchanged.',
+  };
+}
+
+/**
+ * Builds a unique display name by appending ` copy`, then ` copy 2`, and so on.
+ * Names stay within `maxLength`. This is a label helper, not a timestamp.
+ * @param {unknown} base
+ * @param {Iterable<string>} used
+ * @param {number} [maxLength]
+ */
+export function uniqueCopyName(base, used, maxLength = 80) {
+  const source = typeof base === 'string' && base.trim() !== '' ? base.trim() : 'Current case';
+  const usedSet = new Set(used);
+  const suffix = ' copy';
+  const fit = (stem, extra) => {
+    const room = maxLength - extra.length;
+    const clipped = room < 1 ? extra.trim().slice(0, maxLength) : `${stem.slice(0, room)}${extra}`;
+    const trimmed = clipped.trim();
+    return trimmed === '' ? extra.trim().slice(0, maxLength) : trimmed;
+  };
+  let name = fit(source, suffix);
+  if (!usedSet.has(name)) return name;
+  let sequence = 2;
+  while (sequence < 10000) {
+    name = fit(source, `${suffix} ${sequence}`);
+    if (!usedSet.has(name)) return name;
+    sequence += 1;
+  }
+  throw new ValidationError(['Could not assign a unique copy name.']);
+}
+
+/**
+ * Spreadsheet-safe CSV cell. Formula prefixes on strings get a leading apostrophe.
+ * Negative numbers are not treated as formulas.
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function escapeCsvCell(value) {
+  let text = String(value ?? '');
+  if (typeof value === 'string' && /^[\s\u0000-\u001f]*[=+@-]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+const STRESS_CSV_OPTION_KEYS = new Set(['scenarioIds']);
+const STRESS_CSV_HEADER = Object.freeze([
+  'Case', 'Volume change percent', 'Fee reduction percent', 'Variable cost increase percent',
+  'Effective volume', 'Fee per transaction', 'Participant ID', 'Participant', 'Revenue share',
+  'Revenue', 'Variable cost', 'Fixed cost', 'Risk cost', 'Monthly profit', 'Minimum profit',
+  'Profit gap', 'Participant holds', 'Failure reasons',
+]);
+
+/**
+ * One row per participant in each selected compound case. Counts are not likelihoods.
+ * Omit options or omit `scenarioIds` to include every tested case. Grid order is preserved.
+ * @param {PartnershipConfig} config
+ * @param {{ scenarioIds?: string[] }} [options]
+ */
+export function stressGridCsv(config, options) {
+  const stress = evaluateStressGrid(config);
+  let scenarios = stress.scenarios;
+  if (options !== undefined) {
+    if (!isPlainObject(options)) {
+      throw new ValidationError(['CSV options must be an object.']);
+    }
+    const errors = [];
+    rejectUnknownKeys(options, STRESS_CSV_OPTION_KEYS, 'CSV options', errors);
+    if (Object.hasOwn(options, 'scenarioIds')) {
+      const ids = own(options, 'scenarioIds');
+      if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) {
+        errors.push('CSV scenarioIds must be an array of case identifiers.');
+      } else {
+        const allowed = new Set(ids);
+        scenarios = stress.scenarios.filter((scenario) => allowed.has(scenario.id));
+      }
+    }
+    if (errors.length) throw new ValidationError(errors);
+  }
+  const rows = [STRESS_CSV_HEADER.slice()];
+  for (const scenario of scenarios) {
+    scenario.participants.forEach((participant, index) => {
+      const input = config.participants[index];
+      rows.push([
+        scenario.id,
+        scenario.volumeChangePct,
+        scenario.feeDropPct,
+        scenario.variableCostRisePct,
+        scenario.volume,
+        scenario.fee,
+        participant.id,
+        participant.name,
+        input.revenueShare,
+        participant.revenue,
+        participant.variableCost,
+        participant.fixedCost,
+        participant.riskCost,
+        participant.monthlyProfit,
+        input.minimumAcceptableProfit,
+        participant.monthlyProfit - input.minimumAcceptableProfit,
+        participant.viable,
+        participant.failureReasons.join('; '),
+      ]);
+    });
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}\r\n`;
 }

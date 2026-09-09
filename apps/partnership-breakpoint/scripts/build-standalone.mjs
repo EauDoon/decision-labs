@@ -23,6 +23,9 @@ const appImport = `import {
   redactConfiguration,
   solveFeeForAllHold,
   solveMinimumShareToHold,
+  solveMinimumVolumeToHold,
+  stressGridCsv,
+  uniqueCopyName,
   validateConfiguration,
 } from './model.js';
 

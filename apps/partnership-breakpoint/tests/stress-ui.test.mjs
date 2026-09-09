@@ -15,6 +15,8 @@ async function workbench(protocol = 'file:', options = {}) {
   const downloads = [];
   let downloadBlob;
   let prints = 0;
+  const copied = [];
+  const focused = [];
   const app = { innerHTML: '', querySelectorAll: () => [],
     addEventListener: (name, callback) => {
       assert.equal(events.has(name), false, `duplicate ${name} handler`);
@@ -38,18 +40,37 @@ async function workbench(protocol = 'file:', options = {}) {
       return `${this.protocol}${host}${this.pathname}${this.search}${this.hash}`;
     },
   });
-  const context = vm.createContext({ console, Blob, setTimeout: (callback) => callback(), URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
+  const sandbox = { console, Blob, setTimeout: (callback) => callback(), URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
     history: { replaceState(_state, _title, url) {
       if (typeof url === 'string' && url.includes('#')) locationState.hash = url.slice(url.indexOf('#'));
     } },
     window: { print: () => { prints += 1; }, location: locationState, addEventListener: (name, callback) => windowEvents.set(name, callback) },
-    document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
+    document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => {
+      if (selector === '#workbench') return app;
+      if (selector === '#notice') return notice;
+      if ((selector === '#brief-copy-text' || selector === '#results-jump' || selector === '#results-start')
+        && app.innerHTML.includes(`id="${selector.slice(1)}"`)) {
+        return {
+          focus() { focused.push(selector); },
+          scrollIntoView() { focused.push(`scroll:${selector}`); },
+        };
+      }
+      return null;
+    } },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
-  });
+  };
+  if (options.clipboard === 'ok') {
+    sandbox.navigator = { clipboard: { writeText: (text) => { copied.push(text); } } };
+  } else if (options.clipboard === 'fail') {
+    sandbox.navigator = { clipboard: { writeText: () => { throw new Error('denied'); } } };
+  }
+  const context = vm.createContext(sandbox);
   new vm.Script(script).runInContext(context, { timeout: 2000 });
   return {
     markup: () => app.innerHTML,
     downloads: () => downloads,
+    copied: () => copied,
+    focused: () => focused,
     prints: () => prints,
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
@@ -128,7 +149,7 @@ test('standalone displays the complete compound grid with accessible controls an
 test('results jump nav is sticky, labeled, and keyboard-focusable via in-page links', async () => {
   const app = await workbench();
   const html = await buildStandalone();
-  assert.match(app.markup(), /<nav class="results-jump" aria-label="Jump in results" id="results-jump">/);
+  assert.match(app.markup(), /<nav class="results-jump" aria-label="Jump in results" id="results-jump" tabindex="-1">/);
   assert.match(app.markup(), /href="#first-breakpoint">First breakpoint<\/a>/);
   assert.match(app.markup(), /href="#fee-guidance-title">Fee guide<\/a>/);
   assert.match(app.markup(), /href="#charts-title">Charts<\/a>/);
@@ -138,6 +159,7 @@ test('results jump nav is sticky, labeled, and keyboard-focusable via in-page li
   assert.match(html, /\.results-jump a:focus-visible/);
   assert.match(app.markup(), /id="first-breakpoint"/);
   assert.match(app.markup(), /id="participant-ledger"/);
+  assert.match(app.markup(), /id="results-start"/);
 });
 
 test('first breakpoint card reports capacity-limited volume growth', async () => {
@@ -372,6 +394,27 @@ test('edits and resets supersede a pending import', async () => {
   }
 });
 
+test('duplicate current case saves an independent snapshot with a unique title suffix', async () => {
+  const app = await workbench();
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.edit('deal.monthlyVolume', '88000');
+  app.click('duplicate-case');
+  assert.equal(app.library().length, 1);
+  assert.equal(app.library()[0].name, 'Harbor JV copy');
+  assert.equal(app.library()[0].config.deal.title, 'Harbor JV copy');
+  assert.equal(app.library()[0].config.deal.monthlyVolume, 88000);
+  assert.equal(app.saved().deal.monthlyVolume, 88000);
+  assert.equal(app.saved().deal.title, 'Harbor JV');
+  app.edit('deal.monthlyVolume', '50000');
+  assert.equal(app.library()[0].config.deal.monthlyVolume, 88000);
+  app.click('duplicate-case');
+  assert.equal(app.library()[1].name, 'Harbor JV copy 2');
+  app.edit('deal.monthlyVolume', '');
+  app.click('duplicate-case');
+  assert.equal(app.library().length, 2);
+  assert.match(app.notice(), /Resolve invalid inputs before duplicating/);
+});
+
 test('named snapshots are separate, escaped, reloadable and removable with recovery', async () => {
   const app = await workbench();
   app.nameCase('<b>Baseline</b>'); app.click('save-case');
@@ -459,6 +502,36 @@ test('stress CSV exports every participant case and neutralizes formula names', 
   assert.equal(app.downloads().length, 1);
 });
 
+test('visible stress CSV follows the collapsed case filter and keeps all-case export unchanged', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export-visible-csv');
+  const allVisible = app.downloads()[0];
+  assert.equal(allVisible.filename, 'partnership-breakpoint-stress-visible.csv');
+  assert.equal((await allVisible.blob.text()).trim().split('\r\n').length, 82);
+  assert.match(app.notice(), /27 of 27 tested cases included/);
+  assert.match(app.notice(), /not probabilities/);
+  app.click('collapse-all-hold-cases');
+  app.click('export-visible-csv');
+  const collapsed = app.downloads()[1];
+  const collapsedText = await collapsed.blob.text();
+  assert.equal(collapsed.filename, 'partnership-breakpoint-stress-visible.csv');
+  assert.equal(collapsedText.trim().split('\r\n').length, 79);
+  assert.doesNotMatch(collapsedText, /"case-1"/);
+  assert.match(collapsedText, /"case-2"/);
+  assert.match(app.notice(), /26 of 27 tested cases included/);
+  app.click('export-csv');
+  assert.equal(app.downloads()[2].filename, 'partnership-breakpoint-stress.csv');
+  assert.equal((await app.downloads()[2].blob.text()).trim().split('\r\n').length, 82);
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.click('export-visible-csv');
+  assert.equal(app.downloads()[3].filename, 'partnership-breakpoint-harbor-jv-stress-visible.csv');
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-visible-csv');
+  assert.equal(app.downloads().length, 4);
+  assert.match(app.notice(), /Resolve invalid inputs before exporting CSV/);
+});
+
 test('share reconciliation repairs overallocations and preserves participant costs', async () => {
   const app = await workbench();
   app.edit('participants.0.revenueShare', '0.8');
@@ -489,16 +562,37 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
+test('print one-pager keeps tornado, waterfall, ledger, and notes and hides chrome', async () => {
+  const app = await workbench();
+  const html = await buildStandalone();
+  assert.match(app.markup(), /class="panel print-keep"[^>]*id="participant-ledger"|id="participant-ledger"[^>]*class="panel print-keep"/);
+  assert.match(app.markup(), /class="panel print-keep"/);
+  assert.match(app.markup(), /Adverse-shock tornado/);
+  assert.match(app.markup(), /Contribution waterfall/);
+  assert.match(app.markup(), /class="print-only print-keep"/);
+  assert.match(app.markup(), /<h2>Deal notes<\/h2>/);
+  assert.match(html, /@media print/);
+  assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
+  assert.match(html, /\.panel:not\(\.print-keep\)/);
+  assert.match(html, /@page \{ size: portrait;/);
+  assert.match(html, /\.coach-overlay, \.help-overlay/);
+});
+
 test('invalid fields expose accessible state and printing requires a valid case', async () => {
  const app = await workbench();
+ const html = await buildStandalone();
  app.click('print-report'); assert.equal(app.prints(), 1);
  app.edit('deal.monthlyVolume', '');
  assert.match(app.markup(), /id="field-deal-monthlyVolume" aria-invalid="true"/);
+ assert.match(app.markup(), /class="invalid-summary"/);
+ assert.match(app.markup(), /aria-live="polite">1 field needs attention\./);
  assert.match(app.markup(), /Go to first invalid field/);
  assert.match(app.markup(), /[0-9]+ field[s]? need/);
  assert.match(app.markup(), /<details class="participant-details" open>/);
+ assert.match(html, /\.invalid-summary \{[\s\S]*position: sticky;/);
  app.click('print-report'); assert.equal(app.prints(), 1);
  app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
+ assert.doesNotMatch(app.markup(), /class="invalid-summary"/);
  assert.match(app.markup(), /Case assumptions/);
 });
 
@@ -527,19 +621,36 @@ test('deal notes persist, print, and export, and reject overlong or unknown valu
   assert.match(app.markup(), /<textarea[^>]*data-path="deal.notes"/);
   app.edit('deal.notes', '  Review the capacity clause.  ', { type: 'text', optional: 'true' });
   assert.equal(app.saved().deal.notes, 'Review the capacity clause.');
-  assert.match(app.markup(), /<strong>Notes:<\/strong> Review the capacity clause\./);
+  assert.match(app.markup(), /<h2>Deal notes<\/h2><p>Review the capacity clause\.<\/p>/);
   app.click('export-report');
   const report = await app.downloads()[0].blob.text();
   assert.match(report, /Notes: Review the capacity clause\./);
   app.click('copy-brief');
-  const brief = await app.downloads()[1].blob.text();
-  assert.match(brief, /Notes: Review the capacity clause\./);
+  assert.match(app.markup(), /id="brief-copy-text"/);
+  assert.match(app.markup(), /Notes: Review the capacity clause\./);
   app.edit('deal.notes', 'x'.repeat(501), { type: 'text', optional: 'true' });
   assert.match(app.markup(), /Resolve these inputs/);
   assert.match(app.notice(), /Deal notes/);
   assert.equal(app.saved().deal.notes, 'Review the capacity clause.');
   app.edit('deal.notes', '', { type: 'text', optional: 'true' });
   assert.equal(Object.hasOwn(app.saved().deal, 'notes'), false);
+});
+
+test('roster highlights the first listed participant who fails the current baseline', async () => {
+  const app = await workbench();
+  assert.doesNotMatch(app.markup(), /first-fail-label/);
+  const failing = clonePreset('balanced');
+  failing.participants[0].minimumAcceptableProfit = 1_000_000;
+  failing.participants[1].minimumAcceptableProfit = 1_000_000;
+  app.import(failing);
+  assert.match(app.markup(), /class="participant-form first-fail"/);
+  assert.match(app.markup(), /First listed participant who fails an exit test in this baseline/);
+  assert.doesNotMatch(app.markup(), /who will act with a chance/);
+  const firstForm = app.markup().match(/<section class="participant-form first-fail"[\s\S]*?<summary id="participant-0-title">([\s\S]*?)<\/summary>/)[1];
+  assert.match(firstForm, /Platform/);
+  app.click('move-participant-down', { index: '0' });
+  const moved = app.markup().match(/<section class="participant-form first-fail"[\s\S]*?<summary id="participant-0-title">([\s\S]*?)<\/summary>/)[1];
+  assert.match(moved, /Distributor/);
 });
 
 test('participant roster toolbar stays outside the disclosure and defaults to open', async () => {
@@ -605,6 +716,37 @@ test('share-to-hold previews a split and requires an explicit apply', async () =
   assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
 });
 
+test('volume-to-hold previews a floor and requires an explicit apply', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-action="solve-volume-hold" data-participant-id="liquidity-partner"/);
+  app.click('solve-volume-hold', { participantId: 'liquidity-partner' });
+  assert.match(app.markup(), /Volume-to-hold preview/);
+  assert.match(app.markup(), /Apply hold volume/);
+  const originalVolume = 100000;
+  const originalFee = 0.2;
+  const originalShares = [0.4, 0.35, 0.25];
+  app.click('close-volume-hold');
+  assert.doesNotMatch(app.markup(), /Volume-to-hold preview/);
+  app.click('solve-volume-hold', { participantId: 'liquidity-partner' });
+  app.click('apply-volume-hold');
+  assert.ok(app.saved().deal.monthlyVolume < originalVolume);
+  assert.ok(Math.abs(app.saved().deal.monthlyVolume - 90000) < 1e-4);
+  assert.equal(app.saved().deal.feePerTransaction, originalFee);
+  assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
+  app.click('undo');
+  assert.equal(app.saved().deal.monthlyVolume, originalVolume);
+
+  const blocked = clonePreset('balanced');
+  blocked.participants[2].minimumAcceptableProfit = 1_000_000;
+  app.import(blocked);
+  app.click('solve-volume-hold', { participantId: 'liquidity-partner' });
+  assert.match(app.markup(), /No monthly volume/);
+  assert.doesNotMatch(app.markup(), /data-action="apply-volume-hold"/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('solve-volume-hold', { participantId: 'liquidity-partner' });
+  assert.match(app.notice(), /Resolve invalid inputs before solving a hold volume/);
+});
+
 test('participant ledger shows capacity utilization as a meter plus text, or unbounded', async () => {
   const app = await workbench();
   assert.match(app.markup(), /<th>Capacity use<\/th>/);
@@ -639,6 +781,18 @@ test('contribution waterfall includes an SVG and a text fallback for each partic
   const waterfallAt = app.markup().indexOf('Contribution waterfall');
   const stressAt = app.markup().indexOf('Compound stress and negotiation');
   assert.equal(tornadoAt > 0 && waterfallAt > tornadoAt && stressAt > waterfallAt, true);
+});
+
+test('two-party 50/50 studio preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="twoPartyStudio"/);
+  assert.match(app.markup(), /Two-party 50\/50 studio/);
+  app.click('preset', { preset: 'twoPartyStudio' });
+  assert.equal(app.saved().participants.length, 2);
+  assert.equal(app.saved().participants[0].revenueShare, 0.5);
+  assert.equal(app.saved().participants[1].revenueShare, 0.5);
+  assert.equal(app.saved().deal.feePerTransaction, 18);
+  assert.match(app.notice(), /Two-party 50\/50 studio loaded/);
 });
 
 test('visible tour and shortcut buttons reopen coach and help', async () => {
@@ -697,6 +851,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   app.keydown('?');
   assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
   assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
+  assert.match(app.markup(), /<kbd>g<\/kbd> Jump to the results nav/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -710,6 +865,21 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   app.edit('deal.monthlyVolume', '70000');
   app.keydown('u', { tagName: 'INPUT' });
   assert.equal(app.saved().deal.monthlyVolume, 70000);
+});
+
+test('keyboard g jumps to the results nav unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.keydown('g');
+  assert.ok(app.focused().includes('#results-jump'));
+  assert.ok(app.focused().includes('scroll:#results-jump'));
+  const before = app.focused().length;
+  app.keydown('g', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('g');
+  assert.ok(app.focused().includes('#results-start'));
+  assert.doesNotMatch(app.markup(), /id="results-jump"/);
 });
 
 test('redacted export replaces names, clears the title, and keeps identifiers', async () => {
@@ -728,20 +898,33 @@ test('redacted export replaces names, clears the title, and keeps identifiers', 
   assert.equal(app.downloads().length, 1);
 });
 
-test('negotiation brief downloads Markdown focused on weakest participant and first breakpoint', async () => {
-  const app = await workbench();
-  app.click('copy-brief');
-  const file = app.downloads()[0];
-  assert.equal(file.filename, 'partnership-breakpoint-brief.md');
-  const text = await file.blob.text();
-  assert.match(text, /negotiation brief/);
-  assert.match(text, /Weakest participant/);
-  assert.match(text, /First breakpoint/);
-  assert.match(text, /Counts are not probabilities/);
-  assert.match(app.notice(), /downloaded instead/);
-  app.edit('deal.monthlyVolume', '');
-  app.click('copy-brief');
-  assert.equal(app.downloads().length, 1);
+test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
+  const fallback = await workbench();
+  fallback.click('copy-brief');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="brief-copy-text"/);
+  assert.match(fallback.markup(), /Markdown negotiation brief/);
+  assert.match(fallback.markup(), /Weakest participant/);
+  assert.match(fallback.markup(), /First breakpoint/);
+  assert.match(fallback.markup(), /Counts are not probabilities/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-brief-copy');
+  assert.doesNotMatch(fallback.markup(), /id="brief-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-brief');
+  assert.doesNotMatch(fallback.markup(), /id="brief-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-brief');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /negotiation brief/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.doesNotMatch(withClipboard.markup(), /id="brief-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-brief');
+  assert.match(denied.markup(), /id="brief-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('fee-to-hold previews the floor and requires an explicit apply', async () => {
@@ -775,7 +958,8 @@ test('export filenames include a sanitized deal title and fall back without one'
   app.click('export-csv');
   assert.equal(app.downloads()[4].filename, 'partnership-breakpoint-harbor-jv-stress.csv');
   app.click('copy-brief');
-  assert.equal(app.downloads()[5].filename, 'partnership-breakpoint-harbor-jv-brief.md');
+  assert.equal(app.downloads().length, 5);
+  assert.match(app.markup(), /id="brief-copy-text"/);
 });
 
 test('participant CSV replaces the roster only after validation and leaves the deal unchanged', async () => {
@@ -817,6 +1001,27 @@ test('stress grid hide-in-table is display-only and does not change case counts'
   app.click('unmute-stress-row', { participantId: 'platform' });
   assert.doesNotMatch(app.markup(), /Hidden from this table only/);
   assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
+});
+
+test('collapsing all-hold stress cases is display-only and expand restores the rows', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  assert.match(app.markup(), /Inspect all 27 compound cases/);
+  app.click('collapse-all-hold-cases');
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /1 all-hold case is hidden from this table/);
+  assert.match(app.markup(), /Counts are unchanged/);
+  assert.match(app.markup(), /26 of 27 rows are visible/);
+  assert.doesNotMatch(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-2"/);
+  assert.match(app.markup(), /Inspect all 27 compound cases/);
+  const collapseNote = app.markup().match(/[0-9]+ all-hold case is hidden from this table[^.]*\./)[0];
+  assert.doesNotMatch(collapseNote, /probab/i);
+  app.click('expand-all-hold-cases');
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  assert.match(app.markup(), /27 of 27 rows are visible/);
 });
 
 test('copy share URL is http-only and names clipboard failure without a network request', async () => {
