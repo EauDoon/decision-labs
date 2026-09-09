@@ -115,3 +115,15 @@ test("analysis export is deterministic and carries complete evidence", () => {
   assert.equal(report.timeline.at(-1).candidateQueuedAud, report.candidateSummary.finalQueuedAud);
   assert.equal(scenarioFromJSON(output).scenario, null);
 });
+
+test("reserve search matches simulation under every demand timing", () => {
+  for (const demandProfile of ["flat", "fridayBurst", "mondayRush"]) {
+    const scenario = { ...DEFAULT, demandProfile };
+    const plan = planReserve(scenario, 50, 72);
+    assert.equal(plan.status, "reachable");
+    const result = runSimulation({ ...scenario, reserveCashAud: plan.minimumReserveAud });
+    assert.ok(result.summary.totalSettledAud + 1e-7 >= plan.targetAud);
+    assert.equal(plan.currentSettledAud, runSimulation(scenario).summary.totalSettledAud);
+  }
+});
+

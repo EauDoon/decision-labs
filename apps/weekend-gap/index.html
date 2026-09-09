@@ -53,6 +53,7 @@ SOFTWARE.
         <p class="notice"><strong>Educational simulator only.</strong> Every assumption is synthetic and editable. This is not financial advice, live market data or a statement about any issuer.</p>
       </section>
 
+      <nav class="section-links" aria-label="Simulator sections"><a href="#assumptions-title">Edit assumptions</a><a href="#comparison-title">Compare experiments</a><a href="#table-title">Inspect hourly data</a></nav>
       <section class="workspace" aria-label="Weekend liquidity scenario workspace">
         <aside class="controls card" aria-labelledby="assumptions-title">
           <div class="card-heading">
@@ -63,6 +64,8 @@ SOFTWARE.
             <button class="text-button" id="reset-button" type="button">Reset</button>
           </div>
 
+          <div class="scenario-actions"><button id="undo-scenario" type="button" disabled>Undo scenario edit</button><button id="redo-scenario" type="button" disabled>Redo scenario edit</button></div>
+          <p>Recover up to 39 scenario edits in this tab. Baseline, notes and saved copies are separate.</p>
           <fieldset class="preset-set" aria-label="Scenario presets">
             <legend>Preset</legend>
             <div class="preset-grid">
@@ -75,7 +78,7 @@ SOFTWARE.
           <form id="scenario-form" novalidate>
             <div class="input-group input-group--full">
               <label for="name">Scenario name</label>
-              <input id="name" name="name" data-field="name" maxlength="80" type="text" autocomplete="off">
+              <input id="name" name="name" aria-describedby="input-message" data-field="name" maxlength="80" type="text" autocomplete="off">
             </div>
 
             <fieldset>
@@ -155,8 +158,24 @@ SOFTWARE.
                 </div>
               </div>
             </fieldset>
+            <div class="input-group input-group--full">
+              <label for="demandProfile">Demand timing</label>
+              <select id="demandProfile" name="demandProfile" data-field="demandProfile">
+                <option value="flat">Even across 72 hours</option>
+                <option value="fridayBurst">Friday burst (8x weight before midnight)</option>
+                <option value="mondayRush">Monday rush (8x weight from midnight)</option>
+              </select>
+              <p>Total demand stays fixed. Timing changes when it joins the queue.</p>
+            </div>
           </form>
 
+          <section class="library-controls" aria-labelledby="library-title">
+            <h3 id="library-title">Saved scenarios</h3><p>Keep up to 12 named copies in this browser. Edit the scenario name before saving a copy.</p>
+            <label for="scenario-library">Local scenario library</label><select id="scenario-library"></select>
+            <div class="scenario-actions"><button id="save-library" type="button">Save a copy</button><button id="load-library" type="button" disabled>Load selected</button><button id="delete-library" type="button" disabled>Delete selected copy</button></div>
+            <p id="library-status" role="status">No saved copies yet. Browser data can be cleared; export important scenarios.</p>
+          </section>
+          <p id="storage-status" role="status"></p>
           <p id="input-message" class="input-message" role="status" aria-live="polite"></p>
           <div class="scenario-actions">
             <button type="button" id="export-button">Export JSON</button>
@@ -215,20 +234,28 @@ SOFTWARE.
               <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
               <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
               <div><dt>Peak queue</dt><dd id="peak-queue-value">A$0</dd></div>
-              <div><dt>Hours with backlog</dt><dd id="backlog-hours-value">0 of 73</dd></div>
+              <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
 
+          <article class="planning-card card" aria-labelledby="diagnostics-title">
+            <p class="eyebrow">Queue diagnostics</p><h2 id="diagnostics-title">What constrained this run?</h2>
+            <p id="diagnostic-summary"></p><ul id="bottleneck-list"></ul><p id="milestone-summary"></p>
+            <p>Blockers can overlap. Counts describe observed constraints while backlog remains, not how much a single change would improve settlement. Queue exposure sums end-of-hour backlog across 72 one-hour intervals.</p>
+          </article>
           <article class="planning-card card" aria-labelledby="comparison-title">
             <p class="eyebrow">Scenario comparison</p>
             <h2 id="comparison-title">Hold a baseline. Test a change.</h2>
-            <p>Baseline: <strong id="baseline-name"></strong>. It starts from the scenario loaded in this tab and stays in memory until you replace it or close the page.</p>
+            <p>Baseline: <strong id="baseline-name"></strong>. It starts from the loaded scenario and is saved with your local workspace.</p>
             <div class="planning-actions">
               <button id="pin-baseline" type="button">Pin current as baseline</button>
               <button id="restore-baseline" type="button">Restore baseline</button>
               <button id="analysis-export" type="button">Export analysis JSON</button>
             </div>
+            <label for="workspace-notes">Experiment notes</label><textarea id="workspace-notes" rows="3" maxlength="4000" placeholder="What assumption are you testing, and why?"></textarea>
+            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
+            <p id="workspace-status" role="status">Workspace autosave includes the current scenario, pinned baseline, reserve target, notes and selected hour. Share links contain only a scenario and take priority on reload.</p>
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
               <table>
@@ -239,6 +266,13 @@ SOFTWARE.
             </div>
           </article>
 
+          <article class="planning-card card" aria-labelledby="sensitivity-title">
+            <p class="eyebrow">Sensitivity experiment</p><h2 id="sensitivity-title">Change one assumption at a time</h2>
+            <label for="sensitivity-field">Assumption to vary</label>
+            <select id="sensitivity-field"><option value="reserveCashAud">Starting reserve</option><option value="redemptionDemandAud">Total demand</option><option value="issuerThroughputAudPerHour">Issuer hourly throughput</option><option value="fxDepthAudPerHour">FX hourly depth</option><option value="payoutThroughputAudPerHour">Payout hourly throughput</option></select>
+            <button id="run-sensitivity" type="button">Run five cases</button><p id="sensitivity-status" role="status">Test 50%, 75%, 100%, 125% and 150% of the current value. This is an experiment, not a recommended setting.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Sensitivity results"><table><caption>Values are capped by the scenario bounds. A zero starting value remains zero in every case.</caption><thead><tr><th scope="col">Factor</th><th scope="col">Effective assumption (AUD)</th><th scope="col">Settled</th><th scope="col">Final queue</th><th scope="col">Settlement change</th><th scope="col">Action</th></tr></thead><tbody id="sensitivity-rows"></tbody></table></div>
+          </article>
           <article class="planning-card card" aria-labelledby="reserve-title">
             <p class="eyebrow">Reserve sizing</p>
             <h2 id="reserve-title">Can reserve alone meet the target?</h2>
@@ -301,11 +335,12 @@ SOFTWARE.
                 <p class="eyebrow">Text equivalent</p>
                 <h2 id="table-title">Simulation data table</h2>
               </div>
-              <p>Six-hour snapshots plus selected hour</p>
+              <p>Checkpoint balances, preceding interval flows and next-hour capacity</p>
             </div>
-            <div class="table-scroll">
-              <table>
-                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th></tr></thead>
+            <div class="planning-actions"><label for="table-density">Show checkpoints</label><select id="table-density"><option value="snapshots">Every six hours</option><option value="all">Every hour</option><option value="backlog">Hours ending with backlog</option></select><button id="jump-peak" type="button">Jump to peak queue</button><button id="jump-monday" type="button">Jump to Monday 08:00</button><button id="export-timeline" type="button">Export hourly CSV</button></div>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly simulation data">
+              <table><caption>The selected hour is always included. Arrived and settled refer to the hour ending at this checkpoint; immediate capacity is available for the following hour. Displayed AUD is rounded.</caption>
+                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th><th scope="col">Arrived in prior hour</th><th scope="col">Settled in prior hour</th></tr></thead>
                 <tbody id="timeline-table"></tbody>
               </table>
             </div>

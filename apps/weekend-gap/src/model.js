@@ -13,6 +13,7 @@ const ANALYSIS_FORMAT = "weekend-gap-analysis";
 
 export const DEFAULT_SCENARIO = Object.freeze({
   name: "Normal Friday",
+  demandProfile: "flat",
   nominalLiquidityAud: 10000000,
   reserveCashAud: 6500000,
   issuerThroughputAudPerHour: 450000,
@@ -58,6 +59,7 @@ export const PRESETS = Object.freeze({
 
 const FIELD_RULES = Object.freeze({
   name: { type: "text", maxLength: 80 },
+  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush"] },
   nominalLiquidityAud: { min: 10000, max: 5000000000 },
   reserveCashAud: { min: 0, max: 5000000000 },
   issuerThroughputAudPerHour: { min: 0, max: 1000000000 },
@@ -101,6 +103,11 @@ export function sanitizeScenario(raw = {}) {
 
   for (const [field, rule] of Object.entries(FIELD_RULES)) {
     const fallback = DEFAULT_SCENARIO[field];
+    if (rule.type === "choice") {
+      scenario[field] = rule.values.includes(source[field]) ? source[field] : fallback;
+      if (source[field] !== undefined && scenario[field] !== source[field]) errors.push(`${field} was unsupported; the default was used.`);
+      continue;
+    }
     if (rule.type === "text") {
       const name = typeof source[field] === "string" ? source[field].trim() : "";
       scenario[field] = (name || fallback).slice(0, rule.maxLength);
@@ -108,6 +115,10 @@ export function sanitizeScenario(raw = {}) {
         errors.push(`${field} was normalised.`);
       }
       continue;
+    }
+    const validNumeric = finiteNumber(source[field], NaN);
+    if (source[field] !== undefined && !Number.isFinite(validNumeric)) {
+      errors.push(`${field} was not a finite number; the default was used.`);
     }
     const numeric = finiteNumber(source[field], fallback);
     const rounded = rule.integer ? Math.round(numeric) : numeric;
@@ -182,11 +193,15 @@ export function getOperationalStatus(scenarioInput, hourOffset) {
   };
 }
 
-/** A flat, transparent demand schedule that conserves exactly the requested total. */
-export function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS) {
+/** Weighted synthetic arrivals, bounded to 720 hours and conserving total demand. */
+export function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS, profile = "flat") {
   const total = Math.max(0, finiteNumber(totalDemandAud, 0));
-  const count = Math.max(1, Math.floor(hours));
-  return Array.from({ length: count }, () => total / count);
+  if (!Number.isInteger(hours) || hours < 1 || hours > 720) throw new RangeError("Demand schedule requires 1 to 720 whole hours.");
+  if (!["flat", "fridayBurst", "mondayRush"].includes(profile)) throw new RangeError("Unknown demand profile.");
+  const weights = Array.from({ length: hours }, (_, hour) =>
+    profile === "fridayBurst" && hour < 9 ? 8 : profile === "mondayRush" && hour >= 57 ? 8 : 1);
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  return weights.map(weight => total * (weight / weightTotal));
 }
 
 export function capacityForHour(scenarioInput, hourOffset, reserveRemainingAud) {
@@ -264,7 +279,7 @@ export function createSnapshot(scenario, hour, state, demandThisHour = 0, settle
  */
 export function runSimulation(input = {}) {
   const { scenario, errors } = sanitizeScenario(input);
-  const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud);
+  const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud, SIMULATION_HOURS, scenario.demandProfile);
   const state = { reserveRemainingAud: scenario.reserveCashAud, queuedAud: 0, settledAud: 0, demandArrivedAud: 0 };
   const timeline = [createSnapshot(scenario, 0, state)];
 
@@ -317,9 +332,9 @@ function settlementByDeadline(scenario, reserveAud, deadlineHour) {
   let reserve = reserveAud;
   let queued = 0;
   let settled = 0;
-  const demand = scenario.redemptionDemandAud / SIMULATION_HOURS;
+  const demand = buildDemandSchedule(scenario.redemptionDemandAud, SIMULATION_HOURS, scenario.demandProfile);
   for (let hour = 0; hour < deadlineHour; hour += 1) {
-    queued += demand;
+    queued += demand[hour];
     const amount = Math.min(queued, capacityForHour(scenario, hour, reserve).capacityAud);
     queued = Math.max(0, queued - amount);
     reserve = Math.max(0, reserve - amount);
@@ -430,4 +445,136 @@ export function scenarioFromJSON(text) {
   } catch {
     return { scenario: null, errors: ["Import failed. Choose a valid Weekend Gap scenario JSON file."] };
   }
+}
+
+/** End-of-interval exposure and simultaneous blockers, never causal attribution. */
+export function analyzeTimeline(input) {
+  const result = runSimulation(input);
+  const rows = [];
+  const counts = new Map();
+  let queueAudHours = 0;
+  let backlogIntervals = 0;
+  let longestBacklogRun = 0;
+  let currentRun = 0;
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const before = result.timeline[hour];
+    const after = result.timeline[hour + 1];
+    const capacity = capacityForHour(result.scenario, hour, before.reserveRemainingAud);
+    const blockers = [];
+    if (!capacity.status.issuerOpen) blockers.push("Issuer closed");
+    if (!capacity.status.bankOpen) blockers.push("Bank closed");
+    if (!capacity.status.payoutOpen) blockers.push("Payout closed");
+    if (before.reserveRemainingAud <= 0) blockers.push("Reserve exhausted");
+    if (capacity.capacityAud === 0 && blockers.length === 0) blockers.push("Zero throughput or FX depth");
+    if (after.queuedAud > 0 && blockers.length === 0) blockers.push(capacity.limitingGate);
+    const backlog = after.queuedAud > 0;
+    if (backlog) {
+      backlogIntervals += 1;
+      currentRun += 1;
+      for (const blocker of blockers) counts.set(blocker, (counts.get(blocker) || 0) + 1);
+    } else currentRun = 0;
+    longestBacklogRun = Math.max(longestBacklogRun, currentRun);
+    queueAudHours += after.queuedAud;
+    rows.push({ hour, endHour: hour + 1, demandAud: after.demandThisHour,
+      settledAud: after.settledThisHour, queuedAud: after.queuedAud, capacityAud: capacity.capacityAud, blockers });
+  }
+  return { rows, queueAudHours, backlogIntervals, longestBacklogRun,
+    blockers: [...counts].map(([label, intervals]) => ({ label, intervals })),
+    firstBacklogHour: result.timeline.find(point => point.queuedAud > 0)?.hour ?? null,
+    reserveExhaustionHour: result.scenario.reserveCashAud > 0 ? result.timeline.find(point => point.reserveRemainingAud === 0)?.hour ?? null : 0,
+    lastSettlementHour: [...result.timeline].reverse().find(point => point.settledThisHour > 0)?.hour ?? null,
+    peakQueueHour: result.summary.peakQueueHour };
+}
+
+/** A bounded one-factor experiment, with effective values after model caps. */
+export function runSensitivity(input, field) {
+  const fields = ["reserveCashAud", "redemptionDemandAud", "issuerThroughputAudPerHour", "fxDepthAudPerHour", "payoutThroughputAudPerHour"];
+  if (!fields.includes(field)) throw new RangeError("Choose a supported sensitivity assumption.");
+  const base = runSimulation(input);
+  return [0.5, 0.75, 1, 1.25, 1.5].map(multiplier => {
+    const requestedValue = base.scenario[field] * multiplier;
+    const candidate = runSimulation({ ...base.scenario, [field]: requestedValue });
+    return { multiplier, requestedValue, effectiveValue: candidate.scenario[field],
+      adjusted: requestedValue !== candidate.scenario[field], scenario: candidate.scenario,
+      summary: candidate.summary, settlementDeltaAud: candidate.summary.totalSettledAud - base.summary.totalSettledAud };
+  });
+}
+
+/** A small local library, decoded atomically before any UI state is replaced. */
+export function libraryFromJSON(text) {
+  try {
+    if (typeof text !== "string" || text.length > 250000) throw new Error("Library exceeds 250 KB.");
+    const parsed = JSON.parse(text);
+    if (parsed?.format !== "weekend-gap-library" || parsed.version !== 1 || !Array.isArray(parsed.scenarios) || parsed.scenarios.length > 12) throw new Error("Unsupported library format or more than 12 scenarios.");
+    const errors = [];
+    const scenarios = parsed.scenarios.map(raw => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Every library entry must be a scenario object.");
+      const result = sanitizeScenario(raw); errors.push(...result.errors); return result.scenario;
+    });
+    return { scenarios, errors };
+  } catch (error) { return { scenarios: null, errors: [error.message || "Library could not be read."] }; }
+}
+
+/** Portable editing state; computed results are always regenerated on restore. */
+export function workspaceToJSON(current, baseline, options = {}) {
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "" } = options;
+  if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
+  if (typeof notes !== "string" || notes.length > 4000) throw new RangeError("Workspace notes must be 4000 characters or fewer.");
+  return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes }, null, 2);
+}
+export function workspaceFromJSON(text) {
+  try {
+    if (typeof text !== "string" || text.length > 250000) throw new Error("Workspace must be 250 KB or smaller.");
+    const raw = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+    if (raw?.format !== "weekend-gap-workspace" || raw.version !== 1) throw new Error("Unsupported workspace format.");
+    for (const field of ["current", "baseline"]) if (!raw[field] || typeof raw[field] !== "object" || Array.isArray(raw[field])) throw new Error("Workspace requires current and baseline scenario objects.");
+    const current = sanitizeScenario(raw.current), baseline = sanitizeScenario(raw.baseline);
+    const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, raw));
+    return { workspace, errors: [...current.errors, ...baseline.errors] };
+  } catch (error) { return { workspace: null, errors: [error.message || "Workspace could not be read."] }; }
+}
+
+/** In-memory, bounded scenario recovery. Returned values cannot mutate history. */
+export function createScenarioHistory(initial, limit = 40) {
+  if (!Number.isInteger(limit) || limit < 2 || limit > 100) throw new RangeError("History limit must be 2 to 100.");
+  let entries = [sanitizeScenario(initial).scenario], index = 0;
+  const copy = () => ({ ...entries[index] });
+  return {
+    record(next) {
+      const scenario = sanitizeScenario(next).scenario;
+      if (JSON.stringify(scenario) === JSON.stringify(entries[index])) return copy();
+      entries = entries.slice(0,index + 1); entries.push(scenario);
+      if (entries.length > limit) entries.shift();
+      index = entries.length - 1; return copy();
+    },
+    undo() { if (index > 0) index -= 1; return copy(); },
+    redo() { if (index < entries.length - 1) index += 1; return copy(); },
+    get canUndo() { return index > 0; }, get canRedo() { return index < entries.length - 1; },
+    get size() { return entries.length; }
+  };
+}
+
+/** All 73 checkpoints; demand/settlement columns describe the preceding interval. */
+export function timelineToCSV(current, baseline = current) {
+  const comparison = compareScenarios(baseline, current);
+  const headers = ["checkpoint_hour", "local_time", "interval_start_hour", "arrived_previous_interval_aud", "settled_previous_interval_aud", "cumulative_settled_aud", "queued_aud", "reserve_remaining_aud", "next_hour_capacity_aud", "baseline_queued_aud"];
+  const rows = comparison.candidate.timeline.map((point, index) => [point.hour, point.timeLabel, point.hour === 0 ? "" : point.hour - 1,
+    point.demandThisHour, point.settledThisHour, point.settledAud, point.queuedAud, point.reserveRemainingAud, point.immediateAud, comparison.baseline.timeline[index].queuedAud]);
+  return [headers, ...rows].map(row => row.join(",")).join("\r\n") + "\r\n";
+}
+
+/** Static, script-free report. Escape every user-controlled value before HTML output. */
+export function reportToHTML(current, baseline, options = {}) {
+  const workspace = JSON.parse(workspaceToJSON(current, baseline, options));
+  const comparison = compareScenarios(workspace.baseline, workspace.current);
+  const diagnostics = analyzeTimeline(workspace.current);
+  const plan = planReserve(workspace.current, workspace.targetPercent, workspace.deadlineHour);
+  const escape = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+  const money = value => value.toLocaleString("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 2 });
+  const summaryRows = [["Total demand", "totalDemandAud"], ["Settled by Monday 15:00", "totalSettledAud"], ["Final queue", "finalQueuedAud"], ["Peak queue", "peakQueuedAud"], ["Final reserve", "finalReserveAud"]]
+    .map(([label, field]) => "<tr><th scope=row>" + escape(label) + "</th><td>" + escape(money(comparison.baseline.summary[field])) + "</td><td>" + escape(money(comparison.candidate.summary[field])) + "</td></tr>").join("");
+  const assumptionRows = Object.keys(DEFAULT_SCENARIO).map(field => "<tr><th scope=row>" + escape(field) + "</th><td>" + escape(workspace.baseline[field]) + "</td><td>" + escape(workspace.current[field]) + "</td></tr>").join("");
+  const planText = plan.status === "reachable" ? "Minimum whole-cent starting reserve: " + money(plan.minimumReserveAud) : "Unreachable by reserve alone. Maximum modeled settlement: " + money(plan.maximumSettledAud);
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Weekend Gap experiment report</title><style>body{font:16px/1.5 system-ui,sans-serif;color:#172b35;background:white;max-width:1000px;margin:2rem auto;padding:1rem}h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #9aa9b0;padding:.55rem;text-align:left;overflow-wrap:anywhere}th{background:#eff3f5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.notice{border-left:4px solid #54727f;padding:1rem;background:#f2f5f6}@media print{body{margin:0;padding:0;font-size:10pt}h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}}</style></head><body><main><h1>Weekend Gap experiment report</h1><p class="notice">Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations. 72-hour horizon: Friday 15:00 to Monday 15:00, using abstract local time.</p><p>Current: <strong>' + escape(workspace.current.name) + '</strong>. Baseline: <strong>' + escape(workspace.baseline.name) + '</strong>.</p><h2>Experiment notes</h2><pre>' + escape(workspace.notes || "No experiment notes provided.") + '</pre><h2>Outcome comparison</h2><p>AUD display values are rounded to cents. Compare total demand alongside settlement and queue size.</p><table><thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + summaryRows + '</tbody></table><h2>Queue diagnostics</h2><p>' + diagnostics.backlogIntervals + ' of 72 intervals end with backlog. Longest run: ' + diagnostics.longestBacklogRun + ' hours. End-of-hour queue exposure: ' + escape(money(diagnostics.queueAudHours)) + '·hours.</p><ul>' + diagnostics.blockers.map(item => '<li>' + escape(item.label) + ': ' + item.intervals + ' backlog intervals</li>').join("") + '</ul><p>Concurrent blockers overlap. Counts describe observations, not marginal causal impact.</p><h2>Reserve experiment</h2><p>Target: ' + workspace.targetPercent + '% of total 72-hour demand by ' + escape(formatTime(workspace.deadlineHour)) + '. ' + escape(planText) + '.</p><p>' + escape(plan.reason) + '</p><h2>Complete assumptions</h2><table><thead><tr><th scope="col">Assumption</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + assumptionRows + '</tbody></table><h2>Method and limits</h2><p>Demand joins once per hour under the selected deterministic arrival profile. Settlement requires all three business-day operating windows to overlap. Capacity is the minimum of issuer throughput, FX depth, payout throughput and remaining starting reserve. No reserve replenishment occurs. Queue exposure sums end-of-hour balances; it is not a customer waiting-time estimate. Real holidays, time zones, settlement uncertainty and counterparty risk are not modeled. No result is a liquidity recommendation.</p><p>Report format: weekend-gap-report v1. Export the separate workspace JSON for editable inputs and hourly CSV for the complete ledger. Use your browser Print command to save or print this report.</p></main></body></html>';
 }

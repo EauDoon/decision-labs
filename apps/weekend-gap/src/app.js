@@ -11,15 +11,27 @@ import {
   scenarioToJSON,
   compareScenarios,
   planReserve,
-  analysisToJSON
+  analysisToJSON,
+  analyzeTimeline,
+  runSensitivity,
+  libraryFromJSON,
+  workspaceToJSON,
+  workspaceFromJSON,
+  createScenarioHistory,
+  timelineToCSV,
+  reportToHTML
 } from "./model.js";
 
+let workspaceReady = false;
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72 };
+const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
 const form = document.querySelector("#scenario-form");
 const timelineRange = document.querySelector("#timeline-range");
 const canvas = document.querySelector("#liquidity-chart");
 const chartContext = canvas.getContext("2d");
+const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 const elements = {
   title: document.querySelector("#scenario-title"),
   play: document.querySelector("#play-button"),
@@ -48,6 +60,7 @@ const elements = {
 };
 
 let scenario = { ...DEFAULT_SCENARIO };
+let scenarioHistory = createScenarioHistory(scenario);
 let simulation = runSimulation(scenario);
 let baselineScenario = { ...scenario };
 let comparison = compareScenarios(baselineScenario, scenario);
@@ -71,7 +84,7 @@ function formatPercent(value, decimals = 1) {
 function writeForm() {
   for (const [field, value] of Object.entries(scenario)) {
     const input = form.elements.namedItem(field);
-    if (input) input.value = String(value);
+    if (input) { input.value = String(value); input.setAttribute("aria-invalid", "false"); }
   }
 }
 
@@ -87,8 +100,9 @@ function readForm() {
 function saveScenario() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scenario));
+    document.querySelector("#storage-status").textContent = "Current scenario saved locally.";
   } catch {
-    setMessage("Local autosave is unavailable in this browser.");
+    document.querySelector("#storage-status").textContent = "Local autosave is unavailable. Edits remain in this tab; export a scenario or workspace to keep them.";
   }
 }
 
@@ -120,9 +134,11 @@ function setMessage(message = "") {
   elements.inputMessage.textContent = message;
 }
 
-function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false } = {}) {
+function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true } = {}) {
   const cleaned = sanitizeScenario(nextScenario);
+  if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
+  renderHistory();
   simulation = runSimulation(scenario);
   comparison = compareScenarios(baselineScenario, scenario);
   selectedHour = Math.min(selectedHour, SIMULATION_HOURS);
@@ -133,9 +149,13 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   saveScenario();
   render();
   renderPlanning();
+  renderDiagnostics();
+  document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
   if (message) setMessage(message);
-  else if (cleaned.errors.length) setMessage(cleaned.errors[0]);
+  else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
+  if (workspaceReady) saveWorkspace();
 }
 
 function gateText(open) {
@@ -166,6 +186,7 @@ function render() {
   const point = simulation.timeline[selectedHour];
   elements.title.textContent = scenario.name;
   timelineRange.value = String(selectedHour);
+  timelineRange.setAttribute("aria-valuetext", point.timeLabel + ", hour " + selectedHour + " of 72");
   elements.timelineLabel.textContent = point.timeLabel;
   elements.immediate.textContent = formatAud(point.immediateAud);
   elements.immediateDetail.textContent = point.immediateAud > 0
@@ -181,7 +202,7 @@ function render() {
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
-  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS + 1}`;
+  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS}`;
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
     : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
@@ -210,15 +231,18 @@ function render() {
   elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
 
   for (const button of document.querySelectorAll("[data-preset]")) {
-    button.classList.toggle("is-selected", PRESETS[button.dataset.preset].name === scenario.name);
+    button.classList.toggle("is-selected", Object.keys(PRESETS[button.dataset.preset]).every(key => PRESETS[button.dataset.preset][key] === scenario[key]));
   }
   renderTable();
   drawChart();
 }
 
 function renderTable() {
-  const rowIndexes = new Set([0, SIMULATION_HOURS, selectedHour]);
-  for (let hour = 6; hour < SIMULATION_HOURS; hour += 6) rowIndexes.add(hour);
+  const mode = document.querySelector("#table-density").value;
+  const rowIndexes = new Set([selectedHour]);
+  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    if(mode === "all" || (mode === "backlog" && simulation.timeline[hour].queuedAud > 0) || (mode === "snapshots" && hour % 6 === 0)) rowIndexes.add(hour);
+  }
   const fragment = document.createDocumentFragment();
   [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
     const point = simulation.timeline[hour];
@@ -231,7 +255,9 @@ function renderTable() {
       formatPercent(point.liquidityRatio),
       formatPercent(point.discountBps / 10000, 2),
       point.immediateAud > 0 ? "Open" : `Blocked: ${point.limitingGate}`,
-      formatAud(comparison.baseline.timeline[hour].queuedAud)
+      formatAud(comparison.baseline.timeline[hour].queuedAud),
+      formatAud(point.demandThisHour, false),
+      formatAud(point.settledThisHour, false)
     ];
     cells.forEach((value, index) => {
       const cell = document.createElement("td");
@@ -259,6 +285,7 @@ function drawLine(context, points, getValue, color, dimensions, maximum) {
 }
 
 function drawChart() {
+  if (!chartContext) return;
   const bounds = canvas.getBoundingClientRect();
   const pixelRatio = window.devicePixelRatio || 1;
   const width = Math.max(1, Math.floor(bounds.width));
@@ -309,12 +336,17 @@ function drawChart() {
 }
 
 function setPlaying(nextPlaying) {
+  if (nextPlaying && reducedMotion?.matches) {
+    selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
+    render(); saveWorkspace(); return;
+  }
+  const wasPlaying = playing;
   playing = nextPlaying;
-  elements.play.textContent = playing ? "Pause" : "Play";
+  elements.play.textContent = reducedMotion?.matches ? "Step hour" : playing ? "Pause" : "Play";
   elements.play.setAttribute("aria-pressed", String(playing));
   if (playTimer) window.clearInterval(playTimer);
   playTimer = null;
-  if (!playing) return;
+  if (!playing) { if (wasPlaying) saveWorkspace(); return; }
   playTimer = window.setInterval(() => {
     selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
     render();
@@ -388,12 +420,13 @@ document.querySelector("#pin-baseline").addEventListener("click", () => {
   baselineScenario = { ...scenario };
   comparison = compareScenarios(baselineScenario, scenario);
   renderPlanning(); render();
+  saveWorkspace();
 });
 document.querySelector("#restore-baseline").addEventListener("click", () => {
   setScenario(baselineScenario, { message: "Baseline restored to the scenario editor." });
 });
 for (const id of ["reserve-target", "reserve-deadline"]) {
-  document.getElementById(id).addEventListener("input", renderPlanning);
+  document.getElementById(id).addEventListener("input", () => { renderPlanning(); saveWorkspace(); });
 }
 document.querySelector("#apply-reserve").addEventListener("click", () => {
   if (reservePlan?.status !== "reachable") return;
@@ -435,25 +468,35 @@ async function importScenario(file) {
       return;
     }
     userEdited = true;
-    setScenario(imported.scenario, { message: "Scenario imported and autosaved." });
+    setScenario(imported.scenario, { message: imported.errors.length ? `Scenario imported with adjustments: ${imported.errors.join(" ")}` : "Scenario imported." });
   } catch {
     setMessage("Import failed. Choose a readable JSON file.");
   }
 }
 
-form.addEventListener("input", () => {
+function applyFormEdit(normaliseForm) {
+  const raw = readForm();
+  let invalid = false;
+  for (const field of Object.keys(DEFAULT_SCENARIO)) {
+    const input = form.elements.namedItem(field);
+    if (!input || typeof DEFAULT_SCENARIO[field] !== "number") continue;
+    const valid = typeof raw[field] === "string" && raw[field].trim() !== "" && Number.isFinite(Number(raw[field]));
+    input.setAttribute("aria-invalid", String(!valid));
+    if (!valid) invalid = true;
+  }
+  if (invalid) { setMessage("Complete the highlighted numeric assumptions with finite numbers. The previous simulation is kept."); return; }
   userEdited = true;
-  setScenario(readForm(), { normaliseForm: false });
-});
-
-form.addEventListener("change", () => {
-  setScenario(readForm(), { normaliseForm: true });
-});
+  setScenario(raw, { normaliseForm });
+}
+form.addEventListener("input", () => applyFormEdit(false));
+form.addEventListener("change", () => applyFormEdit(true));
+form.addEventListener("submit", event => event.preventDefault());
 
 timelineRange.addEventListener("input", () => {
   selectedHour = Number(timelineRange.value);
   setPlaying(false);
   render();
+  saveWorkspace();
 });
 
 elements.play.addEventListener("click", () => setPlaying(!playing));
@@ -484,7 +527,7 @@ if (standaloneMode) {
 } else {
   shareButton.addEventListener("click", copyShareLink);
 }
-document.querySelector("#import-file").addEventListener("change", (event) => importScenario(event.target.files?.[0]));
+document.querySelector("#import-file").addEventListener("change", (event) => { const file = event.target.files?.[0]; event.target.value = ""; return importScenario(file); });
 
 if (!standaloneMode) {
   window.addEventListener("hashchange", () => {
@@ -509,3 +552,179 @@ writeForm();
 render();
 renderPlanning();
 if (!userEdited && !window.location.hash) saveScenario();
+
+function renderDiagnostics() {
+  const d = analyzeTimeline(scenario);
+  document.querySelector("#diagnostic-summary").textContent = d.backlogIntervals + " of 72 intervals end with backlog. Longest uninterrupted run: " + d.longestBacklogRun + " hours. Queue exposure: " + formatAud(d.queueAudHours, false) + "·hours.";
+  const list = document.querySelector("#bottleneck-list");
+  list.replaceChildren(...d.blockers.map(item => {
+    const li = document.createElement("li"); li.textContent = item.label + ": " + item.intervals + " backlog intervals"; return li;
+  }));
+  if (!d.blockers.length) list.textContent = "No end-of-hour backlog in this run.";
+  document.querySelector("#milestone-summary").textContent = [
+    ["First backlog",d.firstBacklogHour], ["Reserve exhausted",d.reserveExhaustionHour], ["Last settlement checkpoint",d.lastSettlementHour]
+  ].map(([label,hour])=>label + ": " + (hour === null ? "not observed" : formatTime(hour))).join(". ");
+}
+renderDiagnostics();
+
+document.querySelector("#run-sensitivity").addEventListener("click", () => {
+  const field = document.querySelector("#sensitivity-field").value;
+  const rows = runSensitivity(scenario, field);
+  document.querySelector("#sensitivity-rows").replaceChildren(...rows.map(result => {
+    const row = document.createElement("tr");
+    for (const value of [result.multiplier * 100 + "%", planningAud(result.effectiveValue) + (result.adjusted ? " (capped)" : ""),
+      planningAud(result.summary.totalSettledAud), planningAud(result.summary.finalQueuedAud), signedAud(result.settlementDeltaAud)]) {
+      const cell=document.createElement("td");cell.textContent=value;row.append(cell);
+    }
+    const cell=document.createElement("td"), button=document.createElement("button");
+    button.type="button";button.textContent="Apply " + result.multiplier * 100 + "%";
+    button.addEventListener("click",()=>setScenario(result.scenario,{message:"Sensitivity case applied. The pinned baseline was kept."}));
+    cell.append(button);row.append(cell);return row;
+  }));
+  document.querySelector("#sensitivity-status").textContent = "Five cases around the current scenario. All other assumptions held fixed. Changes are relative to the current scenario, not the pinned baseline.";
+});
+document.querySelector("#sensitivity-field").addEventListener("change",()=>{
+  document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-status").textContent="Run the experiment for the selected assumption.";
+});
+
+const LIBRARY_KEY = "weekend-gap:library:v1";
+let scenarioLibrary = [];
+function persistLibrary() {
+  try {
+    localStorage.setItem(LIBRARY_KEY, JSON.stringify({ format: "weekend-gap-library", version: 1, scenarios: scenarioLibrary }));
+    document.querySelector("#library-status").textContent = "Saved on this browser. " + scenarioLibrary.length + " of 12 slots used.";
+  } catch { document.querySelector("#library-status").textContent = "Library changes are in memory only. Browser storage is unavailable; export important scenarios."; }
+}
+function renderLibrary() {
+  const select = document.querySelector("#scenario-library");
+  select.replaceChildren(...scenarioLibrary.map((item,index)=>{
+    const option=document.createElement("option");option.value=String(index);option.textContent=(index+1)+". "+item.name;return option;
+  }));
+  document.querySelector("#load-library").disabled = scenarioLibrary.length === 0;
+  document.querySelector("#delete-library").disabled = scenarioLibrary.length === 0;
+  document.querySelector("#save-library").disabled = scenarioLibrary.length >= 12;
+}
+document.querySelector("#save-library").addEventListener("click",()=>{
+  if(scenarioLibrary.length>=12) return;
+  scenarioLibrary.push({...scenario});persistLibrary();renderLibrary();
+  document.querySelector("#scenario-library").value=String(scenarioLibrary.length-1);
+});
+document.querySelector("#load-library").addEventListener("click",()=>{
+  const saved=scenarioLibrary[Number(document.querySelector("#scenario-library").value)];
+  if(saved) setScenario(saved,{message:"Saved scenario loaded. The pinned baseline was kept."});
+});
+document.querySelector("#delete-library").addEventListener("click",()=>{
+  const index=Number(document.querySelector("#scenario-library").value);
+  if(!Number.isInteger(index)||index<0||index>=scenarioLibrary.length) return;
+  scenarioLibrary.splice(index,1);persistLibrary();renderLibrary();
+});
+try {
+  const raw=localStorage.getItem(LIBRARY_KEY);
+  if(raw) {
+    const restored=libraryFromJSON(raw);
+    if(restored.scenarios) scenarioLibrary=restored.scenarios;
+    document.querySelector("#library-status").textContent=restored.errors.length ? "Saved library: "+restored.errors.join(" ") : "Restored "+scenarioLibrary.length+" saved scenarios.";
+  }
+} catch { document.querySelector("#library-status").textContent="Saved library could not be read. Existing browser data was kept."; }
+renderLibrary();
+
+function currentWorkspace() {
+  return workspaceToJSON(scenario,baselineScenario,{ targetPercent:document.querySelector("#reserve-target").valueAsNumber,
+    deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value });
+}
+function saveWorkspace() {
+  if(!workspaceReady) return;
+  try {
+    let serialized;
+    let controlsValid = true;
+    try {
+      serialized = currentWorkspace();
+      const saved = JSON.parse(serialized);
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour };
+    } catch {
+      controlsValid = false;
+      serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
+    }
+    localStorage.setItem(WORKSPACE_KEY, serialized);
+    document.querySelector("#workspace-status").textContent = controlsValid
+      ? "Workspace autosaved locally, including the baseline, notes and reserve target."
+      : "Scenario edits saved. Incomplete planner fields were excluded; the last valid target and deadline were kept for recovery.";
+  } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
+}
+function applyWorkspace(saved) {
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour };
+  baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour;setPlaying(false);
+  document.querySelector("#reserve-target").value=String(saved.targetPercent);
+  document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
+  document.querySelector("#workspace-notes").value=saved.notes;
+  setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
+}
+function downloadText(text,filename,type) {
+  const url=URL.createObjectURL(new Blob([text],{type})),link=document.createElement("a");
+  link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();
+  window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+document.querySelector("#workspace-notes").addEventListener("input",saveWorkspace);
+document.querySelector("#export-workspace").addEventListener("click",()=>{
+  try { downloadText(currentWorkspace(),"weekend-gap-workspace.json","application/json");document.querySelector("#workspace-status").textContent="Workspace exported. Includes baseline, current assumptions, notes, target and selected hour."; }
+  catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+document.querySelector("#import-workspace").addEventListener("click",()=>document.querySelector("#workspace-file").click());
+document.querySelector("#workspace-file").addEventListener("change",async(event)=>{
+  const file=event.target.files?.[0];event.target.value="";if(!file) return;
+  if(file.size>250000) { document.querySelector("#workspace-status").textContent="Import failed. Workspace must be 250 KB or smaller.";return; }
+  try {
+    const result=workspaceFromJSON(await file.text());
+    if(!result.workspace) { document.querySelector("#workspace-status").textContent="Import failed: "+result.errors.join(" ");return; }
+    applyWorkspace(result.workspace);
+    if(result.errors.length) document.querySelector("#workspace-status").textContent="Workspace imported with adjustments: "+result.errors.join(" ");
+  } catch { document.querySelector("#workspace-status").textContent="Import failed. Choose a readable workspace JSON file."; }
+});
+if(!window.location.hash) {
+  try {
+    const raw=localStorage.getItem(WORKSPACE_KEY);
+    if(raw) {
+      const result=workspaceFromJSON(raw);
+      if(result.workspace) applyWorkspace(result.workspace);
+      document.querySelector("#workspace-status").textContent=result.errors.length ? "Saved workspace: "+result.errors.join(" ") : "Restored the previous local workspace.";
+    }
+  } catch { document.querySelector("#workspace-status").textContent="Saved workspace could not be read. Current scenario was kept."; }
+}
+workspaceReady=true;
+
+function renderHistory() {
+  document.querySelector("#undo-scenario").disabled=!scenarioHistory.canUndo;
+  document.querySelector("#redo-scenario").disabled=!scenarioHistory.canRedo;
+}
+document.querySelector("#undo-scenario").addEventListener("click",()=>{
+  setPlaying(false);setScenario(scenarioHistory.undo(),{recordHistory:false,message:"Previous scenario edit restored. Baseline and notes were kept."});
+});
+document.querySelector("#redo-scenario").addEventListener("click",()=>{
+  setPlaying(false);setScenario(scenarioHistory.redo(),{recordHistory:false,message:"Scenario edit reapplied. Baseline and notes were kept."});
+});
+scenarioHistory=createScenarioHistory(scenario);renderHistory();
+
+document.querySelector("#table-density").addEventListener("change",renderTable);
+document.querySelector("#jump-peak").addEventListener("click",()=>{
+  selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#jump-monday").addEventListener("click",()=>{
+  selectedHour=65;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#export-timeline").addEventListener("click",()=>{
+  downloadText(timelineToCSV(scenario,baselineScenario),"weekend-gap-timeline.csv","text/csv;charset=utf-8");
+  setMessage("Exported all 73 checkpoints. Flow columns describe the preceding interval; capacity describes the next hour.");
+});
+
+document.querySelector("#export-report").addEventListener("click",()=>{
+  try {
+    const saved=JSON.parse(currentWorkspace());
+    downloadText(reportToHTML(saved.current,saved.baseline,saved),"weekend-gap-report.html","text/html;charset=utf-8");
+    document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
+  } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) setPlaying(false); });
+reducedMotion?.addEventListener?.("change",()=>setPlaying(false));
+setPlaying(false);

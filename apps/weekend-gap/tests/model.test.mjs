@@ -202,3 +202,24 @@ test("scenario import does not require the newer Object.hasOwn API", () => {
     Object.hasOwn = originalHasOwn;
   }
 });
+
+test("invalid numeric imports disclose default substitution while missing legacy fields stay quiet", () => {
+  for (const value of [null, false, [], {}, "", " ", "NaN", Infinity]) {
+    const result = sanitizeScenario({ fxDepthAudPerHour: value });
+    assert.equal(result.scenario.fxDepthAudPerHour, DEFAULT_SCENARIO.fxDepthAudPerHour);
+    assert.ok(result.errors.some(error => error.includes("fxDepthAudPerHour was not a finite number")));
+  }
+  assert.deepEqual(sanitizeScenario({}).errors, []);
+});
+
+test("demand profiles conserve volume and change arrival timing", () => {
+  for (const profile of ["flat", "fridayBurst", "mondayRush"]) {
+    const schedule = buildDemandSchedule(987654.32, 72, profile);
+    assert.ok(Math.abs(schedule.reduce((a,b)=>a+b,0)-987654.32)<1e-7);
+    assert.ok(schedule.every(value=>value>=0));
+  }
+  assert.equal(buildDemandSchedule(72,72,"fridayBurst")[0] / buildDemandSchedule(72,72,"fridayBurst")[10],8);
+  assert.equal(sanitizeScenario({}).scenario.demandProfile,"flat");
+  assert.equal(sanitizeScenario({demandProfile:"unknown"}).scenario.demandProfile,"flat");
+  for (const hours of [Infinity,NaN,0,-1,1.5,10000000]) assert.throws(()=>buildDemandSchedule(1,hours),RangeError);
+});

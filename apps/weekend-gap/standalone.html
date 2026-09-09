@@ -275,6 +275,20 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
   .scenario-actions { grid-template-columns: 1fr; }
 }
 
+select { width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #57717b; border-radius: .5rem; background: #12232d; color: #eef4f5; font: inherit; }
+
+textarea { width: 100%; padding: .7rem; resize: vertical; color: #eef4f5; background: #12232d; border: 1px solid #57717b; border-radius: .5rem; font: inherit; }
+
+input[aria-invalid="true"] { border: 2px solid #ffbc88; outline-offset: 3px; }
+textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outline: 3px solid #64d59b; outline-offset: 3px; }
+.library-controls { margin-block: 1.5rem; border-block-start: 1px solid #57717b; padding-block-start: 1rem; }
+.planning-actions select { max-width: 22rem; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+@media (max-width: 600px) { .planning-actions { align-items: stretch; } .planning-actions button, .planning-actions select { width: 100%; max-width: 100%; } }
+
+.section-links { display: flex; flex-wrap: wrap; gap: .7rem 1.3rem; margin-block: 1rem; }
+.section-links a { min-height: 44px; display: inline-flex; align-items: center; }
+
 </style>
   </head>
   <body>
@@ -300,6 +314,7 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
         <p class="notice"><strong>Educational simulator only.</strong> Every assumption is synthetic and editable. This is not financial advice, live market data or a statement about any issuer.</p>
       </section>
 
+      <nav class="section-links" aria-label="Simulator sections"><a href="#assumptions-title">Edit assumptions</a><a href="#comparison-title">Compare experiments</a><a href="#table-title">Inspect hourly data</a></nav>
       <section class="workspace" aria-label="Weekend liquidity scenario workspace">
         <aside class="controls card" aria-labelledby="assumptions-title">
           <div class="card-heading">
@@ -310,6 +325,8 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
             <button class="text-button" id="reset-button" type="button">Reset</button>
           </div>
 
+          <div class="scenario-actions"><button id="undo-scenario" type="button" disabled>Undo scenario edit</button><button id="redo-scenario" type="button" disabled>Redo scenario edit</button></div>
+          <p>Recover up to 39 scenario edits in this tab. Baseline, notes and saved copies are separate.</p>
           <fieldset class="preset-set" aria-label="Scenario presets">
             <legend>Preset</legend>
             <div class="preset-grid">
@@ -322,7 +339,7 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
           <form id="scenario-form" novalidate>
             <div class="input-group input-group--full">
               <label for="name">Scenario name</label>
-              <input id="name" name="name" data-field="name" maxlength="80" type="text" autocomplete="off">
+              <input id="name" name="name" aria-describedby="input-message" data-field="name" maxlength="80" type="text" autocomplete="off">
             </div>
 
             <fieldset>
@@ -402,8 +419,24 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
                 </div>
               </div>
             </fieldset>
+            <div class="input-group input-group--full">
+              <label for="demandProfile">Demand timing</label>
+              <select id="demandProfile" name="demandProfile" data-field="demandProfile">
+                <option value="flat">Even across 72 hours</option>
+                <option value="fridayBurst">Friday burst (8x weight before midnight)</option>
+                <option value="mondayRush">Monday rush (8x weight from midnight)</option>
+              </select>
+              <p>Total demand stays fixed. Timing changes when it joins the queue.</p>
+            </div>
           </form>
 
+          <section class="library-controls" aria-labelledby="library-title">
+            <h3 id="library-title">Saved scenarios</h3><p>Keep up to 12 named copies in this browser. Edit the scenario name before saving a copy.</p>
+            <label for="scenario-library">Local scenario library</label><select id="scenario-library"></select>
+            <div class="scenario-actions"><button id="save-library" type="button">Save a copy</button><button id="load-library" type="button" disabled>Load selected</button><button id="delete-library" type="button" disabled>Delete selected copy</button></div>
+            <p id="library-status" role="status">No saved copies yet. Browser data can be cleared; export important scenarios.</p>
+          </section>
+          <p id="storage-status" role="status"></p>
           <p id="input-message" class="input-message" role="status" aria-live="polite"></p>
           <div class="scenario-actions">
             <button type="button" id="export-button">Export JSON</button>
@@ -462,20 +495,28 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
               <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
               <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
               <div><dt>Peak queue</dt><dd id="peak-queue-value">A$0</dd></div>
-              <div><dt>Hours with backlog</dt><dd id="backlog-hours-value">0 of 73</dd></div>
+              <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
 
+          <article class="planning-card card" aria-labelledby="diagnostics-title">
+            <p class="eyebrow">Queue diagnostics</p><h2 id="diagnostics-title">What constrained this run?</h2>
+            <p id="diagnostic-summary"></p><ul id="bottleneck-list"></ul><p id="milestone-summary"></p>
+            <p>Blockers can overlap. Counts describe observed constraints while backlog remains, not how much a single change would improve settlement. Queue exposure sums end-of-hour backlog across 72 one-hour intervals.</p>
+          </article>
           <article class="planning-card card" aria-labelledby="comparison-title">
             <p class="eyebrow">Scenario comparison</p>
             <h2 id="comparison-title">Hold a baseline. Test a change.</h2>
-            <p>Baseline: <strong id="baseline-name"></strong>. It starts from the scenario loaded in this tab and stays in memory until you replace it or close the page.</p>
+            <p>Baseline: <strong id="baseline-name"></strong>. It starts from the loaded scenario and is saved with your local workspace.</p>
             <div class="planning-actions">
               <button id="pin-baseline" type="button">Pin current as baseline</button>
               <button id="restore-baseline" type="button">Restore baseline</button>
               <button id="analysis-export" type="button">Export analysis JSON</button>
             </div>
+            <label for="workspace-notes">Experiment notes</label><textarea id="workspace-notes" rows="3" maxlength="4000" placeholder="What assumption are you testing, and why?"></textarea>
+            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
+            <p id="workspace-status" role="status">Workspace autosave includes the current scenario, pinned baseline, reserve target, notes and selected hour. Share links contain only a scenario and take priority on reload.</p>
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
               <table>
@@ -486,6 +527,13 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
             </div>
           </article>
 
+          <article class="planning-card card" aria-labelledby="sensitivity-title">
+            <p class="eyebrow">Sensitivity experiment</p><h2 id="sensitivity-title">Change one assumption at a time</h2>
+            <label for="sensitivity-field">Assumption to vary</label>
+            <select id="sensitivity-field"><option value="reserveCashAud">Starting reserve</option><option value="redemptionDemandAud">Total demand</option><option value="issuerThroughputAudPerHour">Issuer hourly throughput</option><option value="fxDepthAudPerHour">FX hourly depth</option><option value="payoutThroughputAudPerHour">Payout hourly throughput</option></select>
+            <button id="run-sensitivity" type="button">Run five cases</button><p id="sensitivity-status" role="status">Test 50%, 75%, 100%, 125% and 150% of the current value. This is an experiment, not a recommended setting.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Sensitivity results"><table><caption>Values are capped by the scenario bounds. A zero starting value remains zero in every case.</caption><thead><tr><th scope="col">Factor</th><th scope="col">Effective assumption (AUD)</th><th scope="col">Settled</th><th scope="col">Final queue</th><th scope="col">Settlement change</th><th scope="col">Action</th></tr></thead><tbody id="sensitivity-rows"></tbody></table></div>
+          </article>
           <article class="planning-card card" aria-labelledby="reserve-title">
             <p class="eyebrow">Reserve sizing</p>
             <h2 id="reserve-title">Can reserve alone meet the target?</h2>
@@ -548,11 +596,12 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
                 <p class="eyebrow">Text equivalent</p>
                 <h2 id="table-title">Simulation data table</h2>
               </div>
-              <p>Six-hour snapshots plus selected hour</p>
+              <p>Checkpoint balances, preceding interval flows and next-hour capacity</p>
             </div>
-            <div class="table-scroll">
-              <table>
-                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th></tr></thead>
+            <div class="planning-actions"><label for="table-density">Show checkpoints</label><select id="table-density"><option value="snapshots">Every six hours</option><option value="all">Every hour</option><option value="backlog">Hours ending with backlog</option></select><button id="jump-peak" type="button">Jump to peak queue</button><button id="jump-monday" type="button">Jump to Monday 08:00</button><button id="export-timeline" type="button">Export hourly CSV</button></div>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly simulation data">
+              <table><caption>The selected hour is always included. Arrived and settled refer to the hour ending at this checkpoint; immediate capacity is available for the following hour. Displayed AUD is rounded.</caption>
+                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th><th scope="col">Arrived in prior hour</th><th scope="col">Settled in prior hour</th></tr></thead>
                 <tbody id="timeline-table"></tbody>
               </table>
             </div>
@@ -592,6 +641,7 @@ const ANALYSIS_FORMAT = "weekend-gap-analysis";
 
 const DEFAULT_SCENARIO = Object.freeze({
   name: "Normal Friday",
+  demandProfile: "flat",
   nominalLiquidityAud: 10000000,
   reserveCashAud: 6500000,
   issuerThroughputAudPerHour: 450000,
@@ -637,6 +687,7 @@ const PRESETS = Object.freeze({
 
 const FIELD_RULES = Object.freeze({
   name: { type: "text", maxLength: 80 },
+  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush"] },
   nominalLiquidityAud: { min: 10000, max: 5000000000 },
   reserveCashAud: { min: 0, max: 5000000000 },
   issuerThroughputAudPerHour: { min: 0, max: 1000000000 },
@@ -680,6 +731,11 @@ function sanitizeScenario(raw = {}) {
 
   for (const [field, rule] of Object.entries(FIELD_RULES)) {
     const fallback = DEFAULT_SCENARIO[field];
+    if (rule.type === "choice") {
+      scenario[field] = rule.values.includes(source[field]) ? source[field] : fallback;
+      if (source[field] !== undefined && scenario[field] !== source[field]) errors.push(`${field} was unsupported; the default was used.`);
+      continue;
+    }
     if (rule.type === "text") {
       const name = typeof source[field] === "string" ? source[field].trim() : "";
       scenario[field] = (name || fallback).slice(0, rule.maxLength);
@@ -687,6 +743,10 @@ function sanitizeScenario(raw = {}) {
         errors.push(`${field} was normalised.`);
       }
       continue;
+    }
+    const validNumeric = finiteNumber(source[field], NaN);
+    if (source[field] !== undefined && !Number.isFinite(validNumeric)) {
+      errors.push(`${field} was not a finite number; the default was used.`);
     }
     const numeric = finiteNumber(source[field], fallback);
     const rounded = rule.integer ? Math.round(numeric) : numeric;
@@ -761,11 +821,15 @@ function getOperationalStatus(scenarioInput, hourOffset) {
   };
 }
 
-/** A flat, transparent demand schedule that conserves exactly the requested total. */
-function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS) {
+/** Weighted synthetic arrivals, bounded to 720 hours and conserving total demand. */
+function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS, profile = "flat") {
   const total = Math.max(0, finiteNumber(totalDemandAud, 0));
-  const count = Math.max(1, Math.floor(hours));
-  return Array.from({ length: count }, () => total / count);
+  if (!Number.isInteger(hours) || hours < 1 || hours > 720) throw new RangeError("Demand schedule requires 1 to 720 whole hours.");
+  if (!["flat", "fridayBurst", "mondayRush"].includes(profile)) throw new RangeError("Unknown demand profile.");
+  const weights = Array.from({ length: hours }, (_, hour) =>
+    profile === "fridayBurst" && hour < 9 ? 8 : profile === "mondayRush" && hour >= 57 ? 8 : 1);
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  return weights.map(weight => total * (weight / weightTotal));
 }
 
 function capacityForHour(scenarioInput, hourOffset, reserveRemainingAud) {
@@ -843,7 +907,7 @@ function createSnapshot(scenario, hour, state, demandThisHour = 0, settledThisHo
  */
 function runSimulation(input = {}) {
   const { scenario, errors } = sanitizeScenario(input);
-  const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud);
+  const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud, SIMULATION_HOURS, scenario.demandProfile);
   const state = { reserveRemainingAud: scenario.reserveCashAud, queuedAud: 0, settledAud: 0, demandArrivedAud: 0 };
   const timeline = [createSnapshot(scenario, 0, state)];
 
@@ -896,9 +960,9 @@ function settlementByDeadline(scenario, reserveAud, deadlineHour) {
   let reserve = reserveAud;
   let queued = 0;
   let settled = 0;
-  const demand = scenario.redemptionDemandAud / SIMULATION_HOURS;
+  const demand = buildDemandSchedule(scenario.redemptionDemandAud, SIMULATION_HOURS, scenario.demandProfile);
   for (let hour = 0; hour < deadlineHour; hour += 1) {
-    queued += demand;
+    queued += demand[hour];
     const amount = Math.min(queued, capacityForHour(scenario, hour, reserve).capacityAud);
     queued = Math.max(0, queued - amount);
     reserve = Math.max(0, reserve - amount);
@@ -1011,18 +1075,154 @@ function scenarioFromJSON(text) {
   }
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON };
+/** End-of-interval exposure and simultaneous blockers, never causal attribution. */
+function analyzeTimeline(input) {
+  const result = runSimulation(input);
+  const rows = [];
+  const counts = new Map();
+  let queueAudHours = 0;
+  let backlogIntervals = 0;
+  let longestBacklogRun = 0;
+  let currentRun = 0;
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const before = result.timeline[hour];
+    const after = result.timeline[hour + 1];
+    const capacity = capacityForHour(result.scenario, hour, before.reserveRemainingAud);
+    const blockers = [];
+    if (!capacity.status.issuerOpen) blockers.push("Issuer closed");
+    if (!capacity.status.bankOpen) blockers.push("Bank closed");
+    if (!capacity.status.payoutOpen) blockers.push("Payout closed");
+    if (before.reserveRemainingAud <= 0) blockers.push("Reserve exhausted");
+    if (capacity.capacityAud === 0 && blockers.length === 0) blockers.push("Zero throughput or FX depth");
+    if (after.queuedAud > 0 && blockers.length === 0) blockers.push(capacity.limitingGate);
+    const backlog = after.queuedAud > 0;
+    if (backlog) {
+      backlogIntervals += 1;
+      currentRun += 1;
+      for (const blocker of blockers) counts.set(blocker, (counts.get(blocker) || 0) + 1);
+    } else currentRun = 0;
+    longestBacklogRun = Math.max(longestBacklogRun, currentRun);
+    queueAudHours += after.queuedAud;
+    rows.push({ hour, endHour: hour + 1, demandAud: after.demandThisHour,
+      settledAud: after.settledThisHour, queuedAud: after.queuedAud, capacityAud: capacity.capacityAud, blockers });
+  }
+  return { rows, queueAudHours, backlogIntervals, longestBacklogRun,
+    blockers: [...counts].map(([label, intervals]) => ({ label, intervals })),
+    firstBacklogHour: result.timeline.find(point => point.queuedAud > 0)?.hour ?? null,
+    reserveExhaustionHour: result.scenario.reserveCashAud > 0 ? result.timeline.find(point => point.reserveRemainingAud === 0)?.hour ?? null : 0,
+    lastSettlementHour: [...result.timeline].reverse().find(point => point.settledThisHour > 0)?.hour ?? null,
+    peakQueueHour: result.summary.peakQueueHour };
+}
+
+/** A bounded one-factor experiment, with effective values after model caps. */
+function runSensitivity(input, field) {
+  const fields = ["reserveCashAud", "redemptionDemandAud", "issuerThroughputAudPerHour", "fxDepthAudPerHour", "payoutThroughputAudPerHour"];
+  if (!fields.includes(field)) throw new RangeError("Choose a supported sensitivity assumption.");
+  const base = runSimulation(input);
+  return [0.5, 0.75, 1, 1.25, 1.5].map(multiplier => {
+    const requestedValue = base.scenario[field] * multiplier;
+    const candidate = runSimulation({ ...base.scenario, [field]: requestedValue });
+    return { multiplier, requestedValue, effectiveValue: candidate.scenario[field],
+      adjusted: requestedValue !== candidate.scenario[field], scenario: candidate.scenario,
+      summary: candidate.summary, settlementDeltaAud: candidate.summary.totalSettledAud - base.summary.totalSettledAud };
+  });
+}
+
+/** A small local library, decoded atomically before any UI state is replaced. */
+function libraryFromJSON(text) {
+  try {
+    if (typeof text !== "string" || text.length > 250000) throw new Error("Library exceeds 250 KB.");
+    const parsed = JSON.parse(text);
+    if (parsed?.format !== "weekend-gap-library" || parsed.version !== 1 || !Array.isArray(parsed.scenarios) || parsed.scenarios.length > 12) throw new Error("Unsupported library format or more than 12 scenarios.");
+    const errors = [];
+    const scenarios = parsed.scenarios.map(raw => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Every library entry must be a scenario object.");
+      const result = sanitizeScenario(raw); errors.push(...result.errors); return result.scenario;
+    });
+    return { scenarios, errors };
+  } catch (error) { return { scenarios: null, errors: [error.message || "Library could not be read."] }; }
+}
+
+/** Portable editing state; computed results are always regenerated on restore. */
+function workspaceToJSON(current, baseline, options = {}) {
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "" } = options;
+  if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
+  if (typeof notes !== "string" || notes.length > 4000) throw new RangeError("Workspace notes must be 4000 characters or fewer.");
+  return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes }, null, 2);
+}
+function workspaceFromJSON(text) {
+  try {
+    if (typeof text !== "string" || text.length > 250000) throw new Error("Workspace must be 250 KB or smaller.");
+    const raw = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
+    if (raw?.format !== "weekend-gap-workspace" || raw.version !== 1) throw new Error("Unsupported workspace format.");
+    for (const field of ["current", "baseline"]) if (!raw[field] || typeof raw[field] !== "object" || Array.isArray(raw[field])) throw new Error("Workspace requires current and baseline scenario objects.");
+    const current = sanitizeScenario(raw.current), baseline = sanitizeScenario(raw.baseline);
+    const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, raw));
+    return { workspace, errors: [...current.errors, ...baseline.errors] };
+  } catch (error) { return { workspace: null, errors: [error.message || "Workspace could not be read."] }; }
+}
+
+/** In-memory, bounded scenario recovery. Returned values cannot mutate history. */
+function createScenarioHistory(initial, limit = 40) {
+  if (!Number.isInteger(limit) || limit < 2 || limit > 100) throw new RangeError("History limit must be 2 to 100.");
+  let entries = [sanitizeScenario(initial).scenario], index = 0;
+  const copy = () => ({ ...entries[index] });
+  return {
+    record(next) {
+      const scenario = sanitizeScenario(next).scenario;
+      if (JSON.stringify(scenario) === JSON.stringify(entries[index])) return copy();
+      entries = entries.slice(0,index + 1); entries.push(scenario);
+      if (entries.length > limit) entries.shift();
+      index = entries.length - 1; return copy();
+    },
+    undo() { if (index > 0) index -= 1; return copy(); },
+    redo() { if (index < entries.length - 1) index += 1; return copy(); },
+    get canUndo() { return index > 0; }, get canRedo() { return index < entries.length - 1; },
+    get size() { return entries.length; }
+  };
+}
+
+/** All 73 checkpoints; demand/settlement columns describe the preceding interval. */
+function timelineToCSV(current, baseline = current) {
+  const comparison = compareScenarios(baseline, current);
+  const headers = ["checkpoint_hour", "local_time", "interval_start_hour", "arrived_previous_interval_aud", "settled_previous_interval_aud", "cumulative_settled_aud", "queued_aud", "reserve_remaining_aud", "next_hour_capacity_aud", "baseline_queued_aud"];
+  const rows = comparison.candidate.timeline.map((point, index) => [point.hour, point.timeLabel, point.hour === 0 ? "" : point.hour - 1,
+    point.demandThisHour, point.settledThisHour, point.settledAud, point.queuedAud, point.reserveRemainingAud, point.immediateAud, comparison.baseline.timeline[index].queuedAud]);
+  return [headers, ...rows].map(row => row.join(",")).join("\r\n") + "\r\n";
+}
+
+/** Static, script-free report. Escape every user-controlled value before HTML output. */
+function reportToHTML(current, baseline, options = {}) {
+  const workspace = JSON.parse(workspaceToJSON(current, baseline, options));
+  const comparison = compareScenarios(workspace.baseline, workspace.current);
+  const diagnostics = analyzeTimeline(workspace.current);
+  const plan = planReserve(workspace.current, workspace.targetPercent, workspace.deadlineHour);
+  const escape = value => String(value).replace(/[&<>"']/g, char => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+  const money = value => value.toLocaleString("en-AU", { style: "currency", currency: "AUD", minimumFractionDigits: 2 });
+  const summaryRows = [["Total demand", "totalDemandAud"], ["Settled by Monday 15:00", "totalSettledAud"], ["Final queue", "finalQueuedAud"], ["Peak queue", "peakQueuedAud"], ["Final reserve", "finalReserveAud"]]
+    .map(([label, field]) => "<tr><th scope=row>" + escape(label) + "</th><td>" + escape(money(comparison.baseline.summary[field])) + "</td><td>" + escape(money(comparison.candidate.summary[field])) + "</td></tr>").join("");
+  const assumptionRows = Object.keys(DEFAULT_SCENARIO).map(field => "<tr><th scope=row>" + escape(field) + "</th><td>" + escape(workspace.baseline[field]) + "</td><td>" + escape(workspace.current[field]) + "</td></tr>").join("");
+  const planText = plan.status === "reachable" ? "Minimum whole-cent starting reserve: " + money(plan.minimumReserveAud) : "Unreachable by reserve alone. Maximum modeled settlement: " + money(plan.maximumSettledAud);
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Weekend Gap experiment report</title><style>body{font:16px/1.5 system-ui,sans-serif;color:#172b35;background:white;max-width:1000px;margin:2rem auto;padding:1rem}h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #9aa9b0;padding:.55rem;text-align:left;overflow-wrap:anywhere}th{background:#eff3f5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.notice{border-left:4px solid #54727f;padding:1rem;background:#f2f5f6}@media print{body{margin:0;padding:0;font-size:10pt}h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}}</style></head><body><main><h1>Weekend Gap experiment report</h1><p class="notice">Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations. 72-hour horizon: Friday 15:00 to Monday 15:00, using abstract local time.</p><p>Current: <strong>' + escape(workspace.current.name) + '</strong>. Baseline: <strong>' + escape(workspace.baseline.name) + '</strong>.</p><h2>Experiment notes</h2><pre>' + escape(workspace.notes || "No experiment notes provided.") + '</pre><h2>Outcome comparison</h2><p>AUD display values are rounded to cents. Compare total demand alongside settlement and queue size.</p><table><thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + summaryRows + '</tbody></table><h2>Queue diagnostics</h2><p>' + diagnostics.backlogIntervals + ' of 72 intervals end with backlog. Longest run: ' + diagnostics.longestBacklogRun + ' hours. End-of-hour queue exposure: ' + escape(money(diagnostics.queueAudHours)) + '·hours.</p><ul>' + diagnostics.blockers.map(item => '<li>' + escape(item.label) + ': ' + item.intervals + ' backlog intervals</li>').join("") + '</ul><p>Concurrent blockers overlap. Counts describe observations, not marginal causal impact.</p><h2>Reserve experiment</h2><p>Target: ' + workspace.targetPercent + '% of total 72-hour demand by ' + escape(formatTime(workspace.deadlineHour)) + '. ' + escape(planText) + '.</p><p>' + escape(plan.reason) + '</p><h2>Complete assumptions</h2><table><thead><tr><th scope="col">Assumption</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + assumptionRows + '</tbody></table><h2>Method and limits</h2><p>Demand joins once per hour under the selected deterministic arrival profile. Settlement requires all three business-day operating windows to overlap. Capacity is the minimum of issuer throughput, FX depth, payout throughput and remaining starting reserve. No reserve replenishment occurs. Queue exposure sums end-of-hour balances; it is not a customer waiting-time estimate. Real holidays, time zones, settlement uncertainty and counterparty risk are not modeled. No result is a liquidity recommendation.</p><p>Report format: weekend-gap-report v1. Export the separate workspace JSON for editable inputs and hourly CSV for the complete ledger. Use your browser Print command to save or print this report.</p></main></body></html>';
+}
+
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, reportToHTML };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, reportToHTML } = window.__WeekendGapModel;
 
+let workspaceReady = false;
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72 };
+const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
 const form = document.querySelector("#scenario-form");
 const timelineRange = document.querySelector("#timeline-range");
 const canvas = document.querySelector("#liquidity-chart");
 const chartContext = canvas.getContext("2d");
+const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 const elements = {
   title: document.querySelector("#scenario-title"),
   play: document.querySelector("#play-button"),
@@ -1051,6 +1251,7 @@ const elements = {
 };
 
 let scenario = { ...DEFAULT_SCENARIO };
+let scenarioHistory = createScenarioHistory(scenario);
 let simulation = runSimulation(scenario);
 let baselineScenario = { ...scenario };
 let comparison = compareScenarios(baselineScenario, scenario);
@@ -1074,7 +1275,7 @@ function formatPercent(value, decimals = 1) {
 function writeForm() {
   for (const [field, value] of Object.entries(scenario)) {
     const input = form.elements.namedItem(field);
-    if (input) input.value = String(value);
+    if (input) { input.value = String(value); input.setAttribute("aria-invalid", "false"); }
   }
 }
 
@@ -1090,8 +1291,9 @@ function readForm() {
 function saveScenario() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scenario));
+    document.querySelector("#storage-status").textContent = "Current scenario saved locally.";
   } catch {
-    setMessage("Local autosave is unavailable in this browser.");
+    document.querySelector("#storage-status").textContent = "Local autosave is unavailable. Edits remain in this tab; export a scenario or workspace to keep them.";
   }
 }
 
@@ -1123,9 +1325,11 @@ function setMessage(message = "") {
   elements.inputMessage.textContent = message;
 }
 
-function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false } = {}) {
+function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true } = {}) {
   const cleaned = sanitizeScenario(nextScenario);
+  if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
+  renderHistory();
   simulation = runSimulation(scenario);
   comparison = compareScenarios(baselineScenario, scenario);
   selectedHour = Math.min(selectedHour, SIMULATION_HOURS);
@@ -1136,9 +1340,13 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   saveScenario();
   render();
   renderPlanning();
+  renderDiagnostics();
+  document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
   if (message) setMessage(message);
-  else if (cleaned.errors.length) setMessage(cleaned.errors[0]);
+  else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
+  if (workspaceReady) saveWorkspace();
 }
 
 function gateText(open) {
@@ -1169,6 +1377,7 @@ function render() {
   const point = simulation.timeline[selectedHour];
   elements.title.textContent = scenario.name;
   timelineRange.value = String(selectedHour);
+  timelineRange.setAttribute("aria-valuetext", point.timeLabel + ", hour " + selectedHour + " of 72");
   elements.timelineLabel.textContent = point.timeLabel;
   elements.immediate.textContent = formatAud(point.immediateAud);
   elements.immediateDetail.textContent = point.immediateAud > 0
@@ -1184,7 +1393,7 @@ function render() {
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
-  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS + 1}`;
+  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS}`;
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
     : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
@@ -1213,15 +1422,18 @@ function render() {
   elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
 
   for (const button of document.querySelectorAll("[data-preset]")) {
-    button.classList.toggle("is-selected", PRESETS[button.dataset.preset].name === scenario.name);
+    button.classList.toggle("is-selected", Object.keys(PRESETS[button.dataset.preset]).every(key => PRESETS[button.dataset.preset][key] === scenario[key]));
   }
   renderTable();
   drawChart();
 }
 
 function renderTable() {
-  const rowIndexes = new Set([0, SIMULATION_HOURS, selectedHour]);
-  for (let hour = 6; hour < SIMULATION_HOURS; hour += 6) rowIndexes.add(hour);
+  const mode = document.querySelector("#table-density").value;
+  const rowIndexes = new Set([selectedHour]);
+  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    if(mode === "all" || (mode === "backlog" && simulation.timeline[hour].queuedAud > 0) || (mode === "snapshots" && hour % 6 === 0)) rowIndexes.add(hour);
+  }
   const fragment = document.createDocumentFragment();
   [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
     const point = simulation.timeline[hour];
@@ -1234,7 +1446,9 @@ function renderTable() {
       formatPercent(point.liquidityRatio),
       formatPercent(point.discountBps / 10000, 2),
       point.immediateAud > 0 ? "Open" : `Blocked: ${point.limitingGate}`,
-      formatAud(comparison.baseline.timeline[hour].queuedAud)
+      formatAud(comparison.baseline.timeline[hour].queuedAud),
+      formatAud(point.demandThisHour, false),
+      formatAud(point.settledThisHour, false)
     ];
     cells.forEach((value, index) => {
       const cell = document.createElement("td");
@@ -1262,6 +1476,7 @@ function drawLine(context, points, getValue, color, dimensions, maximum) {
 }
 
 function drawChart() {
+  if (!chartContext) return;
   const bounds = canvas.getBoundingClientRect();
   const pixelRatio = window.devicePixelRatio || 1;
   const width = Math.max(1, Math.floor(bounds.width));
@@ -1312,12 +1527,17 @@ function drawChart() {
 }
 
 function setPlaying(nextPlaying) {
+  if (nextPlaying && reducedMotion?.matches) {
+    selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
+    render(); saveWorkspace(); return;
+  }
+  const wasPlaying = playing;
   playing = nextPlaying;
-  elements.play.textContent = playing ? "Pause" : "Play";
+  elements.play.textContent = reducedMotion?.matches ? "Step hour" : playing ? "Pause" : "Play";
   elements.play.setAttribute("aria-pressed", String(playing));
   if (playTimer) window.clearInterval(playTimer);
   playTimer = null;
-  if (!playing) return;
+  if (!playing) { if (wasPlaying) saveWorkspace(); return; }
   playTimer = window.setInterval(() => {
     selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
     render();
@@ -1391,12 +1611,13 @@ document.querySelector("#pin-baseline").addEventListener("click", () => {
   baselineScenario = { ...scenario };
   comparison = compareScenarios(baselineScenario, scenario);
   renderPlanning(); render();
+  saveWorkspace();
 });
 document.querySelector("#restore-baseline").addEventListener("click", () => {
   setScenario(baselineScenario, { message: "Baseline restored to the scenario editor." });
 });
 for (const id of ["reserve-target", "reserve-deadline"]) {
-  document.getElementById(id).addEventListener("input", renderPlanning);
+  document.getElementById(id).addEventListener("input", () => { renderPlanning(); saveWorkspace(); });
 }
 document.querySelector("#apply-reserve").addEventListener("click", () => {
   if (reservePlan?.status !== "reachable") return;
@@ -1438,25 +1659,35 @@ async function importScenario(file) {
       return;
     }
     userEdited = true;
-    setScenario(imported.scenario, { message: "Scenario imported and autosaved." });
+    setScenario(imported.scenario, { message: imported.errors.length ? `Scenario imported with adjustments: ${imported.errors.join(" ")}` : "Scenario imported." });
   } catch {
     setMessage("Import failed. Choose a readable JSON file.");
   }
 }
 
-form.addEventListener("input", () => {
+function applyFormEdit(normaliseForm) {
+  const raw = readForm();
+  let invalid = false;
+  for (const field of Object.keys(DEFAULT_SCENARIO)) {
+    const input = form.elements.namedItem(field);
+    if (!input || typeof DEFAULT_SCENARIO[field] !== "number") continue;
+    const valid = typeof raw[field] === "string" && raw[field].trim() !== "" && Number.isFinite(Number(raw[field]));
+    input.setAttribute("aria-invalid", String(!valid));
+    if (!valid) invalid = true;
+  }
+  if (invalid) { setMessage("Complete the highlighted numeric assumptions with finite numbers. The previous simulation is kept."); return; }
   userEdited = true;
-  setScenario(readForm(), { normaliseForm: false });
-});
-
-form.addEventListener("change", () => {
-  setScenario(readForm(), { normaliseForm: true });
-});
+  setScenario(raw, { normaliseForm });
+}
+form.addEventListener("input", () => applyFormEdit(false));
+form.addEventListener("change", () => applyFormEdit(true));
+form.addEventListener("submit", event => event.preventDefault());
 
 timelineRange.addEventListener("input", () => {
   selectedHour = Number(timelineRange.value);
   setPlaying(false);
   render();
+  saveWorkspace();
 });
 
 elements.play.addEventListener("click", () => setPlaying(!playing));
@@ -1487,7 +1718,7 @@ if (standaloneMode) {
 } else {
   shareButton.addEventListener("click", copyShareLink);
 }
-document.querySelector("#import-file").addEventListener("change", (event) => importScenario(event.target.files?.[0]));
+document.querySelector("#import-file").addEventListener("change", (event) => { const file = event.target.files?.[0]; event.target.value = ""; return importScenario(file); });
 
 if (!standaloneMode) {
   window.addEventListener("hashchange", () => {
@@ -1512,6 +1743,182 @@ writeForm();
 render();
 renderPlanning();
 if (!userEdited && !window.location.hash) saveScenario();
+
+function renderDiagnostics() {
+  const d = analyzeTimeline(scenario);
+  document.querySelector("#diagnostic-summary").textContent = d.backlogIntervals + " of 72 intervals end with backlog. Longest uninterrupted run: " + d.longestBacklogRun + " hours. Queue exposure: " + formatAud(d.queueAudHours, false) + "·hours.";
+  const list = document.querySelector("#bottleneck-list");
+  list.replaceChildren(...d.blockers.map(item => {
+    const li = document.createElement("li"); li.textContent = item.label + ": " + item.intervals + " backlog intervals"; return li;
+  }));
+  if (!d.blockers.length) list.textContent = "No end-of-hour backlog in this run.";
+  document.querySelector("#milestone-summary").textContent = [
+    ["First backlog",d.firstBacklogHour], ["Reserve exhausted",d.reserveExhaustionHour], ["Last settlement checkpoint",d.lastSettlementHour]
+  ].map(([label,hour])=>label + ": " + (hour === null ? "not observed" : formatTime(hour))).join(". ");
+}
+renderDiagnostics();
+
+document.querySelector("#run-sensitivity").addEventListener("click", () => {
+  const field = document.querySelector("#sensitivity-field").value;
+  const rows = runSensitivity(scenario, field);
+  document.querySelector("#sensitivity-rows").replaceChildren(...rows.map(result => {
+    const row = document.createElement("tr");
+    for (const value of [result.multiplier * 100 + "%", planningAud(result.effectiveValue) + (result.adjusted ? " (capped)" : ""),
+      planningAud(result.summary.totalSettledAud), planningAud(result.summary.finalQueuedAud), signedAud(result.settlementDeltaAud)]) {
+      const cell=document.createElement("td");cell.textContent=value;row.append(cell);
+    }
+    const cell=document.createElement("td"), button=document.createElement("button");
+    button.type="button";button.textContent="Apply " + result.multiplier * 100 + "%";
+    button.addEventListener("click",()=>setScenario(result.scenario,{message:"Sensitivity case applied. The pinned baseline was kept."}));
+    cell.append(button);row.append(cell);return row;
+  }));
+  document.querySelector("#sensitivity-status").textContent = "Five cases around the current scenario. All other assumptions held fixed. Changes are relative to the current scenario, not the pinned baseline.";
+});
+document.querySelector("#sensitivity-field").addEventListener("change",()=>{
+  document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-status").textContent="Run the experiment for the selected assumption.";
+});
+
+const LIBRARY_KEY = "weekend-gap:library:v1";
+let scenarioLibrary = [];
+function persistLibrary() {
+  try {
+    localStorage.setItem(LIBRARY_KEY, JSON.stringify({ format: "weekend-gap-library", version: 1, scenarios: scenarioLibrary }));
+    document.querySelector("#library-status").textContent = "Saved on this browser. " + scenarioLibrary.length + " of 12 slots used.";
+  } catch { document.querySelector("#library-status").textContent = "Library changes are in memory only. Browser storage is unavailable; export important scenarios."; }
+}
+function renderLibrary() {
+  const select = document.querySelector("#scenario-library");
+  select.replaceChildren(...scenarioLibrary.map((item,index)=>{
+    const option=document.createElement("option");option.value=String(index);option.textContent=(index+1)+". "+item.name;return option;
+  }));
+  document.querySelector("#load-library").disabled = scenarioLibrary.length === 0;
+  document.querySelector("#delete-library").disabled = scenarioLibrary.length === 0;
+  document.querySelector("#save-library").disabled = scenarioLibrary.length >= 12;
+}
+document.querySelector("#save-library").addEventListener("click",()=>{
+  if(scenarioLibrary.length>=12) return;
+  scenarioLibrary.push({...scenario});persistLibrary();renderLibrary();
+  document.querySelector("#scenario-library").value=String(scenarioLibrary.length-1);
+});
+document.querySelector("#load-library").addEventListener("click",()=>{
+  const saved=scenarioLibrary[Number(document.querySelector("#scenario-library").value)];
+  if(saved) setScenario(saved,{message:"Saved scenario loaded. The pinned baseline was kept."});
+});
+document.querySelector("#delete-library").addEventListener("click",()=>{
+  const index=Number(document.querySelector("#scenario-library").value);
+  if(!Number.isInteger(index)||index<0||index>=scenarioLibrary.length) return;
+  scenarioLibrary.splice(index,1);persistLibrary();renderLibrary();
+});
+try {
+  const raw=localStorage.getItem(LIBRARY_KEY);
+  if(raw) {
+    const restored=libraryFromJSON(raw);
+    if(restored.scenarios) scenarioLibrary=restored.scenarios;
+    document.querySelector("#library-status").textContent=restored.errors.length ? "Saved library: "+restored.errors.join(" ") : "Restored "+scenarioLibrary.length+" saved scenarios.";
+  }
+} catch { document.querySelector("#library-status").textContent="Saved library could not be read. Existing browser data was kept."; }
+renderLibrary();
+
+function currentWorkspace() {
+  return workspaceToJSON(scenario,baselineScenario,{ targetPercent:document.querySelector("#reserve-target").valueAsNumber,
+    deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value });
+}
+function saveWorkspace() {
+  if(!workspaceReady) return;
+  try {
+    let serialized;
+    let controlsValid = true;
+    try {
+      serialized = currentWorkspace();
+      const saved = JSON.parse(serialized);
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour };
+    } catch {
+      controlsValid = false;
+      serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
+    }
+    localStorage.setItem(WORKSPACE_KEY, serialized);
+    document.querySelector("#workspace-status").textContent = controlsValid
+      ? "Workspace autosaved locally, including the baseline, notes and reserve target."
+      : "Scenario edits saved. Incomplete planner fields were excluded; the last valid target and deadline were kept for recovery.";
+  } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
+}
+function applyWorkspace(saved) {
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour };
+  baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour;setPlaying(false);
+  document.querySelector("#reserve-target").value=String(saved.targetPercent);
+  document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
+  document.querySelector("#workspace-notes").value=saved.notes;
+  setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
+}
+function downloadText(text,filename,type) {
+  const url=URL.createObjectURL(new Blob([text],{type})),link=document.createElement("a");
+  link.href=url;link.download=filename;document.body.append(link);link.click();link.remove();
+  window.setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+document.querySelector("#workspace-notes").addEventListener("input",saveWorkspace);
+document.querySelector("#export-workspace").addEventListener("click",()=>{
+  try { downloadText(currentWorkspace(),"weekend-gap-workspace.json","application/json");document.querySelector("#workspace-status").textContent="Workspace exported. Includes baseline, current assumptions, notes, target and selected hour."; }
+  catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+document.querySelector("#import-workspace").addEventListener("click",()=>document.querySelector("#workspace-file").click());
+document.querySelector("#workspace-file").addEventListener("change",async(event)=>{
+  const file=event.target.files?.[0];event.target.value="";if(!file) return;
+  if(file.size>250000) { document.querySelector("#workspace-status").textContent="Import failed. Workspace must be 250 KB or smaller.";return; }
+  try {
+    const result=workspaceFromJSON(await file.text());
+    if(!result.workspace) { document.querySelector("#workspace-status").textContent="Import failed: "+result.errors.join(" ");return; }
+    applyWorkspace(result.workspace);
+    if(result.errors.length) document.querySelector("#workspace-status").textContent="Workspace imported with adjustments: "+result.errors.join(" ");
+  } catch { document.querySelector("#workspace-status").textContent="Import failed. Choose a readable workspace JSON file."; }
+});
+if(!window.location.hash) {
+  try {
+    const raw=localStorage.getItem(WORKSPACE_KEY);
+    if(raw) {
+      const result=workspaceFromJSON(raw);
+      if(result.workspace) applyWorkspace(result.workspace);
+      document.querySelector("#workspace-status").textContent=result.errors.length ? "Saved workspace: "+result.errors.join(" ") : "Restored the previous local workspace.";
+    }
+  } catch { document.querySelector("#workspace-status").textContent="Saved workspace could not be read. Current scenario was kept."; }
+}
+workspaceReady=true;
+
+function renderHistory() {
+  document.querySelector("#undo-scenario").disabled=!scenarioHistory.canUndo;
+  document.querySelector("#redo-scenario").disabled=!scenarioHistory.canRedo;
+}
+document.querySelector("#undo-scenario").addEventListener("click",()=>{
+  setPlaying(false);setScenario(scenarioHistory.undo(),{recordHistory:false,message:"Previous scenario edit restored. Baseline and notes were kept."});
+});
+document.querySelector("#redo-scenario").addEventListener("click",()=>{
+  setPlaying(false);setScenario(scenarioHistory.redo(),{recordHistory:false,message:"Scenario edit reapplied. Baseline and notes were kept."});
+});
+scenarioHistory=createScenarioHistory(scenario);renderHistory();
+
+document.querySelector("#table-density").addEventListener("change",renderTable);
+document.querySelector("#jump-peak").addEventListener("click",()=>{
+  selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#jump-monday").addEventListener("click",()=>{
+  selectedHour=65;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#export-timeline").addEventListener("click",()=>{
+  downloadText(timelineToCSV(scenario,baselineScenario),"weekend-gap-timeline.csv","text/csv;charset=utf-8");
+  setMessage("Exported all 73 checkpoints. Flow columns describe the preceding interval; capacity describes the next hour.");
+});
+
+document.querySelector("#export-report").addEventListener("click",()=>{
+  try {
+    const saved=JSON.parse(currentWorkspace());
+    downloadText(reportToHTML(saved.current,saved.baseline,saved),"weekend-gap-report.html","text/html;charset=utf-8");
+    document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
+  } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) setPlaying(false); });
+reducedMotion?.addEventListener?.("change",()=>setPlaying(false));
+setPlaying(false);
 
 </script>
   </body>
