@@ -211,6 +211,8 @@ td input:hover, td input:focus { border-color: var(--line-strong); background: w
 .legend { color: var(--muted); font-size: 0.75rem; }
 .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 0.3rem; background: var(--orange); }
 canvas { display: block; width: 100%; height: 280px; }
+.chart-scroll { max-height: 430px; overflow-y: auto; }
+.chart-scroll:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .canvas-note { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.75rem; }
 .inspector-panel { margin-top: 1rem; }
 .inspector-heading { display: flex; align-items: end; }
@@ -295,7 +297,11 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-}</style>
+}
+ .snapshot-bar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin-block: 1rem; padding: 1rem; border: 1px solid #b9b0a0; border-radius: 12px; }
+ .snapshot-bar label { display: grid; gap: .35rem; min-width: 180px; max-width: 100%; }
+ .snapshot-bar select { max-width: 100%; }
+ .snapshot-bar p { flex-basis: 100%; margin: 0; font-size: .85rem; }</style>
 </head>
 <body>
   <a class="skip-link" href="#workspace">Skip to workspace</a>
@@ -308,6 +314,8 @@ footer {
       </div>
     </div>
     <nav class="header-actions" aria-label="Scenario actions">
+      <button class="quiet" id="undo-button" type="button" disabled>Undo</button>
+      <button class="quiet" id="redo-button" type="button" disabled>Redo</button>
       <button class="quiet" id="import-button" type="button">Import</button>
       <input id="import-file" type="file" accept="application/json" hidden>
       <button class="quiet" id="export-button" type="button">Export</button>
@@ -344,6 +352,14 @@ footer {
     </section>
 
     <div class="status-line" id="status" role="status" aria-live="polite"></div>
+    <p id="save-state" class="canvas-note" role="status" aria-live="polite"></p>
+    <section class="snapshot-bar" aria-label="Saved room workspace">
+      <label>Saved rooms <select id="saved-rooms" aria-describedby="snapshot-help"></select></label>
+      <button id="save-room" type="button">Save named snapshot</button>
+      <button id="load-room" type="button">Load snapshot</button>
+      <button id="delete-room" type="button">Delete snapshot</button>
+      <p id="snapshot-help">Up to 12 local snapshots, named by the room title. Export JSON for a portable backup. Browser data can be cleared.</p>
+    </section>
 
     <section class="scoreboard" aria-label="Market summary">
       <article class="metric feature">
@@ -376,6 +392,12 @@ footer {
       </div>
 
       <div id="buyer-panel" role="tabpanel" aria-labelledby="buyer-tab">
+        <section class="panel" aria-labelledby="comparison-heading">
+          <h2 id="comparison-heading">Compare a decision</h2>
+          <button id="pin-baseline" type="button">Pin current as baseline</button>
+          <button id="clear-baseline" type="button" disabled>Clear baseline</button>
+          <div id="comparison-summary" class="table-shell"></div>
+        </section>
         <div class="section-heading">
           <div>
             <p class="section-number">01 / buyers</p>
@@ -393,6 +415,7 @@ footer {
                 <th scope="col">Category</th>
                 <th scope="col">Qty</th>
                 <th scope="col">Max item price</th>
+                <th scope="col">Max order total <span class="th-note">optional</span></th>
                 <th scope="col">Delivery by</th>
                 <th scope="col">Variants <span class="th-note">comma-separated</span></th>
                 <th scope="col"><span class="sr-only">Remove</span></th>
@@ -412,7 +435,9 @@ footer {
               </div>
               <span class="legend"><i></i> Qualified units</span>
             </div>
-            <canvas id="offer-chart" height="280" aria-label="Bar chart comparing fulfilled units for merchant offers"></canvas>
+            <div class="chart-scroll" tabindex="0" role="region" aria-label="Scrollable offer chart, equivalent values follow in the ranked table">
+              <canvas id="offer-chart" height="280" aria-hidden="true"></canvas>
+            </div>
                 <p class="canvas-note">The chart and table report the same fulfilled-unit result.</p>
           </article>
           <article class="panel">
@@ -451,7 +476,9 @@ footer {
             </table>
           </div>
           <p class="canvas-note">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
-          <p class="canvas-note">The price ceiling covers items only, as in earlier scenarios. Shipping can put the landed total above that ceiling. Any excess is flagged above and does not exclude the buyer.</p>
+          <button id="buyer-report" type="button">Export private buyer report (CSV)</button>
+          <p class="canvas-note">Exports the inspected offer, including buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
+          <p class="canvas-note">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
           <h4>Price-band feasibility</h4>
           <div class="table-shell compact">
             <table>
@@ -464,6 +491,10 @@ footer {
       </div>
 
       <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" hidden>
+        <div class="snapshot-bar">
+          <button id="merchant-report" type="button">Export aggregate merchant report</button>
+          <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information.</p>
+        </div>
         <div class="section-heading">
           <div>
             <p class="section-number">02 / merchants</p>
@@ -557,6 +588,7 @@ footer {
       <td data-label="Category"><input data-field="category" maxlength="60" aria-label="Buyer category" placeholder="Required"></td>
       <td data-label="Quantity"><input data-field="quantity" type="number" min="1" max="5000" step="1" aria-label="Buyer quantity"></td>
       <td data-label="Max item price"><input data-field="maxUnitPrice" type="number" min="0" max="1000000" step="0.01" aria-label="Buyer maximum unit price"></td>
+      <td data-label="Max order total"><input data-field="maxOrderTotal" type="number" min="0" max="5001000000" step="0.01" aria-label="Buyer maximum order total including shipping" placeholder="No limit"></td>
       <td data-label="Delivery by"><span class="unit-input"><input data-field="latestDeliveryDays" type="number" min="0" max="365" step="1" aria-label="Latest delivery in days"><span>days</span></span></td>
       <td data-label="Variants"><input data-field="allowedVariants" maxlength="300" placeholder="Medium roast, Dark roast" aria-label="Allowed variants, comma separated" aria-describedby="variants-help"></td>
       <td><button class="icon-button remove-row" type="button" aria-label="Remove buyer">×</button></td>
@@ -583,7 +615,7 @@ const MAX_UNITS = 5000;
 const MAX_TIERS = 8;
 const MAX_SHARE_LENGTH = 60_000;
 const SCENARIO_FIELDS = ["title", "currency", "buyers", "offers"];
-const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "latestDeliveryDays", "allowedVariants"];
+const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "maxOrderTotal", "latestDeliveryDays", "allowedVariants"];
 const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers"];
 const TIER_FIELDS = ["minimumUnits", "unitPrice"];
 
@@ -671,6 +703,103 @@ function clonePreset(name = "neighbourhood") {
   return structuredClone(presets[name]);
 }
 
+/** Bounded, detached valid states. A new edit after undo clears the redo branch. */
+function createScenarioHistory(initial) {
+  const entries = [JSON.stringify(validateScenario(initial))];
+  let cursor = 0;
+  return {
+    record(value) {
+      const next = JSON.stringify(validateScenario(value));
+      if (entries[cursor] === next) return;
+      entries.splice(cursor + 1);
+      entries.push(next);
+      if (entries.length > 50) entries.shift();
+      cursor = entries.length - 1;
+    },
+    get canUndo() { return cursor > 0; },
+    get canRedo() { return cursor < entries.length - 1; },
+    current() { return JSON.parse(entries[cursor]); },
+    undo() { if (cursor > 0) cursor--; return this.current(); },
+    redo() { if (cursor < entries.length - 1) cursor++; return this.current(); }
+  };
+}
+
+function validateWorkspace(candidate) {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
+    throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
+  }
+  rejectUnknownFields(candidate, ["version", "rooms"], "Workspace");
+  return { version: 1, rooms: candidate.rooms.map(validateScenario) };
+}
+
+function duplicateEntry(rawScenario, kind, id) {
+  const clean = validateScenario(rawScenario);
+  if (!["buyers", "offers"].includes(kind)) throw new ScenarioError("Choose buyers or offers to duplicate.");
+  const entries = clean[kind];
+  if (entries.length >= 40) throw new ScenarioError("A room can have at most 40 entries of each kind.");
+  const original = entries.find((entry) => entry.id === id);
+  if (!original) throw new ScenarioError("The entry to duplicate was not found.");
+  let number = 1;
+  const prefix = kind === "buyers" ? "B" : "O";
+  while (entries.some((entry) => entry.id === `${prefix}${String(number).padStart(2, "0")}`)) number++;
+  const copy = JSON.parse(JSON.stringify(original));
+  copy.id = `${prefix}${String(number).padStart(2, "0")}`;
+  const label = kind === "buyers" ? "label" : "merchant";
+  copy[label] = `${copy[label].slice(0, 53)} (copy)`;
+  entries.push(copy);
+  return clean;
+}
+
+function compareScenarios(before, after) {
+  const baseline = evaluateMarket(before);
+  const current = evaluateMarket(after);
+  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
+  const metrics = (market) => ({
+    requested: market.totalRequestedUnits,
+    fulfilled: market.winner?.fulfilledUnits ?? 0,
+    buyers: market.winner?.deliveredBuyers ?? 0,
+    cost: market.winner?.totalCost ?? null,
+    winner: market.winner?.offer.merchant ?? "No qualifying offer"
+  });
+  return { baseline: metrics(baseline), current: metrics(current), sameCurrency,
+    sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
+}
+
+/** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
+function createMerchantReport(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  return {
+    report: "Common Cart aggregate merchant report", version: 1, currency: market.scenario.currency,
+    limitations: "Synthetic simulation, not a quote or purchase. Aggregate counts can disclose information about small groups. Buyer identities, budgets and allocations are omitted.",
+    requestedUnits: market.totalRequestedUnits, buyerCount: market.buyerCount,
+    offers: market.ranked.map(result => ({
+      merchant: result.offer.merchant, category: result.offer.category, variant: result.offer.variant,
+      status: result.qualifies ? "Unlocked" : "Locked", fulfilledUnits: result.fulfilledUnits,
+      includedBuyerCount: result.deliveredBuyers, itemPrice: result.effectiveUnitPrice,
+      landedTotal: result.qualifies ? result.totalCost : null, deliveryDays: result.offer.deliveryDays
+    }))
+  };
+}
+
+function createBuyerCsv(rawScenario, offerId) {
+  const market = evaluateMarket(rawScenario);
+  const result = market.results.find(entry => entry.offer.id === offerId);
+  if (!result) throw new ScenarioError("Select an existing offer for the buyer report.");
+  const allocations = new Map(result.allocations.map(entry => [entry.buyerId, entry]));
+  const rows = [["Private buyer label", "Offer", "Currency", "Requested quantity", "Outcome", "Reasons", "Allocated quantity", "Items cost", "Shipping", "Order total", "Delivery days"]];
+  for (const outcome of result.buyerOutcomes) {
+    const buyer = market.scenario.buyers.find(entry => entry.id === outcome.buyerId);
+    const allocation = allocations.get(outcome.buyerId);
+    rows.push([buyer.label, result.offer.merchant, market.scenario.currency, buyer.quantity, outcome.status, outcome.reasons.join("; "), allocation?.quantity ?? 0, allocation?.itemsCost ?? "", allocation?.shippingCost ?? "", allocation?.totalCost ?? "", result.offer.deliveryDays]);
+  }
+  const cell = value => {
+    let text = typeof value === "number" ? String(Math.round(value * 1e8) / 1e8) : String(value);
+    if (typeof value === "string" && (/^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text))) text = `'${text}`;
+    return `"${text.replaceAll('"', '""')}"`;
+  };
+  return rows.map(row => row.map(cell).join(",")).join("\r\n") + "\r\n";
+}
+
 function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");
@@ -708,6 +837,7 @@ function validateBuyer(entry, index) {
     category: requiredText(own(entry, "category"), `${prefix} category`, 60),
     quantity: integer(own(entry, "quantity"), `${prefix} quantity`, 1, MAX_UNITS),
     maxUnitPrice: finite(own(entry, "maxUnitPrice"), `${prefix} max item price`, 0, 1_000_000),
+    ...(own(entry, "maxOrderTotal") === undefined ? {} : { maxOrderTotal: finite(own(entry, "maxOrderTotal"), `${prefix} maximum order total`, 0, 5_001_000_000) }),
     latestDeliveryDays: integer(own(entry, "latestDeliveryDays"), `${prefix} delivery limit`, 0, 365),
     allowedVariants: [...new Set(allowedVariants.map((value, variantIndex) => requiredText(value, `${prefix} variant ${variantIndex + 1}`, 60)))]
   };
@@ -902,6 +1032,7 @@ function incompatibilityReasons(buyer, offer) {
   if (normalizeText(buyer.category) !== normalizeText(offer.category)) reasons.push("category");
   if (!buyer.allowedVariants.some((variant) => normalizeText(variant) === normalizeText(offer.variant))) reasons.push("variant");
   if (offer.unitPrice > buyer.maxUnitPrice) reasons.push("price");
+  if (buyer.maxOrderTotal !== undefined && (offer.unitPrice * buyer.quantity + offer.shippingPerBuyer - buyer.maxOrderTotal) > Number.EPSILON * Math.max(1, offer.unitPrice * buyer.quantity + offer.shippingPerBuyer, buyer.maxOrderTotal) * 4) reasons.push("budget");
   if (offer.deliveryDays > buyer.latestDeliveryDays) reasons.push("delivery");
   return reasons;
 }
@@ -1040,6 +1171,7 @@ function jsonSyntaxHint(error) {
 }
 
 const STORAGE_KEY = "common-cart.scenario.v1";
+const WORKSPACE_KEY = "common-cart.workspace.v1";
 const elements = {
   title: document.querySelector("#scenario-title"),
   currency: document.querySelector("#currency"),
@@ -1067,12 +1199,53 @@ const elements = {
   importFile: document.querySelector("#import-file")
 };
 
+let scenarioReadFailed = false;
 let scenario = loadInitialScenario();
+const history = createScenarioHistory(scenario);
+let invalidDraft = false;
+let workspaceReadFailed = false;
+let savedRooms = loadWorkspace();
+let baseline = null;
+let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
 refresh();
 bindStaticEvents();
+renderWorkspace();
+
+function loadWorkspace() {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_KEY);
+    if (!raw) return [];
+    return validateWorkspace(JSON.parse(raw)).rooms;
+  } catch (error) {
+    workspaceReadFailed = true;
+    queueMicrotask(() => setStatus(`Saved rooms could not be opened: ${messageOf(error)} Export your current room before closing.`));
+    return [];
+  }
+}
+
+function renderWorkspace() {
+  const picker = document.querySelector("#saved-rooms");
+  picker.replaceChildren(...savedRooms.map((room, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${room.title}`;
+    return option;
+  }));
+  picker.disabled = savedRooms.length === 0;
+  document.querySelector("#load-room").disabled = savedRooms.length === 0;
+  document.querySelector("#delete-room").disabled = savedRooms.length === 0;
+  document.querySelector("#save-room").disabled = workspaceReadFailed || savedRooms.length >= 12;
+}
+
+function storeWorkspace(rooms) {
+  const clean = validateWorkspace({ version: 1, rooms });
+  localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
+  savedRooms = clean.rooms;
+  renderWorkspace();
+}
 
 function loadInitialScenario() {
   const hashValue = window.location.hash.startsWith("#scenario=") ? window.location.hash.slice(10) : "";
@@ -1092,18 +1265,61 @@ function loadInitialScenario() {
     try {
       parsed = JSON.parse(stored);
     } catch (error) {
-      throw new ScenarioError(`the saved JSON is not valid${jsonSyntaxHint(error)}.`);
+      throw new ScenarioError(`the saved JSON is not valid${appJsonSyntaxHint(error)}.`);
     }
     return validateScenario(parsed);
   } catch (error) {
     if (!shareFailed) {
       queueMicrotask(() => setStatus(`Saved room could not be restored: ${messageOf(error)} Starting from the neighbourhood example.`));
     }
+    scenarioReadFailed = true;
     return clonePreset();
   }
 }
 
 function bindStaticEvents() {
+  document.querySelector("#buyer-report").addEventListener("click", () => {
+    try {
+      downloadFile(createBuyerCsv(scenario, inspectedOfferId), "common-cart-private-buyer-report.csv", "text/csv;charset=utf-8");
+      setStatus("Private buyer report exported for the inspected offer. It contains labels and individual allocations.", true);
+    } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#merchant-report").addEventListener("click", () => {
+    try {
+      downloadFile(`${JSON.stringify(createMerchantReport(scenario), null, 2)}\n`, "common-cart-merchant-report.json", "application/json");
+      setStatus("Aggregate merchant report exported. It omits buyer labels, budgets, IDs, and individual allocations.", true);
+    } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#pin-baseline").addEventListener("click", () => {
+    try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
+    catch (error) { setStatus(messageOf(error)); }
+  });
+  document.querySelector("#clear-baseline").addEventListener("click", () => {
+    baseline = null; renderComparison();
+  });
+  document.querySelector("#save-room").addEventListener("click", () => {
+    try {
+      storeWorkspace([...savedRooms, validateScenario(scenario)]);
+      document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
+      setStatus("Named snapshot saved locally. Later edits do not alter it.", true);
+    } catch (error) { setStatus(`Could not save snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#load-room").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    const room = savedRooms[Number(document.querySelector("#saved-rooms").value)];
+    if (!room) return;
+    scenario = validateScenario(room);
+    renderEditor(); refresh();
+    setStatus("Saved snapshot loaded. Undo returns to the previous valid room.", true);
+  });
+  document.querySelector("#delete-room").addEventListener("click", () => {
+    const index = Number(document.querySelector("#saved-rooms").value);
+    if (!savedRooms[index] || !window.confirm(`Delete saved snapshot "${savedRooms[index].title}"? The open room stays available.`)) return;
+    try { storeWorkspace(savedRooms.filter((_, i) => i !== index)); setStatus("Saved snapshot deleted.", true); }
+    catch (error) { setStatus(`Could not delete snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#undo-button").addEventListener("click", () => restoreHistory(false));
+  document.querySelector("#redo-button").addEventListener("click", () => restoreHistory(true));
   elements.title.addEventListener("input", (event) => updateRoot("title", event.target.value));
   elements.currency.addEventListener("input", (event) => updateRoot("currency", event.target.value.toUpperCase()));
   elements.inspector.addEventListener("change", () => {
@@ -1113,6 +1329,7 @@ function bindStaticEvents() {
 
   document.querySelectorAll("[data-preset]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (!allowReplaceDraft()) return;
       scenario = clonePreset(button.dataset.preset);
       inspectedOfferId = scenario.offers[0]?.id ?? "";
       document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry === button));
@@ -1171,9 +1388,11 @@ function bindStaticEvents() {
     shareButton.addEventListener("click", shareScenario);
   }
   document.querySelector("#reset-button").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    if (scenarioReadFailed && !window.confirm("Replace the unreadable autosave with the example room? This removes its recovery data. Export any browser-storage recovery copy first.")) return;
+    scenarioReadFailed = false;
     scenario = clonePreset();
     inspectedOfferId = scenario.offers[0]?.id ?? "";
-    localStorage.removeItem(STORAGE_KEY);
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry.dataset.preset === "neighbourhood"));
     renderEditor();
@@ -1198,6 +1417,15 @@ function bindStaticEvents() {
   window.addEventListener("resize", () => {
     try { drawChart(evaluateMarket(scenario)); } catch { /* Invalid edits already have a visible message. */ }
   });
+  window.addEventListener("beforeunload", event => {
+    if (invalidDraft || savedState === "failed" || savedState === "pending") {
+      event.preventDefault(); event.returnValue = "";
+    }
+  });
+}
+
+function allowReplaceDraft() {
+  return !invalidDraft || window.confirm("Discard the current invalid draft? Undo restores only the last valid room.");
 }
 
 function activateTab(active) {
@@ -1229,11 +1457,17 @@ function renderEditor() {
 function renderBuyerRow(entry) {
   const row = elements.buyerTemplate.content.firstElementChild.cloneNode(true);
   row.dataset.id = entry.id;
+  addDuplicateAction(row, "buyers", entry);
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
-    input.value = field === "allowedVariants" ? entry[field].join(", ") : entry[field];
+    input.value = field === "allowedVariants" ? entry[field].join(", ") : entry[field] ?? "";
     input.addEventListener("input", () => {
       const target = scenario.buyers.find((buyer) => buyer.id === row.dataset.id);
+      if (field === "maxOrderTotal" && input.value === "") {
+        delete target.maxOrderTotal;
+        refresh();
+        return;
+      }
       target[field] = field === "allowedVariants"
         ? input.value.split(",").map((value) => value.trim()).filter(Boolean)
         : input.value;
@@ -1242,9 +1476,11 @@ function renderBuyerRow(entry) {
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
     if (scenario.buyers.length === 1) return setStatus("A room needs at least one buyer.");
+    const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
     renderEditor();
     refresh();
+    elements.buyerRows.children[Math.min(index, scenario.buyers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
 }
@@ -1252,6 +1488,7 @@ function renderBuyerRow(entry) {
 function renderOfferRow(entry) {
   const row = elements.offerTemplate.content.firstElementChild.cloneNode(true);
   row.dataset.id = entry.id;
+  addDuplicateAction(row, "offers", entry);
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
     input.value = entry[field];
@@ -1266,9 +1503,11 @@ function renderOfferRow(entry) {
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
     if (scenario.offers.length === 1) return setStatus("A room needs at least one offer.");
+    const index = scenario.offers.findIndex(({ id }) => id === row.dataset.id);
     scenario.offers = scenario.offers.filter(({ id }) => id !== row.dataset.id);
     renderEditor();
     refresh();
+    elements.offerRows.children[Math.min(index, scenario.offers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
 }
@@ -1343,6 +1582,11 @@ function refresh() {
   try {
     const market = evaluateMarket(scenario);
     scenario = market.scenario;
+    if (window.location.hash.startsWith("#scenario=")) window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    invalidDraft = false;
+    history.record(scenario);
+    updateHistoryButtons();
+    renderComparison();
     renderSummary(market);
     renderResults(market);
     renderInspector(market);
@@ -1351,6 +1595,10 @@ function refresh() {
     scheduleSave(market.scenario);
     setStatus("");
   } catch (error) {
+    invalidDraft = true;
+    document.querySelector("#save-state").textContent = "Invalid draft, not autosaved. Undo restores the last valid room.";
+    document.querySelector("#comparison-summary").textContent = "Correct invalid inputs to compare this room.";
+    updateHistoryButtons();
     clearTimeout(saveTimer);
     elements.winner.textContent = "Check inputs";
     elements.winnerNote.textContent = "Results are unavailable until the scenario is valid.";
@@ -1368,6 +1616,65 @@ function refresh() {
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
   }
+}
+
+function renderComparison() {
+  const summary = document.querySelector("#comparison-summary");
+  document.querySelector("#clear-baseline").disabled = !baseline;
+  if (!baseline) { summary.textContent = "Pin this room, then change constraints or load another snapshot to compare winners, participation, and cost. Baselines last until this page closes."; return; }
+  const comparison = compareScenarios(baseline, scenario);
+  const { baseline: before, current: after } = comparison;
+  const rows = [
+    ["Winner", before.winner, after.winner],
+    ["Requested units", before.requested, after.requested],
+    ["Fulfilled units", before.fulfilled, after.fulfilled],
+    ["Included buyers", before.buyers, after.buyers]
+  ];
+  if (comparison.sameCurrency) rows.push(["Landed total", before.cost === null ? "No allocation" : money(scenario.currency).format(before.cost), after.cost === null ? "No allocation" : money(scenario.currency).format(after.cost)]);
+  const table = document.createElement("table");
+  const caption = document.createElement("caption"); caption.textContent = `Pinned: ${baseline.title}. Current: ${scenario.title}.`;
+  const head = document.createElement("thead"); const header = document.createElement("tr");
+  for (const text of ["Metric", "Baseline", "Current"]) { const th = document.createElement("th"); th.scope = "col"; th.textContent = text; header.append(th); }
+  head.append(header); table.append(caption, head);
+  const body = document.createElement("tbody");
+  for (const values of rows) { const tr = document.createElement("tr"); for (const value of values) addCell(tr, String(value)); body.append(tr); }
+  table.append(body);
+  const note = document.createElement("p");
+  note.textContent = `${comparison.sameDemand ? "Buyer demand is unchanged." : "Buyer demand changed; cost differences are not like-for-like savings."} ${comparison.sameCurrency ? "Totals may cover different allocated orders." : "Currencies differ; monetary comparisons are omitted."}`;
+  summary.replaceChildren(table, note);
+}
+
+function addDuplicateAction(row, kind, entry) {
+  row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? entry.label : entry.merchant} (${entry.id})`);
+  row.querySelector(".remove-row").disabled = scenario[kind].length === 1;
+  row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "Copy";
+  button.setAttribute("aria-label", `Duplicate ${kind === "buyers" ? entry.label : entry.merchant}`);
+  button.disabled = scenario[kind].length >= 40;
+  button.addEventListener("click", () => {
+    try {
+      scenario = duplicateEntry(scenario, kind, entry.id);
+      renderEditor(); refresh();
+      const body = kind === "buyers" ? elements.buyerRows : elements.offerRows;
+      body.lastElementChild.querySelector("input").focus();
+      setStatus("Independent copy added. Edit its constraints to test an alternative.", true);
+    } catch (error) { setStatus(messageOf(error)); }
+  });
+  row.lastElementChild.append(button);
+}
+
+function updateHistoryButtons() {
+  document.querySelector("#undo-button").disabled = !invalidDraft && !history.canUndo;
+  document.querySelector("#redo-button").disabled = invalidDraft || !history.canRedo;
+}
+
+function restoreHistory(forward) {
+  scenario = invalidDraft ? history.current() : forward ? history.redo() : history.undo();
+  renderEditor();
+  refresh();
+  setStatus(forward ? "Change restored." : "Previous valid room restored.", true);
 }
 
 function renderSummary(market) {
@@ -1483,6 +1790,7 @@ function outcomePresentation(outcome) {
     category: "category differs",
     variant: "variant is not accepted",
     price: "unit price exceeds the ceiling",
+    budget: "items plus shipping exceed the order budget",
     delivery: "delivery exceeds the limit"
   };
   return {
@@ -1545,20 +1853,22 @@ function drawChart(market) {
   const bounds = canvas.getBoundingClientRect();
   if (bounds.width === 0) return;
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  const height = Math.max(280, market.results.length * 64 + 40);
+  canvas.style.height = `${height}px`;
   canvas.width = Math.floor(bounds.width * ratio);
-  canvas.height = Math.floor(280 * ratio);
+  canvas.height = Math.floor(height * ratio);
   const context = canvas.getContext("2d");
   context.scale(ratio, ratio);
   const width = bounds.width;
-  const height = 280;
   context.clearRect(0, 0, width, height);
   context.font = "12px system-ui";
   context.textBaseline = "middle";
   const left = Math.min(150, Math.max(95, width * 0.28));
   const right = 42;
   const top = 20;
-  const rowHeight = Math.min(62, (height - 40) / Math.max(1, market.results.length));
-  const max = Math.max(1, ...market.results.map((result) => Math.max(result.fulfilledUnits, result.offer.minimumUnits)));
+  const rowHeight = 64;
+  const threshold = result => result.tierProgress.find(tier => tier.selected)?.minimumUnits ?? result.offer.minimumUnits;
+  const max = Math.max(1, ...market.results.map((result) => Math.max(result.fulfilledUnits, threshold(result))));
 
   market.results.forEach((result, index) => {
     const y = top + index * rowHeight;
@@ -1567,7 +1877,7 @@ function drawChart(market) {
     const candidateWidth = (result.fulfilledUnits / max) * (width - left - right);
     context.fillStyle = result.qualifies ? "#f36f3d" : "#a9a090";
     context.fillRect(left, y + 14, candidateWidth, 20);
-    const minimumX = left + (result.offer.minimumUnits / max) * (width - left - right);
+    const minimumX = left + (threshold(result) / max) * (width - left - right);
     context.strokeStyle = "#211f55";
     context.lineWidth = 2;
     context.beginPath();
@@ -1578,7 +1888,7 @@ function drawChart(market) {
     context.textAlign = "right";
     context.fillText(trimLabel(result.offer.merchant, 18), left - 10, y + 24);
     context.textAlign = "left";
-    context.fillText(`${result.fulfilledUnits} fulfilled / ${result.offer.minimumUnits} minimum`, left, y + 49);
+    context.fillText(`${result.fulfilledUnits} fulfilled / ${threshold(result)} minimum`, left, y + 49);
   });
 }
 
@@ -1588,8 +1898,23 @@ function trimLabel(value, limit) {
 
 function scheduleSave(cleanScenario) {
   clearTimeout(saveTimer);
+  if (scenarioReadFailed) {
+    savedState = "failed";
+    document.querySelector("#save-state").textContent = "Previous autosave could not be read and is preserved. Export current edits as JSON. Reset this room explicitly to replace the unreadable save.";
+    return;
+  }
+  savedState = "pending";
+  document.querySelector("#save-state").textContent = "Saving locally…";
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanScenario)); } catch { setStatus("This browser could not autosave the room."); }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanScenario));
+      savedState = "saved";
+      document.querySelector("#save-state").textContent = "Current valid room saved in this browser.";
+    } catch {
+      savedState = "failed";
+      document.querySelector("#save-state").textContent = "Autosave unavailable. Export JSON before closing this page.";
+      setStatus("This browser could not autosave the room.");
+    }
   }, 180);
 }
 
@@ -1600,15 +1925,19 @@ async function importScenario(event) {
   if (file.size === 0) return setStatus("Import failed: the file is empty.");
   if (file.size > 250_000) return setStatus("Import files must be smaller than 250 KB.");
   try {
+    const beforeRead = JSON.stringify(scenario);
     const text = await file.text();
     if (!text.trim()) return setStatus("Import failed: the file is empty.");
     let parsed;
     try {
       parsed = JSON.parse(text);
     } catch (error) {
-      return setStatus(`Import failed: the file is not valid JSON${jsonSyntaxHint(error)}.`);
+      return setStatus(`Import failed: the file is not valid JSON${appJsonSyntaxHint(error)}.`);
     }
-    scenario = validateScenario(parsed);
+    const imported = validateScenario(parsed);
+    if (beforeRead !== JSON.stringify(scenario) && !window.confirm("The room changed while the file was read. Replace it with the imported room? Undo keeps the previous valid room.")) return;
+    if (!allowReplaceDraft()) return;
+    scenario = imported;
     inspectedOfferId = scenario.offers[0]?.id ?? "";
     renderEditor();
     refresh();
@@ -1621,16 +1950,19 @@ async function importScenario(event) {
 function exportScenario() {
   try {
     const clean = validateScenario(scenario);
-    const blob = new Blob([`${JSON.stringify(clean, null, 2)}\n`], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "common-cart-scenario.json";
-    link.click();
-    URL.revokeObjectURL(link.href);
+    downloadFile(`${JSON.stringify(clean, null, 2)}\n`, "common-cart-scenario.json", "application/json");
     setStatus("Scenario exported.", true);
   } catch (error) {
     setStatus(`Export failed: ${messageOf(error)}`);
   }
+}
+
+function downloadFile(content, filename, type) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([content], { type }));
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
 async function shareScenario() {
@@ -1673,7 +2005,7 @@ function messageOf(error) {
   return error instanceof ScenarioError || error instanceof Error ? error.message : "The scenario is invalid.";
 }
 
-function jsonSyntaxHint(error) {
+function appJsonSyntaxHint(error) {
   const message = String(error?.message ?? "").replace(/\s+/g, " ").trim();
   if (!message) return "";
   const lineColumn = message.match(/line (\d+)(?: column (\d+))?/i);

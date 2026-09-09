@@ -13,6 +13,8 @@ export interface Buyer {
   quantity: number;
   /** Item-price ceiling from 0 to 1,000,000; does not include shipping. */
   maxUnitPrice: number;
+  /** Optional ceiling for the complete order including shipping. */
+  maxOrderTotal?: number;
   /** Inclusive latest delivery in whole days from 0 to 365. */
   latestDeliveryDays: number;
   /** 1 to 12 distinct variant names after trim. */
@@ -48,7 +50,7 @@ export interface Scenario {
   offers: Offer[];
 }
 
-export type IncompatibilityReason = "category" | "variant" | "price" | "delivery";
+export type IncompatibilityReason = "category" | "variant" | "price" | "delivery" | "budget";
 export type BuyerOutcomeStatus = "included" | "minimum" | "capacity" | "incompatible";
 
 export interface BuyerOutcome {
@@ -142,3 +144,26 @@ export function evaluateMarket(rawScenario: unknown): MarketEvaluation;
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
 export function encodeScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;
+
+export interface ScenarioHistory {
+  readonly canUndo: boolean;
+  readonly canRedo: boolean;
+  record(value: unknown): void;
+  current(): Scenario;
+  undo(): Scenario;
+  redo(): Scenario;
+}
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; }
+export interface ComparisonMetrics { requested: number; fulfilled: number; buyers: number; cost: number | null; winner: string; }
+export interface ScenarioComparison { baseline: ComparisonMetrics; current: ComparisonMetrics; sameCurrency: boolean; sameDemand: boolean; }
+export interface MerchantReport {
+  report: string; version: number; currency: string; limitations: string;
+  requestedUnits: number; buyerCount: number;
+  offers: Array<{ merchant: string; category: string; variant: string; status: string; fulfilledUnits: number; includedBuyerCount: number; itemPrice: number | null; landedTotal: number | null; deliveryDays: number }>;
+}
+export function createScenarioHistory(initial: unknown): ScenarioHistory;
+export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
+export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", id: string): Scenario;
+export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;
+export function createMerchantReport(rawScenario: unknown): MerchantReport;
+export function createBuyerCsv(rawScenario: unknown, offerId: string): string;

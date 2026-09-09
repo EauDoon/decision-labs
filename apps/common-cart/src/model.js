@@ -4,7 +4,7 @@ const MAX_UNITS = 5000;
 const MAX_TIERS = 8;
 const MAX_SHARE_LENGTH = 60_000;
 const SCENARIO_FIELDS = ["title", "currency", "buyers", "offers"];
-const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "latestDeliveryDays", "allowedVariants"];
+const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "maxOrderTotal", "latestDeliveryDays", "allowedVariants"];
 const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers"];
 const TIER_FIELDS = ["minimumUnits", "unitPrice"];
 
@@ -92,6 +92,103 @@ export function clonePreset(name = "neighbourhood") {
   return structuredClone(presets[name]);
 }
 
+/** Bounded, detached valid states. A new edit after undo clears the redo branch. */
+export function createScenarioHistory(initial) {
+  const entries = [JSON.stringify(validateScenario(initial))];
+  let cursor = 0;
+  return {
+    record(value) {
+      const next = JSON.stringify(validateScenario(value));
+      if (entries[cursor] === next) return;
+      entries.splice(cursor + 1);
+      entries.push(next);
+      if (entries.length > 50) entries.shift();
+      cursor = entries.length - 1;
+    },
+    get canUndo() { return cursor > 0; },
+    get canRedo() { return cursor < entries.length - 1; },
+    current() { return JSON.parse(entries[cursor]); },
+    undo() { if (cursor > 0) cursor--; return this.current(); },
+    redo() { if (cursor < entries.length - 1) cursor++; return this.current(); }
+  };
+}
+
+export function validateWorkspace(candidate) {
+  if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
+    throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
+  }
+  rejectUnknownFields(candidate, ["version", "rooms"], "Workspace");
+  return { version: 1, rooms: candidate.rooms.map(validateScenario) };
+}
+
+export function duplicateEntry(rawScenario, kind, id) {
+  const clean = validateScenario(rawScenario);
+  if (!["buyers", "offers"].includes(kind)) throw new ScenarioError("Choose buyers or offers to duplicate.");
+  const entries = clean[kind];
+  if (entries.length >= 40) throw new ScenarioError("A room can have at most 40 entries of each kind.");
+  const original = entries.find((entry) => entry.id === id);
+  if (!original) throw new ScenarioError("The entry to duplicate was not found.");
+  let number = 1;
+  const prefix = kind === "buyers" ? "B" : "O";
+  while (entries.some((entry) => entry.id === `${prefix}${String(number).padStart(2, "0")}`)) number++;
+  const copy = JSON.parse(JSON.stringify(original));
+  copy.id = `${prefix}${String(number).padStart(2, "0")}`;
+  const label = kind === "buyers" ? "label" : "merchant";
+  copy[label] = `${copy[label].slice(0, 53)} (copy)`;
+  entries.push(copy);
+  return clean;
+}
+
+export function compareScenarios(before, after) {
+  const baseline = evaluateMarket(before);
+  const current = evaluateMarket(after);
+  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
+  const metrics = (market) => ({
+    requested: market.totalRequestedUnits,
+    fulfilled: market.winner?.fulfilledUnits ?? 0,
+    buyers: market.winner?.deliveredBuyers ?? 0,
+    cost: market.winner?.totalCost ?? null,
+    winner: market.winner?.offer.merchant ?? "No qualifying offer"
+  });
+  return { baseline: metrics(baseline), current: metrics(current), sameCurrency,
+    sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
+}
+
+/** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
+export function createMerchantReport(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  return {
+    report: "Common Cart aggregate merchant report", version: 1, currency: market.scenario.currency,
+    limitations: "Synthetic simulation, not a quote or purchase. Aggregate counts can disclose information about small groups. Buyer identities, budgets and allocations are omitted.",
+    requestedUnits: market.totalRequestedUnits, buyerCount: market.buyerCount,
+    offers: market.ranked.map(result => ({
+      merchant: result.offer.merchant, category: result.offer.category, variant: result.offer.variant,
+      status: result.qualifies ? "Unlocked" : "Locked", fulfilledUnits: result.fulfilledUnits,
+      includedBuyerCount: result.deliveredBuyers, itemPrice: result.effectiveUnitPrice,
+      landedTotal: result.qualifies ? result.totalCost : null, deliveryDays: result.offer.deliveryDays
+    }))
+  };
+}
+
+export function createBuyerCsv(rawScenario, offerId) {
+  const market = evaluateMarket(rawScenario);
+  const result = market.results.find(entry => entry.offer.id === offerId);
+  if (!result) throw new ScenarioError("Select an existing offer for the buyer report.");
+  const allocations = new Map(result.allocations.map(entry => [entry.buyerId, entry]));
+  const rows = [["Private buyer label", "Offer", "Currency", "Requested quantity", "Outcome", "Reasons", "Allocated quantity", "Items cost", "Shipping", "Order total", "Delivery days"]];
+  for (const outcome of result.buyerOutcomes) {
+    const buyer = market.scenario.buyers.find(entry => entry.id === outcome.buyerId);
+    const allocation = allocations.get(outcome.buyerId);
+    rows.push([buyer.label, result.offer.merchant, market.scenario.currency, buyer.quantity, outcome.status, outcome.reasons.join("; "), allocation?.quantity ?? 0, allocation?.itemsCost ?? "", allocation?.shippingCost ?? "", allocation?.totalCost ?? "", result.offer.deliveryDays]);
+  }
+  const cell = value => {
+    let text = typeof value === "number" ? String(Math.round(value * 1e8) / 1e8) : String(value);
+    if (typeof value === "string" && (/^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text))) text = `'${text}`;
+    return `"${text.replaceAll('"', '""')}"`;
+  };
+  return rows.map(row => row.map(cell).join(",")).join("\r\n") + "\r\n";
+}
+
 export function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");
@@ -129,6 +226,7 @@ function validateBuyer(entry, index) {
     category: requiredText(own(entry, "category"), `${prefix} category`, 60),
     quantity: integer(own(entry, "quantity"), `${prefix} quantity`, 1, MAX_UNITS),
     maxUnitPrice: finite(own(entry, "maxUnitPrice"), `${prefix} max item price`, 0, 1_000_000),
+    ...(own(entry, "maxOrderTotal") === undefined ? {} : { maxOrderTotal: finite(own(entry, "maxOrderTotal"), `${prefix} maximum order total`, 0, 5_001_000_000) }),
     latestDeliveryDays: integer(own(entry, "latestDeliveryDays"), `${prefix} delivery limit`, 0, 365),
     allowedVariants: [...new Set(allowedVariants.map((value, variantIndex) => requiredText(value, `${prefix} variant ${variantIndex + 1}`, 60)))]
   };
@@ -323,6 +421,7 @@ function incompatibilityReasons(buyer, offer) {
   if (normalizeText(buyer.category) !== normalizeText(offer.category)) reasons.push("category");
   if (!buyer.allowedVariants.some((variant) => normalizeText(variant) === normalizeText(offer.variant))) reasons.push("variant");
   if (offer.unitPrice > buyer.maxUnitPrice) reasons.push("price");
+  if (buyer.maxOrderTotal !== undefined && (offer.unitPrice * buyer.quantity + offer.shippingPerBuyer - buyer.maxOrderTotal) > Number.EPSILON * Math.max(1, offer.unitPrice * buyer.quantity + offer.shippingPerBuyer, buyer.maxOrderTotal) * 4) reasons.push("budget");
   if (offer.deliveryDays > buyer.latestDeliveryDays) reasons.push("delivery");
   return reasons;
 }

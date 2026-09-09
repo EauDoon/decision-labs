@@ -117,3 +117,8 @@ Demand is grouped by product category. For each category, the merchant view repo
 - An encoded share payload is at most 60,000 characters of URL-safe base64. Oversized scenarios must be exported as JSON instead. Malformed payloads name the failed step (base64, UTF-8, or JSON location) rather than a generic decode error.
 
 The model can test whether a declared offer satisfies declared constraints. It cannot prove that a purchase is wise, fair, available, safe, or legally compliant.
+# Optional landed budgets and decision tools
+
+`Buyer.maxOrderTotal` optionally limits `quantity * band.unitPrice + shippingPerBuyer`. It is independent of the item-price ceiling and is evaluated separately at each price band before exact whole-buyer allocation. Omitting it preserves existing behavior. A budget mismatch produces the `budget` incompatibility reason. Validation accepts totals from 0 to 5,001,000,000. Existing fractional-price precision is preserved; the comparison allows only a small floating-point tolerance (four machine epsilons at the magnitude of the total), not a currency-unit allowance.
+
+Named snapshots contain validated version-1 scenarios, at most 12 per workspace. Valid history contains at most 50 detached states. Baseline comparisons do not claim welfare or savings from differing cohorts. Merchant reports use an explicit whitelist and omit the scenario title as well as private buyer records. Buyer CSV is explicitly private and escapes spreadsheet formula prefixes.

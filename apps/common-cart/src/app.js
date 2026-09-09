@@ -2,13 +2,20 @@ import {
   ScenarioError,
   aggregateDemand,
   clonePreset,
+  compareScenarios,
+  createScenarioHistory,
+  createMerchantReport,
+  createBuyerCsv,
   decodeScenario,
+  duplicateEntry,
   encodeScenario,
   evaluateMarket,
+  validateWorkspace,
   validateScenario
 } from "./model.js";
 
 const STORAGE_KEY = "common-cart.scenario.v1";
+const WORKSPACE_KEY = "common-cart.workspace.v1";
 const elements = {
   title: document.querySelector("#scenario-title"),
   currency: document.querySelector("#currency"),
@@ -36,12 +43,53 @@ const elements = {
   importFile: document.querySelector("#import-file")
 };
 
+let scenarioReadFailed = false;
 let scenario = loadInitialScenario();
+const history = createScenarioHistory(scenario);
+let invalidDraft = false;
+let workspaceReadFailed = false;
+let savedRooms = loadWorkspace();
+let baseline = null;
+let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
 refresh();
 bindStaticEvents();
+renderWorkspace();
+
+function loadWorkspace() {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_KEY);
+    if (!raw) return [];
+    return validateWorkspace(JSON.parse(raw)).rooms;
+  } catch (error) {
+    workspaceReadFailed = true;
+    queueMicrotask(() => setStatus(`Saved rooms could not be opened: ${messageOf(error)} Export your current room before closing.`));
+    return [];
+  }
+}
+
+function renderWorkspace() {
+  const picker = document.querySelector("#saved-rooms");
+  picker.replaceChildren(...savedRooms.map((room, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${room.title}`;
+    return option;
+  }));
+  picker.disabled = savedRooms.length === 0;
+  document.querySelector("#load-room").disabled = savedRooms.length === 0;
+  document.querySelector("#delete-room").disabled = savedRooms.length === 0;
+  document.querySelector("#save-room").disabled = workspaceReadFailed || savedRooms.length >= 12;
+}
+
+function storeWorkspace(rooms) {
+  const clean = validateWorkspace({ version: 1, rooms });
+  localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
+  savedRooms = clean.rooms;
+  renderWorkspace();
+}
 
 function loadInitialScenario() {
   const hashValue = window.location.hash.startsWith("#scenario=") ? window.location.hash.slice(10) : "";
@@ -61,18 +109,61 @@ function loadInitialScenario() {
     try {
       parsed = JSON.parse(stored);
     } catch (error) {
-      throw new ScenarioError(`the saved JSON is not valid${jsonSyntaxHint(error)}.`);
+      throw new ScenarioError(`the saved JSON is not valid${appJsonSyntaxHint(error)}.`);
     }
     return validateScenario(parsed);
   } catch (error) {
     if (!shareFailed) {
       queueMicrotask(() => setStatus(`Saved room could not be restored: ${messageOf(error)} Starting from the neighbourhood example.`));
     }
+    scenarioReadFailed = true;
     return clonePreset();
   }
 }
 
 function bindStaticEvents() {
+  document.querySelector("#buyer-report").addEventListener("click", () => {
+    try {
+      downloadFile(createBuyerCsv(scenario, inspectedOfferId), "common-cart-private-buyer-report.csv", "text/csv;charset=utf-8");
+      setStatus("Private buyer report exported for the inspected offer. It contains labels and individual allocations.", true);
+    } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#merchant-report").addEventListener("click", () => {
+    try {
+      downloadFile(`${JSON.stringify(createMerchantReport(scenario), null, 2)}\n`, "common-cart-merchant-report.json", "application/json");
+      setStatus("Aggregate merchant report exported. It omits buyer labels, budgets, IDs, and individual allocations.", true);
+    } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#pin-baseline").addEventListener("click", () => {
+    try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
+    catch (error) { setStatus(messageOf(error)); }
+  });
+  document.querySelector("#clear-baseline").addEventListener("click", () => {
+    baseline = null; renderComparison();
+  });
+  document.querySelector("#save-room").addEventListener("click", () => {
+    try {
+      storeWorkspace([...savedRooms, validateScenario(scenario)]);
+      document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
+      setStatus("Named snapshot saved locally. Later edits do not alter it.", true);
+    } catch (error) { setStatus(`Could not save snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#load-room").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    const room = savedRooms[Number(document.querySelector("#saved-rooms").value)];
+    if (!room) return;
+    scenario = validateScenario(room);
+    renderEditor(); refresh();
+    setStatus("Saved snapshot loaded. Undo returns to the previous valid room.", true);
+  });
+  document.querySelector("#delete-room").addEventListener("click", () => {
+    const index = Number(document.querySelector("#saved-rooms").value);
+    if (!savedRooms[index] || !window.confirm(`Delete saved snapshot "${savedRooms[index].title}"? The open room stays available.`)) return;
+    try { storeWorkspace(savedRooms.filter((_, i) => i !== index)); setStatus("Saved snapshot deleted.", true); }
+    catch (error) { setStatus(`Could not delete snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#undo-button").addEventListener("click", () => restoreHistory(false));
+  document.querySelector("#redo-button").addEventListener("click", () => restoreHistory(true));
   elements.title.addEventListener("input", (event) => updateRoot("title", event.target.value));
   elements.currency.addEventListener("input", (event) => updateRoot("currency", event.target.value.toUpperCase()));
   elements.inspector.addEventListener("change", () => {
@@ -82,6 +173,7 @@ function bindStaticEvents() {
 
   document.querySelectorAll("[data-preset]").forEach((button) => {
     button.addEventListener("click", () => {
+      if (!allowReplaceDraft()) return;
       scenario = clonePreset(button.dataset.preset);
       inspectedOfferId = scenario.offers[0]?.id ?? "";
       document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry === button));
@@ -140,9 +232,11 @@ function bindStaticEvents() {
     shareButton.addEventListener("click", shareScenario);
   }
   document.querySelector("#reset-button").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    if (scenarioReadFailed && !window.confirm("Replace the unreadable autosave with the example room? This removes its recovery data. Export any browser-storage recovery copy first.")) return;
+    scenarioReadFailed = false;
     scenario = clonePreset();
     inspectedOfferId = scenario.offers[0]?.id ?? "";
-    localStorage.removeItem(STORAGE_KEY);
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
     document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry.dataset.preset === "neighbourhood"));
     renderEditor();
@@ -167,6 +261,15 @@ function bindStaticEvents() {
   window.addEventListener("resize", () => {
     try { drawChart(evaluateMarket(scenario)); } catch { /* Invalid edits already have a visible message. */ }
   });
+  window.addEventListener("beforeunload", event => {
+    if (invalidDraft || savedState === "failed" || savedState === "pending") {
+      event.preventDefault(); event.returnValue = "";
+    }
+  });
+}
+
+function allowReplaceDraft() {
+  return !invalidDraft || window.confirm("Discard the current invalid draft? Undo restores only the last valid room.");
 }
 
 function activateTab(active) {
@@ -198,11 +301,17 @@ function renderEditor() {
 function renderBuyerRow(entry) {
   const row = elements.buyerTemplate.content.firstElementChild.cloneNode(true);
   row.dataset.id = entry.id;
+  addDuplicateAction(row, "buyers", entry);
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
-    input.value = field === "allowedVariants" ? entry[field].join(", ") : entry[field];
+    input.value = field === "allowedVariants" ? entry[field].join(", ") : entry[field] ?? "";
     input.addEventListener("input", () => {
       const target = scenario.buyers.find((buyer) => buyer.id === row.dataset.id);
+      if (field === "maxOrderTotal" && input.value === "") {
+        delete target.maxOrderTotal;
+        refresh();
+        return;
+      }
       target[field] = field === "allowedVariants"
         ? input.value.split(",").map((value) => value.trim()).filter(Boolean)
         : input.value;
@@ -211,9 +320,11 @@ function renderBuyerRow(entry) {
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
     if (scenario.buyers.length === 1) return setStatus("A room needs at least one buyer.");
+    const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
     renderEditor();
     refresh();
+    elements.buyerRows.children[Math.min(index, scenario.buyers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
 }
@@ -221,6 +332,7 @@ function renderBuyerRow(entry) {
 function renderOfferRow(entry) {
   const row = elements.offerTemplate.content.firstElementChild.cloneNode(true);
   row.dataset.id = entry.id;
+  addDuplicateAction(row, "offers", entry);
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
     input.value = entry[field];
@@ -235,9 +347,11 @@ function renderOfferRow(entry) {
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
     if (scenario.offers.length === 1) return setStatus("A room needs at least one offer.");
+    const index = scenario.offers.findIndex(({ id }) => id === row.dataset.id);
     scenario.offers = scenario.offers.filter(({ id }) => id !== row.dataset.id);
     renderEditor();
     refresh();
+    elements.offerRows.children[Math.min(index, scenario.offers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
 }
@@ -312,6 +426,11 @@ function refresh() {
   try {
     const market = evaluateMarket(scenario);
     scenario = market.scenario;
+    if (window.location.hash.startsWith("#scenario=")) window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    invalidDraft = false;
+    history.record(scenario);
+    updateHistoryButtons();
+    renderComparison();
     renderSummary(market);
     renderResults(market);
     renderInspector(market);
@@ -320,6 +439,10 @@ function refresh() {
     scheduleSave(market.scenario);
     setStatus("");
   } catch (error) {
+    invalidDraft = true;
+    document.querySelector("#save-state").textContent = "Invalid draft, not autosaved. Undo restores the last valid room.";
+    document.querySelector("#comparison-summary").textContent = "Correct invalid inputs to compare this room.";
+    updateHistoryButtons();
     clearTimeout(saveTimer);
     elements.winner.textContent = "Check inputs";
     elements.winnerNote.textContent = "Results are unavailable until the scenario is valid.";
@@ -337,6 +460,65 @@ function refresh() {
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
   }
+}
+
+function renderComparison() {
+  const summary = document.querySelector("#comparison-summary");
+  document.querySelector("#clear-baseline").disabled = !baseline;
+  if (!baseline) { summary.textContent = "Pin this room, then change constraints or load another snapshot to compare winners, participation, and cost. Baselines last until this page closes."; return; }
+  const comparison = compareScenarios(baseline, scenario);
+  const { baseline: before, current: after } = comparison;
+  const rows = [
+    ["Winner", before.winner, after.winner],
+    ["Requested units", before.requested, after.requested],
+    ["Fulfilled units", before.fulfilled, after.fulfilled],
+    ["Included buyers", before.buyers, after.buyers]
+  ];
+  if (comparison.sameCurrency) rows.push(["Landed total", before.cost === null ? "No allocation" : money(scenario.currency).format(before.cost), after.cost === null ? "No allocation" : money(scenario.currency).format(after.cost)]);
+  const table = document.createElement("table");
+  const caption = document.createElement("caption"); caption.textContent = `Pinned: ${baseline.title}. Current: ${scenario.title}.`;
+  const head = document.createElement("thead"); const header = document.createElement("tr");
+  for (const text of ["Metric", "Baseline", "Current"]) { const th = document.createElement("th"); th.scope = "col"; th.textContent = text; header.append(th); }
+  head.append(header); table.append(caption, head);
+  const body = document.createElement("tbody");
+  for (const values of rows) { const tr = document.createElement("tr"); for (const value of values) addCell(tr, String(value)); body.append(tr); }
+  table.append(body);
+  const note = document.createElement("p");
+  note.textContent = `${comparison.sameDemand ? "Buyer demand is unchanged." : "Buyer demand changed; cost differences are not like-for-like savings."} ${comparison.sameCurrency ? "Totals may cover different allocated orders." : "Currencies differ; monetary comparisons are omitted."}`;
+  summary.replaceChildren(table, note);
+}
+
+function addDuplicateAction(row, kind, entry) {
+  row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? entry.label : entry.merchant} (${entry.id})`);
+  row.querySelector(".remove-row").disabled = scenario[kind].length === 1;
+  row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "Copy";
+  button.setAttribute("aria-label", `Duplicate ${kind === "buyers" ? entry.label : entry.merchant}`);
+  button.disabled = scenario[kind].length >= 40;
+  button.addEventListener("click", () => {
+    try {
+      scenario = duplicateEntry(scenario, kind, entry.id);
+      renderEditor(); refresh();
+      const body = kind === "buyers" ? elements.buyerRows : elements.offerRows;
+      body.lastElementChild.querySelector("input").focus();
+      setStatus("Independent copy added. Edit its constraints to test an alternative.", true);
+    } catch (error) { setStatus(messageOf(error)); }
+  });
+  row.lastElementChild.append(button);
+}
+
+function updateHistoryButtons() {
+  document.querySelector("#undo-button").disabled = !invalidDraft && !history.canUndo;
+  document.querySelector("#redo-button").disabled = invalidDraft || !history.canRedo;
+}
+
+function restoreHistory(forward) {
+  scenario = invalidDraft ? history.current() : forward ? history.redo() : history.undo();
+  renderEditor();
+  refresh();
+  setStatus(forward ? "Change restored." : "Previous valid room restored.", true);
 }
 
 function renderSummary(market) {
@@ -452,6 +634,7 @@ function outcomePresentation(outcome) {
     category: "category differs",
     variant: "variant is not accepted",
     price: "unit price exceeds the ceiling",
+    budget: "items plus shipping exceed the order budget",
     delivery: "delivery exceeds the limit"
   };
   return {
@@ -514,20 +697,22 @@ function drawChart(market) {
   const bounds = canvas.getBoundingClientRect();
   if (bounds.width === 0) return;
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  const height = Math.max(280, market.results.length * 64 + 40);
+  canvas.style.height = `${height}px`;
   canvas.width = Math.floor(bounds.width * ratio);
-  canvas.height = Math.floor(280 * ratio);
+  canvas.height = Math.floor(height * ratio);
   const context = canvas.getContext("2d");
   context.scale(ratio, ratio);
   const width = bounds.width;
-  const height = 280;
   context.clearRect(0, 0, width, height);
   context.font = "12px system-ui";
   context.textBaseline = "middle";
   const left = Math.min(150, Math.max(95, width * 0.28));
   const right = 42;
   const top = 20;
-  const rowHeight = Math.min(62, (height - 40) / Math.max(1, market.results.length));
-  const max = Math.max(1, ...market.results.map((result) => Math.max(result.fulfilledUnits, result.offer.minimumUnits)));
+  const rowHeight = 64;
+  const threshold = result => result.tierProgress.find(tier => tier.selected)?.minimumUnits ?? result.offer.minimumUnits;
+  const max = Math.max(1, ...market.results.map((result) => Math.max(result.fulfilledUnits, threshold(result))));
 
   market.results.forEach((result, index) => {
     const y = top + index * rowHeight;
@@ -536,7 +721,7 @@ function drawChart(market) {
     const candidateWidth = (result.fulfilledUnits / max) * (width - left - right);
     context.fillStyle = result.qualifies ? "#f36f3d" : "#a9a090";
     context.fillRect(left, y + 14, candidateWidth, 20);
-    const minimumX = left + (result.offer.minimumUnits / max) * (width - left - right);
+    const minimumX = left + (threshold(result) / max) * (width - left - right);
     context.strokeStyle = "#211f55";
     context.lineWidth = 2;
     context.beginPath();
@@ -547,7 +732,7 @@ function drawChart(market) {
     context.textAlign = "right";
     context.fillText(trimLabel(result.offer.merchant, 18), left - 10, y + 24);
     context.textAlign = "left";
-    context.fillText(`${result.fulfilledUnits} fulfilled / ${result.offer.minimumUnits} minimum`, left, y + 49);
+    context.fillText(`${result.fulfilledUnits} fulfilled / ${threshold(result)} minimum`, left, y + 49);
   });
 }
 
@@ -557,8 +742,23 @@ function trimLabel(value, limit) {
 
 function scheduleSave(cleanScenario) {
   clearTimeout(saveTimer);
+  if (scenarioReadFailed) {
+    savedState = "failed";
+    document.querySelector("#save-state").textContent = "Previous autosave could not be read and is preserved. Export current edits as JSON. Reset this room explicitly to replace the unreadable save.";
+    return;
+  }
+  savedState = "pending";
+  document.querySelector("#save-state").textContent = "Saving locally…";
   saveTimer = setTimeout(() => {
-    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanScenario)); } catch { setStatus("This browser could not autosave the room."); }
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(cleanScenario));
+      savedState = "saved";
+      document.querySelector("#save-state").textContent = "Current valid room saved in this browser.";
+    } catch {
+      savedState = "failed";
+      document.querySelector("#save-state").textContent = "Autosave unavailable. Export JSON before closing this page.";
+      setStatus("This browser could not autosave the room.");
+    }
   }, 180);
 }
 
@@ -569,15 +769,19 @@ async function importScenario(event) {
   if (file.size === 0) return setStatus("Import failed: the file is empty.");
   if (file.size > 250_000) return setStatus("Import files must be smaller than 250 KB.");
   try {
+    const beforeRead = JSON.stringify(scenario);
     const text = await file.text();
     if (!text.trim()) return setStatus("Import failed: the file is empty.");
     let parsed;
     try {
       parsed = JSON.parse(text);
     } catch (error) {
-      return setStatus(`Import failed: the file is not valid JSON${jsonSyntaxHint(error)}.`);
+      return setStatus(`Import failed: the file is not valid JSON${appJsonSyntaxHint(error)}.`);
     }
-    scenario = validateScenario(parsed);
+    const imported = validateScenario(parsed);
+    if (beforeRead !== JSON.stringify(scenario) && !window.confirm("The room changed while the file was read. Replace it with the imported room? Undo keeps the previous valid room.")) return;
+    if (!allowReplaceDraft()) return;
+    scenario = imported;
     inspectedOfferId = scenario.offers[0]?.id ?? "";
     renderEditor();
     refresh();
@@ -590,16 +794,19 @@ async function importScenario(event) {
 function exportScenario() {
   try {
     const clean = validateScenario(scenario);
-    const blob = new Blob([`${JSON.stringify(clean, null, 2)}\n`], { type: "application/json" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "common-cart-scenario.json";
-    link.click();
-    URL.revokeObjectURL(link.href);
+    downloadFile(`${JSON.stringify(clean, null, 2)}\n`, "common-cart-scenario.json", "application/json");
     setStatus("Scenario exported.", true);
   } catch (error) {
     setStatus(`Export failed: ${messageOf(error)}`);
   }
+}
+
+function downloadFile(content, filename, type) {
+  const link = document.createElement("a");
+  link.href = URL.createObjectURL(new Blob([content], { type }));
+  link.download = filename;
+  link.click();
+  setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
 async function shareScenario() {
@@ -642,7 +849,7 @@ function messageOf(error) {
   return error instanceof ScenarioError || error instanceof Error ? error.message : "The scenario is invalid.";
 }
 
-function jsonSyntaxHint(error) {
+function appJsonSyntaxHint(error) {
   const message = String(error?.message ?? "").replace(/\s+/g, " ").trim();
   if (!message) return "";
   const lineColumn = message.match(/line (\d+)(?: column (\d+))?/i);

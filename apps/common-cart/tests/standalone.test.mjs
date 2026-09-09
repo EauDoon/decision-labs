@@ -1,7 +1,16 @@
 import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
+import { spawnSync } from "node:child_process";
 import { buildStandalone } from "../scripts/build-standalone.mjs";
+
+test("generated standalone parses as a module without duplicate declarations", async () => {
+  const html = await buildStandalone();
+  const source = html.match(/<script type="module">([\s\S]*?)<\/script>/u)?.[1];
+  assert.ok(source);
+  const result = spawnSync(process.execPath, ["--check", "--input-type=module"], { input: source, encoding: "utf8" });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+});
 
 test("standalone GUI is deterministic and current", async () => {
   const expected = await buildStandalone();
