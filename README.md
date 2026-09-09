@@ -5,7 +5,7 @@
 Decision Labs is a set of independent, static, browser-based workbenches for
 exploring bounded, high-stakes decisions with transparent, deterministic math.
 Each workbench is self-contained: its own source, tests, generated single-file
-build, and MIT license. All four are at **v1.2.0**.
+build, and MIT license. Each workbench has its own version and release notes.
 
 Every app:
 
@@ -32,6 +32,21 @@ Each app also ships a `MODEL.md` (formulas and conventions), `CONTRIBUTING.md`,
 `SECURITY.md`, and its own `LICENSE`.
 
 ## Quick start
+
+Download the repository ZIP, extract it, and open [index.html](index.html) to
+choose a workbench. The entry page opens each self-contained app without a server.
+Export JSON before clearing browser data or moving to a different browser.
+
+For a local browser address, run these commands from the repository root:
+
+```sh
+npm start
+```
+
+Open the printed address, normally `http://127.0.0.1:4170`. The launcher serves
+only the entry page and the four generated workbenches. It accepts local Host
+headers, binds loopback only, and does not expose source files or local drafts.
+Set `PORT` to an integer from 1 through 65535 to choose another port.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
@@ -68,18 +83,29 @@ Weekend Gap defaults to `http://127.0.0.1:5173`. Override the port with `PORT`
 
 ### Run the tests and checks
 
+From the repository root, these commands cover all four apps:
+
 ```sh
-npm test           # the Node built-in test suite
-npm run check      # syntax checks, standalone freshness, and (where present) tests
+npm test           # root integration tests, then every app's test suite
+npm run check      # every app's syntax and standalone freshness checks
+npm run build:standalone  # regenerate all four self-contained builds
 ```
+
+The integration tests also parse standalone JavaScript in its actual script
+mode. This catches module declaration collisions that a classic-script test
+harness can miss. App-local commands remain available from each app folder.
 
 ## Repository layout
 
 ```text
 decision-labs/
 |-- README.md                  # This file
+|-- index.html                 # Offline workbench selector
+|-- package.json               # Root launch, validation, and build commands
+|-- scripts/                   # Loopback launcher and app command runner
+|-- tests/                     # Launch boundary and browser-script parsing tests
 |-- LICENSE                    # MIT (repository)
-|-- .github/workflows/         # One path-filtered CI workflow per app
+|-- .github/workflows/         # App checks and full-suite integration checks
 `-- apps/
     |-- partnership-breakpoint/
     |-- common-cart/
@@ -115,7 +141,8 @@ app's `MODEL.md` for the exact formulas, assumptions, and non-goals.
 ## Continuous integration
 
 Each app has its own path-filtered GitHub Actions workflow that runs its checks
-on pull requests and on pushes to `main`. Report repository-wide and component
+on pull requests and on pushes to `main`. A repository integration workflow also
+runs the root suite and all app checks on every PR and main push. Report repository-wide and component
 issues in the [shared issue tracker](https://github.com/EauDoon/decision-labs/issues).
 
 ## License

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Four offline workbenches for exploring partnership thresholds, pooled buying, structured agreements and weekend liquidity.">
+  <title>Decision Labs</title>
+  <style>
+    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #182d32; background: #f3f6f6; }
+    * { box-sizing: border-box; }
+    body { margin: 0; border-top: 7px solid #176454; }
+    main, footer { max-width: 1100px; margin: auto; padding: 32px clamp(20px, 5vw, 64px); }
+    header { padding: 24px 0 32px; border-bottom: 1px solid #bac8cb; }
+    h1 { font-family: Georgia, serif; font-size: clamp(38px, 6vw, 64px); line-height: 1.08; font-weight: 500; margin: 0 0 20px; }
+    header p { font-size: 19px; max-width: 680px; margin: 0; line-height: 1.6; }
+    h2 { font-size: 22px; margin: 0 0 10px; line-height: 1.3; }
+    p { line-height: 1.6; }
+    .workbench { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 40px; padding: 30px 0; border-bottom: 1px solid #bac8cb; align-items: center; }
+    .workbench p { margin: 0; max-width: 620px; color: #3c535b; }
+    .open { display: block; padding: 13px 18px; border: 1px solid #176454; border-radius: 4px; color: #105445; text-decoration: none; font-weight: 650; text-align: center; }
+    .open:hover { background: #176454; color: white; }
+    a:focus-visible { outline: 3px solid #a44709; outline-offset: 4px; }
+    .note { margin-top: 28px; max-width: 760px; font-size: 15px; }
+    footer { padding-top: 0; font-size: 14px; color: #3c535b; }
+    .skip { position: absolute; top: -100px; left: 20px; padding: 12px; background: white; color: #105445; }
+    .skip:focus { top: 16px; }
+    @media (max-width: 640px) { .workbench { grid-template-columns: 1fr; gap: 18px; } .open { text-align: left; } main { padding-top: 10px; } }
+    @media print { body { background: white; } .open { border: 0; } }
+  </style>
+</head>
+<body>
+  <a class="skip" href="#workbenches">Skip to workbenches</a>
+  <main>
+    <header>
+      <h1>Decision Labs</h1>
+      <p>Make the assumptions visible. Explore a decision, compare the tradeoffs, and take the evidence into your next conversation.</p>
+    </header>
+    <section id="workbenches" aria-label="Choose a workbench">
+      <article class="workbench">
+        <div><h2>Partnership Breakpoint</h2><p>Find the participant who reaches an exit threshold first. Test changes in volume, fees and costs before agreeing to a revenue split.</p></div>
+        <a class="open" href="apps/partnership-breakpoint/standalone.html">Explore a partnership</a>
+      </article>
+      <article class="workbench">
+        <div><h2>Common Cart</h2><p>Pool buyer requirements and compare conditional merchant offers. See who fits, what the group can unlock, and how shipping changes the outcome.</p></div>
+        <a class="open" href="apps/common-cart/standalone.html">Plan a pooled purchase</a>
+      </article>
+      <article class="workbench">
+        <div><h2>The Smallest Agreement</h2><p>Explore structured clause changes that cross an approval threshold while respecting group support floors, locked choices and a change budget.</p></div>
+        <a class="open" href="apps/smallest-agreement/standalone.html">Build an agreement</a>
+      </article>
+      <article class="workbench">
+        <div><h2>Weekend Gap</h2><p>Follow synthetic redemption demand from Friday to Monday. Explore how reserves and settlement windows affect the queue when banking closes.</p></div>
+        <a class="open" href="apps/weekend-gap/standalone.html">Explore the liquidity gap</a>
+      </article>
+    </section>
+    <p class="note">Each workbench starts with synthetic examples and runs entirely in your browser. No account, installation or external service is required. Browser saves stay on this device; export JSON to keep a portable copy. The models support your judgment and do not make commitments or execute transactions.</p>
+  </main>
+  <footer>Transparent assumptions. Deterministic calculations. Decisions remain with people.</footer>
+</body>
+</html>
