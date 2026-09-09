@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios } from "../src/model.js";
+import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios, compareThreeRooms } from "../src/model.js";
 
 test("history detaches states, caps memory, and truncates branches", () => {
   const s = clonePreset(); const h = createScenarioHistory(s);
@@ -48,4 +48,17 @@ test("workspace validates every room and rejects unsupported schema or oversized
   for (const invalid of [{ version: 2, rooms: [] }, { version: 1, rooms: [{}] }, { version: 1, rooms: Array(13).fill(s) }, { version: 1, rooms: [], extra: true }]) {
     assert.throws(() => validateWorkspace(invalid));
   }
+});
+
+test("three-room comparison reports winners without mixing currencies", () => {
+  const a = clonePreset("neighbourhood");
+  const b = clonePreset("studio");
+  const c = clonePreset("hardware");
+  c.currency = "USD";
+  const comparison = compareThreeRooms(a, b, c);
+  assert.equal(comparison.rooms.length, 3);
+  assert.equal(comparison.sameCurrency, false);
+  assert.equal(comparison.rooms[0].winner, compareScenarios(a, a).baseline.winner);
+  assert.ok(comparison.rooms.every((room) => typeof room.fulfilled === "number"));
+  assert.throws(() => compareThreeRooms(a, b, {}), /Room 3 is invalid/);
 });

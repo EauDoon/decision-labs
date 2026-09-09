@@ -232,6 +232,17 @@ export function createScenarioHistory(initial: unknown): ScenarioHistory;
 export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
 export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", id: string): Scenario;
 export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;
+export interface ThreeRoomRow {
+  title: string;
+  currency: string;
+  requested: number;
+  fulfilled: number;
+  buyers: number;
+  cost: number | null;
+  winner: string;
+}
+export interface ThreeRoomComparison { sameCurrency: boolean; rooms: ThreeRoomRow[]; }
+export function compareThreeRooms(first: unknown, second: unknown, third: unknown): ThreeRoomComparison;
 export function createMerchantReport(rawScenario: unknown): MerchantReport;
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
 export function neutralizeSpreadsheetCell(value: unknown): unknown;

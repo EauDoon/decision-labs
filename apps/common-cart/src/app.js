@@ -3,6 +3,7 @@ import {
   aggregateDemand,
   clonePreset,
   compareScenarios,
+  compareThreeRooms,
   computeResidualCoverage,
   createScenarioHistory,
   createMerchantReport,
@@ -92,6 +93,23 @@ function renderWorkspace() {
   document.querySelector("#load-room").disabled = savedRooms.length === 0;
   document.querySelector("#delete-room").disabled = savedRooms.length === 0;
   document.querySelector("#save-room").disabled = workspaceReadFailed || savedRooms.length >= 12;
+  for (const id of ["compare-room-a", "compare-room-b"]) {
+    const select = document.querySelector(`#${id}`);
+    if (!select) continue;
+    select.replaceChildren(...savedRooms.map((room, index) => {
+      const option = document.createElement("option");
+      option.value = String(index);
+      option.textContent = `${index + 1}. ${room.title}`;
+      return option;
+    }));
+    select.disabled = savedRooms.length < 2;
+  }
+  const selectB = document.querySelector("#compare-room-b");
+  if (selectB && savedRooms.length > 1 && selectB.value === document.querySelector("#compare-room-a")?.value) {
+    selectB.value = "1";
+  }
+  const compareThree = document.querySelector("#compare-three");
+  if (compareThree) compareThree.disabled = savedRooms.length < 2;
 }
 
 function storeWorkspace(rooms) {
@@ -156,6 +174,16 @@ function bindStaticEvents() {
   });
   document.querySelector("#clear-baseline").addEventListener("click", () => {
     baseline = null; renderComparison();
+  });
+  document.querySelector("#compare-three").addEventListener("click", () => {
+    try {
+      const first = savedRooms[Number(document.querySelector("#compare-room-a").value)];
+      const second = savedRooms[Number(document.querySelector("#compare-room-b").value)];
+      if (!first || !second) return setStatus("Save at least two snapshots to compare three rooms.");
+      const comparison = compareThreeRooms(scenario, first, second);
+      renderThreeRoomComparison(comparison);
+      setStatus("Compared the open room with two snapshots. Totals are not savings.", true);
+    } catch (error) { setStatus(messageOf(error)); }
   });
   document.querySelector("#save-room").addEventListener("click", () => {
     try {
@@ -632,6 +660,44 @@ function renderComparison() {
   const note = document.createElement("p");
   note.textContent = `${comparison.sameDemand ? "Buyer demand is unchanged." : "Buyer demand changed; cost differences are not like-for-like savings."} ${comparison.sameCurrency ? "Totals may cover different allocated orders." : "Currencies differ; monetary comparisons are omitted."}`;
   summary.replaceChildren(table, note);
+}
+
+function renderThreeRoomComparison(comparison) {
+  const host = document.querySelector("#three-room-summary");
+  if (!host) return;
+  const table = document.createElement("table");
+  const caption = document.createElement("caption");
+  caption.textContent = comparison.sameCurrency
+    ? "Current room and two snapshots. Landed totals may cover different allocated orders."
+    : "Current room and two snapshots. Currencies differ, so monetary totals are omitted.";
+  const head = document.createElement("thead");
+  const header = document.createElement("tr");
+  for (const text of ["Metric", "Current", "Snapshot A", "Snapshot B"]) {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = text;
+    header.append(th);
+  }
+  head.append(header);
+  table.append(caption, head);
+  const body = document.createElement("tbody");
+  const rows = [
+    ["Room", ...comparison.rooms.map((room) => room.title)],
+    ["Winner", ...comparison.rooms.map((room) => room.winner)],
+    ["Requested units", ...comparison.rooms.map((room) => room.requested)],
+    ["Fulfilled units", ...comparison.rooms.map((room) => room.fulfilled)],
+    ["Included buyers", ...comparison.rooms.map((room) => room.buyers)]
+  ];
+  if (comparison.sameCurrency) {
+    rows.push(["Landed total", ...comparison.rooms.map((room) => room.cost === null ? "No allocation" : money(room.currency).format(room.cost))]);
+  }
+  for (const values of rows) {
+    const tr = document.createElement("tr");
+    for (const value of values) addCell(tr, String(value));
+    body.append(tr);
+  }
+  table.append(body);
+  host.replaceChildren(table);
 }
 
 function addDuplicateAction(row, kind, entry) {

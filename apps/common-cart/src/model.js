@@ -186,6 +186,30 @@ export function compareScenarios(before, after) {
     sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
 }
 
+export function compareThreeRooms(first, second, third) {
+  const rooms = [first, second, third].map((entry, index) => {
+    try {
+      return validateScenario(entry);
+    } catch (error) {
+      throw new ScenarioError(`Room ${index + 1} is invalid: ${error.message}`);
+    }
+  });
+  const markets = rooms.map((room) => evaluateMarket(room));
+  const sameCurrency = rooms.every((room) => room.currency === rooms[0].currency);
+  return {
+    sameCurrency,
+    rooms: rooms.map((room, index) => ({
+      title: room.title,
+      currency: room.currency,
+      requested: markets[index].totalRequestedUnits,
+      fulfilled: markets[index].winner?.fulfilledUnits ?? 0,
+      buyers: markets[index].winner?.deliveredBuyers ?? 0,
+      cost: markets[index].winner?.totalCost ?? null,
+      winner: markets[index].winner?.offer.merchant ?? "No qualifying offer"
+    }))
+  };
+}
+
 /** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
 export function createMerchantReport(rawScenario) {
   const market = evaluateMarket(rawScenario);
