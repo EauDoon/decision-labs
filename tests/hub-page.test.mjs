@@ -98,7 +98,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.doesNotMatch(html, /hosted API/i);
   assert.doesNotMatch(html, /live service/i);
   assert.match(readme, /What's new/);
-  assert.match(readme, /share-to-hold, residual\s+coverage, veto groups, and the gate Gantt/);
+  assert.match(readme, /share-to-hold,\s+residual\s+coverage, veto groups, and the gate Gantt/);
   assert.match(readme, /CSV roster, capacity, and notes/);
   assert.match(readme, /leftover\/tertiary fill/);
   assert.match(readme, /package pin, locks, and notes/);
