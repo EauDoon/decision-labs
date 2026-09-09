@@ -239,10 +239,35 @@ export function createMerchantReport(rawScenario) {
     requestedUnits: market.totalRequestedUnits, buyerCount: market.buyerCount,
     offers: market.ranked.map(result => ({
       merchant: result.offer.merchant, category: result.offer.category, variant: result.offer.variant,
+      fulfillment: result.offer.fulfillment,
       status: result.qualifies ? "Unlocked" : "Locked", fulfilledUnits: result.fulfilledUnits,
       includedBuyerCount: result.deliveredBuyers, itemPrice: result.effectiveUnitPrice,
       landedTotal: result.qualifies ? result.totalCost : null, deliveryDays: result.offer.deliveryDays
     }))
+  };
+}
+
+export function createMerchantResidualReport(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const publicOffer = (entry) => entry && ({
+    merchant: entry.merchant,
+    category: entry.category,
+    variant: entry.variant,
+    fulfilledUnits: entry.fulfilledUnits,
+    deliveredBuyers: entry.deliveredBuyers,
+    totalCost: entry.totalCost
+  });
+  return {
+    report: "Common Cart residual coverage (merchant aggregate)",
+    version: 1,
+    currency: evaluateMarket(rawScenario).scenario.currency,
+    limitations: coverage.note,
+    primary: publicOffer(coverage.primary),
+    secondary: publicOffer(coverage.secondary),
+    leftoverBuyerCount: coverage.leftoverBuyerCount,
+    leftoverUnits: coverage.leftoverUnits,
+    unfilledBuyerCount: coverage.unfilledBuyerCount,
+    unfilledUnits: coverage.unfilledUnits
   };
 }
 

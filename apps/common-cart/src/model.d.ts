@@ -241,7 +241,13 @@ export interface ScenarioComparison { baseline: ComparisonMetrics; current: Comp
 export interface MerchantReport {
   report: string; version: number; currency: string; limitations: string;
   requestedUnits: number; buyerCount: number;
-  offers: Array<{ merchant: string; category: string; variant: string; status: string; fulfilledUnits: number; includedBuyerCount: number; itemPrice: number | null; landedTotal: number | null; deliveryDays: number }>;
+  offers: Array<{ merchant: string; category: string; variant: string; fulfillment: "shipping" | "pickup"; status: string; fulfilledUnits: number; includedBuyerCount: number; itemPrice: number | null; landedTotal: number | null; deliveryDays: number }>;
+}
+export interface MerchantResidualReport {
+  report: string; version: number; currency: string; limitations: string;
+  primary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
+  secondary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
+  leftoverBuyerCount: number; leftoverUnits: number; unfilledBuyerCount: number; unfilledUnits: number;
 }
 export function createScenarioHistory(initial: unknown): ScenarioHistory;
 export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
@@ -260,6 +266,7 @@ export interface ThreeRoomRow {
 export interface ThreeRoomComparison { sameCurrency: boolean; rooms: ThreeRoomRow[]; }
 export function compareThreeRooms(first: unknown, second: unknown, third: unknown): ThreeRoomComparison;
 export function createMerchantReport(rawScenario: unknown): MerchantReport;
+export function createMerchantResidualReport(rawScenario: unknown): MerchantResidualReport;
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
 export function neutralizeSpreadsheetCell(value: unknown): unknown;
 export function parseBuyerCsv(text: unknown): Buyer[];

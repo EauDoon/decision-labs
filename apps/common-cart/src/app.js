@@ -8,6 +8,7 @@ import {
   computeResidualCoverage,
   createScenarioHistory,
   createMerchantReport,
+  createMerchantResidualReport,
   createBuyerCsv,
   importBuyersFromCsv,
   redactBuyerLabels,
@@ -168,6 +169,12 @@ function bindStaticEvents() {
     try {
       downloadFile(`${JSON.stringify(createMerchantReport(scenario), null, 2)}\n`, "common-cart-merchant-report.json", "application/json");
       setStatus("Aggregate merchant report exported. It omits buyer labels, budgets, IDs, and individual allocations.", true);
+    } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#merchant-residual-report").addEventListener("click", () => {
+    try {
+      downloadFile(`${JSON.stringify(createMerchantResidualReport(scenario), null, 2)}\n`, "common-cart-residual-coverage.json", "application/json");
+      setStatus("Residual coverage exported as aggregates. Buyer IDs and labels are omitted. This is not a dual checkout.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
