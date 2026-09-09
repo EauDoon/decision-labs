@@ -27,7 +27,8 @@ export const DEFAULT_SCENARIO = Object.freeze({
   payoutThroughputAudPerHour: 300000,
   payoutOpenStartHour: 8,
   payoutOpenEndHour: 17,
-  redemptionDemandAud: 1200000
+  redemptionDemandAud: 1200000,
+  mondayHoliday: false
 });
 
 export const PRESETS = Object.freeze({
@@ -54,6 +55,24 @@ export const PRESETS = Object.freeze({
     weekendFxMultiplier: 6,
     payoutThroughputAudPerHour: 95000,
     redemptionDemandAud: 7200000
+  }),
+  thinFxTightWindows: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Thin FX, Tight Windows (synthetic)",
+    reserveCashAud: 4800000,
+    issuerThroughputAudPerHour: 220000,
+    issuerOpenStartHour: 10,
+    issuerOpenEndHour: 15,
+    bankOpenStartHour: 10,
+    bankOpenEndHour: 14,
+    fxDepthAudPerHour: 90000,
+    fxSpreadBps: 45,
+    weekendFxMultiplier: 4.5,
+    payoutThroughputAudPerHour: 140000,
+    payoutOpenStartHour: 11,
+    payoutOpenEndHour: 14,
+    redemptionDemandAud: 2800000,
+    mondayHoliday: true
   })
 });
 
@@ -73,7 +92,8 @@ const FIELD_RULES = Object.freeze({
   payoutThroughputAudPerHour: { min: 0, max: 1000000000 },
   payoutOpenStartHour: { min: 0, max: 23, integer: true },
   payoutOpenEndHour: { min: 1, max: 24, integer: true },
-  redemptionDemandAud: { min: 0, max: 5000000000 }
+  redemptionDemandAud: { min: 0, max: 5000000000 },
+  mondayHoliday: { type: "boolean" }
 });
 
 export function finiteNumber(value, fallback) {
@@ -106,6 +126,17 @@ export function sanitizeScenario(raw = {}) {
     if (rule.type === "choice") {
       scenario[field] = rule.values.includes(source[field]) ? source[field] : fallback;
       if (source[field] !== undefined && scenario[field] !== source[field]) errors.push(`${field} was unsupported; the default was used.`);
+      continue;
+    }
+    if (rule.type === "boolean") {
+      if (source[field] === undefined) {
+        scenario[field] = fallback;
+      } else if (source[field] === true || source[field] === false) {
+        scenario[field] = source[field];
+      } else {
+        scenario[field] = fallback;
+        errors.push(`${field} was unsupported; the default was used.`);
+      }
       continue;
     }
     if (rule.type === "text") {
@@ -162,8 +193,9 @@ export function formatTime(hourOffset) {
   return `${days[dayIndex]} ${String(localHour).padStart(2, "0")}:00`;
 }
 
-export function isBusinessDay(hourOffset) {
+export function isBusinessDay(hourOffset, mondayHoliday = false) {
   const { dayIndex } = dayAndHourAt(hourOffset);
+  if (mondayHoliday && dayIndex === 1) return false;
   return dayIndex >= 1 && dayIndex <= 5;
 }
 
@@ -172,16 +204,16 @@ export function isWithinHours(hourOffset, startHour, endHour) {
   return localHour >= startHour && localHour < endHour;
 }
 
-export function isOperational(hourOffset, startHour, endHour) {
-  return isBusinessDay(hourOffset) && isWithinHours(hourOffset, startHour, endHour);
+export function isOperational(hourOffset, startHour, endHour, mondayHoliday = false) {
+  return isBusinessDay(hourOffset, mondayHoliday) && isWithinHours(hourOffset, startHour, endHour);
 }
 
 export function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
-  const weekend = !isBusinessDay(hourOffset);
-  const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour);
-  const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour);
-  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour);
+  const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday);
+  const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday);
+  const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday);
+  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday);
   const fxMultiplier = weekend ? scenario.weekendFxMultiplier : 1;
   return {
     issuerOpen,
@@ -242,6 +274,13 @@ export function nextPayoutTime(scenarioInput, fromHour, reserveRemainingAud) {
     if (capacityForHour(scenario, offset, reserve).capacityAud > 0) return offset;
   }
   return null;
+}
+
+/** Hour offset of the first settling interval, or null when none settle in 72 hours. */
+export function hoursToFirstSettlement(timeline) {
+  if (!Array.isArray(timeline)) return null;
+  const point = timeline.find((item) => item.settledThisHour > 0);
+  return point ? point.hour - 1 : null;
 }
 
 export function createSnapshot(scenario, hour, state, demandThisHour = 0, settledThisHour = 0, limitingGate = "none") {
@@ -311,6 +350,7 @@ export function runSimulation(input = {}) {
         timeline[0],
       ).hour,
       hoursWithQueue: timeline.filter((point) => point.queuedAud > 0).length,
+      hoursToFirstSettlement: hoursToFirstSettlement(timeline),
     })
   });
 }
@@ -323,7 +363,12 @@ export function compareScenarios(baselineInput, candidateInput) {
     .filter((key) => baseline.scenario[key] !== candidate.scenario[key])
     .map((key) => ({ field: key, baseline: baseline.scenario[key], candidate: candidate.scenario[key] }));
   const deltas = Object.fromEntries(Object.keys(baseline.summary)
-    .map((key) => [key, candidate.summary[key] - baseline.summary[key]]));
+    .map((key) => {
+      const before = baseline.summary[key];
+      const after = candidate.summary[key];
+      if (typeof before === "number" && typeof after === "number") return [key, after - before];
+      return [key, before === after ? 0 : null];
+    }));
   return { baseline, candidate, changes, deltas };
 }
 
@@ -576,5 +621,277 @@ export function reportToHTML(current, baseline, options = {}) {
     .map(([label, field]) => "<tr><th scope=row>" + escape(label) + "</th><td>" + escape(money(comparison.baseline.summary[field])) + "</td><td>" + escape(money(comparison.candidate.summary[field])) + "</td></tr>").join("");
   const assumptionRows = Object.keys(DEFAULT_SCENARIO).map(field => "<tr><th scope=row>" + escape(field) + "</th><td>" + escape(workspace.baseline[field]) + "</td><td>" + escape(workspace.current[field]) + "</td></tr>").join("");
   const planText = plan.status === "reachable" ? "Minimum whole-cent starting reserve: " + money(plan.minimumReserveAud) : "Unreachable by reserve alone. Maximum modeled settlement: " + money(plan.maximumSettledAud);
-  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Weekend Gap experiment report</title><style>body{font:16px/1.5 system-ui,sans-serif;color:#172b35;background:white;max-width:1000px;margin:2rem auto;padding:1rem}h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #9aa9b0;padding:.55rem;text-align:left;overflow-wrap:anywhere}th{background:#eff3f5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.notice{border-left:4px solid #54727f;padding:1rem;background:#f2f5f6}@media print{body{margin:0;padding:0;font-size:10pt}h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}}</style></head><body><main><h1>Weekend Gap experiment report</h1><p class="notice">Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations. 72-hour horizon: Friday 15:00 to Monday 15:00, using abstract local time.</p><p>Current: <strong>' + escape(workspace.current.name) + '</strong>. Baseline: <strong>' + escape(workspace.baseline.name) + '</strong>.</p><h2>Experiment notes</h2><pre>' + escape(workspace.notes || "No experiment notes provided.") + '</pre><h2>Outcome comparison</h2><p>AUD display values are rounded to cents. Compare total demand alongside settlement and queue size.</p><table><thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + summaryRows + '</tbody></table><h2>Queue diagnostics</h2><p>' + diagnostics.backlogIntervals + ' of 72 intervals end with backlog. Longest run: ' + diagnostics.longestBacklogRun + ' hours. End-of-hour queue exposure: ' + escape(money(diagnostics.queueAudHours)) + '·hours.</p><ul>' + diagnostics.blockers.map(item => '<li>' + escape(item.label) + ': ' + item.intervals + ' backlog intervals</li>').join("") + '</ul><p>Concurrent blockers overlap. Counts describe observations, not marginal causal impact.</p><h2>Reserve experiment</h2><p>Target: ' + workspace.targetPercent + '% of total 72-hour demand by ' + escape(formatTime(workspace.deadlineHour)) + '. ' + escape(planText) + '.</p><p>' + escape(plan.reason) + '</p><h2>Complete assumptions</h2><table><thead><tr><th scope="col">Assumption</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + assumptionRows + '</tbody></table><h2>Method and limits</h2><p>Demand joins once per hour under the selected deterministic arrival profile. Settlement requires all three business-day operating windows to overlap. Capacity is the minimum of issuer throughput, FX depth, payout throughput and remaining starting reserve. No reserve replenishment occurs. Queue exposure sums end-of-hour balances; it is not a customer waiting-time estimate. Real holidays, time zones, settlement uncertainty and counterparty risk are not modeled. No result is a liquidity recommendation.</p><p>Report format: weekend-gap-report v1. Export the separate workspace JSON for editable inputs and hourly CSV for the complete ledger. Use your browser Print command to save or print this report.</p></main></body></html>';
+  const firstSettlementText = (hours) => hours === null ? "No settlement in 72h" : hours + " hour" + (hours === 1 ? "" : "s");
+  const firstSettlementRow = "<tr><th scope=row>" + escape("Hours to first settlement") + "</th><td>" + escape(firstSettlementText(comparison.baseline.summary.hoursToFirstSettlement)) + "</td><td>" + escape(firstSettlementText(comparison.candidate.summary.hoursToFirstSettlement)) + "</td></tr>";
+  const bottleneckRows = attributeBottlenecks(workspace.current).rows.map((row) =>
+    "<tr><th scope=row>" + escape(row.label) + "</th><td>" + escape(String(row.hours)) + "</td><td>" + escape((row.share * 100).toFixed(1) + "%") + "</td></tr>").join("");
+  return '<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta http-equiv="Content-Security-Policy" content="default-src &#39;none&#39;; style-src &#39;unsafe-inline&#39;; base-uri &#39;none&#39;; form-action &#39;none&#39;"><title>Weekend Gap experiment report</title><style>body{font:16px/1.5 system-ui,sans-serif;color:#172b35;background:white;max-width:1000px;margin:2rem auto;padding:1rem}h1,h2{line-height:1.2}table{border-collapse:collapse;width:100%;margin:1rem 0}th,td{border:1px solid #9aa9b0;padding:.55rem;text-align:left;overflow-wrap:anywhere}th{background:#eff3f5}pre{white-space:pre-wrap;overflow-wrap:anywhere;font:inherit}.notice{border-left:4px solid #54727f;padding:1rem;background:#f2f5f6}@media print{body{margin:0;padding:0;font-size:10pt}h2{break-after:avoid}tr{break-inside:avoid}thead{display:table-header-group}}</style></head><body><main><h1>Weekend Gap experiment report</h1><p class="notice">Synthetic educational analysis. No live data, issuer claims, financial advice or payout operations. 72-hour horizon: Friday 15:00 to Monday 15:00, using abstract local time.</p><p>Current: <strong>' + escape(workspace.current.name) + '</strong>. Baseline: <strong>' + escape(workspace.baseline.name) + '</strong>.</p><h2>Experiment notes</h2><pre>' + escape(workspace.notes || "No experiment notes provided.") + '</pre><h2>Outcome comparison</h2><p>AUD display values are rounded to cents. Compare total demand alongside settlement and queue size.</p><table><thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + summaryRows + firstSettlementRow + '</tbody></table><h2>Queue diagnostics</h2><p>' + diagnostics.backlogIntervals + ' of 72 intervals end with backlog. Longest run: ' + diagnostics.longestBacklogRun + ' hours. End-of-hour queue exposure: ' + escape(money(diagnostics.queueAudHours)) + '·hours.</p><ul>' + diagnostics.blockers.map(item => '<li>' + escape(item.label) + ': ' + item.intervals + ' backlog intervals</li>').join("") + '</ul><p>Concurrent blockers overlap. Counts describe observations, not marginal causal impact.</p><h2>Gate Gantt</h2><p>Open versus closed hours for the current scenario. The green dashed marker is the first hour the payout chain can settle given starting reserve. The solid marker is the selected hour from the workspace.</p>' + buildGateGanttSvg(workspace.current, workspace.selectedHour) + '<h2>Queue path</h2><p>Printable queued AUD versus hour for the current scenario. The dashed path is the pinned baseline. The vertical line is the selected workspace hour.</p>' + buildQueueChartSvg(workspace.current, workspace.baseline, workspace.selectedHour) + '<h2>Hourly limiting gate</h2><p>Count of the 72 interval-start limitingGate values on the current scenario. Closed issuer, bank or payout gates are named before throughput or reserve. This is an observation count, not a ranking of which change would raise settlement.</p><table><thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of 72h</th></tr></thead><tbody>' + bottleneckRows + '</tbody></table><h2>Reserve experiment</h2><p>Target: ' + workspace.targetPercent + '% of total 72-hour demand by ' + escape(formatTime(workspace.deadlineHour)) + '. ' + escape(planText) + '.</p><p>' + escape(plan.reason) + '</p><h2>Complete assumptions</h2><table><thead><tr><th scope="col">Assumption</th><th scope="col">Baseline</th><th scope="col">Current</th></tr></thead><tbody>' + assumptionRows + '</tbody></table><h2>Method and limits</h2><p>Demand joins once per hour under the selected deterministic arrival profile. Settlement requires all three business-day operating windows to overlap. Capacity is the minimum of issuer throughput, FX depth, payout throughput and remaining starting reserve. No reserve replenishment occurs. Queue exposure sums end-of-hour balances; it is not a customer waiting-time estimate. The optional Monday holiday is modeled. Other public holidays, time zones, settlement uncertainty and counterparty risk are not modeled. No result is a liquidity recommendation.</p><p>Report format: weekend-gap-report v1. Export the separate workspace JSON for editable inputs and hourly CSV for the complete ledger. Use your browser Print command to save or print this report.</p></main></body></html>';
 }
+
+export const BOTTLENECK_LABELS = Object.freeze([
+  "issuer",
+  "bank",
+  "payout",
+  "reserve",
+  "issuer throughput",
+  "FX depth",
+  "payout throughput",
+  "AUD reserve",
+  "none"
+]);
+
+/** Count of the 72 interval-start limiting gates. Observation only, not causal impact. */
+export function attributeBottlenecks(input) {
+  const result = runSimulation(input);
+  const counts = Object.fromEntries(BOTTLENECK_LABELS.map((label) => [label, 0]));
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const label = result.timeline[hour].limitingGate;
+    counts[label] = (counts[label] || 0) + 1;
+  }
+  const rows = Object.freeze(BOTTLENECK_LABELS.map((label) => Object.freeze({
+    label,
+    hours: counts[label] || 0,
+    share: (counts[label] || 0) / SIMULATION_HOURS
+  })));
+  const extra = Object.keys(counts).filter((label) => !BOTTLENECK_LABELS.includes(label));
+  const extraRows = extra.map((label) => Object.freeze({
+    label,
+    hours: counts[label],
+    share: counts[label] / SIMULATION_HOURS
+  }));
+  return Object.freeze({
+    hours: SIMULATION_HOURS,
+    counts: Object.freeze(counts),
+    rows: Object.freeze([...rows, ...extraRows])
+  });
+}
+
+export const WINDOW_GATES = Object.freeze(["issuer", "bank", "payout"]);
+
+/** Shift one operating window by whole hours, then clamp to a valid one-hour-minimum window. */
+export function shiftOperatingWindow(scenarioInput, gate, startDeltaHours, endDeltaHours) {
+  if (!WINDOW_GATES.includes(gate)) throw new RangeError("Choose issuer, bank or payout.");
+  if (!Number.isInteger(startDeltaHours) || !Number.isInteger(endDeltaHours)) {
+    throw new RangeError("Window shifts must be whole hours.");
+  }
+  const { scenario } = sanitizeScenario(scenarioInput);
+  const startKey = `${gate}OpenStartHour`;
+  const endKey = `${gate}OpenEndHour`;
+  const [start, end] = normaliseWindow(scenario[startKey] + startDeltaHours, scenario[endKey] + endDeltaHours);
+  return sanitizeScenario({ ...scenario, [startKey]: start, [endKey]: end }).scenario;
+}
+
+/** Re-run the simulation after a window shift. Does not mutate the input scenario. */
+export function previewWindowShift(scenarioInput, gate, startDeltaHours, endDeltaHours) {
+  const current = runSimulation(scenarioInput);
+  const applied = shiftOperatingWindow(current.scenario, gate, startDeltaHours, endDeltaHours);
+  const candidate = runSimulation(applied);
+  const startKey = `${gate}OpenStartHour`;
+  const endKey = `${gate}OpenEndHour`;
+  return Object.freeze({
+    gate,
+    startDeltaHours,
+    endDeltaHours,
+    applied,
+    current: Object.freeze({
+      peakQueuedAud: current.summary.peakQueuedAud,
+      totalSettledAud: current.summary.totalSettledAud,
+      hoursToFirstSettlement: current.summary.hoursToFirstSettlement,
+      startHour: current.scenario[startKey],
+      endHour: current.scenario[endKey]
+    }),
+    candidate: Object.freeze({
+      peakQueuedAud: candidate.summary.peakQueuedAud,
+      totalSettledAud: candidate.summary.totalSettledAud,
+      hoursToFirstSettlement: candidate.summary.hoursToFirstSettlement,
+      startHour: applied[startKey],
+      endHour: applied[endKey]
+    }),
+    deltas: Object.freeze({
+      peakQueuedAud: candidate.summary.peakQueuedAud - current.summary.peakQueuedAud,
+      totalSettledAud: candidate.summary.totalSettledAud - current.summary.totalSettledAud,
+      hoursToFirstSettlement: typeof current.summary.hoursToFirstSettlement === "number" && typeof candidate.summary.hoursToFirstSettlement === "number"
+        ? candidate.summary.hoursToFirstSettlement - current.summary.hoursToFirstSettlement
+        : current.summary.hoursToFirstSettlement === candidate.summary.hoursToFirstSettlement ? 0 : null
+    })
+  });
+}
+
+export const DEMAND_PROFILES = Object.freeze(["flat", "fridayBurst", "mondayRush"]);
+
+const DEMAND_PROFILE_LABELS = Object.freeze({
+  flat: "Even across 72 hours",
+  fridayBurst: "Friday burst",
+  mondayRush: "Monday rush"
+});
+
+/** Same other inputs, three arrival timings. Timing experiment, not a forecast. */
+export function compareDemandProfiles(input) {
+  const { scenario } = sanitizeScenario(input);
+  return Object.freeze(DEMAND_PROFILES.map((demandProfile) => {
+    const result = runSimulation({ ...scenario, demandProfile });
+    return Object.freeze({
+      demandProfile,
+      label: DEMAND_PROFILE_LABELS[demandProfile],
+      peakQueuedAud: result.summary.peakQueuedAud,
+      finalQueuedAud: result.summary.finalQueuedAud,
+      totalSettledAud: result.summary.totalSettledAud,
+      hoursToFirstSettlement: result.summary.hoursToFirstSettlement
+    });
+  }));
+}
+
+function svgEscape(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[char]));
+}
+
+/** Hourly open/closed state for issuer, bank, payout and weekday vs weekend FX. */
+export function buildGateSchedule(input) {
+  const { scenario } = sanitizeScenario(input);
+  const hours = [];
+  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    const status = getOperationalStatus(scenario, hour);
+    hours.push(Object.freeze({
+      hour,
+      timeLabel: formatTime(hour),
+      issuerOpen: status.issuerOpen,
+      bankOpen: status.bankOpen,
+      payoutOpen: status.payoutOpen,
+      fxWeekday: !status.weekend
+    }));
+  }
+  return Object.freeze({ scenario: Object.freeze({ ...scenario }), hours: Object.freeze(hours) });
+}
+
+/** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
+export function buildGateGanttSvg(input, selectedHour = 0) {
+  const schedule = buildGateSchedule(input);
+  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const width = 720;
+  const rowHeight = 28;
+  const labelWidth = 88;
+  const top = 20;
+  const plotWidth = width - labelWidth - 16;
+  const rows = [
+    ["Issuer", (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", "#c45c54"],
+    ["Bank", (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", "#c45c54"],
+    ["Payout", (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", "#c45c54"],
+    ["FX", (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", "#c9a227"]
+  ];
+  const height = top + rows.length * rowHeight + 32;
+  const hourWidth = plotWidth / SIMULATION_HOURS;
+  const firstPayout = nextPayoutTime(schedule.scenario, 0);
+  let cells = "";
+  rows.forEach((row, rowIndex) => {
+    const y = top + rowIndex * rowHeight;
+    for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+      const open = row[1](hour);
+      const x = labelWidth + hour * hourWidth;
+      cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${open ? row[2] : row[3]}" />`;
+    }
+  });
+  const markerX = labelWidth + (markerHour / SIMULATION_HOURS) * plotWidth;
+  const labels = rows.map((row, index) => `<text x="8" y="${top + index * rowHeight + 18}" font-size="12" fill="#17324a">${row[0]}</text>`).join("");
+  const ticks = [0, 9, 33, 57, 72].map((hour) => {
+    const x = labelWidth + (hour / SIMULATION_HOURS) * plotWidth;
+    return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
+  }).join("");
+  const selectedLabel = `<text x="${width - 8}" y="14" font-size="11" text-anchor="end" fill="#17324a">Selected ${svgEscape(formatTime(markerHour))}</text>`;
+  const payoutX = firstPayout === null || firstPayout > SIMULATION_HOURS ? null : labelWidth + (firstPayout / SIMULATION_HOURS) * plotWidth;
+  const payoutMark = payoutX === null ? "" :
+    `<line x1="${payoutX.toFixed(2)}" y1="${top}" x2="${payoutX.toFixed(2)}" y2="${top + rows.length * rowHeight}" stroke="#2f9e6b" stroke-width="2" stroke-dasharray="4 3" />` +
+    `<text x="${Math.min(width - 80, Math.max(labelWidth, payoutX + 6)).toFixed(1)}" y="${top + 12}" font-size="10" fill="#1f6b49">First payout ${svgEscape(formatTime(firstPayout))}</text>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="72-hour gate Gantt for issuer, bank, payout and FX. Current hour is the solid vertical marker. First payout window is the dashed green marker. A table follows.">` +
+    `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
+    selectedLabel + labels + cells + payoutMark +
+    `<line x1="${markerX.toFixed(2)}" y1="${top}" x2="${markerX.toFixed(2)}" y2="${top + rows.length * rowHeight}" stroke="#17324a" stroke-width="2" />` +
+    ticks +
+    "</svg>";
+}
+
+/** Printable SVG of queued AUD versus hour, with optional baseline and playhead. */
+export function buildQueueChartSvg(currentInput, baselineInput = currentInput, selectedHour = 0) {
+  const comparison = compareScenarios(baselineInput, currentInput);
+  const current = comparison.candidate.timeline;
+  const baseline = comparison.baseline.timeline;
+  const width = 720;
+  const height = 220;
+  const left = 56;
+  const top = 18;
+  const plotWidth = width - 72;
+  const plotHeight = height - 50;
+  const maximum = Math.max(1, ...current.map((point) => point.queuedAud), ...baseline.map((point) => point.queuedAud));
+  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const xAt = (hour) => left + (hour / SIMULATION_HOURS) * plotWidth;
+  const yAt = (value) => top + plotHeight - (value / maximum) * plotHeight;
+  const pathFor = (points) => points.map((point, index) => `${index ? "L" : "M"}${xAt(point.hour).toFixed(2)} ${yAt(point.queuedAud).toFixed(2)}`).join(" ");
+  const ticks = [0, 9, 33, 57, 72].map((hour) => {
+    const x = xAt(hour);
+    return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
+  }).join("");
+  const yLabels = [0, 0.5, 1].map((share) => {
+    const value = maximum * share;
+    const y = yAt(value);
+    return `<text x="8" y="${(y + 4).toFixed(1)}" font-size="10" fill="#3e5360">${svgEscape((value / 1000000).toFixed(value >= 10000000 ? 0 : 1) + "m")}</text>`;
+  }).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Printable queued AUD versus hour. The vertical line is the selected hour. A data table follows.">` +
+    `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
+    yLabels +
+    `<path d="${pathFor(baseline)}" fill="none" stroke="#7f93b8" stroke-width="2" stroke-dasharray="6 4" />` +
+    `<path d="${pathFor(current)}" fill="none" stroke="#b57914" stroke-width="2.5" />` +
+    `<line x1="${xAt(markerHour).toFixed(2)}" y1="${top}" x2="${xAt(markerHour).toFixed(2)}" y2="${top + plotHeight}" stroke="#17324a" stroke-width="1.5" />` +
+    ticks +
+    "</svg>";
+}
+
+/** Horizontal bars for one-factor sensitivity cases. Table remains the text equivalent. */
+export function buildSensitivityBarsSvg(rows, metric = "totalSettledAud") {
+  if (metric !== "totalSettledAud" && metric !== "peakQueuedAud") {
+    throw new RangeError("Choose settled total or peak queue.");
+  }
+  if (!Array.isArray(rows) || rows.length === 0) return "";
+  const width = 720;
+  const rowHeight = 28;
+  const left = 70;
+  const top = 24;
+  const plotWidth = width - left - 140;
+  const height = top + rows.length * rowHeight + 16;
+  const values = rows.map((row) => row.summary[metric]);
+  const maximum = Math.max(1, ...values);
+  const bars = rows.map((row, index) => {
+    const value = row.summary[metric];
+    const y = top + index * rowHeight;
+    const barWidth = (value / maximum) * plotWidth;
+    const label = `${Math.round(row.multiplier * 100)}%`;
+    const amount = value.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
+    return `<text x="8" y="${y + 16}" font-size="12" fill="#17324a">${label}</text>` +
+      `<rect x="${left}" y="${y + 6}" width="${Math.max(0.5, barWidth).toFixed(2)}" height="16" fill="${metric === "peakQueuedAud" ? "#c9a227" : "#2f9e6b"}" />` +
+      `<text x="${(left + Math.max(8, barWidth) + 8).toFixed(1)}" y="${y + 18}" font-size="11" fill="#3e5360">${svgEscape(amount)}</text>`;
+  }).join("");
+  const title = metric === "peakQueuedAud" ? "Peak queue" : "Settled total";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="${title} for five sensitivity cases. A table follows.">` +
+    `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
+    `<text x="8" y="16" font-size="12" fill="#17324a">${title}</text>` +
+    bars +
+    "</svg>";
+}
+
+/** Compare two or three canonical scenarios. Observation only, not a ranking. */
+export function compareSavedExperiments(scenarios) {
+  if (!Array.isArray(scenarios) || scenarios.length < 2 || scenarios.length > 3) {
+    throw new RangeError("Compare two or three saved experiments.");
+  }
+  return Object.freeze(scenarios.map((input) => {
+    const result = runSimulation(input);
+    return Object.freeze({
+      name: result.scenario.name,
+      peakQueuedAud: result.summary.peakQueuedAud,
+      finalQueuedAud: result.summary.finalQueuedAud,
+      totalSettledAud: result.summary.totalSettledAud,
+      hoursToFirstSettlement: result.summary.hoursToFirstSettlement
+    });
+  }));
+}
+

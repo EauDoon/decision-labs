@@ -13,6 +13,14 @@ import {
   planReserve,
   analysisToJSON,
   analyzeTimeline,
+  attributeBottlenecks,
+  previewWindowShift,
+  compareDemandProfiles,
+  buildGateGanttSvg,
+  buildGateSchedule,
+  buildQueueChartSvg,
+  buildSensitivityBarsSvg,
+  compareSavedExperiments,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -47,6 +55,7 @@ const elements = {
   finalQueue: document.querySelector("#final-queue-value"),
   peakQueue: document.querySelector("#peak-queue-value"),
   backlogHours: document.querySelector("#backlog-hours-value"),
+  firstSettlement: document.querySelector("#first-settlement-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -65,6 +74,8 @@ let simulation = runSimulation(scenario);
 let baselineScenario = { ...scenario };
 let comparison = compareScenarios(baselineScenario, scenario);
 let reservePlan = null;
+let windowShiftPreview = null;
+let lastSensitivityRows = [];
 let selectedHour = 0;
 let playing = false;
 let playTimer = null;
@@ -84,7 +95,10 @@ function formatPercent(value, decimals = 1) {
 function writeForm() {
   for (const [field, value] of Object.entries(scenario)) {
     const input = form.elements.namedItem(field);
-    if (input) { input.value = String(value); input.setAttribute("aria-invalid", "false"); }
+    if (!input) continue;
+    if (input.type === "checkbox") input.checked = Boolean(value);
+    else input.value = String(value);
+    input.setAttribute("aria-invalid", "false");
   }
 }
 
@@ -92,7 +106,11 @@ function readForm() {
   const raw = {};
   for (const field of Object.keys(DEFAULT_SCENARIO)) {
     const input = form.elements.namedItem(field);
-    raw[field] = input ? input.value : scenario[field];
+    if (!input) {
+      raw[field] = scenario[field];
+      continue;
+    }
+    raw[field] = input.type === "checkbox" ? input.checked : input.value;
   }
   return raw;
 }
@@ -150,8 +168,12 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   render();
   renderPlanning();
   renderDiagnostics();
+  renderDemandProfiles();
   document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-tornado").innerHTML = "";
+  lastSensitivityRows = [];
   document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
+  clearWindowShiftPreview("Assumptions changed. Preview the window shift again before applying.");
   if (message) setMessage(message);
   else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
@@ -196,13 +218,20 @@ function render() {
   elements.queueDetail.textContent = `${formatAud(point.settledAud)} paid so far`;
   elements.ratio.textContent = formatPercent(point.liquidityRatio);
   elements.discount.textContent = formatPercent(point.discountBps / 10000, 2);
-  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour, hoursWithQueue } = simulation.summary;
+  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour, hoursWithQueue, hoursToFirstSettlement } = simulation.summary;
   const settledShare = totalDemandAud > 0 ? totalSettledAud / totalDemandAud : 1;
   elements.outcomeSummary.textContent = `${formatPercent(settledShare)} of demand settled`;
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
   elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS}`;
+  elements.firstSettlement.textContent = hoursToFirstSettlement === null
+    ? "No settlement in 72h"
+    : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
+  const jumpFirst = document.querySelector("#jump-first-settlement");
+  if (jumpFirst) {
+    jumpFirst.disabled = hoursToFirstSettlement === null;
+  }
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
     : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
@@ -226,7 +255,7 @@ function render() {
   applyGateState(elements.bankGate, point.bankOpen);
   applyGateState(elements.payoutGate, point.payoutOpen);
   elements.fxGate.textContent = point.weekend
-    ? `Weekend: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
+    ? `${scenario.mondayHoliday && point.timeLabel.startsWith("Mon") ? "Holiday Monday" : "Weekend"}: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
     : `${Math.round(point.fxSpreadBps)} bps weekday spread`;
   elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
 
@@ -235,6 +264,8 @@ function render() {
   }
   renderTable();
   drawChart();
+  renderGantt();
+  renderQueueSvg();
 }
 
 function renderTable() {
@@ -268,6 +299,46 @@ function renderTable() {
     fragment.append(row);
   });
   elements.table.replaceChildren(fragment);
+}
+
+function renderGantt() {
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour);
+  const schedule = buildGateSchedule(scenario);
+  const mode = document.querySelector("#gantt-density")?.value || "snapshots";
+  const rowIndexes = new Set([0, selectedHour, SIMULATION_HOURS]);
+  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    if (mode === "all" || (mode === "snapshots" && hour % 6 === 0) || (mode === "open" && (point.issuerOpen || point.bankOpen || point.payoutOpen))) {
+      rowIndexes.add(hour);
+    }
+  }
+  const fragment = document.createDocumentFragment();
+  [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
+    const point = schedule.hours[hour];
+    const row = document.createElement("tr");
+    if (hour === selectedHour) row.className = "is-current";
+    for (const value of [
+      point.timeLabel,
+      point.issuerOpen ? "Open" : "Closed",
+      point.bankOpen ? "Open" : "Closed",
+      point.payoutOpen ? "Open" : "Closed",
+      point.fxWeekday ? "Weekday depth" : "Weekend thinned"
+    ]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    fragment.append(row);
+  });
+  document.querySelector("#gantt-table").replaceChildren(fragment);
+  const firstOpen = simulation.timeline[0].nextPayoutHour;
+  document.querySelector("#gantt-payout-note").textContent = firstOpen === null
+    ? "No first payout window was found in the modeled search period."
+    : `First payout window: ${formatTime(firstOpen)} (hour ${firstOpen}). The dashed green marker on the Gantt uses this hour.`;
+}
+
+function renderQueueSvg() {
+  document.querySelector("#queue-svg").innerHTML = buildQueueChartSvg(scenario, baselineScenario, selectedHour);
 }
 
 function drawLine(context, points, getValue, color, dimensions, maximum) {
@@ -392,7 +463,23 @@ function renderPlanning() {
       const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
     }
     return row;
-  }));
+  }), (() => {
+    const row = document.createElement("tr");
+    const before = comparison.baseline.summary.hoursToFirstSettlement;
+    const after = simulation.summary.hoursToFirstSettlement;
+    const delta = typeof before === "number" && typeof after === "number"
+      ? after - before
+      : before === after ? 0 : null;
+    for (const value of [
+      "Hours to first settlement",
+      formatHoursToFirstSettlement(before),
+      formatHoursToFirstSettlement(after),
+      delta === null ? "Not comparable" : `${delta >= 0 ? "+" : ""}${delta}`
+    ]) {
+      const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+    }
+    return row;
+  })());
   document.querySelector("#changed-assumptions").textContent = comparison.changes.length
     ? comparison.changes.map(({ field, baseline, candidate }) => `${field}: ${baseline} to ${candidate}`).join("; ")
     : "No assumptions changed. Pin a baseline, then edit the scenario or choose a preset.";
@@ -440,6 +527,62 @@ document.querySelector("#analysis-export").addEventListener("click", () => {
   document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url);
   setMessage("Analysis exported with both scenarios, changed assumptions, hourly queue comparison, and reserve plan.");
 });
+
+function clearWindowShiftPreview(status = "Choose a gate and whole-hour offsets, then preview. Nothing is applied until you confirm.") {
+  windowShiftPreview = null;
+  const apply = document.querySelector("#apply-window-shift");
+  const rows = document.querySelector("#window-shift-rows");
+  const output = document.querySelector("#window-shift-status");
+  if (apply) apply.disabled = true;
+  if (rows) rows.replaceChildren();
+  if (output) output.textContent = status;
+}
+
+document.querySelector("#preview-window-shift").addEventListener("click", () => {
+  const gate = document.querySelector("#window-shift-gate").value;
+  const startDelta = document.querySelector("#window-shift-start").valueAsNumber;
+  const endDelta = document.querySelector("#window-shift-end").valueAsNumber;
+  try {
+    if (!Number.isInteger(startDelta) || !Number.isInteger(endDelta)) {
+      throw new RangeError("Window shifts must be whole hours.");
+    }
+    windowShiftPreview = previewWindowShift(scenario, gate, startDelta, endDelta);
+    const preview = windowShiftPreview;
+    document.querySelector("#window-shift-rows").replaceChildren(...[
+      ["Operating window", `${preview.current.startHour}:00-${preview.current.endHour}:00`, `${preview.candidate.startHour}:00-${preview.candidate.endHour}:00`, `${startDelta >= 0 ? "+" : ""}${startDelta} / ${endDelta >= 0 ? "+" : ""}${endDelta} h`],
+      ["Peak queue", planningAud(preview.current.peakQueuedAud), planningAud(preview.candidate.peakQueuedAud), signedAud(preview.deltas.peakQueuedAud)],
+      ["Settled total", planningAud(preview.current.totalSettledAud), planningAud(preview.candidate.totalSettledAud), signedAud(preview.deltas.totalSettledAud)],
+      ["Hours to first settlement", formatHoursToFirstSettlement(preview.current.hoursToFirstSettlement), formatHoursToFirstSettlement(preview.candidate.hoursToFirstSettlement), preview.deltas.hoursToFirstSettlement === null ? "Not comparable" : `${preview.deltas.hoursToFirstSettlement >= 0 ? "+" : ""}${preview.deltas.hoursToFirstSettlement}`]
+    ].map((cells) => {
+      const row = document.createElement("tr");
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      }
+      return row;
+    }));
+    document.querySelector("#apply-window-shift").disabled = preview.applied.issuerOpenStartHour === scenario.issuerOpenStartHour
+      && preview.applied.issuerOpenEndHour === scenario.issuerOpenEndHour
+      && preview.applied.bankOpenStartHour === scenario.bankOpenStartHour
+      && preview.applied.bankOpenEndHour === scenario.bankOpenEndHour
+      && preview.applied.payoutOpenStartHour === scenario.payoutOpenStartHour
+      && preview.applied.payoutOpenEndHour === scenario.payoutOpenEndHour;
+    document.querySelector("#window-shift-status").textContent = `Preview only. ${preview.gate} window becomes ${preview.candidate.startHour}:00 to ${preview.candidate.endHour}:00 local. Peak queue change ${signedAud(preview.deltas.peakQueuedAud)}; settled total change ${signedAud(preview.deltas.totalSettledAud)}. Apply to copy this window into the editor.`;
+  } catch (error) {
+    clearWindowShiftPreview(error instanceof RangeError ? error.message : "Window shift could not be previewed.");
+  }
+});
+document.querySelector("#apply-window-shift").addEventListener("click", () => {
+  if (!windowShiftPreview) return;
+  const next = windowShiftPreview.applied;
+  setScenario(next, { message: `Applied ${windowShiftPreview.gate} window ${next[`${windowShiftPreview.gate}OpenStartHour`]}:00 to ${next[`${windowShiftPreview.gate}OpenEndHour`]}:00. Other assumptions and the pinned baseline were kept.` });
+});
+for (const id of ["window-shift-gate", "window-shift-start", "window-shift-end"]) {
+  document.getElementById(id).addEventListener("input", () => {
+    clearWindowShiftPreview("Offsets changed. Preview again before applying.");
+  });
+}
 
 async function copyShareLink() {
   const hash = scenarioToHash(scenario);
@@ -564,16 +707,64 @@ function renderDiagnostics() {
   document.querySelector("#milestone-summary").textContent = [
     ["First backlog",d.firstBacklogHour], ["Reserve exhausted",d.reserveExhaustionHour], ["Last settlement checkpoint",d.lastSettlementHour]
   ].map(([label,hour])=>label + ": " + (hour === null ? "not observed" : formatTime(hour))).join(". ");
+  const attribution = attributeBottlenecks(scenario);
+  const active = attribution.rows.filter((row) => row.hours > 0);
+  document.querySelector("#bottleneck-hours").replaceChildren(...attribution.rows.map((row) => {
+    const tr = document.createElement("tr");
+    for (const value of [row.label, String(row.hours), `${(row.share * 100).toFixed(1)}%`]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.append(td);
+    }
+    return tr;
+  }));
+  document.querySelector("#bottleneck-explanation").textContent = active.length
+    ? `Of 72 hours, ${active.map((row) => `${row.hours} were limited by ${row.label}`).join(", ")}. Hours labeled none had no recorded limiter. This does not say which assumption to change.`
+    : "No limiting-gate hours were recorded for this run.";
+}
+
+function formatHoursToFirstSettlement(hours) {
+  return hours === null ? "No settlement in 72h" : `${hours} hour${hours === 1 ? "" : "s"}`;
+}
+
+function renderDemandProfiles() {
+  const rows = compareDemandProfiles(scenario);
+  document.querySelector("#demand-compare-rows").replaceChildren(...rows.map((item) => {
+    const tr = document.createElement("tr");
+    if (item.demandProfile === scenario.demandProfile) tr.className = "is-current";
+    for (const value of [
+      item.label,
+      planningAud(item.peakQueuedAud),
+      planningAud(item.finalQueuedAud),
+      planningAud(item.totalSettledAud),
+      formatHoursToFirstSettlement(item.hoursToFirstSettlement)
+    ]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.append(td);
+    }
+    return tr;
+  }));
+  document.querySelector("#demand-compare-status").textContent = "Highlighted row is the currently selected arrival profile. The other two rows are the same scenario with only demand timing changed. This is not a forecast.";
 }
 renderDiagnostics();
+renderDemandProfiles();
+
+function renderSensitivityTornado() {
+  const metric = document.querySelector("#sensitivity-metric").value;
+  document.querySelector("#sensitivity-tornado").innerHTML = lastSensitivityRows.length
+    ? buildSensitivityBarsSvg(lastSensitivityRows, metric)
+    : "";
+}
 
 document.querySelector("#run-sensitivity").addEventListener("click", () => {
   const field = document.querySelector("#sensitivity-field").value;
-  const rows = runSensitivity(scenario, field);
-  document.querySelector("#sensitivity-rows").replaceChildren(...rows.map(result => {
+  lastSensitivityRows = runSensitivity(scenario, field);
+  document.querySelector("#sensitivity-rows").replaceChildren(...lastSensitivityRows.map(result => {
     const row = document.createElement("tr");
     for (const value of [result.multiplier * 100 + "%", planningAud(result.effectiveValue) + (result.adjusted ? " (capped)" : ""),
-      planningAud(result.summary.totalSettledAud), planningAud(result.summary.finalQueuedAud), signedAud(result.settlementDeltaAud)]) {
+      planningAud(result.summary.totalSettledAud), planningAud(result.summary.peakQueuedAud),
+      planningAud(result.summary.finalQueuedAud), signedAud(result.settlementDeltaAud)]) {
       const cell=document.createElement("td");cell.textContent=value;row.append(cell);
     }
     const cell=document.createElement("td"), button=document.createElement("button");
@@ -581,12 +772,16 @@ document.querySelector("#run-sensitivity").addEventListener("click", () => {
     button.addEventListener("click",()=>setScenario(result.scenario,{message:"Sensitivity case applied. The pinned baseline was kept."}));
     cell.append(button);row.append(cell);return row;
   }));
-  document.querySelector("#sensitivity-status").textContent = "Five cases around the current scenario. All other assumptions held fixed. Changes are relative to the current scenario, not the pinned baseline.";
+  renderSensitivityTornado();
+  document.querySelector("#sensitivity-status").textContent = "Five cases around the current scenario. All other assumptions held fixed. Bars and table use the same cases. Changes are relative to the current scenario, not the pinned baseline.";
 });
 document.querySelector("#sensitivity-field").addEventListener("change",()=>{
+  lastSensitivityRows = [];
   document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-tornado").innerHTML = "";
   document.querySelector("#sensitivity-status").textContent="Run the experiment for the selected assumption.";
 });
+document.querySelector("#sensitivity-metric").addEventListener("change", renderSensitivityTornado);
 
 const LIBRARY_KEY = "weekend-gap:library:v1";
 let scenarioLibrary = [];
@@ -597,18 +792,49 @@ function persistLibrary() {
   } catch { document.querySelector("#library-status").textContent = "Library changes are in memory only. Browser storage is unavailable; export important scenarios."; }
 }
 function renderLibrary() {
-  const select = document.querySelector("#scenario-library");
-  select.replaceChildren(...scenarioLibrary.map((item,index)=>{
+  const makeOptions = () => scenarioLibrary.map((item,index)=>{
     const option=document.createElement("option");option.value=String(index);option.textContent=(index+1)+". "+item.name;return option;
-  }));
+  });
+  document.querySelector("#scenario-library").replaceChildren(...makeOptions());
+  document.querySelector("#experiment-picks").replaceChildren(...makeOptions());
   document.querySelector("#load-library").disabled = scenarioLibrary.length === 0;
   document.querySelector("#delete-library").disabled = scenarioLibrary.length === 0;
   document.querySelector("#save-library").disabled = scenarioLibrary.length >= 12;
+  document.querySelector("#compare-experiments").disabled = scenarioLibrary.length < 2;
 }
 document.querySelector("#save-library").addEventListener("click",()=>{
   if(scenarioLibrary.length>=12) return;
   scenarioLibrary.push({...scenario});persistLibrary();renderLibrary();
   document.querySelector("#scenario-library").value=String(scenarioLibrary.length-1);
+});
+document.querySelector("#compare-experiments").addEventListener("click",()=>{
+  const picked = [...document.querySelector("#experiment-picks").children].filter((option) => option.selected).map((option) => Number(option.value));
+  const unique = [...new Set(picked)].filter((index) => Number.isInteger(index) && index >= 0 && index < scenarioLibrary.length);
+  if (unique.length < 2 || unique.length > 3) {
+    document.querySelector("#experiment-compare-status").textContent = "Select two or three library copies, then compare.";
+    return;
+  }
+  try {
+    const rows = compareSavedExperiments(unique.map((index) => scenarioLibrary[index]));
+    document.querySelector("#experiment-compare-rows").replaceChildren(...rows.map((item) => {
+      const tr = document.createElement("tr");
+      for (const value of [
+        item.name,
+        planningAud(item.peakQueuedAud),
+        planningAud(item.finalQueuedAud),
+        planningAud(item.totalSettledAud),
+        item.hoursToFirstSettlement === null ? "No settlement in 72h" : `${item.hoursToFirstSettlement} hour${item.hoursToFirstSettlement === 1 ? "" : "s"}`
+      ]) {
+        const td = document.createElement("td");
+        td.textContent = value;
+        tr.append(td);
+      }
+      return tr;
+    }));
+    document.querySelector("#experiment-compare-status").textContent = `Compared ${rows.length} synthetic library copies. This is not a ranking of real issuers.`;
+  } catch (error) {
+    document.querySelector("#experiment-compare-status").textContent = error instanceof RangeError ? error.message : "The selected copies could not be compared.";
+  }
 });
 document.querySelector("#load-library").addEventListener("click",()=>{
   const saved=scenarioLibrary[Number(document.querySelector("#scenario-library").value)];
@@ -706,8 +932,18 @@ document.querySelector("#redo-scenario").addEventListener("click",()=>{
 scenarioHistory=createScenarioHistory(scenario);renderHistory();
 
 document.querySelector("#table-density").addEventListener("change",renderTable);
+document.querySelector("#gantt-density").addEventListener("change",renderGantt);
+document.querySelector("#export-gantt").addEventListener("click",()=>{
+  downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
+  setMessage("Gantt SVG downloaded. It is a synthetic operating calendar, not a live market chart.");
+});
 document.querySelector("#jump-peak").addEventListener("click",()=>{
   selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
+  const hours=simulation.summary.hoursToFirstSettlement;
+  if(hours===null) return;
+  selectedHour=hours+1;setPlaying(false);render();saveWorkspace();
 });
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
@@ -728,3 +964,93 @@ document.querySelector("#export-report").addEventListener("click",()=>{
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) setPlaying(false); });
 reducedMotion?.addEventListener?.("change",()=>setPlaying(false));
 setPlaying(false);
+
+const COACH_KEY = "weekend-gap:coach:v1";
+const coachOverlay = document.querySelector("#coach-overlay");
+const shortcutOverlay = document.querySelector("#shortcut-overlay");
+function closeCoach() {
+  coachOverlay.hidden = true;
+  try { localStorage.setItem(COACH_KEY, "dismissed"); } catch { /* dismissal is best-effort */ }
+}
+function closeShortcutHelp() {
+  shortcutOverlay.hidden = true;
+}
+function openShortcutHelp() {
+  shortcutOverlay.hidden = false;
+  document.querySelector("#shortcut-dismiss").focus();
+}
+function openCoach() {
+  coachOverlay.hidden = false;
+  document.querySelector("#coach-dismiss").focus();
+}
+function replayCoach() {
+  closeShortcutHelp();
+  openCoach();
+}
+function maybeShowCoach() {
+  if (window.location.hash.startsWith("#scenario=")) return;
+  try {
+    if (localStorage.getItem(COACH_KEY) === "dismissed") return;
+  } catch {
+    return;
+  }
+  openCoach();
+}
+function isEditableTarget(target) {
+  if (!target) return false;
+  const tag = (target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select") return true;
+  if (target.isContentEditable) return true;
+  return typeof target.closest === "function" && Boolean(target.closest("input, textarea, select, [contenteditable=true]"));
+}
+document.querySelector("#coach-dismiss").addEventListener("click", closeCoach);
+document.querySelector("#coach-replay").addEventListener("click", replayCoach);
+document.querySelector("#coach-replay-method").addEventListener("click", replayCoach);
+document.querySelector("#shortcut-dismiss").addEventListener("click", closeShortcutHelp);
+document.querySelector("#shortcut-open").addEventListener("click", openShortcutHelp);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape") {
+    if (!shortcutOverlay.hidden) {
+      event.preventDefault();
+      closeShortcutHelp();
+      return;
+    }
+    if (!coachOverlay.hidden) {
+      event.preventDefault();
+      closeCoach();
+    }
+    return;
+  }
+  if (isEditableTarget(event.target)) return;
+  if (event.key === "?") {
+    event.preventDefault();
+    if (shortcutOverlay.hidden) openShortcutHelp();
+    else closeShortcutHelp();
+    return;
+  }
+  if (!shortcutOverlay.hidden || !coachOverlay.hidden) return;
+  if (event.key === " ") {
+    event.preventDefault();
+    setPlaying(!playing);
+    return;
+  }
+  if (event.key === "u" || event.key === "U") {
+    if (!scenarioHistory.canUndo) return;
+    event.preventDefault();
+    setPlaying(false);
+    setScenario(scenarioHistory.undo(), { recordHistory: false, message: "Previous scenario edit restored. Baseline and notes were kept." });
+    return;
+  }
+  if (event.key === "r" || event.key === "R") {
+    if (!scenarioHistory.canRedo) return;
+    event.preventDefault();
+    setPlaying(false);
+    setScenario(scenarioHistory.redo(), { recordHistory: false, message: "Scenario edit reapplied. Baseline and notes were kept." });
+    return;
+  }
+  if (event.key === "e" || event.key === "E") {
+    event.preventDefault();
+    downloadScenario();
+  }
+});
+maybeShowCoach();

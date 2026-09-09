@@ -41,7 +41,7 @@ SOFTWARE.
             <h1>Weekend Gap</h1>
           </div>
         </div>
-        <p class="header-note">Synthetic AUD stablecoin liquidity simulator</p>
+        <p class="header-note">Synthetic AUD stablecoin liquidity simulator<br><button type="button" class="text-button" id="shortcut-open">Keyboard shortcuts</button></p>
       </div>
     </header>
 
@@ -53,7 +53,7 @@ SOFTWARE.
         <p class="notice"><strong>Educational simulator only.</strong> Every assumption is synthetic and editable. This is not financial advice, live market data or a statement about any issuer.</p>
       </section>
 
-      <nav class="section-links" aria-label="Simulator sections"><a href="#assumptions-title">Edit assumptions</a><a href="#comparison-title">Compare experiments</a><a href="#table-title">Inspect hourly data</a></nav>
+      <nav class="section-links" aria-label="Simulator sections"><a href="#assumptions-title">Edit assumptions</a><a href="#comparison-title">Compare experiments</a><a href="#demand-compare-title">Compare demand timing</a><a href="#gantt-title">Gate Gantt</a><a href="#table-title">Inspect hourly data</a></nav>
       <section class="workspace" aria-label="Weekend liquidity scenario workspace">
         <aside class="controls card" aria-labelledby="assumptions-title">
           <div class="card-heading">
@@ -72,6 +72,7 @@ SOFTWARE.
               <button type="button" class="preset-button is-selected" data-preset="normal">Normal Friday</button>
               <button type="button" class="preset-button" data-preset="weekendRush">Weekend Rush</button>
               <button type="button" class="preset-button" data-preset="marketStress">Market Stress</button>
+              <button type="button" class="preset-button" data-preset="thinFxTightWindows">Thin FX, Tight Windows (synthetic)</button>
             </div>
           </fieldset>
 
@@ -167,6 +168,13 @@ SOFTWARE.
               </select>
               <p>Total demand stays fixed. Timing changes when it joins the queue.</p>
             </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="mondayHoliday">
+                <input id="mondayHoliday" name="mondayHoliday" data-field="mondayHoliday" type="checkbox">
+                Treat Monday as a public holiday
+              </label>
+              <p>When selected, Monday is a non-business day like Sunday. Issuer, bank and payout windows stay closed, and weekend FX thinning applies. Older scenario files omit this field and keep a weekday Monday.</p>
+            </div>
           </form>
 
           <section class="library-controls" aria-labelledby="library-title">
@@ -174,6 +182,10 @@ SOFTWARE.
             <label for="scenario-library">Local scenario library</label><select id="scenario-library"></select>
             <div class="scenario-actions"><button id="save-library" type="button">Save a copy</button><button id="load-library" type="button" disabled>Load selected</button><button id="delete-library" type="button" disabled>Delete selected copy</button></div>
             <p id="library-status" role="status">No saved copies yet. Browser data can be cleared; export important scenarios.</p>
+            <label for="experiment-picks">Select 2 or 3 copies to compare</label>
+            <select id="experiment-picks" multiple size="4" aria-describedby="experiment-compare-status"></select>
+            <div class="scenario-actions"><button id="compare-experiments" type="button" disabled>Compare selected copies</button></div>
+            <p id="experiment-compare-status" role="status">Save at least two named copies, then select them. This compares synthetic runs, not real issuers.</p>
           </section>
           <p id="storage-status" role="status"></p>
           <p id="input-message" class="input-message" role="status" aria-live="polite"></p>
@@ -235,6 +247,7 @@ SOFTWARE.
               <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
               <div><dt>Peak queue</dt><dd id="peak-queue-value">A$0</dd></div>
               <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
+              <div><dt>Hours to first settlement</dt><dd id="first-settlement-value">Calculating</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -242,6 +255,15 @@ SOFTWARE.
           <article class="planning-card card" aria-labelledby="diagnostics-title">
             <p class="eyebrow">Queue diagnostics</p><h2 id="diagnostics-title">What constrained this run?</h2>
             <p id="diagnostic-summary"></p><ul id="bottleneck-list"></ul><p id="milestone-summary"></p>
+            <h3 id="attribution-title">Hourly limiting gate</h3>
+            <p id="bottleneck-explanation">Each of the 72 hours is tagged with the single limitingGate value at the start of the interval. Closed issuer, bank or payout gates are named first. This is a count of observations, not a ranking of which change would raise settlement.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly limiting gate counts">
+              <table>
+                <caption>Hours limited by each named gate versus none. Shares are hours divided by 72.</caption>
+                <thead><tr><th scope="col">Limiter</th><th scope="col">Hours</th><th scope="col">Share of 72h</th></tr></thead>
+                <tbody id="bottleneck-hours"></tbody>
+              </table>
+            </div>
             <p>Blockers can overlap. Counts describe observed constraints while backlog remains, not how much a single change would improve settlement. Queue exposure sums end-of-hour backlog across 72 one-hour intervals.</p>
           </article>
           <article class="planning-card card" aria-labelledby="comparison-title">
@@ -259,7 +281,7 @@ SOFTWARE.
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
               <table>
-                <caption>Current minus baseline. Parentheses indicate decreases. Compare demand as well as queue size.</caption>
+                <caption>Current minus baseline. Parentheses indicate decreases. Hours to first settlement uses hour offsets; mixed settlement and no-settlement runs are not subtracted.</caption>
                 <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th><th scope="col">Change</th></tr></thead>
                 <tbody id="comparison-rows"></tbody>
               </table>
@@ -270,8 +292,15 @@ SOFTWARE.
             <p class="eyebrow">Sensitivity experiment</p><h2 id="sensitivity-title">Change one assumption at a time</h2>
             <label for="sensitivity-field">Assumption to vary</label>
             <select id="sensitivity-field"><option value="reserveCashAud">Starting reserve</option><option value="redemptionDemandAud">Total demand</option><option value="issuerThroughputAudPerHour">Issuer hourly throughput</option><option value="fxDepthAudPerHour">FX hourly depth</option><option value="payoutThroughputAudPerHour">Payout hourly throughput</option></select>
-            <button id="run-sensitivity" type="button">Run five cases</button><p id="sensitivity-status" role="status">Test 50%, 75%, 100%, 125% and 150% of the current value. This is an experiment, not a recommended setting.</p>
-            <div class="table-scroll" tabindex="0" role="region" aria-label="Sensitivity results"><table><caption>Values are capped by the scenario bounds. A zero starting value remains zero in every case.</caption><thead><tr><th scope="col">Factor</th><th scope="col">Effective assumption (AUD)</th><th scope="col">Settled</th><th scope="col">Final queue</th><th scope="col">Settlement change</th><th scope="col">Action</th></tr></thead><tbody id="sensitivity-rows"></tbody></table></div>
+            <button id="run-sensitivity" type="button">Run five cases</button>
+            <label for="sensitivity-metric">Bar metric</label>
+            <select id="sensitivity-metric">
+              <option value="totalSettledAud">Settled total</option>
+              <option value="peakQueuedAud">Peak queue</option>
+            </select>
+            <p id="sensitivity-status" role="status">Test 50%, 75%, 100%, 125% and 150% of the current value. This is an experiment, not a recommended setting. Bars visualise the table below.</p>
+            <div id="sensitivity-tornado" class="queue-svg"></div>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Sensitivity results"><table><caption>Values are capped by the scenario bounds. A zero starting value remains zero in every case. The bars above use settled total or peak queue from this table.</caption><thead><tr><th scope="col">Factor</th><th scope="col">Effective assumption (AUD)</th><th scope="col">Settled</th><th scope="col">Peak queue</th><th scope="col">Final queue</th><th scope="col">Settlement change</th><th scope="col">Action</th></tr></thead><tbody id="sensitivity-rows"></tbody></table></div>
           </article>
           <article class="planning-card card" aria-labelledby="reserve-title">
             <p class="eyebrow">Reserve sizing</p>
@@ -292,6 +321,67 @@ SOFTWARE.
             <p>Analysis exports include both scenarios, target, deadline, results, and hourly queue comparison. They are reports, not scenario-import files. Scenario JSON and share links continue to contain only the current scenario.</p>
           </article>
 
+          <article class="planning-card card" aria-labelledby="window-shift-title">
+            <p class="eyebrow">Window what-if</p>
+            <h2 id="window-shift-title">Shift one operating window</h2>
+            <p>Move a gate start and end by whole hours. The shifted window is clamped to valid hours with a one-hour minimum. Preview peak queue and settled total against the current scenario. Apply is a separate action and keeps the pinned baseline.</p>
+            <label for="window-shift-gate">Gate</label>
+            <select id="window-shift-gate">
+              <option value="issuer">Issuer</option>
+              <option value="bank">Bank</option>
+              <option value="payout">Payout</option>
+            </select>
+            <div class="input-grid">
+              <div class="input-group">
+                <label for="window-shift-start">Start shift (hours)</label>
+                <input id="window-shift-start" type="number" step="1" value="-1">
+              </div>
+              <div class="input-group">
+                <label for="window-shift-end">End shift (hours)</label>
+                <input id="window-shift-end" type="number" step="1" value="1">
+              </div>
+            </div>
+            <div class="planning-actions">
+              <button id="preview-window-shift" type="button">Preview shift</button>
+              <button id="apply-window-shift" type="button" disabled>Apply previewed shift</button>
+            </div>
+            <p id="window-shift-status" role="status">Choose a gate and whole-hour offsets, then preview. Nothing is applied until you confirm.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Window shift preview">
+              <table>
+                <caption>Peak queue, settled total and hours to first settlement after the clamped window, compared with the current scenario.</caption>
+                <thead><tr><th scope="col">Metric</th><th scope="col">Current</th><th scope="col">Preview</th><th scope="col">Change</th></tr></thead>
+                <tbody id="window-shift-rows"></tbody>
+              </table>
+            </div>
+          </article>
+
+          <article class="planning-card card" aria-labelledby="demand-compare-title">
+            <p class="eyebrow">Demand timing experiment</p>
+            <h2 id="demand-compare-title">Compare flat, Friday burst and Monday rush</h2>
+            <p>The three rows reuse every other current assumption and only change when demand joins the queue. Total demand is the same. This is a timing experiment, not a forecast of real redemptions.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Demand profile comparison">
+              <table>
+                <caption>Peak queue, remaining queue, settled total and hours to first settlement for each synthetic arrival profile.</caption>
+                <thead><tr><th scope="col">Arrival profile</th><th scope="col">Peak queue</th><th scope="col">Final queue</th><th scope="col">Settled</th><th scope="col">Hours to first settlement</th></tr></thead>
+                <tbody id="demand-compare-rows"></tbody>
+              </table>
+            </div>
+            <p id="demand-compare-status">The highlighted row matches the demand timing currently selected in the scenario editor.</p>
+          </article>
+
+          <article class="planning-card card" aria-labelledby="experiment-compare-title">
+            <p class="eyebrow">Saved experiment comparison</p>
+            <h2 id="experiment-compare-title">Compare two or three library copies</h2>
+            <p>Use the library selector in the scenario panel. Results are side-by-side observations of synthetic runs, not a forecast or ranking of issuers.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Saved experiment comparison">
+              <table>
+                <caption>Peak queue, remaining queue, settled total and hours to first settlement for the selected library copies.</caption>
+                <thead><tr><th scope="col">Copy</th><th scope="col">Peak queue</th><th scope="col">Final queue</th><th scope="col">Settled</th><th scope="col">Hours to first settlement</th></tr></thead>
+                <tbody id="experiment-compare-rows"></tbody>
+              </table>
+            </div>
+          </article>
+
           <article class="chart-card card" aria-labelledby="chart-title">
             <div class="card-heading chart-heading">
               <div>
@@ -301,8 +391,10 @@ SOFTWARE.
               <p id="gate-summary" class="gate-summary">Checking gates</p>
             </div>
             <div class="chart-wrap">
-              <canvas id="liquidity-chart" role="img" aria-label="Line chart comparing queued AUD demand and immediate redeemable AUD over 72 hours. A data table follows.">Your browser does not support canvas. Use the simulation data table below.</canvas>
+              <canvas id="liquidity-chart" role="img" aria-label="Line chart comparing queued AUD demand and immediate redeemable AUD over 72 hours. A printable SVG and a data table follow.">Your browser does not support canvas. Use the simulation data table below.</canvas>
             </div>
+            <div id="queue-svg" class="queue-svg"></div>
+            <p class="chart-print-note">The SVG below is the printable queue path. The canvas keeps a live playhead while you scrub.</p>
             <div class="chart-legend" aria-label="Chart legend">
               <span><i class="legend-mark legend-mark--queue" aria-hidden="true"></i>Queued AUD demand</span>
               <span><i class="legend-mark legend-mark--immediate" aria-hidden="true"></i>Immediate AUD capacity</span>
@@ -329,6 +421,30 @@ SOFTWARE.
             </article>
           </div>
 
+          <article class="planning-card card gantt-card" aria-labelledby="gantt-title">
+            <p class="eyebrow">Operating calendar</p>
+            <h2 id="gantt-title">72-hour gate Gantt</h2>
+            <p>Issuer, bank and payout rows show open (green) versus closed (red) for each hour. FX shows weekday depth (blue) versus weekend thinning (gold). The solid vertical line is the timeline slider hour. The dashed green marker is the first payout window.</p>
+            <p id="gantt-payout-note"></p>
+            <div class="planning-actions">
+              <label for="gantt-density">Show Gantt rows</label>
+              <select id="gantt-density">
+                <option value="snapshots">Every six hours</option>
+                <option value="all">Every hour</option>
+                <option value="open">Hours with any gate open</option>
+              </select>
+              <button id="export-gantt" type="button">Download Gantt SVG</button>
+            </div>
+            <div id="gate-gantt" class="gantt-svg"></div>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
+              <table>
+                <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
+                <thead><tr><th scope="col">Time</th><th scope="col">Issuer</th><th scope="col">Bank</th><th scope="col">Payout</th><th scope="col">FX</th></tr></thead>
+                <tbody id="gantt-table"></tbody>
+              </table>
+            </div>
+          </article>
+
           <article class="table-card card" aria-labelledby="table-title">
             <div class="card-heading">
               <div>
@@ -337,7 +453,7 @@ SOFTWARE.
               </div>
               <p>Checkpoint balances, preceding interval flows and next-hour capacity</p>
             </div>
-            <div class="planning-actions"><label for="table-density">Show checkpoints</label><select id="table-density"><option value="snapshots">Every six hours</option><option value="all">Every hour</option><option value="backlog">Hours ending with backlog</option></select><button id="jump-peak" type="button">Jump to peak queue</button><button id="jump-monday" type="button">Jump to Monday 08:00</button><button id="export-timeline" type="button">Export hourly CSV</button></div>
+            <div class="planning-actions"><label for="table-density">Show checkpoints</label><select id="table-density"><option value="snapshots">Every six hours</option><option value="all">Every hour</option><option value="backlog">Hours ending with backlog</option></select><button id="jump-peak" type="button">Jump to peak queue</button><button id="jump-first-settlement" type="button">Jump to first settlement</button><button id="jump-monday" type="button">Jump to Monday 08:00</button><button id="export-timeline" type="button">Export hourly CSV</button></div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly simulation data">
               <table><caption>The selected hour is always included. Arrived and settled refer to the hour ending at this checkpoint; immediate capacity is available for the following hour. Displayed AUD is rounded.</caption>
                 <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th><th scope="col">Arrived in prior hour</th><th scope="col">Settled in prior hour</th></tr></thead>
@@ -352,7 +468,7 @@ SOFTWARE.
         <div class="method-intro">
           <p class="eyebrow">About and method</p>
           <h2 id="method-title">A constrained operating-window model</h2>
-          <p>At each hour, synthetic redemption demand enters a queue. Settlement can occur only when issuer redemption, bank settlement and Australian AUD payout windows are all open. The hourly capacity is the smallest of issuer throughput, available FX depth, payout throughput and remaining AUD reserve.</p>
+          <p>At each hour, synthetic redemption demand enters a queue. Settlement can occur only when issuer redemption, bank settlement and Australian AUD payout windows are all open. The hourly capacity is the smallest of issuer throughput, available FX depth, payout throughput and remaining AUD reserve. An optional Monday public-holiday flag keeps those windows closed on Monday, the same way Sunday is already closed.</p>
         </div>
         <div class="method-grid">
           <div><h3>What it shows</h3><p>How a closed payout chain can create queued AUD demand and lower immediately redeemable capacity even while onchain transfers continue.</p></div>
@@ -360,9 +476,37 @@ SOFTWARE.
           <div><h3>How to use it</h3><p>Edit the synthetic fields, choose a preset, scrub the 72-hour timeline, or export a scenario. Shared links contain only the editable scenario in the URL hash.</p></div>
         </div>
         <p class="method-link"><a href="MODEL.md">Read the model notes and formulas</a></p>
+        <p><button type="button" class="text-button" id="coach-replay-method">Replay first-run notes</button></p>
       </section>
     </main>
     <footer class="site-footer">Weekend Gap uses only synthetic, editable assumptions. AUD values are illustrative.</footer>
+    <div id="coach-overlay" class="overlay" hidden>
+      <div class="overlay-dialog" role="dialog" aria-modal="true" aria-labelledby="coach-title" id="coach-dialog">
+        <h2 id="coach-title">This is a synthetic 72-hour study</h2>
+        <p>Weekend Gap is an educational liquidity simulator. Every assumption is invented and editable. It is not live market data, issuer information, or financial advice.</p>
+        <p>Three gates must overlap before queued demand can settle: issuer redemption, bank settlement, and Australian AUD payout. Saturday and Sunday keep those gates closed. An optional Monday holiday treats Monday the same way.</p>
+        <p>The clock runs from Friday 15:00 to Monday 15:00 in abstract local time. Demand can still join the queue while the payout chain is closed.</p>
+        <button type="button" id="coach-dismiss">Continue to the simulator</button>
+      </div>
+    </div>
+    <div id="shortcut-overlay" class="overlay" hidden>
+      <div class="overlay-dialog" role="dialog" aria-modal="true" aria-labelledby="shortcut-title" id="shortcut-dialog">
+        <h2 id="shortcut-title">Keyboard shortcuts</h2>
+        <p>These keys are ignored while you are typing in an input, textarea or select.</p>
+        <ul class="shortcut-list">
+          <li><kbd>?</kbd> Open or close this help</li>
+          <li><kbd>Space</kbd> Play or pause the timeline</li>
+          <li><kbd>U</kbd> Undo the last scenario edit</li>
+          <li><kbd>R</kbd> Redo a scenario edit</li>
+          <li><kbd>E</kbd> Export the current scenario JSON</li>
+          <li><kbd>Esc</kbd> Close this help or the first-run coach</li>
+        </ul>
+        <div class="planning-actions">
+          <button type="button" id="coach-replay">Replay first-run notes</button>
+          <button type="button" id="shortcut-dismiss">Close help</button>
+        </div>
+      </div>
+    </div>
     <script type="module" src="src/app.js"></script>
   </body>
 </html>

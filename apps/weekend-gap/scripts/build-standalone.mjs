@@ -46,6 +46,14 @@ const appImportMarker = `import {
   planReserve,
   analysisToJSON,
   analyzeTimeline,
+  attributeBottlenecks,
+  previewWindowShift,
+  compareDemandProfiles,
+  buildGateGanttSvg,
+  buildGateSchedule,
+  buildQueueChartSvg,
+  buildSensitivityBarsSvg,
+  compareSavedExperiments,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -74,6 +82,7 @@ const exportedNames = Object.freeze([
   "capacityForHour",
   "estimateDiscountBps",
   "nextPayoutTime",
+  "hoursToFirstSettlement",
   "createSnapshot",
   "runSimulation",
   "compareScenarios",
@@ -90,7 +99,19 @@ const exportedNames = Object.freeze([
   "workspaceFromJSON",
   "createScenarioHistory",
   "timelineToCSV",
-  "reportToHTML"
+  "reportToHTML",
+  "BOTTLENECK_LABELS",
+  "attributeBottlenecks",
+  "WINDOW_GATES",
+  "shiftOperatingWindow",
+  "previewWindowShift",
+  "DEMAND_PROFILES",
+  "compareDemandProfiles",
+  "buildGateSchedule",
+  "buildGateGanttSvg",
+  "buildQueueChartSvg",
+  "buildSensitivityBarsSvg",
+  "compareSavedExperiments"
 ]);
 
 function normaliseLf(text) {

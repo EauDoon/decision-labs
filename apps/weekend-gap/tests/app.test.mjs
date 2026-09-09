@@ -64,6 +64,7 @@ test("outcome summary surfaces completion, residual queue and peak timing", asyn
   assert.match(indexSource, /id="final-queue-value"/);
   assert.match(indexSource, /id="peak-queue-value"/);
   assert.match(indexSource, /id="backlog-hours-value"/);
+  assert.match(indexSource, /id="first-settlement-value"/);
   assert.match(appSource, /simulation\.summary/);
   assert.match(appSource, /peakQueueHour/);
   assert.match(appSource, /hoursWithQueue/);

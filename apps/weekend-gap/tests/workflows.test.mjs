@@ -6,7 +6,8 @@ const source = await readFile(new URL("../src/app.js", import.meta.url), "utf8")
 let runId = 0;
 
 class Element {
-  constructor(value = "") { this.value = value; this.textContent = ""; this.children = []; this.handlers = {}; this.dataset = {}; this.disabled = false; this.attributes = {}; this.classList = { toggle() {} }; }
+  constructor(value = "") { this.value = value; this.checked = false; this.selected = false; this.type = ""; this.textContent = ""; this.innerHTML = ""; this.hidden = false; this.children = []; this.handlers = {}; this.dataset = {}; this.disabled = false; this.attributes = {}; this.classList = { toggle() {} }; }
+  focus() {}
   get valueAsNumber() { return this.value.trim() === "" ? NaN : Number(this.value); }
   addEventListener(type, handler) { (this.handlers[type] ||= []).push(handler); }
   async emit(type) { for (const handler of this.handlers[type] || []) await handler({ target: this }); }
@@ -23,10 +24,13 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
   const nodes = new Map();
   for (const match of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)) {
     const value = match[0].match(/\bvalue="([^"]*)"/)?.[1] || "";
-    nodes.set(match[1], new Element(value));
+    const node = new Element(value);
+    node.type = match[0].match(/\btype="([^"]*)"/)?.[1] || "";
+    node.checked = /\bchecked\b/.test(match[0]);
+    nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     querySelector(selector) { const node = nodes.get(selector.slice(1)); assert.ok(node, `Missing markup for ${selector}`); return node; },
@@ -68,6 +72,8 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   await ui.edit("table-density", "all", "change");
   assert.equal(ui.nodes.get("timeline-table").children.length, 73);
   assert.equal(ui.nodes.get("timeline-table").children[0].children.length, 9);
+  await ui.edit("gantt-density", "all", "change");
+  assert.equal(ui.nodes.get("gantt-table").children.length, 73);
   await ui.edit("timeline-range", 65);
   const persisted = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
   assert.equal(persisted.current.name, "Market Stress"); assert.equal(persisted.selectedHour, 65);
