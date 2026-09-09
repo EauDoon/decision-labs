@@ -2584,7 +2584,7 @@ function renderSummary(market) {
   elements.buyers.textContent = `${market.buyerCount} ${market.buyerCount === 1 ? "buyer" : "buyers"}`;
   elements.winner.textContent = winner ? `${winner.offer.merchant} / ${winner.offer.variant}` : "Not unlocked";
   elements.winnerNote.textContent = winner
-    ? `${winner.fulfilledUnits} units at ${formatter.format(winner.averageLandedUnitCost)} landed per unit`
+    ? `${winner.fulfilledUnits} units at ${formatter.format(winner.averageLandedUnitCost)} landed per unit. ${computeResidualCoverage(market.scenario).leftoverUnits} units leftover after the winner.`
     : "No bid reaches its minimum with compatible whole orders.";
   elements.fulfilled.textContent = winner ? percent(winner.fulfillmentRate) : "0%";
   elements.delivered.textContent = winner ? `${winner.deliveredBuyers} buyers included` : "0 buyers included";
