@@ -2599,6 +2599,7 @@ const AGREEMENT_REVIEW_TOOLS=Object.freeze([
  {id:'margin',title:'Approval margin'},
  {id:'floors',title:'Group floor and veto slack'},
  {id:'dominance',title:'Option support and cost dominance'},
+ {id:'substitutions',title:'Single-clause substitutions'},
 // SA_REVIEW_TOOLS
 ]);
 function analyzeAgreementReview(rawProposal,tool){
@@ -2621,6 +2622,12 @@ function analyzeAgreementReview(rawProposal,tool){
 
  const rows=[];for(const clause of proposal.clauses){for(const option of clause.options){const allowed=o=>!clause.lockedOptionId||clause.lockedOptionId===o.id;const dominates=allowed(option)?clause.options.filter(other=>other.id!==option.id&&allowed(other)&&other.changeCost<=option.changeCost&&Number(!other.original)<=Number(!option.original)&&proposal.groups.every(g=>other.support[g.id]>=option.support[g.id])&&(other.changeCost<option.changeCost||Number(!other.original)<Number(!option.original)||proposal.groups.some(g=>other.support[g.id]>option.support[g.id]))):[];rows.push([clause.title,option.label,option.changeCost,allowed(option)?dominates.map(o=>o.label).join('; ')||'None on these measures':'Excluded by current lock']);}}
  return report(['Clause','Option','Change cost','Dominating allowed alternatives'],rows,'Comparison is within one clause across every declared group score, change cost and whether the option changes the original. Current locks are respected. This does not infer semantic substitutability or delete options.');
+
+ }
+ case 'substitutions':{
+
+ const rows=[];proposal.clauses.forEach((clause,index)=>{for(const option of clause.options){if(option.id===selected.options[index].id)continue;const options=[...selected.options];options[index]=option;const tested=selectionSummary(proposal,options);rows.push([clause.title,option.label,tested.approval,tested.approval-selected.approval,tested.changeCost,tested.approval+EPSILON>=proposal.threshold&&tested.constraints.met?'Pass':'Does not pass']);}});
+ return report(['Changed clause','Alternative','Approval %','Approval change points','Package cost','All tests'],rows,'One clause changes at a time, all other selected options stay fixed. Lock, budget, floor and veto failures remain failures. At most 460 alternatives; this local neighborhood is not a complete package search.');
 
  }
 // SA_REVIEW_CASES
