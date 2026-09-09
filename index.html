@@ -137,7 +137,9 @@
     #catalog-heading:focus,
     #catalog-heading:focus-visible,
     #shortcuts:focus,
-    #shortcuts:focus-visible {
+    #shortcuts:focus-visible,
+    #trust:focus,
+    #trust:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 6px;
     }
@@ -219,6 +221,32 @@
       transition: background-color 0.16s ease;
     }
     .shortcuts-close:hover { background: #e4eeeb; }
+    .catalog-url-tools { margin: 16px 0 0; }
+    .copy-catalog-url {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 8px 14px;
+      border: 1px solid var(--brand);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--brand-deep);
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background-color 0.16s ease;
+    }
+    .copy-catalog-url:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 4px;
+    }
+    .copy-catalog-status {
+      display: inline-block;
+      margin-left: 12px;
+      font-size: 15px;
+      color: var(--muted);
+    }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -260,7 +288,8 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url { transition: none; }
+      html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
       .shell { padding-inline: clamp(16px, 4vw, 28px); }
@@ -287,7 +316,8 @@
     @media print {
       body { background: white; color: #000; border-top-width: 2px; }
       .skip, .skips, .keys-note, .how, .site-nav, .shortcuts, .shortcuts-open { display: none !important; }
-      .whats-new, .workbench .version, .version-line { display: block !important; }
+      .catalog-url-tools { display: none !important; }
+      .whats-new, .workbench .version, .version-line, .trust { display: block !important; }
       .shell { max-width: none; padding-inline: 0; }
       .hero, .whats-new, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
       .whats-new {
@@ -298,6 +328,7 @@
       .whats-new > p, .whats-new-list h3, .whats-new-list p { color: #000; }
       .whats-new-list li { border-top-color: #000; }
       .workbench .version, .version-line { color: #000; }
+      .trust, .trust p, .trust ul, .trust li { color: #000; }
       .open {
         display: inline;
         min-height: 0;
@@ -319,12 +350,17 @@
     <a class="skip" href="#whats-new">Skip to what's new</a>
     <a class="skip" href="#workbenches">Skip to workbenches</a>
     <a class="skip" href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts</a>
+    <a class="skip" href="#trust">Skip to Trust and limits</a>
   </nav>
   <header class="shell hero">
     <p class="eyebrow">Local catalog of four workbenches</p>
     <h1 id="catalog-heading" tabindex="-1">Decision Labs</h1>
     <p class="lede">Make the assumptions visible. Change one input, see who is affected, and take the evidence into the conversation that actually decides.</p>
     <p class="support">Each workbench is a static page that runs in your browser. There is no shared account, no hosted service, and no model that claims to decide for you.</p>
+    <p class="catalog-url-tools" id="catalog-url-tools" hidden>
+      <button type="button" class="copy-catalog-url" id="copy-catalog-url">Copy catalog address</button>
+      <span class="copy-catalog-status" id="copy-catalog-status" role="status"></span>
+    </p>
   </header>
   <nav class="shell site-nav" aria-label="On this page">
     <a href="#whats-new">What's new</a>
@@ -335,7 +371,7 @@
   <main class="shell" id="main">
     <section class="whats-new" id="whats-new" tabindex="-1" aria-labelledby="whats-new-title">
       <h2 id="whats-new-title">What's new</h2>
-      <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank.</p>
+      <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank. Catalog cards list each workbench version next to its job.</p>
       <ul class="whats-new-list">
         <li>
           <h3>Share-to-hold in Partnership Breakpoint</h3>
@@ -362,6 +398,10 @@
           <p>Import merchant offers from CSV, sort buyers, filter pickup versus shipping, and read organizer leftover headroom after the winner. Merchant tables stay counts and aggregates. This is leftover planning on the case you opened, not checkout or live inventory.</p>
         </li>
         <li>
+          <h3>Offer export, variant filter, and empty-offer recovery in Common Cart 1.3.3</h3>
+          <p>Export merchant offers as CSV, filter organizers by variant, sort offers, and restore example offers when the list is empty. Merchant export stays aggregates and counts. This is leftover planning on the case you opened, not checkout or live inventory.</p>
+        </li>
+        <li>
           <h3>Veto groups in The Smallest Agreement</h3>
           <p>Mark a group whose average support must meet the approval threshold, or the higher of that threshold and the group's support floor. A veto here is a number you entered, not a legal right.</p>
         </li>
@@ -385,17 +425,21 @@
           <h3>Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1.4.2</h3>
           <p>Export hourly queue and gate CSVs, jump to the Gantt or peak queue hour, and start from a synthetic long-weekend Friday. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue.</p>
         </li>
+        <li>
+          <h3>Dashboard copy, file compare, and compressed Friday in Weekend Gap 1.4.3</h3>
+          <p>Copy dashboard numbers as Markdown, compare two scenario JSON files, and start from a synthetic compressed Friday close. Peak-queue table highlighting is a local drawing. It does not connect to a bank or a live redemption queue.</p>
+        </li>
       </ul>
     </section>
     <section id="workbenches" tabindex="-1" aria-labelledby="workbenches-title">
       <h2 id="workbenches-title">The workbenches</h2>
       <ul id="workbench-versions" hidden>
         <li data-app="partnership-breakpoint">1.4.2</li>
-        <li data-app="common-cart">1.3.2</li>
+        <li data-app="common-cart">1.3.3</li>
         <li data-app="smallest-agreement">1.4.2</li>
-        <li data-app="weekend-gap">1.4.2</li>
+        <li data-app="weekend-gap">1.4.3</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>t</kbd> to focus Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -404,6 +448,7 @@
           <dt><kbd>3</kbd></dt><dd>Open The Smallest Agreement</dd>
           <dt><kbd>4</kbd></dt><dd>Open Weekend Gap</dd>
           <dt><kbd>h</kbd></dt><dd>Focus the catalog heading</dd>
+          <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
           <dt><kbd>?</kbd></dt><dd>Show or hide this list</dd>
           <dt><kbd>Esc</kbd></dt><dd>Hide this list</dd>
         </dl>
@@ -427,7 +472,7 @@
         <span class="index" aria-hidden="true">2</span>
         <div>
           <h3>Common Cart</h3>
-          <p class="version">Version <span data-app-version="common-cart">1.3.2</span></p>
+          <p class="version">Version <span data-app-version="common-cart">1.3.3</span></p>
           <p>Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view.</p>
           <p class="sample">You will see the built-in synthetic <strong>coffee</strong> scenario (Neighbourhood coffee run): pooled buyers and conditional merchant offers for coffee beans.</p>
         </div>
@@ -453,7 +498,7 @@
         <span class="index" aria-hidden="true">4</span>
         <div>
           <h3>Weekend Gap</h3>
-          <p class="version">Version <span data-app-version="weekend-gap">1.4.2</span></p>
+          <p class="version">Version <span data-app-version="weekend-gap">1.4.3</span></p>
           <p>Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed.</p>
           <p class="sample">You will see <strong>Normal Friday</strong>, the built-in 72-hour synthetic redemption case from Friday afternoon through Monday.</p>
         </div>
@@ -468,12 +513,14 @@
       <p>This page is a catalog. Each Open workbench link loads one generated file from this repository. You can also open that file from disk. Node.js is only required if you want the loopback launcher or to run tests.</p>
       <h3>Standalone files</h3>
       <p>Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</p>
+      <h3>Loopback catalog address</h3>
+      <p>When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</p>
       <h3>JSON export</h3>
       <p>Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</p>
       <h3>Independent workbenches</h3>
       <p>The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository.</p>
     </section>
-    <section class="trust" id="trust" aria-labelledby="trust-title">
+    <section class="trust" id="trust" tabindex="-1" aria-labelledby="trust-title">
       <h2 id="trust-title">Trust and limits</h2>
       <p>This catalog and the four workbenches are local-first decision aids. They help you inspect a bounded case. They do not make the decision, execute a transaction, or speak for a counterparty.</p>
       <ul>
@@ -486,7 +533,7 @@
     </section>
   </main>
   <footer class="shell site-footer">
-    <p class="version-line">Partnership Breakpoint 1.4.2, Common Cart 1.3.2, The Smallest Agreement 1.4.2, Weekend Gap 1.4.2. Each workbench versions itself.</p>
+    <p class="version-line">Partnership Breakpoint 1.4.2, Common Cart 1.3.3, The Smallest Agreement 1.4.2, Weekend Gap 1.4.3. Each workbench versions itself.</p>
     <p>This page is the catalog. It is not a combined product version. Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap each ship their own version and changelog.</p>
     <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
   </footer>
@@ -504,6 +551,22 @@
         if (version) node.textContent = version;
       });
       const inEditable = (node) => !!(node && (node.closest?.('input, textarea, select, [contenteditable="true"]') || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName || '')));
+      const urlTools = document.getElementById('catalog-url-tools');
+      const copyBtn = document.getElementById('copy-catalog-url');
+      const copyStatus = document.getElementById('copy-catalog-status');
+      if (urlTools && /^https?:$/.test(location.protocol)) {
+        urlTools.hidden = false;
+      }
+      copyBtn?.addEventListener('click', async () => {
+        const url = location.href;
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(url);
+          if (copyStatus) copyStatus.textContent = 'Copied the catalog address.';
+        } catch {
+          if (copyStatus) copyStatus.textContent = 'Could not copy. Select the address bar instead.';
+        }
+      });
       const setOpen = (open, options = {}) => {
         if (!shortcuts) return;
         shortcuts.hidden = !open;
@@ -529,6 +592,11 @@
         if (event.key === 'h') {
           event.preventDefault();
           document.getElementById('catalog-heading')?.focus();
+          return;
+        }
+        if (event.key === 't') {
+          event.preventDefault();
+          document.getElementById('trust')?.focus();
           return;
         }
         if (event.key === 'Escape' && shortcuts && !shortcuts.hidden) {

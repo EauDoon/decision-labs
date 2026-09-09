@@ -67,6 +67,8 @@ SOFTWARE.
         <li><kbd>n</kbd> Add a buyer</li>
         <li><kbd>m</kbd> Focus the merchant inspector region</li>
         <li><kbd>o</kbd> Focus the offers list</li>
+        <li><kbd>b</kbd> Focus the buyer list</li>
+        <li><kbd>w</kbd> Focus the winner and inspector summary</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -126,6 +128,7 @@ SOFTWARE.
     </section>
 
     <div class="status-line" id="status" role="status" aria-live="polite"></div>
+    <p id="entry-cap-warning" class="status-short print-chrome" hidden></p>
     <p id="save-state" class="canvas-note" role="status" aria-live="polite"></p>
     <section class="snapshot-bar print-chrome" aria-label="Saved room workspace">
       <label>Saved rooms <select id="saved-rooms" aria-describedby="snapshot-help"></select></label>
@@ -136,7 +139,7 @@ SOFTWARE.
       <p id="snapshot-help">Up to 12 local snapshots, named by the room title. Export JSON for a portable backup. Browser data can be cleared.</p>
     </section>
 
-    <section class="scoreboard print-keep" aria-label="Market summary">
+    <section class="scoreboard print-keep" id="winner-summary" tabindex="-1" aria-label="Market summary">
       <article class="metric feature">
         <span class="metric-label">Best available offer</span>
         <strong id="metric-winner">Not unlocked</strong>
@@ -202,7 +205,15 @@ SOFTWARE.
           <button id="apply-buyer-sort" type="button">Apply sort</button>
           <p>Preview changes the list on screen only. Apply rewrites saved order and is undoable. Buyer IDs stay the same.</p>
         </div>
-        <div class="table-shell print-private">
+        <div class="snapshot-bar print-chrome" aria-label="Buyer accepted variant filter">
+          <label>Accepted variant
+            <select id="buyer-variant-filter">
+              <option value="all">All</option>
+            </select>
+          </label>
+          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only.</p>
+        </div>
+        <div class="table-shell print-private" id="buyers-list" tabindex="-1" role="region" aria-label="Buyer constraints list">
           <table>
             <caption class="sr-only">Editable buyer constraints</caption>
             <thead>
@@ -225,6 +236,22 @@ SOFTWARE.
           <button id="restore-neighbourhood" type="button">Restore neighbourhood example</button>
         </div>
         <p id="variants-help" class="canvas-note print-chrome">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
+        <article class="panel print-chrome" aria-labelledby="buyer-variant-counts-title">
+          <div class="panel-heading">
+            <div>
+              <p class="section-number">Accepted variants</p>
+              <h3 id="buyer-variant-counts-title">Buyers grouped by variant</h3>
+            </div>
+          </div>
+          <p class="canvas-note">Organizer counts of who accepts each variant. Labels, IDs, budgets, and allocations stay out. Merchant views still show counts only.</p>
+          <div class="table-shell compact">
+            <table>
+              <caption class="sr-only">Buyer counts by accepted variant</caption>
+              <thead><tr><th scope="col">Variant</th><th scope="col">Buyers</th><th scope="col">Units</th></tr></thead>
+              <tbody id="buyer-variant-counts"></tbody>
+            </table>
+          </div>
+        </article>
 
         <div class="result-grid">
           <article class="panel chart-panel print-chrome">
@@ -262,7 +289,7 @@ SOFTWARE.
             <div>
               <p class="section-number">Offer inspector</p>
               <h3 id="inspector-title">Why each order is included or excluded</h3>
-              <p id="inspector-summary" class="inspector-summary"></p>
+              <p id="inspector-summary" class="inspector-summary" tabindex="-1"></p>
             </div>
             <label class="inspector-picker print-chrome">Inspect offer
               <select id="offer-inspector"></select>
@@ -321,7 +348,8 @@ SOFTWARE.
         <div class="snapshot-bar print-chrome">
           <button id="merchant-report" type="button">Export aggregate merchant report</button>
           <button id="merchant-residual-report" type="button">Export residual coverage (aggregate)</button>
-          <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information.</p>
+          <button id="copy-winner-aggregates" type="button">Copy winner aggregates</button>
+          <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information. Winner markdown is aggregates only.</p>
         </div>
         <div class="section-heading print-chrome">
           <div>
@@ -332,6 +360,7 @@ SOFTWARE.
           <div class="button-row">
             <button id="add-offer" class="primary" type="button">Add offer</button>
             <button id="import-offers" type="button">Import offer CSV</button>
+            <button id="export-offers-csv" type="button">Export offer CSV</button>
             <button id="offer-csv-template" type="button">Download offer CSV template</button>
             <input id="import-offers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
@@ -344,7 +373,18 @@ SOFTWARE.
               <option value="pickup">Pickup</option>
             </select>
           </label>
-          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged.</p>
+          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last choice is kept in this browser's workspace file. Older workspace files without it still open.</p>
+        </div>
+        <div class="snapshot-bar print-chrome" aria-label="Offer list order">
+          <label>Sort offers
+            <select id="offer-sort-mode">
+              <option value="unitPrice">Unit price low-high</option>
+              <option value="capacity">Capacity high-low</option>
+            </select>
+          </label>
+          <button id="preview-offer-sort" type="button">Preview sort</button>
+          <button id="apply-offer-sort" type="button">Apply sort</button>
+          <p>Preview changes the list on screen only. Apply rewrites saved order and is undoable. Offer IDs stay the same.</p>
         </div>
         <div class="table-shell print-chrome" id="offers-list" tabindex="-1" role="region" aria-label="Merchant offers list">
           <table>
@@ -356,6 +396,10 @@ SOFTWARE.
             </thead>
             <tbody id="offer-rows"></tbody>
           </table>
+        </div>
+        <div id="empty-offer-recovery" class="empty-recovery print-chrome" hidden>
+          <p>This room has no offers. There is no bid to match, so nothing unlocks. Add an offer, import a CSV, or restore the neighbourhood example offers. Buyers stay in place. Restore is undoable.</p>
+          <button id="restore-example-offers" type="button">Restore example offers</button>
         </div>
 
         <section class="tier-section print-chrome" aria-labelledby="tier-title">

@@ -203,6 +203,8 @@ th, td { padding: 0.68rem 0.58rem; border-bottom: 1px solid var(--line); text-al
 th { color: var(--muted); font-size: 0.68rem; letter-spacing: 0.03em; text-transform: uppercase; }
 th:first-child, td:first-child { text-align: left; }
 tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
+tbody tr.is-peak-queue { box-shadow: inset 4px 0 0 #eef4f5; }
+tbody tr.is-peak-queue td:first-child { font-weight: 800; }
 .table-state { font-weight: 800; }
 
 .method { margin-top: 1.25rem; padding: 1.5rem; }

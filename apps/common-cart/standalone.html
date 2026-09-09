@@ -62,7 +62,7 @@ body {
 button, input, select { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible,
-#offers-list:focus, #merchant-inspector-region:focus {
+#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
 }
@@ -412,6 +412,8 @@ footer {
         <li><kbd>n</kbd> Add a buyer</li>
         <li><kbd>m</kbd> Focus the merchant inspector region</li>
         <li><kbd>o</kbd> Focus the offers list</li>
+        <li><kbd>b</kbd> Focus the buyer list</li>
+        <li><kbd>w</kbd> Focus the winner and inspector summary</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -471,6 +473,7 @@ footer {
     </section>
 
     <div class="status-line" id="status" role="status" aria-live="polite"></div>
+    <p id="entry-cap-warning" class="status-short print-chrome" hidden></p>
     <p id="save-state" class="canvas-note" role="status" aria-live="polite"></p>
     <section class="snapshot-bar print-chrome" aria-label="Saved room workspace">
       <label>Saved rooms <select id="saved-rooms" aria-describedby="snapshot-help"></select></label>
@@ -481,7 +484,7 @@ footer {
       <p id="snapshot-help">Up to 12 local snapshots, named by the room title. Export JSON for a portable backup. Browser data can be cleared.</p>
     </section>
 
-    <section class="scoreboard print-keep" aria-label="Market summary">
+    <section class="scoreboard print-keep" id="winner-summary" tabindex="-1" aria-label="Market summary">
       <article class="metric feature">
         <span class="metric-label">Best available offer</span>
         <strong id="metric-winner">Not unlocked</strong>
@@ -547,7 +550,15 @@ footer {
           <button id="apply-buyer-sort" type="button">Apply sort</button>
           <p>Preview changes the list on screen only. Apply rewrites saved order and is undoable. Buyer IDs stay the same.</p>
         </div>
-        <div class="table-shell print-private">
+        <div class="snapshot-bar print-chrome" aria-label="Buyer accepted variant filter">
+          <label>Accepted variant
+            <select id="buyer-variant-filter">
+              <option value="all">All</option>
+            </select>
+          </label>
+          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only.</p>
+        </div>
+        <div class="table-shell print-private" id="buyers-list" tabindex="-1" role="region" aria-label="Buyer constraints list">
           <table>
             <caption class="sr-only">Editable buyer constraints</caption>
             <thead>
@@ -570,6 +581,22 @@ footer {
           <button id="restore-neighbourhood" type="button">Restore neighbourhood example</button>
         </div>
         <p id="variants-help" class="canvas-note print-chrome">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
+        <article class="panel print-chrome" aria-labelledby="buyer-variant-counts-title">
+          <div class="panel-heading">
+            <div>
+              <p class="section-number">Accepted variants</p>
+              <h3 id="buyer-variant-counts-title">Buyers grouped by variant</h3>
+            </div>
+          </div>
+          <p class="canvas-note">Organizer counts of who accepts each variant. Labels, IDs, budgets, and allocations stay out. Merchant views still show counts only.</p>
+          <div class="table-shell compact">
+            <table>
+              <caption class="sr-only">Buyer counts by accepted variant</caption>
+              <thead><tr><th scope="col">Variant</th><th scope="col">Buyers</th><th scope="col">Units</th></tr></thead>
+              <tbody id="buyer-variant-counts"></tbody>
+            </table>
+          </div>
+        </article>
 
         <div class="result-grid">
           <article class="panel chart-panel print-chrome">
@@ -607,7 +634,7 @@ footer {
             <div>
               <p class="section-number">Offer inspector</p>
               <h3 id="inspector-title">Why each order is included or excluded</h3>
-              <p id="inspector-summary" class="inspector-summary"></p>
+              <p id="inspector-summary" class="inspector-summary" tabindex="-1"></p>
             </div>
             <label class="inspector-picker print-chrome">Inspect offer
               <select id="offer-inspector"></select>
@@ -666,7 +693,8 @@ footer {
         <div class="snapshot-bar print-chrome">
           <button id="merchant-report" type="button">Export aggregate merchant report</button>
           <button id="merchant-residual-report" type="button">Export residual coverage (aggregate)</button>
-          <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information.</p>
+          <button id="copy-winner-aggregates" type="button">Copy winner aggregates</button>
+          <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information. Winner markdown is aggregates only.</p>
         </div>
         <div class="section-heading print-chrome">
           <div>
@@ -677,6 +705,7 @@ footer {
           <div class="button-row">
             <button id="add-offer" class="primary" type="button">Add offer</button>
             <button id="import-offers" type="button">Import offer CSV</button>
+            <button id="export-offers-csv" type="button">Export offer CSV</button>
             <button id="offer-csv-template" type="button">Download offer CSV template</button>
             <input id="import-offers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
@@ -689,7 +718,18 @@ footer {
               <option value="pickup">Pickup</option>
             </select>
           </label>
-          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged.</p>
+          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last choice is kept in this browser's workspace file. Older workspace files without it still open.</p>
+        </div>
+        <div class="snapshot-bar print-chrome" aria-label="Offer list order">
+          <label>Sort offers
+            <select id="offer-sort-mode">
+              <option value="unitPrice">Unit price low-high</option>
+              <option value="capacity">Capacity high-low</option>
+            </select>
+          </label>
+          <button id="preview-offer-sort" type="button">Preview sort</button>
+          <button id="apply-offer-sort" type="button">Apply sort</button>
+          <p>Preview changes the list on screen only. Apply rewrites saved order and is undoable. Offer IDs stay the same.</p>
         </div>
         <div class="table-shell print-chrome" id="offers-list" tabindex="-1" role="region" aria-label="Merchant offers list">
           <table>
@@ -701,6 +741,10 @@ footer {
             </thead>
             <tbody id="offer-rows"></tbody>
           </table>
+        </div>
+        <div id="empty-offer-recovery" class="empty-recovery print-chrome" hidden>
+          <p>This room has no offers. There is no bid to match, so nothing unlocks. Add an offer, import a CSV, or restore the neighbourhood example offers. Buyers stay in place. Restore is undoable.</p>
+          <button id="restore-example-offers" type="button">Restore example offers</button>
         </div>
 
         <section class="tier-section print-chrome" aria-labelledby="tier-title">
@@ -968,8 +1012,16 @@ function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms"], "Workspace");
-  return { version: 1, rooms: candidate.rooms.map(validateScenario) };
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter"], "Workspace");
+  const fulfillmentFilter = own(candidate, "fulfillmentFilter");
+  let filter = "all";
+  if (fulfillmentFilter !== undefined) {
+    if (fulfillmentFilter !== "all" && fulfillmentFilter !== "shipping" && fulfillmentFilter !== "pickup") {
+      throw new ScenarioError("Fulfillment filter must be all, shipping, or pickup.");
+    }
+    filter = fulfillmentFilter;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter };
 }
 
 function duplicateEntry(rawScenario, kind, id) {
@@ -1029,6 +1081,74 @@ function filterOfferIdsByFulfillment(rawScenario, fulfillment) {
   return scenario.offers.filter((offer) => offer.fulfillment === fulfillment).map((offer) => offer.id);
 }
 
+function acceptedVariantFilterOptions(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const seen = new Map();
+  for (const buyer of scenario.buyers) {
+    for (const variant of buyer.allowedVariants) {
+      const key = normalizeText(variant);
+      if (!seen.has(key)) seen.set(key, variant);
+    }
+  }
+  return [...seen.values()].sort((left, right) => compareText(normalizeText(left), normalizeText(right)) || compareText(left, right));
+}
+
+function filterBuyerIdsByAcceptedVariant(rawScenario, variant) {
+  if (typeof variant !== "string") {
+    throw new ScenarioError("Buyer variant filter must be all or an accepted variant name.");
+  }
+  if (variant !== "all" && variant.trim() === "") {
+    throw new ScenarioError("Buyer variant filter must be all or an accepted variant name.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (variant === "all") return scenario.buyers.map((buyer) => buyer.id);
+  const key = normalizeText(variant);
+  return scenario.buyers
+    .filter((buyer) => buyer.allowedVariants.some((entry) => normalizeText(entry) === key))
+    .map((buyer) => buyer.id);
+}
+
+/** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
+function organizerBuyerVariantCounts(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const groups = new Map();
+  for (const buyer of scenario.buyers) {
+    for (const variant of buyer.allowedVariants) {
+      const key = normalizeText(variant);
+      const current = groups.get(key) ?? { variant, buyerCount: 0, units: 0 };
+      current.buyerCount += 1;
+      current.units += buyer.quantity;
+      groups.set(key, current);
+    }
+  }
+  return [...groups.values()].sort((left, right) => compareText(normalizeText(left.variant), normalizeText(right.variant)) || compareText(left.variant, right.variant));
+}
+
+function sortedOffers(offers, mode) {
+  if (mode !== "unitPrice" && mode !== "capacity") {
+    throw new ScenarioError("Offer sort must be unit price or capacity.");
+  }
+  return [...offers].sort((left, right) => {
+    if (mode === "unitPrice") {
+      return left.unitPrice - right.unitPrice || compareText(left.id, right.id);
+    }
+    return right.capacity - left.capacity || compareText(left.id, right.id);
+  });
+}
+
+function previewOfferSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return sortedOffers(scenario.offers, mode).map((offer) => ({
+    ...offer,
+    tiers: offer.tiers ? offer.tiers.map((tier) => ({ ...tier })) : offer.tiers
+  }));
+}
+
+function applyOfferSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return validateScenario({ ...scenario, offers: sortedOffers(scenario.offers, mode) });
+}
+
 function sortedBuyers(buyers, mode) {
   if (mode !== "label" && mode !== "quantity") {
     throw new ScenarioError("Buyer sort must be label or quantity.");
@@ -1067,6 +1187,17 @@ function restoreRemovedBuyer(rawScenario, rawBuyer) {
     throw new ScenarioError(`Buyer ${buyer.id} is already in the room.`);
   }
   return validateScenario({ ...scenario, buyers: [...scenario.buyers, buyer] });
+}
+
+function restoreExampleOffers(rawScenario, name = "neighbourhood") {
+  const scenario = validateScenario(rawScenario);
+  const example = clonePreset(name);
+  return validateScenario({
+    title: scenario.title,
+    currency: scenario.currency,
+    buyers: scenario.buyers,
+    offers: example.offers
+  });
 }
 
 function uniqueCopyTitle(title, existingTitles = []) {
@@ -1472,6 +1603,23 @@ function offerCsvTemplate() {
   return "name,capacity,unit price,shipping,fulfillment,variants\r\n";
 }
 
+/** Merchant-facing offer rows. Formula-safe. Omits buyer IDs, labels, budgets, and allocations. */
+function createOfferCsv(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const rows = [["name", "capacity", "unit price", "shipping", "fulfillment", "variants"]];
+  for (const offer of scenario.offers) {
+    rows.push([
+      offer.merchant,
+      offer.capacity,
+      offer.unitPrice,
+      offer.shippingPerBuyer,
+      offer.fulfillment,
+      offer.variant
+    ]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
 function createOrganizerBriefing(rawScenario) {
   const market = evaluateMarket(rawScenario);
   const residual = computeResidualCoverage(rawScenario);
@@ -1535,6 +1683,50 @@ function createOrganizerBriefing(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Merchant-safe winner totals. Aggregates only. Omits buyer IDs, labels, budgets, and allocations. */
+function createWinnerAggregatesMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const residual = computeResidualCoverage(rawScenario);
+  const winner = market.winner;
+  const lines = [
+    `# Common Cart winner aggregates`,
+    ``,
+    `- Currency: ${market.scenario.currency}`,
+    `- Requested units: ${market.totalRequestedUnits}`,
+    `- Buyers in the room: ${market.buyerCount}`,
+    `- Categories: ${market.categoryCount}`,
+    ``,
+    `## Winning offer`,
+    winner
+      ? [
+        `- Merchant: ${winner.offer.merchant}`,
+        `- Category: ${winner.offer.category}`,
+        `- Variant: ${winner.offer.variant}`,
+        `- Fulfillment: ${winner.offer.fulfillment}`,
+        `- Fulfilled units: ${winner.fulfilledUnits}`,
+        `- Included buyers: ${winner.deliveredBuyers}`,
+        `- Item price: ${winner.effectiveUnitPrice}`,
+        `- Landed total: ${winner.totalCost}`,
+        `- Group headroom: ${winner.savings}`,
+        `- Fulfillment rate: ${winner.fulfillmentRate}`
+      ].join("\n")
+      : `- No qualifying offer.`,
+    ``,
+    `## Residual coverage`,
+    `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
+    `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
+    residual.secondary
+      ? `- Leftover fill: ${residual.secondary.merchant} / ${residual.secondary.variant}, ${residual.secondary.fulfilledUnits} units, ${residual.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    residual.tertiary
+      ? `- Tertiary fill: ${residual.tertiary.merchant} / ${residual.tertiary.variant}, ${residual.tertiary.fulfilledUnits} units, ${residual.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
+    ``,
+    `These aggregates omit private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {
@@ -1558,8 +1750,8 @@ function validateScenario(candidate) {
   if (!Array.isArray(buyers) || buyers.length > MAX_BUYERS) {
     throw new ScenarioError(`Buyers must contain at most ${MAX_BUYERS} entries.`);
   }
-  if (!Array.isArray(offers) || offers.length < 1 || offers.length > MAX_OFFERS) {
-    throw new ScenarioError(`Offers must contain 1 to ${MAX_OFFERS} entries.`);
+  if (!Array.isArray(offers) || offers.length > MAX_OFFERS) {
+    throw new ScenarioError(`Offers must contain at most ${MAX_OFFERS} entries.`);
   }
   const normalizedBuyers = buyers.map((entry, index) => validateBuyer(entry, index));
   const normalizedOffers = offers.map((entry, index) => validateOffer(entry, index));
@@ -2250,13 +2442,15 @@ let scenario = loadInitialScenario();
 const history = createScenarioHistory(scenario);
 let invalidDraft = false;
 let workspaceReadFailed = false;
+let offerFulfillmentFilter = "all";
 let savedRooms = loadWorkspace();
 let baseline = null;
 let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
 let buyerSortPreviewIds = null;
-let offerFulfillmentFilter = "all";
+let offerSortPreviewIds = null;
+let buyerVariantFilter = "all";
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -2269,7 +2463,9 @@ function loadWorkspace() {
   try {
     const raw = localStorage.getItem(WORKSPACE_KEY);
     if (!raw) return [];
-    return validateWorkspace(JSON.parse(raw)).rooms;
+    const workspace = validateWorkspace(JSON.parse(raw));
+    offerFulfillmentFilter = workspace.fulfillmentFilter;
+    return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
     queueMicrotask(() => setStatus(`Saved rooms could not be opened: ${messageOf(error)} Export your current room before closing.`));
@@ -2311,10 +2507,19 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
+}
+
+function persistFulfillmentFilter() {
+  if (workspaceReadFailed) return;
+  try {
+    storeWorkspace(savedRooms);
+  } catch (error) {
+    setStatus(`Could not save fulfillment filter: ${messageOf(error)}`);
+  }
 }
 
 function loadInitialScenario() {
@@ -2394,6 +2599,23 @@ function bindStaticEvents() {
       downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
       setStatus("Overlap CSV downloaded. It contains buyer counts only.", true);
     } catch (error) { setStatus(`Overlap copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#copy-winner-aggregates").addEventListener("click", () => {
+    try {
+      const markdown = createWinnerAggregatesMarkdown(scenario);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(markdown).then(
+          () => setStatus("Winner aggregates copied as Markdown. Counts and totals only. Buyer labels, IDs, budgets, and allocations are omitted.", true),
+          () => {
+            downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
+            setStatus("Clipboard was blocked, so winner aggregates were downloaded instead. Aggregates only.", true);
+          }
+        );
+        return;
+      }
+      downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
+      setStatus("Winner aggregates downloaded as Markdown. Counts and totals only.", true);
+    } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
@@ -2486,7 +2708,7 @@ function bindStaticEvents() {
   });
 
   document.querySelector("#add-buyer").addEventListener("click", () => {
-    if (scenario.buyers.length >= 40) return setStatus("A room can have at most 40 buyers.");
+    if (scenario.buyers.length >= 40) return setStatus("Local matching cap: a room can have at most 40 buyers. That is not a server quota.");
     const next = nextId(scenario.buyers, "B");
     scenario.buyers.push({
       id: next,
@@ -2515,8 +2737,23 @@ function bindStaticEvents() {
     elements.buyerRows.querySelector("input")?.focus();
   });
 
+  document.querySelector("#restore-example-offers").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    try {
+      scenario = restoreExampleOffers(scenario, "neighbourhood");
+      inspectedOfferId = scenario.offers[0]?.id ?? "";
+      offerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Example offers restored. Buyers were left unchanged. Undo returns to the empty offer list.", true);
+      elements.offerRows.querySelector("input")?.focus();
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+
   document.querySelector("#add-offer").addEventListener("click", () => {
-    if (scenario.offers.length >= 40) return setStatus("A room can have at most 40 offers.");
+    if (scenario.offers.length >= 40) return setStatus("Local matching cap: a room can have at most 40 offers. That is not a server quota.");
     const next = nextId(scenario.offers, "O");
     scenario.offers.push({
       id: next,
@@ -2531,6 +2768,7 @@ function bindStaticEvents() {
       fulfillment: "shipping"
     });
     inspectedOfferId = next;
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     elements.offerRows.lastElementChild?.querySelector("input")?.focus();
@@ -2569,20 +2807,66 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#preview-offer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#offer-sort-mode").value;
+      const preview = previewOfferSort(scenario, mode);
+      offerSortPreviewIds = preview.map((offer) => offer.id);
+      renderEditor();
+      setStatus(mode === "capacity"
+        ? "Previewing capacity high to low. Saved order is unchanged until you apply the sort."
+        : "Previewing unit price low to high. Saved order is unchanged until you apply the sort.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#apply-offer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#offer-sort-mode").value;
+      scenario = applyOfferSort(scenario, mode);
+      offerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Offer list order applied. Undo restores the previous saved order. IDs are unchanged.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#import-offers").addEventListener("click", () => document.querySelector("#import-offers-file").click());
   document.querySelector("#offer-csv-template").addEventListener("click", () => {
     downloadFile(offerCsvTemplate(), "common-cart-offers-template.csv", "text/csv;charset=utf-8");
     setStatus("Offer CSV template downloaded. Fill name, capacity, unit price, shipping, fulfillment, and variants, then import.", true);
   });
+  document.querySelector("#export-offers-csv").addEventListener("click", () => {
+    try {
+      downloadFile(createOfferCsv(scenario), "common-cart-offers.csv", "text/csv;charset=utf-8");
+      setStatus("Offer CSV exported. Formula-like text is escaped. Buyer labels, IDs, budgets, and allocations are omitted. Quantity tiers stay in JSON export.", true);
+    } catch (error) {
+      setStatus(`Offer CSV export failed: ${messageOf(error)}`);
+    }
+  });
   document.querySelector("#import-offers-file").addEventListener("change", importOffersCsv);
   document.querySelector("#offer-fulfillment-filter").addEventListener("change", (event) => {
     offerFulfillmentFilter = event.target.value;
+    persistFulfillmentFilter();
     try {
       applyOfferFulfillmentFilter();
       const shown = filterOfferIdsByFulfillment(scenario, offerFulfillmentFilter).length;
       setStatus(offerFulfillmentFilter === "all"
-        ? "Showing every offer. Saved order is unchanged."
-        : `Showing ${shown} ${offerFulfillmentFilter} offer${shown === 1 ? "" : "s"}. Saved offers are unchanged.`, true);
+        ? "Showing every offer. Saved order is unchanged. The last fulfillment filter is kept in this browser."
+        : `Showing ${shown} ${offerFulfillmentFilter} offer${shown === 1 ? "" : "s"}. Saved offers are unchanged. The last fulfillment filter is kept in this browser.`, true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#buyer-variant-filter").addEventListener("change", (event) => {
+    buyerVariantFilter = event.target.value;
+    try {
+      applyBuyerVariantFilter();
+      const shown = filterBuyerIdsByAcceptedVariant(scenario, buyerVariantFilter).length;
+      setStatus(buyerVariantFilter === "all"
+        ? "Showing every buyer. Saved buyers and matching are unchanged."
+        : `Showing ${shown} buyer${shown === 1 ? "" : "s"} who accept ${buyerVariantFilter}. Saved buyers are unchanged.`, true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -2720,7 +3004,34 @@ function handleShortcut(event) {
   if (key === "o") {
     event.preventDefault();
     focusOffersList();
+    return;
   }
+  if (key === "b") {
+    event.preventDefault();
+    focusBuyersList();
+    return;
+  }
+  if (key === "w") {
+    event.preventDefault();
+    focusWinnerSummary();
+  }
+}
+
+function focusBuyersList() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#buyers-list")?.focus();
+}
+
+function focusWinnerSummary() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const summary = document.querySelector("#winner-summary");
+  if (summary) {
+    summary.focus();
+    return;
+  }
+  document.querySelector("#inspector-summary")?.focus();
 }
 
 function focusOffersList() {
@@ -2789,19 +3100,36 @@ function renderEditor() {
   if (scenario.buyers.length === 0) {
     setEmptyState(elements.buyerRows, 8, "No buyers are in this room.");
   }
-  elements.offerRows.replaceChildren(...scenario.offers.map(renderOfferRow));
+  if (offerSortPreviewIds) {
+    const current = new Set(scenario.offers.map((offer) => offer.id));
+    if (offerSortPreviewIds.length !== scenario.offers.length || offerSortPreviewIds.some((id) => !current.has(id))) {
+      offerSortPreviewIds = null;
+    }
+  }
+  const offersForDisplay = offerSortPreviewIds
+    ? offerSortPreviewIds.map((id) => scenario.offers.find((offer) => offer.id === id)).filter(Boolean)
+    : scenario.offers;
+  elements.offerRows.replaceChildren(...offersForDisplay.map(renderOfferRow));
+  if (scenario.offers.length === 0) {
+    setEmptyState(elements.offerRows, 10, "No offers are in this room.");
+  }
   const recovery = document.querySelector("#empty-buyer-recovery");
   if (recovery) recovery.hidden = scenario.buyers.length > 0;
+  const offerRecovery = document.querySelector("#empty-offer-recovery");
+  if (offerRecovery) offerRecovery.hidden = scenario.offers.length > 0;
   const addBuyer = document.querySelector("#add-buyer");
   const addOffer = document.querySelector("#add-offer");
   addBuyer.disabled = scenario.buyers.length >= 40;
   addOffer.disabled = scenario.offers.length >= 40;
-  addBuyer.title = addBuyer.disabled ? "A room can have at most 40 buyers." : "";
-  addOffer.title = addOffer.disabled ? "A room can have at most 40 offers." : "";
+  addBuyer.title = addBuyer.disabled ? "Local matching cap: at most 40 buyers. Not a server quota." : "";
+  addOffer.title = addOffer.disabled ? "Local matching cap: at most 40 offers. Not a server quota." : "";
+  renderEntryCapWarning();
   const filterSelect = document.querySelector("#offer-fulfillment-filter");
   if (filterSelect) filterSelect.value = offerFulfillmentFilter;
   renderTierEditors();
   applyOfferFulfillmentFilter();
+  populateBuyerVariantFilter();
+  applyBuyerVariantFilter();
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -2811,6 +3139,26 @@ function renderEditor() {
         : "Remove a buyer this session to restore it here."
       : "Restore the buyer removed most recently in this session.";
   }
+}
+
+function renderEntryCapWarning() {
+  const note = document.querySelector("#entry-cap-warning");
+  if (!note) return;
+  const buyersFull = scenario.buyers.length >= 40;
+  const offersFull = scenario.offers.length >= 40;
+  if (!buyersFull && !offersFull) {
+    note.hidden = true;
+    note.textContent = "";
+    return;
+  }
+  note.hidden = false;
+  if (buyersFull && offersFull) {
+    note.textContent = "This room is at the local matching cap of 40 buyers and 40 offers. That bound keeps the exact allocator responsive. It is not a server quota.";
+    return;
+  }
+  note.textContent = buyersFull
+    ? "This room is at the local matching cap of 40 buyers. That bound keeps the exact allocator responsive. It is not a server quota."
+    : "This room is at the local matching cap of 40 offers. That bound keeps the exact allocator responsive. It is not a server quota.";
 }
 
 function applyOfferFulfillmentFilter() {
@@ -2833,6 +3181,50 @@ function applyOfferFulfillmentFilter() {
   note.textContent = hiddenCount === 0
     ? "The filter hides rows on screen. Saved offers and matching stay unchanged."
     : `Showing ${visibleIds.size} of ${scenario.offers.length} offers. Hidden rows stay in the room and still match.`;
+}
+
+function populateBuyerVariantFilter() {
+  const select = document.querySelector("#buyer-variant-filter");
+  if (!select) return;
+  let variants = [];
+  try {
+    variants = acceptedVariantFilterOptions(scenario);
+  } catch {
+    variants = [];
+  }
+  if (buyerVariantFilter !== "all" && !variants.some((variant) => variant === buyerVariantFilter)) {
+    buyerVariantFilter = "all";
+  }
+  select.replaceChildren();
+  const all = document.createElement("option");
+  all.value = "all";
+  all.textContent = "All";
+  select.append(all);
+  for (const variant of variants) {
+    const option = document.createElement("option");
+    option.value = variant;
+    option.textContent = variant;
+    select.append(option);
+  }
+  select.value = buyerVariantFilter;
+}
+
+function applyBuyerVariantFilter() {
+  let visibleIds;
+  try {
+    visibleIds = new Set(filterBuyerIdsByAcceptedVariant(scenario, buyerVariantFilter));
+  } catch {
+    visibleIds = new Set(scenario.buyers.map((buyer) => buyer.id));
+  }
+  elements.buyerRows.querySelectorAll("tr[data-id]").forEach((row) => {
+    row.hidden = !visibleIds.has(row.dataset.id);
+  });
+  const note = document.querySelector("#buyer-variant-filter-note");
+  if (!note) return;
+  const hiddenCount = scenario.buyers.length - visibleIds.size;
+  note.textContent = hiddenCount === 0
+    ? "The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only."
+    : `Showing ${visibleIds.size} of ${scenario.buyers.length} buyers. Hidden rows stay in the room and still match. Merchant views still show counts only.`;
 }
 
 function buyerDisplayLabel(buyer) {
@@ -2904,11 +3296,15 @@ function renderOfferRow(entry) {
     });
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
-    if (scenario.offers.length === 1) return setStatus("A room needs at least one offer.");
     const index = scenario.offers.findIndex(({ id }) => id === row.dataset.id);
     scenario.offers = scenario.offers.filter(({ id }) => id !== row.dataset.id);
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
+    if (scenario.offers.length === 0) {
+      document.querySelector("#restore-example-offers")?.focus();
+      return;
+    }
     elements.offerRows.children[Math.min(index, scenario.offers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
@@ -2994,6 +3390,7 @@ function refresh() {
     renderInspector(market);
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
+    renderOrganizerBuyerVariantCounts(market.scenario);
     renderDeliveryHeatmap(market.scenario);
     renderVariantOverlap(market.scenario);
     drawChart(market);
@@ -3036,6 +3433,8 @@ function refresh() {
     document.querySelector("#variant-overlap-head")?.replaceChildren();
     const overlapRows = document.querySelector("#variant-overlap-rows");
     if (overlapRows) setEmptyState(overlapRows, 2, "Variant overlap will appear once every field is valid.");
+    const variantCounts = document.querySelector("#buyer-variant-counts");
+    if (variantCounts) setEmptyState(variantCounts, 3, "Buyer variant counts will appear once every field is valid.");
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -3118,7 +3517,6 @@ function renderThreeRoomComparison(comparison) {
 
 function addDuplicateAction(row, kind, entry) {
   row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? buyerDisplayLabel(entry) : entry.merchant} (${entry.id})`);
-  row.querySelector(".remove-row").disabled = kind === "offers" && scenario.offers.length === 1;
   row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
   const button = document.createElement("button");
   button.type = "button";
@@ -3177,6 +3575,7 @@ function updateHistoryButtons() {
 
 function restoreHistory(forward) {
   buyerSortPreviewIds = null;
+  offerSortPreviewIds = null;
   scenario = invalidDraft ? history.current() : forward ? history.redo() : history.undo();
   renderEditor();
   refresh();
@@ -3482,6 +3881,23 @@ function renderDemand(rawScenario) {
   elements.demandGroups.replaceChildren(...cards);
 }
 
+function renderOrganizerBuyerVariantCounts(rawScenario) {
+  const body = document.querySelector("#buyer-variant-counts");
+  if (!body) return;
+  const groups = organizerBuyerVariantCounts(rawScenario);
+  if (groups.length === 0) {
+    setEmptyState(body, 3, "No buyers are in this room, so there are no accepted-variant counts.");
+    return;
+  }
+  body.replaceChildren(...groups.map((group) => {
+    const row = document.createElement("tr");
+    addCell(row, group.variant);
+    addCell(row, String(group.buyerCount));
+    addCell(row, String(group.units));
+    return row;
+  }));
+}
+
 function renderDeliveryHeatmap(rawScenario) {
   const text = document.querySelector("#delivery-heatmap-text");
   const svg = document.querySelector("#delivery-heatmap");
@@ -3653,6 +4069,8 @@ async function importScenario(event) {
     if (!allowReplaceDraft()) return;
     scenario = imported;
     inspectedOfferId = scenario.offers[0]?.id ?? "";
+    buyerSortPreviewIds = null;
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     setStatus("Scenario imported.", true);
@@ -3674,6 +4092,7 @@ async function importOffersCsv(event) {
     if (!allowReplaceDraft()) return;
     scenario = imported;
     inspectedOfferId = scenario.offers[0]?.id ?? "";
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     setStatus(`Imported ${imported.offers.length} offers from CSV. Buyers were left unchanged.`, true);

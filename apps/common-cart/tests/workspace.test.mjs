@@ -87,9 +87,25 @@ test("workspace validates every room and rejects unsupported schema or oversized
   const workspace = validateWorkspace({ version: 1, rooms: [s] });
   s.title = "Changed";
   assert.notEqual(workspace.rooms[0].title, s.title);
+  assert.equal(workspace.fulfillmentFilter, "all");
   for (const invalid of [{ version: 2, rooms: [] }, { version: 1, rooms: [{}] }, { version: 1, rooms: Array(13).fill(s) }, { version: 1, rooms: [], extra: true }]) {
     assert.throws(() => validateWorkspace(invalid));
   }
+});
+
+test("workspace stores an optional fulfillment filter and older files omit it safely", () => {
+  const s = clonePreset();
+  const legacy = validateWorkspace({ version: 1, rooms: [s] });
+  assert.equal(Object.hasOwn(legacy, "fulfillmentFilter"), true);
+  assert.equal(legacy.fulfillmentFilter, "all");
+  const pickup = validateWorkspace({ version: 1, rooms: [s], fulfillmentFilter: "pickup" });
+  assert.equal(pickup.fulfillmentFilter, "pickup");
+  const shipping = validateWorkspace({ version: 1, rooms: [], fulfillmentFilter: "shipping" });
+  assert.equal(shipping.rooms.length, 0);
+  assert.equal(shipping.fulfillmentFilter, "shipping");
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], fulfillmentFilter: "drone" }), /all, shipping, or pickup/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], fulfillmentFilter: "__proto__" }), /all, shipping, or pickup/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], constructor: "all" }), /unexpected field: constructor/);
 });
 
 test("scenario comparison includes residual leftover and unfilled counts", () => {

@@ -83,6 +83,17 @@ export const PRESETS = Object.freeze({
     weekendFxMultiplier: 3,
     saturdayHoliday: true,
     mondayHoliday: true
+  }),
+  compressedFridayClose: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Compressed Friday close (synthetic)",
+    demandProfile: "fridayBurst",
+    issuerOpenEndHour: 16,
+    bankOpenEndHour: 16,
+    payoutOpenEndHour: 16,
+    reserveCashAud: 5800000,
+    redemptionDemandAud: 1800000,
+    weekendFxMultiplier: 3.2
   })
 });
 
@@ -216,6 +227,13 @@ export function weekendCloseOverlapNotice(scenarioInput) {
   const { scenario } = sanitizeScenario(scenarioInput);
   if (!scenario.saturdayHoliday) return "";
   return "Saturday holiday and Sunday-style close overlap. Both weekend days are treated as closed.";
+}
+
+/** Visible when Monday and Saturday holidays are both selected. */
+export function mondaySaturdayHolidayNotice(scenarioInput) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  if (!(scenario.mondayHoliday && scenario.saturdayHoliday)) return "";
+  return "Monday holiday and Saturday holiday are both on. Saturday, Sunday and Monday stay closed under Sunday-style rules.";
 }
 
 export function isWithinHours(hourOffset, startHour, endHour) {
@@ -526,6 +544,32 @@ export function scenarioFromJSON(text) {
   }
 }
 
+/** Queue and settlement diffs for two scenario JSON files. Mixed null hours stay null. */
+export function compareScenarioFiles(leftText, rightText) {
+  const left = scenarioFromJSON(leftText);
+  const right = scenarioFromJSON(rightText);
+  const errors = [...left.errors, ...right.errors];
+  if (!left.scenario || !right.scenario) {
+    return Object.freeze({
+      comparison: null,
+      deltas: null,
+      errors: Object.freeze(errors.length ? errors : ["Compare failed. Choose two valid Weekend Gap scenario JSON files."])
+    });
+  }
+  const comparison = compareScenarios(left.scenario, right.scenario);
+  return Object.freeze({
+    comparison,
+    deltas: Object.freeze({
+      peakQueuedAud: comparison.deltas.peakQueuedAud,
+      finalQueuedAud: comparison.deltas.finalQueuedAud,
+      totalSettledAud: comparison.deltas.totalSettledAud,
+      hoursToFirstSettlement: comparison.deltas.hoursToFirstSettlement,
+      hoursToClearQueue: comparison.deltas.hoursToClearQueue
+    }),
+    errors: Object.freeze(errors)
+  });
+}
+
 /** End-of-interval exposure and simultaneous blockers, never causal attribution. */
 export function analyzeTimeline(input) {
   const result = runSimulation(input);
@@ -594,14 +638,17 @@ export function libraryFromJSON(text) {
   } catch (error) { return { scenarios: null, errors: [error.message || "Library could not be read."] }; }
 }
 
+export const CHART_VIEWS = Object.freeze(["queue", "gantt"]);
+
 /** Portable editing state; computed results are always regenerated on restore. */
 export function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots" } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue" } = options;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
   if (typeof notes !== "string" || notes.length > 4000) throw new RangeError("Workspace notes must be 4000 characters or fewer.");
   if (!["snapshots", "all", "open"].includes(ganttDensity)) throw new RangeError("Workspace Gantt density is invalid.");
+  if (!CHART_VIEWS.includes(selectedChart)) throw new RangeError("Workspace selected chart is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart }, null, 2);
 }
 export function workspaceFromJSON(text) {
   try {
@@ -615,7 +662,8 @@ export function workspaceFromJSON(text) {
       deadlineHour: raw.deadlineHour,
       selectedHour: raw.selectedHour === undefined ? 0 : raw.selectedHour,
       notes: raw.notes,
-      ganttDensity: raw.ganttDensity === undefined ? "snapshots" : raw.ganttDensity
+      ganttDensity: raw.ganttDensity === undefined ? "snapshots" : raw.ganttDensity,
+      selectedChart: raw.selectedChart === undefined ? "queue" : raw.selectedChart
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -705,6 +753,10 @@ function hoursToClearLabel(hours, peak) {
   return hours + " hour" + (hours === 1 ? "" : "s");
 }
 
+function hoursToFirstSettlementLabel(hours) {
+  return hours === null ? "No settlement in 72h" : hours + " hour" + (hours === 1 ? "" : "s");
+}
+
 function peakQueueHourLabel(summary) {
   if (!(summary.peakQueuedAud > 0)) return "No queue in 72h";
   return formatTime(summary.peakQueueHour) + " (hour " + summary.peakQueueHour + ")";
@@ -740,6 +792,22 @@ export function reportToMarkdown(current, baseline, options = {}) {
     "| Peak queue | " + comparison.baseline.summary.peakQueuedAud + " | " + comparison.candidate.summary.peakQueuedAud + " |",
     "",
     "This is a synthetic comparison, not a liquidity recommendation.",
+    ""
+  ].join("\n");
+}
+
+/** Copyable Markdown for the visible dashboard numbers. No timestamps. */
+export function dashboardToMarkdown(input) {
+  const result = runSimulation(input);
+  const summary = result.summary;
+  return [
+    "# Weekend Gap dashboard",
+    "",
+    "Synthetic educational numbers. Not financial advice or live market data.",
+    "",
+    "- Hours to clear queue: " + hoursToClearLabel(summary.hoursToClearQueue, summary.peakQueuedAud),
+    "- Peak queue hour: " + peakQueueHourLabel(summary),
+    "- Hours to first settlement: " + hoursToFirstSettlementLabel(summary.hoursToFirstSettlement),
     ""
   ].join("\n");
 }
@@ -835,11 +903,56 @@ export function previewWindowShift(scenarioInput, gate, startDeltaHours, endDelt
 
 export const DEMAND_PROFILES = Object.freeze(["flat", "fridayBurst", "mondayRush"]);
 
+/** Earlier arrivals first: Friday burst, then flat, then Monday rush. */
+export const DEMAND_PROFILE_STEP_ORDER = Object.freeze(["fridayBurst", "flat", "mondayRush"]);
+
 const DEMAND_PROFILE_LABELS = Object.freeze({
   flat: "Even across 72 hours",
   fridayBurst: "Friday burst",
   mondayRush: "Monday rush"
 });
+
+/** Adjacent arrival profile with no randomness. Stays put at either end. */
+export function stepDemandProfile(profile, direction) {
+  if (!DEMAND_PROFILES.includes(profile)) throw new RangeError("Unknown demand profile.");
+  if (direction !== "earlier" && direction !== "later") throw new RangeError("Demand timing steps must be earlier or later.");
+  const index = DEMAND_PROFILE_STEP_ORDER.indexOf(profile);
+  const nextIndex = direction === "earlier" ? Math.max(0, index - 1) : Math.min(DEMAND_PROFILE_STEP_ORDER.length - 1, index + 1);
+  return DEMAND_PROFILE_STEP_ORDER[nextIndex];
+}
+
+/** Re-run after one earlier or later arrival step. Does not mutate the input. */
+export function previewDemandProfileStep(input, direction) {
+  const { scenario } = sanitizeScenario(input);
+  const candidateProfile = stepDemandProfile(scenario.demandProfile, direction);
+  const current = runSimulation(scenario);
+  const applied = { ...scenario, demandProfile: candidateProfile };
+  const candidate = runSimulation(applied);
+  return Object.freeze({
+    direction,
+    currentProfile: scenario.demandProfile,
+    candidateProfile,
+    unchanged: candidateProfile === scenario.demandProfile,
+    applied,
+    current: Object.freeze({
+      peakQueuedAud: current.summary.peakQueuedAud,
+      totalSettledAud: current.summary.totalSettledAud,
+      hoursToFirstSettlement: current.summary.hoursToFirstSettlement
+    }),
+    candidate: Object.freeze({
+      peakQueuedAud: candidate.summary.peakQueuedAud,
+      totalSettledAud: candidate.summary.totalSettledAud,
+      hoursToFirstSettlement: candidate.summary.hoursToFirstSettlement
+    }),
+    deltas: Object.freeze({
+      peakQueuedAud: candidate.summary.peakQueuedAud - current.summary.peakQueuedAud,
+      totalSettledAud: candidate.summary.totalSettledAud - current.summary.totalSettledAud,
+      hoursToFirstSettlement: typeof current.summary.hoursToFirstSettlement === "number" && typeof candidate.summary.hoursToFirstSettlement === "number"
+        ? candidate.summary.hoursToFirstSettlement - current.summary.hoursToFirstSettlement
+        : current.summary.hoursToFirstSettlement === candidate.summary.hoursToFirstSettlement ? 0 : null
+    })
+  });
+}
 
 /** Same other inputs, three arrival timings. Timing experiment, not a forecast. */
 export function compareDemandProfiles(input) {
