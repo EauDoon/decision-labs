@@ -1789,6 +1789,27 @@ export function parseLocksJson(text, proposal) {
   return { status: "ok", proposal: next, applied: raw.locks.length };
 }
 
+/**
+ * Clear one group's support scores to blank on a copy of the proposal.
+ * The copy is invalid until those cells are filled. Does not mutate the input.
+ */
+export function resetGroupSupport(proposal, groupId) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof groupId !== "string" || !proposal.groups.some((group) => group.id === groupId)) {
+    return { status: "invalid", errors: ["Unknown group."] };
+  }
+  const next = canonicalProposal(proposal);
+  let cleared = 0;
+  for (const clause of next.clauses) {
+    for (const option of clause.options) {
+      option.support[groupId] = null;
+      cleared += 1;
+    }
+  }
+  return { status: "ok", proposal: next, cleared, groupId };
+}
+
 function parseCsvCost(raw, path) {
   const neutralized = neutralizeCsvCell(raw).trim();
   if (FORMULA_CELL.test(neutralized)) {

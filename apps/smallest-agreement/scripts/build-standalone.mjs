@@ -47,6 +47,7 @@ const appImport = `import {
   parseWorkspaceJson,
   formatLocksJson,
   parseLocksJson,
+  resetGroupSupport,
   groupContributions,
   stressPackage,
   compareScenarioInputs,

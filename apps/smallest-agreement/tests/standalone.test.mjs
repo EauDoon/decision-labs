@@ -73,6 +73,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
   assert.match(html, /Duplicate group/u);
+  assert.match(html, /Reset support to blank/u);
+  assert.match(html, /data-action="reset-group-support"/u);
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /id="worksheet-csv-button"/u);
@@ -1087,6 +1089,25 @@ test("clause density persists in workspace JSON and local workspace prefs", asyn
   await app.importJson(workspace);
   assert.match(app.message(), /Imported workspace/u);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).clauseDensity, "compact");
+});
+
+test("resetting one group's support to blank is undoable and leaves other scores", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for blank support");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const residents = before.clauses[0].options[0].support.residents;
+  const shopkeepers = before.clauses[0].options[0].support.shopkeepers;
+  app.clickAction("reset-group-support", { groupId: "residents" });
+  assert.match(app.message(), /Cleared Residents support scores to blank/u);
+  assert.match(app.alert(), /Fix the proposal before searching/u);
+  assert.match(app.clauses(), /data-group-id="residents"[^>]*value=""/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].options[0].support.residents, residents);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].options[0].support.shopkeepers, shopkeepers);
+  app.click("#undo-button");
+  const undone = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(undone.clauses[0].options[0].support.residents, residents);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
 });
 
 test("renormalize weights requires a preview then apply and can be undone", async () => {

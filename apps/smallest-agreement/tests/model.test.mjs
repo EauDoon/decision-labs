@@ -33,6 +33,7 @@ import {
   parseWorkspaceJson,
   formatLocksJson,
   parseLocksJson,
+  resetGroupSupport,
   groupContributions,
   lockPackage,
   clearAllLocks,
@@ -1550,6 +1551,26 @@ test("locks JSON round-trips current locks and fails closed on unknown ids", () 
   assert.equal(parseLocksJson("{", input).errors[0].code, "invalid_json");
   assert.equal(parseLocksJson("{}", input).errors[0].code, "invalid_format");
   assert.equal(JSON.stringify(input), before);
+});
+
+test("resetGroupSupport blanks one group's scores without mutating the draft", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 80 }),
+      option("alternative", false, { a: 70, b: 60 }, 1),
+      option("other", false, { a: 90, b: 50 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const reset = resetGroupSupport(input, "a");
+  assert.equal(reset.status, "ok");
+  assert.equal(reset.cleared, 3);
+  assert.equal(reset.proposal.clauses[0].options[0].support.a, null);
+  assert.equal(reset.proposal.clauses[0].options[0].support.b, 80);
+  assert.equal(validateProposal(reset.proposal).valid, false);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(resetGroupSupport(input, "missing").errors[0], "Unknown group.");
 });
 
 test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {
