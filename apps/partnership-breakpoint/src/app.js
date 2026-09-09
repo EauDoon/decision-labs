@@ -323,16 +323,17 @@ function breakpointSection(result) {
 function inputPanel() {
   const participantForms = state.participants.map((participant, index) => `
     <section class="participant-form" aria-labelledby="participant-${index}-title">
-      <div class="participant-header">
-        <strong id="participant-${index}-title">Participant ${index + 1}</strong>
-        <div class="button-row participant-roster">
-          <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
-          <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
-          <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
-          <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
+      <details class="participant-details">
+        <summary id="participant-${index}-title">Participant ${index + 1}: ${escapeAttribute(participant.name)}</summary>
+        <div class="participant-header">
+          <div class="button-row participant-roster">
+            <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
+            <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
+            <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
+            <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
+          </div>
         </div>
-      </div>
-      <div class="field-grid">
+        <div class="field-grid">
         ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text', title: 'Display name, 1 through 80 characters after trimming spaces.' })}
         ${field({ label: 'Revenue share', path: `participants.${index}.revenueShare`, value: participant.revenueShare, min: 0, max: 1, step: '0.0001', title: 'Share of gross fee revenue, 0 through 1. All shares must sum to 1.' })}
         ${field({ label: 'Variable cost / txn', path: `participants.${index}.variableCostPerTransaction`, value: participant.variableCostPerTransaction, step: '0.0001' })}
@@ -343,7 +344,7 @@ function inputPanel() {
         ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
       </div>
       <div class="button-row"><button type="button" data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button></div>
-      </div>
+      </details>
     </section>`).join('');
 
   return `
@@ -404,7 +405,9 @@ function inputPanel() {
 }
 
 function errorBox(errors) {
-  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><button type="button" data-action="focus-invalid">Go to first invalid field</button><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
+  const count = invalidFieldCount;
+  const countText = count === 1 ? '1 field needs attention.' : `${count} fields need attention.`;
+  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><p class="invalid-count" aria-live="polite">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
 }
 
 function resultsPanel(result) {
@@ -729,7 +732,13 @@ function attachEvents() {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
     const action = button.dataset.action;
-    if (action === 'focus-invalid') { app.querySelector('input[aria-invalid="true"]')?.focus(); return; }
+    if (action === 'focus-invalid') {
+      const input = app.querySelector('input[aria-invalid="true"]');
+      const details = input?.closest?.('details');
+      if (details) details.open = true;
+      input?.focus();
+      return;
+    }
     if (action === 'dismiss-coach') { dismissCoach(); return; }
     if (action === 'close-help') { helpOpen = false; render(); return; }
     if (action === 'print-report') {

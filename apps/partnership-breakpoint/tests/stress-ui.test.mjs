@@ -434,6 +434,8 @@ test('invalid fields expose accessible state and printing requires a valid case'
  app.edit('deal.monthlyVolume', '');
  assert.match(app.markup(), /id="field-deal-monthlyVolume" aria-invalid="true"/);
  assert.match(app.markup(), /Go to first invalid field/);
+ assert.match(app.markup(), /[0-9]+ field[s]? need/);
+ assert.match(app.markup(), /<details class="participant-details">/);
  app.click('print-report'); assert.equal(app.prints(), 1);
  app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
  assert.match(app.markup(), /Case assumptions/);
