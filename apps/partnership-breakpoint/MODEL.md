@@ -170,9 +170,11 @@ A leading apostrophe is stripped when the remaining cell looks like a spreadshee
 
 Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validation errors name the row (`Row 3 revenue share`) or the column. A rejected CSV leaves the current roster unchanged.
 
+`participantsToCsv` writes those same columns in header order, using formula-safe cells. Empty optional capacity and commitment values become blank cells so a later import restores `null`. Identifiers are omitted because import regenerates them from names. Deal terms are not written.
+
 ## Export filenames
 
-`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`, `partnership-breakpoint-stress-visible.csv`). Path separators cannot appear in the slug.
+`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`, `partnership-breakpoint-stress-visible.csv`, `partnership-breakpoint-participants.csv`, `partnership-breakpoint-tornado.svg`). Path separators cannot appear in the slug.
 
 ## Stress-grid CSV
 

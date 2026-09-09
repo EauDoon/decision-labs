@@ -7,6 +7,7 @@ import {
   neutralizeCsvCell,
   parseCsv,
   participantsFromCsv,
+  participantsToCsv,
   stressGridCsv,
   validateConfiguration,
 } from '../src/model.js';
@@ -150,6 +151,26 @@ test('stressGridCsv exports every participant case and can filter by scenario id
     assert.match(error.errors.join(' '), /scenarioIds must be an array of case identifiers/);
     return error instanceof ValidationError;
   });
+});
+
+test('participantsToCsv uses import columns, formula-safe cells, and empty optional blanks', () => {
+  const config = clonePreset('balanced');
+  config.participants[0].name = '=HYPERLINK("bad")';
+  config.participants[1].capacity = null;
+  config.participants[1].minimumCommitment = 2000;
+  const csv = participantsToCsv(config);
+  const lines = csv.trim().split('\r\n');
+  assert.equal(lines[0], '"name","revenue share","variable cost","fixed cost","min profit","capacity","commitment","risk"');
+  assert.ok(csv.includes('"\'=HYPERLINK(""bad"")"'));
+  assert.match(lines[2], /"","2000"/);
+  assert.doesNotMatch(csv, /probab/i);
+  const roundTrip = participantsFromCsv(csv);
+  assert.equal(roundTrip.length, 3);
+  assert.equal(roundTrip[0].name, '=HYPERLINK("bad")');
+  assert.equal(roundTrip[0].revenueShare, 0.4);
+  assert.equal(roundTrip[1].capacity, null);
+  assert.equal(roundTrip[1].minimumCommitment, 2000);
+  assert.equal(validateConfiguration({ ...config, participants: roundTrip }).valid, true);
 });
 
 test('participantsFromCsv requires two to 24 rows and unique generated ids', () => {

@@ -957,8 +957,10 @@ test('export filenames include a sanitized deal title and fall back without one'
   assert.equal(app.downloads()[3].filename, 'partnership-breakpoint-harbor-jv-report.md');
   app.click('export-csv');
   assert.equal(app.downloads()[4].filename, 'partnership-breakpoint-harbor-jv-stress.csv');
+  app.click('export-participants-csv');
+  assert.equal(app.downloads()[5].filename, 'partnership-breakpoint-harbor-jv-participants.csv');
   app.click('copy-brief');
-  assert.equal(app.downloads().length, 5);
+  assert.equal(app.downloads().length, 6);
   assert.match(app.markup(), /id="brief-copy-text"/);
 });
 
@@ -988,6 +990,26 @@ test('participant CSV replaces the roster only after validation and leaves the d
   assert.match(app.notice(), /Deal terms are unchanged/);
   app.click('undo');
   assert.deepEqual(app.saved().participants.map((item) => item.id), before.participants.map((item) => item.id));
+});
+
+test('participant CSV export uses import columns and formula-safe names', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export-participants-csv');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-participants.csv');
+  const text = await file.blob.text();
+  assert.match(text, /^"name","revenue share","variable cost","fixed cost","min profit","capacity","commitment","risk"/);
+  assert.match(text, /"Platform"/);
+  assert.doesNotMatch(text, /probab/i);
+  app.edit('participants.0.name', '=HYPERLINK("bad")', { type: 'text' });
+  app.click('export-participants-csv');
+  const formula = await app.downloads()[1].blob.text();
+  assert.match(formula, /"'=HYPERLINK\(""bad""\)"/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-participants-csv');
+  assert.equal(app.downloads().length, 2);
+  assert.match(app.notice(), /Resolve invalid inputs before exporting participant CSV/);
 });
 
 test('stress grid hide-in-table is display-only and does not change case counts', async () => {

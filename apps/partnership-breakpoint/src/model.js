@@ -1185,6 +1185,36 @@ export function participantsFromCsv(text) {
   return participants;
 }
 
+const PARTICIPANT_CSV_HEADER = Object.freeze([
+  'name', 'revenue share', 'variable cost', 'fixed cost', 'min profit', 'capacity', 'commitment', 'risk',
+]);
+
+/**
+ * Writes the current roster using the same columns as participant CSV import.
+ * Empty optional capacity and commitment cells round-trip to null. Formula-like
+ * names are prefixed with an apostrophe. Identifiers are not exported because
+ * import regenerates them from names.
+ * @param {PartnershipConfig} config
+ * @returns {string}
+ */
+export function participantsToCsv(config) {
+  assertValidConfiguration(config);
+  const rows = [PARTICIPANT_CSV_HEADER.slice()];
+  for (const participant of config.participants) {
+    rows.push([
+      participant.name,
+      participant.revenueShare,
+      participant.variableCostPerTransaction,
+      participant.fixedMonthlyCost,
+      participant.minimumAcceptableProfit,
+      participant.capacity == null ? '' : participant.capacity,
+      participant.minimumCommitment == null ? '' : participant.minimumCommitment,
+      participant.riskCost,
+    ]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}\r\n`;
+}
+
 /**
  * Aligns two saved snapshots with the current case by participant id.
  * Missing roster members are flagged rather than silently dropped.
@@ -1262,7 +1292,7 @@ export function sanitizeExportSlug(title) {
 }
 
 /**
- * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'} kind
+ * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'|'participants'|'tornado'} kind
  * @param {unknown} title
  */
 export function exportDownloadName(kind, title) {
@@ -1273,6 +1303,8 @@ export function exportDownloadName(kind, title) {
   if (kind === 'brief') return slug ? `partnership-breakpoint-${slug}-brief.md` : 'partnership-breakpoint-brief.md';
   if (kind === 'csv') return slug ? `partnership-breakpoint-${slug}-stress.csv` : 'partnership-breakpoint-stress.csv';
   if (kind === 'csv-visible') return slug ? `partnership-breakpoint-${slug}-stress-visible.csv` : 'partnership-breakpoint-stress-visible.csv';
+  if (kind === 'participants') return slug ? `partnership-breakpoint-${slug}-participants.csv` : 'partnership-breakpoint-participants.csv';
+  if (kind === 'tornado') return slug ? `partnership-breakpoint-${slug}-tornado.svg` : 'partnership-breakpoint-tornado.svg';
   return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
 }
 
