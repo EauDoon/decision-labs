@@ -29,9 +29,20 @@ async function workbench(protocol = 'file:', options = {}) {
       else this.onload();
     }
   }
+  const locationState = { protocol, hash: options.hash ?? '', pathname: '/', search: '' };
+  Object.defineProperty(locationState, 'href', {
+    configurable: true,
+    enumerable: true,
+    get() {
+      const host = this.protocol === 'file:' ? '' : '//127.0.0.1';
+      return `${this.protocol}${host}${this.pathname}${this.search}${this.hash}`;
+    },
+  });
   const context = vm.createContext({ console, Blob, setTimeout: (callback) => callback(), URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
-    history: { replaceState() {} },
-    window: { print: () => { prints += 1; }, location: { protocol, hash: options.hash ?? '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
+    history: { replaceState(_state, _title, url) {
+      if (typeof url === 'string' && url.includes('#')) locationState.hash = url.slice(url.indexOf('#'));
+    } },
+    window: { print: () => { prints += 1; }, location: locationState, addEventListener: (name, callback) => windowEvents.set(name, callback) },
     document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
   });
@@ -793,5 +804,19 @@ test('participant CSV replaces the roster only after validation and leaves the d
   assert.match(app.notice(), /Deal terms are unchanged/);
   app.click('undo');
   assert.deepEqual(app.saved().participants.map((item) => item.id), before.participants.map((item) => item.id));
+});
+
+test('copy share URL is http-only and names clipboard failure without a network request', async () => {
+  const fileApp = await workbench('file:');
+  assert.doesNotMatch(fileApp.markup(), /data-action="copy-share-url"/);
+  const httpApp = await workbench('http:');
+  httpApp.click('dismiss-coach');
+  assert.match(httpApp.markup(), /data-action="copy-share-url"/);
+  httpApp.click('copy-share-url');
+  assert.match(httpApp.notice(), /Share URL/);
+  assert.match(httpApp.notice(), /#deal=/);
+  httpApp.edit('deal.monthlyVolume', '');
+  httpApp.click('copy-share-url');
+  assert.match(httpApp.notice(), /Resolve invalid inputs before copying a share URL/);
 });
 

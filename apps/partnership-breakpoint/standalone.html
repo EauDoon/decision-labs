@@ -2022,7 +2022,7 @@ function inputPanel() {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button><button type="button" data-action="export-csv">Export stress CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
             <button type="button" data-action="reset">Reset</button>
@@ -2506,6 +2506,7 @@ function attachEvents() {
     if (action === 'export-redacted') exportRedactedFile();
     if (action === 'export-report') exportReport();
     if (action === 'copy-brief') copyNegotiationBrief();
+    if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv();
     if (action === 'apply-stress-proposal') {
       try {
@@ -2848,6 +2849,30 @@ function negotiationBrief(config, title = 'Current case') {
     '## Limits',
     'Assumptions are user-entered. Results do not prove demand, legal enforceability, credit, taxes, cash-flow timing, or participant behavior.', '',
   ].join('\n');
+}
+
+function copyShareUrl() {
+  if (standaloneFileMode) {
+    setNotice('Share URLs are not available in standalone file mode. Export JSON to transfer this case.');
+    return;
+  }
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice(`Resolve invalid inputs before copying a share URL. ${summarizeErrors(validation.errors)}`);
+    return;
+  }
+  saveState();
+  const url = String(window.location.href || '');
+  const clipboard = globalThis.navigator?.clipboard;
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    Promise.resolve(clipboard.writeText(url)).then(() => {
+      setNotice('Share URL copied. The link loads this case locally; no server stores it.');
+    }).catch(() => {
+      setNotice(`Clipboard unavailable. Share URL: ${url}`);
+    });
+    return;
+  }
+  setNotice(`Clipboard unavailable. Share URL: ${url}`);
 }
 
 function copyNegotiationBrief() {
