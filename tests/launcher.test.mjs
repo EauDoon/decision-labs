@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -148,6 +148,8 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(notFoundPage(), /The Smallest Agreement/);
   assert.match(notFoundPage(), /Weekend Gap/);
   assert.match(notFoundPage(), /href="\/"/);
+  assert.match(notFoundPage(), /Current catalog:/);
+  assert.match(notFoundPage(), catalogVersionLine());
   assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
 
   const missing = await get('/README.md');
@@ -157,6 +159,8 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /<!doctype html>/i);
   assert.match(missing.body, /Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap/);
   assert.match(missing.body, /href="\/"/);
+  assert.match(missing.body, /Current catalog:/);
+  assert.match(missing.body, catalogVersionLine());
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
   assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
 

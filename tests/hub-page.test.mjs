@@ -11,6 +11,7 @@ test('catalog page keeps language, landmarks, skip, and focus contract', () => {
   assert.match(html, /class="skip" href="#whats-new">Skip to what's new/);
   assert.match(html, /class="skip" href="#workbenches">Skip to workbenches/);
   assert.match(html, /href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts/);
+  assert.match(html, /class="skip" href="#trust">Skip to Trust and limits/);
   assert.match(html, /id="catalog-heading" tabindex="-1"/);
   assert.match(html, /<header class="shell hero">/);
   assert.match(html, /<nav class="shell site-nav" aria-label="On this page">/);
@@ -134,4 +135,17 @@ test('h focuses the catalog heading when focus is not in an input', () => {
   assert.match(html, /getElementById\('catalog-heading'\)\?\.focus\(\)/);
   assert.match(html, /<kbd>h<\/kbd><\/dt><dd>Focus the catalog heading/);
   assert.match(html, /inEditable\(event\.target\)/);
+});
+
+test('t focuses Trust and limits when focus is not in an input', () => {
+  assert.match(html, /id="trust" tabindex="-1"/);
+  assert.match(html, /event\.key === 't'/);
+  assert.match(html, /getElementById\('trust'\)\?\.focus\(\)/);
+  assert.match(html, /<kbd>t<\/kbd><\/dt><dd>Focus Trust and limits/);
+  assert.match(html, /Press <kbd>t<\/kbd> to focus Trust and limits/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /#trust:focus-visible/);
+  assert.match(html, /@media print[\s\S]*\.trust \{ display: block !important; \}/);
+  assert.match(readme, /Press `t` to focus Trust and\s+limits/);
+  assert.match(readme, /Skip links jump to What's new, workbenches, keyboard\s+shortcuts, and Trust and limits/);
 });
