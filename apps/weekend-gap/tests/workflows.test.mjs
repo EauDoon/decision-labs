@@ -88,6 +88,10 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   await ui.edit("table-density", "all", "change");
   assert.equal(ui.nodes.get("timeline-table").children.length, 73);
   assert.equal(ui.nodes.get("timeline-table").children[0].children.length, 9);
+  const peakRow = ui.nodes.get("timeline-table").children.find((row) => /is-peak-queue/.test(row.className));
+  assert.ok(peakRow);
+  assert.match(peakRow.children[0].textContent, /Peak queue/);
+  assert.match(ui.nodes.get("peak-queue-row-note").textContent, /peak queue checkpoint/);
   await ui.edit("gantt-density", "all", "change");
   assert.equal(ui.nodes.get("gantt-table").children.length, 73);
   await ui.edit("timeline-range", 65);

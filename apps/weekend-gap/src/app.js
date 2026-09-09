@@ -301,7 +301,10 @@ function render() {
 
 function renderTable() {
   const mode = document.querySelector("#table-density").value;
+  const peakHour = simulation.summary.peakQueueHour;
+  const peakQueuedAud = simulation.summary.peakQueuedAud;
   const rowIndexes = new Set([selectedHour]);
+  if (peakQueuedAud > 0) rowIndexes.add(peakHour);
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
     if(mode === "all" || (mode === "backlog" && simulation.timeline[hour].queuedAud > 0) || (mode === "snapshots" && hour % 6 === 0)) rowIndexes.add(hour);
   }
@@ -309,9 +312,10 @@ function renderTable() {
   [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
     const point = simulation.timeline[hour];
     const row = document.createElement("tr");
-    if (hour === selectedHour) row.className = "is-current";
+    const isPeak = peakQueuedAud > 0 && hour === peakHour;
+    row.className = [hour === selectedHour ? "is-current" : "", isPeak ? "is-peak-queue" : ""].filter(Boolean).join(" ");
     const cells = [
-      point.timeLabel,
+      isPeak ? `${point.timeLabel} Peak queue` : point.timeLabel,
       formatAud(point.immediateAud),
       formatAud(point.queuedAud),
       formatPercent(point.liquidityRatio),
@@ -330,6 +334,12 @@ function renderTable() {
     fragment.append(row);
   });
   elements.table.replaceChildren(fragment);
+  const note = document.querySelector("#peak-queue-row-note");
+  if (note) {
+    note.textContent = peakQueuedAud > 0
+      ? `The highlighted row is the peak queue checkpoint at ${formatTime(peakHour)} (hour ${peakHour}).`
+      : "No peak queue row is highlighted because demand never queued.";
+  }
 }
 
 function renderGantt() {
