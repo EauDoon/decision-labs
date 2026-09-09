@@ -53,7 +53,7 @@ SOFTWARE.
         <p class="notice"><strong>Educational simulator only.</strong> Every assumption is synthetic and editable. This is not financial advice, live market data or a statement about any issuer.</p>
       </section>
 
-      <nav class="section-links" aria-label="Simulator sections"><a href="#assumptions-title">Edit assumptions</a><a href="#comparison-title">Compare experiments</a><a href="#demand-compare-title">Compare demand timing</a><a href="#table-title">Inspect hourly data</a></nav>
+      <nav class="section-links" aria-label="Simulator sections"><a href="#assumptions-title">Edit assumptions</a><a href="#comparison-title">Compare experiments</a><a href="#demand-compare-title">Compare demand timing</a><a href="#gantt-title">Gate Gantt</a><a href="#table-title">Inspect hourly data</a></nav>
       <section class="workspace" aria-label="Weekend liquidity scenario workspace">
         <aside class="controls card" aria-labelledby="assumptions-title">
           <div class="card-heading">
@@ -393,6 +393,20 @@ SOFTWARE.
               </dl>
             </article>
           </div>
+
+          <article class="planning-card card gantt-card" aria-labelledby="gantt-title">
+            <p class="eyebrow">Operating calendar</p>
+            <h2 id="gantt-title">72-hour gate Gantt</h2>
+            <p>Issuer, bank and payout rows show open (green) versus closed (red) for each hour. FX shows weekday depth (blue) versus weekend thinning (gold). The vertical line is the timeline slider hour. Print this page for a light-background copy.</p>
+            <div id="gate-gantt" class="gantt-svg"></div>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
+              <table>
+                <caption>Text equivalent of the Gantt. Every six hours plus the selected hour. FX weekday means the weekend multiplier is not applied.</caption>
+                <thead><tr><th scope="col">Time</th><th scope="col">Issuer</th><th scope="col">Bank</th><th scope="col">Payout</th><th scope="col">FX</th></tr></thead>
+                <tbody id="gantt-table"></tbody>
+              </table>
+            </div>
+          </article>
 
           <article class="table-card card" aria-labelledby="table-title">
             <div class="card-heading">

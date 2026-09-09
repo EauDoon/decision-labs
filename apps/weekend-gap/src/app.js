@@ -16,6 +16,8 @@ import {
   attributeBottlenecks,
   previewWindowShift,
   compareDemandProfiles,
+  buildGateGanttSvg,
+  buildGateSchedule,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -252,6 +254,7 @@ function render() {
   }
   renderTable();
   drawChart();
+  renderGantt();
 }
 
 function renderTable() {
@@ -285,6 +288,32 @@ function renderTable() {
     fragment.append(row);
   });
   elements.table.replaceChildren(fragment);
+}
+
+function renderGantt() {
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour);
+  const schedule = buildGateSchedule(scenario);
+  const rowIndexes = new Set([0, selectedHour, SIMULATION_HOURS]);
+  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 6) rowIndexes.add(hour);
+  const fragment = document.createDocumentFragment();
+  [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
+    const point = schedule.hours[hour];
+    const row = document.createElement("tr");
+    if (hour === selectedHour) row.className = "is-current";
+    for (const value of [
+      point.timeLabel,
+      point.issuerOpen ? "Open" : "Closed",
+      point.bankOpen ? "Open" : "Closed",
+      point.payoutOpen ? "Open" : "Closed",
+      point.fxWeekday ? "Weekday depth" : "Weekend thinned"
+    ]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    fragment.append(row);
+  });
+  document.querySelector("#gantt-table").replaceChildren(fragment);
 }
 
 function drawLine(context, points, getValue, color, dimensions, maximum) {

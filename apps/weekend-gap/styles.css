@@ -258,3 +258,11 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
 
 .section-links { display: flex; flex-wrap: wrap; gap: .7rem 1.3rem; margin-block: 1rem; }
 .section-links a { min-height: 44px; display: inline-flex; align-items: center; }
+.gantt-svg { margin-top: 0.8rem; background: #f7fafb; border-radius: 8px; overflow: hidden; color: #17324a; }
+.gantt-svg svg { display: block; width: 100%; height: auto; }
+@media print {
+  body { background: white; color: #17202a; }
+  .site-header, .section-links, .controls, .skip-link, .scenario-actions, .planning-actions, .timeline-controls { break-inside: avoid; }
+  .gantt-card, .gantt-svg { break-inside: avoid; background: white; }
+  .gantt-svg { border: 1px solid #9aa9b0; }
+}

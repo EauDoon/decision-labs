@@ -49,6 +49,8 @@ const appImportMarker = `import {
   attributeBottlenecks,
   previewWindowShift,
   compareDemandProfiles,
+  buildGateGanttSvg,
+  buildGateSchedule,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -101,7 +103,9 @@ const exportedNames = Object.freeze([
   "shiftOperatingWindow",
   "previewWindowShift",
   "DEMAND_PROFILES",
-  "compareDemandProfiles"
+  "compareDemandProfiles",
+  "buildGateSchedule",
+  "buildGateGanttSvg"
 ]);
 
 function normaliseLf(text) {

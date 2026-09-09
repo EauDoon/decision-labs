@@ -6,7 +6,7 @@ const source = await readFile(new URL("../src/app.js", import.meta.url), "utf8")
 let runId = 0;
 
 class Element {
-  constructor(value = "") { this.value = value; this.checked = false; this.type = ""; this.textContent = ""; this.children = []; this.handlers = {}; this.dataset = {}; this.disabled = false; this.attributes = {}; this.classList = { toggle() {} }; }
+  constructor(value = "") { this.value = value; this.checked = false; this.type = ""; this.textContent = ""; this.innerHTML = ""; this.children = []; this.handlers = {}; this.dataset = {}; this.disabled = false; this.attributes = {}; this.classList = { toggle() {} }; }
   get valueAsNumber() { return this.value.trim() === "" ? NaN : Number(this.value); }
   addEventListener(type, handler) { (this.handlers[type] ||= []).push(handler); }
   async emit(type) { for (const handler of this.handlers[type] || []) await handler({ target: this }); }

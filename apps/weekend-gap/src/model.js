@@ -714,3 +714,68 @@ export function compareDemandProfiles(input) {
   }));
 }
 
+function svgEscape(value) {
+  return String(value).replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[char]));
+}
+
+/** Hourly open/closed state for issuer, bank, payout and weekday vs weekend FX. */
+export function buildGateSchedule(input) {
+  const { scenario } = sanitizeScenario(input);
+  const hours = [];
+  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    const status = getOperationalStatus(scenario, hour);
+    hours.push(Object.freeze({
+      hour,
+      timeLabel: formatTime(hour),
+      issuerOpen: status.issuerOpen,
+      bankOpen: status.bankOpen,
+      payoutOpen: status.payoutOpen,
+      fxWeekday: !status.weekend
+    }));
+  }
+  return Object.freeze({ scenario: Object.freeze({ ...scenario }), hours: Object.freeze(hours) });
+}
+
+/** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
+export function buildGateGanttSvg(input, selectedHour = 0) {
+  const schedule = buildGateSchedule(input);
+  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const width = 720;
+  const rowHeight = 28;
+  const labelWidth = 88;
+  const top = 20;
+  const plotWidth = width - labelWidth - 16;
+  const rows = [
+    ["Issuer", (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", "#c45c54"],
+    ["Bank", (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", "#c45c54"],
+    ["Payout", (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", "#c45c54"],
+    ["FX", (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", "#c9a227"]
+  ];
+  const height = top + rows.length * rowHeight + 32;
+  const hourWidth = plotWidth / SIMULATION_HOURS;
+  let cells = "";
+  rows.forEach((row, rowIndex) => {
+    const y = top + rowIndex * rowHeight;
+    for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+      const open = row[1](hour);
+      const x = labelWidth + hour * hourWidth;
+      cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${open ? row[2] : row[3]}" />`;
+    }
+  });
+  const markerX = labelWidth + (markerHour / SIMULATION_HOURS) * plotWidth;
+  const labels = rows.map((row, index) => `<text x="8" y="${top + index * rowHeight + 18}" font-size="12" fill="#17324a">${row[0]}</text>`).join("");
+  const ticks = [0, 9, 33, 57, 72].map((hour) => {
+    const x = labelWidth + (hour / SIMULATION_HOURS) * plotWidth;
+    return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
+  }).join("");
+  const selectedLabel = `<text x="${width - 8}" y="14" font-size="11" text-anchor="end" fill="#17324a">Selected ${svgEscape(formatTime(markerHour))}</text>`;
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="72-hour gate Gantt for issuer, bank, payout and FX. Current hour is the vertical marker. A table follows.">` +
+    `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
+    selectedLabel + labels + cells +
+    `<line x1="${markerX.toFixed(2)}" y1="${top}" x2="${markerX.toFixed(2)}" y2="${top + rows.length * rowHeight}" stroke="#17324a" stroke-width="2" />` +
+    ticks +
+    "</svg>";
+}
+
