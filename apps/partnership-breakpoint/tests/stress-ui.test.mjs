@@ -15,6 +15,7 @@ async function workbench(protocol = 'file:', options = {}) {
   const downloads = [];
   let downloadBlob;
   let prints = 0;
+  const printSnapshots = [];
   const copied = [];
   const focused = [];
   const app = { innerHTML: '', querySelectorAll: () => [],
@@ -44,12 +45,16 @@ async function workbench(protocol = 'file:', options = {}) {
     history: { replaceState(_state, _title, url) {
       if (typeof url === 'string' && url.includes('#')) locationState.hash = url.slice(url.indexOf('#'));
     } },
-    window: { print: () => { prints += 1; }, location: locationState, addEventListener: (name, callback) => windowEvents.set(name, callback) },
+    window: { print: () => { prints += 1; printSnapshots.push(app.innerHTML); }, location: locationState, addEventListener: (name, callback) => windowEvents.set(name, callback) },
     document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => {
       if (selector === '#workbench') return app;
       if (selector === '#notice') return notice;
-      if ((selector === '#brief-copy-text' || selector === '#results-jump' || selector === '#results-start')
-        && app.innerHTML.includes(`id="${selector.slice(1)}"`)) {
+      const focusIds = new Set([
+        'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
+        'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
+      ]);
+      const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
+      if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
         return {
           focus() { focused.push(selector); },
           scrollIntoView() { focused.push(`scroll:${selector}`); },
@@ -65,13 +70,15 @@ async function workbench(protocol = 'file:', options = {}) {
     sandbox.navigator = { clipboard: { writeText: () => { throw new Error('denied'); } } };
   }
   const context = vm.createContext(sandbox);
-  new vm.Script(script).runInContext(context, { timeout: 2000 });
+  // Windows Node 22 can spend more than 2s compiling the inlined standalone.
+  new vm.Script(script).runInContext(context, { timeout: 10000 });
   return {
     markup: () => app.innerHTML,
     downloads: () => downloads,
     copied: () => copied,
     focused: () => focused,
     prints: () => prints,
+    lastPrint: () => printSnapshots.at(-1) ?? '',
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
     edit: (path, value, extra = {}) => events.get('change')({ target: new Input({ path, ...extra }, value) }),
@@ -98,6 +105,13 @@ async function workbench(protocol = 'file:', options = {}) {
       input.files = [{ size: file.size ?? String(contents).length, contents, pending, error }];
       events.get('change')({ target: input });
     },
+    compareImport: (config, pending, error = false, file = {}) => {
+      const contents = Object.hasOwn(file, 'contents') ? file.contents : JSON.stringify(config);
+      const input = new Input({ action: 'compare-import' }, '');
+      input.files = [{ size: file.size ?? String(contents).length, contents, pending, error, name: file.name ?? 'imported.json' }];
+      events.get('change')({ target: input });
+    },
+    pasteRoster: (value) => events.get('change')({ target: new Input({ action: 'roster-paste' }, value) }),
     keydown: (key, extra = {}) => {
       let prevented = false;
       windowEvents.get('keydown')?.({
@@ -475,6 +489,36 @@ test('three-snapshot compare pins two library cases and flags roster mismatches'
   assert.doesNotMatch(app.markup(), /id="three-compare-title"/);
 });
 
+test('imported JSON compare keeps the current case and labels different identifiers', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  const before = app.saved();
+  const other = clonePreset('balanced');
+  other.participants[0].fixedMonthlyCost = 1900;
+  app.compareImport(other, undefined, false, { name: 'alt.json' });
+  assert.match(app.markup(), /id="imported-compare-title"/);
+  assert.match(app.markup(), /alt.json/);
+  assert.match(app.markup(), /The current case was not replaced/);
+  assert.match(app.markup(), /class="diff-up"/);
+  assert.match(app.markup(), /100.00 units/);
+  assert.match(app.markup(), /Missing identifiers are labeled, not zero-filled/);
+  assert.deepEqual(app.saved(), before);
+  const creator = clonePreset('creatorTakeRate');
+  app.compareImport(creator, undefined, false, { name: 'creator.json' });
+  assert.match(app.markup(), /Not in this roster/);
+  assert.match(app.markup(), /roster mismatch/);
+  assert.match(app.markup(), /n\/a/);
+  assert.deepEqual(app.saved(), before);
+  const unknown = clonePreset('balanced');
+  unknown.unexpected = true;
+  app.compareImport(unknown);
+  assert.match(app.notice(), /unknown field/);
+  assert.deepEqual(app.saved(), before);
+  app.click('clear-imported-compare');
+  assert.doesNotMatch(app.markup(), /id="imported-compare-title"/);
+});
+
 test('decision report exports reproducible inputs, outcomes, and safe participant prose', async () => {
   const app = await workbench();
   app.edit('participants.0.name', '<img src=x>|Bad', { type: 'text' });
@@ -532,6 +576,60 @@ test('visible stress CSV follows the collapsed case filter and keeps all-case ex
   assert.match(app.notice(), /Resolve invalid inputs before exporting CSV/);
 });
 
+test('copy visible stress CSV uses a second control and does not download', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-visible-csv"/);
+  assert.match(fallback.markup(), /Copy visible stress CSV/);
+  assert.match(fallback.markup(), /Copy visible cases CSV/);
+  assert.match(fallback.markup(), /data-action="export-visible-csv"/);
+  fallback.click('copy-visible-csv');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="csv-copy-text"/);
+  assert.match(fallback.markup(), /currently visible stress grid/);
+  assert.match(fallback.markup(), /&quot;case-1&quot;/);
+  assert.match(fallback.notice(), /Copy the visible stress CSV from the text area/);
+  fallback.click('close-csv-copy');
+  assert.doesNotMatch(fallback.markup(), /id="csv-copy-text"/);
+
+  fallback.click('collapse-all-hold-cases');
+  fallback.click('copy-visible-csv');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="csv-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /&quot;case-1&quot;/);
+  assert.match(fallback.markup(), /&quot;case-2&quot;/);
+  fallback.click('close-csv-copy');
+
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-visible-csv');
+  assert.equal(fallback.downloads().length, 0);
+  assert.doesNotMatch(fallback.markup(), /id="csv-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying visible stress CSV/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-visible-csv');
+  assert.equal(withClipboard.downloads().length, 0);
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].trim().split('\r\n').length, 82);
+  assert.match(withClipboard.notice(), /27 of 27 tested cases included/);
+  assert.match(withClipboard.notice(), /not probabilities/);
+  assert.doesNotMatch(withClipboard.markup(), /id="csv-copy-text"/);
+  withClipboard.click('collapse-all-hold-cases');
+  withClipboard.click('copy-visible-csv');
+  assert.equal(withClipboard.copied().length, 2);
+  assert.equal(withClipboard.copied()[1].trim().split('\r\n').length, 79);
+  assert.doesNotMatch(withClipboard.copied()[1], /"case-1"/);
+  assert.match(withClipboard.copied()[1], /"case-2"/);
+  assert.match(withClipboard.notice(), /26 of 27 tested cases included/);
+  assert.equal(withClipboard.downloads().length, 0);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-visible-csv');
+  assert.equal(denied.downloads().length, 0);
+  assert.match(denied.markup(), /id="csv-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
 test('share reconciliation repairs overallocations and preserves participant costs', async () => {
   const app = await workbench();
   app.edit('participants.0.revenueShare', '0.8');
@@ -576,6 +674,26 @@ test('print one-pager keeps tornado, waterfall, ledger, and notes and hides chro
   assert.match(html, /\.panel:not\(\.print-keep\)/);
   assert.match(html, /@page \{ size: portrait;/);
   assert.match(html, /\.coach-overlay, \.help-overlay/);
+});
+
+test('redacted print uses Participant 1 through N in the print path and stylesheet', async () => {
+  const app = await workbench();
+  const html = await buildStandalone();
+  app.click('print-redacted');
+  assert.equal(app.prints(), 1);
+  const snapshot = app.lastPrint();
+  assert.match(snapshot, /class="app-grid print-redacted"/);
+  assert.match(snapshot, /Participant 1/);
+  assert.match(snapshot, /class="participant-redacted-name">Participant 1</);
+  assert.doesNotMatch(snapshot, /class="participant-live-name">Platform</);
+  assert.match(html, /\.print-redacted \.participant-live-name/);
+  assert.match(html, /\.print-redacted \.participant-redacted-name/);
+  assert.match(app.markup(), /class="participant-live-name">Platform</);
+  assert.doesNotMatch(app.markup(), /class="app-grid print-redacted"/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('print-redacted');
+  assert.equal(app.prints(), 1);
+  assert.match(app.notice(), /Resolve invalid inputs before printing a redacted report/);
 });
 
 test('invalid fields expose accessible state and printing requires a valid case', async () => {
@@ -634,6 +752,20 @@ test('deal notes persist, print, and export, and reject overlong or unknown valu
   assert.equal(app.saved().deal.notes, 'Review the capacity clause.');
   app.edit('deal.notes', '', { type: 'text', optional: 'true' });
   assert.equal(Object.hasOwn(app.saved().deal, 'notes'), false);
+});
+
+test('duplicate display names warn without blocking edits', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.doesNotMatch(app.markup(), /duplicate-name-warning/);
+  app.edit('participants.1.name', 'Platform', { type: 'text' });
+  assert.match(app.markup(), /class="duplicate-name-warning"/);
+  assert.match(app.markup(), /2 participants share the name Platform/);
+  assert.match(app.markup(), /does not claim they are the same party/);
+  assert.match(app.markup(), /does not block editing/);
+  assert.match(app.markup(), /tested cases hold/);
+  app.edit('participants.1.name', 'Distributor', { type: 'text' });
+  assert.doesNotMatch(app.markup(), /duplicate-name-warning/);
 });
 
 test('roster highlights the first listed participant who fails the current baseline', async () => {
@@ -769,6 +901,27 @@ test('tornado chart includes an SVG and a text-equivalent table', async () => {
   assert.match(app.markup(), /<caption>Text equivalent of the tornado chart<\/caption>/);
   assert.match(app.markup(), /Volume down/);
   assert.match(app.markup(), /Fee down/);
+  assert.match(app.markup(), /data-action="export-tornado-svg"/);
+});
+
+test('tornado SVG download writes a namespaced file and refuses invalid cases', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export-tornado-svg');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-tornado.svg');
+  const text = await file.blob.text();
+  assert.match(text, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
+  assert.match(text, /xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+  assert.match(text, /<svg /);
+  assert.doesNotMatch(text, /probab/i);
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.click('export-tornado-svg');
+  assert.equal(app.downloads()[1].filename, 'partnership-breakpoint-harbor-jv-tornado.svg');
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-tornado-svg');
+  assert.equal(app.downloads().length, 2);
+  assert.match(app.notice(), /Resolve invalid inputs before downloading the tornado SVG/);
 });
 
 test('contribution waterfall includes an SVG and a text fallback for each participant', async () => {
@@ -793,6 +946,18 @@ test('two-party 50/50 studio preset loads from the starting-point buttons', asyn
   assert.equal(app.saved().participants[1].revenueShare, 0.5);
   assert.equal(app.saved().deal.feePerTransaction, 18);
   assert.match(app.notice(), /Two-party 50\/50 studio loaded/);
+});
+
+test('four-party marketplace preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="fourPartyMarketplace"/);
+  assert.match(app.markup(), /Four-party marketplace/);
+  app.click('preset', { preset: 'fourPartyMarketplace' });
+  assert.equal(app.saved().participants.length, 4);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['marketplace', 'seller', 'logistics', 'payments']);
+  assert.equal(app.saved().deal.feePerTransaction, 1.2);
+  assert.equal(app.saved().deal.monthlyVolume, 25000);
+  assert.match(app.notice(), /Four-party marketplace loaded/);
 });
 
 test('visible tour and shortcut buttons reopen coach and help', async () => {
@@ -852,6 +1017,8 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
   assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
   assert.match(app.markup(), /<kbd>g<\/kbd> Jump to the results nav/);
+  assert.match(app.markup(), /<kbd>n<\/kbd> Focus Add participant/);
+  assert.match(app.markup(), /<kbd>s<\/kbd> Jump to share-to-hold/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -880,6 +1047,41 @@ test('keyboard g jumps to the results nav unless a field is focused', async () =
   app.keydown('g');
   assert.ok(app.focused().includes('#results-start'));
   assert.doesNotMatch(app.markup(), /id="results-jump"/);
+});
+
+test('keyboard n focuses Add participant and ignores focused inputs', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="add-participant"/);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const beforeCount = forms();
+  app.keydown('n');
+  assert.ok(app.focused().includes('#add-participant'));
+  assert.ok(app.focused().includes('scroll:#add-participant'));
+  assert.equal(forms(), beforeCount);
+  const before = app.focused().length;
+  app.keydown('n', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  assert.equal(forms(), beforeCount);
+  app.keydown('n', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+});
+
+test('keyboard s jumps to share-to-hold and ignores focused inputs', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="share-hold-jump"/);
+  app.keydown('s');
+  assert.ok(app.focused().includes('#share-hold-jump'));
+  assert.ok(app.focused().includes('scroll:#share-hold-jump'));
+  const before = app.focused().length;
+  app.keydown('s', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('s', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  app.keydown('s');
+  assert.ok(app.focused().includes('#share-hold-title'));
 });
 
 test('redacted export replaces names, clears the title, and keeps identifiers', async () => {
@@ -957,8 +1159,10 @@ test('export filenames include a sanitized deal title and fall back without one'
   assert.equal(app.downloads()[3].filename, 'partnership-breakpoint-harbor-jv-report.md');
   app.click('export-csv');
   assert.equal(app.downloads()[4].filename, 'partnership-breakpoint-harbor-jv-stress.csv');
+  app.click('export-participants-csv');
+  assert.equal(app.downloads()[5].filename, 'partnership-breakpoint-harbor-jv-participants.csv');
   app.click('copy-brief');
-  assert.equal(app.downloads().length, 5);
+  assert.equal(app.downloads().length, 6);
   assert.match(app.markup(), /id="brief-copy-text"/);
 });
 
@@ -988,6 +1192,49 @@ test('participant CSV replaces the roster only after validation and leaves the d
   assert.match(app.notice(), /Deal terms are unchanged/);
   app.click('undo');
   assert.deepEqual(app.saved().participants.map((item) => item.id), before.participants.map((item) => item.id));
+});
+
+test('pasted TSV roster reuses CSV validation and leaves the deal unchanged', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  const before = app.saved();
+  assert.match(app.markup(), /id="roster-paste"/);
+  const tsv = [
+    'name\trevenue share\tvariable cost\tfixed cost\tmin profit\tcapacity\tcommitment\trisk',
+    'Alpha\t0.55\t0.01\t100\t50\t90000\t\t10',
+    'Beta\t0.45\t0.02\t80\t40\t\t1000\t5',
+  ].join('\n');
+  app.pasteRoster(tsv);
+  app.click('import-roster-paste');
+  const after = app.saved();
+  assert.deepEqual(after.participants.map((item) => item.name), ['Alpha', 'Beta']);
+  assert.equal(after.deal.monthlyVolume, before.deal.monthlyVolume);
+  assert.match(app.notice(), /pasted CSV or TSV/);
+  app.pasteRoster('name\tshare\nA\t0.5\nB\t0.5\n');
+  app.click('import-roster-paste');
+  assert.match(app.notice(), /Pasted roster rejected/);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Alpha', 'Beta']);
+});
+
+test('participant CSV export uses import columns and formula-safe names', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export-participants-csv');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-participants.csv');
+  const text = await file.blob.text();
+  assert.match(text, /^"name","revenue share","variable cost","fixed cost","min profit","capacity","commitment","risk"/);
+  assert.match(text, /"Platform"/);
+  assert.doesNotMatch(text, /probab/i);
+  app.edit('participants.0.name', '=HYPERLINK("bad")', { type: 'text' });
+  app.click('export-participants-csv');
+  const formula = await app.downloads()[1].blob.text();
+  assert.match(formula, /"'=HYPERLINK\(""bad""\)"/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-participants-csv');
+  assert.equal(app.downloads().length, 2);
+  assert.match(app.notice(), /Resolve invalid inputs before exporting participant CSV/);
 });
 
 test('stress grid hide-in-table is display-only and does not change case counts', async () => {

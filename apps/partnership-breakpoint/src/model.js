@@ -114,6 +114,16 @@ export const PRESETS = Object.freeze({
       { id: 'distribution-studio', name: 'Distribution studio', revenueShare: 0.5, variableCostPerTransaction: 2.25, fixedMonthlyCost: 6000, minimumAcceptableProfit: 5000, capacity: 12000, minimumCommitment: 0, riskCost: 1500 },
     ],
   },
+  fourPartyMarketplace: {
+    name: 'Four-party marketplace',
+    deal: { monthlyVolume: 25000, feePerTransaction: 1.2, addressableVolume: 40000, volumeShockPct: 0 },
+    participants: [
+      { id: 'marketplace', name: 'Marketplace', revenueShare: 0.28, variableCostPerTransaction: 0.05, fixedMonthlyCost: 2500, minimumAcceptableProfit: 3000, capacity: 38000, minimumCommitment: 0, riskCost: 400 },
+      { id: 'seller', name: 'Seller', revenueShare: 0.42, variableCostPerTransaction: 0.12, fixedMonthlyCost: 1500, minimumAcceptableProfit: 7500, capacity: 45000, minimumCommitment: 5000, riskCost: 300 },
+      { id: 'logistics', name: 'Logistics', revenueShare: 0.18, variableCostPerTransaction: 0.06, fixedMonthlyCost: 1200, minimumAcceptableProfit: 600, capacity: 32000, minimumCommitment: 4000, riskCost: 200 },
+      { id: 'payments', name: 'Payments', revenueShare: 0.12, variableCostPerTransaction: 0.03, fixedMonthlyCost: 500, minimumAcceptableProfit: 1800, capacity: 26000, minimumCommitment: 0, riskCost: 100 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -741,6 +751,27 @@ export function duplicateParticipant(participants, index) {
 }
 
 /**
+ * Names that appear more than once after trimming. This is a label warning,
+ * not a claim that the parties are the same or that the case is invalid.
+ * @param {ParticipantInput[]} participants
+ * @returns {{name: string, indexes: number[]}[]}
+ */
+export function duplicateDisplayNames(participants) {
+  if (!Array.isArray(participants)) return [];
+  const groups = new Map();
+  participants.forEach((item, index) => {
+    if (!isPlainObject(item)) return;
+    const name = typeof item.name === 'string' ? item.name.trim() : '';
+    if (!name) return;
+    if (!groups.has(name)) groups.set(name, []);
+    groups.get(name).push(index);
+  });
+  return [...groups.entries()]
+    .filter(([, indexes]) => indexes.length > 1)
+    .map(([name, indexes]) => ({ name, indexes: indexes.slice() }));
+}
+
+/**
  * Reorders one participant. Out-of-range moves return a shallow copy unchanged.
  * @param {ParticipantInput[]} participants
  * @param {number} index
@@ -986,13 +1017,18 @@ export function neutralizeCsvCell(value) {
 }
 
 /**
- * RFC 4180-style records. Does not execute formulas. Empty rows are dropped.
+ * RFC 4180-style records with a single-character delimiter. Does not execute formulas.
+ * Empty rows are dropped.
  * @param {unknown} text
+ * @param {string} [delimiter]
  * @returns {string[][]}
  */
-export function parseCsv(text) {
+export function parseDelimited(text, delimiter = ',') {
   if (typeof text !== 'string') {
     throw new ValidationError(['CSV must be text.']);
+  }
+  if (typeof delimiter !== 'string' || delimiter.length !== 1) {
+    throw new ValidationError(['CSV delimiter must be a single character.']);
   }
   const source = text.replace(/^\uFEFF/, '');
   if (source.trim() === '') {
@@ -1017,7 +1053,7 @@ export function parseCsv(text) {
       }
     } else if (ch === '"') {
       inQuotes = true;
-    } else if (ch === ',') {
+    } else if (ch === delimiter) {
       row.push(cell);
       cell = '';
     } else if (ch === '\n') {
@@ -1041,6 +1077,28 @@ export function parseCsv(text) {
   row.push(cell);
   if (row.some((item) => item !== '')) rows.push(row);
   return rows.filter((item) => item.some((value) => String(value).trim() !== ''));
+}
+
+/**
+ * RFC 4180-style records. Does not execute formulas. Empty rows are dropped.
+ * @param {unknown} text
+ * @returns {string[][]}
+ */
+export function parseCsv(text) {
+  return parseDelimited(text, ',');
+}
+
+/**
+ * Uses a tab delimiter when the first line contains a tab; otherwise comma.
+ * @param {unknown} text
+ * @returns {','|'\t'}
+ */
+export function detectRosterDelimiter(text) {
+  if (typeof text !== 'string') return ',';
+  const source = text.replace(/^\uFEFF/, '');
+  const end = source.search(/\r\n|\n|\r/);
+  const first = end === -1 ? source : source.slice(0, end);
+  return first.includes('\t') ? '\t' : ',';
 }
 
 function normalizeCsvHeader(value) {
@@ -1186,6 +1244,56 @@ export function participantsFromCsv(text) {
 }
 
 /**
+ * Builds a replacement roster from pasted CSV or TSV. Tab-separated first lines
+ * are converted to CSV, then {@link participantsFromCsv} validates the roster.
+ * @param {unknown} text
+ * @returns {ParticipantInput[]}
+ */
+export function participantsFromRosterText(text) {
+  if (typeof text !== 'string') {
+    throw new ValidationError(['CSV must be text.']);
+  }
+  if (text.length > 250_000) {
+    throw new ValidationError(['CSV must be 250 KB or smaller.']);
+  }
+  const delimiter = detectRosterDelimiter(text);
+  if (delimiter === ',') return participantsFromCsv(text);
+  const rows = parseDelimited(text, '\t');
+  const csv = `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\n')}\n`;
+  return participantsFromCsv(csv);
+}
+
+const PARTICIPANT_CSV_HEADER = Object.freeze([
+  'name', 'revenue share', 'variable cost', 'fixed cost', 'min profit', 'capacity', 'commitment', 'risk',
+]);
+
+/**
+ * Writes the current roster using the same columns as participant CSV import.
+ * Empty optional capacity and commitment cells round-trip to null. Formula-like
+ * names are prefixed with an apostrophe. Identifiers are not exported because
+ * import regenerates them from names.
+ * @param {PartnershipConfig} config
+ * @returns {string}
+ */
+export function participantsToCsv(config) {
+  assertValidConfiguration(config);
+  const rows = [PARTICIPANT_CSV_HEADER.slice()];
+  for (const participant of config.participants) {
+    rows.push([
+      participant.name,
+      participant.revenueShare,
+      participant.variableCostPerTransaction,
+      participant.fixedMonthlyCost,
+      participant.minimumAcceptableProfit,
+      participant.capacity == null ? '' : participant.capacity,
+      participant.minimumCommitment == null ? '' : participant.minimumCommitment,
+      participant.riskCost,
+    ]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}\r\n`;
+}
+
+/**
  * Aligns two saved snapshots with the current case by participant id.
  * Missing roster members are flagged rather than silently dropped.
  * @param {PartnershipConfig} currentConfig
@@ -1246,6 +1354,56 @@ export function compareThreeSnapshots(currentConfig, firstConfig, secondConfig) 
 }
 
 /**
+ * Aligns the current case with an imported JSON case by participant id.
+ * Missing identifiers are labeled rather than filled with zeros.
+ * @param {PartnershipConfig} currentConfig
+ * @param {PartnershipConfig} importedConfig
+ */
+export function compareImportedCase(currentConfig, importedConfig) {
+  assertValidConfiguration(currentConfig);
+  assertValidConfiguration(importedConfig);
+  const current = calculatePartnership(currentConfig);
+  const imported = calculatePartnership(importedConfig);
+  const order = [];
+  const seen = new Set();
+  for (const list of [current.participants, imported.participants]) {
+    for (const item of list) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        order.push(item.id);
+      }
+    }
+  }
+  const currentIds = new Set(current.participants.map((item) => item.id));
+  const importedIds = new Set(imported.participants.map((item) => item.id));
+  const sameRoster = currentIds.size === importedIds.size && [...currentIds].every((id) => importedIds.has(id));
+  const pick = (result, id) => {
+    const item = result.participants.find((participant) => participant.id === id);
+    if (!item) return null;
+    return { id: item.id, name: item.name, monthlyProfit: item.monthlyProfit, viable: item.viable };
+  };
+  const rows = order.map((id) => {
+    const currentRow = pick(current, id);
+    const importedRow = pick(imported, id);
+    return {
+      id,
+      name: currentRow?.name ?? importedRow?.name ?? id,
+      current: currentRow,
+      imported: importedRow,
+      rosterMismatch: !(currentRow && importedRow),
+    };
+  });
+  return {
+    sameRoster,
+    rows,
+    currentViable: current.viable,
+    importedViable: imported.viable,
+    currentTotalProfit: current.totalProfit,
+    importedTotalProfit: imported.totalProfit,
+  };
+}
+
+/**
  * Lowercase hyphenated slug for download names. Path separators and punctuation
  * collapse. Empty or unusable titles return an empty string.
  * @param {unknown} title
@@ -1262,7 +1420,7 @@ export function sanitizeExportSlug(title) {
 }
 
 /**
- * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'} kind
+ * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'|'participants'|'tornado'} kind
  * @param {unknown} title
  */
 export function exportDownloadName(kind, title) {
@@ -1273,6 +1431,8 @@ export function exportDownloadName(kind, title) {
   if (kind === 'brief') return slug ? `partnership-breakpoint-${slug}-brief.md` : 'partnership-breakpoint-brief.md';
   if (kind === 'csv') return slug ? `partnership-breakpoint-${slug}-stress.csv` : 'partnership-breakpoint-stress.csv';
   if (kind === 'csv-visible') return slug ? `partnership-breakpoint-${slug}-stress-visible.csv` : 'partnership-breakpoint-stress-visible.csv';
+  if (kind === 'participants') return slug ? `partnership-breakpoint-${slug}-participants.csv` : 'partnership-breakpoint-participants.csv';
+  if (kind === 'tornado') return slug ? `partnership-breakpoint-${slug}-tornado.svg` : 'partnership-breakpoint-tornado.svg';
   return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
 }
 
