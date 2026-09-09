@@ -1494,6 +1494,7 @@ export const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
   {id:'fixed',title:'Fixed-cost allowance'},
   {id:'variable',title:'Variable-cost allowance'},
   {id:'shares',title:'Revenue-share funding needs'},
+  {id:'fees',title:'Common fee scenarios'},
 // PB_REVIEW_TOOLS
 ]);
 
@@ -1542,6 +1543,12 @@ export function analyzePartnershipReview(rawConfig, tool) {
  const total=rows.every(r=>r[2]!==null)?rows.reduce((sum,r)=>sum+r[2],0):null;
  rows.push(['Total funding need',config.participants.reduce((sum,p)=>sum+p.revenueShare,0),total,total===null?null:1-total]);
  return report(['Participant','Current share','Minimum funding share','Share above requirement'],rows,'Shares are fractions of the same revenue pool, not independent offers. A total requirement above 1 cannot be funded at these terms. Blank means positive obligations with no gross revenue. Operational constraints are not repaired by a split.');
+
+ }
+ case 'fees': {
+
+ const rows=[.75,1,1.25,1.5].map(factor=>{const fee=Math.min(MAX_NUMERIC_INPUT,config.deal.feePerTransaction*factor);const evaluated=calculatePartnership({...config,deal:{...config.deal,feePerTransaction:fee}});return[factor,fee,evaluated.participants.filter(p=>p.viable).length,evaluated.totalProfit,Math.min(...evaluated.participants.map(p=>p.monthlyProfit-p.minimumAcceptableProfit)),evaluated.viable?'All hold':'At least one exits'];});
+ return report(['Fee multiplier','Tested fee','Participants holding','Total monthly profit','Lowest profit slack','Outcome'],rows,'Four illustrative fee levels, capped at the model input limit. Only the common fee changes. Volume, shares, costs and operational limits stay fixed; these points are not an optimum or forecast.');
 
  }
 // PB_REVIEW_CASES
