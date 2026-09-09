@@ -74,8 +74,8 @@ async function savedWorkbench(storage, hash = "") {
       target.value = value;
       target.events.get("input")({ target });
     },
-    edit: (field, value) => {
-      const target = { value: String(value), valueAsNumber: value, validity: { badInput: false }, dataset: { field: "group-floor", groupId: "g" } };
+    edit: (field, value, dataset = {}) => {
+      const target = { value: String(value), valueAsNumber: value, validity: { badInput: false }, dataset: { field: "group-floor", groupId: "g", ...dataset } };
       if (field === "budget") element("#max-change-cost").events.get("input")({ target });
       else documentEvents.get("input")({ target });
     },
@@ -324,4 +324,26 @@ test("invalid scenario libraries are preserved and cannot be overwritten", async
   assert.equal(app.disabled("#save-scenario"), true);
   app.click("#save-scenario");
   assert.equal(storage.get(key), "{broken");
+});
+
+
+test("required numeric edits remain invalid instead of silently changing support, cost, or weight", async () => {
+  for (const [field, value, details] of [
+    ["group-weight", 0, { groupId: "residents" }],
+    ["group-weight", NaN, { groupId: "residents" }],
+    ["option-support", 101, { clauseId: "hours", optionId: "hours-original", groupId: "residents" }],
+    ["option-support", NaN, { clauseId: "hours", optionId: "hours-original", groupId: "residents" }],
+    ["option-cost", -1, { clauseId: "hours", optionId: "hours-seasonal" }],
+  ]) {
+    const storage = new Map();
+    const app = await savedWorkbench(storage);
+    app.setTitle("Valid saved draft");
+    const before = storage.get("smallest-agreement:proposal:v1");
+    app.edit(field, value, { field, ...details });
+    assert.match(app.alert(), /Fix the proposal before searching/);
+    assert.equal(app.disabled("#export-button"), true);
+    assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+    app.click("#undo-button");
+    assert.doesNotMatch(app.alert(), /Fix the proposal/);
+  }
 });

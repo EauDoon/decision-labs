@@ -307,7 +307,7 @@ function renderGroups() {
   $("#groups-editor").innerHTML = state.proposal.groups.map((group) => `
     <div class="group-row">
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
-      <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0.1" step="0.1" value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
+      <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0.000001" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
       <button class="text-button danger" type="button" data-action="remove-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length <= 1 ? "disabled" : ""}>Remove</button>
       <label class="group-floor">Minimum support (%)<input data-field="group-floor" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" value="${group.minSupport ?? ""}" placeholder="No floor" aria-label="${escapeHtml(group.name)} minimum support" aria-describedby="floor-note"></label>
     </div>`).join("");
@@ -333,8 +333,8 @@ function renderClauses() {
         <tbody>${clause.options.map((option) => `
           <tr>
             <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="Option label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
-            <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" step="0.1" value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
-            ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="1" value="${option.support[group.id]}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
+            <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" max="1000000000" step="any" required value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
+            ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" required value="${option.support[group.id]}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
             <td><div class="option-tools">${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
           </tr>`).join("")}</tbody>
       </table></div>
@@ -499,17 +499,18 @@ document.addEventListener("input", (event) => {
     if (target.value === "" && !target.validity.badInput) delete group.minSupport;
     else group.minSupport = target.valueAsNumber;
   }
-  if (field === "group-name") groupById(target.dataset.groupId).name = target.value || "Unnamed group";
-  if (field === "group-weight") groupById(target.dataset.groupId).weight = Math.max(.1, number(target.value, 1));
-  if (field === "clause-title") clauseById(target.dataset.clauseId).title = target.value || "Untitled clause";
-  if (field === "option-label") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).label = target.value || "Untitled option";
+  if (field === "group-name") groupById(target.dataset.groupId).name = target.value;
+  if (field === "group-weight") groupById(target.dataset.groupId).weight = target.valueAsNumber;
+  if (field === "clause-title") clauseById(target.dataset.clauseId).title = target.value;
+  if (field === "option-label") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).label = target.value;
   if (field === "option-label") {
     const select = [...document.querySelectorAll('[data-field="clause-lock"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId);
     const choice = [...select.options].find((element) => element.value === target.dataset.optionId);
     choice.textContent = target.value || "Untitled option";
   }
-  if (field === "option-cost") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).changeCost = Math.max(0, number(target.value));
-  if (field === "option-support") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).support[target.dataset.groupId] = Math.min(100, Math.max(0, number(target.value)));
+  if (field === "option-cost") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).changeCost = target.valueAsNumber;
+  if (field === "option-support") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).support[target.dataset.groupId] = target.valueAsNumber;
+  target.setAttribute?.("aria-invalid", String(!target.validity.valid));
   save();
   $("#proposal-heading").textContent = state.proposal.title;
   $("#autosave-status").textContent = state.saveMessage;
