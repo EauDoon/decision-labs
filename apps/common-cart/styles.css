@@ -311,3 +311,14 @@ footer {
  .snapshot-bar label { display: grid; gap: .35rem; min-width: 180px; max-width: 100%; }
  .snapshot-bar select { max-width: 100%; }
  .snapshot-bar p { flex-basis: 100%; margin: 0; font-size: .85rem; }
+
+@media print {
+  .skip-link, .header-actions, .preset-bar .button-row, #coach-dialog, #shortcut-help,
+  #add-buyer, #import-buyers, #add-offer, .icon-button, .tabs button[aria-selected="false"] {
+    display: none !important;
+  }
+  body { background: white; color: black; }
+  .masthead, .scoreboard, .local-note, .privacy-panel { color: black; background: white; border: 1px solid #333; box-shadow: none; }
+  a { text-decoration: none; color: black; }
+  [role="tabpanel"][hidden] { display: block !important; break-before: page; }
+}
