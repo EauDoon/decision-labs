@@ -21,6 +21,8 @@ test('launcher serves only workbenches and refuses hostile hosts and methods', a
   const page = await get('/');
   assert.equal(page.status, 200);
   assert.match(page.body, /Decision Labs/);
+  assert.match(page.body, /What's new/);
+  assert.match(page.body, /Share-to-hold/);
   assert.match(page.body, /Trust and limits/);
   assert.match(page.body, /The workbenches/);
   assert.match(page.body, /Open workbench/);
