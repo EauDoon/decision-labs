@@ -105,7 +105,7 @@ function loadInitialScenario() {
     try {
       parsed = JSON.parse(stored);
     } catch (error) {
-      throw new ScenarioError(`the saved JSON is not valid${jsonSyntaxHint(error)}.`);
+      throw new ScenarioError(`the saved JSON is not valid${appJsonSyntaxHint(error)}.`);
     }
     return validateScenario(parsed);
   } catch (error) {
@@ -731,7 +731,7 @@ async function importScenario(event) {
     try {
       parsed = JSON.parse(text);
     } catch (error) {
-      return setStatus(`Import failed: the file is not valid JSON${jsonSyntaxHint(error)}.`);
+      return setStatus(`Import failed: the file is not valid JSON${appJsonSyntaxHint(error)}.`);
     }
     scenario = validateScenario(parsed);
     inspectedOfferId = scenario.offers[0]?.id ?? "";
@@ -806,7 +806,7 @@ function messageOf(error) {
   return error instanceof ScenarioError || error instanceof Error ? error.message : "The scenario is invalid.";
 }
 
-function jsonSyntaxHint(error) {
+function appJsonSyntaxHint(error) {
   const message = String(error?.message ?? "").replace(/\s+/g, " ").trim();
   if (!message) return "";
   const lineColumn = message.match(/line (\d+)(?: column (\d+))?/i);
