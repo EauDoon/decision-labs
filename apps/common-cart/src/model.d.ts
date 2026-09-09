@@ -244,6 +244,7 @@ export interface VariantOverlapMatrix {
   cells: VariantOverlapCell[][];
 }
 export function variantOverlapMatrix(rawScenario: unknown): VariantOverlapMatrix;
+export function createVariantOverlapCsv(rawScenario: unknown): string;
 export function encodeScenario(rawScenario: unknown): string;
 export function encodeRedactedScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;

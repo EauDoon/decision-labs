@@ -708,6 +708,7 @@ footer {
                 <tbody id="variant-overlap-rows"></tbody>
               </table>
             </div>
+            <button id="overlap-csv" type="button">Copy overlap CSV</button>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>
@@ -2022,6 +2023,20 @@ function variantOverlapMatrix(rawScenario) {
   return { variants, cells };
 }
 
+function createVariantOverlapCsv(rawScenario) {
+  const matrix = variantOverlapMatrix(rawScenario);
+  const rows = [["Accepted variant", ...matrix.variants.map((entry) => entry.variant)]];
+  for (const [index, row] of matrix.cells.entries()) {
+    rows.push([matrix.variants[index].variant, ...row.map((cell) => cell.buyerCount)]);
+  }
+  rows.push([]);
+  rows.push(["Variant", "Offers", "Buyers", "Units"]);
+  for (const entry of matrix.variants) {
+    rows.push([entry.variant, entry.offerCount, entry.buyerCount, entry.units]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
 function encodeScenario(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const bytes = new TextEncoder().encode(JSON.stringify(scenario));
@@ -2231,6 +2246,23 @@ function bindStaticEvents() {
       downloadFile(createDeliveryHeatmapCsv(scenario), "common-cart-delivery-heatmap.csv", "text/csv;charset=utf-8");
       setStatus("Delivery heatmap CSV exported. It contains aggregate deadline buckets only.", true);
     } catch (error) { setStatus(`Heatmap export failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#overlap-csv").addEventListener("click", () => {
+    try {
+      const csv = createVariantOverlapCsv(scenario);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(csv).then(
+          () => setStatus("Overlap CSV copied. It contains buyer counts only, with formula-like text escaped.", true),
+          () => {
+            downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
+            setStatus("Clipboard was blocked, so the overlap CSV was downloaded instead. Counts only.", true);
+          }
+        );
+        return;
+      }
+      downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
+      setStatus("Overlap CSV downloaded. It contains buyer counts only.", true);
+    } catch (error) { setStatus(`Overlap copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }

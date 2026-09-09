@@ -14,6 +14,7 @@ import {
   createMerchantResidualReport,
   createBuyerCsv,
   createDeliveryHeatmapCsv,
+  createVariantOverlapCsv,
   importBuyersFromCsv,
   importOffersFromCsv,
   buyerCsvTemplate,
@@ -192,6 +193,23 @@ function bindStaticEvents() {
       downloadFile(createDeliveryHeatmapCsv(scenario), "common-cart-delivery-heatmap.csv", "text/csv;charset=utf-8");
       setStatus("Delivery heatmap CSV exported. It contains aggregate deadline buckets only.", true);
     } catch (error) { setStatus(`Heatmap export failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#overlap-csv").addEventListener("click", () => {
+    try {
+      const csv = createVariantOverlapCsv(scenario);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(csv).then(
+          () => setStatus("Overlap CSV copied. It contains buyer counts only, with formula-like text escaped.", true),
+          () => {
+            downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
+            setStatus("Clipboard was blocked, so the overlap CSV was downloaded instead. Counts only.", true);
+          }
+        );
+        return;
+      }
+      downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
+      setStatus("Overlap CSV downloaded. It contains buyer counts only.", true);
+    } catch (error) { setStatus(`Overlap copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }

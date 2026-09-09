@@ -1229,6 +1229,20 @@ export function variantOverlapMatrix(rawScenario) {
   return { variants, cells };
 }
 
+export function createVariantOverlapCsv(rawScenario) {
+  const matrix = variantOverlapMatrix(rawScenario);
+  const rows = [["Accepted variant", ...matrix.variants.map((entry) => entry.variant)]];
+  for (const [index, row] of matrix.cells.entries()) {
+    rows.push([matrix.variants[index].variant, ...row.map((cell) => cell.buyerCount)]);
+  }
+  rows.push([]);
+  rows.push(["Variant", "Offers", "Buyers", "Units"]);
+  for (const entry of matrix.variants) {
+    rows.push([entry.variant, entry.offerCount, entry.buyerCount, entry.units]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
 export function encodeScenario(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const bytes = new TextEncoder().encode(JSON.stringify(scenario));
