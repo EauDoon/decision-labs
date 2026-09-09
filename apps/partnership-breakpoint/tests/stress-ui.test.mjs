@@ -707,7 +707,7 @@ test('invalid fields expose accessible state and printing requires a valid case'
  assert.match(app.markup(), /aria-live="polite">1 field needs attention\./);
  assert.match(app.markup(), /Go to first invalid field/);
  assert.match(app.markup(), /[0-9]+ field[s]? need/);
- assert.match(app.markup(), /<details class="participant-details" open>/);
+ assert.match(app.markup(), /<details class="participant-details"[^>]* open/);
  assert.match(html, /\.invalid-summary \{[\s\S]*position: sticky;/);
  app.click('print-report'); assert.equal(app.prints(), 1);
  app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
@@ -797,7 +797,7 @@ test('participant roster toolbar stays outside the disclosure and defaults to op
   assert.match(form, /data-action="move-participant-up"/);
   assert.match(form, /data-action="move-participant-down"/);
   assert.match(form, /data-action="remove-participant"/);
-  assert.match(app.markup(), /<details class="participant-details" open>/);
+  assert.match(app.markup(), /<details class="participant-details"[^>]* open/);
   assert.match(html, /@media \(max-width: 390px\)/);
   assert.match(html, /\.participant-toolbar \.button-row/);
 });
@@ -1342,6 +1342,44 @@ test('stress grid hide-in-table is display-only and does not change case counts'
   app.click('unmute-stress-row', { participantId: 'platform' });
   assert.doesNotMatch(app.markup(), /Hidden from this table only/);
   assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
+});
+
+test('hiding participants who currently hold is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-holding-participants"/);
+  app.click('hide-holding-participants');
+  assert.equal(forms(), 0);
+  assert.match(app.markup(), /3 participants who currently hold are hidden from this roster display/);
+  assert.match(app.markup(), /Tested-case and model counts are unchanged/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /Every displayed participant currently holds/);
+  assert.match(app.markup(), /participant-live-name">Platform/);
+  assert.match(app.markup(), /participant-live-name">Distributor/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  app.click('export');
+  assert.equal(JSON.parse(await app.downloads()[0].blob.text()).participants.length, 3);
+  app.click('show-holding-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  const failing = clonePreset('balanced');
+  failing.participants[2].minimumAcceptableProfit = 10000;
+  app.import(failing);
+  assert.equal(forms(), 3);
+  app.click('hide-holding-participants');
+  assert.equal(forms(), 1);
+  assert.match(app.markup(), /Liquidity Partner/);
+  assert.match(app.markup(), /2 participants who currently hold are hidden from this roster display/);
+  assert.match(app.markup(), /class="participant-form first-fail"/);
+  app.click('show-holding-participants');
+  assert.equal(forms(), 3);
+  app.edit('deal.monthlyVolume', '');
+  app.click('hide-holding-participants');
+  assert.match(app.notice(), /Resolve invalid inputs before hiding participants who currently hold/);
+  assert.equal(forms(), 3);
 });
 
 test('collapsing all-hold stress cases is display-only and expand restores the rows', async () => {

@@ -71,6 +71,7 @@ let dialogOpener = null;
 let dialogNeedsInitialFocus = coachVisible;
 const mutedStressIds = new Set();
 let collapseAllHoldCases = false;
+let hideHoldingParticipants = false;
 let printRedacted = false;
 const undoHistory = [];
 const redoHistory = [];
@@ -411,12 +412,24 @@ function breakpointSection(result) {
 function participantDetailsOpen(index) {
   const nodes = app?.querySelectorAll?.('.participant-details');
   if (!nodes?.length) return true;
+  const match = [...nodes].find((node) => Number(node.dataset?.participantIndex) === index);
+  if (match) return Boolean(match.open);
   return Boolean(nodes[index]?.open);
+}
+
+function participantCurrentlyHolds(result, participantId) {
+  return Boolean(result?.participants.find((item) => item.id === participantId)?.viable);
 }
 
 function inputPanel(result) {
   const firstFailId = result?.participants.find((participant) => !participant.viable)?.id ?? null;
-  const participantForms = state.participants.map((participant, index) => `
+  const hiddenHoldCount = hideHoldingParticipants && result
+    ? state.participants.filter((participant) => participantCurrentlyHolds(result, participant.id)).length
+    : 0;
+  const firstVisibleIndex = state.participants.findIndex((participant) => !(hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)));
+  const participantForms = state.participants.map((participant, index) => {
+    if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return '';
+    return `
     <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}" aria-labelledby="participant-${index}-title">
       <div class="participant-toolbar">
         <div class="button-row participant-roster">
@@ -427,7 +440,7 @@ function inputPanel(result) {
         </div>
       </div>
       ${firstFailId === participant.id ? '<p class="first-fail-label">First listed participant who fails an exit test in this baseline. Roster order, not a ranking of who will act.</p>' : ''}
-      <details class="participant-details"${participantDetailsOpen(index) ? ' open' : ''}>
+      <details class="participant-details"${participantDetailsOpen(index) ? ' open' : ''} data-participant-index="${index}">
         <summary id="participant-${index}-title">Participant ${index + 1}: ${escapeAttribute(participant.name)}</summary>
         <div class="field-grid">
         ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text', title: 'Display name, 1 through 80 characters after trimming spaces.' })}
@@ -439,9 +452,13 @@ function inputPanel(result) {
         ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1', title: 'Leave blank for no commitment. Blank and zero are equivalent here.' })}
         ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
       </div>
-      <div class="button-row"><button type="button"${index === 0 ? ' id="share-hold-jump"' : ''} data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
+      <div class="button-row"><button type="button"${index === firstVisibleIndex ? ' id="share-hold-jump"' : ''} data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
       </details>
-    </section>`).join('');
+    </section>`;
+  }).join('');
+  const rosterFilterNote = hideHoldingParticipants
+    ? `${hiddenHoldCount} participant${hiddenHoldCount === 1 ? '' : 's'} who currently hold ${hiddenHoldCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
+    : 'Hide participants who currently hold to filter this roster display only. Expand restores them. Counts stay the same.';
 
   return `
     <aside class="panel inputs" aria-label="Deal inputs">
@@ -481,8 +498,10 @@ function inputPanel(result) {
           <h2 id="participant-inputs-title">Participants</h2>
           <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
           ${duplicateNameWarning()}
-          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div><p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
-          ${participantForms}
+          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
+          <div class="button-row"><button type="button" data-action="hide-holding-participants" aria-pressed="${hideHoldingParticipants}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants who currently hold</button><button type="button" data-action="show-holding-participants" ${hideHoldingParticipants ? '' : 'disabled'}>Show holding participants</button></div>
+          <p class="notice">${rosterFilterNote}</p>
+          ${participantForms || (hideHoldingParticipants ? `<p class="notice">${firstVisibleIndex === -1 ? '<span id="share-hold-jump" tabindex="-1"></span>' : ''}Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>` : '')}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
           <textarea id="roster-paste" data-action="roster-paste" rows="6">${escapeAttribute(rosterPasteText)}</textarea>
@@ -1015,6 +1034,20 @@ function attachEvents() {
     }
     if (action === 'expand-all-hold-cases') {
       collapseAllHoldCases = false;
+      render();
+      return;
+    }
+    if (action === 'hide-holding-participants') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding participants who currently hold.');
+        return;
+      }
+      hideHoldingParticipants = true;
+      render();
+      return;
+    }
+    if (action === 'show-holding-participants') {
+      hideHoldingParticipants = false;
       render();
       return;
     }
