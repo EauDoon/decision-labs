@@ -124,7 +124,7 @@ SOFTWARE.
           <p id="budget-note" class="field-note">Optional hard budget. Leave blank for no limit. Zero permits only zero-cost changes.</p>
         </section>
         <section class="panel-section">
-          <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" id="add-group" data-action="add-group">Add group</button></div>
+          <div class="section-heading"><h2 id="groups-heading" tabindex="-1">Participant groups</h2><button class="text-button" type="button" id="add-group" data-action="add-group">Add group</button></div>
           <label class="veto-groups-filter" for="veto-groups-only"><input id="veto-groups-only" type="checkbox"> Show veto groups only</label>
           <p id="veto-groups-filter-note" class="field-note">The filter hides group cards. Every group still participates in search and export. A veto is a numerical constraint, not a legal right.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
@@ -315,6 +315,7 @@ SOFTWARE.
           <li><kbd>l</kbd> Jump to the first locked clause, or the lock controls</li>
           <li><kbd>v</kbd> Toggle the veto-only group filter</li>
           <li><kbd>b</kbd> Jump to the first veto-blocker highlight, or the veto list</li>
+          <li><kbd>g</kbd> Focus the participant groups heading or the first group card</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>

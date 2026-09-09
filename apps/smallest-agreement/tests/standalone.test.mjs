@@ -50,6 +50,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Jump to the first locked clause/u);
   assert.match(html, /<kbd>v<\/kbd> Toggle the veto-only group filter/u);
   assert.match(html, /<kbd>b<\/kbd> Jump to the first veto-blocker highlight, or the veto list/u);
+  assert.match(html, /<kbd>g<\/kbd> Focus the participant groups heading or the first group card/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -942,6 +943,26 @@ test("keyboard b jumps to the first veto-blocker highlight unless an input is ac
   assert.match(blocked.groups(), /data-veto-block="minority"/u);
   blocked.keydown("B");
   assert.equal(blocked.focused(), '[data-veto-block="minority"]');
+});
+
+test("keyboard g focuses the first group card unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="groups-heading"/u);
+  assert.match(html, /<kbd>g<\/kbd> Focus the participant groups heading or the first group card/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("g");
+  assert.equal(app.focused(), '[data-field="group-name"][data-group-id="residents"]');
+  app.clearFocus();
+  app.keydown("g", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("g", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("G");
+  assert.equal(app.focused(), '[data-field="group-name"][data-group-id="residents"]');
+  app.filterVetoGroups(true);
+  app.clearFocus();
+  app.keydown("g");
+  assert.equal(app.focused(), "#groups-heading");
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {

@@ -1983,6 +1983,21 @@ function jumpToLocks() {
   }
   $("#clear-locks")?.focus?.();
 }
+function jumpToGroups() {
+  const visible = vetoGroupsOnly
+    ? state.proposal.groups.filter((group) => group.veto === true)
+    : state.proposal.groups;
+  if (visible.length) {
+    const first = visible[0];
+    const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
+    if (target?.focus) {
+      target.focus();
+      return;
+    }
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToVetoBlockers() {
   const blocking = blockingVetoIds(currentResult());
   const first = state.proposal.groups.find((group) => blocking.has(group.id));
@@ -2051,6 +2066,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "b" || event.key === "B") {
     event.preventDefault();
     jumpToVetoBlockers();
+  } else if (event.key === "g" || event.key === "G") {
+    event.preventDefault();
+    jumpToGroups();
   }
 });
 
