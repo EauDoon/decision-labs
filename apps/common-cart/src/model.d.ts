@@ -287,6 +287,7 @@ export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
 export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", id: string): Scenario;
 export function copyOfferAsNewTierSet(rawScenario: unknown, offerId: string): Scenario;
 export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenario;
+export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "all" | "shipping" | "pickup"): string[];
 export function previewBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Buyer[];
 export function applyBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Scenario;
 export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;

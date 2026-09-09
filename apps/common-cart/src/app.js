@@ -5,6 +5,7 @@ import {
   variantOverlapMatrix,
   applyBuyerSort,
   previewBuyerSort,
+  filterOfferIdsByFulfillment,
   clonePreset,
   compareScenarios,
   compareThreeRooms,
@@ -76,6 +77,7 @@ let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
 let buyerSortPreviewIds = null;
+let offerFulfillmentFilter = "all";
 let saveTimer;
 renderEditor();
 refresh();
@@ -369,6 +371,18 @@ function bindStaticEvents() {
     setStatus("Offer CSV template downloaded. Fill name, capacity, unit price, shipping, fulfillment, and variants, then import.", true);
   });
   document.querySelector("#import-offers-file").addEventListener("change", importOffersCsv);
+  document.querySelector("#offer-fulfillment-filter").addEventListener("change", (event) => {
+    offerFulfillmentFilter = event.target.value;
+    try {
+      applyOfferFulfillmentFilter();
+      const shown = filterOfferIdsByFulfillment(scenario, offerFulfillmentFilter).length;
+      setStatus(offerFulfillmentFilter === "all"
+        ? "Showing every offer. Saved order is unchanged."
+        : `Showing ${shown} ${offerFulfillmentFilter} offer${shown === 1 ? "" : "s"}. Saved offers are unchanged.`, true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#export-button").addEventListener("click", exportScenario);
   document.querySelector("#screenshot-mode").addEventListener("click", () => {
     screenshotMode = !screenshotMode;
@@ -580,7 +594,32 @@ function renderEditor() {
   addOffer.disabled = scenario.offers.length >= 40;
   addBuyer.title = addBuyer.disabled ? "A room can have at most 40 buyers." : "";
   addOffer.title = addOffer.disabled ? "A room can have at most 40 offers." : "";
+  const filterSelect = document.querySelector("#offer-fulfillment-filter");
+  if (filterSelect) filterSelect.value = offerFulfillmentFilter;
   renderTierEditors();
+  applyOfferFulfillmentFilter();
+}
+
+function applyOfferFulfillmentFilter() {
+  let visibleIds;
+  try {
+    visibleIds = new Set(filterOfferIdsByFulfillment(scenario, offerFulfillmentFilter));
+  } catch {
+    visibleIds = new Set(scenario.offers.map((offer) => offer.id));
+  }
+  elements.offerRows.querySelectorAll("tr[data-id]").forEach((row) => {
+    row.hidden = !visibleIds.has(row.dataset.id);
+  });
+  const editors = [...elements.tierEditors.querySelectorAll("fieldset")];
+  scenario.offers.forEach((offer, index) => {
+    if (editors[index]) editors[index].hidden = !visibleIds.has(offer.id);
+  });
+  const note = document.querySelector("#offer-filter-note");
+  if (!note) return;
+  const hiddenCount = scenario.offers.length - visibleIds.size;
+  note.textContent = hiddenCount === 0
+    ? "The filter hides rows on screen. Saved offers and matching stay unchanged."
+    : `Showing ${visibleIds.size} of ${scenario.offers.length} offers. Hidden rows stay in the room and still match.`;
 }
 
 function buyerDisplayLabel(buyer) {

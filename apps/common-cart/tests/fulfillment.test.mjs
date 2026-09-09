@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, evaluateOffer, evaluateMarket, validateScenario, encodeScenario, decodeScenario } from "../src/model.js";
+import { readFile } from "node:fs/promises";
+import { clonePreset, evaluateOffer, evaluateMarket, validateScenario, encodeScenario, decodeScenario, filterOfferIdsByFulfillment } from "../src/model.js";
 
 test("legacy offers without fulfillment default to shipping and round trip", () => {
   const scenario = clonePreset("neighbourhood");
@@ -48,4 +49,29 @@ test("pickup does not change ranking identity of a room that already used zero s
   scenario.offers[2].fulfillment = "pickup";
   const market = evaluateMarket(scenario);
   assert.equal(market.winner?.offer.id, evaluateMarket(clonePreset("pantry")).winner?.offer.id);
+});
+
+test("fulfillment filter returns ids without changing saved offer order", () => {
+  const scenario = clonePreset("hardware");
+  const original = scenario.offers.map((offer) => offer.id);
+  const all = filterOfferIdsByFulfillment(scenario, "all");
+  const shipping = filterOfferIdsByFulfillment(scenario, "shipping");
+  const pickup = filterOfferIdsByFulfillment(scenario, "pickup");
+  assert.deepEqual(all, original);
+  assert.deepEqual(shipping, ["O01", "O02"]);
+  assert.deepEqual(pickup, ["O03"]);
+  assert.deepEqual(scenario.offers.map((offer) => offer.id), original);
+  assert.throws(() => filterOfferIdsByFulfillment(scenario, "__proto__"), /all, shipping, or pickup/);
+  assert.throws(() => filterOfferIdsByFulfillment(scenario, "constructor"), /all, shipping, or pickup/);
+});
+
+test("merchant table includes an all, shipping, and pickup fulfillment filter", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="offer-fulfillment-filter"/u);
+  assert.match(html, /<option value="all">All<\/option>/u);
+  assert.match(html, /<option value="shipping">Shipping<\/option>/u);
+  assert.match(html, /<option value="pickup">Pickup<\/option>/u);
+  assert.match(app, /function applyOfferFulfillmentFilter\(/u);
+  assert.match(app, /row\.hidden/u);
 });

@@ -331,6 +331,15 @@ SOFTWARE.
             <input id="import-offers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
         </div>
+        <div class="snapshot-bar" aria-label="Offer fulfillment filter">
+          <label>Fulfillment
+            <select id="offer-fulfillment-filter">
+              <option value="all">All</option>
+              <option value="shipping">Shipping</option>
+              <option value="pickup">Pickup</option>
+            </select>
+          </label>
+          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged.</p>
         <div class="table-shell" id="offers-list" tabindex="-1" role="region" aria-label="Merchant offers list">
             <thead>
               <tr>

@@ -201,6 +201,15 @@ export function copyOfferAsPickup(rawScenario, offerId) {
   return validateScenario(clean);
 }
 
+export function filterOfferIdsByFulfillment(rawScenario, fulfillment) {
+  if (fulfillment !== "all" && fulfillment !== "shipping" && fulfillment !== "pickup") {
+    throw new ScenarioError("Fulfillment filter must be all, shipping, or pickup.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (fulfillment === "all") return scenario.offers.map((offer) => offer.id);
+  return scenario.offers.filter((offer) => offer.fulfillment === fulfillment).map((offer) => offer.id);
+}
+
 function sortedBuyers(buyers, mode) {
   if (mode !== "label" && mode !== "quantity") {
     throw new ScenarioError("Buyer sort must be label or quantity.");
