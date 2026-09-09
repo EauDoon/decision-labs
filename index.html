@@ -221,6 +221,7 @@
     }
     .site-footer { padding-top: 12px; padding-bottom: 36px; font-size: 14px; color: var(--muted); }
     .site-footer p { margin: 0 0 8px; max-width: 46rem; }
+    .site-footer .version-line { color: var(--ink); font-weight: 650; }
     .skips {
       position: absolute;
       z-index: 3;
@@ -283,6 +284,7 @@
     @media print {
       body { background: white; color: #000; border-top-width: 2px; }
       .skip, .skips, .keys-note, .how, .site-nav, .shortcuts, .shortcuts-open { display: none !important; }
+      .whats-new, .workbench .version, .version-line { display: block !important; }
       .shell { max-width: none; padding-inline: 0; }
       .hero, .whats-new, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
       .whats-new {
@@ -292,6 +294,7 @@
       }
       .whats-new > p, .whats-new-list h3, .whats-new-list p { color: #000; }
       .whats-new-list li { border-top-color: #000; }
+      .workbench .version, .version-line { color: #000; }
       .open {
         display: inline;
         min-height: 0;
@@ -464,6 +467,7 @@
     </section>
   </main>
   <footer class="shell site-footer">
+    <p class="version-line">Partnership Breakpoint 1.4.1, Common Cart 1.3.1, The Smallest Agreement 1.4.1, Weekend Gap 1.4.1. Each workbench versions itself.</p>
     <p>This page is the catalog. It is not a combined product version. Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap each ship their own version and changelog.</p>
     <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
   </footer>

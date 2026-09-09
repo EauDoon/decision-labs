@@ -36,8 +36,9 @@ for (const app of apps) {
   const escaped = version.replaceAll('.', '\\.');
   const listed = new RegExp(`data-app="${app}">\\s*${escaped}\\s*<`).test(html);
   const card = new RegExp(`data-app-version="${app}">\\s*${escaped}\\s*<`).test(html);
-  if (!listed || !card) {
-    console.error(`index.html: ${app} should show version ${version} on the version list and catalog card.`);
+  const line = html.includes(version) && /class="version-line"/.test(html);
+  if (!listed || !card || !line) {
+    console.error(`index.html: ${app} should show version ${version} on the version list, catalog card, and print version line.`);
     failed += 1;
   }
 }
