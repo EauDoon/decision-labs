@@ -432,6 +432,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>r</kbd> Redo</li>
           <li><kbd>e</kbd> Export JSON</li>
           <li><kbd>s</kbd> Find agreement (jump to the live recommendation)</li>
+          <li><kbd>f</kbd> Focus the clause filter</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -3005,6 +3006,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "s" || event.key === "S") {
     event.preventDefault();
     findAgreement();
+  } else if (event.key === "f" || event.key === "F") {
+    event.preventDefault();
+    $("#clause-filter")?.focus?.();
   }
 });
 

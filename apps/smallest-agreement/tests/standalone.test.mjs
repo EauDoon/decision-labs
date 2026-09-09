@@ -40,6 +40,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Leave one group out/u);
   assert.match(html, /id="coach-overlay"/u);
   assert.match(html, /id="shortcut-overlay"/u);
+  assert.match(html, /Focus the clause filter/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -71,10 +72,11 @@ async function savedWorkbench(storage, hash = "") {
   const script = html.match(/<script type="module">([\s\S]*?)<\/script>/u)[1];
   const elements = new Map();
   const documentEvents = new Map();
+  let focusedSelector = "";
   const canvasContext = { setTransform() {}, clearRect() {}, fillRect() {}, fillText() {} };
   const element = (selector) => {
     if (!elements.has(selector)) elements.set(selector, { value: "", textContent: "", innerHTML: "", clientWidth: 400,
-      events: new Map(), addEventListener(name, callback) { this.events.set(name, callback); }, getContext: () => canvasContext });
+      events: new Map(), addEventListener(name, callback) { this.events.set(name, callback); }, getContext: () => canvasContext, focus() { focusedSelector = selector; } });
     return elements.get(selector);
   };
   const context = vm.createContext({ console, TextDecoder, Uint8Array, atob,
@@ -144,6 +146,18 @@ async function savedWorkbench(storage, hash = "") {
     changeManual: (clauseId, optionId) => {
       documentEvents.get("change")({
         target: { dataset: { field: "manual-option", clauseId }, value: optionId },
+      });
+    },
+    focused: () => focusedSelector,
+    clearFocus: () => { focusedSelector = ""; },
+    keydown: (key, target = { tagName: "BODY", isContentEditable: false }) => {
+      documentEvents.get("keydown")({
+        key,
+        ctrlKey: false,
+        metaKey: false,
+        altKey: false,
+        preventDefault() {},
+        target,
       });
     },
   };
@@ -465,6 +479,19 @@ test("workplace hybrid preset loads a valid three-group office policy", async ()
   assert.match(app.clauses(), /Core collaboration hours/u);
   assert.match(app.clauses(), /Desk assignment/u);
   assert.match(app.clauses(), /On-site staff|data-group-id="onsite"|onsite/u);
+});
+
+test("keyboard f focuses the clause filter unless an input is active", async () => {
+  const app = await savedWorkbench(new Map());
+  app.keydown("f");
+  assert.equal(app.focused(), "#clause-filter");
+  app.clearFocus();
+  app.keydown("f", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("f", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("F");
+  assert.equal(app.focused(), "#clause-filter");
 });
 
 test("show workshop tour reopens the first-run coach after it was dismissed", async () => {

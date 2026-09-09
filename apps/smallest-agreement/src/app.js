@@ -1477,6 +1477,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "s" || event.key === "S") {
     event.preventDefault();
     findAgreement();
+  } else if (event.key === "f" || event.key === "F") {
+    event.preventDefault();
+    $("#clause-filter")?.focus?.();
   }
 });
 
