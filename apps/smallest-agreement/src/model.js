@@ -294,6 +294,52 @@ export function compareNearMisses(threshold, a, b) {
   return compareAgreements(a, b);
 }
 
+function samePackage(a, b) {
+  if (!a || !b || a.options.length !== b.options.length) return false;
+  return a.options.every((option, index) => option.id === b.options[index].id);
+}
+
+/**
+ * Explain the model's constraint-compliant near misses and the next passing packages.
+ * Cheaper misses cost less than the recommended package and still miss the threshold.
+ * Next-over packages are later passing alternatives, not a claim that they are fairer.
+ */
+export function explorePackageGaps(proposal, result) {
+  if (!isPlainObject(proposal) || !isPlainObject(result) || result.status === "invalid" || result.status === "too_large") {
+    return {
+      status: result?.status ?? "invalid",
+      errors: result?.errors,
+      cheaperMisses: [],
+      closestMisses: [],
+      nextOverThreshold: [],
+      recommended: null,
+    };
+  }
+  const recommended = result.agreement ?? null;
+  const describe = (summary) => ({
+    approval: summary.approval,
+    changeCost: summary.changeCost,
+    changedClauseCount: summary.changedClauseCount,
+    approvalGap: proposal.threshold - summary.approval,
+    costVsRecommended: recommended ? summary.changeCost - recommended.changeCost : null,
+    cheaperThanRecommended: recommended ? summary.changeCost + EPSILON < recommended.changeCost : true,
+    meetsThreshold: summary.approval + EPSILON >= proposal.threshold,
+    labels: summary.options.map((option, index) => `${proposal.clauses[index].title}: ${option.label}`).join("; "),
+  });
+  const closestMisses = (result.nearMisses ?? []).map(describe);
+  const cheaperMisses = closestMisses.filter((row) => row.cheaperThanRecommended);
+  const nextOverThreshold = (result.alternatives ?? [])
+    .filter((candidate) => !samePackage(candidate, recommended))
+    .map(describe);
+  return {
+    status: "ok",
+    recommended: recommended ? describe(recommended) : null,
+    cheaperMisses,
+    closestMisses,
+    nextOverThreshold,
+  };
+}
+
 export function combinationCount(clauses, cap = Number.MAX_SAFE_INTEGER) {
   let count = 1;
   for (const clause of clauses) {

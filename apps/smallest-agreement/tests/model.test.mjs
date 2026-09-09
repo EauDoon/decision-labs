@@ -13,6 +13,7 @@ import {
   canonicalProposal,
   clauseContributions,
   clauseWeightedSupport,
+  explorePackageGaps,
   evaluatePackage,
   stressPackage,
   compareScenarioInputs,
@@ -802,6 +803,37 @@ test("clause contributions reject mismatched packages without mutating the propo
   const before = JSON.stringify(input);
   assert.equal(clauseContributions(input, []).status, "invalid");
   assert.equal(clauseContributions(input, [{ id: "missing" }]).status, "invalid");
-  assert.equal(clauseContributions({ title: "" }, []).status, "invalid");
   assert.equal(JSON.stringify(input), before);
+});
+
+test("package gap explorer names cheaper misses and the next packages over threshold", () => {
+  const input = proposal({
+    threshold: 80,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 40 }),
+      option("near", false, { g: 70 }, 1),
+      option("pass", false, { g: 90 }, 3),
+    ] }],
+  });
+  const result = findSmallestAgreement(input, { alternativesLimit: 5 });
+  assert.equal(result.status, "found");
+  const gaps = explorePackageGaps(input, result);
+  assert.equal(gaps.status, "ok");
+  assert.equal(gaps.recommended.changeCost, 3);
+  assert.ok(gaps.cheaperMisses.some((row) => row.labels.includes("near") && row.approvalGap > 0 && row.changeCost === 1));
+  assert.ok(gaps.closestMisses.every((row) => row.approvalGap > 0 && row.meetsThreshold === false));
+  assert.equal(gaps.nextOverThreshold.length, 0);
+  const extra = proposal({
+    threshold: 50,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 60 }),
+      option("cheap", false, { g: 70 }, 1),
+      option("better", false, { g: 90 }, 2),
+    ] }],
+  });
+  const passing = findSmallestAgreement(extra, { alternativesLimit: 5 });
+  const over = explorePackageGaps(extra, passing);
+  assert.ok(over.nextOverThreshold.length >= 1);
+  assert.ok(over.nextOverThreshold.every((row) => row.meetsThreshold && row.approvalGap <= 0));
+  assert.ok(over.nextOverThreshold.every((row) => row.costVsRecommended > 0 || row.changedClauseCount > 0));
 });

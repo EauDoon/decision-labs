@@ -5,6 +5,7 @@ import {
   MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
   clauseContributions,
+  explorePackageGaps,
   evaluatePackage,
   stressPackage,
   compareScenarioInputs,
@@ -417,7 +418,7 @@ function renderResults(result) {
     <div class="metric cost"><span class="metric-label">Best result</span><strong>Not found</strong></div>`;
   renderChanges(agreement, current);
   renderConstraints(result);
-  renderNearMisses(result.nearMisses);
+  renderNearMissExplorer(result);
   renderClauseContribution(result);
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
@@ -528,11 +529,48 @@ function renderChanges(agreement, current) {
   shifts.innerHTML = deltas.length ? deltas.map((group) => `<div class="shift-item"><strong>${escapeHtml(group.name)}</strong> <span class="${group.delta > 0 ? "positive" : "negative"}">${group.delta > 0 ? "+" : ""}${group.delta.toFixed(1)} points</span><br><span>${formatPercent(group.before)} to ${formatPercent(group.after)}</span></div>`).join("") : '<p class="empty-state">No group support changes.</p>';
 }
 
-function renderNearMisses(nearMisses) {
-  $("#near-misses-list").innerHTML = nearMisses.length ? nearMisses.map((miss) => {
-    const labels = miss.changes.length ? miss.changes.map((change) => `${change.clauseTitle}: ${change.to}`).join("; ") : "Keep every original option";
-    return `<div class="miss-item"><span class="miss-score">${formatPercent(miss.approval)}</span><span>${escapeHtml(labels)}<br><small>Short by ${(state.proposal.threshold - miss.approval).toFixed(1)} points. Cost ${miss.changeCost.toFixed(1)}.</small></span></div>`;
-  }).join("") : '<p class="empty-state">No constraint-compliant near misses to show.</p>';
+function packageGapRow(row, kind) {
+  const gap = row.approvalGap;
+  const approvalNote = row.meetsThreshold
+    ? `Over the threshold by ${(-gap).toFixed(1)} points.`
+    : `Short of the threshold by ${gap.toFixed(1)} points.`;
+  const costNote = row.costVsRecommended == null
+    ? `Cost ${row.changeCost.toFixed(1)}.`
+    : row.costVsRecommended === 0
+      ? `Same cost as the recommendation (${row.changeCost.toFixed(1)}).`
+      : row.costVsRecommended < 0
+        ? `Costs ${(-row.costVsRecommended).toFixed(1)} less than the recommendation (cost ${row.changeCost.toFixed(1)}).`
+        : `Costs ${row.costVsRecommended.toFixed(1)} more than the recommendation (cost ${row.changeCost.toFixed(1)}).`;
+  return `<div class="miss-item"><span class="miss-score">${formatPercent(row.approval)}</span><span>${escapeHtml(row.labels)}<br><small>${escapeHtml(kind)} ${approvalNote} ${costNote}</small></span></div>`;
+}
+
+function renderNearMissExplorer(result) {
+  const gaps = explorePackageGaps(state.proposal, result);
+  if (gaps.status !== "ok") {
+    $("#near-misses-list").innerHTML = '<p class="empty-state">Near-miss comparison is unavailable for this search result.</p>';
+    return;
+  }
+  const parts = [];
+  if (gaps.cheaperMisses.length) {
+    parts.push("<h4>Cheaper packages that miss the threshold</h4>");
+    parts.push("<p>These combinations cost less than the recommended package and remain below the threshold. They are not adoptable under the current rules.</p>");
+    parts.push(gaps.cheaperMisses.map((row) => packageGapRow(row, "Cheaper miss.")).join(""));
+  } else {
+    parts.push('<p class="empty-state">No cheaper constraint-compliant package in the near-miss list falls below the threshold.</p>');
+  }
+  if (gaps.closestMisses.length) {
+    parts.push("<h4>Closest misses</h4>");
+    parts.push("<p>Ranked by smallest approval gap among constraint-compliant combinations that miss the threshold.</p>");
+    parts.push(gaps.closestMisses.map((row) => packageGapRow(row, "Closest miss.")).join(""));
+  }
+  if (gaps.nextOverThreshold.length) {
+    parts.push("<h4>Next packages over the threshold</h4>");
+    parts.push("<p>These passing combinations come after the lowest-cost recommendation. Extra cost buys a different package, not a fairer one.</p>");
+    parts.push(gaps.nextOverThreshold.map((row) => packageGapRow(row, "Next passing package.")).join(""));
+  } else {
+    parts.push('<p class="empty-state">No later passing package is available to compare.</p>');
+  }
+  $("#near-misses-list").innerHTML = parts.join("");
 }
 
 function contributionBarSvg(rows) {

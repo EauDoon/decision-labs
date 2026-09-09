@@ -98,7 +98,7 @@ canvas { display: block; width: 100%; height: auto; min-height: 190px; margin-to
 .change-item strong { display: block; }
 .change-item span, .shift-item span, .miss-item small { color: var(--ink-soft); font-size: .82rem; }
 .positive { color: #286842 !important; }.negative { color: var(--brick) !important; }
-.near-misses { margin-top: 1rem; }
+.near-misses h4 { margin: 1rem 0 .35rem; font-size: .95rem; font-weight: 600; }
 .miss-item { display: grid; grid-template-columns: auto 1fr; gap: .8rem; }
 .miss-score { color: var(--brick); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 800; }
 .empty-state { color: var(--ink-soft); font-style: italic; }
