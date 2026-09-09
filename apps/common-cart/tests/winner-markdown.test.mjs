@@ -23,8 +23,8 @@ test("winner aggregates markdown uses counts and omits private buyer rows", () =
   assert.equal(markdown.includes("123456.78"), false);
   assert.equal(markdown.includes("maxUnitPrice"), false);
   assert.equal(markdown.includes("leftoverBuyerIds"), false);
-  assert.equal(markdown.includes("selectedBuyerIds"), false);
-  assert.equal(markdown.includes("allocations"), false);
+  assert.equal(markdown.includes('"selectedBuyerIds":'), false);
+  assert.equal(markdown.includes('"allocations":'), false);
   assert.match(markdown, /omit private buyer labels, IDs, budgets, and allocations/);
 });
 
