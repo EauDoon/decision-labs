@@ -37,7 +37,9 @@ async function workbench(protocol = 'file:', options = {}) {
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
     edit: (path, value, extra = {}) => events.get('change')({ target: new Input({ path, ...extra }, value) }),
-    click: (action) => events.get('click')({ target: { closest: () => ({ dataset: { action } }) } }),
+    click: (action, extra = {}) => events.get('click')({ target: { closest: () => ({ dataset: { action, ...extra } }) } }),
+    nameCase: (value) => events.get('change')({ target: new Input({ action: 'case-name' }, value) }),
+    library: () => JSON.parse(storage.get('partnership-breakpoint.cases.v1') ?? '[]'),
     navigate: (config) => {
       context.window.location.hash = `#deal=${Buffer.from(JSON.stringify(config)).toString('base64url')}`;
       windowEvents.get('hashchange')?.();
@@ -319,4 +321,26 @@ test('edits and resets supersede a pending import', async () => {
     assert.equal(app.saved().deal.monthlyVolume, action === 'edit' ? 70000 : 100000);
     assert.equal(app.saved().deal.feePerTransaction, 0.2);
   }
+});
+
+test('named snapshots are separate, escaped, reloadable and removable with recovery', async () => {
+  const app = await workbench();
+  app.nameCase('<b>Baseline</b>'); app.click('save-case');
+  assert.equal(app.library().length, 1);
+  assert.match(app.markup(), /&lt;b&gt;Baseline&lt;\/b&gt;/);
+  app.edit('deal.monthlyVolume', '80000');
+  assert.equal(app.library()[0].config.deal.monthlyVolume, 100000);
+  app.click('load-case', { caseId: 'case-1' });
+  assert.equal(app.saved().deal.monthlyVolume, 100000);
+  app.click('undo'); assert.equal(app.saved().deal.monthlyVolume, 80000);
+  app.click('remove-case', { caseId: 'case-1' }); assert.equal(app.library().length, 0);
+  app.click('restore-case'); assert.equal(app.library().length, 1);
+});
+test('library refuses invalid unnamed snapshots and reports blocked persistence', async () => {
+  const app = await workbench(); app.click('save-case');
+  assert.match(app.notice(), /Enter a snapshot name/);
+  const blocked = await workbench('file:', { blockStorage: true });
+  blocked.nameCase('A'); blocked.click('save-case');
+  assert.match(blocked.notice(), /could not be saved/);
+  assert.equal(blocked.library().length, 0);
 });

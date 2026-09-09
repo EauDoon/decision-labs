@@ -874,6 +874,10 @@ let pendingNotice = '';
 let persistenceWarning = '';
 let state = withStress(loadInitialState());
 let eventsBound = false;
+const LIBRARY_KEY = 'partnership-breakpoint.cases.v1';
+let caseName = '';
+let caseLibrary = loadCaseLibrary();
+let removedCase = null;
 const undoHistory = [];
 const redoHistory = [];
 
@@ -893,6 +897,52 @@ function travelHistory(direction) {
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
+}
+
+function loadCaseLibrary() {
+  try {
+    const raw = localStorage.getItem(LIBRARY_KEY);
+    if (!raw) return [];
+    if (raw.length > 3_000_000) throw new Error('Library too large');
+    const cases = JSON.parse(raw);
+    if (!Array.isArray(cases) || cases.length > 12 || new Set(cases.map((item) => item?.id)).size !== cases.length || cases.some((item) => !item || typeof item.id !== 'string' || !/^case-[0-9]+$/.test(item.id) || typeof item.name !== 'string' || !item.name.trim() || item.name.length > 80 || !validateConfiguration(item.config).valid)) throw new Error('Invalid library');
+    return cases;
+  } catch { pendingNotice += ' Saved case library is unavailable or invalid. Export individual JSON backups for recovery.'; return []; }
+}
+
+function persistLibrary(candidate) {
+  try { localStorage.setItem(LIBRARY_KEY, JSON.stringify(candidate)); }
+  catch { setNotice('Case library could not be saved. Export JSON to keep this case.'); return false; }
+  caseLibrary = candidate;
+  return true;
+}
+
+function libraryPanel() {
+  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
+}
+
+function handleLibraryAction(action, id) {
+  if (action === 'save-case') {
+    if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before saving a snapshot.'); return; }
+    if (!caseName.trim() || caseName.trim().length > 80) { setNotice('Enter a snapshot name of 1 to 80 characters.'); return; }
+    if (caseLibrary.length >= 12) { setNotice('The library holds 12 snapshots. Remove one before saving another.'); return; }
+    let sequence = 1;
+    while (caseLibrary.some((item) => item.id === `case-${sequence}`) || removedCase?.id === `case-${sequence}`) sequence += 1;
+    if (persistLibrary([...caseLibrary, { id: `case-${sequence}`, name: caseName.trim(), config: clone(state) }])) { render(); setNotice('Named snapshot saved locally.'); }
+  }
+  if (action === 'load-case') {
+    const item = caseLibrary.find((entry) => entry.id === id);
+    if (!item) return;
+    checkpoint(); state = withStress(clone(item.config)); activePreset = ''; caseName = item.name;
+    refresh(`Loaded snapshot: ${item.name}. Undo restores your prior draft.`);
+  }
+  if (action === 'remove-case') {
+    const item = caseLibrary.find((entry) => entry.id === id);
+    if (item && persistLibrary(caseLibrary.filter((entry) => entry.id !== id))) { removedCase = item; render(); setNotice('Snapshot removed. Restore last removed snapshot is available in this tab.'); }
+  }
+  if (action === 'restore-case' && removedCase && caseLibrary.length < 12) {
+    if (persistLibrary([...caseLibrary, removedCase])) { removedCase = null; render(); setNotice('Snapshot restored.'); }
+  }
 }
 
 function clone(value) {
@@ -1139,6 +1189,7 @@ function inputPanel() {
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
+          ${libraryPanel()}
           <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button></div>
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
@@ -1328,6 +1379,7 @@ function attachEvents() {
   app.addEventListener('change', (event) => {
     const input = event.target;
     if (!(input instanceof HTMLInputElement)) return;
+    if (input.dataset.action === 'case-name') { caseName = input.value; return; }
     if (input.dataset.path) {
       checkpoint();
       setPath(input.dataset.path, input.dataset.type === 'text' ? input.value.trim() : numberFromInput(input.value, input.dataset.optional === 'true'));
@@ -1344,6 +1396,7 @@ function attachEvents() {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
     const action = button.dataset.action;
+    if (['save-case', 'load-case', 'remove-case', 'restore-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
     if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
     if (action === 'edit-stress-settings') {
       app.querySelector('input[data-path="stress.volumeDropPct"]')?.focus();
