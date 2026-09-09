@@ -139,6 +139,21 @@ export function duplicateEntry(rawScenario, kind, id) {
   return clean;
 }
 
+export function compareScenarios(before, after) {
+  const baseline = evaluateMarket(before);
+  const current = evaluateMarket(after);
+  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
+  const metrics = (market) => ({
+    requested: market.totalRequestedUnits,
+    fulfilled: market.winner?.fulfilledUnits ?? 0,
+    buyers: market.winner?.deliveredBuyers ?? 0,
+    cost: market.winner?.totalCost ?? null,
+    winner: market.winner?.offer.merchant ?? "No qualifying offer"
+  });
+  return { baseline: metrics(baseline), current: metrics(current), sameCurrency,
+    sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
+}
+
 export function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");

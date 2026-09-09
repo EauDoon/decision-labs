@@ -2,6 +2,7 @@ import {
   ScenarioError,
   aggregateDemand,
   clonePreset,
+  compareScenarios,
   createScenarioHistory,
   decodeScenario,
   duplicateEntry,
@@ -44,6 +45,7 @@ let scenario = loadInitialScenario();
 const history = createScenarioHistory(scenario);
 let invalidDraft = false;
 let savedRooms = loadWorkspace();
+let baseline = null;
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
@@ -113,6 +115,13 @@ function loadInitialScenario() {
 }
 
 function bindStaticEvents() {
+  document.querySelector("#pin-baseline").addEventListener("click", () => {
+    try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
+    catch (error) { setStatus(messageOf(error)); }
+  });
+  document.querySelector("#clear-baseline").addEventListener("click", () => {
+    baseline = null; renderComparison();
+  });
   document.querySelector("#save-room").addEventListener("click", () => {
     try {
       storeWorkspace([...savedRooms, validateScenario(scenario)]);
@@ -384,6 +393,7 @@ function refresh() {
     invalidDraft = false;
     history.record(scenario);
     updateHistoryButtons();
+    renderComparison();
     renderSummary(market);
     renderResults(market);
     renderInspector(market);
@@ -393,6 +403,7 @@ function refresh() {
     setStatus("");
   } catch (error) {
     invalidDraft = true;
+    document.querySelector("#comparison-summary").textContent = "Correct invalid inputs to compare this room.";
     updateHistoryButtons();
     clearTimeout(saveTimer);
     elements.winner.textContent = "Check inputs";
@@ -411,6 +422,32 @@ function refresh() {
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
   }
+}
+
+function renderComparison() {
+  const summary = document.querySelector("#comparison-summary");
+  document.querySelector("#clear-baseline").disabled = !baseline;
+  if (!baseline) { summary.textContent = "Pin this room, then change constraints or load another snapshot to compare winners, participation, and cost. Baselines last until this page closes."; return; }
+  const comparison = compareScenarios(baseline, scenario);
+  const { baseline: before, current: after } = comparison;
+  const rows = [
+    ["Winner", before.winner, after.winner],
+    ["Requested units", before.requested, after.requested],
+    ["Fulfilled units", before.fulfilled, after.fulfilled],
+    ["Included buyers", before.buyers, after.buyers]
+  ];
+  if (comparison.sameCurrency) rows.push(["Landed total", before.cost === null ? "No allocation" : money(scenario.currency).format(before.cost), after.cost === null ? "No allocation" : money(scenario.currency).format(after.cost)]);
+  const table = document.createElement("table");
+  const caption = document.createElement("caption"); caption.textContent = `Pinned: ${baseline.title}. Current: ${scenario.title}.`;
+  const head = document.createElement("thead"); const header = document.createElement("tr");
+  for (const text of ["Metric", "Baseline", "Current"]) { const th = document.createElement("th"); th.scope = "col"; th.textContent = text; header.append(th); }
+  head.append(header); table.append(caption, head);
+  const body = document.createElement("tbody");
+  for (const values of rows) { const tr = document.createElement("tr"); for (const value of values) addCell(tr, String(value)); body.append(tr); }
+  table.append(body);
+  const note = document.createElement("p");
+  note.textContent = `${comparison.sameDemand ? "Buyer demand is unchanged." : "Buyer demand changed; cost differences are not like-for-like savings."} ${comparison.sameCurrency ? "Totals may cover different allocated orders." : "Currencies differ; monetary comparisons are omitted."}`;
+  summary.replaceChildren(table, note);
 }
 
 function addDuplicateAction(row, kind, entry) {

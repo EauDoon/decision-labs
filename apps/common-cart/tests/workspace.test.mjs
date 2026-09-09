@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry } from "../src/model.js";
+import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios } from "../src/model.js";
 
 test("history detaches states, caps memory, and truncates branches", () => {
   const s = clonePreset(); const h = createScenarioHistory(s);
@@ -14,6 +14,18 @@ test("history detaches states, caps memory, and truncates branches", () => {
   let count = 0; while (h.canUndo) { h.undo(); count++; }
   assert.equal(count, 49);
   assert.throws(() => h.record({}));
+});
+
+test("comparison distinguishes changed demand, currency and missing allocations", () => {
+  const before = clonePreset(); const after = clonePreset();
+  assert.ok(compareScenarios(before, after).sameDemand);
+  after.buyers[0].quantity++;
+  after.currency = "USD";
+  after.offers.forEach(o => { o.deliveryDays = 365; });
+  const comparison = compareScenarios(before, after);
+  assert.equal(comparison.sameDemand, false);
+  assert.equal(comparison.sameCurrency, false);
+  assert.equal(comparison.current.cost, null);
 });
 
 test("duplicate gives a unique id and independent nested constraints", () => {
