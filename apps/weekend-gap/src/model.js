@@ -1256,6 +1256,7 @@ export const WEEKEND_REVIEW_TOOLS=Object.freeze([
  {id:'reserve',title:'Reserve needed by service target'},
  {id:'throughput',title:'Joint-throughput ladder'},
  {id:'holidays',title:'Holiday assumption comparison'},
+ {id:'reserve-hours',title:'Hourly effect of extra reserve'},
 // WG_REVIEW_TOOLS
 ]);
 function validateWeekendReviewScenario(raw){
@@ -1311,6 +1312,12 @@ export function analyzeWeekendReview(rawScenario,tool){
 
  const rows=[];for(const saturdayHoliday of [false,true])for(const mondayHoliday of [false,true]){const r=runSimulation({...scenario,saturdayHoliday,mondayHoliday});rows.push([saturdayHoliday?'Yes':'No',mondayHoliday?'Yes':'No',r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud]);}
  return report(['Saturday holiday','Monday holiday','Settled by 72 AUD','Change from current AUD','Final queue AUD'],rows,'These four declared holiday combinations are synthetic, not a calendar lookup. Saturday is already closed in the current business-day model, so its flag may have no numerical effect. No actual holiday or service availability is verified.');
+
+ }
+ case 'reserve-hours':{
+
+ const added=Math.min(scenario.nominalLiquidityAud-scenario.reserveCashAud,Math.max(.01,scenario.reserveCashAud*.1));const candidate=runSimulation({...scenario,reserveCashAud:scenario.reserveCashAud+added});
+ return report(['Hour ending','Base settled this hour AUD','With extra reserve AUD','Extra settled this hour AUD','Extra cumulative settled AUD'],result.timeline.slice(1).map((point,i)=>{const other=candidate.timeline[i+1];return[point.hour,point.settledThisHour,other.settledThisHour,other.settledThisHour-point.settledThisHour,other.settledAud-point.settledAud];}),'A single counterfactual adds '+added+' AUD starting reserve (10% or one cent, capped at nominal liquidity). All other assumptions stay fixed. Hourly differences may be negative when earlier payouts reduce later backlog; the cumulative column tracks the net effect. No reserve is actually moved.');
 
  }
 // WG_REVIEW_CASES

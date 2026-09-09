@@ -165,3 +165,7 @@ The optional timing review can test coordinated throughput increases while retai
 ### Holiday assumption comparison
 
 The optional timing review can compare all four Saturday and Monday holiday combinations with other inputs fixed. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Hourly effect of extra reserve
+
+The optional timing review can locate when an additional reserve increment changes actual modeled settlements. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
