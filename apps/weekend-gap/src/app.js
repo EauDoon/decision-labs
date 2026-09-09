@@ -894,9 +894,17 @@ setPlaying(false);
 
 const COACH_KEY = "weekend-gap:coach:v1";
 const coachOverlay = document.querySelector("#coach-overlay");
+const shortcutOverlay = document.querySelector("#shortcut-overlay");
 function closeCoach() {
   coachOverlay.hidden = true;
   try { localStorage.setItem(COACH_KEY, "dismissed"); } catch { /* dismissal is best-effort */ }
+}
+function closeShortcutHelp() {
+  shortcutOverlay.hidden = true;
+}
+function openShortcutHelp() {
+  shortcutOverlay.hidden = false;
+  document.querySelector("#shortcut-dismiss").focus();
 }
 function maybeShowCoach() {
   if (window.location.hash.startsWith("#scenario=")) return;
@@ -908,11 +916,59 @@ function maybeShowCoach() {
   coachOverlay.hidden = false;
   document.querySelector("#coach-dismiss").focus();
 }
+function isEditableTarget(target) {
+  if (!target) return false;
+  const tag = (target.tagName || "").toLowerCase();
+  if (tag === "input" || tag === "textarea" || tag === "select") return true;
+  if (target.isContentEditable) return true;
+  return typeof target.closest === "function" && Boolean(target.closest("input, textarea, select, [contenteditable=true]"));
+}
 document.querySelector("#coach-dismiss").addEventListener("click", closeCoach);
+document.querySelector("#shortcut-dismiss").addEventListener("click", closeShortcutHelp);
+document.querySelector("#shortcut-open").addEventListener("click", openShortcutHelp);
 document.addEventListener("keydown", (event) => {
-  if (event.key === "Escape" && !coachOverlay.hidden) {
+  if (event.key === "Escape") {
+    if (!shortcutOverlay.hidden) {
+      event.preventDefault();
+      closeShortcutHelp();
+      return;
+    }
+    if (!coachOverlay.hidden) {
+      event.preventDefault();
+      closeCoach();
+    }
+    return;
+  }
+  if (isEditableTarget(event.target)) return;
+  if (event.key === "?") {
     event.preventDefault();
-    closeCoach();
+    if (shortcutOverlay.hidden) openShortcutHelp();
+    else closeShortcutHelp();
+    return;
+  }
+  if (!shortcutOverlay.hidden || !coachOverlay.hidden) return;
+  if (event.key === " ") {
+    event.preventDefault();
+    setPlaying(!playing);
+    return;
+  }
+  if (event.key === "u" || event.key === "U") {
+    if (!scenarioHistory.canUndo) return;
+    event.preventDefault();
+    setPlaying(false);
+    setScenario(scenarioHistory.undo(), { recordHistory: false, message: "Previous scenario edit restored. Baseline and notes were kept." });
+    return;
+  }
+  if (event.key === "r" || event.key === "R") {
+    if (!scenarioHistory.canRedo) return;
+    event.preventDefault();
+    setPlaying(false);
+    setScenario(scenarioHistory.redo(), { recordHistory: false, message: "Scenario edit reapplied. Baseline and notes were kept." });
+    return;
+  }
+  if (event.key === "e" || event.key === "E") {
+    event.preventDefault();
+    downloadScenario();
   }
 });
 maybeShowCoach();

@@ -41,7 +41,7 @@ SOFTWARE.
             <h1>Weekend Gap</h1>
           </div>
         </div>
-        <p class="header-note">Synthetic AUD stablecoin liquidity simulator</p>
+        <p class="header-note">Synthetic AUD stablecoin liquidity simulator<br><button type="button" class="text-button" id="shortcut-open">Keyboard shortcuts</button></p>
       </div>
     </header>
 
@@ -458,6 +458,21 @@ SOFTWARE.
         <p>Three gates must overlap before queued demand can settle: issuer redemption, bank settlement, and Australian AUD payout. Saturday and Sunday keep those gates closed. An optional Monday holiday treats Monday the same way.</p>
         <p>The clock runs from Friday 15:00 to Monday 15:00 in abstract local time. Demand can still join the queue while the payout chain is closed.</p>
         <button type="button" id="coach-dismiss">Continue to the simulator</button>
+      </div>
+    </div>
+    <div id="shortcut-overlay" class="overlay" hidden>
+      <div class="overlay-dialog" role="dialog" aria-modal="true" aria-labelledby="shortcut-title" id="shortcut-dialog">
+        <h2 id="shortcut-title">Keyboard shortcuts</h2>
+        <p>These keys are ignored while you are typing in an input, textarea or select.</p>
+        <ul class="shortcut-list">
+          <li><kbd>?</kbd> Open or close this help</li>
+          <li><kbd>Space</kbd> Play or pause the timeline</li>
+          <li><kbd>U</kbd> Undo the last scenario edit</li>
+          <li><kbd>R</kbd> Redo a scenario edit</li>
+          <li><kbd>E</kbd> Export the current scenario JSON</li>
+          <li><kbd>Esc</kbd> Close this help or the first-run coach</li>
+        </ul>
+        <button type="button" id="shortcut-dismiss">Close help</button>
       </div>
     </div>
     <script type="module" src="src/app.js"></script>

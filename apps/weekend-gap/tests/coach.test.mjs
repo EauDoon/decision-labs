@@ -16,3 +16,15 @@ test("first-run coach is dismissible, skippable on share links, and keyboard clo
   assert.match(appSource, /event\.key === "Escape"/);
   assert.match(appSource, /#coach-dismiss/);
 });
+
+test("keyboard shortcuts skip inputs and cover help, play, undo, redo and export", () => {
+  assert.match(html, /id="shortcut-overlay"/);
+  assert.match(html, /<kbd>\?<\/kbd>/);
+  assert.match(appSource, /isEditableTarget/);
+  assert.match(appSource, /event\.key === "\?"/);
+  assert.match(appSource, /event\.key === " "/);
+  assert.match(appSource, /event\.key === "u"/);
+  assert.match(appSource, /event\.key === "r"/);
+  assert.match(appSource, /event\.key === "e"/);
+  assert.match(appSource, /downloadScenario\(\)/);
+});
