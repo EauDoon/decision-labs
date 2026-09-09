@@ -449,7 +449,7 @@ function errorBox(errors) {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results">${errorBox(errors)}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -460,7 +460,7 @@ function resultsPanel(result) {
   const statusDetail = escapeAttribute(result.viable
     ? `${result.weakestParticipant.name} has the least volume headroom to its ${result.weakestParticipant.bindingConstraint.label} limit.`
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
-  return `<section class="results">
+  return `<section class="results" id="results-start">
     <section class="status-card ${statusClass}" aria-live="polite">
       <div><span class="eyebrow">Partnership viability</span><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
@@ -472,7 +472,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
     <section class="print-only"><h2>Case assumptions</h2>${state.deal.notes ? `<p><strong>Notes:</strong> ${escapeAttribute(state.deal.notes)}</p>` : ''}<p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
-    <nav class="results-jump" aria-label="Jump in results" id="results-jump">
+    <nav class="results-jump" aria-label="Jump in results" id="results-jump" tabindex="-1">
       <span class="eyebrow">Jump in results</span>
       <a href="#first-breakpoint">First breakpoint</a>
       <a href="#fee-guidance-title">Fee guide</a>
@@ -1137,6 +1137,12 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'u' || event.key === 'U') { travelHistory('undo'); return; }
   if (event.key === 'r' || event.key === 'R') { travelHistory('redo'); return; }
   if (event.key === 'e' || event.key === 'E') exportFile();
+  if (event.key === 'g' || event.key === 'G') {
+    const jump = document.querySelector('#results-jump');
+    const start = jump ?? document.querySelector('#results-start');
+    start?.focus?.({ preventScroll: false });
+    start?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -1605,6 +1611,7 @@ function helpDialog() {
         <li><kbd>u</kbd> Undo the last edit in this tab (up to 50)</li>
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON of the current valid case</li>
+        <li><kbd>g</kbd> Jump to the results nav or the first results heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

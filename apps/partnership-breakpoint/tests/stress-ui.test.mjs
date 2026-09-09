@@ -16,6 +16,7 @@ async function workbench(protocol = 'file:', options = {}) {
   let downloadBlob;
   let prints = 0;
   const copied = [];
+  const focused = [];
   const app = { innerHTML: '', querySelectorAll: () => [],
     addEventListener: (name, callback) => {
       assert.equal(events.has(name), false, `duplicate ${name} handler`);
@@ -44,7 +45,18 @@ async function workbench(protocol = 'file:', options = {}) {
       if (typeof url === 'string' && url.includes('#')) locationState.hash = url.slice(url.indexOf('#'));
     } },
     window: { print: () => { prints += 1; }, location: locationState, addEventListener: (name, callback) => windowEvents.set(name, callback) },
-    document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : selector === '#brief-copy-text' ? { focus() {} } : null },
+    document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => {
+      if (selector === '#workbench') return app;
+      if (selector === '#notice') return notice;
+      if ((selector === '#brief-copy-text' || selector === '#results-jump' || selector === '#results-start')
+        && app.innerHTML.includes(`id="${selector.slice(1)}"`)) {
+        return {
+          focus() { focused.push(selector); },
+          scrollIntoView() { focused.push(`scroll:${selector}`); },
+        };
+      }
+      return null;
+    } },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
   };
   if (options.clipboard === 'ok') {
@@ -58,6 +70,7 @@ async function workbench(protocol = 'file:', options = {}) {
     markup: () => app.innerHTML,
     downloads: () => downloads,
     copied: () => copied,
+    focused: () => focused,
     prints: () => prints,
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
@@ -136,7 +149,7 @@ test('standalone displays the complete compound grid with accessible controls an
 test('results jump nav is sticky, labeled, and keyboard-focusable via in-page links', async () => {
   const app = await workbench();
   const html = await buildStandalone();
-  assert.match(app.markup(), /<nav class="results-jump" aria-label="Jump in results" id="results-jump">/);
+  assert.match(app.markup(), /<nav class="results-jump" aria-label="Jump in results" id="results-jump" tabindex="-1">/);
   assert.match(app.markup(), /href="#first-breakpoint">First breakpoint<\/a>/);
   assert.match(app.markup(), /href="#fee-guidance-title">Fee guide<\/a>/);
   assert.match(app.markup(), /href="#charts-title">Charts<\/a>/);
@@ -146,6 +159,7 @@ test('results jump nav is sticky, labeled, and keyboard-focusable via in-page li
   assert.match(html, /\.results-jump a:focus-visible/);
   assert.match(app.markup(), /id="first-breakpoint"/);
   assert.match(app.markup(), /id="participant-ledger"/);
+  assert.match(app.markup(), /id="results-start"/);
 });
 
 test('first breakpoint card reports capacity-limited volume growth', async () => {
@@ -736,6 +750,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   app.keydown('?');
   assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
   assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
+  assert.match(app.markup(), /<kbd>g<\/kbd> Jump to the results nav/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -749,6 +764,21 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   app.edit('deal.monthlyVolume', '70000');
   app.keydown('u', { tagName: 'INPUT' });
   assert.equal(app.saved().deal.monthlyVolume, 70000);
+});
+
+test('keyboard g jumps to the results nav unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.keydown('g');
+  assert.ok(app.focused().includes('#results-jump'));
+  assert.ok(app.focused().includes('scroll:#results-jump'));
+  const before = app.focused().length;
+  app.keydown('g', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('g');
+  assert.ok(app.focused().includes('#results-start'));
+  assert.doesNotMatch(app.markup(), /id="results-jump"/);
 });
 
 test('redacted export replaces names, clears the title, and keeps identifiers', async () => {
