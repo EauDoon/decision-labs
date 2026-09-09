@@ -29,6 +29,7 @@ import {
   workspaceFromJSON,
   createScenarioHistory,
   timelineToCSV,
+  queueToCSV,
   reportToHTML
 } from "./model.js";
 
@@ -1017,6 +1018,10 @@ document.querySelector("#export-gantt").addEventListener("click",()=>{
 document.querySelector("#export-queue-svg").addEventListener("click",()=>{
   downloadText(buildQueueChartSvg(scenario,baselineScenario,selectedHour),"weekend-gap-queue.svg","image/svg+xml;charset=utf-8");
   setMessage("Queue SVG downloaded. It is a synthetic path, not a live market chart.");
+});
+document.querySelector("#export-queue-csv").addEventListener("click",()=>{
+  downloadText(queueToCSV(scenario,baselineScenario),"weekend-gap-queue.csv","text/csv;charset=utf-8");
+  setMessage("Queue CSV downloaded. Hour labels and queue size are formula-safe spreadsheet cells.");
 });
 document.querySelector("#jump-peak").addEventListener("click",()=>{
   selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();

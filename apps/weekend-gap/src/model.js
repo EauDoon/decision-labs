@@ -619,6 +619,20 @@ export function createScenarioHistory(initial, limit = 40) {
   };
 }
 
+function spreadsheetUnsafeCell(text) {
+  return /^[\s\u0000-\u001f]*[=+@-]/u.test(text);
+}
+
+function csvCell(value) {
+  let text = String(value);
+  if (typeof value === "string" && spreadsheetUnsafeCell(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function csvTable(rows) {
+  return rows.map((row) => row.map(csvCell).join(",")).join("\r\n") + "\r\n";
+}
+
 /** All 73 checkpoints; demand/settlement columns describe the preceding interval. */
 export function timelineToCSV(current, baseline = current) {
   const comparison = compareScenarios(baseline, current);
@@ -626,6 +640,20 @@ export function timelineToCSV(current, baseline = current) {
   const rows = comparison.candidate.timeline.map((point, index) => [point.hour, point.timeLabel, point.hour === 0 ? "" : point.hour - 1,
     point.demandThisHour, point.settledThisHour, point.settledAud, point.queuedAud, point.reserveRemainingAud, point.immediateAud, comparison.baseline.timeline[index].queuedAud]);
   return [headers, ...rows].map(row => row.join(",")).join("\r\n") + "\r\n";
+}
+
+/** Formula-safe hourly queue path: hour label and queue size at every checkpoint. */
+export function queueToCSV(current, baseline = current) {
+  const comparison = compareScenarios(baseline, current);
+  const headers = ["hour", "time_label", "queued_aud", "baseline_queued_aud", "scenario_name"];
+  const rows = comparison.candidate.timeline.map((point, index) => [
+    point.hour,
+    point.timeLabel,
+    point.queuedAud,
+    comparison.baseline.timeline[index].queuedAud,
+    comparison.candidate.scenario.name
+  ]);
+  return csvTable([headers, ...rows]);
 }
 
 /** Static, script-free report. Escape every user-controlled value before HTML output. */

@@ -62,6 +62,7 @@ const appImportMarker = `import {
   workspaceFromJSON,
   createScenarioHistory,
   timelineToCSV,
+  queueToCSV,
   reportToHTML
 } from "./model.js";`;
 const exportedNames = Object.freeze([
@@ -102,6 +103,7 @@ const exportedNames = Object.freeze([
   "workspaceFromJSON",
   "createScenarioHistory",
   "timelineToCSV",
+  "queueToCSV",
   "reportToHTML",
   "BOTTLENECK_LABELS",
   "attributeBottlenecks",
