@@ -131,6 +131,34 @@
     .trust { margin: 28px 0 8px; padding: 28px 0 8px; border-top: 1px solid var(--line); max-width: 760px; }
     .trust ul { margin: 12px 0 0; padding-left: 1.2rem; color: var(--muted); }
     .trust li { margin: 8px 0; }
+    .whats-new {
+      margin: 8px 0 12px;
+      padding: 24px 0 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .whats-new > p { max-width: 46rem; color: var(--muted); margin: 0 0 16px; }
+    .whats-new-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 28px;
+    }
+    .whats-new-list li {
+      margin: 0;
+      padding: 16px 0 4px;
+      border-top: 1px solid var(--line);
+    }
+    .whats-new-list h3 {
+      font-size: 17px;
+      margin: 0 0 6px;
+      color: var(--ink);
+    }
+    .whats-new-list p { margin: 0; color: var(--muted); font-size: 16px; }
+    @media (max-width: 720px) {
+      .whats-new-list { grid-template-columns: 1fr; }
+    }
     .site-footer { padding-top: 12px; padding-bottom: 36px; font-size: 14px; color: var(--muted); }
     .site-footer p { margin: 0 0 8px; max-width: 46rem; }
     .skip {
@@ -201,11 +229,34 @@
     <p class="support">Each workbench is a static page that runs in your browser. There is no shared account, no hosted service, and no model that claims to decide for you.</p>
   </header>
   <nav class="shell site-nav" aria-label="On this page">
+    <a href="#whats-new">What's new</a>
     <a href="#workbenches">Workbenches</a>
     <a href="#how-it-works">How it works</a>
     <a href="#trust">Trust and limits</a>
   </nav>
   <main class="shell" id="main">
+    <section class="whats-new" id="whats-new" tabindex="-1" aria-labelledby="whats-new-title">
+      <h2 id="whats-new-title">What's new</h2>
+      <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank.</p>
+      <ul class="whats-new-list">
+        <li>
+          <h3>Share-to-hold in Partnership Breakpoint</h3>
+          <p>Solve the minimum revenue share at which a named participant still meets their floor in the open case, then apply it if you choose. The solver is local arithmetic. It does not quote a market or predict who will stay.</p>
+        </li>
+        <li>
+          <h3>Residual coverage in Common Cart</h3>
+          <p>After a winning offer is chosen, leftover whole-buyer demand can be tested against the next-best other offer. Merchant export stays aggregate. This is a planning view, not checkout, inventory, or a second live order.</p>
+        </li>
+        <li>
+          <h3>Veto groups in The Smallest Agreement</h3>
+          <p>Mark a group whose average support must meet the approval threshold, or the higher of that threshold and the group's support floor. A veto here is a number you entered, not a legal right.</p>
+        </li>
+        <li>
+          <h3>Gate Gantt in Weekend Gap</h3>
+          <p>Scrub 72 hours of issuer, bank, payout, and FX windows on the synthetic calendar, with a table fallback. The drawing does not connect to a bank or a live redemption queue.</p>
+        </li>
+      </ul>
+    </section>
     <section id="workbenches" tabindex="-1" aria-labelledby="workbenches-title">
       <h2 id="workbenches-title">The workbenches</h2>
       <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input.</p>
