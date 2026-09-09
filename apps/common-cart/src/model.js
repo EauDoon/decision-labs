@@ -785,6 +785,50 @@ export function createOrganizerBriefing(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Merchant-safe winner totals. Aggregates only. Omits buyer IDs, labels, budgets, and allocations. */
+export function createWinnerAggregatesMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const residual = computeResidualCoverage(rawScenario);
+  const winner = market.winner;
+  const lines = [
+    `# Common Cart winner aggregates`,
+    ``,
+    `- Currency: ${market.scenario.currency}`,
+    `- Requested units: ${market.totalRequestedUnits}`,
+    `- Buyers in the room: ${market.buyerCount}`,
+    `- Categories: ${market.categoryCount}`,
+    ``,
+    `## Winning offer`,
+    winner
+      ? [
+        `- Merchant: ${winner.offer.merchant}`,
+        `- Category: ${winner.offer.category}`,
+        `- Variant: ${winner.offer.variant}`,
+        `- Fulfillment: ${winner.offer.fulfillment}`,
+        `- Fulfilled units: ${winner.fulfilledUnits}`,
+        `- Included buyers: ${winner.deliveredBuyers}`,
+        `- Item price: ${winner.effectiveUnitPrice}`,
+        `- Landed total: ${winner.totalCost}`,
+        `- Group headroom: ${winner.savings}`,
+        `- Fulfillment rate: ${winner.fulfillmentRate}`
+      ].join("\n")
+      : `- No qualifying offer.`,
+    ``,
+    `## Residual coverage`,
+    `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
+    `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
+    residual.secondary
+      ? `- Leftover fill: ${residual.secondary.merchant} / ${residual.secondary.variant}, ${residual.secondary.fulfilledUnits} units, ${residual.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    residual.tertiary
+      ? `- Tertiary fill: ${residual.tertiary.merchant} / ${residual.tertiary.variant}, ${residual.tertiary.fulfilledUnits} units, ${residual.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
+    ``,
+    `These aggregates omit private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 export function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {

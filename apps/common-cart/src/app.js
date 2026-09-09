@@ -30,6 +30,7 @@ import {
   createOfferCsv,
   redactBuyerLabels,
   createOrganizerBriefing,
+  createWinnerAggregatesMarkdown,
   decodeScenario,
   duplicateEntry,
   copyOfferAsNewTierSet,
@@ -225,6 +226,23 @@ function bindStaticEvents() {
       downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
       setStatus("Overlap CSV downloaded. It contains buyer counts only.", true);
     } catch (error) { setStatus(`Overlap copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#copy-winner-aggregates").addEventListener("click", () => {
+    try {
+      const markdown = createWinnerAggregatesMarkdown(scenario);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(markdown).then(
+          () => setStatus("Winner aggregates copied as Markdown. Counts and totals only. Buyer labels, IDs, budgets, and allocations are omitted.", true),
+          () => {
+            downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
+            setStatus("Clipboard was blocked, so winner aggregates were downloaded instead. Aggregates only.", true);
+          }
+        );
+        return;
+      }
+      downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
+      setStatus("Winner aggregates downloaded as Markdown. Counts and totals only.", true);
+    } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }

@@ -675,7 +675,8 @@ footer {
         <div class="snapshot-bar print-chrome">
           <button id="merchant-report" type="button">Export aggregate merchant report</button>
           <button id="merchant-residual-report" type="button">Export residual coverage (aggregate)</button>
-          <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information.</p>
+          <button id="copy-winner-aggregates" type="button">Copy winner aggregates</button>
+          <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information. Winner markdown is aggregates only.</p>
         </div>
         <div class="section-heading print-chrome">
           <div>
@@ -1625,6 +1626,50 @@ function createOrganizerBriefing(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Merchant-safe winner totals. Aggregates only. Omits buyer IDs, labels, budgets, and allocations. */
+function createWinnerAggregatesMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const residual = computeResidualCoverage(rawScenario);
+  const winner = market.winner;
+  const lines = [
+    `# Common Cart winner aggregates`,
+    ``,
+    `- Currency: ${market.scenario.currency}`,
+    `- Requested units: ${market.totalRequestedUnits}`,
+    `- Buyers in the room: ${market.buyerCount}`,
+    `- Categories: ${market.categoryCount}`,
+    ``,
+    `## Winning offer`,
+    winner
+      ? [
+        `- Merchant: ${winner.offer.merchant}`,
+        `- Category: ${winner.offer.category}`,
+        `- Variant: ${winner.offer.variant}`,
+        `- Fulfillment: ${winner.offer.fulfillment}`,
+        `- Fulfilled units: ${winner.fulfilledUnits}`,
+        `- Included buyers: ${winner.deliveredBuyers}`,
+        `- Item price: ${winner.effectiveUnitPrice}`,
+        `- Landed total: ${winner.totalCost}`,
+        `- Group headroom: ${winner.savings}`,
+        `- Fulfillment rate: ${winner.fulfillmentRate}`
+      ].join("\n")
+      : `- No qualifying offer.`,
+    ``,
+    `## Residual coverage`,
+    `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
+    `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
+    residual.secondary
+      ? `- Leftover fill: ${residual.secondary.merchant} / ${residual.secondary.variant}, ${residual.secondary.fulfilledUnits} units, ${residual.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    residual.tertiary
+      ? `- Tertiary fill: ${residual.tertiary.merchant} / ${residual.tertiary.variant}, ${residual.tertiary.fulfilledUnits} units, ${residual.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
+    ``,
+    `These aggregates omit private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {
@@ -2486,6 +2531,23 @@ function bindStaticEvents() {
       downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
       setStatus("Overlap CSV downloaded. It contains buyer counts only.", true);
     } catch (error) { setStatus(`Overlap copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#copy-winner-aggregates").addEventListener("click", () => {
+    try {
+      const markdown = createWinnerAggregatesMarkdown(scenario);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(markdown).then(
+          () => setStatus("Winner aggregates copied as Markdown. Counts and totals only. Buyer labels, IDs, budgets, and allocations are omitted.", true),
+          () => {
+            downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
+            setStatus("Clipboard was blocked, so winner aggregates were downloaded instead. Aggregates only.", true);
+          }
+        );
+        return;
+      }
+      downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
+      setStatus("Winner aggregates downloaded as Markdown. Counts and totals only.", true);
+    } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }

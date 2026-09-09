@@ -334,3 +334,4 @@ export function offerCsvTemplate(): string;
 export function createOfferCsv(rawScenario: unknown): string;
 export function redactBuyerLabels(rawScenario: unknown): Scenario;
 export function createOrganizerBriefing(rawScenario: unknown): string;
+export function createWinnerAggregatesMarkdown(rawScenario: unknown): string;
