@@ -210,6 +210,33 @@ export function filterOfferIdsByFulfillment(rawScenario, fulfillment) {
   return scenario.offers.filter((offer) => offer.fulfillment === fulfillment).map((offer) => offer.id);
 }
 
+export function acceptedVariantFilterOptions(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const seen = new Map();
+  for (const buyer of scenario.buyers) {
+    for (const variant of buyer.allowedVariants) {
+      const key = normalizeText(variant);
+      if (!seen.has(key)) seen.set(key, variant);
+    }
+  }
+  return [...seen.values()].sort((left, right) => compareText(normalizeText(left), normalizeText(right)) || compareText(left, right));
+}
+
+export function filterBuyerIdsByAcceptedVariant(rawScenario, variant) {
+  if (typeof variant !== "string") {
+    throw new ScenarioError("Buyer variant filter must be all or an accepted variant name.");
+  }
+  if (variant !== "all" && variant.trim() === "") {
+    throw new ScenarioError("Buyer variant filter must be all or an accepted variant name.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (variant === "all") return scenario.buyers.map((buyer) => buyer.id);
+  const key = normalizeText(variant);
+  return scenario.buyers
+    .filter((buyer) => buyer.allowedVariants.some((entry) => normalizeText(entry) === key))
+    .map((buyer) => buyer.id);
+}
+
 function sortedBuyers(buyers, mode) {
   if (mode !== "label" && mode !== "quantity") {
     throw new ScenarioError("Buyer sort must be label or quantity.");

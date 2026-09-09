@@ -6,6 +6,8 @@ import {
   applyBuyerSort,
   previewBuyerSort,
   filterOfferIdsByFulfillment,
+  acceptedVariantFilterOptions,
+  filterBuyerIdsByAcceptedVariant,
   restoreRemovedBuyer,
   duplicateRoom,
   winnerBudgetLeftover,
@@ -82,6 +84,7 @@ let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
 let buyerSortPreviewIds = null;
 let offerFulfillmentFilter = "all";
+let buyerVariantFilter = "all";
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -420,6 +423,18 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#buyer-variant-filter").addEventListener("change", (event) => {
+    buyerVariantFilter = event.target.value;
+    try {
+      applyBuyerVariantFilter();
+      const shown = filterBuyerIdsByAcceptedVariant(scenario, buyerVariantFilter).length;
+      setStatus(buyerVariantFilter === "all"
+        ? "Showing every buyer. Saved buyers and matching are unchanged."
+        : `Showing ${shown} buyer${shown === 1 ? "" : "s"} who accept ${buyerVariantFilter}. Saved buyers are unchanged.`, true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#export-button").addEventListener("click", exportScenario);
   document.querySelector("#screenshot-mode").addEventListener("click", () => {
     screenshotMode = !screenshotMode;
@@ -646,6 +661,8 @@ function renderEditor() {
   if (filterSelect) filterSelect.value = offerFulfillmentFilter;
   renderTierEditors();
   applyOfferFulfillmentFilter();
+  populateBuyerVariantFilter();
+  applyBuyerVariantFilter();
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -677,6 +694,50 @@ function applyOfferFulfillmentFilter() {
   note.textContent = hiddenCount === 0
     ? "The filter hides rows on screen. Saved offers and matching stay unchanged."
     : `Showing ${visibleIds.size} of ${scenario.offers.length} offers. Hidden rows stay in the room and still match.`;
+}
+
+function populateBuyerVariantFilter() {
+  const select = document.querySelector("#buyer-variant-filter");
+  if (!select) return;
+  let variants = [];
+  try {
+    variants = acceptedVariantFilterOptions(scenario);
+  } catch {
+    variants = [];
+  }
+  if (buyerVariantFilter !== "all" && !variants.some((variant) => variant === buyerVariantFilter)) {
+    buyerVariantFilter = "all";
+  }
+  select.replaceChildren();
+  const all = document.createElement("option");
+  all.value = "all";
+  all.textContent = "All";
+  select.append(all);
+  for (const variant of variants) {
+    const option = document.createElement("option");
+    option.value = variant;
+    option.textContent = variant;
+    select.append(option);
+  }
+  select.value = buyerVariantFilter;
+}
+
+function applyBuyerVariantFilter() {
+  let visibleIds;
+  try {
+    visibleIds = new Set(filterBuyerIdsByAcceptedVariant(scenario, buyerVariantFilter));
+  } catch {
+    visibleIds = new Set(scenario.buyers.map((buyer) => buyer.id));
+  }
+  elements.buyerRows.querySelectorAll("tr[data-id]").forEach((row) => {
+    row.hidden = !visibleIds.has(row.dataset.id);
+  });
+  const note = document.querySelector("#buyer-variant-filter-note");
+  if (!note) return;
+  const hiddenCount = scenario.buyers.length - visibleIds.size;
+  note.textContent = hiddenCount === 0
+    ? "The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only."
+    : `Showing ${visibleIds.size} of ${scenario.buyers.length} buyers. Hidden rows stay in the room and still match. Merchant views still show counts only.`;
 }
 
 function buyerDisplayLabel(buyer) {

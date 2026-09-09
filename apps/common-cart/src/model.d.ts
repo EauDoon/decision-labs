@@ -289,6 +289,8 @@ export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", 
 export function copyOfferAsNewTierSet(rawScenario: unknown, offerId: string): Scenario;
 export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenario;
 export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "all" | "shipping" | "pickup"): string[];
+export function acceptedVariantFilterOptions(rawScenario: unknown): string[];
+export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: string): string[];
 export function previewBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Buyer[];
 export function applyBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Scenario;
 export function restoreRemovedBuyer(rawScenario: unknown, rawBuyer: unknown): Scenario;

@@ -203,6 +203,14 @@ SOFTWARE.
           <button id="apply-buyer-sort" type="button">Apply sort</button>
           <p>Preview changes the list on screen only. Apply rewrites saved order and is undoable. Buyer IDs stay the same.</p>
         </div>
+        <div class="snapshot-bar print-chrome" aria-label="Buyer accepted variant filter">
+          <label>Accepted variant
+            <select id="buyer-variant-filter">
+              <option value="all">All</option>
+            </select>
+          </label>
+          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only.</p>
+        </div>
         <div class="table-shell print-private" id="buyers-list" tabindex="-1" role="region" aria-label="Buyer constraints list">
           <table>
             <caption class="sr-only">Editable buyer constraints</caption>
