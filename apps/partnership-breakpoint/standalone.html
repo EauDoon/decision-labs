@@ -1195,7 +1195,7 @@ function inputPanel() {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-report">Export decision report</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <button type="button" data-action="reset">Reset</button>
           </div>
@@ -1425,6 +1425,7 @@ function attachEvents() {
       refresh('Participant removed.');
     }
     if (action === 'export') exportFile();
+    if (action === 'export-report') exportReport();
     if (action === 'apply-stress-proposal') {
       try {
         const proposal = applyStressProposal(state);
@@ -1587,6 +1588,48 @@ function comparisonSection(current) {
     return `<tr><th scope="row">${escapeAttribute(after?.name ?? before.name)}</th><td>${before ? formatMoney(before.monthlyProfit) : 'Added'}</td><td>${after ? formatMoney(after.monthlyProfit) : 'Removed'}</td><td>${before && after ? formatMoney(after.monthlyProfit - before.monthlyProfit) : 'n/a'}</td><td>${before ? before.viable ? 'Holds' : 'Exits' : 'n/a'} to ${after ? after.viable ? 'Holds' : 'Exits' : 'n/a'}</td></tr>`;
   }).join('');
   return `<section class="panel" aria-labelledby="comparison-title"><div class="panel-heading"><h2 id="comparison-title">Compare with ${escapeAttribute(snapshot.name)}</h2><button type="button" data-action="clear-comparison">Close comparison</button></div><div class="panel-body"><p>Total monthly profit change: <strong>${formatMoney(current.totalProfit - baseline.totalProfit)}</strong>. Effective volume change: ${formatNumber(current.effectiveVolume - baseline.effectiveVolume)} txn.</p><p>Snapshot stress cases held: ${baselineStress.passCount} / ${baselineStress.caseCount}. Current: ${currentStress.passCount} / ${currentStress.caseCount}. Each uses its own stress settings, so counts may not be directly comparable.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Case comparison"><table><caption>Current minus snapshot. Participants matched by stable identifier.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Snapshot profit</th><th scope="col">Current profit</th><th scope="col">Profit change</th><th scope="col">Exit test</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+function reportText(value) {
+  return String(value).replace(/[\r\n\t]/g, ' ').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/[\\`*_[\]{}()#+!|]/g, (character) => '\\' + character);
+}
+
+function decisionReport(config, title = 'Current case') {
+  const result = calculatePartnership(config);
+  const stress = evaluateStressGrid(config);
+  const lines = ['# Partnership Breakpoint decision report', '', 'Case: ' + reportText(title), '',
+    'Deterministic monthly contribution analysis. All money uses one consistent currency unit.', '',
+    '## Current outcome', '',
+    'Partnership: ' + (result.viable ? 'all participants hold' : 'at least one participant exits') + '.',
+    'Effective volume: ' + result.effectiveVolume + ' transactions per month.',
+    'Total revenue: ' + result.totalRevenue + ' units. Total participant profit: ' + result.totalProfit + ' units.', '',
+    '| Participant | Monthly profit | Minimum profit | Outcome |', '| --- | ---: | ---: | --- |',
+    ...result.participants.map((item, index) => '| ' + reportText(item.name) + ' | ' + item.monthlyProfit + ' | ' + config.participants[index].minimumAcceptableProfit + ' | ' + reportText(item.viable ? 'Holds' : item.failureReasons.join('; ')) + ' |'), '',
+    '## Compound stress evidence', '',
+    stress.passCount + ' of ' + stress.caseCount + ' selected cases hold. Counts are not probabilities.',
+    'Negotiation status: ' + stress.negotiation.status + '.', '',
+    ...stress.scenarios.map((scenario) => '- ' + scenario.id + ': volume ' + scenario.volume + ', fee ' + scenario.fee + ', total profit ' + scenario.totalProfit + '. ' + reportText(scenario.viable ? 'All participants hold.' : scenario.participants.filter((item) => !item.viable).map((item) => item.name + ': ' + item.failureReasons.join('; ')).join(' / '))), '',
+    '## Limits', '',
+    'These inputs are assumptions, not verified commercial terms. Results do not establish demand, legal enforceability, credit performance, taxes, cash-flow timing, or participant behavior. Discrete stress cases do not cover every possible future.', '',
+    '## Reproducible case JSON', '', '```json', JSON.stringify(config, null, 2), '```', ''];
+  return lines.join('\n');
+}
+
+function downloadText(contents, type, filename) {
+  const blob = new Blob([contents], { type });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  link.click();
+  URL.revokeObjectURL(url);
+}
+
+function exportReport() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) { setNotice('Resolve invalid inputs before exporting a report. ' + summarizeErrors(validation.errors)); return; }
+  downloadText(decisionReport(state, caseName.trim() || 'Current case'), 'text/markdown;charset=utf-8', 'partnership-breakpoint-report.md');
+  setNotice('Decision report exported with assumptions and reproducible case JSON.');
 }
 </script>
   </body>

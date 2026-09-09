@@ -11,6 +11,8 @@ async function workbench(protocol = 'file:', options = {}) {
   const windowEvents = new Map();
   const storage = new Map();
   const notice = { textContent: '' };
+  const downloads = [];
+  let downloadBlob;
   const app = { innerHTML: '', querySelectorAll: () => [],
     addEventListener: (name, callback) => {
       assert.equal(events.has(name), false, `duplicate ${name} handler`);
@@ -25,15 +27,16 @@ async function workbench(protocol = 'file:', options = {}) {
       else this.onload();
     }
   }
-  const context = vm.createContext({ console, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
+  const context = vm.createContext({ console, Blob, URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
     history: { replaceState() {} },
     window: { location: { protocol, hash: options.hash ?? '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
-    document: { activeElement: null, querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
+    document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
   });
   new vm.Script(script).runInContext(context, { timeout: 2000 });
   return {
     markup: () => app.innerHTML,
+    downloads: () => downloads,
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
     edit: (path, value, extra = {}) => events.get('change')({ target: new Input({ path, ...extra }, value) }),
@@ -355,4 +358,18 @@ test('snapshot comparison reports participant deltas without mutating the curren
   assert.match(app.markup(), /matched by stable identifier/);
   assert.deepEqual(app.saved(), current);
   app.click('clear-comparison'); assert.doesNotMatch(app.markup(), /Compare with Baseline/);
+});
+
+test('decision report exports reproducible inputs, outcomes, and safe participant prose', async () => {
+  const app = await workbench();
+  app.edit('participants.0.name', '<img src=x>|Bad', { type: 'text' });
+  app.click('export-report');
+  const file = app.downloads()[0]; assert.equal(file.filename, 'partnership-breakpoint-report.md');
+  const text = await file.blob.text();
+  assert.match(text, /Counts are not probabilities/);
+  assert.match(text, /&lt;img src=x&gt;/);
+  const config = JSON.parse(text.split('\x60\x60\x60json\n')[1].split('\n\x60\x60\x60')[0]);
+  assert.deepEqual(config, app.saved());
+  app.edit('deal.monthlyVolume', ''); app.click('export-report');
+  assert.equal(app.downloads().length, 1);
 });
