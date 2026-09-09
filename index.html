@@ -6,55 +6,136 @@
   <meta name="description" content="Four offline workbenches for exploring partnership thresholds, pooled buying, structured agreements and weekend liquidity.">
   <title>Decision Labs</title>
   <style>
-    :root { color-scheme: light; font-family: system-ui, sans-serif; color: #182d32; background: #f3f6f6; }
+    :root {
+      color-scheme: light;
+      --ink: #12262b;
+      --muted: #2a434b;
+      --paper: #f2f6f5;
+      --panel: #ffffff;
+      --line: #c3d0d3;
+      --brand: #0f5a4b;
+      --brand-deep: #0a4439;
+      --focus: #8a3800;
+      font-family: "Segoe UI", system-ui, sans-serif;
+      color: var(--ink);
+      background: var(--paper);
+    }
     * { box-sizing: border-box; }
-    body { margin: 0; border-top: 7px solid #176454; }
-    main, footer { max-width: 1100px; margin: auto; padding: 32px clamp(20px, 5vw, 64px); }
-    header { padding: 24px 0 32px; border-bottom: 1px solid #bac8cb; }
-    h1 { font-family: Georgia, serif; font-size: clamp(38px, 6vw, 64px); line-height: 1.08; font-weight: 500; margin: 0 0 20px; }
-    header p { font-size: 19px; max-width: 680px; margin: 0; line-height: 1.6; }
-    h2 { font-size: 22px; margin: 0 0 10px; line-height: 1.3; }
+    body { margin: 0; border-top: 7px solid var(--brand); }
+    main, .site-footer { max-width: 1100px; margin: auto; padding: 32px clamp(20px, 5vw, 64px); }
+    .hero { padding: 28px 0 36px; border-bottom: 1px solid var(--line); }
+    .eyebrow {
+      margin: 0 0 12px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--brand-deep);
+    }
+    h1 {
+      font-family: Georgia, "Times New Roman", serif;
+      font-size: clamp(40px, 6vw, 68px);
+      line-height: 1.06;
+      font-weight: 500;
+      margin: 0 0 18px;
+    }
+    .lede { font-size: 21px; max-width: 42rem; margin: 0 0 14px; line-height: 1.5; }
+    .support { font-size: 17px; max-width: 40rem; margin: 0; line-height: 1.6; color: var(--muted); }
+    h2 { font-size: 26px; margin: 0 0 10px; line-height: 1.25; }
+    h3 { font-size: 22px; margin: 0 0 8px; line-height: 1.3; }
     p { line-height: 1.6; }
-    .workbench { display: grid; grid-template-columns: minmax(0, 1fr) 230px; gap: 40px; padding: 30px 0; border-bottom: 1px solid #bac8cb; align-items: center; }
-    .workbench p { margin: 0; max-width: 620px; color: #3c535b; }
-    .open { display: block; padding: 13px 18px; border: 1px solid #176454; border-radius: 4px; color: #105445; text-decoration: none; font-weight: 650; text-align: center; }
-    .open:hover { background: #176454; color: white; }
-    a:focus-visible { outline: 3px solid #a44709; outline-offset: 4px; }
-    .note { margin-top: 28px; max-width: 760px; font-size: 15px; }
-    footer { padding-top: 0; font-size: 14px; color: #3c535b; }
-    .skip { position: absolute; top: -100px; left: 20px; padding: 12px; background: white; color: #105445; }
+    .workbench {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 240px;
+      gap: 36px;
+      padding: 32px 0;
+      border-bottom: 1px solid var(--line);
+      align-items: start;
+    }
+    .workbench p { margin: 0; max-width: 640px; color: var(--muted); }
+    .actions { display: grid; gap: 10px; }
+    .open, .how {
+      display: block;
+      padding: 13px 18px;
+      border-radius: 4px;
+      text-decoration: none;
+      font-weight: 650;
+      text-align: center;
+    }
+    .open { border: 1px solid var(--brand); background: var(--brand); color: #fff; }
+    .open:hover { background: var(--brand-deep); border-color: var(--brand-deep); }
+    .how { border: 1px solid var(--brand); color: var(--brand-deep); background: var(--panel); }
+    .how:hover { background: #e4eeeb; }
+    a:focus-visible { outline: 3px solid var(--focus); outline-offset: 4px; }
+    .guide { margin: 40px 0 12px; max-width: 720px; }
+    .guide p { color: var(--muted); }
+    .site-footer { padding-top: 8px; font-size: 14px; color: var(--muted); }
+    .skip { position: absolute; top: -100px; left: 20px; padding: 12px; background: white; color: var(--brand-deep); }
     .skip:focus { top: 16px; }
-    @media (max-width: 640px) { .workbench { grid-template-columns: 1fr; gap: 18px; } .open { text-align: left; } main { padding-top: 10px; } }
-    @media print { body { background: white; } .open { border: 0; } }
+    @media (max-width: 640px) {
+      .workbench { grid-template-columns: 1fr; gap: 16px; }
+      .open, .how { text-align: left; }
+      main { padding-top: 10px; }
+    }
+    @media print { body { background: white; } .open, .how { border: 1px solid #000; color: #000; background: none; } }
   </style>
 </head>
 <body>
   <a class="skip" href="#workbenches">Skip to workbenches</a>
   <main>
-    <header>
+    <header class="hero">
+      <p class="eyebrow">Local catalog of four workbenches</p>
       <h1>Decision Labs</h1>
-      <p>Make the assumptions visible. Explore a decision, compare the tradeoffs, and take the evidence into your next conversation.</p>
+      <p class="lede">Make the assumptions visible. Change one input, see who is affected, and take the evidence into the conversation that actually decides.</p>
+      <p class="support">Each workbench is a static page that runs in your browser. There is no shared account, no hosted service, and no model that claims to decide for you.</p>
     </header>
     <section id="workbenches" aria-label="Choose a workbench">
       <article class="workbench">
-        <div><h2>Partnership Breakpoint</h2><p>Find the participant who reaches an exit threshold first. Test changes in volume, fees and costs before agreeing to a revenue split.</p></div>
-        <a class="open" href="apps/partnership-breakpoint/standalone.html">Explore a partnership</a>
+        <div>
+          <h2>Partnership Breakpoint</h2>
+          <p>Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move.</p>
+        </div>
+        <div class="actions">
+          <a class="open" href="apps/partnership-breakpoint/standalone.html">Open workbench</a>
+          <a class="how" href="#how-it-works">How it works</a>
+        </div>
       </article>
       <article class="workbench">
-        <div><h2>Common Cart</h2><p>Pool buyer requirements and compare conditional merchant offers. See who fits, what the group can unlock, and how shipping changes the outcome.</p></div>
-        <a class="open" href="apps/common-cart/standalone.html">Plan a pooled purchase</a>
+        <div>
+          <h2>Common Cart</h2>
+          <p>Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view.</p>
+        </div>
+        <div class="actions">
+          <a class="open" href="apps/common-cart/standalone.html">Open workbench</a>
+          <a class="how" href="#how-it-works">How it works</a>
+        </div>
       </article>
       <article class="workbench">
-        <div><h2>The Smallest Agreement</h2><p>Explore structured clause changes that cross an approval threshold while respecting group support floors, locked choices and a change budget.</p></div>
-        <a class="open" href="apps/smallest-agreement/standalone.html">Build an agreement</a>
+        <div>
+          <h2>The Smallest Agreement</h2>
+          <p>Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget.</p>
+        </div>
+        <div class="actions">
+          <a class="open" href="apps/smallest-agreement/standalone.html">Open workbench</a>
+          <a class="how" href="#how-it-works">How it works</a>
+        </div>
       </article>
       <article class="workbench">
-        <div><h2>Weekend Gap</h2><p>Follow synthetic redemption demand from Friday to Monday. Explore how reserves and settlement windows affect the queue when banking closes.</p></div>
-        <a class="open" href="apps/weekend-gap/standalone.html">Explore the liquidity gap</a>
+        <div>
+          <h2>Weekend Gap</h2>
+          <p>Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed.</p>
+        </div>
+        <div class="actions">
+          <a class="open" href="apps/weekend-gap/standalone.html">Open workbench</a>
+          <a class="how" href="#how-it-works">How it works</a>
+        </div>
       </article>
     </section>
-    <p class="note">Each workbench starts with synthetic examples and runs entirely in your browser. No account, installation or external service is required. Browser saves stay on this device; export JSON to keep a portable copy. The models support your judgment and do not make commitments or execute transactions.</p>
+    <section class="guide" id="how-it-works" aria-labelledby="how-title">
+      <h2 id="how-title">How it works</h2>
+      <p>Open a workbench from this catalog. Each link loads a self-contained file. The four tools do not share data with each other.</p>
+    </section>
   </main>
-  <footer>Transparent assumptions. Deterministic calculations. Decisions remain with people.</footer>
+  <footer class="site-footer">Transparent assumptions. Deterministic calculations. Decisions remain with people.</footer>
 </body>
 </html>
