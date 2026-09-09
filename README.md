@@ -34,8 +34,12 @@ Every workbench:
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
-What's new section. Skip links jump to What's new, workbenches, keyboard
-shortcuts, and Trust and limits. What's new names current in-workbench tools (share-to-hold,
+What's new section. Skip links jump to What's new, workbenches, How it works,
+keyboard shortcuts, and Trust and limits. Catalog keys `w`, `k`, `n`, and `c`
+focus the workbenches, How it works, What's new, or copy the catalog address on
+http. Copy versions copies the four names and versions printed on this page as
+Markdown. That list is not a live product version and it does not call a
+registry. What's new names current in-workbench tools (share-to-hold,
 residual coverage, veto groups, and the gate Gantt) without implying live
 services. It also names the local 1.4.1 and 1.3.1 extras now on main: Partnership
 Breakpoint CSV roster, capacity, and notes; Common Cart leftover/tertiary fill
@@ -77,12 +81,19 @@ local drafts. A path outside that set still returns HTTP 404; the body is a
 Decision Labs page that points back to the catalog rather than a blank
 "Not found" line. Set `PORT` to an integer from 1 through 65535 to choose another
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
-an input. Press `h` to focus the catalog heading. Press `t` to focus Trust and
-limits. Press `?` on the catalog for the in-page shortcut list. The branded 404
+an input. Press `h` to focus the catalog heading. Press `n` to focus What's
+new. Press `w` to focus the workbenches. Press `k` to focus How it works.
+Press `t` to focus Trust and limits. Press `c` to copy the catalog address
+when this page is served over http. On a file URL that key does not claim a
+copy succeeded. Press `?` on the catalog for the in-page shortcut list. The branded 404
 page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
 Smallest Agreement, and Weekend Gap. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
+Copy versions copies the four workbench names and versions already printed on
+this catalog page as Markdown. It uses the browser clipboard when that API is
+available, and shows a visible text box if it is not. This is the catalog list,
+not a live product version.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
