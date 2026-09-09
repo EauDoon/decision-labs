@@ -677,6 +677,7 @@ footer {
           <div class="button-row">
             <button id="add-offer" class="primary" type="button">Add offer</button>
             <button id="import-offers" type="button">Import offer CSV</button>
+            <button id="export-offers-csv" type="button">Export offer CSV</button>
             <button id="offer-csv-template" type="button">Download offer CSV template</button>
             <input id="import-offers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
@@ -1470,6 +1471,23 @@ function importOffersFromCsv(rawScenario, text) {
 
 function offerCsvTemplate() {
   return "name,capacity,unit price,shipping,fulfillment,variants\r\n";
+}
+
+/** Merchant-facing offer rows. Formula-safe. Omits buyer IDs, labels, budgets, and allocations. */
+function createOfferCsv(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const rows = [["name", "capacity", "unit price", "shipping", "fulfillment", "variants"]];
+  for (const offer of scenario.offers) {
+    rows.push([
+      offer.merchant,
+      offer.capacity,
+      offer.unitPrice,
+      offer.shippingPerBuyer,
+      offer.fulfillment,
+      offer.variant
+    ]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
 }
 
 function createOrganizerBriefing(rawScenario) {
@@ -2573,6 +2591,14 @@ function bindStaticEvents() {
   document.querySelector("#offer-csv-template").addEventListener("click", () => {
     downloadFile(offerCsvTemplate(), "common-cart-offers-template.csv", "text/csv;charset=utf-8");
     setStatus("Offer CSV template downloaded. Fill name, capacity, unit price, shipping, fulfillment, and variants, then import.", true);
+  });
+  document.querySelector("#export-offers-csv").addEventListener("click", () => {
+    try {
+      downloadFile(createOfferCsv(scenario), "common-cart-offers.csv", "text/csv;charset=utf-8");
+      setStatus("Offer CSV exported. Formula-like text is escaped. Buyer labels, IDs, budgets, and allocations are omitted. Quantity tiers stay in JSON export.", true);
+    } catch (error) {
+      setStatus(`Offer CSV export failed: ${messageOf(error)}`);
+    }
   });
   document.querySelector("#import-offers-file").addEventListener("change", importOffersCsv);
   document.querySelector("#offer-fulfillment-filter").addEventListener("change", (event) => {

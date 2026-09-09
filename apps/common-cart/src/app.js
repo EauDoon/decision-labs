@@ -23,6 +23,7 @@ import {
   importOffersFromCsv,
   buyerCsvTemplate,
   offerCsvTemplate,
+  createOfferCsv,
   redactBuyerLabels,
   createOrganizerBriefing,
   decodeScenario,
@@ -397,6 +398,14 @@ function bindStaticEvents() {
   document.querySelector("#offer-csv-template").addEventListener("click", () => {
     downloadFile(offerCsvTemplate(), "common-cart-offers-template.csv", "text/csv;charset=utf-8");
     setStatus("Offer CSV template downloaded. Fill name, capacity, unit price, shipping, fulfillment, and variants, then import.", true);
+  });
+  document.querySelector("#export-offers-csv").addEventListener("click", () => {
+    try {
+      downloadFile(createOfferCsv(scenario), "common-cart-offers.csv", "text/csv;charset=utf-8");
+      setStatus("Offer CSV exported. Formula-like text is escaped. Buyer labels, IDs, budgets, and allocations are omitted. Quantity tiers stay in JSON export.", true);
+    } catch (error) {
+      setStatus(`Offer CSV export failed: ${messageOf(error)}`);
+    }
   });
   document.querySelector("#import-offers-file").addEventListener("change", importOffersCsv);
   document.querySelector("#offer-fulfillment-filter").addEventListener("change", (event) => {

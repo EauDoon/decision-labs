@@ -1,8 +1,10 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   ScenarioError,
   clonePreset,
+  createOfferCsv,
   importOffersFromCsv,
   neutralizeSpreadsheetCell,
   offerCsvTemplate,
@@ -78,4 +80,45 @@ test("offer CSV template is a valid header for a later import", () => {
 test("offer CSV rejects prototype defaults and unknown default keys", () => {
   assert.throws(() => parseOfferCsv(`${HEADER}\nA,20,26,2,shipping,Medium roast\n`, { extra: "nope" }), /unexpected field: extra/);
   assert.throws(() => parseOfferCsv(`${HEADER}\nA,20,26,2,shipping,Medium roast\n`, { constructor: "Product" }), /unexpected field: constructor/);
+});
+
+test("offer CSV export is formula-safe and omits buyer private fields", () => {
+  const scenario = clonePreset("neighbourhood");
+  scenario.buyers[0].label = "SECRET_LABEL";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  scenario.offers[0].merchant = "=HYPERLINK(\"x\")";
+  const csv = createOfferCsv(scenario);
+  assert.match(csv, /^"name","capacity","unit price","shipping","fulfillment","variants"\r\n/u);
+  assert.match(csv, /"'=HYPERLINK\(""x""\)"/);
+  assert.equal(csv.includes("SECRET_LABEL"), false);
+  assert.equal(csv.includes("SECRET_ID"), false);
+  assert.equal(csv.includes("987654.32"), false);
+  assert.equal(csv.includes("maxUnitPrice"), false);
+  assert.equal(csv.includes("selectedBuyerIds"), false);
+  assert.equal(csv.includes("allocations"), false);
+  assert.equal(csv.includes("leftoverBuyerIds"), false);
+  assert.equal(csv.endsWith("\r\n"), true);
+});
+
+test("exported offer CSV round-trips through import without changing buyers", () => {
+  const original = clonePreset("hardware");
+  const csv = createOfferCsv(original);
+  const imported = importOffersFromCsv(original, csv);
+  assert.equal(imported.offers.length, original.offers.length);
+  assert.deepEqual(imported.offers.map((offer) => offer.merchant), original.offers.map((offer) => offer.merchant));
+  assert.deepEqual(imported.offers.map((offer) => offer.capacity), original.offers.map((offer) => offer.capacity));
+  assert.deepEqual(imported.offers.map((offer) => offer.unitPrice), original.offers.map((offer) => offer.unitPrice));
+  assert.deepEqual(imported.offers.map((offer) => offer.fulfillment), ["shipping", "shipping", "pickup"]);
+  assert.deepEqual(imported.buyers.map((buyer) => buyer.id), original.buyers.map((buyer) => buyer.id));
+  assert.equal(original.offers[0].merchant, "Forge & Co");
+});
+
+test("the merchant table can export offer CSV", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="export-offers-csv"/u);
+  assert.match(html, /Export offer CSV/u);
+  assert.match(app, /createOfferCsv\(/u);
+  assert.match(app, /Buyer labels, IDs, budgets, and allocations are omitted/u);
 });

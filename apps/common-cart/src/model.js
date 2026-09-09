@@ -653,6 +653,23 @@ export function offerCsvTemplate() {
   return "name,capacity,unit price,shipping,fulfillment,variants\r\n";
 }
 
+/** Merchant-facing offer rows. Formula-safe. Omits buyer IDs, labels, budgets, and allocations. */
+export function createOfferCsv(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const rows = [["name", "capacity", "unit price", "shipping", "fulfillment", "variants"]];
+  for (const offer of scenario.offers) {
+    rows.push([
+      offer.merchant,
+      offer.capacity,
+      offer.unitPrice,
+      offer.shippingPerBuyer,
+      offer.fulfillment,
+      offer.variant
+    ]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
 export function createOrganizerBriefing(rawScenario) {
   const market = evaluateMarket(rawScenario);
   const residual = computeResidualCoverage(rawScenario);
