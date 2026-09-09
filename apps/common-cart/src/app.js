@@ -497,7 +497,18 @@ function handleShortcut(event) {
   if (key === "m") {
     event.preventDefault();
     focusMerchantInspector();
+    return;
   }
+  if (key === "o") {
+    event.preventDefault();
+    focusOffersList();
+  }
+}
+
+function focusOffersList() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  if (merchantTab) activateTab(merchantTab);
+  document.querySelector("#offers-list")?.focus();
 }
 
 function focusMerchantInspector() {

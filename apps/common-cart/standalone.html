@@ -61,7 +61,8 @@ body {
 
 button, input, select { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible {
+button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible,
+#offers-list:focus, #merchant-inspector-region:focus {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
 }
@@ -402,6 +403,7 @@ footer {
         <li><kbd>e</kbd> Export JSON</li>
         <li><kbd>n</kbd> Add a buyer</li>
         <li><kbd>m</kbd> Focus the merchant inspector region</li>
+        <li><kbd>o</kbd> Focus the offers list</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -666,9 +668,7 @@ footer {
             <input id="import-offers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
         </div>
-        <div class="table-shell">
-          <table>
-            <caption class="sr-only">Editable merchant offers</caption>
+        <div class="table-shell" id="offers-list" tabindex="-1" role="region" aria-label="Merchant offers list">
             <thead>
               <tr>
                 <th scope="col">Merchant</th><th scope="col">Category</th><th scope="col">Variant</th><th scope="col">Unit price</th><th scope="col">Minimum</th><th scope="col">Delivery</th><th scope="col">Capacity</th><th scope="col">Ship / buyer</th><th scope="col">Fulfillment</th><th scope="col"><span class="sr-only">Remove</span></th>
@@ -2550,7 +2550,18 @@ function handleShortcut(event) {
   if (key === "m") {
     event.preventDefault();
     focusMerchantInspector();
+    return;
   }
+  if (key === "o") {
+    event.preventDefault();
+    focusOffersList();
+  }
+}
+
+function focusOffersList() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  if (merchantTab) activateTab(merchantTab);
+  document.querySelector("#offers-list")?.focus();
 }
 
 function focusMerchantInspector() {
