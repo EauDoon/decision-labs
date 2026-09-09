@@ -684,8 +684,8 @@ footer {
           <article>
             <p class="section-number">03 / method</p>
             <h2>One transparent matching rule</h2>
-            <p>An offer is compatible when its category and variant are accepted, its unit price is within the buyer's ceiling, and delivery is no later than the buyer's limit.</p>
-            <p>Whole buyer quantities are selected within merchant capacity. The offer unlocks only if those units meet its minimum. Qualified offers rank by fulfilled units, group headroom, buyers included, landed cost, then offer ID.</p>
+            <p>An offer is compatible when its category and variant are accepted, its unit price is within the buyer's ceiling, and delivery is no later than the buyer's limit. Pickup offers still carry a stored shipping amount, but matching charges 0 shipping.</p>
+            <p>Whole buyer quantities are selected within merchant capacity. The offer unlocks only if those units meet its minimum. Qualified offers rank by fulfilled units, group headroom, buyers included, landed cost, then offer ID. Leftover whole orders may be shown against a second offer as a planning aid, not a dual checkout.</p>
             <p>For quantity discounts, each price is tested inside its own unit range. The next tier's minimum ends the preceding band. Only actually allocated whole orders count toward a tier. The feasible band with the most units wins.</p>
           </article>
           <article>
