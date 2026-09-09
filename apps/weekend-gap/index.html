@@ -467,6 +467,7 @@ SOFTWARE.
           <div><h3>How to use it</h3><p>Edit the synthetic fields, choose a preset, scrub the 72-hour timeline, or export a scenario. Shared links contain only the editable scenario in the URL hash.</p></div>
         </div>
         <p class="method-link"><a href="MODEL.md">Read the model notes and formulas</a></p>
+        <p><button type="button" class="text-button" id="coach-replay-method">Replay first-run notes</button></p>
       </section>
     </main>
     <footer class="site-footer">Weekend Gap uses only synthetic, editable assumptions. AUD values are illustrative.</footer>
@@ -491,7 +492,10 @@ SOFTWARE.
           <li><kbd>E</kbd> Export the current scenario JSON</li>
           <li><kbd>Esc</kbd> Close this help or the first-run coach</li>
         </ul>
-        <button type="button" id="shortcut-dismiss">Close help</button>
+        <div class="planning-actions">
+          <button type="button" id="coach-replay">Replay first-run notes</button>
+          <button type="button" id="shortcut-dismiss">Close help</button>
+        </div>
       </div>
     </div>
     <script type="module" src="src/app.js"></script>

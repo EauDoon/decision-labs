@@ -17,6 +17,14 @@ test("first-run coach is dismissible, skippable on share links, and keyboard clo
   assert.match(appSource, /#coach-dismiss/);
 });
 
+test("first-run coach can be replayed from help and the method section", () => {
+  assert.match(html, /id="coach-replay"/);
+  assert.match(html, /id="coach-replay-method"/);
+  assert.match(appSource, /function replayCoach/);
+  assert.match(appSource, /#coach-replay/);
+  assert.match(appSource, /#coach-replay-method/);
+});
+
 test("keyboard shortcuts skip inputs and cover help, play, undo, redo and export", () => {
   assert.match(html, /id="shortcut-overlay"/);
   assert.match(html, /<kbd>\?<\/kbd>/);

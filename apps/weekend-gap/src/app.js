@@ -952,6 +952,14 @@ function openShortcutHelp() {
   shortcutOverlay.hidden = false;
   document.querySelector("#shortcut-dismiss").focus();
 }
+function openCoach() {
+  coachOverlay.hidden = false;
+  document.querySelector("#coach-dismiss").focus();
+}
+function replayCoach() {
+  closeShortcutHelp();
+  openCoach();
+}
 function maybeShowCoach() {
   if (window.location.hash.startsWith("#scenario=")) return;
   try {
@@ -959,8 +967,7 @@ function maybeShowCoach() {
   } catch {
     return;
   }
-  coachOverlay.hidden = false;
-  document.querySelector("#coach-dismiss").focus();
+  openCoach();
 }
 function isEditableTarget(target) {
   if (!target) return false;
@@ -970,6 +977,8 @@ function isEditableTarget(target) {
   return typeof target.closest === "function" && Boolean(target.closest("input, textarea, select, [contenteditable=true]"));
 }
 document.querySelector("#coach-dismiss").addEventListener("click", closeCoach);
+document.querySelector("#coach-replay").addEventListener("click", replayCoach);
+document.querySelector("#coach-replay-method").addEventListener("click", replayCoach);
 document.querySelector("#shortcut-dismiss").addEventListener("click", closeShortcutHelp);
 document.querySelector("#shortcut-open").addEventListener("click", openShortcutHelp);
 document.addEventListener("keydown", (event) => {
