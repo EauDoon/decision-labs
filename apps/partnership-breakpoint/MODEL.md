@@ -138,6 +138,10 @@ At current effective volume V, the fee floor for participant i is (V times varia
 
 Applying a compound case copies its realized volume, shocked fee and participant variable costs to a new baseline. It resets baseline volume shock to zero, keeps addressable demand and other inputs, and validates the result against input bounds. Stress settings remain the same, so the next grid represents additional shocks from the new baseline.
 
+## Volume-to-hold solver
+
+`solveMinimumVolumeToHold(config, participantId)` binary-searches the minimum monthly volume at which that participant holds, with fee, shares, addressable demand, and volume shock held fixed. The search high bound is the monthly volume that reaches `min(addressableVolume, capacity)` after shock, so a capacity breach at a larger volume cannot hide a lower holding volume. If the participant holds at volume 0, the result is 0. If they still fail at that high bound, the result is `impossible` with the failing tests named. This is a solvability result, not a probability. Applying a proposal is an explicit GUI action and changes only `monthlyVolume`.
+
 ## Roster edits
 
 `duplicateParticipant` copies costs and constraints, assigns `nextUnusedParticipantId`, appends ` copy` to the name (trimmed to 80 characters), and sets `revenueShare` to 0 so the original allocation still sums to the same total. `moveParticipant` swaps two adjacent rows without changing shares. `dropAndReallocate` removes one participant when more than two remain and spreads that share across whoever remains in proportion to their current weights. If remaining weights are all zero, the dropped share is split equally. The last remaining participant absorbs floating-point remainder so a previously valid split still sums to 1.

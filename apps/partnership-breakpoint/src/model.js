@@ -1295,3 +1295,83 @@ export function solveFeeForAllHold(config) {
     reason: 'Minimum fee per transaction at which every participant holds, with volume and shares held fixed. Demand response is not included.',
   };
 }
+
+function targetHoldsAtMonthlyVolume(config, participantId, monthlyVolume) {
+  const participant = config.participants.find((item) => item.id === participantId);
+  const deal = { ...config.deal, monthlyVolume };
+  return evaluateParticipant(participant, deal).viable;
+}
+
+/**
+ * Highest monthly volume searched for a hold. Effective volume stays inside
+ * addressable demand and, when supplied, that participant's capacity, so a
+ * capacity breach at a larger volume cannot hide a lower holding volume.
+ * @param {PartnershipConfig} config
+ * @param {ParticipantInput} participant
+ */
+export function maxMonthlyVolumeForHoldSearch(config, participant) {
+  const shock = config.deal.volumeShockPct ?? 0;
+  const factor = 1 - shock / 100;
+  const demand = config.deal.addressableVolume;
+  const capacity = participant.capacity;
+  const maxEffective = capacity == null ? demand : Math.min(demand, capacity);
+  if (factor <= EPSILON) return 0;
+  const needed = maxEffective / factor;
+  if (!Number.isFinite(needed) || needed < 0) return 0;
+  return needed > MAX_NUMERIC_INPUT ? MAX_NUMERIC_INPUT : needed;
+}
+
+/**
+ * Binary-searches the minimum monthly volume at which `participantId` holds,
+ * with fee, shares, addressable demand, and volume shock held fixed. The search
+ * is deterministic and does not assign probability. Capacity and addressable
+ * demand cap the search so an upper-bound failure cannot hide a lower hold.
+ * @param {PartnershipConfig} config
+ * @param {string} participantId
+ */
+export function solveMinimumVolumeToHold(config, participantId) {
+  assertValidConfiguration(config);
+  const participant = config.participants.find((item) => item.id === participantId);
+  if (!participant) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  if (targetHoldsAtMonthlyVolume(config, participantId, 0)) {
+    const deal = { ...config.deal, monthlyVolume: 0 };
+    return {
+      status: 'possible',
+      monthlyVolume: 0,
+      effectiveVolume: effectiveVolume(deal),
+      participantId,
+      reason: 'This participant holds even at zero monthly volume under the current fee, shares, costs, capacity, and commitment.',
+    };
+  }
+  const highBound = maxMonthlyVolumeForHoldSearch(config, participant);
+  if (!targetHoldsAtMonthlyVolume(config, participantId, highBound)) {
+    const deal = { ...config.deal, monthlyVolume: highBound };
+    const atHigh = evaluateParticipant(participant, deal);
+    const detail = atHigh.failureReasons.length ? atHigh.failureReasons.join('; ') : 'fee revenue cannot fund the profit floor';
+    return {
+      status: 'impossible',
+      monthlyVolume: null,
+      effectiveVolume: null,
+      participantId,
+      reason: `No monthly volume at or below the addressable and capacity limits can make this participant hold (${detail}). Fee and shares stay fixed.`,
+    };
+  }
+  let low = 0;
+  let high = highBound;
+  for (let step = 0; step < 60; step += 1) {
+    const mid = (low + high) / 2;
+    if (targetHoldsAtMonthlyVolume(config, participantId, mid)) high = mid;
+    else low = mid;
+  }
+  const monthlyVolume = targetHoldsAtMonthlyVolume(config, participantId, high) ? high : highBound;
+  const deal = { ...config.deal, monthlyVolume };
+  return {
+    status: 'possible',
+    monthlyVolume,
+    effectiveVolume: effectiveVolume(deal),
+    participantId,
+    reason: 'Minimum monthly volume at which this participant holds, with fee and shares held fixed. Addressable demand and volume shock stay unchanged.',
+  };
+}
