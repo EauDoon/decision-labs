@@ -2425,6 +2425,7 @@ function jsonSyntaxHint(error) {
 
 
 const CART_REVIEW_TOOLS = Object.freeze([
+  { id: "withdrawal", title: "Winner withdrawal stress" },
   { id: "frontier", title: "Same-cohort offer alternatives" },
   { id: "stranded", title: "Unserved buyer reasons" },
   { id: "dependency", title: "Sole-offer dependency" },
@@ -2464,6 +2465,18 @@ function analyzeCartReview(rawScenario, tool) {
         const better = qualified.filter((other) => other.offer.id !== result.offer.id && cohort(other) === cohort(result) && other.totalCost <= result.totalCost && other.offer.deliveryDays <= result.offer.deliveryDays && (other.totalCost < result.totalCost || other.offer.deliveryDays < result.offer.deliveryDays));
         return [result.offer.merchant, result.fulfilledUnits, result.totalCost, result.offer.deliveryDays, better.map((other) => other.offer.merchant).join(', ') || 'None on these measures'];
       }), 'Compares landed cost and delivery only for exactly the same allocated buyer IDs. Different cohorts, merchant quality, and unmodeled terms are not ranked as equivalent.');
+    }
+    case "withdrawal": {
+      if (!market.winner) return report(['Withdrawn buyer', 'Withdrawn units', 'Other originally served units', 'Other original units still served', 'Other original units lost'], [], 'No qualified winner exists to stress.');
+      const winning = market.winner;
+      return report(['Withdrawn buyer', 'Withdrawn units', 'Other originally served units', 'Other original units still served', 'Other original units lost'], scenario.buyers.filter((buyer) => winning.selectedBuyerIds.includes(buyer.id)).map((buyer) => {
+        const remaining = { ...scenario, buyers: scenario.buyers.filter((entry) => entry.id !== buyer.id) };
+        const result = evaluateOffer(remaining, winning.offer.id);
+        const originalOther = scenario.buyers.filter((entry) => entry.id !== buyer.id && winning.selectedBuyerIds.includes(entry.id));
+        const originalUnits = originalOther.reduce((sum, entry) => sum + entry.quantity, 0);
+        const retained = originalOther.filter((entry) => result.selectedBuyerIds.includes(entry.id)).reduce((sum, entry) => sum + entry.quantity, 0);
+        return [buyer.label, buyer.quantity, originalUnits, retained, originalUnits - retained];
+      }), 'Rematches only the current winning offer after one included buyer withdraws. Other buyers can fill freed capacity. Lost units exclude the withdrawn order; this is not a withdrawal probability.');
     }
     default: throw new ScenarioError('Review is unavailable.');
   }

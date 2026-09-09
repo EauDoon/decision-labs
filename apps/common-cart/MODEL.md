@@ -183,3 +183,7 @@ For buyers served by no qualified offer, count current exclusion reasons across 
 ### Same-cohort offer alternatives
 
 Compare qualified offers only when their selected buyer-ID sets are identical. An alternative dominates on these two declared measures only when total landed cost and delivery days are both no worse and at least one is strictly better. Equal offers are retained.
+
+### Winner withdrawal stress
+
+Remove each included buyer from the current winner in turn and rerun the existing whole-order allocator on that same offer. Report originally served units retained/lost among the other buyers. No cross-merchant or behavioral prediction is made.
