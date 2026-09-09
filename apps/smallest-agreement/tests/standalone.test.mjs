@@ -278,3 +278,20 @@ test("editor disables add controls at the model's validation caps", async () => 
   })));
   assert.match((await savedWorkbench(new Map([[key, JSON.stringify(optionCapped)]]))).clauses(), /data-action="add-option"[^>]*disabled/u);
 });
+
+
+test("undo and redo restore edits and replacement imports; new edits clear redo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const original = app.title();
+  assert.equal(app.disabled("#undo-button"), true);
+  app.setTitle("Negotiation draft");
+  app.click("#undo-button");
+  assert.equal(app.title(), original);
+  app.click("#redo-button");
+  assert.equal(app.title(), "Negotiation draft");
+  app.click("#undo-button");
+  app.setTitle("Another round");
+  assert.equal(app.disabled("#redo-button"), true);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).title, "Another round");
+});

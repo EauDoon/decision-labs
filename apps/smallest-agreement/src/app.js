@@ -137,6 +137,9 @@ const presets = {
 };
 
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
+const undoStack = [];
+const redoStack = [];
+let historySnapshot = JSON.stringify(state.proposal);
 const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
@@ -236,7 +239,20 @@ function encodeHash(proposal) {
   return `${HASH_PREFIX}${encoded}`;
 }
 
-function save() {
+function updateHistoryButtons() {
+  $("#undo-button").disabled = undoStack.length === 0;
+  $("#redo-button").disabled = redoStack.length === 0;
+}
+
+function save(recordHistory = true) {
+  const snapshot = JSON.stringify(state.proposal);
+  if (recordHistory && snapshot !== historySnapshot) {
+    undoStack.push(historySnapshot);
+    if (undoStack.length > 50) undoStack.shift();
+    redoStack.length = 0;
+  }
+  historySnapshot = snapshot;
+  updateHistoryButtons();
   importSequence += 1;
   const error = firstProposalError(state.proposal);
   if (error) {
@@ -276,6 +292,7 @@ function render() {
   $("#max-change-cost").value = proposal.maxChangeCost ?? "";
   $("#proposal-heading").textContent = proposal.title;
   $("#autosave-status").textContent = state.saveMessage;
+  updateHistoryButtons();
   renderGroups();
   renderClauses();
   renderResults(currentResult());
@@ -561,6 +578,16 @@ document.addEventListener("click", (event) => {
     clause.options = clause.options.filter((option) => option.id !== button.dataset.optionId);
   });
 });
+
+function restoreHistory(from, to) {
+  if (!from.length) return;
+  to.push(JSON.stringify(state.proposal));
+  state.proposal = JSON.parse(from.pop());
+  save(false);
+  render();
+}
+$("#undo-button").addEventListener("click", () => restoreHistory(undoStack, redoStack));
+$("#redo-button").addEventListener("click", () => restoreHistory(redoStack, undoStack));
 
 $("#load-preset").addEventListener("click", () => {
   changeAndRender(() => { state.proposal = clone(presets[$("#preset-select").value]); state.saveMessage = "Preset loaded and saved locally."; });
