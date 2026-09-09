@@ -1,13 +1,17 @@
 # Decision Labs
 
-**Four local-first decision workbenches, in one repository.**
+**Four local workbenches you can open today. One catalog. No account.**
 
-Decision Labs is a set of independent, static, browser-based workbenches for
-exploring bounded, high-stakes decisions with transparent, deterministic math.
-Each workbench is self-contained: its own source, tests, generated single-file
-build, and MIT license. Each workbench has its own version and release notes.
+Decision Labs is a repository of independent, static, browser-based workbenches.
+Each one helps a group inspect a bounded, high-stakes decision with transparent,
+deterministic math. Open a workbench, change the assumptions, and take a JSON
+export into the conversation that actually decides.
 
-Every app:
+This root is the catalog, not a fifth product and not a hosted service. Each
+workbench keeps its own source, tests, generated single-file build, MIT license,
+version, and release notes.
+
+Every workbench:
 
 - runs in the browser with **no install, no account, and no network requests**;
 - uses **zero package dependencies** (Node.js 20 or newer is only needed to run
@@ -21,21 +25,25 @@ Every app:
 
 ## The workbenches
 
-| Workbench | The question it helps you explore |
-| --- | --- |
-| [Partnership Breakpoint](apps/partnership-breakpoint/) | In a shared revenue split, which participant breaks first, and what is the smallest adverse volume, fee, or cost movement that reaches their exit threshold? |
-| [Common Cart](apps/common-cart/) | Before a marketplace has accounts or payments, can pooled buyer constraints unlock better merchant offers without exposing individual buyers? |
-| [The Smallest Agreement](apps/smallest-agreement/) | What is the lowest-cost set of clause changes that crosses an approval threshold while respecting support floors, a cost budget, and locked choices? |
-| [Weekend Gap](apps/weekend-gap/) | What happens to synthetic AUD stablecoin redemption liquidity from Friday to Monday when the on-chain ledger stays open but issuer, bank, FX, and payout windows do not fully overlap? |
+| Workbench | Job to be done | Built-in synthetic example |
+| --- | --- | --- |
+| [Partnership Breakpoint](apps/partnership-breakpoint/) | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
+| [Common Cart](apps/common-cart/) | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
+| [The Smallest Agreement](apps/smallest-agreement/) | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
+| [Weekend Gap](apps/weekend-gap/) | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
-Each app also ships a `MODEL.md` (formulas and conventions), `CONTRIBUTING.md`,
-`SECURITY.md`, and its own `LICENSE`.
+Open [index.html](index.html) for the product home: one-sentence jobs, Open
+workbench / How it works actions, and in-page trust notes. Each app also ships
+a `MODEL.md` (formulas and conventions), `CONTRIBUTING.md`, `SECURITY.md`, and
+its own `LICENSE`. The loopback launcher does not serve those markdown files;
+open the app folder or the workbench itself to read them.
 
 ## Quick start
 
 Download the repository ZIP, extract it, and open [index.html](index.html) to
-choose a workbench. The entry page opens each self-contained app without a server.
-Export JSON before clearing browser data or moving to a different browser.
+choose a workbench. The catalog links to each self-contained app. No server is
+required for that path. Export JSON before clearing browser data or moving to a
+different browser.
 
 For a local browser address, run these commands from the repository root:
 
@@ -44,9 +52,11 @@ npm start
 ```
 
 Open the printed address, normally `http://127.0.0.1:4170`. The launcher serves
-only the entry page and the four generated workbenches. It accepts local Host
-headers, binds loopback only, and does not expose source files or local drafts.
-Set `PORT` to an integer from 1 through 65535 to choose another port.
+only the catalog page and the four generated workbenches. It accepts local Host
+headers, binds loopback only, and does not expose source files, model notes, or
+local drafts. Set `PORT` to an integer from 1 through 65535 to choose another
+port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
+an input.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
@@ -100,7 +110,7 @@ harness can miss. App-local commands remain available from each app folder.
 ```text
 decision-labs/
 |-- README.md                  # This file
-|-- index.html                 # Offline workbench selector
+|-- index.html                 # Product catalog for the four workbenches
 |-- package.json               # Root launch, validation, and build commands
 |-- scripts/                   # Loopback launcher and app command runner
 |-- tests/                     # Launch boundary and browser-script parsing tests
@@ -138,12 +148,16 @@ design, none of them:
 Keep real judgment, governing rules, and accountability with people. Read each
 app's `MODEL.md` for the exact formulas, assumptions, and non-goals.
 
+The hub page is a catalog. It does not version the four workbenches together
+and it does not run them as a suite. Each workbench ships its own version.
+
 ## Continuous integration
 
 Each app has its own path-filtered GitHub Actions workflow that runs its checks
 on pull requests and on pushes to `main`. A repository integration workflow also
-runs the root suite and all app checks on every PR and main push. Report repository-wide and component
-issues in the [shared issue tracker](https://github.com/EauDoon/decision-labs/issues).
+runs the root suite and all app checks on every PR and main push. Report
+repository-wide and component issues in the
+[shared issue tracker](https://github.com/EauDoon/decision-labs/issues).
 
 ## License
 
