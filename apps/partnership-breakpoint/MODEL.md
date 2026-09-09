@@ -172,7 +172,13 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 
 ## Export filenames
 
-`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`). Path separators cannot appear in the slug.
+`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`, `partnership-breakpoint-stress-visible.csv`). Path separators cannot appear in the slug.
+
+## Stress-grid CSV
+
+`escapeCsvCell` quotes every field and prefixes string values that look like spreadsheet formulas with an apostrophe. Negative numbers are not treated as formulas.
+
+`stressGridCsv(config, options)` writes one row per participant in each selected case. Omit `options` or omit `scenarioIds` to include every tested case. `scenarioIds` is an optional array of case identifiers; grid order is preserved; unknown identifiers are skipped. Unknown option keys and reserved keys (`__proto__`, `constructor`, `prototype`) are rejected. Row counts describe selected cases, not likelihoods. The GUI Export visible stress CSV uses the currently displayed cases, including after collapsing all-hold rows.
 
 ## Three-snapshot compare
 

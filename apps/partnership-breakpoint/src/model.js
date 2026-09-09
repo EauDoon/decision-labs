@@ -1262,7 +1262,7 @@ export function sanitizeExportSlug(title) {
 }
 
 /**
- * @param {'json'|'redacted'|'report'|'brief'|'csv'} kind
+ * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'} kind
  * @param {unknown} title
  */
 export function exportDownloadName(kind, title) {
@@ -1272,6 +1272,7 @@ export function exportDownloadName(kind, title) {
   if (kind === 'report') return slug ? `partnership-breakpoint-${slug}-report.md` : 'partnership-breakpoint-report.md';
   if (kind === 'brief') return slug ? `partnership-breakpoint-${slug}-brief.md` : 'partnership-breakpoint-brief.md';
   if (kind === 'csv') return slug ? `partnership-breakpoint-${slug}-stress.csv` : 'partnership-breakpoint-stress.csv';
+  if (kind === 'csv-visible') return slug ? `partnership-breakpoint-${slug}-stress-visible.csv` : 'partnership-breakpoint-stress-visible.csv';
   return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
 }
 
@@ -1410,4 +1411,79 @@ export function uniqueCopyName(base, used, maxLength = 80) {
     sequence += 1;
   }
   throw new ValidationError(['Could not assign a unique copy name.']);
+}
+
+/**
+ * Spreadsheet-safe CSV cell. Formula prefixes on strings get a leading apostrophe.
+ * Negative numbers are not treated as formulas.
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function escapeCsvCell(value) {
+  let text = String(value ?? '');
+  if (typeof value === 'string' && /^[\s\u0000-\u001f]*[=+@-]/.test(text)) text = `'${text}`;
+  return `"${text.replace(/"/g, '""')}"`;
+}
+
+const STRESS_CSV_OPTION_KEYS = new Set(['scenarioIds']);
+const STRESS_CSV_HEADER = Object.freeze([
+  'Case', 'Volume change percent', 'Fee reduction percent', 'Variable cost increase percent',
+  'Effective volume', 'Fee per transaction', 'Participant ID', 'Participant', 'Revenue share',
+  'Revenue', 'Variable cost', 'Fixed cost', 'Risk cost', 'Monthly profit', 'Minimum profit',
+  'Profit gap', 'Participant holds', 'Failure reasons',
+]);
+
+/**
+ * One row per participant in each selected compound case. Counts are not likelihoods.
+ * Omit options or omit `scenarioIds` to include every tested case. Grid order is preserved.
+ * @param {PartnershipConfig} config
+ * @param {{ scenarioIds?: string[] }} [options]
+ */
+export function stressGridCsv(config, options) {
+  const stress = evaluateStressGrid(config);
+  let scenarios = stress.scenarios;
+  if (options !== undefined) {
+    if (!isPlainObject(options)) {
+      throw new ValidationError(['CSV options must be an object.']);
+    }
+    const errors = [];
+    rejectUnknownKeys(options, STRESS_CSV_OPTION_KEYS, 'CSV options', errors);
+    if (Object.hasOwn(options, 'scenarioIds')) {
+      const ids = own(options, 'scenarioIds');
+      if (!Array.isArray(ids) || ids.some((id) => typeof id !== 'string')) {
+        errors.push('CSV scenarioIds must be an array of case identifiers.');
+      } else {
+        const allowed = new Set(ids);
+        scenarios = stress.scenarios.filter((scenario) => allowed.has(scenario.id));
+      }
+    }
+    if (errors.length) throw new ValidationError(errors);
+  }
+  const rows = [STRESS_CSV_HEADER.slice()];
+  for (const scenario of scenarios) {
+    scenario.participants.forEach((participant, index) => {
+      const input = config.participants[index];
+      rows.push([
+        scenario.id,
+        scenario.volumeChangePct,
+        scenario.feeDropPct,
+        scenario.variableCostRisePct,
+        scenario.volume,
+        scenario.fee,
+        participant.id,
+        participant.name,
+        input.revenueShare,
+        participant.revenue,
+        participant.variableCost,
+        participant.fixedCost,
+        participant.riskCost,
+        participant.monthlyProfit,
+        input.minimumAcceptableProfit,
+        participant.monthlyProfit - input.minimumAcceptableProfit,
+        participant.viable,
+        participant.failureReasons.join('; '),
+      ]);
+    });
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}\r\n`;
 }

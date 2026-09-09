@@ -3,9 +3,11 @@ import assert from 'node:assert/strict';
 import {
   ValidationError,
   clonePreset,
+  escapeCsvCell,
   neutralizeCsvCell,
   parseCsv,
   participantsFromCsv,
+  stressGridCsv,
   validateConfiguration,
 } from '../src/model.js';
 
@@ -100,6 +102,52 @@ test('participantsFromCsv names missing columns, bad numbers, and share totals',
   ]);
   assert.throws(() => participantsFromCsv(shares), (error) => {
     assert.match(error.errors.join(' '), /shares must sum to 1/);
+    return error instanceof ValidationError;
+  });
+});
+
+test('escapeCsvCell quotes fields and prefixes formula strings, not negative numbers', () => {
+  assert.equal(escapeCsvCell('Platform'), '"Platform"');
+  assert.equal(escapeCsvCell('=HYPERLINK("bad")'), '"\'=HYPERLINK(""bad"")"');
+  assert.equal(escapeCsvCell('+SUM(1,2)'), '"\'+SUM(1,2)"');
+  assert.equal(escapeCsvCell('@cmd'), '"\'@cmd"');
+  assert.equal(escapeCsvCell('-1+1'), '"\'-1+1"');
+  assert.equal(escapeCsvCell('\t=CMD'), '"\'\t=CMD"');
+  assert.equal(escapeCsvCell(-20), '"-20"');
+  assert.equal(escapeCsvCell('Quote "marks"'), '"Quote ""marks"""');
+});
+
+test('stressGridCsv exports every participant case and can filter by scenario ids', () => {
+  const config = clonePreset('balanced');
+  config.participants[0].name = '=HYPERLINK("bad")';
+  const csv = stressGridCsv(config);
+  assert.equal(csv.trim().split('\r\n').length, 82);
+  assert.ok(csv.includes('"\'=HYPERLINK(""bad"")"'));
+  assert.match(csv, /Profit gap/);
+  assert.doesNotMatch(csv, /probab/i);
+
+  const oneCase = stressGridCsv(config, { scenarioIds: ['case-1', 'missing', 'case-1'] });
+  assert.equal(oneCase.trim().split('\r\n').length, 4);
+  assert.match(oneCase, /"case-1"/);
+  assert.doesNotMatch(oneCase, /"case-2"/);
+
+  const none = stressGridCsv(config, { scenarioIds: [] });
+  assert.equal(none.trim().split('\r\n').length, 1);
+
+  assert.throws(() => stressGridCsv(config, { extra: true }), (error) => {
+    assert.match(error.errors.join(' '), /unknown field: extra/);
+    return error instanceof ValidationError;
+  });
+  const reserved = {};
+  Object.defineProperty(reserved, '__proto__', { value: {}, enumerable: true, configurable: true });
+  Object.defineProperty(reserved, 'constructor', { value: 1, enumerable: true, configurable: true });
+  assert.throws(() => stressGridCsv(config, reserved), (error) => {
+    assert.match(error.errors.join(' '), /reserved field: __proto__/);
+    assert.match(error.errors.join(' '), /reserved field: constructor/);
+    return error instanceof ValidationError;
+  });
+  assert.throws(() => stressGridCsv(config, { scenarioIds: ['case-1', 2] }), (error) => {
+    assert.match(error.errors.join(' '), /scenarioIds must be an array of case identifiers/);
     return error instanceof ValidationError;
   });
 });

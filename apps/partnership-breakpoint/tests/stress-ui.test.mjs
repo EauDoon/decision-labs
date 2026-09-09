@@ -502,6 +502,36 @@ test('stress CSV exports every participant case and neutralizes formula names', 
   assert.equal(app.downloads().length, 1);
 });
 
+test('visible stress CSV follows the collapsed case filter and keeps all-case export unchanged', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export-visible-csv');
+  const allVisible = app.downloads()[0];
+  assert.equal(allVisible.filename, 'partnership-breakpoint-stress-visible.csv');
+  assert.equal((await allVisible.blob.text()).trim().split('\r\n').length, 82);
+  assert.match(app.notice(), /27 of 27 tested cases included/);
+  assert.match(app.notice(), /not probabilities/);
+  app.click('collapse-all-hold-cases');
+  app.click('export-visible-csv');
+  const collapsed = app.downloads()[1];
+  const collapsedText = await collapsed.blob.text();
+  assert.equal(collapsed.filename, 'partnership-breakpoint-stress-visible.csv');
+  assert.equal(collapsedText.trim().split('\r\n').length, 79);
+  assert.doesNotMatch(collapsedText, /"case-1"/);
+  assert.match(collapsedText, /"case-2"/);
+  assert.match(app.notice(), /26 of 27 tested cases included/);
+  app.click('export-csv');
+  assert.equal(app.downloads()[2].filename, 'partnership-breakpoint-stress.csv');
+  assert.equal((await app.downloads()[2].blob.text()).trim().split('\r\n').length, 82);
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.click('export-visible-csv');
+  assert.equal(app.downloads()[3].filename, 'partnership-breakpoint-harbor-jv-stress-visible.csv');
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-visible-csv');
+  assert.equal(app.downloads().length, 4);
+  assert.match(app.notice(), /Resolve invalid inputs before exporting CSV/);
+});
+
 test('share reconciliation repairs overallocations and preserves participant costs', async () => {
   const app = await workbench();
   app.edit('participants.0.revenueShare', '0.8');

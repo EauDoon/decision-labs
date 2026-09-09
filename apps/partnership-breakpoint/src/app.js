@@ -20,6 +20,7 @@ import {
   solveFeeForAllHold,
   solveMinimumShareToHold,
   solveMinimumVolumeToHold,
+  stressGridCsv,
   uniqueCopyName,
   validateConfiguration,
 } from './model.js';
@@ -454,7 +455,7 @@ function inputPanel(result) {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
             <button type="button" data-action="reset">Reset</button>
@@ -577,7 +578,7 @@ function stressSection() {
   return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.4.1</span></div>
     <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
       <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
-      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button></div>
+      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button><button type="button" data-action="export-csv">Export all cases CSV</button><button type="button" data-action="export-visible-csv">Export visible cases CSV</button></div>
       <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant. ${collapseNote}</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
@@ -987,7 +988,8 @@ function attachEvents() {
     if (action === 'export-report') exportReport();
     if (action === 'copy-brief') copyNegotiationBrief();
     if (action === 'copy-share-url') copyShareUrl();
-    if (action === 'export-csv') exportStressCsv();
+    if (action === 'export-csv') exportStressCsv(false);
+    if (action === 'export-visible-csv') exportStressCsv(true);
     if (action === 'apply-stress-proposal') {
       try {
         const proposal = applyStressProposal(state);
@@ -1407,26 +1409,19 @@ function copyNegotiationBrief() {
   showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
 }
 
-function csvCell(value) {
-  let text = String(value ?? '');
-  if (typeof value === 'string' && /^[\s\u0000-\u001f]*[=+@-]/.test(text)) text = "'" + text;
-  return '"' + text.replace(/"/g, '""') + '"';
-}
-
-function stressCsv(config) {
-  const stress = evaluateStressGrid(config);
-  const rows = [['Case', 'Volume change percent', 'Fee reduction percent', 'Variable cost increase percent', 'Effective volume', 'Fee per transaction', 'Participant ID', 'Participant', 'Revenue share', 'Revenue', 'Variable cost', 'Fixed cost', 'Risk cost', 'Monthly profit', 'Minimum profit', 'Profit gap', 'Participant holds', 'Failure reasons']];
-  for (const scenario of stress.scenarios) {
-    scenario.participants.forEach((participant, index) => rows.push([scenario.id, scenario.volumeChangePct, scenario.feeDropPct, scenario.variableCostRisePct, scenario.volume, scenario.fee, participant.id, participant.name, config.participants[index].revenueShare, participant.revenue, participant.variableCost, participant.fixedCost, participant.riskCost, participant.monthlyProfit, config.participants[index].minimumAcceptableProfit, participant.monthlyProfit - config.participants[index].minimumAcceptableProfit, participant.viable, participant.failureReasons.join('; ')]));
-  }
-  return rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
-}
-
-function exportStressCsv() {
+function exportStressCsv(visibleOnly = false) {
   const validation = validateConfiguration(state);
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting CSV. ' + summarizeErrors(validation.errors)); return; }
-  downloadText(stressCsv(state), 'text/csv;charset=utf-8', exportDownloadName('csv', caseExportTitle()));
-  setNotice('Stress CSV exported. Each row is one participant in one selected case; case counts are not probabilities.');
+  const stress = evaluateStressGrid(state);
+  const visible = visibleStressScenarios(stress);
+  const options = visibleOnly ? { scenarioIds: visible.map((scenario) => scenario.id) } : undefined;
+  const kind = visibleOnly ? 'csv-visible' : 'csv';
+  downloadText(stressGridCsv(state, options), 'text/csv;charset=utf-8', exportDownloadName(kind, caseExportTitle()));
+  if (visibleOnly) {
+    setNotice(`Visible stress CSV exported. ${visible.length} of ${stress.caseCount} tested cases included. Case counts are not probabilities.`);
+  } else {
+    setNotice('Stress CSV exported. Each row is one participant in one selected case; case counts are not probabilities.');
+  }
 }
 
 function feeRequirementsSection() {
