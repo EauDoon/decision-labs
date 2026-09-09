@@ -187,3 +187,22 @@ test('launcher port rejects ambiguous, empty and out-of-range values', () => {
     assert.throws(() => parsePort(raw), /PORT/);
   }
 });
+
+test('404 version listing does not expand PUBLIC_PATHS or change CSP', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(
+    CONTENT_SECURITY_POLICY,
+    "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  );
+  assert.equal(publicFile('/package.json'), null);
+  assert.equal(publicFile('/apps/weekend-gap/MODEL.md'), null);
+  assert.match(notFoundPage(), catalogVersionLine());
+});
