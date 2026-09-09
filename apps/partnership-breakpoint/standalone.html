@@ -1855,6 +1855,7 @@ function stressGridCsv(config, options) {
 const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
   {id:'interval',title:'Feasible effective volume interval'},
   {id:'slack',title:'Constraint slack ledger'},
+  {id:'fixed',title:'Fixed-cost allowance'},
 // PB_REVIEW_TOOLS
 ]);
 
@@ -1884,6 +1885,11 @@ function analyzePartnershipReview(rawConfig, tool) {
  case 'slack': {
 
  return report(['Participant','Profit above floor','Volume above commitment','Capacity remaining','Current tests'],result.participants.map(p=>[p.name,p.monthlyProfit-p.minimumAcceptableProfit,p.volume-(p.minimumCommitment??0),p.capacity==null?null:p.capacity-p.volume,p.viable?'Hold':p.failureReasons.join('; ')]),'Signed slack uses current effective volume. Negative values are breaches; a blank capacity is unbounded. Monetary and transaction slacks are distinct units and cannot be added.');
+
+ }
+ case 'fixed': {
+
+ return report(['Participant','Current fixed cost','Maximum fixed cost','Change allowance','Interpretation'],result.participants.map(p=>{const maximum=p.volume*p.contributionPerTransaction-p.riskCost-p.minimumAcceptableProfit;return[p.name,p.fixedMonthlyCost,maximum<0?null:Math.min(MAX_NUMERIC_INPUT,maximum),p.monthlyProfit-p.minimumAcceptableProfit,maximum<0?'Even zero fixed cost misses the profit floor':maximum>MAX_NUMERIC_INPUT?'Ceiling capped at model input limit':'Profit-only ceiling'];}),'Each row changes only that participant fixed cost. Capacity and commitment remain separate tests; a positive allowance does not establish partnership viability.');
 
  }
 // PB_REVIEW_CASES

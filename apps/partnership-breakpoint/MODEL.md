@@ -201,3 +201,7 @@ The optional review can intersect participant profit, commitment, capacity and d
 ### Constraint slack ledger
 
 The optional review can separate profit, commitment and capacity gaps at the actual effective volume. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Fixed-cost allowance
+
+The optional review can show the maximum monthly fixed cost each current split can fund. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
