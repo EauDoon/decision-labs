@@ -466,3 +466,15 @@ test('duplicate and move roster controls keep unique ids and the original share 
   assert.deepEqual(app.saved().participants.map((item) => item.id), duplicated.participants.map((item) => item.id));
   assert.equal(app.saved().participants.reduce((sum, item) => sum + item.revenueShare, 0), 1);
 });
+
+test('removing a participant reallocates their share and blocks dropping the last two', async () => {
+  const app = await workbench();
+  app.click('remove-participant', { index: '0' });
+  const remaining = app.saved().participants;
+  assert.equal(remaining.length, 2);
+  assert.equal(remaining.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+  assert.match(app.notice(), /reallocated/);
+  assert.match(app.markup(), /data-action="remove-participant"[^>]*disabled/);
+  app.click('remove-participant', { index: '0' });
+  assert.equal(app.saved().participants.length, 2);
+});

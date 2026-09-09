@@ -8,6 +8,7 @@ import {
   calculateFeeRequirements,
   clonePreset,
   duplicateParticipant,
+  dropAndReallocate,
   evaluateStressGrid,
   makeParticipant,
   materializeStressCase,
@@ -366,7 +367,7 @@ function inputPanel() {
         </section>
         <section class="input-section" aria-labelledby="participant-inputs-title">
           <h2 id="participant-inputs-title">Participants</h2>
-          <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent.</p>
+          <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
           <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div><p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
           ${participantForms}
           <div class="button-row"><button type="button" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
@@ -657,10 +658,18 @@ function attachEvents() {
       refresh(direction === 'up' ? 'Participant moved up. Shares are unchanged.' : 'Participant moved down. Shares are unchanged.');
     }
     if (action === 'remove-participant' && state.participants.length > 2) {
-      checkpoint();
-      state.participants.splice(Number(button.dataset.index), 1);
-      activePreset = '';
-      refresh('Participant removed.');
+      try {
+        const removed = state.participants[Number(button.dataset.index)];
+        const next = dropAndReallocate(state.participants, Number(button.dataset.index));
+        checkpoint();
+        state.participants = next;
+        activePreset = '';
+        const sharePct = Number.isFinite(removed.revenueShare) ? formatPct(removed.revenueShare * 100) : 'their share';
+        refresh(`Removed ${removed.name}. ${sharePct} was reallocated across the remaining participants in proportion to their current shares.`);
+      } catch (error) {
+        if (!(error instanceof ValidationError)) throw error;
+        setNotice(`Remove rejected: ${summarizeErrors(error.errors)}`);
+      }
     }
     if (action === 'equal-shares' || action === 'normalize-shares') reconcileShares(action);
     if (action === 'export') exportFile();

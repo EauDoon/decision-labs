@@ -721,6 +721,55 @@ export function moveParticipant(participants, index, direction) {
   return next;
 }
 
+/**
+ * Removes one participant and reallocates that share across whoever remains.
+ * Remaining participants keep their relative weights. The last remaining
+ * participant absorbs floating-point remainder so a previously valid split
+ * still sums to 1. The last two participants cannot be removed.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+export function dropAndReallocate(participants, index) {
+  if (!Array.isArray(participants) || participants.length <= 2) {
+    throw new ValidationError(['At least two participants must remain.']);
+  }
+  if (!Number.isInteger(index) || index < 0 || index >= participants.length) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  const originalSum = participants.reduce((sum, item) => sum + item.revenueShare, 0);
+  const droppedShare = participants[index].revenueShare;
+  const remaining = participants.filter((_, itemIndex) => itemIndex !== index).map((item) => ({ ...item }));
+  const remainingTotal = remaining.reduce((sum, item) => sum + item.revenueShare, 0);
+  if (Number.isFinite(droppedShare) && droppedShare > 0) {
+    if (remainingTotal > 0) {
+      let assigned = 0;
+      remaining.forEach((item, itemIndex) => {
+        if (itemIndex === remaining.length - 1) item.revenueShare += droppedShare - assigned;
+        else {
+          const add = droppedShare * (item.revenueShare / remainingTotal);
+          item.revenueShare += add;
+          assigned += add;
+        }
+      });
+    } else {
+      let assigned = 0;
+      remaining.forEach((item, itemIndex) => {
+        if (itemIndex === remaining.length - 1) item.revenueShare += droppedShare - assigned;
+        else {
+          const add = droppedShare / remaining.length;
+          item.revenueShare += add;
+          assigned += add;
+        }
+      });
+    }
+  }
+  if (Number.isFinite(originalSum)) {
+    const now = remaining.reduce((sum, item) => sum + item.revenueShare, 0);
+    remaining[remaining.length - 1].revenueShare += originalSum - now;
+  }
+  return remaining;
+}
+
 /** Fee floors at current effective volume and fixed shares, not a demand forecast. */
 export function calculateFeeRequirements(config) {
   assertValidConfiguration(config);

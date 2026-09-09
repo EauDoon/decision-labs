@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import {
   MAX_PARTICIPANTS,
   clonePreset,
+  dropAndReallocate,
   duplicateParticipant,
   moveParticipant,
   nextUnusedParticipantId,
@@ -70,4 +71,29 @@ test('move up and down reorder participants without changing shares or ids', () 
   const blockedLast = moveParticipant(config.participants, 2, 'down');
   assert.deepEqual(blockedLast.map((item) => item.id), originalIds);
   assert.notEqual(blocked[0], config.participants[0]);
+});
+
+test('dropping a participant reallocates their share and restores an exact sum of 1', () => {
+  const config = clonePreset('balanced');
+  const dropped = dropAndReallocate(config.participants, 0);
+  assert.deepEqual(dropped.map((item) => item.id), ['distributor', 'liquidity-partner']);
+  assert.equal(shareSum(dropped), 1);
+  assert.equal(dropped[0].revenueShare, 0.35 + 0.4 * (0.35 / 0.6));
+  assert.equal(dropped[1].revenueShare, 1 - dropped[0].revenueShare);
+  assert.equal(validateConfiguration({ ...config, participants: dropped }).valid, true);
+
+  const zeroOthers = [
+    { ...config.participants[0], revenueShare: 1 },
+    { ...config.participants[1], revenueShare: 0 },
+    { ...config.participants[2], revenueShare: 0 },
+  ];
+  const equalized = dropAndReallocate(zeroOthers, 0);
+  assert.equal(shareSum(equalized), 1);
+  assert.equal(equalized[0].revenueShare, 0.5);
+  assert.equal(equalized[1].revenueShare, 0.5);
+
+  assert.throws(() => dropAndReallocate(dropped, 0), (error) => {
+    assert.match(error.errors.join(' '), /At least two participants must remain/);
+    return true;
+  });
 });

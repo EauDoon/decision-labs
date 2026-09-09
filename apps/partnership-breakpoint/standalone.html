@@ -951,6 +951,55 @@ function moveParticipant(participants, index, direction) {
   return next;
 }
 
+/**
+ * Removes one participant and reallocates that share across whoever remains.
+ * Remaining participants keep their relative weights. The last remaining
+ * participant absorbs floating-point remainder so a previously valid split
+ * still sums to 1. The last two participants cannot be removed.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+function dropAndReallocate(participants, index) {
+  if (!Array.isArray(participants) || participants.length <= 2) {
+    throw new ValidationError(['At least two participants must remain.']);
+  }
+  if (!Number.isInteger(index) || index < 0 || index >= participants.length) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  const originalSum = participants.reduce((sum, item) => sum + item.revenueShare, 0);
+  const droppedShare = participants[index].revenueShare;
+  const remaining = participants.filter((_, itemIndex) => itemIndex !== index).map((item) => ({ ...item }));
+  const remainingTotal = remaining.reduce((sum, item) => sum + item.revenueShare, 0);
+  if (Number.isFinite(droppedShare) && droppedShare > 0) {
+    if (remainingTotal > 0) {
+      let assigned = 0;
+      remaining.forEach((item, itemIndex) => {
+        if (itemIndex === remaining.length - 1) item.revenueShare += droppedShare - assigned;
+        else {
+          const add = droppedShare * (item.revenueShare / remainingTotal);
+          item.revenueShare += add;
+          assigned += add;
+        }
+      });
+    } else {
+      let assigned = 0;
+      remaining.forEach((item, itemIndex) => {
+        if (itemIndex === remaining.length - 1) item.revenueShare += droppedShare - assigned;
+        else {
+          const add = droppedShare / remaining.length;
+          item.revenueShare += add;
+          assigned += add;
+        }
+      });
+    }
+  }
+  if (Number.isFinite(originalSum)) {
+    const now = remaining.reduce((sum, item) => sum + item.revenueShare, 0);
+    remaining[remaining.length - 1].revenueShare += originalSum - now;
+  }
+  return remaining;
+}
+
 /** Fee floors at current effective volume and fixed shares, not a demand forecast. */
 function calculateFeeRequirements(config) {
   assertValidConfiguration(config);
@@ -1330,7 +1379,7 @@ function inputPanel() {
         </section>
         <section class="input-section" aria-labelledby="participant-inputs-title">
           <h2 id="participant-inputs-title">Participants</h2>
-          <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent.</p>
+          <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
           <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div><p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
           ${participantForms}
           <div class="button-row"><button type="button" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
@@ -1621,10 +1670,18 @@ function attachEvents() {
       refresh(direction === 'up' ? 'Participant moved up. Shares are unchanged.' : 'Participant moved down. Shares are unchanged.');
     }
     if (action === 'remove-participant' && state.participants.length > 2) {
-      checkpoint();
-      state.participants.splice(Number(button.dataset.index), 1);
-      activePreset = '';
-      refresh('Participant removed.');
+      try {
+        const removed = state.participants[Number(button.dataset.index)];
+        const next = dropAndReallocate(state.participants, Number(button.dataset.index));
+        checkpoint();
+        state.participants = next;
+        activePreset = '';
+        const sharePct = Number.isFinite(removed.revenueShare) ? formatPct(removed.revenueShare * 100) : 'their share';
+        refresh(`Removed ${removed.name}. ${sharePct} was reallocated across the remaining participants in proportion to their current shares.`);
+      } catch (error) {
+        if (!(error instanceof ValidationError)) throw error;
+        setNotice(`Remove rejected: ${summarizeErrors(error.errors)}`);
+      }
     }
     if (action === 'equal-shares' || action === 'normalize-shares') reconcileShares(action);
     if (action === 'export') exportFile();

@@ -13,6 +13,7 @@ const appImport = `import {
   calculateFeeRequirements,
   clonePreset,
   duplicateParticipant,
+  dropAndReallocate,
   evaluateStressGrid,
   makeParticipant,
   materializeStressCase,
