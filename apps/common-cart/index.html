@@ -369,6 +369,17 @@ SOFTWARE.
           <button id="copy-winner-aggregates" type="button">Copy winner aggregates</button>
           <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information. Winner markdown is aggregates only.</p>
         </div>
+        <div class="snapshot-bar print-chrome" aria-label="Compare two room JSON files by offer identity">
+          <label>Left room JSON
+            <input id="compare-offer-json-left" type="file" accept="application/json,application/json,.json">
+          </label>
+          <label>Right room JSON
+            <input id="compare-offer-json-right" type="file" accept="application/json,application/json,.json">
+          </label>
+          <button id="compare-offer-identity" type="button">Compare rooms by offer id</button>
+          <p>Merchant-facing counts only. Matching offer ids are compared. Missing ids are listed and are not filled with zeros. The open room stays in place.</p>
+          <pre id="offer-identity-compare" class="compare-pre" hidden></pre>
+        </div>
         <div class="section-heading print-chrome">
           <div>
             <p class="section-number">02 / merchants</p>

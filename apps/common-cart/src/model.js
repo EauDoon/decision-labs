@@ -448,6 +448,95 @@ function withComparableCost(metrics, comparable) {
   return { ...metrics, cost: comparable ? metrics.cost : null };
 }
 
+function publicOfferIdentitySide(result, includeLanded) {
+  return {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    category: result.offer.category,
+    variant: result.offer.variant,
+    fulfillment: result.offer.fulfillment,
+    status: result.qualifies ? "Unlocked" : "Locked",
+    fulfilledUnits: result.fulfilledUnits,
+    includedBuyerCount: result.deliveredBuyers,
+    itemPrice: result.effectiveUnitPrice,
+    landedTotal: includeLanded && result.qualifies ? result.totalCost : null
+  };
+}
+
+/**
+ * Merchant-facing compare of two rooms by offer id. Shared ids report
+ * aggregates only. Missing ids are listed and are not filled with zeros.
+ */
+export function compareRoomsByOfferIdentity(leftRaw, rightRaw) {
+  const left = validateScenario(leftRaw);
+  const right = validateScenario(rightRaw);
+  const leftMarket = evaluateMarket(left);
+  const rightMarket = evaluateMarket(right);
+  const currency = landedTotalsComparison(left.currency, right.currency);
+  const leftIds = left.offers.map((offer) => offer.id);
+  const rightIds = right.offers.map((offer) => offer.id);
+  const rightSet = new Set(rightIds);
+  const leftSet = new Set(leftIds);
+  const leftById = new Map(leftMarket.results.map((result) => [result.offer.id, result]));
+  const rightById = new Map(rightMarket.results.map((result) => [result.offer.id, result]));
+  return {
+    leftCurrency: left.currency,
+    rightCurrency: right.currency,
+    leftBuyerCount: leftMarket.buyerCount,
+    rightBuyerCount: rightMarket.buyerCount,
+    leftRequestedUnits: leftMarket.totalRequestedUnits,
+    rightRequestedUnits: rightMarket.totalRequestedUnits,
+    leftOfferCount: left.offers.length,
+    rightOfferCount: right.offers.length,
+    sameCurrency: currency.sameCurrency,
+    currencyWarning: currency.warning,
+    shared: leftIds.filter((id) => rightSet.has(id)).map((id) => ({
+      offerId: id,
+      left: publicOfferIdentitySide(leftById.get(id), currency.comparable),
+      right: publicOfferIdentitySide(rightById.get(id), currency.comparable)
+    })),
+    missingFromRight: leftIds.filter((id) => !rightSet.has(id)),
+    missingFromLeft: rightIds.filter((id) => !leftSet.has(id))
+  };
+}
+
+export function createOfferIdentityCompareMarkdown(leftRaw, rightRaw) {
+  const comparison = compareRoomsByOfferIdentity(leftRaw, rightRaw);
+  const formatSide = (side) => {
+    const landed = side.landedTotal === null ? "landed total omitted" : `landed ${side.landedTotal}`;
+    return `${side.fulfilledUnits} units, ${side.includedBuyerCount} buyers, ${side.status}, ${landed}`;
+  };
+  const sharedLines = comparison.shared.length === 0
+    ? ["- None."]
+    : comparison.shared.map((entry) => `- ${entry.offerId} (${entry.left.merchant} / ${entry.left.variant}): left ${formatSide(entry.left)}; right ${entry.right.merchant} / ${entry.right.variant}, ${formatSide(entry.right)}.`);
+  const missingRight = comparison.missingFromRight.length === 0
+    ? ["- None."]
+    : comparison.missingFromRight.map((id) => `- ${id}`);
+  const missingLeft = comparison.missingFromLeft.length === 0
+    ? ["- None."]
+    : comparison.missingFromLeft.map((id) => `- ${id}`);
+  const lines = [
+    `# Common Cart offer identity compare`,
+    ``,
+    `- Left: ${comparison.leftOfferCount} offers, ${comparison.leftBuyerCount} buyers, ${comparison.leftRequestedUnits} requested units, ${comparison.leftCurrency}.`,
+    `- Right: ${comparison.rightOfferCount} offers, ${comparison.rightBuyerCount} buyers, ${comparison.rightRequestedUnits} requested units, ${comparison.rightCurrency}.`,
+    `- Shared offer ids: ${comparison.shared.length}.`,
+    comparison.currencyWarning ? `- ${comparison.currencyWarning}` : `- Currencies match. Landed totals are shown when an offer unlocks.`,
+    ``,
+    `## Shared offers`,
+    ...sharedLines,
+    ``,
+    `## Missing from right`,
+    ...missingRight,
+    ``,
+    `## Missing from left`,
+    ...missingLeft,
+    ``,
+    `Missing offer ids are listed and are not filled with zeros. These aggregates omit private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 /** Organizer-only sum of unused item-ceiling headroom for buyers included in the winner. */
 export function winnerBudgetLeftover(rawScenario) {
   const market = evaluateMarket(rawScenario);

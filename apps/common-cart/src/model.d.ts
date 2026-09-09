@@ -322,6 +322,35 @@ export interface ThreeRoomRow {
 export interface ThreeRoomComparison { sameCurrency: boolean; currencyWarning: string | null; rooms: ThreeRoomRow[]; }
 export function compareThreeRooms(first: unknown, second: unknown, third: unknown): ThreeRoomComparison;
 export function landedTotalsComparison(leftCurrency: unknown, rightCurrency: unknown): { sameCurrency: boolean; comparable: boolean; warning: string | null };
+export interface OfferIdentitySide {
+  offerId: string;
+  merchant: string;
+  category: string;
+  variant: string;
+  fulfillment: "shipping" | "pickup";
+  status: string;
+  fulfilledUnits: number;
+  includedBuyerCount: number;
+  itemPrice: number | null;
+  landedTotal: number | null;
+}
+export interface OfferIdentityComparison {
+  leftCurrency: string;
+  rightCurrency: string;
+  leftBuyerCount: number;
+  rightBuyerCount: number;
+  leftRequestedUnits: number;
+  rightRequestedUnits: number;
+  leftOfferCount: number;
+  rightOfferCount: number;
+  sameCurrency: boolean;
+  currencyWarning: string | null;
+  shared: Array<{ offerId: string; left: OfferIdentitySide; right: OfferIdentitySide }>;
+  missingFromRight: string[];
+  missingFromLeft: string[];
+}
+export function compareRoomsByOfferIdentity(leftRaw: unknown, rightRaw: unknown): OfferIdentityComparison;
+export function createOfferIdentityCompareMarkdown(leftRaw: unknown, rightRaw: unknown): string;
 export function createMerchantReport(rawScenario: unknown): MerchantReport;
 export function createMerchantResidualReport(rawScenario: unknown): MerchantResidualReport;
 export interface WinnerBudgetLeftover {

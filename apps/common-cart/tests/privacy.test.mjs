@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, evaluateMarket, redactBuyerLabels, validateScenario, encodeScenario, encodeRedactedScenario, decodeScenario } from "../src/model.js";
+import { clonePreset, evaluateMarket, redactBuyerLabels, validateScenario, encodeScenario, encodeRedactedScenario, decodeScenario, createOfferIdentityCompareMarkdown } from "../src/model.js";
 
 test("redactBuyerLabels replaces private labels without changing ids or the source room", () => {
   const source = clonePreset("neighbourhood");
@@ -45,4 +45,25 @@ test("redacted share encoding uses Buyer 1 through N and leaves the default shar
   assert.equal(JSON.stringify(redacted).includes("SECRET_HALL"), false);
   assert.equal(source.buyers[0].label, "SECRET_HALL");
   assert.deepEqual(evaluateMarket(redacted).winner?.selectedBuyerIds, evaluateMarket(source).winner?.selectedBuyerIds);
+});
+
+test("offer identity compare markdown omits buyer labels, ids, budgets, and allocations", () => {
+  const left = clonePreset("neighbourhood");
+  const right = clonePreset("studio");
+  left.title = "SECRET_TITLE";
+  left.buyers[0].label = "SECRET_LABEL";
+  left.buyers[0].id = "SECRET_ID";
+  left.buyers[0].maxOrderTotal = 987654.32;
+  right.buyers[0].label = "SECRET_STUDIO";
+  const markdown = createOfferIdentityCompareMarkdown(left, right);
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("SECRET_STUDIO"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes('"selectedBuyerIds":'), false);
+  assert.equal(markdown.includes('"allocations":'), false);
+  assert.match(markdown, /omit private buyer labels, IDs, budgets, and allocations/);
 });

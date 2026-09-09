@@ -39,6 +39,7 @@ import {
   redactBuyerLabels,
   createOrganizerBriefing,
   createWinnerAggregatesMarkdown,
+  createOfferIdentityCompareMarkdown,
   decodeScenario,
   duplicateEntry,
   copyOfferAsNewTierSet,
@@ -225,6 +226,7 @@ function bindStaticEvents() {
       setStatus("Residual coverage exported as aggregates. Buyer IDs and labels are omitted. This is not a dual checkout.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
   });
+  document.querySelector("#compare-offer-identity").addEventListener("click", compareOfferIdentityFiles);
   document.querySelector("#heatmap-csv").addEventListener("click", () => {
     try {
       downloadFile(createDeliveryHeatmapCsv(scenario), "common-cart-delivery-heatmap.csv", "text/csv;charset=utf-8");
@@ -1745,6 +1747,49 @@ async function importScenario(event) {
     setStatus("Scenario imported.", true);
   } catch (error) {
     setStatus(`Import failed: ${messageOf(error)}`);
+  }
+}
+
+async function readRoomJsonFile(file, label) {
+  if (file.size === 0) throw new ScenarioError(`${label} is empty.`);
+  if (file.size > 250_000) throw new ScenarioError(`${label} must be smaller than 250 KB.`);
+  const text = await file.text();
+  if (!text.trim()) throw new ScenarioError(`${label} is empty.`);
+  let parsed;
+  try {
+    parsed = JSON.parse(text);
+  } catch (error) {
+    throw new ScenarioError(`${label} is not valid JSON${appJsonSyntaxHint(error)}.`);
+  }
+  return validateScenario(parsed);
+}
+
+async function compareOfferIdentityFiles() {
+  const leftFile = document.querySelector("#compare-offer-json-left")?.files?.[0];
+  const rightFile = document.querySelector("#compare-offer-json-right")?.files?.[0];
+  const output = document.querySelector("#offer-identity-compare");
+  if (!leftFile || !rightFile) {
+    if (output) {
+      output.hidden = true;
+      output.textContent = "";
+    }
+    return setStatus("Choose two room JSON files to compare by offer id.");
+  }
+  try {
+    const left = await readRoomJsonFile(leftFile, "Left room JSON");
+    const right = await readRoomJsonFile(rightFile, "Right room JSON");
+    const markdown = createOfferIdentityCompareMarkdown(left, right);
+    if (output) {
+      output.hidden = false;
+      output.textContent = markdown;
+    }
+    setStatus("Compared rooms by offer id. Aggregates and counts only. Missing ids are listed, not zero-filled. The open room was not replaced.", true);
+  } catch (error) {
+    if (output) {
+      output.hidden = true;
+      output.textContent = "";
+    }
+    setStatus(`Offer identity compare failed: ${messageOf(error)}`);
   }
 }
 
