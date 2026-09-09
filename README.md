@@ -33,10 +33,12 @@ Every workbench:
 | [Weekend Gap](apps/weekend-gap/) | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
-workbench / How it works actions, and in-page trust notes. Each app also ships
-a `MODEL.md` (formulas and conventions), `CONTRIBUTING.md`, `SECURITY.md`, and
-its own `LICENSE`. The loopback launcher does not serve those markdown files;
-open the app folder or the workbench itself to read them.
+workbench / How it works actions, in-page trust notes, and a What's new
+section. What's new names current in-workbench tools (share-to-hold, residual
+coverage, veto groups, and the gate Gantt) without implying live services.
+Each app also ships a `MODEL.md` (formulas and conventions), `CONTRIBUTING.md`,
+`SECURITY.md`, and its own `LICENSE`. The loopback launcher does not serve those
+markdown files; open the app folder or the workbench itself to read them.
 
 ## Quick start
 
@@ -56,7 +58,7 @@ only the catalog page and the four generated workbenches. It accepts local Host
 headers, binds loopback only, and does not expose source files, model notes, or
 local drafts. Set `PORT` to an integer from 1 through 65535 to choose another
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
-an input.
+an input. Press `?` on the catalog for the in-page shortcut list.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
