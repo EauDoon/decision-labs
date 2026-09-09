@@ -94,6 +94,14 @@ export const PRESETS = Object.freeze({
     reserveCashAud: 5800000,
     redemptionDemandAud: 1800000,
     weekendFxMultiplier: 3.2
+  }),
+  paydayFridayBurst: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Payday Friday burst (synthetic)",
+    demandProfile: "fridayBurst",
+    reserveCashAud: 6100000,
+    redemptionDemandAud: 4500000,
+    weekendFxMultiplier: 2.8
   })
 });
 

@@ -429,6 +429,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
               <button type="button" class="preset-button" data-preset="thinFxTightWindows">Thin FX, Tight Windows (synthetic)</button>
               <button type="button" class="preset-button" data-preset="longWeekendFridayStart">Long-weekend Friday start (synthetic)</button>
               <button type="button" class="preset-button" data-preset="compressedFridayClose">Compressed Friday close (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="paydayFridayBurst">Payday Friday burst (synthetic)</button>
             </div>
           </fieldset>
 
@@ -1029,6 +1030,14 @@ const PRESETS = Object.freeze({
     reserveCashAud: 5800000,
     redemptionDemandAud: 1800000,
     weekendFxMultiplier: 3.2
+  }),
+  paydayFridayBurst: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Payday Friday burst (synthetic)",
+    demandProfile: "fridayBurst",
+    reserveCashAud: 6100000,
+    redemptionDemandAud: 4500000,
+    weekendFxMultiplier: 2.8
   })
 });
 
