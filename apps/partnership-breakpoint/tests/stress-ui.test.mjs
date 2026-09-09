@@ -13,6 +13,7 @@ async function workbench(protocol = 'file:', options = {}) {
   const notice = { textContent: '' };
   const downloads = [];
   let downloadBlob;
+  let prints = 0;
   const app = { innerHTML: '', querySelectorAll: () => [],
     addEventListener: (name, callback) => {
       assert.equal(events.has(name), false, `duplicate ${name} handler`);
@@ -27,9 +28,9 @@ async function workbench(protocol = 'file:', options = {}) {
       else this.onload();
     }
   }
-  const context = vm.createContext({ console, Blob, URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
+  const context = vm.createContext({ console, Blob, setTimeout: (callback) => callback(), URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
     history: { replaceState() {} },
-    window: { location: { protocol, hash: options.hash ?? '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
+    window: { print: () => { prints += 1; }, location: { protocol, hash: options.hash ?? '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
     document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
   });
@@ -37,6 +38,7 @@ async function workbench(protocol = 'file:', options = {}) {
   return {
     markup: () => app.innerHTML,
     downloads: () => downloads,
+    prints: () => prints,
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
     edit: (path, value, extra = {}) => events.get('change')({ target: new Input({ path, ...extra }, value) }),
@@ -415,4 +417,15 @@ test('compound case inspection requires explicit application and supports undo',
   assert.equal(app.saved().deal.monthlyVolume, 120000);
   assert.equal(app.saved().deal.feePerTransaction, 0.2 * 0.9);
   app.click('undo'); assert.deepEqual(app.saved(), original);
+});
+
+test('invalid fields expose accessible state and printing requires a valid case', async () => {
+ const app = await workbench();
+ app.click('print-report'); assert.equal(app.prints(), 1);
+ app.edit('deal.monthlyVolume', '');
+ assert.match(app.markup(), /id="field-deal-monthlyVolume" aria-invalid="true"/);
+ assert.match(app.markup(), /Go to first invalid field/);
+ app.click('print-report'); assert.equal(app.prints(), 1);
+ app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
+ assert.match(app.markup(), /Case assumptions/);
 });

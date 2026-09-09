@@ -84,3 +84,13 @@ To try a feasible proposal, load Balanced, set volume decline to 5%, and set gro
 This project is a transparent deterministic monthly model. It does not prove a contract is enforceable, that counterparties will actually exit at the stated threshold, that inputs are complete, or that demand, costs, and behavior stay unchanged. It does not model taxes, cash-flow timing, credit losses, correlations, allocations outside the stated deal, or strategic value beyond the entered minimum acceptable profit.
 
 Read [MODEL.md](MODEL.md) for formulas and conventions, [CONTRIBUTING.md](CONTRIBUTING.md) for change standards, and [SECURITY.md](SECURITY.md) for vulnerability reporting.
+
+## Decision workflow (v1.3.0)
+
+1. Enter shared deal terms and participant costs. The allocation balance shows missing or excess revenue share. Equal split and Normalize current shares are explicit editing aids, not negotiated allocations.
+2. Name and save a snapshot before exploring terms. Up to 12 snapshots stay in this browser. Compare a snapshot with the current draft to see participant profit changes and added or removed participants, matched by identifier. Each snapshot uses its own stress settings.
+3. Review the fee negotiation guide. It computes the fee required for each profit floor at current effective volume and shares, and separately flags capacity or commitment failures that fee changes cannot repair. Rounded fee floors require rechecking.
+4. Inspect a compound case, preview the changed assumptions, and apply it only when you want a new baseline. Existing volume shock resets to zero to avoid double counting. The stress grid then applies the existing settings as additional shocks from this baseline.
+5. Export JSON for portable case backups, a Markdown decision report with reproducible inputs, or a CSV containing every participant in every compound case. Formula-like text is prefixed with an apostrophe in CSV. Print report includes case assumptions and the displayed analysis.
+
+Undo and Redo retain up to 50 edits during this tab session. Reset, imports, snapshot loads and applied proposals can be undone. The last removed snapshot can be restored during the session. Browser storage is optional; failures are displayed and JSON export remains available. New edits cancel pending imports. Local snapshots and undo history are not synced or backed up elsewhere. No requests are sent to a server.

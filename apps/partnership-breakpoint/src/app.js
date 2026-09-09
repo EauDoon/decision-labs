@@ -215,9 +215,12 @@ function inputValue(value) {
 function field({ label, path, value, optional = false, min = 0, max = null, step = 'any', wide = false, type = 'number', title = '' }) {
   const optionalText = optional ? '<span class="optional">optional</span>' : '';
   const titleAttr = title ? ` title="${escapeAttribute(title)}"` : '';
+  const sharesInvalid = path.endsWith('.revenueShare') && Math.abs(state.participants.reduce((sum, item) => sum + item.revenueShare, 0) - 1) > 1e-9;
+  const invalid = type === 'text' ? !String(value ?? '').trim() : !(optional && value == null) && (!Number.isFinite(value) || value < min || (max !== null && value > max) || sharesInvalid);
+  const inputId = `field-${path.replace(/\./g, '-')}`;
   const input = type === 'text'
-    ? `<input type="text" data-path="${path}" data-type="text" value="${escapeAttribute(value)}" maxlength="80" required${titleAttr} />`
-    : `<input type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'}${titleAttr} />`;
+    ? `<input id="${inputId}" aria-invalid="${invalid}" type="text" data-path="${path}" data-type="text" value="${escapeAttribute(value)}" maxlength="80" required${titleAttr} />`
+    : `<input id="${inputId}" aria-invalid="${invalid}" type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'}${titleAttr} />`;
   return `<div class="field ${wide ? 'wide' : ''}"><label>${label} ${optionalText}${input}</label></div>`;
 }
 
@@ -348,7 +351,7 @@ function inputPanel() {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="export-csv">Export stress CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="export-csv">Export stress CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <button type="button" data-action="reset">Reset</button>
           </div>
@@ -359,7 +362,7 @@ function inputPanel() {
 }
 
 function errorBox(errors) {
-  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
+  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><button type="button" data-action="focus-invalid">Go to first invalid field</button><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
 }
 
 function resultsPanel(result) {
@@ -383,6 +386,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
+    <section class="print-only"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
     ${feeRequirementsSection()}
     ${comparisonSection(result)}
     ${breakpointSection(result)}
@@ -451,7 +455,7 @@ function participantTable(result) {
       <td>${escapeAttribute(participant.bindingConstraint.label)}</td>
       <td class="${participant.viable ? 'pass-text' : 'failure-text'}">${participant.viable ? 'Holds' : escapeAttribute(participant.failureReasons.join('; '))}</td>
     </tr>`).join('');
-  return `<section class="panel"><div class="table-wrap"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary.</p></section>`;
+  return `<section class="panel"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary.</p></section>`;
 }
 
 function shockCard(label, shock, units) {
@@ -485,7 +489,7 @@ function sensitivityGrid() {
 function sensitivitySection() {
   const grid = sensitivityGrid();
   const tableRows = grid.fees.map((fee, row) => `<tr><th scope="row">${formatNumber(fee, 3)}</th>${grid.volumes.map((volume, column) => `<td class="${grid.cells[row][column] ? 'cell-viable' : 'cell-fail'}" aria-label="Fee ${formatNumber(fee, 3)}, volume ${formatNumber(volume)}: ${grid.cells[row][column] ? 'viable' : 'not viable'}">${grid.cells[row][column] ? 'Holds' : 'Exit'}</td>`).join('')}</tr>`).join('');
-  return `<section class="panel"><div class="panel-heading"><h2>Operating region</h2><span class="optional">fee and volume sensitivity</span></div><div class="sensitivity-layout"><div><canvas id="sensitivity-canvas" width="560" height="400" role="img" aria-label="Canvas chart of viable and non-viable fee and monthly-volume combinations. The visible table provides the same values.">Canvas chart unavailable. Use the operating region table.</canvas><div class="legend"><span><i class="swatch viable"></i>Every participant holds</span><span><i class="swatch fail"></i>At least one participant exits</span></div></div><div class="table-wrap"><table class="sensitivity-table"><caption>Operating region table. Rows are fee per transaction. Columns are monthly volume.</caption><thead><tr><th>Fee / volume</th>${grid.volumes.map((volume) => `<th>${formatNumber(volume)}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table></div></div></section>`;
+  return `<section class="panel"><div class="panel-heading"><h2>Operating region</h2><span class="optional">fee and volume sensitivity</span></div><div class="sensitivity-layout"><div><canvas id="sensitivity-canvas" width="560" height="400" role="img" aria-label="Canvas chart of viable and non-viable fee and monthly-volume combinations. The visible table provides the same values.">Canvas chart unavailable. Use the operating region table.</canvas><div class="legend"><span><i class="swatch viable"></i>Every participant holds</span><span><i class="swatch fail"></i>At least one participant exits</span></div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Operating region values, scroll horizontally"><table class="sensitivity-table"><caption>Operating region table. Rows are fee per transaction. Columns are monthly volume.</caption><thead><tr><th>Fee / volume</th>${grid.volumes.map((volume) => `<th>${formatNumber(volume)}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table></div></div></section>`;
 }
 
 function methodAndLimits() {
@@ -504,7 +508,6 @@ function render() {
     const message = pendingNotice;
     pendingNotice = '';
     setNotice(message);
-    saveState();
   }
 }
 
@@ -521,11 +524,15 @@ function setPath(path, value) {
 
 function refresh(message = '') {
   const focusedPath = document.activeElement?.dataset?.path;
+  const focusedAction = document.activeElement?.dataset?.action;
+  const focusedCase = document.activeElement?.dataset?.caseId;
   saveState();
   render();
   if (focusedPath) {
     const replacement = [...app.querySelectorAll('input[data-path]')].find((input) => input.dataset.path === focusedPath);
     replacement?.focus({ preventScroll: true });
+  } else if (focusedAction) {
+    [...app.querySelectorAll('button[data-action]')].find((button) => button.dataset.action === focusedAction && button.dataset.caseId === focusedCase)?.focus({ preventScroll: true });
   }
   setNotice(message);
 }
@@ -553,6 +560,11 @@ function attachEvents() {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
     const action = button.dataset.action;
+    if (action === 'focus-invalid') { app.querySelector('input[aria-invalid="true"]')?.focus(); return; }
+    if (action === 'print-report') {
+      if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
+      window.print(); return;
+    }
     if (action === 'inspect-stress') { stressPreviewId = button.dataset.scenarioId; render(); return; }
     if (action === 'close-stress-preview') { stressPreviewId = ''; render(); return; }
     if (action === 'apply-stress-case') { applyInspectedStressCase(); return; }
@@ -619,7 +631,7 @@ function exportFile() {
   link.href = url;
   link.download = 'partnership-breakpoint.json';
   link.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
   setNotice('JSON exported.');
 }
 
@@ -782,7 +794,7 @@ function downloadText(contents, type, filename) {
   link.href = url;
   link.download = filename;
   link.click();
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 function exportReport() {
