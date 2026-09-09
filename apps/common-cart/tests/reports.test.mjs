@@ -37,5 +37,6 @@ test("merchant residual report omits leftover buyer ids and labels", () => {
   assert.equal(json.includes("leftoverBuyerIds"), false);
   assert.equal(json.includes("selectedBuyerIds"), false);
   assert.equal(typeof report.leftoverBuyerCount, "number");
+  assert.equal(Object.hasOwn(report, "tertiary"), true);
   assert.match(report.limitations, /not a dual checkout/i);
 });

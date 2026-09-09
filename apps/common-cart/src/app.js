@@ -2,6 +2,7 @@ import {
   ScenarioError,
   aggregateDemand,
   deliveryHeatmap,
+  variantOverlapMatrix,
   clonePreset,
   compareScenarios,
   compareThreeRooms,
@@ -10,6 +11,7 @@ import {
   createMerchantReport,
   createMerchantResidualReport,
   createBuyerCsv,
+  createDeliveryHeatmapCsv,
   importBuyersFromCsv,
   buyerCsvTemplate,
   redactBuyerLabels,
@@ -17,7 +19,9 @@ import {
   decodeScenario,
   duplicateEntry,
   copyOfferAsNewTierSet,
+  copyOfferAsPickup,
   encodeScenario,
+  encodeRedactedScenario,
   evaluateMarket,
   unitsToNextTier,
   capacityBar,
@@ -178,6 +182,12 @@ function bindStaticEvents() {
       setStatus("Residual coverage exported as aggregates. Buyer IDs and labels are omitted. This is not a dual checkout.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
   });
+  document.querySelector("#heatmap-csv").addEventListener("click", () => {
+    try {
+      downloadFile(createDeliveryHeatmapCsv(scenario), "common-cart-delivery-heatmap.csv", "text/csv;charset=utf-8");
+      setStatus("Delivery heatmap CSV exported. It contains aggregate deadline buckets only.", true);
+    } catch (error) { setStatus(`Heatmap export failed: ${messageOf(error)}`); }
+  });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
     catch (error) { setStatus(messageOf(error)); }
@@ -252,7 +262,7 @@ function bindStaticEvents() {
     scenario.buyers.push({
       id: next,
       label: `Buyer ${scenario.buyers.length + 1}`,
-      category: scenario.buyers[0]?.category ?? "Product",
+      category: scenario.buyers[0]?.category ?? scenario.offers[0]?.category ?? "Product",
       quantity: 1,
       maxUnitPrice: 100,
       latestDeliveryDays: 7,
@@ -261,6 +271,18 @@ function bindStaticEvents() {
     renderEditor();
     refresh();
     elements.buyerRows.lastElementChild?.querySelector("input")?.focus();
+  });
+
+  document.querySelector("#restore-neighbourhood").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    scenario = clonePreset("neighbourhood");
+    inspectedOfferId = scenario.offers[0]?.id ?? "";
+    document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry.dataset.preset === "neighbourhood"));
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    renderEditor();
+    refresh();
+    setStatus("Neighbourhood example restored. Undo returns to the empty buyer room.", true);
+    elements.buyerRows.querySelector("input")?.focus();
   });
 
   document.querySelector("#add-offer").addEventListener("click", () => {
@@ -313,11 +335,17 @@ function bindStaticEvents() {
     }
   });
   const shareButton = document.querySelector("#share-button");
+  const shareRedactedButton = document.querySelector("#share-redacted-button");
   if (window.location.protocol === "file:") {
     shareButton.textContent = "Share via export";
     shareButton.addEventListener("click", () => setStatus("Use Export JSON to share a standalone scenario."));
+    if (shareRedactedButton) {
+      shareRedactedButton.textContent = "Share redacted via export";
+      shareRedactedButton.addEventListener("click", () => setStatus("Use Export redacted JSON to share a standalone scenario with Buyer 1 through N labels."));
+    }
   } else {
-    shareButton.addEventListener("click", shareScenario);
+    shareButton.addEventListener("click", () => shareScenario(false));
+    shareRedactedButton?.addEventListener("click", () => shareScenario(true));
   }
   document.querySelector("#reset-button").addEventListener("click", () => {
     if (!allowReplaceDraft()) return;
@@ -409,7 +437,23 @@ function handleShortcut(event) {
   if (key === "n") {
     event.preventDefault();
     document.querySelector("#add-buyer").click();
+    return;
   }
+  if (key === "m") {
+    event.preventDefault();
+    focusMerchantInspector();
+  }
+}
+
+function focusMerchantInspector() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (merchantTab?.getAttribute("aria-selected") === "true") {
+    document.querySelector("#merchant-panel")?.focus();
+    return;
+  }
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#merchant-inspector-region")?.focus();
 }
 
 function maybeShowCoach() {
@@ -449,7 +493,12 @@ function renderEditor() {
   elements.title.value = scenario.title;
   elements.currency.value = scenario.currency;
   elements.buyerRows.replaceChildren(...scenario.buyers.map(renderBuyerRow));
+  if (scenario.buyers.length === 0) {
+    setEmptyState(elements.buyerRows, 8, "No buyers are in this room.");
+  }
   elements.offerRows.replaceChildren(...scenario.offers.map(renderOfferRow));
+  const recovery = document.querySelector("#empty-buyer-recovery");
+  if (recovery) recovery.hidden = scenario.buyers.length > 0;
   const addBuyer = document.querySelector("#add-buyer");
   const addOffer = document.querySelector("#add-offer");
   addBuyer.disabled = scenario.buyers.length >= 40;
@@ -495,11 +544,14 @@ function renderBuyerRow(entry) {
     });
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
-    if (scenario.buyers.length === 1) return setStatus("A room needs at least one buyer.");
     const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
     renderEditor();
     refresh();
+    if (scenario.buyers.length === 0) {
+      document.querySelector("#restore-neighbourhood")?.focus();
+      return;
+    }
     elements.buyerRows.children[Math.min(index, scenario.buyers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
@@ -613,6 +665,7 @@ function refresh() {
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
     renderDeliveryHeatmap(market.scenario);
+    renderVariantOverlap(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
     setStatus("");
@@ -648,6 +701,11 @@ function refresh() {
     const heatmapText = document.querySelector("#delivery-heatmap-text");
     if (heatmapText) heatmapText.textContent = "Delivery heatmap will appear once every field is valid.";
     document.querySelector("#delivery-heatmap")?.replaceChildren();
+    const overlapNote = document.querySelector("#variant-overlap-note");
+    if (overlapNote) overlapNote.textContent = "Variant overlap will appear once every field is valid.";
+    document.querySelector("#variant-overlap-head")?.replaceChildren();
+    const overlapRows = document.querySelector("#variant-overlap-rows");
+    if (overlapRows) setEmptyState(overlapRows, 2, "Variant overlap will appear once every field is valid.");
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -664,7 +722,11 @@ function renderComparison() {
     ["Winner", before.winner, after.winner],
     ["Requested units", before.requested, after.requested],
     ["Fulfilled units", before.fulfilled, after.fulfilled],
-    ["Included buyers", before.buyers, after.buyers]
+    ["Included buyers", before.buyers, after.buyers],
+    ["Leftover buyers after winner", before.leftoverBuyers, after.leftoverBuyers],
+    ["Leftover units after winner", before.leftoverUnits, after.leftoverUnits],
+    ["Unfilled buyers after residual", before.unfilledBuyers, after.unfilledBuyers],
+    ["Unfilled units after residual", before.unfilledUnits, after.unfilledUnits]
   ];
   if (comparison.sameCurrency) rows.push(["Landed total", before.cost === null ? "No allocation" : money(scenario.currency).format(before.cost), after.cost === null ? "No allocation" : money(scenario.currency).format(after.cost)]);
   const table = document.createElement("table");
@@ -704,7 +766,11 @@ function renderThreeRoomComparison(comparison) {
     ["Winner", ...comparison.rooms.map((room) => room.winner)],
     ["Requested units", ...comparison.rooms.map((room) => room.requested)],
     ["Fulfilled units", ...comparison.rooms.map((room) => room.fulfilled)],
-    ["Included buyers", ...comparison.rooms.map((room) => room.buyers)]
+    ["Included buyers", ...comparison.rooms.map((room) => room.buyers)],
+    ["Leftover buyers after winner", ...comparison.rooms.map((room) => room.leftoverBuyers)],
+    ["Leftover units after winner", ...comparison.rooms.map((room) => room.leftoverUnits)],
+    ["Unfilled buyers after residual", ...comparison.rooms.map((room) => room.unfilledBuyers)],
+    ["Unfilled units after residual", ...comparison.rooms.map((room) => room.unfilledUnits)]
   ];
   if (comparison.sameCurrency) {
     rows.push(["Landed total", ...comparison.rooms.map((room) => room.cost === null ? "No allocation" : money(room.currency).format(room.cost))]);
@@ -720,7 +786,7 @@ function renderThreeRoomComparison(comparison) {
 
 function addDuplicateAction(row, kind, entry) {
   row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? buyerDisplayLabel(entry) : entry.merchant} (${entry.id})`);
-  row.querySelector(".remove-row").disabled = scenario[kind].length === 1;
+  row.querySelector(".remove-row").disabled = kind === "offers" && scenario.offers.length === 1;
   row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
   const button = document.createElement("button");
   button.type = "button";
@@ -754,6 +820,22 @@ function addDuplicateAction(row, kind, entry) {
     } catch (error) { setStatus(messageOf(error)); }
   });
   row.lastElementChild.append(tierSet);
+  const pickup = document.createElement("button");
+  pickup.type = "button";
+  pickup.textContent = "As pickup";
+  pickup.setAttribute("aria-label", `Copy ${entry.merchant} as a pickup offer`);
+  pickup.disabled = scenario.offers.length >= 40;
+  pickup.addEventListener("click", () => {
+    try {
+      scenario = copyOfferAsPickup(scenario, entry.id);
+      inspectedOfferId = scenario.offers.at(-1).id;
+      renderEditor();
+      refresh();
+      elements.offerRows.lastElementChild.querySelector("input").focus();
+      setStatus("Copied this offer as a pickup clone. Shipping is 0. This is a planning draft, not a merchant quote.", true);
+    } catch (error) { setStatus(messageOf(error)); }
+  });
+  row.lastElementChild.append(pickup);
 }
 
 function updateHistoryButtons() {
@@ -840,6 +922,13 @@ function renderResidualCoverage(rawScenario) {
     appendDetail(list, "Leftover buyers that fit", coverage.secondary.deliveredBuyers);
   } else {
     appendDetail(list, "Next-best leftover offer", "No other qualifying offer on leftover whole orders");
+  }
+  if (coverage.tertiary) {
+    appendDetail(list, "Third leftover offer", `${coverage.tertiary.merchant} / ${coverage.tertiary.variant}`);
+    appendDetail(list, "Tertiary units that fit", coverage.tertiary.fulfilledUnits);
+    appendDetail(list, "Tertiary buyers that fit", coverage.tertiary.deliveredBuyers);
+  } else {
+    appendDetail(list, "Third leftover offer", "No third distinct offer on remaining whole orders");
   }
   appendDetail(list, "Still unfilled", `${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`);
   summary.replaceChildren(list);
@@ -1029,6 +1118,13 @@ function outcomePresentation(outcome) {
 
 function renderDemand(rawScenario) {
   const groups = aggregateDemand(rawScenario);
+  if (groups.length === 0) {
+    const demandNote = document.createElement("p");
+    demandNote.className = "canvas-note";
+    demandNote.textContent = "No buyers are in this room, so there is no aggregate demand.";
+    elements.demandGroups.replaceChildren(demandNote);
+    return;
+  }
   const formatter = money(rawScenario.currency);
   const cards = groups.map((group) => {
     const card = document.createElement("article");
@@ -1069,6 +1165,36 @@ function renderDeliveryHeatmap(rawScenario) {
     append("rect", { x, y: 64 - barHeight, width: 64, height: barHeight, fill: bucket.units ? "#f36f3d" : "#d8d0c3" });
     append("text", { x: x + 32, y: 80, fill: "#636174", "font-size": "9", "text-anchor": "middle" }).textContent = bucket.key;
   });
+}
+
+function renderVariantOverlap(rawScenario) {
+  const note = document.querySelector("#variant-overlap-note");
+  const head = document.querySelector("#variant-overlap-head");
+  const body = document.querySelector("#variant-overlap-rows");
+  if (!note || !head || !body) return;
+  const matrix = variantOverlapMatrix(rawScenario);
+  note.textContent = matrix.variants.map((entry) => `${entry.variant}: ${entry.buyerCount} buyers, ${entry.units} units (${entry.offerCount} offers)`).join(". ") + ".";
+  const headerRow = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.scope = "col";
+  corner.textContent = "Accepted variant";
+  headerRow.append(corner);
+  for (const entry of matrix.variants) {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = entry.variant;
+    headerRow.append(th);
+  }
+  head.replaceChildren(headerRow);
+  body.replaceChildren(...matrix.cells.map((row, index) => {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.scope = "row";
+    th.textContent = matrix.variants[index].variant;
+    tr.append(th);
+    for (const cell of row) addCell(tr, String(cell.buyerCount));
+    return tr;
+  }));
 }
 
 function addCell(row, text, className = "") {
@@ -1235,14 +1361,16 @@ function downloadFile(content, filename, type) {
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-async function shareScenario() {
+async function shareScenario(redacted = false) {
   try {
-    const encoded = encodeScenario(scenario);
+    const encoded = redacted ? encodeRedactedScenario(scenario) : encodeScenario(scenario);
     const url = new URL(window.location.href);
     url.hash = `scenario=${encoded}`;
     window.history.replaceState(null, "", url);
     await navigator.clipboard.writeText(url.href);
-    setStatus("Share link copied. It contains this scenario's data.", true);
+    setStatus(redacted
+      ? "Redacted share link copied. Buyer labels are Buyer 1 through N. IDs and constraints are unchanged."
+      : "Share link copied. It contains this scenario's data.", true);
   } catch (error) {
     setStatus(error?.name === "NotAllowedError" ? "The share link is in the address bar, but clipboard access was denied." : `Share failed: ${messageOf(error)}`);
   }

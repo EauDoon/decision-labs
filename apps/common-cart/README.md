@@ -8,6 +8,18 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
+## Changelog (1.3.1)
+
+Organizer and merchant workbench updates for leftover planning, share hygiene, and empty-room recovery. This remains an offline simulator. Residual coverage is still a planning aid, not a dual checkout or split invoice.
+
+- **Tertiary residual fill.** After the winner and the next leftover offer, a third distinct offer is tried on remaining whole buyers. Quantities are never split. Organizer briefing names the tertiary fill as aggregates. Compare rooms report leftover and unfilled counts.
+- **Variant overlap matrix.** Merchants see how many buyers accept each offered variant, including pairwise overlap. Cells are counts only. Labels, IDs, budgets, and allocations stay out.
+- **Redacted share link.** Optional hash uses Buyer 1 through N labels. The default share link still encodes saved private labels. Standalone `file://` pages keep pointing to JSON export.
+- **Delivery heatmap CSV.** Aggregate deadline buckets with buyer and unit counts. Formula-like text is escaped the same way as other CSV exports.
+- **Keyboard jump.** `m` focuses the merchant inspector region when you are not typing. `?` help lists it with undo, redo, export, and add buyer.
+- **Copy as pickup.** One click clones a shipping offer with fulfillment set to pickup and shipping charged at 0. The original offer is unchanged.
+- **Empty-room recovery.** Deleting every buyer leaves a valid empty room. Restore neighbourhood example reloads the coffee scenario and is undoable.
+
 ## Changelog (1.3.0)
 
 Pooled-purchase workbench updates for organizers who need leftover fill, quantity-ladder planning, and private-label hygiene. This remains an offline simulator. Residual coverage is a planning aid, not a dual checkout.
@@ -83,10 +95,11 @@ npm run check
 - Review item cost, shipping, landed cost, and ceiling headroom per included buyer locally.
 - Compare qualified offers by fulfilled units, group headroom, buyers included, and landed cost.
 - Inspect why each buyer order is included, blocked by the minimum, left out by capacity, or incompatible with an offer, grouped by reason.
-- See leftover demand after the winner as a planning aid, not a second checkout.
-- See which local buyer labels each qualified offer includes; merchant-facing views stay aggregated. Screenshot mode can hide labels.
-- Inspect a merchant view that contains aggregate ranges rather than individual records.
-- Import or export a scenario as JSON, export an organizer briefing, or encode the current scenario in a share link.
+- See leftover demand after the winner, then a second and third distinct offer, as a planning aid, not a second checkout.
+- See which local buyer labels each qualified offer includes; merchant-facing views stay aggregated. Screenshot mode can hide labels. A redacted share link uses Buyer 1 through N.
+- Inspect a merchant view that contains aggregate ranges, a variant overlap matrix, and a delivery heatmap, rather than individual records.
+- Import or export a scenario as JSON, export an organizer briefing, export heatmap CSV, or encode the current scenario in a share link.
+- Recover an empty buyer room with the neighbourhood example; Undo returns to the empty list.
 - Work entirely in the browser with local autosave.
 
 ## How matching works
@@ -116,6 +129,10 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |   |-- residual.test.mjs   Leftover coverage after the winner
 |   |-- next-tier.test.mjs  Units needed for the next cheaper band
 |   |-- csv-import.test.mjs Buyer CSV import
+|   |-- overlap.test.mjs    Merchant variant overlap counts
+|   |-- heatmap.test.mjs    Delivery deadline buckets and CSV
+|   |-- empty-room.test.mjs Empty buyer rooms and undoable restore
+|   |-- shortcuts.test.mjs  Keyboard help for the merchant inspector
 |   |-- standalone.test.mjs Single-file build checks
 |-- standalone.html         No-install, single-file GUI
 |-- launch-windows.cmd      One-click Windows GUI launcher
@@ -132,7 +149,7 @@ The [root CI workflow](../../.github/workflows/common-cart.yml) runs this compon
 
 ## Data and privacy
 
-Common Cart makes no network requests. Scenarios are held in browser memory and local storage. Export and link sharing happen only when requested. A share link contains the full scenario, including buyer labels, so review it before sending. Screenshot mode and redacted JSON replace labels with Buyer 1 through N. Merchant reports, residual coverage JSON, and organizer briefings omit private buyer rows.
+Common Cart makes no network requests. Scenarios are held in browser memory and local storage. Export and link sharing happen only when requested. A share link contains the full scenario, including buyer labels, so review it before sending. Screenshot mode, redacted JSON, and the optional redacted share link replace labels with Buyer 1 through N. Merchant reports, residual coverage JSON, heatmap CSV, variant overlap, and organizer briefings omit private buyer rows.
 
 The merchant view is an interface boundary, not a formal privacy guarantee. Small cohorts and unusual constraints can still reveal information.
 
