@@ -12,6 +12,7 @@ import {
   approvalForOptions,
   canonicalProposal,
   evaluatePackage,
+  stressPackage,
   findSmallestAgreement,
   formatDecisionBrief,
   validateProposal,
@@ -681,4 +682,20 @@ test("custom packages evaluate all constraints without changing the draft", () =
   assert.equal(JSON.stringify(input), before);
   input.maxChangeCost = 1;
   assert.equal(evaluatePackage(input, ["better"]).status, "not_passing");
+});
+
+
+test("downside stress tests preserve inputs and expose protected-group failures", () => {
+  const input = proposal({ threshold: 50, groups: [{ id: "a", name: "A", weight: 9 }, { id: "b", name: "B", weight: 1, minSupport: 70 }], clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { a: 90, b: 80 }), option("other", false, { a: 80, b: 80 }, 1), option("third", false, { a: 70, b: 75 }, 2),
+  ] }] });
+  const before = JSON.stringify(input);
+  assert.equal(stressPackage(input, ["original"], 10).status, "passing");
+  const failed = stressPackage(input, ["original"], 11);
+  assert.equal(failed.status, "not_passing");
+  assert.ok(failed.summary.approval > input.threshold);
+  assert.equal(failed.summary.constraints.floors[0].met, false);
+  assert.equal(stressPackage(input, ["original"], 100).summary.approval, 0);
+  for (const drop of [-1, 101, NaN, "5"]) assert.equal(stressPackage(input, ["original"], drop).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
 });

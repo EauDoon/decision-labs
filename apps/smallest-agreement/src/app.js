@@ -5,6 +5,7 @@ import {
   MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
   evaluatePackage,
+  stressPackage,
   findSmallestAgreement,
   formatPercent,
   formatDecisionBrief,
@@ -348,6 +349,7 @@ function renderResults(result) {
   const { proposal } = state;
   renderAlternatives(result);
   renderManualPackage(result);
+  renderStressTest(result);
   const alert = $("#result-alert");
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
@@ -399,6 +401,26 @@ function renderResults(result) {
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
 }
+
+function renderStressTest(result) {
+  if (!result.agreement) {
+    $("#stress-result").textContent = "A passing recommendation is needed before testing its resilience.";
+    return;
+  }
+  const input = $("#support-drop");
+  const drop = input.value === "" ? NaN : Number(input.value);
+  const stressed = stressPackage(state.proposal, result.agreement.options.map((option) => option.id), drop);
+  if (stressed.status === "invalid") {
+    $("#stress-result").textContent = stressed.errors[0];
+    return;
+  }
+  const summary = stressed.summary;
+  $("#stress-result").innerHTML = '<p><strong>' + (stressed.status === 'passing' ? 'The same recommendation still passes this downside scenario.' : 'The recommendation fails this downside scenario.') + '</strong> Approval: ' + formatPercent(summary.approval) + ', threshold margin: ' + formatMargin(summary.approval - state.proposal.threshold) + '.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Entered support</th><th scope="col">Downside support</th><th scope="col">Floor</th></tr></thead><tbody>' + summary.byGroup.map((group, index) => {
+    const floor = summary.constraints.floors.find((row) => row.id === group.id);
+    return '<tr><th scope="row">' + escapeHtml(group.name) + '</th><td>' + formatPercent(stressed.original.byGroup[index].approval) + '</td><td>' + formatPercent(group.approval) + '</td><td>' + (floor ? floor.minimum + '%: ' + (floor.met ? 'met' : 'not met') : 'None') + '</td></tr>';
+  }).join('') + '</tbody></table></div>';
+}
+$("#support-drop").addEventListener("input", () => renderStressTest(currentResult()));
 
 function renderManualPackage(result) {
   const valid = result.status !== "invalid";

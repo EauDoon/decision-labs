@@ -256,6 +256,12 @@ canvas { display: block; width: 100%; height: auto; min-height: 190px; margin-to
             <div id="manual-options" class="manual-options"></div>
             <div id="manual-result" role="status" aria-live="polite"></div>
           </section>
+          <section class="result-card" aria-labelledby="stress-heading">
+            <h3 id="stress-heading">Stress-test the recommendation</h3>
+            <p>Reduce every entered support score by the same number of percentage points, stopping at zero. Test the same package against the same threshold and group floors. Costs and locks stay fixed. This is a hypothetical downside scenario, not a forecast or a probability of consent.</p>
+            <label for="support-drop">Support drop (percentage points)</label><input id="support-drop" type="number" min="0" max="100" step="any" value="5">
+            <div id="stress-result" role="status" aria-live="polite"></div>
+          </section>
           <section class="near-misses" aria-labelledby="near-misses-heading">
             <div class="section-heading"><div><p class="eyebrow">Alternatives</p><h3 id="near-misses-heading">Near misses</h3></div></div>
             <div id="near-misses-list"></div>
@@ -746,6 +752,21 @@ function evaluatePackage(proposal, optionIds) {
   return { status: summary.constraints.met && summary.approval + EPSILON >= proposal.threshold ? "passing" : "not_passing", summary };
 }
 
+
+/** A deterministic downside scenario, not a probability estimate or a new optimization. */
+function stressPackage(proposal, optionIds, supportDrop) {
+  if (!Number.isFinite(supportDrop) || supportDrop < 0 || supportDrop > 100) {
+    return { status: "invalid", errors: ["Support drop must be a number from 0 to 100."] };
+  }
+  const original = evaluatePackage(proposal, optionIds);
+  if (original.status === "invalid") return original;
+  const pessimistic = canonicalProposal(proposal);
+  for (const clause of pessimistic.clauses) for (const option of clause.options) {
+    for (const group of pessimistic.groups) option.support[group.id] = Math.max(0, option.support[group.id] - supportDrop);
+  }
+  return { ...evaluatePackage(pessimistic, optionIds), original: original.summary, supportDrop };
+}
+
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const MAX_SCENARIOS = 20;
@@ -1083,6 +1104,7 @@ function renderResults(result) {
   const { proposal } = state;
   renderAlternatives(result);
   renderManualPackage(result);
+  renderStressTest(result);
   const alert = $("#result-alert");
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
@@ -1134,6 +1156,26 @@ function renderResults(result) {
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
 }
+
+function renderStressTest(result) {
+  if (!result.agreement) {
+    $("#stress-result").textContent = "A passing recommendation is needed before testing its resilience.";
+    return;
+  }
+  const input = $("#support-drop");
+  const drop = input.value === "" ? NaN : Number(input.value);
+  const stressed = stressPackage(state.proposal, result.agreement.options.map((option) => option.id), drop);
+  if (stressed.status === "invalid") {
+    $("#stress-result").textContent = stressed.errors[0];
+    return;
+  }
+  const summary = stressed.summary;
+  $("#stress-result").innerHTML = '<p><strong>' + (stressed.status === 'passing' ? 'The same recommendation still passes this downside scenario.' : 'The recommendation fails this downside scenario.') + '</strong> Approval: ' + formatPercent(summary.approval) + ', threshold margin: ' + formatMargin(summary.approval - state.proposal.threshold) + '.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Entered support</th><th scope="col">Downside support</th><th scope="col">Floor</th></tr></thead><tbody>' + summary.byGroup.map((group, index) => {
+    const floor = summary.constraints.floors.find((row) => row.id === group.id);
+    return '<tr><th scope="row">' + escapeHtml(group.name) + '</th><td>' + formatPercent(stressed.original.byGroup[index].approval) + '</td><td>' + formatPercent(group.approval) + '</td><td>' + (floor ? floor.minimum + '%: ' + (floor.met ? 'met' : 'not met') : 'None') + '</td></tr>';
+  }).join('') + '</tbody></table></div>';
+}
+$("#support-drop").addEventListener("input", () => renderStressTest(currentResult()));
 
 function renderManualPackage(result) {
   const valid = result.status !== "invalid";

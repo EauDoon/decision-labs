@@ -462,3 +462,18 @@ export function evaluatePackage(proposal, optionIds) {
   const summary = selectionSummary(proposal, selected);
   return { status: summary.constraints.met && summary.approval + EPSILON >= proposal.threshold ? "passing" : "not_passing", summary };
 }
+
+
+/** A deterministic downside scenario, not a probability estimate or a new optimization. */
+export function stressPackage(proposal, optionIds, supportDrop) {
+  if (!Number.isFinite(supportDrop) || supportDrop < 0 || supportDrop > 100) {
+    return { status: "invalid", errors: ["Support drop must be a number from 0 to 100."] };
+  }
+  const original = evaluatePackage(proposal, optionIds);
+  if (original.status === "invalid") return original;
+  const pessimistic = canonicalProposal(proposal);
+  for (const clause of pessimistic.clauses) for (const option of clause.options) {
+    for (const group of pessimistic.groups) option.support[group.id] = Math.max(0, option.support[group.id] - supportDrop);
+  }
+  return { ...evaluatePackage(pessimistic, optionIds), original: original.summary, supportDrop };
+}
