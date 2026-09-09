@@ -175,6 +175,8 @@ SOFTWARE.
           <p>Choose one question, then review the current room. This organizer-only view can contain private buyer labels. It does not change offers or make purchases.</p>
           <label for="cart-review-tool">Review question</label>
           <div class="cart-review-controls"><select id="cart-review-tool"></select><button id="cart-review-run" type="button">Run review</button></div>
+          <div class="cart-review-controls"><button id="cart-review-export" type="button" disabled>Export private review</button><button id="cart-review-import" type="button">Inspect review packet</button><input id="cart-review-file" type="file" accept="application/json,.json" hidden></div>
+          <p id="cart-review-origin"></p>
           <div id="cart-review-output" aria-live="polite"></div>
         </details>
         <section class="panel print-chrome" aria-labelledby="comparison-heading">

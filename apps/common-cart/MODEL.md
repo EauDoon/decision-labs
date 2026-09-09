@@ -203,3 +203,7 @@ On demand, rerun at most five ranked offers at up to three distinct capacity inc
 ### Minimum-order relaxation preview
 
 Reevaluate each offer with only its base minimum changed to one unit. Capacity, shipping, prices, and quantity-tier thresholds remain unchanged. The preview does not assert merchant acceptance.
+
+### Private review packets
+
+Packets contain the validated scenario, its exact normalized JSON snapshot, the selected review tool, and full-precision computed rows. Replay rejects changed input snapshots, unknown fields, or result mismatches, while ignoring object field order. The importer limits files to 1 MiB, recomputes all results, and leaves the active room unchanged. This consistency check is unsigned; someone able to rewrite both input and result can create a new valid packet. It is not authentication or an immutable audit trail. Review packets are organizer-private and never merchant exports.

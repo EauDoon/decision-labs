@@ -1637,3 +1637,23 @@ export function analyzeCartReview(rawScenario, tool) {
     default: throw new ScenarioError('Review is unavailable.');
   }
 }
+
+
+export function createCartReviewPacket(rawScenario, tool) {
+  const scenario = validateScenario(rawScenario);
+  const packet = { format: 'common-cart-review', version: 1, tool, scenario, inputJSON: JSON.stringify(scenario), review: analyzeCartReview(scenario, tool) };
+  if (new TextEncoder().encode(JSON.stringify(packet)).length > 1048576) throw new ScenarioError('Review packet exceeds 1 MiB. Choose a narrower review.');
+  return packet;
+}
+
+export function replayCartReviewPacket(candidate) {
+  const fields = ['format', 'version', 'tool', 'scenario', 'inputJSON', 'review'];
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== fields.length || !fields.every((field) => Object.hasOwn(candidate, field)) || candidate.format !== 'common-cart-review' || candidate.version !== 1) throw new ScenarioError('Unsupported review packet.');
+  const current = createCartReviewPacket(candidate.scenario, candidate.tool);
+  if (candidate.inputJSON !== current.inputJSON) throw new ScenarioError('Review input snapshot changed. Run a new review.');
+  const supplied = candidate.review, expected = current.review;
+  if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied) || Object.keys(supplied).length !== Object.keys(expected).length || !Object.keys(expected).every((field) => Object.hasOwn(supplied, field))) throw new ScenarioError('Review result fields changed.');
+  for (const field of ['tool', 'title', 'currency', 'note']) if (supplied[field] !== expected[field]) throw new ScenarioError('Review result does not match the input snapshot.');
+  if (!Array.isArray(supplied.columns) || supplied.columns.length !== expected.columns.length || expected.columns.some((value, index) => !Object.hasOwn(supplied.columns, index) || supplied.columns[index] !== value) || !Array.isArray(supplied.rows) || supplied.rows.length !== expected.rows.length || expected.rows.some((row, index) => !Object.hasOwn(supplied.rows, index) || !Array.isArray(supplied.rows[index]) || supplied.rows[index].length !== row.length || row.some((value, column) => !Object.hasOwn(supplied.rows[index], column) || supplied.rows[index][column] !== value))) throw new ScenarioError('Review result does not match the input snapshot.');
+  return current;
+}

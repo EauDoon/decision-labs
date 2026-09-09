@@ -8,7 +8,11 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
-## Changelog (1.3.3)
+## Changelog (1.4.0)
+
+The Buyer room now includes an on-demand organizer review flow: allocated coverage, sole-offer dependency, unserved reasons, same-cohort alternatives, withdrawal stress, shipping exposure, delivery slack, and bounded capacity/minimum previews. Export a private review packet and inspect it later without replacing the current room. Its input snapshot and recomputed results must match; it is an unsigned consistency record, not proof of authorship or merchant consent.
+
+## Earlier changelog (1.3.3)
 
 Organizer tools for merchant-safe offer export, list hygiene, empty-offer recovery, and honest local caps. This remains an offline simulator. Merchant views, JSON, CSV, overlap, briefing, and winner markdown still receive aggregates and counts only.
 

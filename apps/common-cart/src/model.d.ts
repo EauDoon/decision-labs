@@ -349,3 +349,7 @@ export interface CartReview {
 }
 export const CART_REVIEW_TOOLS: readonly { id: string; title: string }[];
 export function analyzeCartReview(rawScenario: unknown, tool: string): CartReview;
+
+export interface CartReviewPacket { format: 'common-cart-review'; version: 1; tool: string; scenario: Scenario; inputJSON: string; review: CartReview; }
+export function createCartReviewPacket(rawScenario: unknown, tool: string): CartReviewPacket;
+export function replayCartReviewPacket(candidate: unknown): CartReviewPacket;
