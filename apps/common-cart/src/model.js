@@ -245,6 +245,23 @@ export function filterBuyerIdsByAcceptedVariant(rawScenario, variant) {
     .map((buyer) => buyer.id);
 }
 
+/** Display-only. Matching is unchanged. When hideExcluded is false, every buyer id is returned. */
+export function filterBuyerIdsHidingExcluded(rawScenario, offerId, hideExcluded) {
+  if (hideExcluded !== true && hideExcluded !== false) {
+    throw new ScenarioError("Hide excluded buyers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideExcluded) return scenario.buyers.map((buyer) => buyer.id);
+  if (typeof offerId !== "string" || offerId.trim() === "") {
+    throw new ScenarioError("Select an existing offer to hide excluded buyers.");
+  }
+  const result = evaluateOffer(scenario, offerId);
+  const included = new Set(
+    result.buyerOutcomes.filter((outcome) => outcome.status === "included").map((outcome) => outcome.buyerId)
+  );
+  return scenario.buyers.filter((buyer) => included.has(buyer.id)).map((buyer) => buyer.id);
+}
+
 /** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
 export function organizerBuyerVariantCounts(rawScenario) {
   const scenario = validateScenario(rawScenario);

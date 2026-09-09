@@ -14,6 +14,7 @@ import {
   filterOfferIdsByFulfillment,
   acceptedVariantFilterOptions,
   filterBuyerIdsByAcceptedVariant,
+  filterBuyerIdsHidingExcluded,
   organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
@@ -100,6 +101,7 @@ let cartReviewSequence = 0;
 let buyerSortPreviewIds = null;
 let offerSortPreviewIds = null;
 let buyerVariantFilter = "all";
+let hideExcludedBuyers = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -328,6 +330,7 @@ function bindStaticEvents() {
   elements.inspector.addEventListener("change", () => {
     inspectedOfferId = elements.inspector.value;
     try { renderInspector(evaluateMarket(scenario)); } catch { /* Invalid edits already have a visible message. */ }
+    applyBuyerDisplayFilters();
   });
 
   document.querySelectorAll("[data-preset]").forEach((button) => {
@@ -521,11 +524,22 @@ function bindStaticEvents() {
   document.querySelector("#buyer-variant-filter").addEventListener("change", (event) => {
     buyerVariantFilter = event.target.value;
     try {
-      applyBuyerVariantFilter();
+      applyBuyerDisplayFilters();
       const shown = filterBuyerIdsByAcceptedVariant(scenario, buyerVariantFilter).length;
       setStatus(buyerVariantFilter === "all"
         ? "Showing every buyer. Saved buyers and matching are unchanged."
         : `Showing ${shown} buyer${shown === 1 ? "" : "s"} who accept ${buyerVariantFilter}. Saved buyers are unchanged.`, true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#hide-excluded-buyers").addEventListener("change", (event) => {
+    hideExcludedBuyers = event.target.checked;
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideExcludedBuyers
+        ? "Hiding buyers excluded from the inspected offer. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only."
+        : "Showing excluded buyers again. Saved buyers and matching stay unchanged.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -799,7 +813,9 @@ function renderEditor() {
   renderTierEditors();
   applyOfferFulfillmentFilter();
   populateBuyerVariantFilter();
-  applyBuyerVariantFilter();
+  applyBuyerDisplayFilters();
+  const hideExcluded = document.querySelector("#hide-excluded-buyers");
+  if (hideExcluded) hideExcluded.checked = hideExcludedBuyers;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -880,11 +896,23 @@ function populateBuyerVariantFilter() {
 }
 
 function applyBuyerVariantFilter() {
+  applyBuyerDisplayFilters();
+}
+
+function applyBuyerDisplayFilters() {
   let visibleIds;
   try {
     visibleIds = new Set(filterBuyerIdsByAcceptedVariant(scenario, buyerVariantFilter));
   } catch {
     visibleIds = new Set(scenario.buyers.map((buyer) => buyer.id));
+  }
+  if (hideExcludedBuyers) {
+    try {
+      const included = new Set(filterBuyerIdsHidingExcluded(scenario, inspectedOfferId, true));
+      visibleIds = new Set([...visibleIds].filter((id) => included.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
   }
   elements.buyerRows.querySelectorAll("tr[data-id]").forEach((row) => {
     row.hidden = !visibleIds.has(row.dataset.id);
@@ -1059,6 +1087,7 @@ function refresh() {
     renderSummary(market);
     renderResults(market);
     renderInspector(market);
+    applyBuyerDisplayFilters();
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
     renderOrganizerBuyerVariantCounts(market.scenario);
