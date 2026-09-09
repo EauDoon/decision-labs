@@ -82,6 +82,7 @@ let scenario = loadInitialScenario();
 const history = createScenarioHistory(scenario);
 let invalidDraft = false;
 let workspaceReadFailed = false;
+let offerFulfillmentFilter = "all";
 let savedRooms = loadWorkspace();
 let baseline = null;
 let savedState = "pending";
@@ -89,7 +90,6 @@ let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
 let buyerSortPreviewIds = null;
 let offerSortPreviewIds = null;
-let offerFulfillmentFilter = "all";
 let buyerVariantFilter = "all";
 let lastRemovedBuyer = null;
 let saveTimer;
@@ -103,7 +103,9 @@ function loadWorkspace() {
   try {
     const raw = localStorage.getItem(WORKSPACE_KEY);
     if (!raw) return [];
-    return validateWorkspace(JSON.parse(raw)).rooms;
+    const workspace = validateWorkspace(JSON.parse(raw));
+    offerFulfillmentFilter = workspace.fulfillmentFilter;
+    return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
     queueMicrotask(() => setStatus(`Saved rooms could not be opened: ${messageOf(error)} Export your current room before closing.`));
@@ -145,10 +147,19 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
+}
+
+function persistFulfillmentFilter() {
+  if (workspaceReadFailed) return;
+  try {
+    storeWorkspace(savedRooms);
+  } catch (error) {
+    setStatus(`Could not save fulfillment filter: ${messageOf(error)}`);
+  }
 }
 
 function loadInitialScenario() {
@@ -477,12 +488,13 @@ function bindStaticEvents() {
   document.querySelector("#import-offers-file").addEventListener("change", importOffersCsv);
   document.querySelector("#offer-fulfillment-filter").addEventListener("change", (event) => {
     offerFulfillmentFilter = event.target.value;
+    persistFulfillmentFilter();
     try {
       applyOfferFulfillmentFilter();
       const shown = filterOfferIdsByFulfillment(scenario, offerFulfillmentFilter).length;
       setStatus(offerFulfillmentFilter === "all"
-        ? "Showing every offer. Saved order is unchanged."
-        : `Showing ${shown} ${offerFulfillmentFilter} offer${shown === 1 ? "" : "s"}. Saved offers are unchanged.`, true);
+        ? "Showing every offer. Saved order is unchanged. The last fulfillment filter is kept in this browser."
+        : `Showing ${shown} ${offerFulfillmentFilter} offer${shown === 1 ? "" : "s"}. Saved offers are unchanged. The last fulfillment filter is kept in this browser.`, true);
     } catch (error) {
       setStatus(messageOf(error));
     }

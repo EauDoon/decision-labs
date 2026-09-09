@@ -149,8 +149,16 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms"], "Workspace");
-  return { version: 1, rooms: candidate.rooms.map(validateScenario) };
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter"], "Workspace");
+  const fulfillmentFilter = own(candidate, "fulfillmentFilter");
+  let filter = "all";
+  if (fulfillmentFilter !== undefined) {
+    if (fulfillmentFilter !== "all" && fulfillmentFilter !== "shipping" && fulfillmentFilter !== "pickup") {
+      throw new ScenarioError("Fulfillment filter must be all, shipping, or pickup.");
+    }
+    filter = fulfillmentFilter;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {

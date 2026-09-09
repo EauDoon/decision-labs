@@ -74,4 +74,6 @@ test("merchant table includes an all, shipping, and pickup fulfillment filter", 
   assert.match(html, /<option value="pickup">Pickup<\/option>/u);
   assert.match(app, /function applyOfferFulfillmentFilter\(/u);
   assert.match(app, /row\.hidden/u);
+  assert.match(app, /function persistFulfillmentFilter\(/u);
+  assert.match(html, /Older workspace files without it still open/u);
 });
