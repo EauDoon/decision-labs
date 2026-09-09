@@ -33,6 +33,28 @@ SOFTWARE.
 </head>
 <body>
   <a class="skip-link" href="#workspace">Skip to workspace</a>
+  <dialog id="coach-dialog" aria-labelledby="coach-title">
+    <form method="dialog" class="coach-card">
+      <p class="section-number">First run</p>
+      <h2 id="coach-title">How this pooled-purchase room works</h2>
+      <ol class="coach-steps">
+        <li>
+          <strong>Pool buyers.</strong>
+          Add private constraints: category, whole quantity, price ceiling, delivery limit, and accepted variants. Labels stay in this browser.
+        </li>
+        <li>
+          <strong>Compare offers.</strong>
+          Merchants set a price, minimum, capacity, and optional quantity ladder. The room shows which offer a cohort can actually unlock.
+        </li>
+        <li>
+          <strong>Inspect who is excluded and why.</strong>
+          Open the offer inspector for price, delivery, variant, budget, and capacity reasons. The merchant table still shows aggregates only.
+        </li>
+      </ol>
+      <p class="canvas-note">This is a local planning aid, not a checkout. You can reopen this guide from the header.</p>
+      <button id="coach-dismiss" class="primary" value="dismiss" type="submit">Got it</button>
+    </form>
+  </dialog>
   <header class="masthead">
     <div class="brand-lockup">
       <span class="brand-mark" aria-hidden="true">CC</span>
@@ -42,7 +64,7 @@ SOFTWARE.
       </div>
     </div>
     <nav class="header-actions" aria-label="Scenario actions">
-      <button class="quiet" id="undo-button" type="button" disabled>Undo</button>
+      <button class="quiet" id="show-coach" type="button">How this room works</button>
       <button class="quiet" id="redo-button" type="button" disabled>Redo</button>
       <button class="quiet" id="import-button" type="button">Import</button>
       <input id="import-file" type="file" accept="application/json" hidden>

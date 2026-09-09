@@ -20,6 +20,7 @@ import {
 
 const STORAGE_KEY = "common-cart.scenario.v1";
 const WORKSPACE_KEY = "common-cart.workspace.v1";
+const COACH_KEY = "common-cart.coach.v1";
 const elements = {
   title: document.querySelector("#scenario-title"),
   currency: document.querySelector("#currency"),
@@ -62,6 +63,7 @@ renderEditor();
 refresh();
 bindStaticEvents();
 renderWorkspace();
+maybeShowCoach();
 
 function loadWorkspace() {
   try {
@@ -166,6 +168,14 @@ function bindStaticEvents() {
     if (!savedRooms[index] || !window.confirm(`Delete saved snapshot "${savedRooms[index].title}"? The open room stays available.`)) return;
     try { storeWorkspace(savedRooms.filter((_, i) => i !== index)); setStatus("Saved snapshot deleted.", true); }
     catch (error) { setStatus(`Could not delete snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#show-coach").addEventListener("click", () => openCoach());
+  const coachDialog = document.querySelector("#coach-dialog");
+  coachDialog.addEventListener("close", () => {
+    try { localStorage.setItem(COACH_KEY, "dismissed"); } catch { /* Coach memory is optional. */ }
+  });
+  coachDialog.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") coachDialog.close("dismiss");
   });
   document.querySelector("#undo-button").addEventListener("click", () => restoreHistory(false));
   document.querySelector("#redo-button").addEventListener("click", () => restoreHistory(true));
@@ -292,6 +302,23 @@ function bindStaticEvents() {
       event.preventDefault(); event.returnValue = "";
     }
   });
+}
+
+function maybeShowCoach() {
+  if (window.location.hash.startsWith("#scenario=")) return;
+  try {
+    if (localStorage.getItem(COACH_KEY) === "dismissed") return;
+  } catch {
+    return;
+  }
+  openCoach();
+}
+
+function openCoach() {
+  const dialog = document.querySelector("#coach-dialog");
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  else dialog.setAttribute("open", "");
+  document.querySelector("#coach-dismiss")?.focus();
 }
 
 function allowReplaceDraft() {

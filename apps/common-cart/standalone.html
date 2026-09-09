@@ -79,6 +79,21 @@ a { color: var(--indigo-2); text-underline-offset: 3px; }
 }
 .skip-link:focus { transform: none; }
 
+#coach-dialog {
+  width: min(36rem, calc(100% - 2rem));
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+#coach-dialog::backdrop { background: rgba(23, 22, 43, 0.55); }
+.coach-card { padding: 1.4rem 1.5rem 1.5rem; }
+.coach-card h2 { margin: 0.2rem 0 0.9rem; font-size: 1.7rem; }
+.coach-steps { margin: 0 0 1rem; padding-left: 1.2rem; }
+.coach-steps li { margin-bottom: 0.75rem; color: #4f4c5e; }
+.coach-card .primary { margin-top: 0.4rem; }
+
 .masthead {
   min-height: 76px;
   display: flex;
@@ -309,6 +324,28 @@ footer {
 </head>
 <body>
   <a class="skip-link" href="#workspace">Skip to workspace</a>
+  <dialog id="coach-dialog" aria-labelledby="coach-title">
+    <form method="dialog" class="coach-card">
+      <p class="section-number">First run</p>
+      <h2 id="coach-title">How this pooled-purchase room works</h2>
+      <ol class="coach-steps">
+        <li>
+          <strong>Pool buyers.</strong>
+          Add private constraints: category, whole quantity, price ceiling, delivery limit, and accepted variants. Labels stay in this browser.
+        </li>
+        <li>
+          <strong>Compare offers.</strong>
+          Merchants set a price, minimum, capacity, and optional quantity ladder. The room shows which offer a cohort can actually unlock.
+        </li>
+        <li>
+          <strong>Inspect who is excluded and why.</strong>
+          Open the offer inspector for price, delivery, variant, budget, and capacity reasons. The merchant table still shows aggregates only.
+        </li>
+      </ol>
+      <p class="canvas-note">This is a local planning aid, not a checkout. You can reopen this guide from the header.</p>
+      <button id="coach-dismiss" class="primary" value="dismiss" type="submit">Got it</button>
+    </form>
+  </dialog>
   <header class="masthead">
     <div class="brand-lockup">
       <span class="brand-mark" aria-hidden="true">CC</span>
@@ -318,7 +355,7 @@ footer {
       </div>
     </div>
     <nav class="header-actions" aria-label="Scenario actions">
-      <button class="quiet" id="undo-button" type="button" disabled>Undo</button>
+      <button class="quiet" id="show-coach" type="button">How this room works</button>
       <button class="quiet" id="redo-button" type="button" disabled>Redo</button>
       <button class="quiet" id="import-button" type="button">Import</button>
       <input id="import-file" type="file" accept="application/json" hidden>
@@ -1472,6 +1509,7 @@ function jsonSyntaxHint(error) {
 
 const STORAGE_KEY = "common-cart.scenario.v1";
 const WORKSPACE_KEY = "common-cart.workspace.v1";
+const COACH_KEY = "common-cart.coach.v1";
 const elements = {
   title: document.querySelector("#scenario-title"),
   currency: document.querySelector("#currency"),
@@ -1514,6 +1552,7 @@ renderEditor();
 refresh();
 bindStaticEvents();
 renderWorkspace();
+maybeShowCoach();
 
 function loadWorkspace() {
   try {
@@ -1618,6 +1657,14 @@ function bindStaticEvents() {
     if (!savedRooms[index] || !window.confirm(`Delete saved snapshot "${savedRooms[index].title}"? The open room stays available.`)) return;
     try { storeWorkspace(savedRooms.filter((_, i) => i !== index)); setStatus("Saved snapshot deleted.", true); }
     catch (error) { setStatus(`Could not delete snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#show-coach").addEventListener("click", () => openCoach());
+  const coachDialog = document.querySelector("#coach-dialog");
+  coachDialog.addEventListener("close", () => {
+    try { localStorage.setItem(COACH_KEY, "dismissed"); } catch { /* Coach memory is optional. */ }
+  });
+  coachDialog.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") coachDialog.close("dismiss");
   });
   document.querySelector("#undo-button").addEventListener("click", () => restoreHistory(false));
   document.querySelector("#redo-button").addEventListener("click", () => restoreHistory(true));
@@ -1744,6 +1791,23 @@ function bindStaticEvents() {
       event.preventDefault(); event.returnValue = "";
     }
   });
+}
+
+function maybeShowCoach() {
+  if (window.location.hash.startsWith("#scenario=")) return;
+  try {
+    if (localStorage.getItem(COACH_KEY) === "dismissed") return;
+  } catch {
+    return;
+  }
+  openCoach();
+}
+
+function openCoach() {
+  const dialog = document.querySelector("#coach-dialog");
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  else dialog.setAttribute("open", "");
+  document.querySelector("#coach-dismiss")?.focus();
 }
 
 function allowReplaceDraft() {
