@@ -8,6 +8,7 @@ const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
 
 test('catalog page keeps language, landmarks, skip, and focus contract', () => {
   assert.match(html, /<html lang="en">/);
+  assert.match(html, /class="skip" href="#whats-new">Skip to what's new/);
   assert.match(html, /class="skip" href="#workbenches">Skip to workbenches/);
   assert.match(html, /<header class="shell hero">/);
   assert.match(html, /<nav class="shell site-nav" aria-label="On this page">/);
@@ -16,6 +17,7 @@ test('catalog page keeps language, landmarks, skip, and focus contract', () => {
   assert.match(html, /a:focus-visible, button:focus-visible/);
   assert.match(html, /prefers-reduced-motion: reduce/);
   assert.match(html, /id="workbenches" tabindex="-1"/);
+  assert.match(html, /id="whats-new" tabindex="-1"/);
 });
 
 test('catalog names jobs, samples, trust, and both actions', () => {
@@ -70,4 +72,31 @@ test('inline catalog script parses as classic browser JavaScript', () => {
     encoding: 'utf8',
   });
   assert.equal(result.status, 0, result.stderr || result.error?.message);
+});
+
+test('catalog names current workbench tools without live services', () => {
+  assert.match(html, /id="whats-new"/);
+  assert.match(html, /What's new/);
+  assert.match(html, /Share-to-hold in Partnership Breakpoint/);
+  assert.match(html, /Residual coverage in Common Cart/);
+  assert.match(html, /Veto groups in The Smallest Agreement/);
+  assert.match(html, /Gate Gantt in Weekend Gap/);
+  assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
+  assert.match(html, /not checkout, inventory, or a second live order/);
+  assert.match(html, /not a legal right/);
+  assert.match(html, /does not connect to a bank or a live redemption queue/);
+  assert.match(html, /href="#whats-new">What's new/);
+  assert.match(readme, /What's new/);
+  assert.match(readme, /share-to-hold, residual\s+coverage, veto groups, and the gate Gantt/);
+});
+
+test('question-mark shortcut toggles an in-page panel and skips inputs', () => {
+  assert.match(html, /id="shortcuts"/);
+  assert.match(html, /aria-labelledby="shortcuts-title"/);
+  assert.match(html, /event\.key === '\?'/);
+  assert.match(html, /aria-controls="shortcuts"/);
+  assert.match(html, /input, textarea, select, \[contenteditable="true"\]/);
+  assert.match(html, /@media print[\s\S]*\.shortcuts/);
+  assert.match(html, /@media print[\s\S]*\.whats-new/);
+  assert.match(html, /\.skip, \.skips, \.keys-note, \.how, \.site-nav, \.shortcuts/);
 });

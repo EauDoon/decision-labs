@@ -124,6 +124,11 @@
       outline-offset: 4px;
     }
     .skip:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    #whats-new:focus-visible,
+    #workbenches:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 6px;
+    }
     .guide { margin: 40px 0 12px; max-width: 720px; }
     .guide p { color: var(--muted); }
     .guide h3 { font-size: 18px; margin: 20px 0 6px; }
@@ -131,23 +136,118 @@
     .trust { margin: 28px 0 8px; padding: 28px 0 8px; border-top: 1px solid var(--line); max-width: 760px; }
     .trust ul { margin: 12px 0 0; padding-left: 1.2rem; color: var(--muted); }
     .trust li { margin: 8px 0; }
+    .whats-new {
+      margin: 8px 0 20px;
+      padding: 24px 22px 16px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel);
+    }
+    .whats-new > p { max-width: 46rem; color: var(--ink); margin: 0 0 16px; }
+    .whats-new-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px 28px;
+    }
+    .whats-new-list li {
+      margin: 0;
+      padding: 16px 0 4px;
+      border-top: 2px solid var(--brand);
+    }
+    .whats-new-list h3 {
+      font-size: 17px;
+      margin: 0 0 6px;
+      color: var(--brand-deep);
+    }
+    .whats-new-list p { margin: 0; color: var(--ink); font-size: 16px; }
+    .shortcuts-open {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      margin-left: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--brand);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--brand-deep);
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background-color 0.16s ease;
+    }
+    .shortcuts-open:hover { background: #e4eeeb; }
+    .shortcuts {
+      margin: 16px 0 8px;
+      padding: 20px 22px;
+      max-width: 36rem;
+      border: 2px solid var(--brand-deep);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--ink);
+    }
+    .shortcuts[hidden] { display: none; }
+    .shortcuts h3 { font-size: 18px; margin: 0 0 10px; }
+    .shortcuts dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; }
+    .shortcuts dt { margin: 0; }
+    .shortcuts dd { margin: 0; color: var(--ink); }
+    .shortcuts-close {
+      margin-top: 16px;
+      min-height: 44px;
+      padding: 8px 14px;
+      border: 1px solid var(--brand);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--brand-deep);
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+      transition: background-color 0.16s ease;
+    }
+    .shortcuts-close:hover { background: #e4eeeb; }
+    @media (max-width: 720px) {
+      .whats-new-list { grid-template-columns: 1fr; }
+    }
     .site-footer { padding-top: 12px; padding-bottom: 36px; font-size: 14px; color: var(--muted); }
     .site-footer p { margin: 0 0 8px; max-width: 46rem; }
+    .skips {
+      position: absolute;
+      z-index: 3;
+      left: 16px;
+      top: 16px;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
     .skip {
       position: absolute;
-      top: -100px;
-      left: 20px;
-      z-index: 2;
-      padding: 12px 16px;
-      border: 2px solid var(--brand-deep);
+      width: 1px;
+      height: 1px;
+      padding: 0;
+      overflow: hidden;
+      clip: rect(0, 0, 0, 0);
+      white-space: nowrap;
+      border: 0;
       background: white;
       color: var(--brand-deep);
       font-weight: 700;
       text-decoration: none;
     }
-    .skip:focus { top: 16px; }
+    .skip:focus, .skip:focus-visible {
+      position: static;
+      width: auto;
+      height: auto;
+      overflow: visible;
+      clip: auto;
+      white-space: normal;
+      padding: 12px 16px;
+      border: 2px solid var(--brand-deep);
+    }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close { transition: none; }
     }
     @media (max-width: 720px) {
       .shell { padding-inline: clamp(16px, 4vw, 28px); }
@@ -173,9 +273,16 @@
     }
     @media print {
       body { background: white; color: #000; border-top-width: 2px; }
-      .skip, .keys-note, .how, .site-nav { display: none; }
+      .skip, .skips, .keys-note, .how, .site-nav, .shortcuts, .shortcuts-open { display: none !important; }
       .shell { max-width: none; padding-inline: 0; }
-      .hero, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
+      .hero, .whats-new, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
+      .whats-new {
+        background: white;
+        border: 1px solid #000;
+        color: #000;
+      }
+      .whats-new > p, .whats-new-list h3, .whats-new-list p { color: #000; }
+      .whats-new-list li { border-top-color: #000; }
       .open {
         display: inline;
         min-height: 0;
@@ -193,7 +300,10 @@
   </style>
 </head>
 <body>
-  <a class="skip" href="#workbenches">Skip to workbenches</a>
+  <nav class="skips" aria-label="Skip">
+    <a class="skip" href="#whats-new">Skip to what's new</a>
+    <a class="skip" href="#workbenches">Skip to workbenches</a>
+  </nav>
   <header class="shell hero">
     <p class="eyebrow">Local catalog of four workbenches</p>
     <h1>Decision Labs</h1>
@@ -201,14 +311,50 @@
     <p class="support">Each workbench is a static page that runs in your browser. There is no shared account, no hosted service, and no model that claims to decide for you.</p>
   </header>
   <nav class="shell site-nav" aria-label="On this page">
+    <a href="#whats-new">What's new</a>
     <a href="#workbenches">Workbenches</a>
     <a href="#how-it-works">How it works</a>
     <a href="#trust">Trust and limits</a>
   </nav>
   <main class="shell" id="main">
+    <section class="whats-new" id="whats-new" tabindex="-1" aria-labelledby="whats-new-title">
+      <h2 id="whats-new-title">What's new</h2>
+      <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank.</p>
+      <ul class="whats-new-list">
+        <li>
+          <h3>Share-to-hold in Partnership Breakpoint</h3>
+          <p>Solve the minimum revenue share at which a named participant still meets their floor in the open case, then apply it if you choose. The solver is local arithmetic. It does not quote a market or predict who will stay.</p>
+        </li>
+        <li>
+          <h3>Residual coverage in Common Cart</h3>
+          <p>After a winning offer is chosen, leftover whole-buyer demand can be tested against the next-best other offer. Merchant export stays aggregate. This is a planning view, not checkout, inventory, or a second live order.</p>
+        </li>
+        <li>
+          <h3>Veto groups in The Smallest Agreement</h3>
+          <p>Mark a group whose average support must meet the approval threshold, or the higher of that threshold and the group's support floor. A veto here is a number you entered, not a legal right.</p>
+        </li>
+        <li>
+          <h3>Gate Gantt in Weekend Gap</h3>
+          <p>Scrub 72 hours of issuer, bank, payout, and FX windows on the synthetic calendar, with a table fallback. The drawing does not connect to a bank or a live redemption queue.</p>
+        </li>
+      </ul>
+    </section>
     <section id="workbenches" tabindex="-1" aria-labelledby="workbenches-title">
       <h2 id="workbenches-title">The workbenches</h2>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input.</p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <aside id="shortcuts" class="shortcuts" hidden aria-labelledby="shortcuts-title">
+        <h3 id="shortcuts-title">Keyboard shortcuts</h3>
+        <dl>
+          <dt><kbd>1</kbd></dt><dd>Open Partnership Breakpoint</dd>
+          <dt><kbd>2</kbd></dt><dd>Open Common Cart</dd>
+          <dt><kbd>3</kbd></dt><dd>Open The Smallest Agreement</dd>
+          <dt><kbd>4</kbd></dt><dd>Open Weekend Gap</dd>
+          <dt><kbd>?</kbd></dt><dd>Show or hide this list</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Hide this list</dd>
+        </dl>
+        <p>Shortcuts are ignored while focus is in an input, textarea, or select.</p>
+        <button type="button" class="shortcuts-close" id="shortcuts-close">Close shortcuts</button>
+      </aside>
       <article class="workbench">
         <span class="index" aria-hidden="true">1</span>
         <div>
@@ -285,18 +431,46 @@
     <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
   </footer>
   <script>
-    document.addEventListener('keydown', (event) => {
-      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-      const keys = { 1: 0, 2: 1, 3: 2, 4: 3 };
-      const index = keys[event.key];
-      if (index == null) return;
-      const node = event.target;
-      if (node && (node.closest?.('input, textarea, select, [contenteditable="true"]') || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName || ''))) return;
-      const link = document.querySelectorAll('#workbenches a.open')[index];
-      if (!link) return;
-      event.preventDefault();
-      window.location.assign(link.href);
-    });
+    (function () {
+      const shortcuts = document.getElementById('shortcuts');
+      const openBtn = document.getElementById('shortcuts-open');
+      const closeBtn = document.getElementById('shortcuts-close');
+      const inEditable = (node) => !!(node && (node.closest?.('input, textarea, select, [contenteditable="true"]') || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName || '')));
+      const setOpen = (open) => {
+        if (!shortcuts) return;
+        shortcuts.hidden = !open;
+        openBtn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) (closeBtn || shortcuts).focus();
+      };
+      openBtn?.addEventListener('click', () => setOpen(shortcuts.hidden));
+      closeBtn?.addEventListener('click', () => {
+        setOpen(false);
+        openBtn?.focus();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+        if (inEditable(event.target)) return;
+        if (event.key === '?') {
+          event.preventDefault();
+          setOpen(shortcuts.hidden);
+          return;
+        }
+        if (event.key === 'Escape' && shortcuts && !shortcuts.hidden) {
+          event.preventDefault();
+          setOpen(false);
+          openBtn?.focus();
+          return;
+        }
+        if (event.shiftKey) return;
+        const keys = { 1: 0, 2: 1, 3: 2, 4: 3 };
+        const index = keys[event.key];
+        if (index == null) return;
+        const link = document.querySelectorAll('#workbenches a.open')[index];
+        if (!link) return;
+        event.preventDefault();
+        window.location.assign(link.href);
+      });
+    })();
   </script>
 </body>
 </html>
