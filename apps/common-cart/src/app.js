@@ -4,6 +4,7 @@ import {
   clonePreset,
   createScenarioHistory,
   decodeScenario,
+  duplicateEntry,
   encodeScenario,
   evaluateMarket,
   validateWorkspace,
@@ -259,6 +260,7 @@ function renderEditor() {
 function renderBuyerRow(entry) {
   const row = elements.buyerTemplate.content.firstElementChild.cloneNode(true);
   row.dataset.id = entry.id;
+  addDuplicateAction(row, "buyers", entry);
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
     input.value = field === "allowedVariants" ? entry[field].join(", ") : entry[field] ?? "";
@@ -287,6 +289,7 @@ function renderBuyerRow(entry) {
 function renderOfferRow(entry) {
   const row = elements.offerTemplate.content.firstElementChild.cloneNode(true);
   row.dataset.id = entry.id;
+  addDuplicateAction(row, "offers", entry);
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
     input.value = entry[field];
@@ -408,6 +411,24 @@ function refresh() {
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
   }
+}
+
+function addDuplicateAction(row, kind, entry) {
+  const button = document.createElement("button");
+  button.type = "button";
+  button.textContent = "Copy";
+  button.setAttribute("aria-label", `Duplicate ${kind === "buyers" ? entry.label : entry.merchant}`);
+  button.disabled = scenario[kind].length >= 40;
+  button.addEventListener("click", () => {
+    try {
+      scenario = duplicateEntry(scenario, kind, entry.id);
+      renderEditor(); refresh();
+      const body = kind === "buyers" ? elements.buyerRows : elements.offerRows;
+      body.lastElementChild.querySelector("input").focus();
+      setStatus("Independent copy added. Edit its constraints to test an alternative.", true);
+    } catch (error) { setStatus(messageOf(error)); }
+  });
+  row.lastElementChild.append(button);
 }
 
 function updateHistoryButtons() {

@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, createScenarioHistory, validateWorkspace } from "../src/model.js";
+import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry } from "../src/model.js";
 
 test("history detaches states, caps memory, and truncates branches", () => {
   const s = clonePreset(); const h = createScenarioHistory(s);
@@ -14,6 +14,18 @@ test("history detaches states, caps memory, and truncates branches", () => {
   let count = 0; while (h.canUndo) { h.undo(); count++; }
   assert.equal(count, 49);
   assert.throws(() => h.record({}));
+});
+
+test("duplicate gives a unique id and independent nested constraints", () => {
+  const s = clonePreset("tiers");
+  const buyers = duplicateEntry(s, "buyers", s.buyers[0].id);
+  assert.equal(new Set(buyers.buyers.map(b => b.id)).size, buyers.buyers.length);
+  buyers.buyers.at(-1).allowedVariants.push("Changed");
+  assert.notDeepEqual(buyers.buyers.at(-1).allowedVariants, buyers.buyers[0].allowedVariants);
+  const offers = duplicateEntry(s, "offers", s.offers[0].id);
+  assert.equal(offers.offers.length, s.offers.length + 1);
+  assert.throws(() => duplicateEntry(s, "__proto__", s.buyers[0].id));
+  assert.throws(() => duplicateEntry(s, "buyers", "missing"));
 });
 
 test("workspace validates every room and rejects unsupported schema or oversized collections", () => {

@@ -121,6 +121,24 @@ export function validateWorkspace(candidate) {
   return { version: 1, rooms: candidate.rooms.map(validateScenario) };
 }
 
+export function duplicateEntry(rawScenario, kind, id) {
+  const clean = validateScenario(rawScenario);
+  if (!["buyers", "offers"].includes(kind)) throw new ScenarioError("Choose buyers or offers to duplicate.");
+  const entries = clean[kind];
+  if (entries.length >= 40) throw new ScenarioError("A room can have at most 40 entries of each kind.");
+  const original = entries.find((entry) => entry.id === id);
+  if (!original) throw new ScenarioError("The entry to duplicate was not found.");
+  let number = 1;
+  const prefix = kind === "buyers" ? "B" : "O";
+  while (entries.some((entry) => entry.id === `${prefix}${String(number).padStart(2, "0")}`)) number++;
+  const copy = JSON.parse(JSON.stringify(original));
+  copy.id = `${prefix}${String(number).padStart(2, "0")}`;
+  const label = kind === "buyers" ? "label" : "merchant";
+  copy[label] = `${copy[label].slice(0, 53)} (copy)`;
+  entries.push(copy);
+  return clean;
+}
+
 export function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");
