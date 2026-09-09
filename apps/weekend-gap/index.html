@@ -93,6 +93,28 @@ SOFTWARE.
               <label for="name">Scenario name</label>
               <input id="name" name="name" aria-describedby="input-message" data-field="name" maxlength="80" type="text" autocomplete="off">
             </div>
+            <fieldset>
+              <legend>Gate display names</legend>
+              <p>Optional labels for the dashboard and Gantt. They do not change the math. Print redacted replaces custom names with Issuer, Bank, Payout and FX.</p>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="issuerLabel">Issuer label</label>
+                  <input id="issuerLabel" name="issuerLabel" data-field="issuerLabel" maxlength="40" type="text" autocomplete="off">
+                </div>
+                <div class="input-group">
+                  <label for="bankLabel">Bank label</label>
+                  <input id="bankLabel" name="bankLabel" data-field="bankLabel" maxlength="40" type="text" autocomplete="off">
+                </div>
+                <div class="input-group">
+                  <label for="payoutLabel">Payout label</label>
+                  <input id="payoutLabel" name="payoutLabel" data-field="payoutLabel" maxlength="40" type="text" autocomplete="off">
+                </div>
+                <div class="input-group">
+                  <label for="fxLabel">FX label</label>
+                  <input id="fxLabel" name="fxLabel" data-field="fxLabel" maxlength="40" type="text" autocomplete="off">
+                </div>
+              </div>
+            </fieldset>
 
             <fieldset>
               <legend>Liquidity base</legend>
@@ -302,7 +324,7 @@ SOFTWARE.
               <button id="analysis-export" type="button">Export analysis JSON</button>
             </div>
             <label for="workspace-notes">Experiment notes</label><textarea id="workspace-notes" rows="3" maxlength="4000" placeholder="What assumption are you testing, and why?"></textarea>
-            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="copy-markdown-report" type="button">Copy Markdown report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
+            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="print-redacted" type="button">Print redacted</button><button id="copy-markdown-report" type="button">Copy Markdown report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
             <p id="workspace-status" role="status">Workspace autosave includes the current scenario, pinned baseline, reserve target, notes and selected hour. Share links contain only a scenario and take priority on reload.</p>
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
@@ -493,10 +515,10 @@ SOFTWARE.
               <p class="eyebrow">Settlement chain</p>
               <h2 id="chain-title">Current gate state</h2>
               <dl class="gate-list">
-                <div><dt>Issuer redemption</dt><dd id="issuer-gate">Closed</dd></div>
-                <div><dt>Bank settlement</dt><dd id="bank-gate">Closed</dd></div>
-                <div><dt>Australian payout</dt><dd id="payout-gate">Closed</dd></div>
-                <div><dt>FX condition</dt><dd id="fx-gate">Normal</dd></div>
+                <div><dt><span class="gate-live-label" id="issuer-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></dt><dd id="issuer-gate">Closed</dd></div>
+                <div><dt><span class="gate-live-label" id="bank-live-label">Bank</span><span class="gate-redacted-label">Bank</span></dt><dd id="bank-gate">Closed</dd></div>
+                <div><dt><span class="gate-live-label" id="payout-live-label">Payout</span><span class="gate-redacted-label">Payout</span></dt><dd id="payout-gate">Closed</dd></div>
+                <div><dt><span class="gate-live-label" id="fx-live-label">FX</span><span class="gate-redacted-label">FX</span></dt><dd id="fx-gate">Normal</dd></div>
               </dl>
             </article>
           </div>
@@ -528,7 +550,7 @@ SOFTWARE.
             <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
               <table>
                 <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
-                <thead><tr><th scope="col">Time</th><th scope="col">Issuer</th><th scope="col">Bank</th><th scope="col">Payout</th><th scope="col">FX</th></tr></thead>
+                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
                 <tbody id="gantt-table"></tbody>
               </table>
             </div>

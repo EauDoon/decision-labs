@@ -28,6 +28,8 @@ import {
   selectedGanttHourToMarkdown,
   firstClosedGanttHour,
   ganttHourClosedOnAnyGate,
+  gateDisplayLabels,
+  GENERIC_GATE_LABELS,
   buildGateSchedule,
   compareGateSchedules,
   buildComparisonGanttSvg,
@@ -207,6 +209,16 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   if (workspaceReady) saveWorkspace();
 }
 
+function applyGateDisplayLabels(redacted = false) {
+  const labels = gateDisplayLabels(scenario, redacted);
+  for (const key of Object.keys(GENERIC_GATE_LABELS)) {
+    const live = document.querySelector(`#${key}-live-label`);
+    const gantt = document.querySelector(`#${key}-gantt-live-label`);
+    if (live) live.textContent = labels[key];
+    if (gantt) gantt.textContent = labels[key];
+  }
+}
+
 function gateText(open) {
   return open ? "Open" : "Closed";
 }
@@ -286,6 +298,7 @@ function render() {
   applyGateState(elements.issuerGate, point.issuerOpen);
   applyGateState(elements.bankGate, point.bankOpen);
   applyGateState(elements.payoutGate, point.payoutOpen);
+  applyGateDisplayLabels(false);
   elements.fxGate.textContent = point.weekend
     ? `${scenario.mondayHoliday && point.timeLabel.startsWith("Mon") ? "Holiday Monday" : scenario.saturdayHoliday && point.timeLabel.startsWith("Sat") ? "Holiday Saturday" : "Weekend"}: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
     : `${Math.round(point.fxSpreadBps)} bps weekday spread`;
@@ -1372,6 +1385,17 @@ document.querySelector("#export-report").addEventListener("click",()=>{
     downloadText(reportToHTML(saved.current,saved.baseline,saved),"weekend-gap-report.html","text/html;charset=utf-8");
     document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
   } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+document.querySelector("#print-redacted").addEventListener("click", () => {
+  document.body.classList.add("print-redacted");
+  applyGateDisplayLabels(true);
+  const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, redacted: true });
+  window.print();
+  document.body.classList.remove("print-redacted");
+  applyGateDisplayLabels(false);
+  renderGantt();
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. The saved scenario was not changed.";
 });
 document.querySelector("#copy-dashboard-markdown").addEventListener("click", async () => {
   try {

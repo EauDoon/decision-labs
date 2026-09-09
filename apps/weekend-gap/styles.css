@@ -318,6 +318,11 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
 .overlay-dialog h2 { margin-bottom: 0.8rem; }
 .overlay-dialog p { color: #d3dfe2; }
 .overlay-dialog button { margin-top: 0.4rem; }
+.gate-redacted-label { display: none; }
+@media print {
+  .print-redacted .gate-live-label { display: none !important; }
+  .print-redacted .gate-redacted-label { display: inline !important; }
+}
 .shortcut-list { margin: 0 0 1rem; padding-left: 1.1rem; color: #d3dfe2; font-family: Arial, Helvetica, sans-serif; }
 .shortcut-list kbd {
   display: inline-block;

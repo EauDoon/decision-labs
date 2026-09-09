@@ -13,6 +13,10 @@ const ANALYSIS_FORMAT = "weekend-gap-analysis";
 
 export const DEFAULT_SCENARIO = Object.freeze({
   name: "Normal Friday",
+  issuerLabel: "Issuer",
+  bankLabel: "Bank",
+  payoutLabel: "Payout",
+  fxLabel: "FX",
   demandProfile: "flat",
   nominalLiquidityAud: 10000000,
   reserveCashAud: 6500000,
@@ -107,6 +111,10 @@ export const PRESETS = Object.freeze({
 
 const FIELD_RULES = Object.freeze({
   name: { type: "text", maxLength: 80 },
+  issuerLabel: { type: "text", maxLength: 40 },
+  bankLabel: { type: "text", maxLength: 40 },
+  payoutLabel: { type: "text", maxLength: 40 },
+  fxLabel: { type: "text", maxLength: 40 },
   demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush"] },
   nominalLiquidityAud: { min: 10000, max: 5000000000 },
   reserveCashAud: { min: 0, max: 5000000000 },
@@ -1055,6 +1063,40 @@ function ganttCellFill(open, openColor, prefix, fx = false) {
   return `url(#${prefix}-${fx ? "fx-closed" : "closed"})`;
 }
 
+export const GENERIC_GATE_LABELS = Object.freeze({
+  issuer: "Issuer",
+  bank: "Bank",
+  payout: "Payout",
+  fx: "FX"
+});
+
+function isGenericGateLabel(value, generic) {
+  return String(value).trim().toLowerCase() === generic.toLowerCase();
+}
+
+/** Keep already-generic spellings. Replace custom institution names with Issuer, Bank, Payout or FX. */
+export function redactGateLabels(labels = {}) {
+  const redacted = {};
+  for (const key of Object.keys(GENERIC_GATE_LABELS)) {
+    const generic = GENERIC_GATE_LABELS[key];
+    const value = typeof labels[key] === "string" ? labels[key].trim() : "";
+    redacted[key] = !value || !isGenericGateLabel(value, generic) ? generic : value;
+  }
+  return Object.freeze(redacted);
+}
+
+/** Live or print-redacted gate headings. Does not mutate the scenario. */
+export function gateDisplayLabels(input, redacted = false) {
+  const { scenario } = sanitizeScenario(input);
+  const live = Object.freeze({
+    issuer: scenario.issuerLabel,
+    bank: scenario.bankLabel,
+    payout: scenario.payoutLabel,
+    fx: scenario.fxLabel
+  });
+  return redacted ? redactGateLabels(live) : live;
+}
+
 /** Hourly open/closed state for issuer, bank, payout and weekday vs weekend FX. */
 export function buildGateSchedule(input) {
   const { scenario } = sanitizeScenario(input);
@@ -1094,16 +1136,17 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const schedule = buildGateSchedule(input);
   const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
   const closedOnly = options.closedOnly === true;
+  const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
   const rowHeight = 28;
   const labelWidth = 88;
   const top = 20;
   const plotWidth = width - labelWidth - 16;
   const rows = [
-    ["Issuer", (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", false],
-    ["Bank", (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", false],
-    ["Payout", (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", false],
-    ["FX", (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", true]
+    [labelsForChart.issuer, (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", false],
+    [labelsForChart.bank, (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", false],
+    [labelsForChart.payout, (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", false],
+    [labelsForChart.fx, (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", true]
   ];
   const height = top + rows.length * rowHeight + 32;
   const hourWidth = plotWidth / SIMULATION_HOURS;
@@ -1119,7 +1162,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
     }
   });
   const markerX = labelWidth + (markerHour / SIMULATION_HOURS) * plotWidth;
-  const labels = rows.map((row, index) => `<text x="8" y="${top + index * rowHeight + 18}" font-size="12" fill="#17324a">${row[0]}</text>`).join("");
+  const labels = rows.map((row, index) => `<text x="8" y="${top + index * rowHeight + 18}" font-size="12" fill="#17324a">${svgEscape(row[0])}</text>`).join("");
   const ticks = [0, 9, 33, 57, 72].map((hour) => {
     const x = labelWidth + (hour / SIMULATION_HOURS) * plotWidth;
     return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
