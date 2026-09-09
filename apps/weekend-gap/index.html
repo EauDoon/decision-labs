@@ -435,7 +435,7 @@ SOFTWARE.
 
           <article class="planning-card card gantt-card" aria-labelledby="gantt-title">
             <p class="eyebrow">Operating calendar</p>
-            <h2 id="gantt-title">72-hour gate Gantt</h2>
+            <h2 id="gantt-title" tabindex="-1">72-hour gate Gantt</h2>
             <p>Issuer, bank and payout rows show open (green) versus closed (red) for each hour. FX shows weekday depth (blue) versus weekend thinning (gold). The solid vertical line is the timeline slider hour. The dashed green marker is the first payout window.</p>
             <p id="gantt-payout-note"></p>
             <div class="planning-actions">
@@ -520,6 +520,7 @@ SOFTWARE.
           <li><kbd>?</kbd> Open or close this help</li>
           <li><kbd>Space</kbd> Play or pause the timeline</li>
           <li><kbd>J</kbd> Jump the timeline to the first settlement</li>
+          <li><kbd>G</kbd> Jump to the gate Gantt</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>
           <li><kbd>R</kbd> Redo a scenario edit</li>
           <li><kbd>E</kbd> Export the current scenario JSON</li>

@@ -7,7 +7,7 @@ let runId = 0;
 
 class Element {
   constructor(value = "") { this.value = value; this.checked = false; this.selected = false; this.type = ""; this.textContent = ""; this.innerHTML = ""; this.hidden = false; this.children = []; this.handlers = {}; this.dataset = {}; this.disabled = false; this.attributes = {}; this.classList = { toggle() {} }; }
-  focus() {}
+  focus() { this.focused = true; }
   get valueAsNumber() { return this.value.trim() === "" ? NaN : Number(this.value); }
   addEventListener(type, handler) { (this.handlers[type] ||= []).push(handler); }
   async emit(type) { for (const handler of this.handlers[type] || []) await handler({ target: this }); }
@@ -191,6 +191,22 @@ test("baseline versus current Gantt table lists differing hours and keeps a sele
 test("reduced motion advances a single hour instead of starting playback",async()=>{
   const ui=await boot(new Map(),{reduced:true});assert.equal(ui.nodes.get("play-button").textContent,"Step hour");
   await ui.nodes.get("play-button").click();assert.equal(ui.nodes.get("timeline-range").value,"1");assert.equal(ui.nodes.get("play-button").attributes["aria-pressed"],"false");
+});
+
+test("keyboard g jumps to the Gantt heading and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("coach-overlay").hidden, true);
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  await ui.keydown("g");
+  assert.equal(ui.nodes.get("gantt-title").focused, true);
+  assert.equal(ui.nodes.get("gantt-title").attributes.tabindex, "-1");
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("G", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("g", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("g", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
 });
 
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
