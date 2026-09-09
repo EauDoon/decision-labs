@@ -30,6 +30,8 @@ test("keyboard shortcuts skip inputs and cover help, play, first settlement, und
   assert.match(html, /<kbd>\?<\/kbd>/);
   assert.match(html, /<kbd>J<\/kbd>/);
   assert.match(html, /Jump the timeline to the first settlement/);
+  assert.match(html, /<kbd>F<\/kbd>/);
+  assert.match(html, /Jump the timeline to the first closed bank hour/);
   assert.match(html, /<kbd>D<\/kbd>/);
   assert.match(html, /Jump to the dashboard outcome summary/);
   assert.match(html, /<kbd>Q<\/kbd>/);
@@ -43,6 +45,8 @@ test("keyboard shortcuts skip inputs and cover help, play, first settlement, und
   assert.match(appSource, /event\.key === " "/);
   assert.match(appSource, /event\.key === "j"/);
   assert.match(appSource, /jumpToFirstSettlement\(\)/);
+  assert.match(appSource, /event\.key === "f"/);
+  assert.match(appSource, /jumpToFirstClosedBank\(\)/);
   assert.match(appSource, /event\.key === "d"/);
   assert.match(appSource, /jumpToDashboard\(\)/);
   assert.match(appSource, /event\.key === "q"/);

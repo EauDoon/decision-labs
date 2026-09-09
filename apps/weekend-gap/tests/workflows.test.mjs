@@ -316,6 +316,21 @@ test("keyboard j jumps to first settlement and ignores the key while typing", as
   assert.equal(ui.nodes.get("timeline-range").value, "12");
 });
 
+test("keyboard f jumps to the first closed bank hour and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.edit("timeline-range", 0);
+  await ui.keydown("f");
+  assert.equal(ui.nodes.get("timeline-range").value, "2");
+  assert.match(ui.nodes.get("input-message").textContent, /first closed bank hour/);
+  await ui.edit("timeline-range", 40);
+  await ui.keydown("F", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+  await ui.keydown("f", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+  await ui.keydown("f", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+});
+
 test("comparing two scenario JSON files shows queue diffs and honest null settlement hours", async () => {
   const { scenarioToJSON, DEFAULT_SCENARIO, PRESETS } = await import(new URL("../src/model.js", import.meta.url));
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));

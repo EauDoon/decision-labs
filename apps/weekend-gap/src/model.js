@@ -1012,6 +1012,16 @@ export function buildGateSchedule(input) {
   return Object.freeze({ scenario: Object.freeze({ ...scenario }), hours: Object.freeze(hours) });
 }
 
+/** First chart hour where the bank gate is closed, else the first closed issuer/bank/payout hour. */
+export function firstClosedGanttHour(input) {
+  const schedule = buildGateSchedule(input);
+  const chartHours = schedule.hours.filter((point) => point.hour < SIMULATION_HOURS);
+  const bankClosed = chartHours.find((point) => !point.bankOpen);
+  if (bankClosed) return bankClosed.hour;
+  const closedGate = chartHours.find((point) => !point.issuerOpen || !point.bankOpen || !point.payoutOpen);
+  return closedGate ? closedGate.hour : null;
+}
+
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
 export function buildGateGanttSvg(input, selectedHour = 0) {
   const schedule = buildGateSchedule(input);

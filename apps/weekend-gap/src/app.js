@@ -26,6 +26,7 @@ import {
   buildGateGanttSvg,
   ganttToCSV,
   selectedGanttHourToMarkdown,
+  firstClosedGanttHour,
   buildGateSchedule,
   compareGateSchedules,
   buildComparisonGanttSvg,
@@ -1232,6 +1233,19 @@ function jumpToFirstSettlement() {
 document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
   jumpToFirstSettlement();
 });
+function jumpToFirstClosedBank() {
+  const hour = firstClosedGanttHour(scenario);
+  if (hour === null) {
+    setMessage("No closed bank or gate hour in this 72-hour calendar.");
+    return false;
+  }
+  selectedHour = hour;
+  setPlaying(false);
+  render();
+  saveWorkspace();
+  setMessage(`Jumped to the first closed bank hour at ${formatTime(hour)} (hour ${hour}).`);
+  return true;
+}
 function jumpToDashboard() {
   const heading = document.querySelector("#outcome-title");
   if (!heading) return false;
@@ -1387,6 +1401,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "j" || event.key === "J") {
     event.preventDefault();
     jumpToFirstSettlement();
+    return;
+  }
+  if (event.key === "f" || event.key === "F") {
+    event.preventDefault();
+    jumpToFirstClosedBank();
     return;
   }
   if (event.key === "d" || event.key === "D") {
