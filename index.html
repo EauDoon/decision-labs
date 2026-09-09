@@ -428,7 +428,7 @@
           <p>Import merchant offers from CSV, sort buyers, filter pickup versus shipping, and read organizer leftover headroom after the winner. Merchant tables stay counts and aggregates. This is leftover planning on the case you opened, not checkout or live inventory.</p>
         </li>
         <li>
-          <h3>Offer export, variant filter, and empty-offer recovery in Common Cart 1.4.0</h3>
+          <h3>Offer export, variant filter, and empty-offer recovery in Common Cart 1.3.3</h3>
           <p>Export merchant offers as CSV, filter organizers by variant, sort offers, and restore example offers when the list is empty. Merchant export stays aggregates and counts. This is leftover planning on the case you opened, not checkout or live inventory.</p>
         </li>
         <li>
@@ -499,6 +499,7 @@
           <h3>Partnership Breakpoint</h3>
           <p class="version">Version <span data-app-version="partnership-breakpoint">1.5.0</span></p>
           <p class="last-launched" data-last-workbench="1" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
+          <p class="review-path"><strong>Review constraints and negotiation room.</strong> Check cost allowances, feasible volume and operational conflicts before exporting a review packet.</p>
           <p>Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move.</p>
           <p class="sample">You will see <strong>Balanced</strong>, the built-in synthetic starting point: a shared-revenue case with participant costs and exit floors already filled in.</p>
         </div>
@@ -513,6 +514,7 @@
           <h3>Common Cart</h3>
           <p class="version">Version <span data-app-version="common-cart">1.4.0</span></p>
           <p class="last-launched" data-last-workbench="2" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
+          <p class="review-path"><strong>Review buyer coverage and offer resilience.</strong> In the buyer room, inspect private buyer alternatives and bounded offer changes.</p>
           <p>Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view.</p>
           <p class="sample">You will see the built-in synthetic <strong>coffee</strong> scenario (Neighbourhood coffee run): pooled buyers and conditional merchant offers for coffee beans.</p>
         </div>
@@ -527,6 +529,7 @@
           <h3>The Smallest Agreement</h3>
           <p class="version">Version <span data-app-version="smallest-agreement">1.5.0</span></p>
           <p class="last-launched" data-last-workbench="3" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
+          <p class="review-path"><strong>Review the package before discussion.</strong> Inspect approval margins, alternatives and bounded rule changes before facilitation.</p>
           <p>Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget.</p>
           <p class="sample">You will see <strong>Neighbourhood Plan</strong>, the built-in synthetic neighborhood-plan scenario: clause alternatives, an approval threshold, and a change-cost budget.</p>
         </div>
@@ -541,6 +544,7 @@
           <h3>Weekend Gap</h3>
           <p class="version">Version <span data-app-version="weekend-gap">1.5.0</span></p>
           <p class="last-launched" data-last-workbench="4" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
+          <p class="review-path"><strong>Review the timing behind the queue.</strong> Inspect arrival cohorts, closed intervals and reserve or throughput scenarios.</p>
           <p>Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed.</p>
           <p class="sample">You will see <strong>Normal Friday</strong>, the built-in 72-hour synthetic redemption case from Friday afternoon through Monday.</p>
         </div>
@@ -552,6 +556,8 @@
     </section>
     <section class="guide" id="how-it-works" tabindex="-1" aria-labelledby="how-title">
       <h2 id="how-title">How it works</h2>
+      <p><strong>Review one question at a time.</strong> Inside a workbench, open its optional review panel, choose a question, and run it on the current inputs. Each table explains its assumptions and bounds. Editing inputs clears the review.</p>
+      <p><strong>Replay without replacing your draft.</strong> Export review packet saves the inputs and calculated table. Inspect review packet recomputes them and rejects a mismatch while keeping your working case. Use the same workbench to inspect its packet. Packets may contain private names, constraints and notes; they are unsigned consistency records, not authenticated evidence.</p>
       <p>This page is a catalog. Each Open workbench link loads one generated file from this repository. You can also open that file from disk. Node.js is only required if you want the loopback launcher or to run tests.</p>
       <h3>Standalone files</h3>
       <p>Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</p>
@@ -600,6 +606,14 @@
         if (version) node.textContent = version;
       });
       const LAST_WORKBENCH_KEY = 'decision-labs.last-workbench';
+      document.querySelectorAll('.open[aria-keyshortcuts]').forEach((link) => {
+        link.addEventListener('click', (event) => {
+          if (event.defaultPrevented) return;
+          const key = link.getAttribute('aria-keyshortcuts');
+          if (!['1', '2', '3', '4'].includes(key)) return;
+          try { localStorage.setItem(LAST_WORKBENCH_KEY, key); } catch { /* Recency is optional. */ }
+        });
+      });
       let lastWorkbench = null;
       try {
         lastWorkbench = localStorage.getItem(LAST_WORKBENCH_KEY);
