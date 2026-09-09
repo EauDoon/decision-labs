@@ -2604,6 +2604,7 @@ const AGREEMENT_REVIEW_TOOLS=Object.freeze([
  {id:'thresholds',title:'Threshold scenarios'},
  {id:'budgets',title:'Budget scenarios'},
  {id:'locks',title:'Single-lock opportunity cost'},
+ {id:'uncertainty',title:'Targeted support uncertainty'},
 // SA_REVIEW_TOOLS
 ]);
 function analyzeAgreementReview(rawProposal,tool){
@@ -2659,6 +2660,12 @@ function analyzeAgreementReview(rawProposal,tool){
  const locked=proposal.clauses.filter(c=>c.lockedOptionId);const perSearch=Math.max(1,Math.floor(50000/Math.max(1,locked.length)));
  const rows=locked.map(clause=>{const changed={...proposal,clauses:proposal.clauses.map(c=>{const copy={...c};if(c.id===clause.id)delete copy.lockedOptionId;return copy;})};const r=findSmallestAgreement(changed,{maxCombinations:perSearch});return[clause.title,clause.lockedOptionId,r.status,r.agreement?.changeCost??null,solved.agreement&&r.agreement?solved.agreement.changeCost-r.agreement.changeCost:null,r.agreement?.options.map(o=>o.id).join(', ')??'Unavailable'];});
  return report(['Unlocked clause','Original lock ID','Search status','Cost with one lock removed','Cost saved vs recommendation','New option IDs'],rows,'One lock is removed per row without changing the current proposal. Across rows at most 50,000 candidate combinations are allowed. A too_large result is unavailable and is not evidence that the lock is necessary.');
+
+ }
+ case 'uncertainty':{
+
+ const rows=[];for(const group of proposal.groups)for(const drop of [5,10,20]){const options=selected.options.map(o=>({...o,support:{...o.support,[group.id]:Math.max(0,o.support[group.id]-drop)}}));const tested=selectionSummary(proposal,options);rows.push([group.name,drop,tested.byGroup.find(g=>g.id===group.id).approval,tested.approval,tested.approval-proposal.threshold,tested.approval+EPSILON>=proposal.threshold&&tested.constraints.met?'Pass':'Does not pass']);}
+ return report(['Stressed group','Score reduction points','Group support after clamp %','Aggregate approval %','Margin points','All tests'],rows,'Reduce the selected option scores for one group by 5, 10 or 20 points, clamped at zero. Other scores and the package stay fixed; no search or probability is implied. At most 72 cases.');
 
  }
 // SA_REVIEW_CASES

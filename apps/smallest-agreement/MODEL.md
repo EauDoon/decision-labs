@@ -177,3 +177,7 @@ The optional package review can compare discrete cost limits without changing sc
 ### Single-lock opportunity cost
 
 The optional package review can compare removing one lock while retaining every other declared constraint. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Targeted support uncertainty
+
+The optional package review can stress one group at a time while holding the selected package fixed. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
