@@ -50,6 +50,7 @@ let coachVisible = !openedFromShareLink && !coachIsDismissed();
 let helpOpen = false;
 let dialogOpener = null;
 let dialogNeedsInitialFocus = coachVisible;
+const mutedStressIds = new Set();
 const undoHistory = [];
 const redoHistory = [];
 
@@ -506,9 +507,12 @@ function stressSection() {
     feasible: 'A fixed-share proposal passes every tested case. Remaining revenue is distributed in proportion to the current shares. Applying it changes only revenue shares.',
   }[negotiation.status];
   const rows = stress.participants.map((participant, index) => {
+    if (mutedStressIds.has(participant.id)) {
+      return `<tr class="stress-muted"><th scope="row">${escapeAttribute(participant.name)}</th><td colspan="6">Hidden from this table only. Still counted in the ${stress.caseCount} tested cases and any proposal. <button type="button" data-action="unmute-stress-row" data-participant-id="${escapeAttribute(participant.id)}">Show row</button></td></tr>`;
+    }
     const worstCase = stress.scenarios.find((scenario) => scenario.id === participant.worst.scenarioId);
     const operations = negotiation.operationalFailures.filter((failure) => failure.participantId === participant.id);
-    return `<tr><th scope="row">${escapeAttribute(participant.name)}</th>
+    return `<tr><th scope="row">${escapeAttribute(participant.name)}<br><button type="button" data-action="mute-stress-row" data-participant-id="${escapeAttribute(participant.id)}">Hide in table</button></th>
       <td>${participant.passCount} / ${stress.caseCount} hold</td>
       <td>${formatMoney(participant.worst.profitGap)}<br><small>${caseLabel(worstCase)}</small></td>
       <td>${operations.length ? `${operations.length} cases fail capacity or commitment` : 'All operational tests pass'}</td>
@@ -523,7 +527,7 @@ function stressSection() {
     <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
       <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
       <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button></div>
-      <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying.</p></div>
+      <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant.</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
     <details class="case-details"><summary>Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases}</tbody></table></div></details>
@@ -831,6 +835,16 @@ function attachEvents() {
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
     if (action === 'apply-stress-case') { applyInspectedStressCase(); return; }
+    if (action === 'mute-stress-row') {
+      mutedStressIds.add(button.dataset.participantId);
+      render();
+      return;
+    }
+    if (action === 'unmute-stress-row') {
+      mutedStressIds.delete(button.dataset.participantId);
+      render();
+      return;
+    }
     if (action === 'compare-case') { comparisonId = button.dataset.caseId; render(); document.querySelector('#comparison-title')?.focus(); return; }
     if (action === 'pin-first') {
       pinFirstId = pinFirstId === button.dataset.caseId ? '' : button.dataset.caseId;

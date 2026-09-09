@@ -806,6 +806,19 @@ test('participant CSV replaces the roster only after validation and leaves the d
   assert.deepEqual(app.saved().participants.map((item) => item.id), before.participants.map((item) => item.id));
 });
 
+test('stress grid hide-in-table is display-only and does not change case counts', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
+  app.click('mute-stress-row', { participantId: 'platform' });
+  assert.match(app.markup(), /Hidden from this table only/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="unmute-stress-row" data-participant-id="platform"/);
+  app.click('unmute-stress-row', { participantId: 'platform' });
+  assert.doesNotMatch(app.markup(), /Hidden from this table only/);
+  assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
+});
+
 test('copy share URL is http-only and names clipboard failure without a network request', async () => {
   const fileApp = await workbench('file:');
   assert.doesNotMatch(fileApp.markup(), /data-action="copy-share-url"/);
