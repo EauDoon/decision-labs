@@ -43,6 +43,7 @@ const elements = {
   importFile: document.querySelector("#import-file")
 };
 
+let scenarioReadFailed = false;
 let scenario = loadInitialScenario();
 const history = createScenarioHistory(scenario);
 let invalidDraft = false;
@@ -115,6 +116,7 @@ function loadInitialScenario() {
     if (!shareFailed) {
       queueMicrotask(() => setStatus(`Saved room could not be restored: ${messageOf(error)} Starting from the neighbourhood example.`));
     }
+    scenarioReadFailed = true;
     return clonePreset();
   }
 }
@@ -231,6 +233,8 @@ function bindStaticEvents() {
   }
   document.querySelector("#reset-button").addEventListener("click", () => {
     if (!allowReplaceDraft()) return;
+    if (scenarioReadFailed && !window.confirm("Replace the unreadable autosave with the example room? This removes its recovery data. Export any browser-storage recovery copy first.")) return;
+    scenarioReadFailed = false;
     scenario = clonePreset();
     inspectedOfferId = scenario.offers[0]?.id ?? "";
     window.history.replaceState(null, "", window.location.pathname + window.location.search);
@@ -738,6 +742,11 @@ function trimLabel(value, limit) {
 
 function scheduleSave(cleanScenario) {
   clearTimeout(saveTimer);
+  if (scenarioReadFailed) {
+    savedState = "failed";
+    document.querySelector("#save-state").textContent = "Previous autosave could not be read and is preserved. Export current edits as JSON. Reset this room explicitly to replace the unreadable save.";
+    return;
+  }
   savedState = "pending";
   document.querySelector("#save-state").textContent = "Saving locally…";
   saveTimer = setTimeout(() => {
