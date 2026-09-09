@@ -83,6 +83,7 @@ const exportedNames = Object.freeze([
   "estimateDiscountBps",
   "nextPayoutTime",
   "hoursToFirstSettlement",
+  "hoursToClearQueue",
   "createSnapshot",
   "runSimulation",
   "compareScenarios",

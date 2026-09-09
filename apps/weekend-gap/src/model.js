@@ -283,6 +283,20 @@ export function hoursToFirstSettlement(timeline) {
   return point ? point.hour - 1 : null;
 }
 
+/** First checkpoint where queued AUD is 0 after having been positive, or null if it never clears. */
+export function hoursToClearQueue(timeline) {
+  if (!Array.isArray(timeline)) return null;
+  let seenPositive = false;
+  for (const point of timeline) {
+    if (point.queuedAud > 0) {
+      seenPositive = true;
+      continue;
+    }
+    if (seenPositive && point.queuedAud === 0) return point.hour;
+  }
+  return null;
+}
+
 export function createSnapshot(scenario, hour, state, demandThisHour = 0, settledThisHour = 0, limitingGate = "none") {
   const capacity = capacityForHour(scenario, hour, state.reserveRemainingAud);
   const immediateAud = capacity.capacityAud;
@@ -351,6 +365,7 @@ export function runSimulation(input = {}) {
       ).hour,
       hoursWithQueue: timeline.filter((point) => point.queuedAud > 0).length,
       hoursToFirstSettlement: hoursToFirstSettlement(timeline),
+      hoursToClearQueue: hoursToClearQueue(timeline),
     })
   });
 }
