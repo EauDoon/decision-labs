@@ -637,7 +637,7 @@ function chartLabel(value, max = 24) {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
 }
 
-function tornadoSection(result) {
+function tornadoChart(result) {
   const kinds = [
     ['volume', 'Volume down'],
     ['volumeIncrease', 'Volume up'],
@@ -676,7 +676,23 @@ function tornadoSection(result) {
       <text x="${left + Math.max(0, barWidth) + 6}" y="${y + 13}" font-size="11" fill="#1f2328">${escapeAttribute(row.display)}</text>`;
   }).join('');
   const tableRows = rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('');
-  return `<section class="panel print-keep"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="chart-frame">${`<svg class="chart-svg" role="img" aria-label="Tornado chart of smallest bounded adverse percentage shocks by participant. The table lists the same values." viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(height, 520)}">${bars}</svg>`}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${tableRows}</tbody></table></div></section>`;
+  return { width, height, bars, tableRows };
+}
+
+function tornadoSvgMarkup(result, { standalone = false } = {}) {
+  const chart = tornadoChart(result);
+  const xmlns = standalone ? ' xmlns="http://www.w3.org/2000/svg"' : '';
+  const role = standalone ? '' : ' class="chart-svg" role="img" aria-label="Tornado chart of smallest bounded adverse percentage shocks by participant. The table lists the same values."';
+  return `<svg${xmlns}${role} viewBox="0 0 ${chart.width} ${chart.height}" width="${standalone ? chart.width : '100%'}" height="${standalone ? chart.height : Math.min(chart.height, 520)}">${chart.bars}</svg>`;
+}
+
+function tornadoSvgFile(result) {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n${tornadoSvgMarkup(result, { standalone: true })}\n`;
+}
+
+function tornadoSection(result) {
+  const chart = tornadoChart(result);
+  return `<section class="panel print-keep"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
 }
 
 function waterfallSection(result) {
@@ -992,6 +1008,7 @@ function attachEvents() {
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
     if (action === 'export-participants-csv') exportParticipantsCsv();
+    if (action === 'export-tornado-svg') exportTornadoSvg();
     if (action === 'apply-stress-proposal') {
       try {
         const proposal = applyStressProposal(state);
@@ -1424,6 +1441,17 @@ function copyNegotiationBrief() {
     }
   }
   showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+}
+
+function exportTornadoSvg() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before downloading the tornado SVG. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const result = calculatePartnership(state);
+  downloadText(tornadoSvgFile(result), 'image/svg+xml;charset=utf-8', exportDownloadName('tornado', caseExportTitle()));
+  setNotice('Tornado SVG downloaded. It ranks displayed movements and does not assign probability.');
 }
 
 function exportParticipantsCsv() {

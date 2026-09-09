@@ -773,6 +773,27 @@ test('tornado chart includes an SVG and a text-equivalent table', async () => {
   assert.match(app.markup(), /<caption>Text equivalent of the tornado chart<\/caption>/);
   assert.match(app.markup(), /Volume down/);
   assert.match(app.markup(), /Fee down/);
+  assert.match(app.markup(), /data-action="export-tornado-svg"/);
+});
+
+test('tornado SVG download writes a namespaced file and refuses invalid cases', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export-tornado-svg');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-tornado.svg');
+  const text = await file.blob.text();
+  assert.match(text, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
+  assert.match(text, /xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+  assert.match(text, /<svg /);
+  assert.doesNotMatch(text, /probab/i);
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.click('export-tornado-svg');
+  assert.equal(app.downloads()[1].filename, 'partnership-breakpoint-harbor-jv-tornado.svg');
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-tornado-svg');
+  assert.equal(app.downloads().length, 2);
+  assert.match(app.notice(), /Resolve invalid inputs before downloading the tornado SVG/);
 });
 
 test('contribution waterfall includes an SVG and a text fallback for each participant', async () => {

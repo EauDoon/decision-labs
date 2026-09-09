@@ -188,7 +188,7 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 
 ## Charts
 
-The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.
+The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. Download tornado SVG writes that same chart as a standalone SVG file with an XML declaration and SVG namespace. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.
 
 ## Display-only stress mute
 
