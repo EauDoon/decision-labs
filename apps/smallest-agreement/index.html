@@ -60,6 +60,7 @@ SOFTWARE.
       </div>
     </header>
 
+    <nav class="workshop-nav" aria-label="Workshop sections"><a href="#workspace">Setup</a><a href="#clauses-heading">Clauses</a><a href="#results-heading">Recommendation</a><a href="#manual-heading">Custom package</a><a href="#comparison-heading">Compare rounds</a></nav>
     <main id="workspace" class="workspace">
       <aside class="control-panel" aria-label="Proposal controls">
         <div class="margin-note"><span>01</span> Shape the room before you ask it to decide.</div>
@@ -70,7 +71,7 @@ SOFTWARE.
         <section class="panel-section" aria-labelledby="scenarios-heading">
           <h2 id="scenarios-heading">Saved scenarios</h2>
           <label for="scenario-name">Snapshot name (optional)</label>
-          <input id="scenario-name" maxlength="120" placeholder="For example, round two">
+          <input id="scenario-name" type="text" maxlength="120" placeholder="For example, round two">
           <button class="button button-secondary" id="save-scenario" type="button">Save snapshot</button>
           <label for="scenario-select">Scenario library</label>
           <select id="scenario-select"></select>
@@ -79,7 +80,8 @@ SOFTWARE.
         </section>
         <section class="panel-section threshold-panel">
           <div class="label-row"><label for="threshold">Approval threshold</label><output id="threshold-output"></output></div>
-          <input id="threshold" type="range" min="0" max="100" step="1">
+          <input id="threshold" type="range" min="0" max="100" step="any">
+          <label for="threshold-number">Exact threshold (%)</label><input id="threshold-number" type="number" min="0" max="100" step="any" required>
           <p>Weighted average support across all clauses and groups.</p>
         </section>
         <section class="panel-section">
@@ -104,7 +106,7 @@ SOFTWARE.
 
         <section aria-labelledby="clauses-heading">
           <div class="section-heading clause-heading">
-            <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading">What can change?</h2></div>
+            <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading" tabindex="-1">What can change?</h2></div>
             <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
           </div>
           <div id="clauses-editor" class="clauses-editor"></div>
@@ -112,7 +114,7 @@ SOFTWARE.
 
         <section class="results-section" aria-labelledby="results-heading">
           <div class="section-heading">
-            <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading">The smallest agreement</h2></div>
+            <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading" tabindex="-1">The smallest agreement</h2></div>
             <p id="search-meta" class="search-meta"></p>
           </div>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
@@ -137,7 +139,7 @@ SOFTWARE.
           </div>
           <section class="result-card" aria-labelledby="alternatives-heading"><h3 id="alternatives-heading">Passing packages</h3><div id="passing-alternatives"></div></section>
           <section class="result-card" aria-labelledby="manual-heading">
-            <h3 id="manual-heading">Try your own package</h3>
+            <h3 id="manual-heading" tabindex="-1">Try your own package</h3>
             <p>Choose one option per clause to inspect tradeoffs. This comparison does not change the draft, locks, or recommendation. Choices reset when you reload.</p>
             <button class="button button-secondary" id="use-recommendation" type="button">Start from recommendation</button>
             <div id="manual-options" class="manual-options"></div>
@@ -150,7 +152,7 @@ SOFTWARE.
             <div id="stress-result" role="status" aria-live="polite"></div>
           </section>
           <section class="result-card" aria-labelledby="comparison-heading">
-            <h3 id="comparison-heading">Compare negotiation rounds</h3>
+            <h3 id="comparison-heading" tabindex="-1">Compare negotiation rounds</h3>
             <label for="comparison-select">Saved scenario</label><select id="comparison-select"></select>
             <div id="scenario-comparison"></div>
           </section>

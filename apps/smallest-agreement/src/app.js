@@ -146,6 +146,9 @@ const presets = {
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
 let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
+let cachedResultKey;
+let cachedResult;
+const savedResults = new WeakMap();
 const undoStack = [];
 const redoStack = [];
 let historySnapshot = JSON.stringify(state.proposal);
@@ -278,7 +281,12 @@ function save(recordHistory = true) {
 }
 
 function currentResult() {
-  return findSmallestAgreement(state.proposal, { maxCombinations: MAX_COMBINATIONS, alternativesLimit: 5 });
+  const key = JSON.stringify(state.proposal);
+  if (key !== cachedResultKey) {
+    cachedResult = findSmallestAgreement(state.proposal, { maxCombinations: MAX_COMBINATIONS, alternativesLimit: 5 });
+    cachedResultKey = key;
+  }
+  return cachedResult;
 }
 
 function number(value, fallback = 0) {
@@ -297,6 +305,7 @@ function render() {
   $("[data-action=\"add-clause\"]").disabled = proposal.clauses.length >= MAX_CLAUSES;
   $("#proposal-title").value = proposal.title;
   $("#threshold").value = proposal.threshold;
+  $("#threshold-number").value = Number.isFinite(proposal.threshold) ? proposal.threshold : "";
   $("#threshold-output").textContent = `${proposal.threshold}%`;
   $("#max-change-cost").value = proposal.maxChangeCost ?? "";
   $("#proposal-heading").textContent = proposal.title;
@@ -312,7 +321,7 @@ function renderGroups() {
   $("#groups-editor").innerHTML = state.proposal.groups.map((group) => `
     <div class="group-row">
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
-      <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0.000001" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
+      <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
       <button class="text-button danger" type="button" data-action="remove-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length <= 1 ? "disabled" : ""}>Remove</button>
       <label class="group-floor">Minimum support (%)<input data-field="group-floor" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" value="${group.minSupport ?? ""}" placeholder="No floor" aria-label="${escapeHtml(group.name)} minimum support" aria-describedby="floor-note"></label>
     </div>`).join("");
@@ -321,7 +330,7 @@ function renderGroups() {
 function renderClauses() {
   const { groups } = state.proposal;
   $("#clauses-editor").innerHTML = state.proposal.clauses.map((clause, clauseIndex) => `
-    <article class="clause-card">
+    <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
         <label><span class="visually-hidden">Clause title</span><input class="clause-title-input" data-field="clause-title" data-clause-id="${escapeHtml(clause.id)}" value="${escapeHtml(clause.title)}" maxlength="120" aria-label="Clause ${clauseIndex + 1} title"></label>
         <button class="text-button danger" type="button" data-action="remove-clause" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses.length <= 1 ? "disabled" : ""}>Remove clause</button>
@@ -337,7 +346,7 @@ function renderClauses() {
         <thead><tr><th scope="col">Option</th><th scope="col">Change cost</th>${groups.map((group) => `<th scope="col">${escapeHtml(group.name)}<br>support</th>`).join("")}<th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
         <tbody>${clause.options.map((option) => `
           <tr>
-            <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="Option label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
+            <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="${escapeHtml(clause.title)}, ${escapeHtml(option.label)} label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
             <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" max="1000000000" step="any" required value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
             ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" required value="${option.support[group.id]}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
             <td><div class="option-tools">${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
@@ -413,7 +422,8 @@ function renderScenarioComparison(result) {
     $("#scenario-comparison").textContent = result.status === "invalid" ? "Fix the draft before comparing snapshots." : "Save a snapshot, then select it here to compare with the working draft.";
     return;
   }
-  const previous = findSmallestAgreement(row.proposal);
+  if (!savedResults.has(row.proposal)) savedResults.set(row.proposal, findSmallestAgreement(row.proposal));
+  const previous = savedResults.get(row.proposal);
   const changes = compareScenarioInputs(row.proposal, state.proposal);
   const metric = (label, get) => '<tr><th scope="row">' + label + '</th><td>' + get(row.proposal, previous) + '</td><td>' + get(state.proposal, result) + '</td></tr>';
   const value = (input) => input === undefined ? 'Not set / absent' : escapeHtml(input);
@@ -520,6 +530,7 @@ function renderNearMisses(nearMisses) {
 function drawCoalition(current, agreement) {
   const canvas = $("#coalition-canvas");
   const context = canvas.getContext("2d");
+  if (!context) return;
   const width = Math.max(280, Math.floor(canvas.clientWidth));
   const rows = current?.byGroup ?? [];
   const height = Math.max(190, 24 + rows.length * 34);
@@ -569,9 +580,20 @@ function clauseById(id) { return state.proposal.clauses.find((clause) => clause.
 function optionById(clause, id) { return clause?.options.find((option) => option.id === id); }
 
 function changeAndRender(mutator) {
+  const active = document.activeElement;
+  const context = active?.dataset;
   mutator();
   save();
   render();
+  if (!context?.action) return;
+  let selector;
+  if (context.action === "add-group") selector = '[data-field="group-name"][data-group-id="' + state.proposal.groups.at(-1).id + '"]';
+  if (context.action === "add-clause") selector = '[data-field="clause-title"][data-clause-id="' + state.proposal.clauses.at(-1).id + '"]';
+  if (context.action === "add-option") selector = '[data-field="option-label"][data-clause-id="' + context.clauseId + '"][data-option-id="' + clauseById(context.clauseId).options.at(-1).id + '"]';
+  if (context.action === "remove-group") selector = '[data-action="add-group"]';
+  if (context.action === "remove-clause") selector = '[data-action="add-clause"]';
+  if (context.action === "remove-option") selector = '[data-action="add-option"][data-clause-id="' + context.clauseId + '"]';
+  if (selector) $(selector)?.focus();
 }
 
 document.addEventListener("input", (event) => {
@@ -613,6 +635,15 @@ $("#threshold").addEventListener("input", (event) => {
   state.proposal.threshold = Math.min(100, Math.max(0, number(event.target.value)));
   save();
   $("#threshold-output").textContent = `${state.proposal.threshold}%`;
+  $("#threshold-number").value = state.proposal.threshold;
+  $("#autosave-status").textContent = state.saveMessage;
+  renderResults(currentResult());
+});
+$("#threshold-number").addEventListener("input", (event) => {
+  state.proposal.threshold = event.target.valueAsNumber;
+  save();
+  $("#threshold").value = Number.isFinite(state.proposal.threshold) ? state.proposal.threshold : 0;
+  $("#threshold-output").textContent = Number.isFinite(state.proposal.threshold) ? state.proposal.threshold + '%' : 'Invalid';
   $("#autosave-status").textContent = state.saveMessage;
   renderResults(currentResult());
 });

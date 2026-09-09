@@ -54,6 +54,7 @@ async function savedWorkbench(storage, hash = "") {
   });
   new vm.Script(script).runInContext(context, { timeout: 5000 });
   return {
+    numberInput: (selector, value) => element(selector).events.get("input")({ target: { valueAsNumber: value } }),
     field: (selector, value) => { element(selector).value = value; },
     title: () => element("#proposal-title").value,
     message: () => element("#autosave-status").textContent,
@@ -346,4 +347,17 @@ test("required numeric edits remain invalid instead of silently changing support
     app.click("#undo-button");
     assert.doesNotMatch(app.alert(), /Fix the proposal/);
   }
+});
+
+
+test("exact thresholds preserve decimals and reject missing values without corrupting autosave", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.numberInput("#threshold-number", 68.125);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).threshold, 68.125);
+  app.numberInput("#threshold-number", NaN);
+  assert.match(app.alert(), /Fix the proposal/);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).threshold, 68.125);
+  app.click("#undo-button");
+  assert.doesNotMatch(app.alert(), /Fix the proposal/);
 });
