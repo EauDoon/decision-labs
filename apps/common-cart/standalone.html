@@ -2425,6 +2425,7 @@ function jsonSyntaxHint(error) {
 
 
 const CART_REVIEW_TOOLS = Object.freeze([
+  { id: "frontier", title: "Same-cohort offer alternatives" },
   { id: "stranded", title: "Unserved buyer reasons" },
   { id: "dependency", title: "Sole-offer dependency" },
   { id: 'coverage', title: 'Buyer option coverage' },
@@ -2456,6 +2457,13 @@ function analyzeCartReview(rawScenario, tool) {
         for (const result of market.results) for (const reason of result.buyerOutcomes.find((outcome) => outcome.buyerId === buyer.id).reasons) counts.set(reason, (counts.get(reason) ?? 0) + 1);
         return [buyer.label, buyer.quantity, [...counts].sort(([a], [b]) => compareText(a, b)).map(([reason, count]) => reason + ': ' + count).join('; ') || 'No offers'];
       }), 'Shows buyers included by no current qualified offer. Reasons describe the evaluated price band of each offer; relaxing a reason does not guarantee qualification.');
+    }
+    case "frontier": {
+      const cohort = (result) => JSON.stringify([...result.selectedBuyerIds].sort());
+      return report(['Merchant', 'Units', 'Landed total', 'Delivery days', 'Strictly better same-cohort alternatives'], qualified.map((result) => {
+        const better = qualified.filter((other) => other.offer.id !== result.offer.id && cohort(other) === cohort(result) && other.totalCost <= result.totalCost && other.offer.deliveryDays <= result.offer.deliveryDays && (other.totalCost < result.totalCost || other.offer.deliveryDays < result.offer.deliveryDays));
+        return [result.offer.merchant, result.fulfilledUnits, result.totalCost, result.offer.deliveryDays, better.map((other) => other.offer.merchant).join(', ') || 'None on these measures'];
+      }), 'Compares landed cost and delivery only for exactly the same allocated buyer IDs. Different cohorts, merchant quality, and unmodeled terms are not ranked as equivalent.');
     }
     default: throw new ScenarioError('Review is unavailable.');
   }

@@ -179,3 +179,7 @@ Count buyers whose current whole-order allocation is available from only one qua
 ### Unserved buyer reasons
 
 For buyers served by no qualified offer, count current exclusion reasons across offers. These are evaluated-band diagnostics, not promises that one relaxed constraint will solve the order.
+
+### Same-cohort offer alternatives
+
+Compare qualified offers only when their selected buyer-ID sets are identical. An alternative dominates on these two declared measures only when total landed cost and delivery days are both no worse and at least one is strictly better. Equal offers are retained.
