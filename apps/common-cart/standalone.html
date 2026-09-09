@@ -374,7 +374,16 @@ footer {
   #merchant-result-rows, #variant-overlap-rows, #demand-groups, #residual-summary {
     break-inside: avoid;
   }
-}</style>
+}
+
+.cart-review { margin-block: 1.2rem; }
+.cart-review summary { cursor: pointer; font-weight: 700; padding-block: .5rem; }
+.cart-review-controls { display: flex; flex-wrap: wrap; gap: .7rem; margin-block: .7rem; }
+.cart-review-controls select { min-width: 0; max-width: 100%; flex: 1 1 16rem; }
+.cart-review-controls button { min-height: 44px; }
+.cart-review-table { overflow: auto; max-height: 28rem; }
+.cart-review-table table { min-width: 36rem; }
+.cart-review-table caption { text-align: left; padding-block: .7rem; }</style>
 </head>
 <body>
   <a class="skip-link" href="#workspace">Skip to workspace</a>
@@ -515,6 +524,15 @@ footer {
       </div>
 
       <div id="buyer-panel" role="tabpanel" aria-labelledby="buyer-tab">
+        <details class="panel print-chrome cart-review" id="cart-review">
+          <summary>Review buyer coverage and offer resilience</summary>
+          <p>Choose one question, then review the current room. This organizer-only view can contain private buyer labels. It does not change offers or make purchases.</p>
+          <label for="cart-review-tool">Review question</label>
+          <div class="cart-review-controls"><select id="cart-review-tool"></select><button id="cart-review-run" type="button">Run review</button></div>
+          <div class="cart-review-controls"><button id="cart-review-export" type="button" disabled>Export private review</button><button id="cart-review-import" type="button">Inspect review packet</button><input id="cart-review-file" type="file" accept="application/json,.json" hidden></div>
+          <p id="cart-review-origin"></p>
+          <div id="cart-review-output" aria-live="polite"></div>
+        </details>
         <section class="panel print-chrome" aria-labelledby="comparison-heading">
           <h2 id="comparison-heading">Compare a decision</h2>
           <button id="pin-baseline" type="button">Pin current as baseline</button>
@@ -2407,6 +2425,120 @@ function jsonSyntaxHint(error) {
   return ` (${message})`;
 }
 
+
+const CART_REVIEW_TOOLS = Object.freeze([
+  { id: "minimum", title: "Minimum-order relaxation preview" },
+  { id: "capacity", title: "Capacity increase previews" },
+  { id: "delivery", title: "Delivery slack by included order" },
+  { id: "shipping", title: "Shipping exposure and headroom" },
+  { id: "withdrawal", title: "Winner withdrawal stress" },
+  { id: "frontier", title: "Same-cohort offer alternatives" },
+  { id: "stranded", title: "Unserved buyer reasons" },
+  { id: "dependency", title: "Sole-offer dependency" },
+  { id: 'coverage', title: 'Buyer option coverage' },
+]);
+
+/** On-demand organizer analysis. Never changes matching inputs or places orders. */
+function analyzeCartReview(rawScenario, tool) {
+  const scenario = validateScenario(rawScenario);
+  const selected = CART_REVIEW_TOOLS.find((entry) => entry.id === tool);
+  if (!selected) throw new ScenarioError('Choose a supported organizer review.');
+  const market = evaluateMarket(scenario);
+  const qualified = market.results.filter((result) => result.qualifies);
+  const report = (columns, rows, note) => ({ tool, title: selected.title, currency: scenario.currency, columns, rows, note });
+  switch (tool) {
+    case 'coverage':
+      return report(['Private buyer', 'Requested units', 'Offers including this buyer', 'Merchant options'], scenario.buyers.map((buyer) => {
+        const options = qualified.filter((result) => result.selectedBuyerIds.includes(buyer.id));
+        return [buyer.label, buyer.quantity, options.length, options.map((result) => result.offer.merchant).join(', ') || 'None'];
+      }), 'Counts use the actual whole-order allocation of each offer in this room. Offers are alternatives, not simultaneous purchases; no inventory is reserved.');
+    case "dependency": {
+      return report(['Merchant', 'Buyers with no other allocated option', 'Dependent units'], qualified.map((result) => {
+        const dependent = scenario.buyers.filter((buyer) => result.selectedBuyerIds.includes(buyer.id) && !qualified.some((other) => other.offer.id !== result.offer.id && other.selectedBuyerIds.includes(buyer.id)));
+        return [result.offer.merchant, dependent.length, dependent.reduce((sum, buyer) => sum + buyer.quantity, 0)];
+      }), 'Dependency is measured against current allocated cohorts. Removing an offer may change other allocations; this is an exposure count, not a forecast.');
+    }
+    case "stranded": {
+      return report(['Private buyer', 'Requested units', 'Current reasons across offers'], scenario.buyers.filter((buyer) => !qualified.some((result) => result.selectedBuyerIds.includes(buyer.id))).map((buyer) => {
+        const counts = new Map();
+        for (const result of market.results) for (const reason of result.buyerOutcomes.find((outcome) => outcome.buyerId === buyer.id).reasons) counts.set(reason, (counts.get(reason) ?? 0) + 1);
+        return [buyer.label, buyer.quantity, [...counts].sort(([a], [b]) => compareText(a, b)).map(([reason, count]) => reason + ': ' + count).join('; ') || 'No offers'];
+      }), 'Shows buyers included by no current qualified offer. Reasons describe the evaluated price band of each offer; relaxing a reason does not guarantee qualification.');
+    }
+    case "frontier": {
+      const cohort = (result) => JSON.stringify([...result.selectedBuyerIds].sort());
+      return report(['Merchant', 'Units', 'Landed total', 'Delivery days', 'Strictly better same-cohort alternatives'], qualified.map((result) => {
+        const better = qualified.filter((other) => other.offer.id !== result.offer.id && cohort(other) === cohort(result) && other.totalCost <= result.totalCost && other.offer.deliveryDays <= result.offer.deliveryDays && (other.totalCost < result.totalCost || other.offer.deliveryDays < result.offer.deliveryDays));
+        return [result.offer.merchant, result.fulfilledUnits, result.totalCost, result.offer.deliveryDays, better.map((other) => other.offer.merchant).join(', ') || 'None on these measures'];
+      }), 'Compares landed cost and delivery only for exactly the same allocated buyer IDs. Different cohorts, merchant quality, and unmodeled terms are not ranked as equivalent.');
+    }
+    case "withdrawal": {
+      if (!market.winner) return report(['Withdrawn buyer', 'Withdrawn units', 'Other originally served units', 'Other original units still served', 'Other original units lost'], [], 'No qualified winner exists to stress.');
+      const winning = market.winner;
+      return report(['Withdrawn buyer', 'Withdrawn units', 'Other originally served units', 'Other original units still served', 'Other original units lost'], scenario.buyers.filter((buyer) => winning.selectedBuyerIds.includes(buyer.id)).map((buyer) => {
+        const remaining = { ...scenario, buyers: scenario.buyers.filter((entry) => entry.id !== buyer.id) };
+        const result = evaluateOffer(remaining, winning.offer.id);
+        const originalOther = scenario.buyers.filter((entry) => entry.id !== buyer.id && winning.selectedBuyerIds.includes(entry.id));
+        const originalUnits = originalOther.reduce((sum, entry) => sum + entry.quantity, 0);
+        const retained = originalOther.filter((entry) => result.selectedBuyerIds.includes(entry.id)).reduce((sum, entry) => sum + entry.quantity, 0);
+        return [buyer.label, buyer.quantity, originalUnits, retained, originalUnits - retained];
+      }), 'Rematches only the current winning offer after one included buyer withdraws. Other buyers can fill freed capacity. Lost units exclude the withdrawn order; this is not a withdrawal probability.');
+    }
+    case "shipping": {
+      return report(['Merchant', 'Included buyers', 'Shipping total', 'Landed total', 'Shipping share (%)', 'Item ceilings exceeded after shipping', 'Least remaining ceiling'], qualified.map((result) => {
+        const shipping = result.allocations.reduce((sum, allocation) => sum + allocation.shippingCost, 0);
+        const headrooms = result.allocations.map((allocation) => {
+          const buyer = scenario.buyers.find((entry) => entry.id === allocation.buyerId);
+          return Math.min(buyer.quantity * buyer.maxUnitPrice, buyer.maxOrderTotal ?? Infinity) - allocation.totalCost;
+        });
+        return [result.offer.merchant, result.deliveredBuyers, shipping, result.totalCost, result.totalCost > 0 ? shipping / result.totalCost * 100 : null, result.allocations.filter((allocation) => allocation.exceedsCeilingAfterShipping).length, Math.min(...headrooms)];
+      }), 'Pickup shipping is zero. Item-price ceilings and optional landed-order budgets remain different constraints; negative item-ceiling headroom is shown honestly. A zero landed total has no shipping percentage.');
+    }
+    case "delivery": {
+      return report(['Merchant', 'Private buyer', 'Units', 'Delivery days', 'Buyer deadline days', 'Remaining days'], qualified.flatMap((result) => result.allocations.map((allocation) => {
+        const buyer = scenario.buyers.find((entry) => entry.id === allocation.buyerId);
+        return [result.offer.merchant, buyer.label, buyer.quantity, result.offer.deliveryDays, buyer.latestDeliveryDays, buyer.latestDeliveryDays - result.offer.deliveryDays];
+      })), 'Slack is the declared buyer deadline minus promised delivery for included orders. Zero slack means no modeled delay tolerance; this is not a delivery reliability estimate.');
+    }
+    case "capacity": {
+      return report(['Merchant', 'Current capacity', 'Preview capacity', 'Current fulfilled units', 'Preview fulfilled units', 'Unit difference'], market.ranked.slice(0, 5).flatMap((original) => {
+        const capacities = [...new Set([0.1, 0.25, 0.5].map((factor) => Math.min(MAX_UNITS, original.offer.capacity + Math.max(1, Math.ceil(original.offer.capacity * factor)))))] .filter((capacity) => capacity > original.offer.capacity);
+        return capacities.map((capacity) => {
+          const result = evaluateOffer(scenario, { ...original.offer, capacity });
+          return [original.offer.merchant, original.offer.capacity, capacity, original.fulfilledUnits, result.fulfilledUnits, result.fulfilledUnits - original.fulfilledUnits];
+        });
+      }), 'Preview the first five currently ranked offers at capacity increases of 10%, 25%, and 50%, rounded up and capped at 5,000. Duplicate capacities are omitted. Prices, tiers, demand, and all other terms stay fixed; no merchant capacity is verified.');
+    }
+    case "minimum": {
+      return report(['Merchant', 'Current base minimum', 'Preview base minimum', 'Current fulfilled units', 'Preview fulfilled units', 'Preview included buyers'], market.results.map((original) => {
+        const result = evaluateOffer(scenario, { ...original.offer, minimumUnits: 1 });
+        return [original.offer.merchant, original.offer.minimumUnits, 1, original.fulfilledUnits, result.fulfilledUnits, result.deliveredBuyers];
+      }), 'Counterfactual only: set the base minimum to one unit while preserving capacity, prices, tier thresholds, shipping, and buyer constraints. This does not imply that a merchant will agree.');
+    }
+    default: throw new ScenarioError('Review is unavailable.');
+  }
+}
+
+
+function createCartReviewPacket(rawScenario, tool) {
+  const scenario = validateScenario(rawScenario);
+  const packet = { format: 'common-cart-review', version: 1, tool, scenario, inputJSON: JSON.stringify(scenario), review: analyzeCartReview(scenario, tool) };
+  if (new TextEncoder().encode(JSON.stringify(packet)).length > 1048576) throw new ScenarioError('Review packet exceeds 1 MiB. Choose a narrower review.');
+  return packet;
+}
+
+function replayCartReviewPacket(candidate) {
+  const fields = ['format', 'version', 'tool', 'scenario', 'inputJSON', 'review'];
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== fields.length || !fields.every((field) => Object.hasOwn(candidate, field)) || candidate.format !== 'common-cart-review' || candidate.version !== 1) throw new ScenarioError('Unsupported review packet.');
+  const current = createCartReviewPacket(candidate.scenario, candidate.tool);
+  if (candidate.inputJSON !== current.inputJSON) throw new ScenarioError('Review input snapshot changed. Run a new review.');
+  const supplied = candidate.review, expected = current.review;
+  if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied) || Object.keys(supplied).length !== Object.keys(expected).length || !Object.keys(expected).every((field) => Object.hasOwn(supplied, field))) throw new ScenarioError('Review result fields changed.');
+  for (const field of ['tool', 'title', 'currency', 'note']) if (supplied[field] !== expected[field]) throw new ScenarioError('Review result does not match the input snapshot.');
+  if (!Array.isArray(supplied.columns) || supplied.columns.length !== expected.columns.length || expected.columns.some((value, index) => !Object.hasOwn(supplied.columns, index) || supplied.columns[index] !== value) || !Array.isArray(supplied.rows) || supplied.rows.length !== expected.rows.length || expected.rows.some((row, index) => !Object.hasOwn(supplied.rows, index) || !Array.isArray(supplied.rows[index]) || supplied.rows[index].length !== row.length || row.some((value, column) => !Object.hasOwn(supplied.rows[index], column) || supplied.rows[index][column] !== value))) throw new ScenarioError('Review result does not match the input snapshot.');
+  return current;
+}
+
 const STORAGE_KEY = "common-cart.scenario.v1";
 const WORKSPACE_KEY = "common-cart.workspace.v1";
 const COACH_KEY = "common-cart.coach.v1";
@@ -2448,6 +2580,8 @@ let baseline = null;
 let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
+let cartReviewPacket = null;
+let cartReviewSequence = 0;
 let buyerSortPreviewIds = null;
 let offerSortPreviewIds = null;
 let buyerVariantFilter = "all";
@@ -3377,6 +3511,7 @@ function updateRoot(field, value) {
 }
 
 function refresh() {
+  clearCartReview();
   try {
     const market = evaluateMarket(scenario);
     scenario = market.scenario;
@@ -4190,6 +4325,85 @@ function appJsonSyntaxHint(error) {
   const position = message.match(/position (\d+)/i);
   if (position) return ` (at position ${position[1]})`;
   return ` (${message})`;
-}</script>
+}
+
+
+function clearCartReview() {
+  cartReviewSequence++;
+  cartReviewPacket = null;
+  const exportButton = document.querySelector('#cart-review-export');
+  if (exportButton) exportButton.disabled = true;
+  const origin = document.querySelector('#cart-review-origin');
+  if (origin) origin.textContent = '';
+  const output = document.querySelector('#cart-review-output');
+  if (output) output.textContent = 'Run a review for the current valid room. Results clear when inputs change.';
+}
+
+function showCartReview(review) {
+  const output = document.querySelector('#cart-review-output');
+  output.replaceChildren();
+  const heading = document.createElement('h3'); heading.textContent = review.title;
+  const note = document.createElement('p'); note.textContent = review.note;
+  const scroll = document.createElement('div'); scroll.className = 'cart-review-table'; scroll.tabIndex = 0;
+  scroll.setAttribute('role', 'region'); scroll.setAttribute('aria-label', review.title + ' results');
+  const table = document.createElement('table');
+  const caption = document.createElement('caption'); caption.textContent = 'Private organizer review. Monetary values use ' + review.currency + '.';
+  table.append(caption);
+  const head = document.createElement('thead'), header = document.createElement('tr');
+  for (const label of review.columns) { const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = label; header.append(cell); }
+  head.append(header); table.append(head);
+  const body = document.createElement('tbody');
+  for (const values of review.rows) {
+    const row = document.createElement('tr');
+    values.forEach((value, index) => { const cell = document.createElement('td'); cell.dataset.label = review.columns[index]; cell.textContent = value === null ? 'Not available' : typeof value === 'number' ? new Intl.NumberFormat('en', { maximumFractionDigits: 8 }).format(value) : value; row.append(cell); });
+    body.append(row);
+  }
+  if (!review.rows.length) { const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = review.columns.length; cell.textContent = 'No matching rows in this room.'; row.append(cell); body.append(row); }
+  table.append(body); scroll.append(table); output.append(heading, note, scroll);
+}
+
+function initializeCartReview() {
+  const select = document.querySelector('#cart-review-tool');
+  for (const tool of CART_REVIEW_TOOLS) { const option = document.createElement('option'); option.value = tool.id; option.textContent = tool.title; select.append(option); }
+  select.value = 'coverage';
+  select.addEventListener('change', clearCartReview);
+  document.querySelector('#cart-review-run').addEventListener('click', () => {
+    clearCartReview();
+    try {
+      if (invalidDraft) throw new ScenarioError('Correct invalid room inputs before reviewing.');
+      cartReviewPacket = createCartReviewPacket(screenshotMode ? redactBuyerLabels(scenario) : scenario, select.value);
+      showCartReview(cartReviewPacket.review);
+      document.querySelector('#cart-review-origin').textContent = 'Current room: ' + cartReviewPacket.scenario.title;
+      document.querySelector('#cart-review-export').disabled = false;
+    } catch (error) { clearCartReview(); setStatus(messageOf(error)); }
+  });
+}
+initializeCartReview();
+document.querySelector('#cart-review-export').addEventListener('click', () => {
+  try {
+    if (!cartReviewPacket) throw new ScenarioError('Run or inspect a review first.');
+    downloadFile(JSON.stringify(cartReviewPacket), 'common-cart-private-review.json', 'application/json');
+    setStatus('Private review packet exported. It contains buyer constraints and labels as displayed; review before sharing.', true);
+  } catch (error) { setStatus(messageOf(error)); }
+});
+document.querySelector('#cart-review-import').addEventListener('click', () => document.querySelector('#cart-review-file').click());
+document.querySelector('#cart-review-file').addEventListener('change', async (event) => {
+  const file = event.target.files[0]; event.target.value = '';
+  if (!file) return;
+  clearCartReview();
+  const sequence = cartReviewSequence;
+  try {
+    if (file.size > 1048576) throw new ScenarioError('Review packet exceeds 1 MiB.');
+    const text = await file.text();
+    if (sequence !== cartReviewSequence) return;
+    const packet = replayCartReviewPacket(JSON.parse(text));
+    cartReviewPacket = screenshotMode ? createCartReviewPacket(redactBuyerLabels(packet.scenario), packet.tool) : packet;
+    document.querySelector('#cart-review-tool').value = packet.tool;
+    showCartReview(cartReviewPacket.review);
+    document.querySelector('#cart-review-origin').textContent = 'Inspected saved room: ' + packet.scenario.title + '. Current room unchanged.';
+    document.querySelector('#cart-review-export').disabled = false;
+    setStatus('Saved review recomputed and matched. Current room and autosave are unchanged.', true);
+  } catch (error) { if (sequence !== cartReviewSequence) return; clearCartReview(); setStatus('Review could not be inspected: ' + messageOf(error)); }
+});</script>
 </body>
 </html>

@@ -167,3 +167,43 @@ Compared rooms that use different currencies set `currencyWarning` and omit land
 `createWinnerAggregatesMarkdown` copies winner merchant, units, included-buyer counts, landed total, headroom, and residual fills. It omits the room title, labels, IDs, budgets, and allocations.
 
 Named snapshots contain validated version-1 scenarios, at most 12 per workspace. Workspace JSON may include `fulfillmentFilter` of `all`, `shipping`, or `pickup`. Older files that omit it still validate and behave as `all`. Valid history contains at most 50 detached states. Baseline and three-room comparisons do not claim welfare or savings from differing cohorts. They do report leftover and unfilled residual counts. Merchant reports use an explicit whitelist and omit the scenario title as well as private buyer records. Buyer CSV is explicitly private and escapes spreadsheet formula prefixes. Organizer briefing markdown, winner aggregate markdown, merchant residual JSON, heatmap CSV, offer CSV export, variant overlap, and overlap CSV omit private buyer rows. `redactBuyerLabels` replaces labels with Buyer 1 through N without changing identifiers or constraints. `encodeRedactedScenario` encodes that redacted room; `encodeScenario` still keeps saved labels. `copyOfferAsPickup` duplicates an offer with `fulfillment` set to pickup and `shippingPerBuyer` set to 0.
+
+## Organizer review calculations
+
+Buyer option coverage counts qualified offers whose actual selected cohort contains the buyer ID. Mere category/price compatibility does not count when whole-order capacity excludes that buyer. Every analysis validates the current scenario, uses the existing allocator, and preserves the input.
+
+### Sole-offer dependency
+
+Count buyers whose current whole-order allocation is available from only one qualified offer, and sum their units. This measures current option dependency, not post-withdrawal rematching.
+
+### Unserved buyer reasons
+
+For buyers served by no qualified offer, count current exclusion reasons across offers. These are evaluated-band diagnostics, not promises that one relaxed constraint will solve the order.
+
+### Same-cohort offer alternatives
+
+Compare qualified offers only when their selected buyer-ID sets are identical. An alternative dominates on these two declared measures only when total landed cost and delivery days are both no worse and at least one is strictly better. Equal offers are retained.
+
+### Winner withdrawal stress
+
+Remove each included buyer from the current winner in turn and rerun the existing whole-order allocator on that same offer. Report originally served units retained/lost among the other buyers. No cross-merchant or behavioral prediction is made.
+
+### Shipping exposure and headroom
+
+Sum actual charged shipping across allocated buyers and divide by landed total when nonzero. Least remaining ceiling is the minimum of item-ceiling total and optional order budget, minus actual landed cost. Pickup charges zero shipping.
+
+### Delivery slack by included order
+
+Delivery slack equals latestDeliveryDays minus offer.deliveryDays for each actual included order. Counts repeat a buyer across alternative offers and must not be summed as unique demand.
+
+### Capacity increase previews
+
+On demand, rerun at most five ranked offers at up to three distinct capacity increases (10%, 25%, 50%, rounded up). Capacity is bounded at 5,000. These finite previews do not search for an optimal capacity or change merchant terms.
+
+### Minimum-order relaxation preview
+
+Reevaluate each offer with only its base minimum changed to one unit. Capacity, shipping, prices, and quantity-tier thresholds remain unchanged. The preview does not assert merchant acceptance.
+
+### Private review packets
+
+Packets contain the validated scenario, its exact normalized JSON snapshot, the selected review tool, and full-precision computed rows. Replay rejects changed input snapshots, unknown fields, or result mismatches, while ignoring object field order. The importer limits files to 1 MiB, recomputes all results, and leaves the active room unchanged. This consistency check is unsigned; someone able to rewrite both input and result can create a new valid packet. It is not authentication or an immutable audit trail. Review packets are organizer-private and never merchant exports.

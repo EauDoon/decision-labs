@@ -1,4 +1,8 @@
 import {
+  createCartReviewPacket,
+  replayCartReviewPacket,
+  CART_REVIEW_TOOLS,
+  analyzeCartReview,
   ScenarioError,
   aggregateDemand,
   deliveryHeatmap,
@@ -88,6 +92,8 @@ let baseline = null;
 let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
+let cartReviewPacket = null;
+let cartReviewSequence = 0;
 let buyerSortPreviewIds = null;
 let offerSortPreviewIds = null;
 let buyerVariantFilter = "all";
@@ -1017,6 +1023,7 @@ function updateRoot(field, value) {
 }
 
 function refresh() {
+  clearCartReview();
   try {
     const market = evaluateMarket(scenario);
     scenario = market.scenario;
@@ -1831,3 +1838,82 @@ function appJsonSyntaxHint(error) {
   if (position) return ` (at position ${position[1]})`;
   return ` (${message})`;
 }
+
+
+function clearCartReview() {
+  cartReviewSequence++;
+  cartReviewPacket = null;
+  const exportButton = document.querySelector('#cart-review-export');
+  if (exportButton) exportButton.disabled = true;
+  const origin = document.querySelector('#cart-review-origin');
+  if (origin) origin.textContent = '';
+  const output = document.querySelector('#cart-review-output');
+  if (output) output.textContent = 'Run a review for the current valid room. Results clear when inputs change.';
+}
+
+function showCartReview(review) {
+  const output = document.querySelector('#cart-review-output');
+  output.replaceChildren();
+  const heading = document.createElement('h3'); heading.textContent = review.title;
+  const note = document.createElement('p'); note.textContent = review.note;
+  const scroll = document.createElement('div'); scroll.className = 'cart-review-table'; scroll.tabIndex = 0;
+  scroll.setAttribute('role', 'region'); scroll.setAttribute('aria-label', review.title + ' results');
+  const table = document.createElement('table');
+  const caption = document.createElement('caption'); caption.textContent = 'Private organizer review. Monetary values use ' + review.currency + '.';
+  table.append(caption);
+  const head = document.createElement('thead'), header = document.createElement('tr');
+  for (const label of review.columns) { const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = label; header.append(cell); }
+  head.append(header); table.append(head);
+  const body = document.createElement('tbody');
+  for (const values of review.rows) {
+    const row = document.createElement('tr');
+    values.forEach((value, index) => { const cell = document.createElement('td'); cell.dataset.label = review.columns[index]; cell.textContent = value === null ? 'Not available' : typeof value === 'number' ? new Intl.NumberFormat('en', { maximumFractionDigits: 8 }).format(value) : value; row.append(cell); });
+    body.append(row);
+  }
+  if (!review.rows.length) { const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = review.columns.length; cell.textContent = 'No matching rows in this room.'; row.append(cell); body.append(row); }
+  table.append(body); scroll.append(table); output.append(heading, note, scroll);
+}
+
+function initializeCartReview() {
+  const select = document.querySelector('#cart-review-tool');
+  for (const tool of CART_REVIEW_TOOLS) { const option = document.createElement('option'); option.value = tool.id; option.textContent = tool.title; select.append(option); }
+  select.value = 'coverage';
+  select.addEventListener('change', clearCartReview);
+  document.querySelector('#cart-review-run').addEventListener('click', () => {
+    clearCartReview();
+    try {
+      if (invalidDraft) throw new ScenarioError('Correct invalid room inputs before reviewing.');
+      cartReviewPacket = createCartReviewPacket(screenshotMode ? redactBuyerLabels(scenario) : scenario, select.value);
+      showCartReview(cartReviewPacket.review);
+      document.querySelector('#cart-review-origin').textContent = 'Current room: ' + cartReviewPacket.scenario.title;
+      document.querySelector('#cart-review-export').disabled = false;
+    } catch (error) { clearCartReview(); setStatus(messageOf(error)); }
+  });
+}
+initializeCartReview();
+document.querySelector('#cart-review-export').addEventListener('click', () => {
+  try {
+    if (!cartReviewPacket) throw new ScenarioError('Run or inspect a review first.');
+    downloadFile(JSON.stringify(cartReviewPacket), 'common-cart-private-review.json', 'application/json');
+    setStatus('Private review packet exported. It contains buyer constraints and labels as displayed; review before sharing.', true);
+  } catch (error) { setStatus(messageOf(error)); }
+});
+document.querySelector('#cart-review-import').addEventListener('click', () => document.querySelector('#cart-review-file').click());
+document.querySelector('#cart-review-file').addEventListener('change', async (event) => {
+  const file = event.target.files[0]; event.target.value = '';
+  if (!file) return;
+  clearCartReview();
+  const sequence = cartReviewSequence;
+  try {
+    if (file.size > 1048576) throw new ScenarioError('Review packet exceeds 1 MiB.');
+    const text = await file.text();
+    if (sequence !== cartReviewSequence) return;
+    const packet = replayCartReviewPacket(JSON.parse(text));
+    cartReviewPacket = screenshotMode ? createCartReviewPacket(redactBuyerLabels(packet.scenario), packet.tool) : packet;
+    document.querySelector('#cart-review-tool').value = packet.tool;
+    showCartReview(cartReviewPacket.review);
+    document.querySelector('#cart-review-origin').textContent = 'Inspected saved room: ' + packet.scenario.title + '. Current room unchanged.';
+    document.querySelector('#cart-review-export').disabled = false;
+    setStatus('Saved review recomputed and matched. Current room and autosave are unchanged.', true);
+  } catch (error) { if (sequence !== cartReviewSequence) return; clearCartReview(); setStatus('Review could not be inspected: ' + messageOf(error)); }
+});

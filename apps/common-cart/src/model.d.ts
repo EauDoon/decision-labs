@@ -342,3 +342,14 @@ export function createOfferCsv(rawScenario: unknown): string;
 export function redactBuyerLabels(rawScenario: unknown): Scenario;
 export function createOrganizerBriefing(rawScenario: unknown): string;
 export function createWinnerAggregatesMarkdown(rawScenario: unknown): string;
+
+export interface CartReview {
+  tool: string; title: string; currency: string; columns: string[];
+  rows: (string | number | null)[][]; note: string;
+}
+export const CART_REVIEW_TOOLS: readonly { id: string; title: string }[];
+export function analyzeCartReview(rawScenario: unknown, tool: string): CartReview;
+
+export interface CartReviewPacket { format: 'common-cart-review'; version: 1; tool: string; scenario: Scenario; inputJSON: string; review: CartReview; }
+export function createCartReviewPacket(rawScenario: unknown, tool: string): CartReviewPacket;
+export function replayCartReviewPacket(candidate: unknown): CartReviewPacket;

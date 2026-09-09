@@ -8,7 +8,11 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
-## Changelog (1.3.3)
+## Changelog (1.4.0)
+
+The Buyer room now includes an on-demand organizer review flow: allocated coverage, sole-offer dependency, unserved reasons, same-cohort alternatives, withdrawal stress, shipping exposure, delivery slack, and bounded capacity/minimum previews. Export a private review packet and inspect it later without replacing the current room. Its input snapshot and recomputed results must match; it is an unsigned consistency record, not proof of authorship or merchant consent.
+
+## Earlier changelog (1.3.3)
 
 Organizer tools for merchant-safe offer export, list hygiene, empty-offer recovery, and honest local caps. This remains an offline simulator. Merchant views, JSON, CSV, overlap, briefing, and winner markdown still receive aggregates and counts only.
 
@@ -205,3 +209,39 @@ Bug reports and focused pull requests are welcome. Read [CONTRIBUTING.md](./CONT
 ## License
 
 MIT. See [LICENSE](./LICENSE).
+
+## Organizer review
+
+Open **Review buyer coverage and offer resilience** inside Buyer room. Select a question and run it on demand. Buyer option coverage counts actual whole-order allocations across qualified offers. Results clear after edits, stay out of Merchant table and printing, and respect screenshot-mode labels. These are declared-input alternatives, not reserved orders.
+
+### Sole-offer dependency
+
+Count buyers whose current whole-order allocation is available from only one qualified offer, and sum their units. This measures current option dependency, not post-withdrawal rematching.
+
+### Unserved buyer reasons
+
+For buyers served by no qualified offer, count current exclusion reasons across offers. These are evaluated-band diagnostics, not promises that one relaxed constraint will solve the order.
+
+### Same-cohort offer alternatives
+
+Compare qualified offers only when their selected buyer-ID sets are identical. An alternative dominates on these two declared measures only when total landed cost and delivery days are both no worse and at least one is strictly better. Equal offers are retained.
+
+### Winner withdrawal stress
+
+Remove each included buyer from the current winner in turn and rerun the existing whole-order allocator on that same offer. Report originally served units retained/lost among the other buyers. No cross-merchant or behavioral prediction is made.
+
+### Shipping exposure and headroom
+
+Sum actual charged shipping across allocated buyers and divide by landed total when nonzero. Least remaining ceiling is the minimum of item-ceiling total and optional order budget, minus actual landed cost. Pickup charges zero shipping.
+
+### Delivery slack by included order
+
+Delivery slack equals latestDeliveryDays minus offer.deliveryDays for each actual included order. Counts repeat a buyer across alternative offers and must not be summed as unique demand.
+
+### Capacity increase previews
+
+On demand, rerun at most five ranked offers at up to three distinct capacity increases (10%, 25%, 50%, rounded up). Capacity is bounded at 5,000. These finite previews do not search for an optimal capacity or change merchant terms.
+
+### Minimum-order relaxation preview
+
+Reevaluate each offer with only its base minimum changed to one unit. Capacity, shipping, prices, and quantity-tier thresholds remain unchanged. The preview does not assert merchant acceptance.

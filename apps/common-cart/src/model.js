@@ -1543,3 +1543,117 @@ function jsonSyntaxHint(error) {
   if (position) return ` (at position ${position[1]})`;
   return ` (${message})`;
 }
+
+
+export const CART_REVIEW_TOOLS = Object.freeze([
+  { id: "minimum", title: "Minimum-order relaxation preview" },
+  { id: "capacity", title: "Capacity increase previews" },
+  { id: "delivery", title: "Delivery slack by included order" },
+  { id: "shipping", title: "Shipping exposure and headroom" },
+  { id: "withdrawal", title: "Winner withdrawal stress" },
+  { id: "frontier", title: "Same-cohort offer alternatives" },
+  { id: "stranded", title: "Unserved buyer reasons" },
+  { id: "dependency", title: "Sole-offer dependency" },
+  { id: 'coverage', title: 'Buyer option coverage' },
+]);
+
+/** On-demand organizer analysis. Never changes matching inputs or places orders. */
+export function analyzeCartReview(rawScenario, tool) {
+  const scenario = validateScenario(rawScenario);
+  const selected = CART_REVIEW_TOOLS.find((entry) => entry.id === tool);
+  if (!selected) throw new ScenarioError('Choose a supported organizer review.');
+  const market = evaluateMarket(scenario);
+  const qualified = market.results.filter((result) => result.qualifies);
+  const report = (columns, rows, note) => ({ tool, title: selected.title, currency: scenario.currency, columns, rows, note });
+  switch (tool) {
+    case 'coverage':
+      return report(['Private buyer', 'Requested units', 'Offers including this buyer', 'Merchant options'], scenario.buyers.map((buyer) => {
+        const options = qualified.filter((result) => result.selectedBuyerIds.includes(buyer.id));
+        return [buyer.label, buyer.quantity, options.length, options.map((result) => result.offer.merchant).join(', ') || 'None'];
+      }), 'Counts use the actual whole-order allocation of each offer in this room. Offers are alternatives, not simultaneous purchases; no inventory is reserved.');
+    case "dependency": {
+      return report(['Merchant', 'Buyers with no other allocated option', 'Dependent units'], qualified.map((result) => {
+        const dependent = scenario.buyers.filter((buyer) => result.selectedBuyerIds.includes(buyer.id) && !qualified.some((other) => other.offer.id !== result.offer.id && other.selectedBuyerIds.includes(buyer.id)));
+        return [result.offer.merchant, dependent.length, dependent.reduce((sum, buyer) => sum + buyer.quantity, 0)];
+      }), 'Dependency is measured against current allocated cohorts. Removing an offer may change other allocations; this is an exposure count, not a forecast.');
+    }
+    case "stranded": {
+      return report(['Private buyer', 'Requested units', 'Current reasons across offers'], scenario.buyers.filter((buyer) => !qualified.some((result) => result.selectedBuyerIds.includes(buyer.id))).map((buyer) => {
+        const counts = new Map();
+        for (const result of market.results) for (const reason of result.buyerOutcomes.find((outcome) => outcome.buyerId === buyer.id).reasons) counts.set(reason, (counts.get(reason) ?? 0) + 1);
+        return [buyer.label, buyer.quantity, [...counts].sort(([a], [b]) => compareText(a, b)).map(([reason, count]) => reason + ': ' + count).join('; ') || 'No offers'];
+      }), 'Shows buyers included by no current qualified offer. Reasons describe the evaluated price band of each offer; relaxing a reason does not guarantee qualification.');
+    }
+    case "frontier": {
+      const cohort = (result) => JSON.stringify([...result.selectedBuyerIds].sort());
+      return report(['Merchant', 'Units', 'Landed total', 'Delivery days', 'Strictly better same-cohort alternatives'], qualified.map((result) => {
+        const better = qualified.filter((other) => other.offer.id !== result.offer.id && cohort(other) === cohort(result) && other.totalCost <= result.totalCost && other.offer.deliveryDays <= result.offer.deliveryDays && (other.totalCost < result.totalCost || other.offer.deliveryDays < result.offer.deliveryDays));
+        return [result.offer.merchant, result.fulfilledUnits, result.totalCost, result.offer.deliveryDays, better.map((other) => other.offer.merchant).join(', ') || 'None on these measures'];
+      }), 'Compares landed cost and delivery only for exactly the same allocated buyer IDs. Different cohorts, merchant quality, and unmodeled terms are not ranked as equivalent.');
+    }
+    case "withdrawal": {
+      if (!market.winner) return report(['Withdrawn buyer', 'Withdrawn units', 'Other originally served units', 'Other original units still served', 'Other original units lost'], [], 'No qualified winner exists to stress.');
+      const winning = market.winner;
+      return report(['Withdrawn buyer', 'Withdrawn units', 'Other originally served units', 'Other original units still served', 'Other original units lost'], scenario.buyers.filter((buyer) => winning.selectedBuyerIds.includes(buyer.id)).map((buyer) => {
+        const remaining = { ...scenario, buyers: scenario.buyers.filter((entry) => entry.id !== buyer.id) };
+        const result = evaluateOffer(remaining, winning.offer.id);
+        const originalOther = scenario.buyers.filter((entry) => entry.id !== buyer.id && winning.selectedBuyerIds.includes(entry.id));
+        const originalUnits = originalOther.reduce((sum, entry) => sum + entry.quantity, 0);
+        const retained = originalOther.filter((entry) => result.selectedBuyerIds.includes(entry.id)).reduce((sum, entry) => sum + entry.quantity, 0);
+        return [buyer.label, buyer.quantity, originalUnits, retained, originalUnits - retained];
+      }), 'Rematches only the current winning offer after one included buyer withdraws. Other buyers can fill freed capacity. Lost units exclude the withdrawn order; this is not a withdrawal probability.');
+    }
+    case "shipping": {
+      return report(['Merchant', 'Included buyers', 'Shipping total', 'Landed total', 'Shipping share (%)', 'Item ceilings exceeded after shipping', 'Least remaining ceiling'], qualified.map((result) => {
+        const shipping = result.allocations.reduce((sum, allocation) => sum + allocation.shippingCost, 0);
+        const headrooms = result.allocations.map((allocation) => {
+          const buyer = scenario.buyers.find((entry) => entry.id === allocation.buyerId);
+          return Math.min(buyer.quantity * buyer.maxUnitPrice, buyer.maxOrderTotal ?? Infinity) - allocation.totalCost;
+        });
+        return [result.offer.merchant, result.deliveredBuyers, shipping, result.totalCost, result.totalCost > 0 ? shipping / result.totalCost * 100 : null, result.allocations.filter((allocation) => allocation.exceedsCeilingAfterShipping).length, Math.min(...headrooms)];
+      }), 'Pickup shipping is zero. Item-price ceilings and optional landed-order budgets remain different constraints; negative item-ceiling headroom is shown honestly. A zero landed total has no shipping percentage.');
+    }
+    case "delivery": {
+      return report(['Merchant', 'Private buyer', 'Units', 'Delivery days', 'Buyer deadline days', 'Remaining days'], qualified.flatMap((result) => result.allocations.map((allocation) => {
+        const buyer = scenario.buyers.find((entry) => entry.id === allocation.buyerId);
+        return [result.offer.merchant, buyer.label, buyer.quantity, result.offer.deliveryDays, buyer.latestDeliveryDays, buyer.latestDeliveryDays - result.offer.deliveryDays];
+      })), 'Slack is the declared buyer deadline minus promised delivery for included orders. Zero slack means no modeled delay tolerance; this is not a delivery reliability estimate.');
+    }
+    case "capacity": {
+      return report(['Merchant', 'Current capacity', 'Preview capacity', 'Current fulfilled units', 'Preview fulfilled units', 'Unit difference'], market.ranked.slice(0, 5).flatMap((original) => {
+        const capacities = [...new Set([0.1, 0.25, 0.5].map((factor) => Math.min(MAX_UNITS, original.offer.capacity + Math.max(1, Math.ceil(original.offer.capacity * factor)))))] .filter((capacity) => capacity > original.offer.capacity);
+        return capacities.map((capacity) => {
+          const result = evaluateOffer(scenario, { ...original.offer, capacity });
+          return [original.offer.merchant, original.offer.capacity, capacity, original.fulfilledUnits, result.fulfilledUnits, result.fulfilledUnits - original.fulfilledUnits];
+        });
+      }), 'Preview the first five currently ranked offers at capacity increases of 10%, 25%, and 50%, rounded up and capped at 5,000. Duplicate capacities are omitted. Prices, tiers, demand, and all other terms stay fixed; no merchant capacity is verified.');
+    }
+    case "minimum": {
+      return report(['Merchant', 'Current base minimum', 'Preview base minimum', 'Current fulfilled units', 'Preview fulfilled units', 'Preview included buyers'], market.results.map((original) => {
+        const result = evaluateOffer(scenario, { ...original.offer, minimumUnits: 1 });
+        return [original.offer.merchant, original.offer.minimumUnits, 1, original.fulfilledUnits, result.fulfilledUnits, result.deliveredBuyers];
+      }), 'Counterfactual only: set the base minimum to one unit while preserving capacity, prices, tier thresholds, shipping, and buyer constraints. This does not imply that a merchant will agree.');
+    }
+    default: throw new ScenarioError('Review is unavailable.');
+  }
+}
+
+
+export function createCartReviewPacket(rawScenario, tool) {
+  const scenario = validateScenario(rawScenario);
+  const packet = { format: 'common-cart-review', version: 1, tool, scenario, inputJSON: JSON.stringify(scenario), review: analyzeCartReview(scenario, tool) };
+  if (new TextEncoder().encode(JSON.stringify(packet)).length > 1048576) throw new ScenarioError('Review packet exceeds 1 MiB. Choose a narrower review.');
+  return packet;
+}
+
+export function replayCartReviewPacket(candidate) {
+  const fields = ['format', 'version', 'tool', 'scenario', 'inputJSON', 'review'];
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== fields.length || !fields.every((field) => Object.hasOwn(candidate, field)) || candidate.format !== 'common-cart-review' || candidate.version !== 1) throw new ScenarioError('Unsupported review packet.');
+  const current = createCartReviewPacket(candidate.scenario, candidate.tool);
+  if (candidate.inputJSON !== current.inputJSON) throw new ScenarioError('Review input snapshot changed. Run a new review.');
+  const supplied = candidate.review, expected = current.review;
+  if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied) || Object.keys(supplied).length !== Object.keys(expected).length || !Object.keys(expected).every((field) => Object.hasOwn(supplied, field))) throw new ScenarioError('Review result fields changed.');
+  for (const field of ['tool', 'title', 'currency', 'note']) if (supplied[field] !== expected[field]) throw new ScenarioError('Review result does not match the input snapshot.');
+  if (!Array.isArray(supplied.columns) || supplied.columns.length !== expected.columns.length || expected.columns.some((value, index) => !Object.hasOwn(supplied.columns, index) || supplied.columns[index] !== value) || !Array.isArray(supplied.rows) || supplied.rows.length !== expected.rows.length || expected.rows.some((row, index) => !Object.hasOwn(supplied.rows, index) || !Array.isArray(supplied.rows[index]) || supplied.rows[index].length !== row.length || row.some((value, column) => !Object.hasOwn(supplied.rows[index], column) || supplied.rows[index][column] !== value))) throw new ScenarioError('Review result does not match the input snapshot.');
+  return current;
+}
