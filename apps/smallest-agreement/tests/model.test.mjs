@@ -22,6 +22,7 @@ import {
   leaveOneGroupOut,
   formatDiscussionWorksheet,
   groupContributions,
+  lockPackage,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -728,6 +729,32 @@ test("pinned package comparison shows original, solver, and custom columns witho
 });
 
 
+test("lockPackage sets every clause lock in one copy and rejects unknown options", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 40 }), option("two-change", false, { g: 90 }, 1), option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const locked = lockPackage(input, ["one-change", "two-change"]);
+  assert.equal(locked.status, "ok");
+  assert.deepEqual(locked.proposal.clauses.map((clause) => clause.lockedOptionId), ["one-change", "two-change"]);
+  assert.equal(JSON.stringify(input), before);
+  const searched = findSmallestAgreement(locked.proposal);
+  assert.equal(searched.possibleCombinations, 1);
+  assert.deepEqual(searched.agreement.options.map((option) => option.id), ["one-change", "two-change"]);
+  assert.equal(lockPackage(input, ["one-change"]).status, "invalid");
+  assert.equal(lockPackage(input, ["missing", "two-change"]).status, "invalid");
+  assert.equal(lockPackage(input, ["one-change", "one-change"]).status, "invalid");
+});
+
+
 test("downside stress tests preserve inputs and expose protected-group failures", () => {
   const input = proposal({ threshold: 50, groups: [{ id: "a", name: "A", weight: 9 }, { id: "b", name: "B", weight: 1, minSupport: 70 }], clauses: [{ id: "one", title: "One", options: [
     option("original", true, { a: 90, b: 80 }), option("other", false, { a: 80, b: 80 }, 1), option("third", false, { a: 70, b: 75 }, 2),
@@ -859,6 +886,7 @@ test("package gap explorer names cheaper misses and the next packages over thres
   assert.equal(gaps.status, "ok");
   assert.equal(gaps.recommended.changeCost, 3);
   assert.ok(gaps.cheaperMisses.some((row) => row.labels.includes("near") && row.approvalGap > 0 && row.changeCost === 1));
+  assert.ok(gaps.cheaperMisses.every((row) => Array.isArray(row.optionIds) && row.optionIds.length === 1));
   assert.ok(gaps.closestMisses.every((row) => row.approvalGap > 0 && row.meetsThreshold === false));
   assert.equal(gaps.nextOverThreshold.length, 0);
   const extra = proposal({

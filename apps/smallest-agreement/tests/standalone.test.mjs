@@ -42,7 +42,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="shortcut-overlay"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
-  assert.match(html, /Custom package/u);
+  assert.match(html, /Lock recommended package/u);
+  assert.match(html, /Lock this package/u);
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="support-drop-range"/u);
@@ -117,6 +118,7 @@ async function savedWorkbench(storage, hash = "") {
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
     sideBySide: () => element("#side-by-side").innerHTML,
+    nearMisses: () => element("#near-misses-list").innerHTML,
     coachHidden: () => element("#coach-overlay").hidden,
     clickAction: (action, dataset = {}) => {
       documentEvents.get("click")({
@@ -542,7 +544,27 @@ test("side-by-side pins original, solver, and custom package columns", async () 
   assert.match(app.sideBySide(), /Custom package/u);
   assert.match(app.sideBySide(), /Custom approval/u);
   assert.match(app.sideBySide(), /Close at 20:00 every day/u);
+  assert.match(app.sideBySide(), /Lock recommended package/u);
   app.changeManual("hours", "hours-pilot");
   assert.match(app.sideBySide(), /Trial a 21:00 Friday close for three months/u);
   assert.match(app.sideBySide(), /\(custom\)/u);
+});
+
+test("locking a package applies every clause lock in one undoable step", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for package locks");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(before.clauses.every((clause) => clause.lockedOptionId === undefined), true);
+  const optionIds = before.clauses.map((clause) => clause.options[1].id);
+  app.clickAction("lock-package", { optionIds: optionIds.join("|") });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.deepEqual(after.clauses.map((clause) => clause.lockedOptionId), optionIds);
+  assert.match(app.message(), /Locked every clause to that package/u);
+  app.click("#undo-button");
+  const restored = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(restored.clauses.every((clause) => clause.lockedOptionId === undefined), true);
+  app.clickAction("lock-package", { optionIds: "missing" });
+  assert.match(app.message(), /Could not lock that package/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.every((clause) => clause.lockedOptionId === undefined), true);
 });

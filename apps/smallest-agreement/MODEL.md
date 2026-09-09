@@ -115,6 +115,7 @@ Use the result to focus a human conversation. Establish process rules, evidence 
 
 - `evaluatePackage(proposal, optionIds)` requires exactly one valid option ID per clause and returns `passing`, `not_passing`, or `invalid`. It tests all constraints, including locks, without modifying the proposal or performing an optimization.
 - `comparePinnedPackages(proposal, recommendedIds, customIds)` reports original, solver, and custom selections side by side. Pass `null` for a missing solver recommendation. This is a readout of three packages, not a vote.
+- `lockPackage(proposal, optionIds)` copies the proposal and sets every clause lock to those option IDs. It does not mutate the input. The GUI applies that copy as one undoable draft edit.
 - `stressPackage(proposal, optionIds, supportDrop)` accepts a finite 0 to 100 point reduction, clamps every support score at zero, and evaluates the same choices. It reports the original and downside summaries. The scenario is hypothetical, not probabilistic.
 - `compareScenarioInputs(before, after)` compares canonical fields by stable IDs, including clause order because that order participates in the tie breaker. The GUI shows the first 100 changed fields with an explicit truncation message.
 - `formatEvidenceCsv(proposal, result)` includes every modeled input and recommendation markers, including a `veto` column. Text formula prefixes are neutralized, CSV quoting preserves commas, quotes, and newlines, and the GUI emits a UTF-8 byte-order mark.

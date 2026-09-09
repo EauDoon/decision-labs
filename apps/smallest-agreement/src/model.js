@@ -334,6 +334,7 @@ export function explorePackageGaps(proposal, result) {
     cheaperThanRecommended: recommended ? summary.changeCost + EPSILON < recommended.changeCost : true,
     meetsThreshold: summary.approval + EPSILON >= proposal.threshold,
     labels: summary.options.map((option, index) => `${proposal.clauses[index].title}: ${option.label}`).join("; "),
+    optionIds: summary.options.map((option) => option.id),
   });
   const closestMisses = (result.nearMisses ?? []).map(describe);
   const cheaperMisses = closestMisses.filter((row) => row.cheaperThanRecommended);
@@ -636,6 +637,27 @@ export function comparePinnedPackages(proposal, recommendedIds, customIds) {
       custom: customSummary ? customSummary.byGroup[index].approval : null,
     })),
   };
+}
+
+/**
+ * Lock every clause to the given option IDs in one copy.
+ * Does not mutate the supplied proposal. Invalid identifiers fail closed.
+ */
+export function lockPackage(proposal, optionIds) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(optionIds) || optionIds.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const next = canonicalProposal(proposal);
+  for (let index = 0; index < next.clauses.length; index += 1) {
+    const optionId = optionIds[index];
+    if (typeof optionId !== "string" || !next.clauses[index].options.some((option) => option.id === optionId)) {
+      return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+    }
+    next.clauses[index].lockedOptionId = optionId;
+  }
+  return { status: "ok", proposal: next };
 }
 
 

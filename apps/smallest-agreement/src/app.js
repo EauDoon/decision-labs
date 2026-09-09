@@ -8,6 +8,7 @@ import {
   comparePinnedPackages,
   explorePackageGaps,
   evaluatePackage,
+  lockPackage,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
   previewLockedOption,
@@ -695,7 +696,8 @@ function renderSideBySide(result) {
     return `<tr><th scope="row">${escapeHtml(row.clauseTitle)}</th><td>${choiceCell(row.original)}</td><td>${row.recommended ? choiceCell(row.recommended, changed ? " (changed)" : "") : "No recommendation"}</td><td>${choiceCell(row.custom, customNote)}</td></tr>`;
   }).join("");
   const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
-  $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(comparison.originalApproval)}. Recommended ${comparison.recommendedApproval == null ? "not found" : formatPercent(comparison.recommendedApproval)}. Custom ${formatPercent(comparison.customApproval)}. Original cost ${comparison.originalCost.toFixed(1)}. Recommended cost ${comparison.recommendedCost == null ? "not found" : comparison.recommendedCost.toFixed(1)}. Custom cost ${comparison.customCost.toFixed(1)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th><th scope="col">Custom package</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th><th scope="col">Custom approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
+  const recommendedLock = recommendedIds ? `<p>${lockPackageButton(recommendedIds, "Lock recommended package")} Applying locks is one draft edit, so undo restores the previous locks. Locked search still reports a deliberation aid, not a decision.</p>` : "";
+  $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(comparison.originalApproval)}. Recommended ${comparison.recommendedApproval == null ? "not found" : formatPercent(comparison.recommendedApproval)}. Custom ${formatPercent(comparison.customApproval)}. Original cost ${comparison.originalCost.toFixed(1)}. Recommended cost ${comparison.recommendedCost == null ? "not found" : comparison.recommendedCost.toFixed(1)}. Custom cost ${comparison.customCost.toFixed(1)}.</p>${recommendedLock}<div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th><th scope="col">Custom package</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th><th scope="col">Custom approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
 }
 
 function renderConstraints(result) {
@@ -728,6 +730,11 @@ function renderChanges(agreement, current) {
   shifts.innerHTML = deltas.length ? deltas.map((group) => `<div class="shift-item"><strong>${escapeHtml(group.name)}</strong> <span class="${group.delta > 0 ? "positive" : "negative"}">${group.delta > 0 ? "+" : ""}${group.delta.toFixed(1)} points</span><br><span>${formatPercent(group.before)} to ${formatPercent(group.after)}</span></div>`).join("") : '<p class="empty-state">No group support changes.</p>';
 }
 
+function lockPackageButton(optionIds, label) {
+  if (!Array.isArray(optionIds) || !optionIds.length) return "";
+  return ` <button class="text-button" type="button" data-action="lock-package" data-option-ids="${escapeHtml(optionIds.join("|"))}">${escapeHtml(label)}</button>`;
+}
+
 function packageGapRow(row, kind) {
   const gap = row.approvalGap;
   const approvalNote = row.meetsThreshold
@@ -740,7 +747,7 @@ function packageGapRow(row, kind) {
       : row.costVsRecommended < 0
         ? `Costs ${(-row.costVsRecommended).toFixed(1)} less than the recommendation (cost ${row.changeCost.toFixed(1)}).`
         : `Costs ${row.costVsRecommended.toFixed(1)} more than the recommendation (cost ${row.changeCost.toFixed(1)}).`;
-  return `<div class="miss-item"><span class="miss-score">${formatPercent(row.approval)}</span><span>${escapeHtml(row.labels)}<br><small>${escapeHtml(kind)} ${approvalNote} ${costNote}</small></span></div>`;
+  return `<div class="miss-item"><span class="miss-score">${formatPercent(row.approval)}</span><span>${escapeHtml(row.labels)}<br><small>${escapeHtml(kind)} ${approvalNote} ${costNote}</small>${lockPackageButton(row.optionIds, "Lock this package")}</span></div>`;
 }
 
 function renderNearMissExplorer(result) {
@@ -981,6 +988,19 @@ document.addEventListener("click", (event) => {
     lockPreview = previewLockedOption(state.proposal, button.dataset.clauseId, button.dataset.optionId, { maxCombinations: MAX_COMBINATIONS, alternativesLimit: 5 });
     renderLockPreview();
     $("#lock-preview-heading").focus?.();
+    return;
+  }
+  if (action === "lock-package") {
+    const optionIds = typeof button.dataset.optionIds === "string" && button.dataset.optionIds
+      ? button.dataset.optionIds.split("|")
+      : [];
+    const locked = lockPackage(state.proposal, optionIds);
+    if (locked.status !== "ok") {
+      notifyDraft(`Could not lock that package: ${locked.errors[0]}`);
+      return;
+    }
+    changeAndRender(() => { state.proposal = locked.proposal; });
+    notifyDraft("Locked every clause to that package. Undo restores the previous draft.");
     return;
   }
   if (action === "dismiss-lock-preview") {
