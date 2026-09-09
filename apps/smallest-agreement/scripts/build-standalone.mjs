@@ -21,6 +21,8 @@ const appImport = `import {
   clauseContributions,
   explorePackageGaps,
   evaluatePackage,
+  formatSupportMatrixCsv,
+  parseSupportMatrixCsv,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,

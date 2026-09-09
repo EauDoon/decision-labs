@@ -7,6 +7,8 @@ import {
   clauseContributions,
   explorePackageGaps,
   evaluatePackage,
+  formatSupportMatrixCsv,
+  parseSupportMatrixCsv,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -373,6 +375,7 @@ function renderResults(result) {
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
   $("#csv-button").disabled = result.status === "invalid";
+  $("#matrix-export-button").disabled = result.status === "invalid";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -921,6 +924,36 @@ $("#csv-button").addEventListener("click", () => {
   if (!validateProposal(state.proposal).valid) return notifyDraft("Fix the draft before exporting CSV.");
   downloadText("smallest-agreement-evidence.csv", "\uFEFF" + formatEvidenceCsv(state.proposal, currentResult()), "text/csv;charset=utf-8");
   notifyDraft("CSV downloaded with every option, group, constraint, support score, and recommendation marker.");
+});
+$("#matrix-export-button").addEventListener("click", () => {
+  if (!validateProposal(state.proposal).valid) return notifyDraft("Fix the draft before exporting the support matrix.");
+  downloadText("smallest-agreement-support.csv", "\uFEFF" + formatSupportMatrixCsv(state.proposal), "text/csv;charset=utf-8");
+  notifyDraft("Support matrix CSV downloaded. Import it to replace group scores without changing labels or costs.");
+});
+$("#matrix-import-button").addEventListener("click", () => $("#matrix-import-file").click());
+$("#matrix-import-file").addEventListener("change", async (event) => {
+  const sequence = ++importSequence;
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (file.size > 250_000) return notifyDraft("Support CSV import failed: files must be 250 KB or smaller.");
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    if (sequence !== importSequence) return;
+    return notifyDraft("Support CSV import failed: the file could not be read.");
+  }
+  if (sequence !== importSequence) return;
+  const parsed = parseSupportMatrixCsv(text, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Support CSV import failed (${first.code}): ${first.message}`);
+  }
+  state.proposal = parsed.proposal;
+  state.saveMessage = `Imported ${parsed.updatedCells} support scores from CSV.`;
+  save();
+  render();
 });
 $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");

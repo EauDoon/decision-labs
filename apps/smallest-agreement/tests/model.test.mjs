@@ -15,6 +15,8 @@ import {
   clauseWeightedSupport,
   explorePackageGaps,
   evaluatePackage,
+  formatSupportMatrixCsv,
+  parseSupportMatrixCsv,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -864,4 +866,46 @@ test("veto groups require threshold support and leave old JSON valid without the
     bad.groups[1].veto = value;
     assert.equal(findSmallestAgreement(bad).status, "invalid", `veto ${String(value)}`);
   }
+});
+
+test("support matrix CSV round-trips scores and names formula, identity, and header errors", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const csv = formatSupportMatrixCsv(input);
+  const parsed = parseSupportMatrixCsv(csv, input);
+  assert.equal(parsed.status, "ok");
+  assert.deepEqual(parsed.proposal, canonicalProposal(input));
+  assert.equal(JSON.stringify(input.clauses[0].options[0].support), JSON.stringify({ a: 40, b: 50 }));
+
+  const edited = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,55,65\r\n", input);
+  assert.equal(edited.status, "ok");
+  assert.equal(edited.proposal.clauses[0].options[0].support.a, 55);
+  assert.equal(input.clauses[0].options[0].support.a, 40);
+
+  const apostrophe = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,'60,'70\r\n", input);
+  assert.equal(apostrophe.status, "ok");
+  assert.equal(apostrophe.proposal.clauses[0].options[0].support.a, 60);
+
+  const formula = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,=SUM(1),50\r\n", input);
+  assert.equal(formula.status, "invalid");
+  assert.equal(formula.errors[0].code, "formula_cell");
+
+  const unknown = parseSupportMatrixCsv("clause_id,option_id,a,b\r\nmissing,original,1,2\r\n", input);
+  assert.equal(unknown.errors[0].code, "unknown_clause");
+  const missingOption = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,nope,1,2\r\n", input);
+  assert.equal(missingOption.errors[0].code, "unknown_option");
+  const extra = parseSupportMatrixCsv("clause_id,option_id,a,b,hidden\r\none,original,1,2,3\r\n", input);
+  assert.equal(extra.errors[0].code, "unknown_group_column");
+  const header = parseSupportMatrixCsv("option_id,a,b\r\n", input);
+  assert.equal(header.errors[0].code, "missing_clause_id_column");
+  const empty = parseSupportMatrixCsv("   ", input);
+  assert.equal(empty.errors[0].code, "empty_csv");
+  const score = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,101,0\r\n", input);
+  assert.equal(score.errors[0].code, "invalid_score");
 });

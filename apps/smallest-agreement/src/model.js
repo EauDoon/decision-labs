@@ -645,10 +645,187 @@ export function formatEvidenceCsv(proposal, result = findSmallestAgreement(propo
   for (const [index, clause] of p.clauses.entries()) for (const option of clause.options) for (const group of p.groups) {
     rows.push([p.title, p.threshold, p.maxChangeCost ?? "unlimited", result.status, clause.id, clause.title, clause.lockedOptionId ?? "none", option.id, option.label, option.original ? "yes" : "no", result.agreement ? (result.agreement.options[index].id === option.id ? "yes" : "no") : "no recommendation", option.changeCost, group.id, group.name, group.weight, group.minSupport ?? "none", group.veto === true ? "yes" : "no", option.support[group.id]]);
   }
-  const cell = (value) => {
-    let text = String(value);
-    if (typeof value === "string" && /^(?:[\s\u0000-\u001f]*[=+@-]|[\t\r\n])/u.test(text)) text = "'" + text;
-    return '"' + text.replaceAll('"', '""') + '"';
-  };
-  return rows.map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";
+  return serializeCsv(rows);
+}
+
+const FORMULA_CELL = /^(?:[\s\u0000-\u001f]*[=+@-]|[\t\r\n])/u;
+
+function quoteCsvCell(value) {
+  let text = String(value);
+  if (typeof value === "string" && FORMULA_CELL.test(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function serializeCsv(rows) {
+  return `${rows.map((row) => row.map(quoteCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
+/** Strip a leading apostrophe added for spreadsheet safety. */
+export function neutralizeCsvCell(raw) {
+  const text = String(raw ?? "");
+  return text.startsWith("'") ? text.slice(1) : text;
+}
+
+function namedCsvError(code, message, extra = {}) {
+  return { code, message, ...extra };
+}
+
+function parseCsvRecords(text) {
+  const source = String(text ?? "").replace(/^\uFEFF/u, "");
+  if (source.trim() === "") return { status: "invalid", errors: [namedCsvError("empty_csv", "CSV is empty.")] };
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (inQuotes) {
+      if (character === '"') {
+        if (source[index + 1] === '"') {
+          cell += '"';
+          index += 1;
+        } else inQuotes = false;
+      } else cell += character;
+      continue;
+    }
+    if (character === '"') {
+      inQuotes = true;
+      continue;
+    }
+    if (character === ",") {
+      row.push(cell);
+      cell = "";
+      continue;
+    }
+    if (character === "\n" || character === "\r") {
+      if (character === "\r" && source[index + 1] === "\n") index += 1;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+    cell += character;
+  }
+  if (inQuotes) return { status: "invalid", errors: [namedCsvError("truncated_row", "CSV quote was not closed.")] };
+  if (cell !== "" || row.length > 0) {
+    row.push(cell);
+    rows.push(row);
+  }
+  const records = rows.filter((entry) => entry.some((value) => value !== ""));
+  if (records.length === 0) return { status: "invalid", errors: [namedCsvError("empty_csv", "CSV is empty.")] };
+  return { status: "ok", records };
+}
+
+function parseSupportScore(raw, path) {
+  const neutralized = neutralizeCsvCell(raw);
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  if (typeof neutralized !== "string" || neutralized.trim() === "") {
+    return { error: namedCsvError("invalid_score", `${path} must be a number from 0 to 100.`, { path }) };
+  }
+  if (!/^[+-]?(?:\d+\.?\d*|\.\d+)$/u.test(neutralized.trim())) {
+    return { error: namedCsvError("invalid_score", `${path} must be a number from 0 to 100.`, { path, value: neutralized }) };
+  }
+  const score = Number(neutralized);
+  if (!Number.isFinite(score) || score < 0 || score > 100) {
+    return { error: namedCsvError("invalid_score", `${path} must be a number from 0 to 100.`, { path, value: neutralized }) };
+  }
+  return { score };
+}
+
+/**
+ * Import a clause-option vs group support matrix.
+ * Header must be clause_id, option_id, then every group id. Unknown columns are rejected.
+ * Formula-like cells are named formula_cell errors after neutralizing a leading apostrophe.
+ */
+export function parseSupportMatrixCsv(csvText, proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
+  const parsed = parseCsvRecords(csvText);
+  if (parsed.status !== "ok") return parsed;
+  const [header, ...body] = parsed.records;
+  if (!header || header.length < 3) {
+    return { status: "invalid", errors: [namedCsvError("missing_header", "CSV needs a header row with clause_id, option_id, and every group id.")] };
+  }
+  const columns = header.map((name) => neutralizeCsvCell(name).trim());
+  if (FORMULA_CELL.test(columns[0]) || FORMULA_CELL.test(columns[1])) {
+    return { status: "invalid", errors: [namedCsvError("formula_cell", "Header cells must not look like spreadsheet formulas.")] };
+  }
+  if (columns[0] !== "clause_id") return { status: "invalid", errors: [namedCsvError("missing_clause_id_column", "The first column must be clause_id.")] };
+  if (columns[1] !== "option_id") return { status: "invalid", errors: [namedCsvError("missing_option_id_column", "The second column must be option_id.")] };
+  const groupColumns = columns.slice(2);
+  const errors = [];
+  const seenGroups = new Set();
+  for (const groupId of groupColumns) {
+    if (FORMULA_CELL.test(groupId)) {
+      errors.push(namedCsvError("formula_cell", `Group column ${groupId} looks like a spreadsheet formula.`));
+      continue;
+    }
+    if (!proposal.groups.some((group) => group.id === groupId)) {
+      errors.push(namedCsvError("unknown_group_column", `Unknown group column: ${groupId}.`, { groupId }));
+    }
+    if (seenGroups.has(groupId)) errors.push(namedCsvError("duplicate_row", `Group column ${groupId} is repeated.`, { groupId }));
+    seenGroups.add(groupId);
+  }
+  for (const group of proposal.groups) {
+    if (!seenGroups.has(group.id)) errors.push(namedCsvError("missing_group_column", `Missing group column: ${group.id}.`, { groupId: group.id }));
+  }
+  if (body.length === 0) errors.push(namedCsvError("empty_csv", "CSV has a header but no support rows."));
+  const next = canonicalProposal(proposal);
+  const seenPairs = new Set();
+  let updatedCells = 0;
+  body.forEach((record, index) => {
+    const rowNumber = index + 2;
+    if (record.length !== columns.length) {
+      errors.push(namedCsvError("truncated_row", `Row ${rowNumber} has ${record.length} cells, expected ${columns.length}.`, { row: rowNumber }));
+      return;
+    }
+    const clauseId = neutralizeCsvCell(record[0]).trim();
+    const optionId = neutralizeCsvCell(record[1]).trim();
+    if (FORMULA_CELL.test(clauseId) || FORMULA_CELL.test(optionId)) {
+      errors.push(namedCsvError("formula_cell", `Row ${rowNumber} identifier looks like a spreadsheet formula.`, { row: rowNumber }));
+      return;
+    }
+    const pair = `${clauseId}\0${optionId}`;
+    if (seenPairs.has(pair)) {
+      errors.push(namedCsvError("duplicate_row", `Row ${rowNumber} repeats clause ${clauseId} option ${optionId}.`, { row: rowNumber, clauseId, optionId }));
+      return;
+    }
+    seenPairs.add(pair);
+    const clause = next.clauses.find((item) => item.id === clauseId);
+    if (!clause) {
+      errors.push(namedCsvError("unknown_clause", `Row ${rowNumber} clause_id ${clauseId} is not in this proposal.`, { row: rowNumber, clauseId }));
+      return;
+    }
+    const option = clause.options.find((item) => item.id === optionId);
+    if (!option) {
+      errors.push(namedCsvError("unknown_option", `Row ${rowNumber} option_id ${optionId} is not in clause ${clauseId}.`, { row: rowNumber, clauseId, optionId }));
+      return;
+    }
+    groupColumns.forEach((groupId, groupIndex) => {
+      const path = `row ${rowNumber} ${clauseId}/${optionId}/${groupId}`;
+      const parsedScore = parseSupportScore(record[groupIndex + 2], path);
+      if (parsedScore.error) {
+        errors.push(parsedScore.error);
+        return;
+      }
+      option.support[groupId] = parsedScore.score;
+      updatedCells += 1;
+    });
+  });
+  if (errors.length) return { status: "invalid", errors };
+  return { status: "ok", proposal: next, updatedCells };
+}
+
+/** Export only the support matrix used by parseSupportMatrixCsv. */
+export function formatSupportMatrixCsv(proposal) {
+  const p = canonicalProposal(proposal);
+  const header = ["clause_id", "option_id", ...p.groups.map((group) => group.id)];
+  const rows = [header];
+  for (const clause of p.clauses) for (const option of clause.options) {
+    rows.push([clause.id, option.id, ...p.groups.map((group) => option.support[group.id])]);
+  }
+  return serializeCsv(rows);
 }
