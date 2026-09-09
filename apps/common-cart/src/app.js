@@ -336,7 +336,7 @@ function bindStaticEvents() {
   });
 
   document.querySelector("#add-buyer").addEventListener("click", () => {
-    if (scenario.buyers.length >= 40) return setStatus("A room can have at most 40 buyers.");
+    if (scenario.buyers.length >= 40) return setStatus("Local matching cap: a room can have at most 40 buyers. That is not a server quota.");
     const next = nextId(scenario.buyers, "B");
     scenario.buyers.push({
       id: next,
@@ -381,7 +381,7 @@ function bindStaticEvents() {
   });
 
   document.querySelector("#add-offer").addEventListener("click", () => {
-    if (scenario.offers.length >= 40) return setStatus("A room can have at most 40 offers.");
+    if (scenario.offers.length >= 40) return setStatus("Local matching cap: a room can have at most 40 offers. That is not a server quota.");
     const next = nextId(scenario.offers, "O");
     scenario.offers.push({
       id: next,
@@ -732,8 +732,9 @@ function renderEditor() {
   const addOffer = document.querySelector("#add-offer");
   addBuyer.disabled = scenario.buyers.length >= 40;
   addOffer.disabled = scenario.offers.length >= 40;
-  addBuyer.title = addBuyer.disabled ? "A room can have at most 40 buyers." : "";
-  addOffer.title = addOffer.disabled ? "A room can have at most 40 offers." : "";
+  addBuyer.title = addBuyer.disabled ? "Local matching cap: at most 40 buyers. Not a server quota." : "";
+  addOffer.title = addOffer.disabled ? "Local matching cap: at most 40 offers. Not a server quota." : "";
+  renderEntryCapWarning();
   const filterSelect = document.querySelector("#offer-fulfillment-filter");
   if (filterSelect) filterSelect.value = offerFulfillmentFilter;
   renderTierEditors();
@@ -751,7 +752,25 @@ function renderEditor() {
   }
 }
 
-function applyOfferFulfillmentFilter() {
+function renderEntryCapWarning() {
+  const note = document.querySelector("#entry-cap-warning");
+  if (!note) return;
+  const buyersFull = scenario.buyers.length >= 40;
+  const offersFull = scenario.offers.length >= 40;
+  if (!buyersFull && !offersFull) {
+    note.hidden = true;
+    note.textContent = "";
+    return;
+  }
+  note.hidden = false;
+  if (buyersFull && offersFull) {
+    note.textContent = "This room is at the local matching cap of 40 buyers and 40 offers. That bound keeps the exact allocator responsive. It is not a server quota.";
+    return;
+  }
+  note.textContent = buyersFull
+    ? "This room is at the local matching cap of 40 buyers. That bound keeps the exact allocator responsive. It is not a server quota."
+    : "This room is at the local matching cap of 40 offers. That bound keeps the exact allocator responsive. It is not a server quota.";
+}
   let visibleIds;
   try {
     visibleIds = new Set(filterOfferIdsByFulfillment(scenario, offerFulfillmentFilter));
