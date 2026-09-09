@@ -30,6 +30,33 @@ for (const file of copy) {
 }
 
 const html = readFileSync(new URL('index.html', root), 'utf8');
+const serve = readFileSync(new URL('scripts/serve.mjs', root), 'utf8');
+const expectedCsp = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+if (!serve.includes(`CONTENT_SECURITY_POLICY = "${expectedCsp}"`)) {
+  console.error('scripts/serve.mjs: Content-Security-Policy must stay the catalog CSP.');
+  failed += 1;
+}
+for (const path of [
+  "'/'",
+  "'/index.html'",
+  "'/apps/partnership-breakpoint/standalone.html'",
+  "'/apps/common-cart/standalone.html'",
+  "'/apps/smallest-agreement/standalone.html'",
+  "'/apps/weekend-gap/standalone.html'",
+]) {
+  if (!serve.includes(path)) {
+    console.error(`scripts/serve.mjs: PUBLIC_PATHS must keep ${path}.`);
+    failed += 1;
+  }
+}
+if (!serve.includes("request.method !== 'GET' && request.method !== 'HEAD'")) {
+  console.error('scripts/serve.mjs: launcher must accept only GET and HEAD.');
+  failed += 1;
+}
+if (!serve.includes("server.listen(port, '127.0.0.1'")) {
+  console.error('scripts/serve.mjs: launcher must bind loopback only.');
+  failed += 1;
+}
 const apps = [
   ['partnership-breakpoint', 'Partnership Breakpoint'],
   ['common-cart', 'Common Cart'],

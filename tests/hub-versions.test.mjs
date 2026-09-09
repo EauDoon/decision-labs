@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
+import { catalogVersionLine, notFoundPage } from '../scripts/serve.mjs';
+
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
 const apps = [
@@ -26,4 +28,15 @@ test('catalog version list and cards match each app package.json', () => {
       `${label} ${version} missing from README table`,
     );
   }
+});
+
+test('404 catalog version line matches each app package.json', () => {
+  const line = catalogVersionLine();
+  for (const [id, label] of apps) {
+    const version = JSON.parse(readFileSync(new URL(`../apps/${id}/package.json`, import.meta.url), 'utf8')).version;
+    assert.equal(line.includes(`${label} ${version}`), true, `${label} ${version} missing from 404 version line`);
+  }
+  const page = notFoundPage();
+  assert.match(page, /Current catalog:/);
+  assert.equal(page.includes(line), true, '404 page should include the catalog version line');
 });

@@ -11,6 +11,7 @@ test('catalog page keeps language, landmarks, skip, and focus contract', () => {
   assert.match(html, /class="skip" href="#whats-new">Skip to what's new/);
   assert.match(html, /class="skip" href="#workbenches">Skip to workbenches/);
   assert.match(html, /href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts/);
+  assert.match(html, /class="skip" href="#trust">Skip to Trust and limits/);
   assert.match(html, /id="catalog-heading" tabindex="-1"/);
   assert.match(html, /<header class="shell hero">/);
   assert.match(html, /<nav class="shell site-nav" aria-label="On this page">/);
@@ -92,6 +93,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
+  assert.match(html, /Catalog cards list each workbench version next to its job/);
   assert.match(html, /not checkout, inventory, or a second live order/);
   assert.match(html, /not a legal right/);
   assert.match(html, /does not connect to a bank or a live redemption queue/);
@@ -134,4 +136,36 @@ test('h focuses the catalog heading when focus is not in an input', () => {
   assert.match(html, /getElementById\('catalog-heading'\)\?\.focus\(\)/);
   assert.match(html, /<kbd>h<\/kbd><\/dt><dd>Focus the catalog heading/);
   assert.match(html, /inEditable\(event\.target\)/);
+});
+
+test('t focuses Trust and limits when focus is not in an input', () => {
+  assert.match(html, /id="trust" tabindex="-1"/);
+  assert.match(html, /event\.key === 't'/);
+  assert.match(html, /getElementById\('trust'\)\?\.focus\(\)/);
+  assert.match(html, /<kbd>t<\/kbd><\/dt><dd>Focus Trust and limits/);
+  assert.match(html, /Press <kbd>t<\/kbd> to focus Trust and limits/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /#trust:focus-visible/);
+  assert.match(html, /@media print[\s\S]*\.trust \{ display: block !important; \}/);
+  assert.match(readme, /Press `t` to focus Trust and\s+limits/);
+  assert.match(readme, /Skip links jump to What's new, workbenches, keyboard\s+shortcuts, and Trust and limits/);
+});
+
+test('catalog does not use CSS animation', () => {
+  const style = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
+  assert.doesNotMatch(style, /@keyframes/);
+  assert.doesNotMatch(style, /animation\s*:/);
+  assert.match(style, /prefers-reduced-motion:\s*reduce[\s\S]*transition:\s*none/);
+});
+
+test('copy catalog address control exists and stays hidden off http', () => {
+  assert.match(html, /id="catalog-url-tools" hidden/);
+  assert.match(html, /id="copy-catalog-url"/);
+  assert.match(html, /Copy catalog address/);
+  assert.match(html, /\/\^https\?:\$\/\.test\(location\.protocol\)/);
+  assert.match(html, /urlTools\.hidden = false/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /\.copy-catalog-url:focus-visible/);
+  assert.match(html, /@media print[\s\S]*\.catalog-url-tools \{ display: none !important; \}/);
+  assert.match(html, /The control stays hidden if you open the page from a file/);
 });
