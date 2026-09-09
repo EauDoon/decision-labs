@@ -169,10 +169,31 @@ input[aria-invalid="true"] { border: 2px solid #b42318; }
 :focus-visible { outline: 3px solid #1558d6; outline-offset: 3px; }
 .print-only { display: none; }
 .stress-preview { border-block: 2px solid #1558d6; }
+.coach-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 35, 40, 0.62);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  padding: 1rem;
+}
+.coach-card {
+  width: min(32rem, 100%);
+  background: #fbfaf6;
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.35rem;
+  box-shadow: 0 8px 28px rgba(31, 35, 40, 0.18);
+}
+.coach-card h2 { margin: 0 0 .75rem; font-size: 1.1rem; }
+.coach-card ol { margin: 0 0 1rem; padding-left: 1.2rem; }
+.coach-card p { color: var(--muted); font-size: .86rem; }
 @media print {
   @page { size: landscape; margin: 12mm; }
   body { background: white; color: black; font-size: 10pt; }
-  .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview { display: none !important; }
+  .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview, .coach-overlay { display: none !important; }
   .app-grid, .results, .disclosure-grid { display: block; }
   .panel, .status-card { box-shadow: none; border-color: #777; margin-bottom: 12pt; }
   .table-wrap { overflow: visible; }

@@ -10,6 +10,7 @@ async function workbench(protocol = 'file:', options = {}) {
   const events = new Map();
   const windowEvents = new Map();
   const storage = new Map();
+  if (options.storage) Object.entries(options.storage).forEach(([key, value]) => storage.set(key, value));
   const notice = { textContent: '' };
   const downloads = [];
   let downloadBlob;
@@ -59,6 +60,14 @@ async function workbench(protocol = 'file:', options = {}) {
       input.files = [{ size: file.size ?? String(contents).length, contents, pending, error }];
       events.get('change')({ target: input });
     },
+    keydown: (key, extra = {}) => {
+      windowEvents.get('keydown')?.({
+        key,
+        target: extra.target ?? { tagName: extra.tagName ?? 'BODY' },
+        preventDefault() {},
+      });
+    },
+    stored: (key) => storage.get(key) ?? null,
   };
 }
 
@@ -512,4 +521,24 @@ test('contribution waterfall includes an SVG and a text fallback for each partic
   assert.match(app.markup(), /aria-label="Contribution waterfall for Platform/);
   assert.match(app.markup(), /<caption>Text equivalent for Platform<\/caption>/);
   assert.match(app.markup(), /Minimum acceptable profit/);
+});
+
+test('first-run coach explains the three-step flow, dismisses to localStorage, and skips share links', async () => {
+  const fresh = await workbench();
+  assert.match(fresh.markup(), /Three steps to a first read/);
+  assert.match(fresh.markup(), /role="dialog"/);
+  fresh.click('dismiss-coach');
+  assert.doesNotMatch(fresh.markup(), /Three steps to a first read/);
+  assert.equal(fresh.stored('partnership-breakpoint.coach.v1'), 'dismissed');
+  const dismissed = await workbench('file:', { storage: { 'partnership-breakpoint.coach.v1': 'dismissed' } });
+  assert.doesNotMatch(dismissed.markup(), /Three steps to a first read/);
+  const shared = clonePreset('balanced');
+  shared.deal.monthlyVolume = 88_000;
+  const encoded = Buffer.from(JSON.stringify(shared)).toString('base64url');
+  const linked = await workbench('http:', { hash: `#deal=${encoded}` });
+  assert.doesNotMatch(linked.markup(), /Three steps to a first read/);
+  assert.match(linked.markup(), /value="88000"/);
+  const escapeApp = await workbench();
+  escapeApp.keydown('Escape');
+  assert.doesNotMatch(escapeApp.markup(), /Three steps to a first read/);
 });

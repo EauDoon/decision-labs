@@ -201,10 +201,31 @@ input[aria-invalid="true"] { border: 2px solid #b42318; }
 :focus-visible { outline: 3px solid #1558d6; outline-offset: 3px; }
 .print-only { display: none; }
 .stress-preview { border-block: 2px solid #1558d6; }
+.coach-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(31, 35, 40, 0.62);
+  display: grid;
+  place-items: center;
+  z-index: 30;
+  padding: 1rem;
+}
+.coach-card {
+  width: min(32rem, 100%);
+  background: #fbfaf6;
+  color: var(--ink);
+  border: 2px solid var(--ink);
+  border-radius: var(--radius);
+  padding: 1.2rem 1.35rem;
+  box-shadow: 0 8px 28px rgba(31, 35, 40, 0.18);
+}
+.coach-card h2 { margin: 0 0 .75rem; font-size: 1.1rem; }
+.coach-card ol { margin: 0 0 1rem; padding-left: 1.2rem; }
+.coach-card p { color: var(--muted); font-size: .86rem; }
 @media print {
   @page { size: landscape; margin: 12mm; }
   body { background: white; color: black; font-size: 10pt; }
-  .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview { display: none !important; }
+  .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview, .coach-overlay { display: none !important; }
   .app-grid, .results, .disclosure-grid { display: block; }
   .panel, .status-card { box-shadow: none; border-color: #777; margin-bottom: 12pt; }
   .table-wrap { overflow: visible; }
@@ -1135,9 +1156,12 @@ function solveMinimumShareToHold(config, participantId) {
 }
 
 const STORAGE_KEY = 'partnership-breakpoint.v1';
+const LIBRARY_KEY = 'partnership-breakpoint.cases.v1';
+const COACH_KEY = 'partnership-breakpoint.coach.v1';
 const MAX_HASH_LENGTH = 60_000;
 const app = document.querySelector('#workbench');
 const standaloneFileMode = window.location.protocol === 'file:';
+let openedFromShareLink = false;
 let participantSequence = 0;
 let importSequence = 0;
 let activePreset = 'balanced';
@@ -1145,7 +1169,6 @@ let pendingNotice = '';
 let persistenceWarning = '';
 let state = withStress(loadInitialState());
 let eventsBound = false;
-const LIBRARY_KEY = 'partnership-breakpoint.cases.v1';
 let caseName = '';
 let caseLibrary = loadCaseLibrary();
 let removedCase = null;
@@ -1153,6 +1176,7 @@ let comparisonId = '';
 let stressPreviewId = '';
 let shareHoldPreview = null;
 let invalidFieldCount = 0;
+let coachVisible = !openedFromShareLink && !coachIsDismissed();
 const undoHistory = [];
 const redoHistory = [];
 
@@ -1292,7 +1316,10 @@ function loadStoredState() {
 
 function loadInitialState() {
   const fromHash = decodeHash(window.location.hash);
-  if (fromHash.kind === 'ok') return fromHash.config;
+  if (fromHash.kind === 'ok') {
+    openedFromShareLink = true;
+    return fromHash.config;
+  }
   const fromStorage = loadStoredState();
   if (fromHash.kind === 'invalid') {
     const fallback = fromStorage
@@ -1765,10 +1792,11 @@ function render() {
   try { result = calculatePartnership(state); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
   }
-  app.innerHTML = `<div class="app-grid">${inputPanel()}${resultsPanel(result)}</div>`;
+  app.innerHTML = `${coachOverlay()}<div class="app-grid">${inputPanel()}${resultsPanel(result)}</div>`;
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
+  if (coachVisible) app.querySelector?.('[data-action="dismiss-coach"]')?.focus();
   if (pendingNotice) {
     const message = pendingNotice;
     pendingNotice = '';
@@ -1838,6 +1866,7 @@ function attachEvents() {
     if (!button) return;
     const action = button.dataset.action;
     if (action === 'focus-invalid') { app.querySelector('input[aria-invalid="true"]')?.focus(); return; }
+    if (action === 'dismiss-coach') { dismissCoach(); return; }
     if (action === 'print-report') {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
       window.print(); return;
@@ -2034,6 +2063,10 @@ function drawSensitivityChart(grid) {
   grid.fees.forEach((fee, index) => context.fillText(formatNumber(fee, 3), margin.left - 6, margin.top + (index + .5) * cellHeight + 4));
 }
 
+window.addEventListener('keydown', (event) => {
+  if (event.key === 'Escape' && coachVisible) dismissCoach();
+});
+
 window.addEventListener('resize', () => {
   if (validateConfiguration(state).valid) drawSensitivityChart(sensitivityGrid());
 });
@@ -2222,6 +2255,33 @@ function shareHoldPreviewSection() {
     return `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${current ? formatPct(current.revenueShare * 100) : 'n/a'}</td><td>${formatPct(item.revenueShare * 100)}</td></tr>`;
   }).join('');
   return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p><strong>${name}</strong> holds at a minimum revenue share of <strong>${formatPct(solved.share * 100)}</strong>. Remaining participants keep their relative shares of the leftover. Apply is required; the current case is unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Proposed hold shares"><table><caption>Current shares versus proposed hold split</caption><thead><tr><th scope="col">Participant</th><th scope="col">Current share</th><th scope="col">Proposed share</th></tr></thead><tbody>${rows}</tbody></table></div><div class="panel-body"><div class="button-row"><button type="button" class="primary" data-action="apply-share-hold">Apply minimum hold share</button><button type="button" data-action="close-share-hold">Keep current shares</button></div></div></section>`;
+}
+
+function coachIsDismissed() {
+  try { return localStorage.getItem(COACH_KEY) === 'dismissed'; } catch { return false; }
+}
+
+function dismissCoach() {
+  coachVisible = false;
+  try { localStorage.setItem(COACH_KEY, 'dismissed'); } catch { /* The overlay still closes for this visit. */ }
+  render();
+  setNotice('Coach dismissed. Enter the deal, then read the weakest participant and First breakpoint.');
+}
+
+function coachOverlay() {
+  if (!coachVisible) return '';
+  return `<div class="coach-overlay" role="dialog" aria-modal="true" aria-labelledby="coach-title">
+    <div class="coach-card">
+      <h2 id="coach-title">Three steps to a first read</h2>
+      <ol>
+        <li>Enter the shared deal and each participant's costs and share.</li>
+        <li>Read the viability card for the weakest participant by volume headroom.</li>
+        <li>Inspect First breakpoint for the smallest adverse percentage move.</li>
+      </ol>
+      <p>This is a local decision aid. It does not say who will actually exit. Press Escape to dismiss.</p>
+      <button type="button" class="primary" data-action="dismiss-coach">Got it</button>
+    </div>
+  </div>`;
 }
 </script>
   </body>
