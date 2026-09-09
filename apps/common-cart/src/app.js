@@ -302,6 +302,62 @@ function bindStaticEvents() {
       event.preventDefault(); event.returnValue = "";
     }
   });
+  document.querySelector("#shortcut-help-close").addEventListener("click", () => document.querySelector("#shortcut-help").close());
+  window.addEventListener("keydown", handleShortcut);
+}
+
+function isTypingTarget(target) {
+  if (!(target instanceof Element)) return false;
+  if (target.isContentEditable) return true;
+  return Boolean(target.closest("input, textarea, select, [contenteditable='true']"));
+}
+
+function openShortcutHelp() {
+  const dialog = document.querySelector("#shortcut-help");
+  if (dialog.open) {
+    dialog.close();
+    return;
+  }
+  if (typeof dialog.showModal === "function") dialog.showModal();
+  else dialog.setAttribute("open", "");
+  document.querySelector("#shortcut-help-close")?.focus();
+}
+
+function handleShortcut(event) {
+  if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+  const helpOpen = document.querySelector("#shortcut-help")?.open;
+  const coachOpen = document.querySelector("#coach-dialog")?.open;
+  if (event.key === "Escape") {
+    document.querySelector("#shortcut-help")?.close();
+    return;
+  }
+  if (isTypingTarget(event.target) && event.key !== "Escape") return;
+  if (event.key === "?" || (event.shiftKey && event.key === "/")) {
+    event.preventDefault();
+    openShortcutHelp();
+    return;
+  }
+  if (helpOpen || coachOpen) return;
+  const key = event.key.length === 1 ? event.key.toLowerCase() : event.key;
+  if (key === "u") {
+    event.preventDefault();
+    if (!document.querySelector("#undo-button").disabled) restoreHistory(false);
+    return;
+  }
+  if (key === "r") {
+    event.preventDefault();
+    if (!document.querySelector("#redo-button").disabled) restoreHistory(true);
+    return;
+  }
+  if (key === "e") {
+    event.preventDefault();
+    exportScenario();
+    return;
+  }
+  if (key === "n") {
+    event.preventDefault();
+    document.querySelector("#add-buyer").click();
+  }
 }
 
 function maybeShowCoach() {
