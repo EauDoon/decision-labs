@@ -707,6 +707,30 @@ export function clearAllLocks(proposal) {
 }
 
 /**
+ * Lock or unlock one clause option on a copy of the proposal.
+ * Locking an option replaces any previous lock on that clause. Unlocking the
+ * currently locked option removes the lock. Does not mutate the input.
+ */
+export function toggleClauseLock(proposal, clauseId, optionId) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof clauseId !== "string" || typeof optionId !== "string") {
+    return { status: "invalid", errors: ["Clause and option identifiers are required."] };
+  }
+  const next = canonicalProposal(proposal);
+  const clause = next.clauses.find((item) => item.id === clauseId);
+  if (!clause) return { status: "invalid", errors: ["Unknown clause."] };
+  const option = clause.options.find((item) => item.id === optionId);
+  if (!option) return { status: "invalid", errors: ["Unknown option."] };
+  if (clause.lockedOptionId === optionId) {
+    delete clause.lockedOptionId;
+    return { status: "ok", proposal: next, locked: false, clauseId, optionId };
+  }
+  clause.lockedOptionId = optionId;
+  return { status: "ok", proposal: next, locked: true, clauseId, optionId };
+}
+
+/**
  * Copy a participant group, including weight, optional floor, veto, and every option's support score.
  * The copy receives a unique id. The solver still treats it as a separate supplied group.
  */

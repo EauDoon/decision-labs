@@ -10,6 +10,7 @@ import {
   evaluatePackage,
   lockPackage,
   clearAllLocks,
+  toggleClauseLock,
   duplicateParticipantGroup,
   sortPackageGapRows,
   formatSupportMatrixCsv,
@@ -438,7 +439,7 @@ function renderClauses() {
             <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="${escapeHtml(clause.title)}, ${escapeHtml(option.label)} label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
             <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" max="1000000000" step="any" required value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
             ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" required value="${option.support[group.id]}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
-            <td><div class="option-tools">${option.original ? "" : `<button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`}${option.original ? "" : `<button class="text-button" type="button" data-action="duplicate-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Duplicate option</button>`}${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
+            <td><div class="option-tools">${option.original ? "" : `<button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`}<button class="text-button" type="button" data-action="toggle-clause-lock" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">${clause.lockedOptionId === option.id ? "Unlock option" : "Lock this option"}</button>${option.original ? "" : `<button class="text-button" type="button" data-action="duplicate-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Duplicate option</button>`}${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
           </tr>`).join("")}</tbody>
       </table></div>
       <button class="text-button add-alternative" type="button" data-action="add-option" data-clause-id="${escapeHtml(clause.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Add alternative</button>
@@ -1052,6 +1053,18 @@ document.addEventListener("click", (event) => {
     }
     changeAndRender(() => { state.proposal = cleared.proposal; });
     notifyDraft("Cleared every clause lock. Undo restores the previous draft.");
+    return;
+  }
+  if (action === "toggle-clause-lock") {
+    const toggled = toggleClauseLock(state.proposal, button.dataset.clauseId, button.dataset.optionId);
+    if (toggled.status !== "ok") {
+      notifyDraft(`Could not toggle that lock: ${toggled.errors[0]}`);
+      return;
+    }
+    changeAndRender(() => { state.proposal = toggled.proposal; });
+    notifyDraft(toggled.locked
+      ? "Locked that clause to the selected option. Undo restores the previous draft."
+      : "Unlocked that clause. Undo restores the previous draft.");
     return;
   }
   if (action === "dismiss-lock-preview") {

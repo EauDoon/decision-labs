@@ -45,6 +45,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
+  assert.match(html, /Lock this option/u);
+  assert.match(html, /data-action="toggle-clause-lock"/u);
   assert.match(html, /id="clear-locks"/u);
   assert.match(html, /Clear all locks/u);
   assert.match(html, /id="near-miss-sort"/u);
@@ -688,6 +690,21 @@ test("clearing all locks is one undoable draft edit", async () => {
   app.click("#undo-button");
   const restored = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
   assert.deepEqual(restored.clauses.map((clause) => clause.lockedOptionId), optionIds);
+});
+
+test("clause cards can lock or unlock one option without applying a whole package", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for clause lock toggles");
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
+  assert.match(app.clauses(), /Unlock option/u);
+  assert.match(app.message(), /Locked that clause to the selected option/u);
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.find((clause) => clause.id === "hours").lockedOptionId, undefined);
+  assert.match(app.message(), /Unlocked that clause/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
 });
 
 test("near-miss explorer can sort closest misses by cost or approval gap", async () => {

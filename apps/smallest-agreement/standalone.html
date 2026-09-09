@@ -1153,6 +1153,30 @@ function clearAllLocks(proposal) {
 }
 
 /**
+ * Lock or unlock one clause option on a copy of the proposal.
+ * Locking an option replaces any previous lock on that clause. Unlocking the
+ * currently locked option removes the lock. Does not mutate the input.
+ */
+function toggleClauseLock(proposal, clauseId, optionId) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof clauseId !== "string" || typeof optionId !== "string") {
+    return { status: "invalid", errors: ["Clause and option identifiers are required."] };
+  }
+  const next = canonicalProposal(proposal);
+  const clause = next.clauses.find((item) => item.id === clauseId);
+  if (!clause) return { status: "invalid", errors: ["Unknown clause."] };
+  const option = clause.options.find((item) => item.id === optionId);
+  if (!option) return { status: "invalid", errors: ["Unknown option."] };
+  if (clause.lockedOptionId === optionId) {
+    delete clause.lockedOptionId;
+    return { status: "ok", proposal: next, locked: false, clauseId, optionId };
+  }
+  clause.lockedOptionId = optionId;
+  return { status: "ok", proposal: next, locked: true, clauseId, optionId };
+}
+
+/**
  * Copy a participant group, including weight, optional floor, veto, and every option's support score.
  * The copy receives a unique id. The solver still treats it as a separate supplied group.
  */
@@ -2039,7 +2063,7 @@ function renderClauses() {
             <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="${escapeHtml(clause.title)}, ${escapeHtml(option.label)} label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
             <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" max="1000000000" step="any" required value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
             ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" required value="${option.support[group.id]}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
-            <td><div class="option-tools">${option.original ? "" : `<button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`}${option.original ? "" : `<button class="text-button" type="button" data-action="duplicate-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Duplicate option</button>`}${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
+            <td><div class="option-tools">${option.original ? "" : `<button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`}<button class="text-button" type="button" data-action="toggle-clause-lock" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">${clause.lockedOptionId === option.id ? "Unlock option" : "Lock this option"}</button>${option.original ? "" : `<button class="text-button" type="button" data-action="duplicate-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Duplicate option</button>`}${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
           </tr>`).join("")}</tbody>
       </table></div>
       <button class="text-button add-alternative" type="button" data-action="add-option" data-clause-id="${escapeHtml(clause.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Add alternative</button>
@@ -2653,6 +2677,18 @@ document.addEventListener("click", (event) => {
     }
     changeAndRender(() => { state.proposal = cleared.proposal; });
     notifyDraft("Cleared every clause lock. Undo restores the previous draft.");
+    return;
+  }
+  if (action === "toggle-clause-lock") {
+    const toggled = toggleClauseLock(state.proposal, button.dataset.clauseId, button.dataset.optionId);
+    if (toggled.status !== "ok") {
+      notifyDraft(`Could not toggle that lock: ${toggled.errors[0]}`);
+      return;
+    }
+    changeAndRender(() => { state.proposal = toggled.proposal; });
+    notifyDraft(toggled.locked
+      ? "Locked that clause to the selected option. Undo restores the previous draft."
+      : "Unlocked that clause. Undo restores the previous draft.");
     return;
   }
   if (action === "dismiss-lock-preview") {

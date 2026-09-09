@@ -25,6 +25,7 @@ import {
   groupContributions,
   lockPackage,
   clearAllLocks,
+  toggleClauseLock,
   duplicateParticipantGroup,
   sortPackageGapRows,
   stressPackage,
@@ -816,6 +817,28 @@ test("clearAllLocks removes every clause lock in one copy and rejects invalid dr
   assert.equal(JSON.stringify(input), before);
   assert.equal(clearAllLocks(cleared.proposal).cleared, 0);
   assert.equal(clearAllLocks({ title: "" }).status, "invalid");
+});
+
+test("toggleClauseLock locks or unlocks one option on a copy and rejects unknown ids", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [{ id: "one", title: "One", options: [
+      option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const locked = toggleClauseLock(input, "one", "one-change");
+  assert.equal(locked.status, "ok");
+  assert.equal(locked.locked, true);
+  assert.equal(locked.proposal.clauses[0].lockedOptionId, "one-change");
+  assert.equal(JSON.stringify(input), before);
+  const switched = toggleClauseLock(locked.proposal, "one", "one-other");
+  assert.equal(switched.proposal.clauses[0].lockedOptionId, "one-other");
+  const unlocked = toggleClauseLock(switched.proposal, "one", "one-other");
+  assert.equal(unlocked.locked, false);
+  assert.equal(Object.hasOwn(unlocked.proposal.clauses[0], "lockedOptionId"), false);
+  assert.equal(toggleClauseLock(input, "missing", "one-change").status, "invalid");
+  assert.equal(toggleClauseLock(input, "one", "missing").status, "invalid");
 });
 
 
