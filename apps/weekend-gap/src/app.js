@@ -18,6 +18,8 @@ import {
   compareDemandProfiles,
   buildGateGanttSvg,
   buildGateSchedule,
+  compareGateSchedules,
+  buildComparisonGanttSvg,
   buildQueueChartSvg,
   buildSensitivityBarsSvg,
   compareSavedExperiments,
@@ -31,7 +33,7 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72 };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots" };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -56,6 +58,7 @@ const elements = {
   peakQueue: document.querySelector("#peak-queue-value"),
   backlogHours: document.querySelector("#backlog-hours-value"),
   firstSettlement: document.querySelector("#first-settlement-value"),
+  queueClear: document.querySelector("#queue-clear-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -152,7 +155,7 @@ function setMessage(message = "") {
   elements.inputMessage.textContent = message;
 }
 
-function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true } = {}) {
+function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus } = {}) {
   const cleaned = sanitizeScenario(nextScenario);
   if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
@@ -173,7 +176,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   document.querySelector("#sensitivity-tornado").innerHTML = "";
   lastSensitivityRows = [];
   document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
-  clearWindowShiftPreview("Assumptions changed. Preview the window shift again before applying.");
+  clearWindowShiftPreview(windowShiftStatus || "Assumptions changed. Preview the window shift again before applying.");
   if (message) setMessage(message);
   else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
@@ -218,7 +221,7 @@ function render() {
   elements.queueDetail.textContent = `${formatAud(point.settledAud)} paid so far`;
   elements.ratio.textContent = formatPercent(point.liquidityRatio);
   elements.discount.textContent = formatPercent(point.discountBps / 10000, 2);
-  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour, hoursWithQueue, hoursToFirstSettlement } = simulation.summary;
+  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour, hoursWithQueue, hoursToFirstSettlement, hoursToClearQueue } = simulation.summary;
   const settledShare = totalDemandAud > 0 ? totalSettledAud / totalDemandAud : 1;
   elements.outcomeSummary.textContent = `${formatPercent(settledShare)} of demand settled`;
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
@@ -228,6 +231,7 @@ function render() {
   elements.firstSettlement.textContent = hoursToFirstSettlement === null
     ? "No settlement in 72h"
     : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
+  elements.queueClear.textContent = formatHoursToClearQueue(hoursToClearQueue, peakQueuedAud);
   const jumpFirst = document.querySelector("#jump-first-settlement");
   if (jumpFirst) {
     jumpFirst.disabled = hoursToFirstSettlement === null;
@@ -255,7 +259,7 @@ function render() {
   applyGateState(elements.bankGate, point.bankOpen);
   applyGateState(elements.payoutGate, point.payoutOpen);
   elements.fxGate.textContent = point.weekend
-    ? `${scenario.mondayHoliday && point.timeLabel.startsWith("Mon") ? "Holiday Monday" : "Weekend"}: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
+    ? `${scenario.mondayHoliday && point.timeLabel.startsWith("Mon") ? "Holiday Monday" : scenario.saturdayHoliday && point.timeLabel.startsWith("Sat") ? "Holiday Saturday" : "Weekend"}: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
     : `${Math.round(point.fxSpreadBps)} bps weekday spread`;
   elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
 
@@ -265,6 +269,7 @@ function render() {
   renderTable();
   drawChart();
   renderGantt();
+  renderCompareGantt();
   renderQueueSvg();
 }
 
@@ -335,6 +340,46 @@ function renderGantt() {
   document.querySelector("#gantt-payout-note").textContent = firstOpen === null
     ? "No first payout window was found in the modeled search period."
     : `First payout window: ${formatTime(firstOpen)} (hour ${firstOpen}). The dashed green marker on the Gantt uses this hour.`;
+}
+
+function gateCellLabel(open, fx = false) {
+  if (fx) return open ? "Weekday depth" : "Weekend thinned";
+  return open ? "Open" : "Closed";
+}
+
+function renderCompareGantt() {
+  document.querySelector("#compare-gantt").innerHTML = buildComparisonGanttSvg(baselineScenario, scenario, selectedHour);
+  const comparison = compareGateSchedules(baselineScenario, scenario);
+  const rowIndexes = new Set([selectedHour]);
+  comparison.hours.forEach((point) => {
+    if (point.differs) rowIndexes.add(point.hour);
+  });
+  const fragment = document.createDocumentFragment();
+  [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
+    const point = comparison.hours[hour];
+    const row = document.createElement("tr");
+    if (hour === selectedHour) row.className = "is-current";
+    for (const value of [
+      point.timeLabel,
+      gateCellLabel(point.current.issuerOpen),
+      gateCellLabel(point.baseline.issuerOpen),
+      gateCellLabel(point.current.bankOpen),
+      gateCellLabel(point.baseline.bankOpen),
+      gateCellLabel(point.current.payoutOpen),
+      gateCellLabel(point.baseline.payoutOpen),
+      gateCellLabel(point.current.fxWeekday, true),
+      gateCellLabel(point.baseline.fxWeekday, true)
+    ]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    fragment.append(row);
+  });
+  document.querySelector("#compare-gantt-table").replaceChildren(fragment);
+  document.querySelector("#compare-gantt-status").textContent = comparison.differingHours === 0
+    ? "Current and baseline gate hours match. The table keeps the selected hour as a text equivalent."
+    : `${comparison.differingHours} of 73 checkpoints differ between current and baseline. Matching hours are omitted except the selected hour.`;
 }
 
 function renderQueueSvg() {
@@ -479,6 +524,24 @@ function renderPlanning() {
       const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
     }
     return row;
+  })(), (() => {
+    const row = document.createElement("tr");
+    const before = comparison.baseline.summary.hoursToClearQueue;
+    const after = simulation.summary.hoursToClearQueue;
+    const peakBefore = comparison.baseline.summary.peakQueuedAud;
+    const peakAfter = simulation.summary.peakQueuedAud;
+    const delta = typeof before === "number" && typeof after === "number"
+      ? after - before
+      : before === after ? 0 : null;
+    for (const value of [
+      "Hours to clear queue",
+      formatHoursToClearQueue(before, peakBefore),
+      formatHoursToClearQueue(after, peakAfter),
+      delta === null ? "Not comparable" : `${delta >= 0 ? "+" : ""}${delta}`
+    ]) {
+      const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+    }
+    return row;
   })());
   document.querySelector("#changed-assumptions").textContent = comparison.changes.length
     ? comparison.changes.map(({ field, baseline, candidate }) => `${field}: ${baseline} to ${candidate}`).join("; ")
@@ -575,8 +638,12 @@ document.querySelector("#preview-window-shift").addEventListener("click", () => 
 });
 document.querySelector("#apply-window-shift").addEventListener("click", () => {
   if (!windowShiftPreview) return;
+  const gate = windowShiftPreview.gate;
   const next = windowShiftPreview.applied;
-  setScenario(next, { message: `Applied ${windowShiftPreview.gate} window ${next[`${windowShiftPreview.gate}OpenStartHour`]}:00 to ${next[`${windowShiftPreview.gate}OpenEndHour`]}:00. Other assumptions and the pinned baseline were kept.` });
+  const start = next[`${gate}OpenStartHour`];
+  const end = next[`${gate}OpenEndHour`];
+  const notice = `Applied ${gate} window ${start}:00 to ${end}:00. Other assumptions and the pinned baseline were kept. Undo scenario edit reverts this window shift.`;
+  setScenario(next, { message: notice, windowShiftStatus: notice });
 });
 for (const id of ["window-shift-gate", "window-shift-start", "window-shift-end"]) {
   document.getElementById(id).addEventListener("input", () => {
@@ -727,6 +794,11 @@ function formatHoursToFirstSettlement(hours) {
   return hours === null ? "No settlement in 72h" : `${hours} hour${hours === 1 ? "" : "s"}`;
 }
 
+function formatHoursToClearQueue(hours, peakQueuedAud = 0) {
+  if (hours === null) return peakQueuedAud > 0 ? "queue remains" : "No queue in 72h";
+  return `${hours} hour${hours === 1 ? "" : "s"}`;
+}
+
 function renderDemandProfiles() {
   const rows = compareDemandProfiles(scenario);
   document.querySelector("#demand-compare-rows").replaceChildren(...rows.map((item) => {
@@ -857,7 +929,8 @@ renderLibrary();
 
 function currentWorkspace() {
   return workspaceToJSON(scenario,baselineScenario,{ targetPercent:document.querySelector("#reserve-target").valueAsNumber,
-    deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value });
+    deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value,
+    ganttDensity: document.querySelector("#gantt-density").value });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -867,7 +940,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -879,11 +952,12 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots" };
   baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
   document.querySelector("#workspace-notes").value=saved.notes;
+  document.querySelector("#gantt-density").value = saved.ganttDensity || "snapshots";
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -932,18 +1006,32 @@ document.querySelector("#redo-scenario").addEventListener("click",()=>{
 scenarioHistory=createScenarioHistory(scenario);renderHistory();
 
 document.querySelector("#table-density").addEventListener("change",renderTable);
-document.querySelector("#gantt-density").addEventListener("change",renderGantt);
+document.querySelector("#gantt-density").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
 document.querySelector("#export-gantt").addEventListener("click",()=>{
   downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
   setMessage("Gantt SVG downloaded. It is a synthetic operating calendar, not a live market chart.");
 });
+document.querySelector("#export-queue-svg").addEventListener("click",()=>{
+  downloadText(buildQueueChartSvg(scenario,baselineScenario,selectedHour),"weekend-gap-queue.svg","image/svg+xml;charset=utf-8");
+  setMessage("Queue SVG downloaded. It is a synthetic path, not a live market chart.");
+});
 document.querySelector("#jump-peak").addEventListener("click",()=>{
   selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
 });
+function jumpToFirstSettlement() {
+  const hours = simulation.summary.hoursToFirstSettlement;
+  if (hours === null) return false;
+  selectedHour = hours + 1;
+  setPlaying(false);
+  render();
+  saveWorkspace();
+  return true;
+}
 document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
-  const hours=simulation.summary.hoursToFirstSettlement;
-  if(hours===null) return;
-  selectedHour=hours+1;setPlaying(false);render();saveWorkspace();
+  jumpToFirstSettlement();
 });
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
@@ -1032,6 +1120,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === " ") {
     event.preventDefault();
     setPlaying(!playing);
+    return;
+  }
+  if (event.key === "j" || event.key === "J") {
+    event.preventDefault();
+    jumpToFirstSettlement();
     return;
   }
   if (event.key === "u" || event.key === "U") {

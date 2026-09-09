@@ -175,6 +175,13 @@ SOFTWARE.
               </label>
               <p>When selected, Monday is a non-business day like Sunday. Issuer, bank and payout windows stay closed, and weekend FX thinning applies. Older scenario files omit this field and keep a weekday Monday.</p>
             </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="saturdayHoliday">
+                <input id="saturdayHoliday" name="saturdayHoliday" data-field="saturdayHoliday" type="checkbox">
+                Treat Saturday as a public holiday
+              </label>
+              <p>When selected, Saturday is a non-business day like Sunday. Issuer, bank and payout windows stay closed, and weekend FX thinning applies. Older scenario files omit this field and keep the existing weekend Saturday.</p>
+            </div>
           </form>
 
           <section class="library-controls" aria-labelledby="library-title">
@@ -248,6 +255,7 @@ SOFTWARE.
               <div><dt>Peak queue</dt><dd id="peak-queue-value">A$0</dd></div>
               <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
               <div><dt>Hours to first settlement</dt><dd id="first-settlement-value">Calculating</dd></div>
+              <div><dt>Hours to clear queue</dt><dd id="queue-clear-value">Calculating</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -324,7 +332,7 @@ SOFTWARE.
           <article class="planning-card card" aria-labelledby="window-shift-title">
             <p class="eyebrow">Window what-if</p>
             <h2 id="window-shift-title">Shift one operating window</h2>
-            <p>Move a gate start and end by whole hours. The shifted window is clamped to valid hours with a one-hour minimum. Preview peak queue and settled total against the current scenario. Apply is a separate action and keeps the pinned baseline.</p>
+            <p>Move a gate start and end by whole hours. The shifted window is clamped to valid hours with a one-hour minimum. Preview peak queue and settled total against the current scenario. Apply is a separate action and keeps the pinned baseline. Undo scenario edit reverts the last applied shift because apply is one history step.</p>
             <label for="window-shift-gate">Gate</label>
             <select id="window-shift-gate">
               <option value="issuer">Issuer</option>
@@ -393,8 +401,11 @@ SOFTWARE.
             <div class="chart-wrap">
               <canvas id="liquidity-chart" role="img" aria-label="Line chart comparing queued AUD demand and immediate redeemable AUD over 72 hours. A printable SVG and a data table follow.">Your browser does not support canvas. Use the simulation data table below.</canvas>
             </div>
+            <div class="planning-actions">
+              <button id="export-queue-svg" type="button">Download queue SVG</button>
+            </div>
             <div id="queue-svg" class="queue-svg"></div>
-            <p class="chart-print-note">The SVG below is the printable queue path. The canvas keeps a live playhead while you scrub.</p>
+            <p class="chart-print-note">The SVG is a printable queue path. Download saves the same light-background drawing as a file. The canvas keeps a live playhead while you scrub.</p>
             <div class="chart-legend" aria-label="Chart legend">
               <span><i class="legend-mark legend-mark--queue" aria-hidden="true"></i>Queued AUD demand</span>
               <span><i class="legend-mark legend-mark--immediate" aria-hidden="true"></i>Immediate AUD capacity</span>
@@ -443,6 +454,17 @@ SOFTWARE.
                 <tbody id="gantt-table"></tbody>
               </table>
             </div>
+            <h3 id="compare-gantt-title">Baseline versus current</h3>
+            <p>Each gate has two rows: current above baseline. Green or blue is open or weekday depth; red or gold is closed or weekend thinning. The solid marker is the selected timeline hour. The table lists hours where the calendars differ and always includes the selected hour.</p>
+            <p id="compare-gantt-status" role="status"></p>
+            <div id="compare-gantt" class="gantt-svg"></div>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Baseline versus current Gantt table fallback">
+              <table>
+                <caption>Text equivalent of the paired-row Gantt. Matching hours are omitted except the selected hour. FX weekday means the weekend multiplier is not applied.</caption>
+                <thead><tr><th scope="col">Time</th><th scope="col">Current issuer</th><th scope="col">Baseline issuer</th><th scope="col">Current bank</th><th scope="col">Baseline bank</th><th scope="col">Current payout</th><th scope="col">Baseline payout</th><th scope="col">Current FX</th><th scope="col">Baseline FX</th></tr></thead>
+                <tbody id="compare-gantt-table"></tbody>
+              </table>
+            </div>
           </article>
 
           <article class="table-card card" aria-labelledby="table-title">
@@ -468,7 +490,7 @@ SOFTWARE.
         <div class="method-intro">
           <p class="eyebrow">About and method</p>
           <h2 id="method-title">A constrained operating-window model</h2>
-          <p>At each hour, synthetic redemption demand enters a queue. Settlement can occur only when issuer redemption, bank settlement and Australian AUD payout windows are all open. The hourly capacity is the smallest of issuer throughput, available FX depth, payout throughput and remaining AUD reserve. An optional Monday public-holiday flag keeps those windows closed on Monday, the same way Sunday is already closed.</p>
+          <p>At each hour, synthetic redemption demand enters a queue. Settlement can occur only when issuer redemption, bank settlement and Australian AUD payout windows are all open. The hourly capacity is the smallest of issuer throughput, available FX depth, payout throughput and remaining AUD reserve. An optional Monday public-holiday flag keeps those windows closed on Monday, the same way Sunday is already closed. An optional Saturday public-holiday flag treats Saturday like Sunday.</p>
         </div>
         <div class="method-grid">
           <div><h3>What it shows</h3><p>How a closed payout chain can create queued AUD demand and lower immediately redeemable capacity even while onchain transfers continue.</p></div>
@@ -484,7 +506,7 @@ SOFTWARE.
       <div class="overlay-dialog" role="dialog" aria-modal="true" aria-labelledby="coach-title" id="coach-dialog">
         <h2 id="coach-title">This is a synthetic 72-hour study</h2>
         <p>Weekend Gap is an educational liquidity simulator. Every assumption is invented and editable. It is not live market data, issuer information, or financial advice.</p>
-        <p>Three gates must overlap before queued demand can settle: issuer redemption, bank settlement, and Australian AUD payout. Saturday and Sunday keep those gates closed. An optional Monday holiday treats Monday the same way.</p>
+        <p>Three gates must overlap before queued demand can settle: issuer redemption, bank settlement, and Australian AUD payout. Saturday and Sunday keep those gates closed. An optional Monday holiday treats Monday the same way. An optional Saturday holiday records Saturday as a Sunday-like public holiday.</p>
         <p>The clock runs from Friday 15:00 to Monday 15:00 in abstract local time. Demand can still join the queue while the payout chain is closed.</p>
         <button type="button" id="coach-dismiss">Continue to the simulator</button>
       </div>
@@ -496,6 +518,7 @@ SOFTWARE.
         <ul class="shortcut-list">
           <li><kbd>?</kbd> Open or close this help</li>
           <li><kbd>Space</kbd> Play or pause the timeline</li>
+          <li><kbd>J</kbd> Jump the timeline to the first settlement</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>
           <li><kbd>R</kbd> Redo a scenario edit</li>
           <li><kbd>E</kbd> Export the current scenario JSON</li>

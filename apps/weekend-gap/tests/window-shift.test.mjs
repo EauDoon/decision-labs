@@ -68,3 +68,12 @@ test("zero shift preview is a no-op on windows and settlement", () => {
   assert.equal(preview.deltas.totalSettledAud, 0);
   assert.equal(preview.deltas.hoursToFirstSettlement, 0);
 });
+
+test("applying a window shift notices that undo reverts that history step", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /Undo scenario edit reverts the last applied shift/);
+  assert.match(app, /Undo scenario edit reverts this window shift/);
+  assert.match(app, /windowShiftStatus: notice/);
+});
