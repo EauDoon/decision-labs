@@ -273,9 +273,16 @@
     }
     @media print {
       body { background: white; color: #000; border-top-width: 2px; }
-      .skip, .keys-note, .how, .site-nav { display: none; }
+      .skip, .skips, .keys-note, .how, .site-nav, .shortcuts, .shortcuts-open { display: none !important; }
       .shell { max-width: none; padding-inline: 0; }
-      .hero, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
+      .hero, .whats-new, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
+      .whats-new {
+        background: white;
+        border: 1px solid #000;
+        color: #000;
+      }
+      .whats-new > p, .whats-new-list h3, .whats-new-list p { color: #000; }
+      .whats-new-list li { border-top-color: #000; }
       .open {
         display: inline;
         min-height: 0;
