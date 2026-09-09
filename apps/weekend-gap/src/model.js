@@ -446,3 +446,42 @@ export function scenarioFromJSON(text) {
     return { scenario: null, errors: ["Import failed. Choose a valid Weekend Gap scenario JSON file."] };
   }
 }
+
+/** End-of-interval exposure and simultaneous blockers, never causal attribution. */
+export function analyzeTimeline(input) {
+  const result = runSimulation(input);
+  const rows = [];
+  const counts = new Map();
+  let queueAudHours = 0;
+  let backlogIntervals = 0;
+  let longestBacklogRun = 0;
+  let currentRun = 0;
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const before = result.timeline[hour];
+    const after = result.timeline[hour + 1];
+    const capacity = capacityForHour(result.scenario, hour, before.reserveRemainingAud);
+    const blockers = [];
+    if (!capacity.status.issuerOpen) blockers.push("Issuer closed");
+    if (!capacity.status.bankOpen) blockers.push("Bank closed");
+    if (!capacity.status.payoutOpen) blockers.push("Payout closed");
+    if (before.reserveRemainingAud <= 0) blockers.push("Reserve exhausted");
+    if (capacity.capacityAud === 0 && blockers.length === 0) blockers.push("Zero throughput or FX depth");
+    if (after.queuedAud > 0 && blockers.length === 0) blockers.push(capacity.limitingGate);
+    const backlog = after.queuedAud > 0;
+    if (backlog) {
+      backlogIntervals += 1;
+      currentRun += 1;
+      for (const blocker of blockers) counts.set(blocker, (counts.get(blocker) || 0) + 1);
+    } else currentRun = 0;
+    longestBacklogRun = Math.max(longestBacklogRun, currentRun);
+    queueAudHours += after.queuedAud;
+    rows.push({ hour, endHour: hour + 1, demandAud: after.demandThisHour,
+      settledAud: after.settledThisHour, queuedAud: after.queuedAud, capacityAud: capacity.capacityAud, blockers });
+  }
+  return { rows, queueAudHours, backlogIntervals, longestBacklogRun,
+    blockers: [...counts].map(([label, intervals]) => ({ label, intervals })),
+    firstBacklogHour: result.timeline.find(point => point.queuedAud > 0)?.hour ?? null,
+    reserveExhaustionHour: result.scenario.reserveCashAud > 0 ? result.timeline.find(point => point.reserveRemainingAud === 0)?.hour ?? null : 0,
+    lastSettlementHour: result.timeline.findLast(point => point.settledThisHour > 0)?.hour ?? null,
+    peakQueueHour: result.summary.peakQueueHour };
+}

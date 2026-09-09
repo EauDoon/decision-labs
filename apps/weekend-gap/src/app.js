@@ -509,3 +509,17 @@ writeForm();
 render();
 renderPlanning();
 if (!userEdited && !window.location.hash) saveScenario();
+
+function renderDiagnostics() {
+  const d = analyzeTimeline(scenario);
+  document.querySelector("#diagnostic-summary").textContent = d.backlogIntervals + " of 72 intervals end with backlog. Longest uninterrupted run: " + d.longestBacklogRun + " hours. Queue exposure: " + formatAud(d.queueAudHours, false) + "·hours.";
+  const list = document.querySelector("#bottleneck-list");
+  list.replaceChildren(...d.blockers.map(item => {
+    const li = document.createElement("li"); li.textContent = item.label + ": " + item.intervals + " backlog intervals"; return li;
+  }));
+  if (!d.blockers.length) list.textContent = "No end-of-hour backlog in this run.";
+  document.querySelector("#milestone-summary").textContent = [
+    ["First backlog",d.firstBacklogHour], ["Reserve exhausted",d.reserveExhaustionHour], ["Last settlement checkpoint",d.lastSettlementHour]
+  ].map(([label,hour])=>label + ": " + (hour === null ? "not observed" : formatTime(hour))).join(". ");
+}
+renderDiagnostics();

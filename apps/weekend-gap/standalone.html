@@ -478,6 +478,11 @@ select { width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #57717
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
 
+          <article class="planning-card card" aria-labelledby="diagnostics-title">
+            <p class="eyebrow">Queue diagnostics</p><h2 id="diagnostics-title">What constrained this run?</h2>
+            <p id="diagnostic-summary"></p><ul id="bottleneck-list"></ul><p id="milestone-summary"></p>
+            <p>Blockers can overlap. Counts describe observed constraints while backlog remains, not how much a single change would improve settlement. Queue exposure sums end-of-hour backlog across 72 one-hour intervals.</p>
+          </article>
           <article class="planning-card card" aria-labelledby="comparison-title">
             <p class="eyebrow">Scenario comparison</p>
             <h2 id="comparison-title">Hold a baseline. Test a change.</h2>
@@ -1037,11 +1042,50 @@ function scenarioFromJSON(text) {
   }
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON };
+/** End-of-interval exposure and simultaneous blockers, never causal attribution. */
+function analyzeTimeline(input) {
+  const result = runSimulation(input);
+  const rows = [];
+  const counts = new Map();
+  let queueAudHours = 0;
+  let backlogIntervals = 0;
+  let longestBacklogRun = 0;
+  let currentRun = 0;
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const before = result.timeline[hour];
+    const after = result.timeline[hour + 1];
+    const capacity = capacityForHour(result.scenario, hour, before.reserveRemainingAud);
+    const blockers = [];
+    if (!capacity.status.issuerOpen) blockers.push("Issuer closed");
+    if (!capacity.status.bankOpen) blockers.push("Bank closed");
+    if (!capacity.status.payoutOpen) blockers.push("Payout closed");
+    if (before.reserveRemainingAud <= 0) blockers.push("Reserve exhausted");
+    if (capacity.capacityAud === 0 && blockers.length === 0) blockers.push("Zero throughput or FX depth");
+    if (after.queuedAud > 0 && blockers.length === 0) blockers.push(capacity.limitingGate);
+    const backlog = after.queuedAud > 0;
+    if (backlog) {
+      backlogIntervals += 1;
+      currentRun += 1;
+      for (const blocker of blockers) counts.set(blocker, (counts.get(blocker) || 0) + 1);
+    } else currentRun = 0;
+    longestBacklogRun = Math.max(longestBacklogRun, currentRun);
+    queueAudHours += after.queuedAud;
+    rows.push({ hour, endHour: hour + 1, demandAud: after.demandThisHour,
+      settledAud: after.settledThisHour, queuedAud: after.queuedAud, capacityAud: capacity.capacityAud, blockers });
+  }
+  return { rows, queueAudHours, backlogIntervals, longestBacklogRun,
+    blockers: [...counts].map(([label, intervals]) => ({ label, intervals })),
+    firstBacklogHour: result.timeline.find(point => point.queuedAud > 0)?.hour ?? null,
+    reserveExhaustionHour: result.scenario.reserveCashAud > 0 ? result.timeline.find(point => point.reserveRemainingAud === 0)?.hour ?? null : 0,
+    lastSettlementHour: result.timeline.findLast(point => point.settledThisHour > 0)?.hour ?? null,
+    peakQueueHour: result.summary.peakQueueHour };
+}
+
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline } = window.__WeekendGapModel;
 
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -1538,6 +1582,20 @@ writeForm();
 render();
 renderPlanning();
 if (!userEdited && !window.location.hash) saveScenario();
+
+function renderDiagnostics() {
+  const d = analyzeTimeline(scenario);
+  document.querySelector("#diagnostic-summary").textContent = d.backlogIntervals + " of 72 intervals end with backlog. Longest uninterrupted run: " + d.longestBacklogRun + " hours. Queue exposure: " + formatAud(d.queueAudHours, false) + "·hours.";
+  const list = document.querySelector("#bottleneck-list");
+  list.replaceChildren(...d.blockers.map(item => {
+    const li = document.createElement("li"); li.textContent = item.label + ": " + item.intervals + " backlog intervals"; return li;
+  }));
+  if (!d.blockers.length) list.textContent = "No end-of-hour backlog in this run.";
+  document.querySelector("#milestone-summary").textContent = [
+    ["First backlog",d.firstBacklogHour], ["Reserve exhausted",d.reserveExhaustionHour], ["Last settlement checkpoint",d.lastSettlementHour]
+  ].map(([label,hour])=>label + ": " + (hour === null ? "not observed" : formatTime(hour))).join(". ");
+}
+renderDiagnostics();
 
 </script>
   </body>
