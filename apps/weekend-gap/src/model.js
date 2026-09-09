@@ -705,6 +705,10 @@ function hoursToClearLabel(hours, peak) {
   return hours + " hour" + (hours === 1 ? "" : "s");
 }
 
+function hoursToFirstSettlementLabel(hours) {
+  return hours === null ? "No settlement in 72h" : hours + " hour" + (hours === 1 ? "" : "s");
+}
+
 function peakQueueHourLabel(summary) {
   if (!(summary.peakQueuedAud > 0)) return "No queue in 72h";
   return formatTime(summary.peakQueueHour) + " (hour " + summary.peakQueueHour + ")";
@@ -740,6 +744,22 @@ export function reportToMarkdown(current, baseline, options = {}) {
     "| Peak queue | " + comparison.baseline.summary.peakQueuedAud + " | " + comparison.candidate.summary.peakQueuedAud + " |",
     "",
     "This is a synthetic comparison, not a liquidity recommendation.",
+    ""
+  ].join("\n");
+}
+
+/** Copyable Markdown for the visible dashboard numbers. No timestamps. */
+export function dashboardToMarkdown(input) {
+  const result = runSimulation(input);
+  const summary = result.summary;
+  return [
+    "# Weekend Gap dashboard",
+    "",
+    "Synthetic educational numbers. Not financial advice or live market data.",
+    "",
+    "- Hours to clear queue: " + hoursToClearLabel(summary.hoursToClearQueue, summary.peakQueuedAud),
+    "- Peak queue hour: " + peakQueueHourLabel(summary),
+    "- Hours to first settlement: " + hoursToFirstSettlementLabel(summary.hoursToFirstSettlement),
     ""
   ].join("\n");
 }

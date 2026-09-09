@@ -66,7 +66,8 @@ const appImportMarker = `import {
   timelineToCSV,
   queueToCSV,
   reportToHTML,
-  reportToMarkdown
+  reportToMarkdown,
+  dashboardToMarkdown
 } from "./model.js";`;
 const exportedNames = Object.freeze([
   "SIMULATION_HOURS",
@@ -110,6 +111,7 @@ const exportedNames = Object.freeze([
   "queueToCSV",
   "reportToHTML",
   "reportToMarkdown",
+  "dashboardToMarkdown",
   "BOTTLENECK_LABELS",
   "attributeBottlenecks",
   "WINDOW_GATES",
