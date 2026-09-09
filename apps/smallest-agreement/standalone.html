@@ -290,6 +290,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
           <p id="veto-note" class="field-note">A veto group must reach the overall threshold (or its higher support floor, if one is set). Old drafts without this mark stay valid. A veto is a numerical constraint, not a legal right.</p>
           <div id="weight-shares"></div>
+          <div id="weight-renorm"></div>
         </section>
       </aside>
 
@@ -1215,6 +1216,55 @@ function vetoBlockingGroups(proposal, options) {
 }
 
 /**
+ * Preview dividing every group weight by the current total so weights would sum to 1.
+ * Rejects the whole draft when any weight is invalid. Does not mutate the proposal.
+ */
+function previewRenormalizedWeights(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) {
+    const weightError = validation.errors.find((error) => error.includes(".weight "));
+    return { status: "invalid", errors: [weightError ?? validation.errors[0]] };
+  }
+  const invalidIndex = proposal.groups.findIndex((group) => !Number.isFinite(group.weight) || group.weight <= 0 || group.weight > MAX_WEIGHT);
+  if (invalidIndex >= 0) {
+    return { status: "invalid", errors: [`groups[${invalidIndex}].weight must be greater than 0 and no more than ${MAX_WEIGHT}.`] };
+  }
+  const total = proposal.groups.reduce((sum, group) => sum + group.weight, 0);
+  if (!(total > 0) || !Number.isFinite(total)) {
+    return { status: "invalid", errors: ["Weights must be positive finite numbers before they can be renormalized."] };
+  }
+  const rows = proposal.groups.map((group) => ({
+    id: group.id,
+    name: group.name,
+    current: group.weight,
+    next: group.weight / total,
+  }));
+  const assigned = rows.slice(0, -1).reduce((sum, row) => sum + row.next, 0);
+  if (rows.length) rows[rows.length - 1].next = 1 - assigned;
+  return {
+    status: "ok",
+    total,
+    nextTotal: 1,
+    rows,
+  };
+}
+
+/**
+ * Apply renormalized weights that sum to 1.
+ * Requires a valid preview. Does not mutate the supplied proposal.
+ */
+function applyRenormalizedWeights(proposal) {
+  const preview = previewRenormalizedWeights(proposal);
+  if (preview.status !== "ok") return preview;
+  const next = canonicalProposal(proposal);
+  for (const group of next.groups) {
+    const row = preview.rows.find((item) => item.id === group.id);
+    group.weight = row.next;
+  }
+  return { status: "ok", proposal: next, rows: preview.rows, total: preview.total };
+}
+
+/**
  * Copy a participant group, including weight, optional floor, veto, and every option's support score.
  * The copy receives a unique id. The solver still treats it as a separate supplied group.
  */
@@ -2115,6 +2165,8 @@ let manualSelection = Object.create(null);
 let lockPreview = null;
 let clauseFilter = "";
 let nearMissSort = "approval_gap";
+let weightPreview = null;
+let weightPreviewKey = "";
 let cachedResultKey;
 let cachedResult;
 const savedResults = new WeakMap();
@@ -2287,6 +2339,7 @@ function render() {
   const result = currentResult();
   const vetoBlocks = blockingVetoIds(result);
   renderGroups(vetoBlocks);
+  renderWeightPreview();
   $("#clause-filter").value = clauseFilter;
   renderClauses();
   renderBallot(vetoBlocks);
@@ -2322,6 +2375,28 @@ function renderGroups(vetoBlocks = new Set()) {
     return;
   }
   $("#weight-shares").innerHTML = `<p class="field-note">Each share is that group's weight divided by the total (${total}). Shares are mixing weights in the approval formula, not voting rights.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Share of total</th></tr></thead><tbody>${state.proposal.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${group.weight}</td><td>${Number.isFinite(group.weight) && group.weight > 0 ? `${((group.weight / total) * 100).toFixed(1)}%` : "Invalid"}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+function currentWeightKey() {
+  return JSON.stringify(state.proposal.groups.map((group) => [group.id, group.weight]));
+}
+
+function renderWeightPreview() {
+  const target = $("#weight-renorm");
+  if (!target) return;
+  if (weightPreview && weightPreviewKey !== currentWeightKey()) {
+    weightPreview = null;
+    weightPreviewKey = "";
+  }
+  if (!weightPreview) {
+    target.innerHTML = '<p class="field-note">Renormalize divides each weight by the current total so the weights sum to 1. Preview first. Apply is an ordinary undoable edit. Mixing weights are not voting rights.</p><button class="text-button" type="button" data-action="preview-renorm">Preview renormalize weights</button>';
+    return;
+  }
+  if (weightPreview.status !== "ok") {
+    target.innerHTML = `<p class="field-note">${escapeHtml(weightPreview.errors[0])}</p><button class="text-button" type="button" data-action="preview-renorm">Preview renormalize weights</button>`;
+    return;
+  }
+  target.innerHTML = `<p class="field-note">Current total ${weightPreview.total}. After apply, weights sum to 1. Mixing weights are not voting rights.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current weight</th><th scope="col">Weight after apply</th></tr></thead><tbody>${weightPreview.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.current}</td><td>${row.next}</td></tr>`).join("")}</tbody></table></div><div class="scenario-actions"><button class="button button-brick" type="button" data-action="apply-renorm">Apply renormalized weights</button> <button class="text-button" type="button" data-action="dismiss-renorm">Dismiss preview</button></div>`;
 }
 
 function clauseMatchesFilter(clause, query) {
@@ -3007,6 +3082,33 @@ document.addEventListener("click", (event) => {
     notifyDraft(toggled.locked
       ? "Locked that clause to the selected option. Undo restores the previous draft."
       : "Unlocked that clause. Undo restores the previous draft.");
+    return;
+  }
+  if (action === "preview-renorm") {
+    weightPreview = previewRenormalizedWeights(state.proposal);
+    weightPreviewKey = currentWeightKey();
+    renderWeightPreview();
+    if (weightPreview.status !== "ok") notifyDraft(`Could not preview renormalized weights: ${weightPreview.errors[0]}`);
+    return;
+  }
+  if (action === "dismiss-renorm") {
+    weightPreview = null;
+    weightPreviewKey = "";
+    renderWeightPreview();
+    return;
+  }
+  if (action === "apply-renorm") {
+    const applied = applyRenormalizedWeights(state.proposal);
+    if (applied.status !== "ok") {
+      notifyDraft(`Could not renormalize weights: ${applied.errors[0]}`);
+      weightPreview = applied;
+      renderWeightPreview();
+      return;
+    }
+    weightPreview = null;
+    weightPreviewKey = "";
+    changeAndRender(() => { state.proposal = applied.proposal; });
+    notifyDraft("Renormalized group weights so they sum to 1. Undo restores the previous draft.");
     return;
   }
   if (action === "dismiss-lock-preview") {

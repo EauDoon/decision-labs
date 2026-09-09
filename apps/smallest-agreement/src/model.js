@@ -758,6 +758,55 @@ export function vetoBlockingGroups(proposal, options) {
 }
 
 /**
+ * Preview dividing every group weight by the current total so weights would sum to 1.
+ * Rejects the whole draft when any weight is invalid. Does not mutate the proposal.
+ */
+export function previewRenormalizedWeights(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) {
+    const weightError = validation.errors.find((error) => error.includes(".weight "));
+    return { status: "invalid", errors: [weightError ?? validation.errors[0]] };
+  }
+  const invalidIndex = proposal.groups.findIndex((group) => !Number.isFinite(group.weight) || group.weight <= 0 || group.weight > MAX_WEIGHT);
+  if (invalidIndex >= 0) {
+    return { status: "invalid", errors: [`groups[${invalidIndex}].weight must be greater than 0 and no more than ${MAX_WEIGHT}.`] };
+  }
+  const total = proposal.groups.reduce((sum, group) => sum + group.weight, 0);
+  if (!(total > 0) || !Number.isFinite(total)) {
+    return { status: "invalid", errors: ["Weights must be positive finite numbers before they can be renormalized."] };
+  }
+  const rows = proposal.groups.map((group) => ({
+    id: group.id,
+    name: group.name,
+    current: group.weight,
+    next: group.weight / total,
+  }));
+  const assigned = rows.slice(0, -1).reduce((sum, row) => sum + row.next, 0);
+  if (rows.length) rows[rows.length - 1].next = 1 - assigned;
+  return {
+    status: "ok",
+    total,
+    nextTotal: 1,
+    rows,
+  };
+}
+
+/**
+ * Apply renormalized weights that sum to 1.
+ * Requires a valid preview. Does not mutate the supplied proposal.
+ */
+export function applyRenormalizedWeights(proposal) {
+  const preview = previewRenormalizedWeights(proposal);
+  if (preview.status !== "ok") return preview;
+  const next = canonicalProposal(proposal);
+  for (const group of next.groups) {
+    const row = preview.rows.find((item) => item.id === group.id);
+    group.weight = row.next;
+  }
+  return { status: "ok", proposal: next, rows: preview.rows, total: preview.total };
+}
+
+/**
  * Copy a participant group, including weight, optional floor, veto, and every option's support score.
  * The copy receives a unique id. The solver still treats it as a separate supplied group.
  */

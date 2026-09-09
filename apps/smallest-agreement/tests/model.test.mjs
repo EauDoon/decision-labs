@@ -30,6 +30,8 @@ import {
   clearAllLocks,
   toggleClauseLock,
   vetoBlockingGroups,
+  previewRenormalizedWeights,
+  applyRenormalizedWeights,
   duplicateParticipantGroup,
   sortPackageGapRows,
   stressPackage,
@@ -869,6 +871,38 @@ test("vetoBlockingGroups names groups whose veto fails on the inspected package"
   assert.equal(cleared.groups.length, 0);
   assert.equal(JSON.stringify(input), before);
   assert.equal(vetoBlockingGroups(input, []).status, "invalid");
+});
+
+test("renormalized weights preview then apply so weights sum to 1 and reject invalid weights", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 3 }, { id: "b", name: "B", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const preview = previewRenormalizedWeights(input);
+  assert.equal(preview.status, "ok");
+  assert.equal(preview.total, 4);
+  assert.equal(preview.nextTotal, 1);
+  assert.equal(preview.rows[0].next, 0.75);
+  assert.equal(preview.rows[1].next, 0.25);
+  assert.equal(JSON.stringify(input), before);
+  const applied = applyRenormalizedWeights(input);
+  assert.equal(applied.status, "ok");
+  assert.equal(applied.proposal.groups.reduce((sum, group) => sum + group.weight, 0), 1);
+  assert.equal(applied.proposal.groups[0].weight, 0.75);
+  const uneven = structuredClone(applied.proposal);
+  uneven.groups = [{ id: "a", name: "A", weight: 3 }, { id: "b", name: "B", weight: 2 }, { id: "c", name: "C", weight: 2 }];
+  for (const option of uneven.clauses[0].options) option.support = { a: 50, b: 50, c: 50 };
+  const evened = applyRenormalizedWeights(uneven);
+  assert.equal(evened.proposal.groups.reduce((sum, group) => sum + group.weight, 0), 1);
+  assert.equal(JSON.stringify(input), before);
+  input.groups[0].weight = 0;
+  assert.equal(previewRenormalizedWeights(input).status, "invalid");
+  assert.equal(applyRenormalizedWeights(input).status, "invalid");
 });
 
 

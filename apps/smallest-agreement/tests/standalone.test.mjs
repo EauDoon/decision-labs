@@ -73,6 +73,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Duplicate option/u);
   assert.match(html, /Move up/u);
   assert.match(html, /id="weight-shares"/u);
+  assert.match(html, /id="weight-renorm"/u);
   assert.match(html, /Budget remaining/u);
   assert.match(html, /Group contribution/u);
   assert.match(html, /Filter clauses by title or option label/u);
@@ -149,6 +150,7 @@ async function savedWorkbench(storage, hash = "") {
     shares: () => element("#weight-shares").innerHTML,
     coalition: () => element("#coalition-table").innerHTML,
     constraints: () => element("#constraint-checks").innerHTML,
+    weightRenorm: () => element("#weight-renorm").innerHTML,
     sideBySide: () => element("#side-by-side").innerHTML,
     nearMisses: () => element("#near-misses-list").innerHTML,
     sortNearMisses: (value) => {
@@ -814,4 +816,23 @@ test("groups CSV import replaces the roster with named errors and supports undo"
   assert.match(app.message(), /Imported 1 participant groups/u);
   app.click("#undo-button");
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.length, before.groups.length);
+});
+
+test("renormalize weights requires a preview then apply and can be undone", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for renormalize");
+  assert.match(app.weightRenorm(), /Preview renormalize weights/u);
+  app.clickAction("preview-renorm");
+  assert.match(app.weightRenorm(), /Apply renormalized weights/u);
+  assert.match(app.weightRenorm(), /Current weight/u);
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const total = before.groups.reduce((sum, group) => sum + group.weight, 0);
+  app.clickAction("apply-renorm");
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.groups.reduce((sum, group) => sum + group.weight, 0), 1);
+  assert.equal(after.groups[0].weight, before.groups[0].weight / total);
+  assert.match(app.message(), /Renormalized group weights so they sum to 1/u);
+  app.click("#undo-button");
+  assert.deepEqual(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.map((group) => group.weight), before.groups.map((group) => group.weight));
 });

@@ -26,6 +26,8 @@ const appImport = `import {
   clearAllLocks,
   toggleClauseLock,
   vetoBlockingGroups,
+  previewRenormalizedWeights,
+  applyRenormalizedWeights,
   duplicateParticipantGroup,
   sortPackageGapRows,
   formatSupportMatrixCsv,
