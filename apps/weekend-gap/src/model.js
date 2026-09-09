@@ -13,6 +13,7 @@ const ANALYSIS_FORMAT = "weekend-gap-analysis";
 
 export const DEFAULT_SCENARIO = Object.freeze({
   name: "Normal Friday",
+  demandProfile: "flat",
   nominalLiquidityAud: 10000000,
   reserveCashAud: 6500000,
   issuerThroughputAudPerHour: 450000,
@@ -58,6 +59,7 @@ export const PRESETS = Object.freeze({
 
 const FIELD_RULES = Object.freeze({
   name: { type: "text", maxLength: 80 },
+  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush"] },
   nominalLiquidityAud: { min: 10000, max: 5000000000 },
   reserveCashAud: { min: 0, max: 5000000000 },
   issuerThroughputAudPerHour: { min: 0, max: 1000000000 },
@@ -101,6 +103,11 @@ export function sanitizeScenario(raw = {}) {
 
   for (const [field, rule] of Object.entries(FIELD_RULES)) {
     const fallback = DEFAULT_SCENARIO[field];
+    if (rule.type === "choice") {
+      scenario[field] = rule.values.includes(source[field]) ? source[field] : fallback;
+      if (source[field] !== undefined && scenario[field] !== source[field]) errors.push(`${field} was unsupported; the default was used.`);
+      continue;
+    }
     if (rule.type === "text") {
       const name = typeof source[field] === "string" ? source[field].trim() : "";
       scenario[field] = (name || fallback).slice(0, rule.maxLength);
@@ -186,11 +193,15 @@ export function getOperationalStatus(scenarioInput, hourOffset) {
   };
 }
 
-/** A flat, transparent demand schedule that conserves exactly the requested total. */
-export function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS) {
+/** Weighted synthetic arrivals, bounded to 720 hours and conserving total demand. */
+export function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS, profile = "flat") {
   const total = Math.max(0, finiteNumber(totalDemandAud, 0));
-  const count = Math.max(1, Math.floor(hours));
-  return Array.from({ length: count }, () => total / count);
+  if (!Number.isInteger(hours) || hours < 1 || hours > 720) throw new RangeError("Demand schedule requires 1 to 720 whole hours.");
+  if (!["flat", "fridayBurst", "mondayRush"].includes(profile)) throw new RangeError("Unknown demand profile.");
+  const weights = Array.from({ length: hours }, (_, hour) =>
+    profile === "fridayBurst" && hour < 9 ? 8 : profile === "mondayRush" && hour >= 57 ? 8 : 1);
+  const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
+  return weights.map(weight => total * (weight / weightTotal));
 }
 
 export function capacityForHour(scenarioInput, hourOffset, reserveRemainingAud) {
@@ -268,7 +279,7 @@ export function createSnapshot(scenario, hour, state, demandThisHour = 0, settle
  */
 export function runSimulation(input = {}) {
   const { scenario, errors } = sanitizeScenario(input);
-  const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud);
+  const demandSchedule = buildDemandSchedule(scenario.redemptionDemandAud, SIMULATION_HOURS, scenario.demandProfile);
   const state = { reserveRemainingAud: scenario.reserveCashAud, queuedAud: 0, settledAud: 0, demandArrivedAud: 0 };
   const timeline = [createSnapshot(scenario, 0, state)];
 
@@ -321,9 +332,9 @@ function settlementByDeadline(scenario, reserveAud, deadlineHour) {
   let reserve = reserveAud;
   let queued = 0;
   let settled = 0;
-  const demand = scenario.redemptionDemandAud / SIMULATION_HOURS;
+  const demand = buildDemandSchedule(scenario.redemptionDemandAud, SIMULATION_HOURS, scenario.demandProfile);
   for (let hour = 0; hour < deadlineHour; hour += 1) {
-    queued += demand;
+    queued += demand[hour];
     const amount = Math.min(queued, capacityForHour(scenario, hour, reserve).capacityAud);
     queued = Math.max(0, queued - amount);
     reserve = Math.max(0, reserve - amount);

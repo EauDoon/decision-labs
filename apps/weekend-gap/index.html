@@ -155,6 +155,15 @@ SOFTWARE.
                 </div>
               </div>
             </fieldset>
+            <div class="input-group input-group--full">
+              <label for="demandProfile">Demand timing</label>
+              <select id="demandProfile" name="demandProfile" data-field="demandProfile">
+                <option value="flat">Even across 72 hours</option>
+                <option value="fridayBurst">Friday burst (8x weight before midnight)</option>
+                <option value="mondayRush">Monday rush (8x weight from midnight)</option>
+              </select>
+              <p>Total demand stays fixed. Timing changes when it joins the queue.</p>
+            </div>
           </form>
 
           <p id="input-message" class="input-message" role="status" aria-live="polite"></p>

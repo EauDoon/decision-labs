@@ -105,3 +105,7 @@ Explicit failure states include a closed issuer, bank or payout gate, zero reser
 - A cash reserve is treated as immediately available once all operating gates are open. This is an assumption, not a claim about custody or settlement finality.
 
 Use the simulator to compare assumptions and reason about dependencies, not to make a trading, redemption, investment, legal or operational decision.
+
+## Demand timing
+
+Flat arrivals remain the default for existing scenario files. Friday burst gives each of the first nine hours weight 8, all other hours weight 1. Monday rush gives hours 57 to 71 weight 8. Each hourly demand is total demand times its weight divided by the sum of weights. This conserves total demand subject to floating-point rounding. The reserve planner uses exactly the same arrival schedule.

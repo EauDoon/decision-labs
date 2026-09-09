@@ -242,3 +242,5 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
   .table-card .card-heading > p, .chart-heading .gate-summary, .outcome-card .gate-summary { text-align: left; }
   .scenario-actions { grid-template-columns: 1fr; }
 }
+
+select { width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #57717b; border-radius: .5rem; background: #12232d; color: #eef4f5; font: inherit; }
