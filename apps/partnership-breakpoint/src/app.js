@@ -7,7 +7,9 @@ import {
   calculatePartnership,
   calculateFeeRequirements,
   clonePreset,
+  compareImportedCase,
   compareThreeSnapshots,
+  duplicateDisplayNames,
   duplicateParticipant,
   dropAndReallocate,
   evaluateStressGrid,
@@ -16,6 +18,8 @@ import {
   materializeStressCase,
   moveParticipant,
   participantsFromCsv,
+  participantsFromRosterText,
+  participantsToCsv,
   redactConfiguration,
   solveFeeForAllHold,
   solveMinimumShareToHold,
@@ -45,11 +49,14 @@ let removedCase = null;
 let comparisonId = '';
 let pinFirstId = '';
 let pinSecondId = '';
+let importedCompare = null;
 let stressPreviewId = '';
 let shareHoldPreview = null;
 let feeHoldPreview = null;
 let volumeHoldPreview = null;
 let briefCopyText = '';
+let csvCopyText = '';
+let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
 let helpOpen = false;
@@ -57,6 +64,7 @@ let dialogOpener = null;
 let dialogNeedsInitialFocus = coachVisible;
 const mutedStressIds = new Set();
 let collapseAllHoldCases = false;
+let printRedacted = false;
 const undoHistory = [];
 const redoHistory = [];
 
@@ -66,6 +74,7 @@ function checkpoint() {
   feeHoldPreview = null;
   volumeHoldPreview = null;
   briefCopyText = '';
+  csvCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -83,6 +92,7 @@ function travelHistory(direction) {
   feeHoldPreview = null;
   volumeHoldPreview = null;
   briefCopyText = '';
+  csvCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -164,6 +174,19 @@ function handleLibraryAction(action, id) {
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function displayState() {
+  if (!printRedacted) return state;
+  const copy = clone(state);
+  copy.participants.forEach((item, index) => {
+    item.name = `Participant ${index + 1}`;
+  });
+  return copy;
+}
+
+function printSafeName(index, name) {
+  return `<span class="participant-live-name">${escapeAttribute(name)}</span><span class="participant-redacted-name">Participant ${index + 1}</span>`;
 }
 
 function withStress(config) {
@@ -403,7 +426,7 @@ function inputPanel(result) {
         ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1', title: 'Leave blank for no commitment. Blank and zero are equivalent here.' })}
         ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
       </div>
-      <div class="button-row"><button type="button" data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
+      <div class="button-row"><button type="button"${index === 0 ? ' id="share-hold-jump"' : ''} data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
       </details>
     </section>`).join('');
 
@@ -444,19 +467,25 @@ function inputPanel(result) {
         <section class="input-section" aria-labelledby="participant-inputs-title">
           <h2 id="participant-inputs-title">Participants</h2>
           <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
+          ${duplicateNameWarning()}
           <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div><p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
           ${participantForms}
-          <div class="button-row"><button type="button" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
+          <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
+          <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
+          <textarea id="roster-paste" data-action="roster-paste" rows="6">${escapeAttribute(rosterPasteText)}</textarea>
+          <div class="button-row"><button type="button" data-action="import-roster-paste">Import pasted roster</button></div>
+          <p class="notice">Pasted CSV or TSV uses the same columns and validation as file import. Deal terms stay unchanged.</p>
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
           ${libraryPanel()}
           <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button><button type="button" data-action="open-help">Keyboard shortcuts</button><button type="button" data-action="show-coach">Show tour</button></div>
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
-          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged.</p>
+          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Compare imported JSON shows honest diffs against the current draft without replacing it. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged. Export participant CSV uses those same columns and formula-safe cells.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="print-redacted">Print redacted</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="copy-visible-csv">Copy visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
+            <label class="file-button">Compare imported JSON<input type="file" data-action="compare-import" accept="application/json,.json" /></label>
             <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
             <button type="button" data-action="reset">Reset</button>
           </div>
@@ -481,7 +510,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -510,6 +539,7 @@ function resultsPanel(result) {
       <a href="#first-breakpoint">First breakpoint</a>
       <a href="#fee-guidance-title">Fee guide</a>
       <a href="#three-compare-title">Three-snapshot compare</a>
+      ${importedCompare ? '<a href="#imported-compare-title">Imported JSON compare</a>' : ''}
       <a href="#charts-title">Charts</a>
       <a href="#compound-title">Compound stress</a>
       <a href="#participant-ledger">Participant ledger</a>
@@ -519,8 +549,10 @@ function resultsPanel(result) {
     ${shareHoldPreviewSection()}
     ${volumeHoldPreviewSection()}
     ${briefCopySection()}
+    ${csvCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
+    ${importedCompareSection()}
     ${breakpointSection(result)}
     <h2 id="charts-title" class="visually-hidden">Charts</h2>
     ${tornadoSection(result)}
@@ -575,10 +607,10 @@ function stressSection() {
   const collapseNote = collapseAllHoldCases
     ? `${hiddenHoldCount} all-hold ${hiddenHoldCount === 1 ? 'case is' : 'cases are'} hidden from this table. ${stress.passCount} of ${stress.caseCount} tested cases still hold. Counts are unchanged.`
     : 'Collapse cases every participant holds to hide those rows from this table only. Counts stay the same.';
-  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.4.2</span></div>
+  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.4.3</span></div>
     <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
       <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
-      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button><button type="button" data-action="export-csv">Export all cases CSV</button><button type="button" data-action="export-visible-csv">Export visible cases CSV</button></div>
+      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button><button type="button" data-action="export-csv">Export all cases CSV</button><button type="button" data-action="export-visible-csv">Export visible cases CSV</button><button type="button" data-action="copy-visible-csv">Copy visible cases CSV</button></div>
       <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant. ${collapseNote}</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
@@ -601,9 +633,9 @@ function capacityUtilizationCell(participant) {
 }
 
 function participantTable(result) {
-  const rows = result.participants.map((participant) => `
+  const rows = result.participants.map((participant, index) => `
     <tr>
-      <td><strong>${escapeAttribute(participant.name)}</strong></td>
+      <td><strong>${printSafeName(index, participant.name)}</strong></td>
       <td>${formatMoney(participant.revenue)}</td>
       <td>${formatMoney(participant.variableCost)}</td>
       <td>${formatMoney(participant.fixedCost)}</td>
@@ -636,7 +668,7 @@ function chartLabel(value, max = 24) {
   return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
 }
 
-function tornadoSection(result) {
+function tornadoChart(result) {
   const kinds = [
     ['volume', 'Volume down'],
     ['volumeIncrease', 'Volume up'],
@@ -675,7 +707,23 @@ function tornadoSection(result) {
       <text x="${left + Math.max(0, barWidth) + 6}" y="${y + 13}" font-size="11" fill="#1f2328">${escapeAttribute(row.display)}</text>`;
   }).join('');
   const tableRows = rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('');
-  return `<section class="panel print-keep"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="chart-frame">${`<svg class="chart-svg" role="img" aria-label="Tornado chart of smallest bounded adverse percentage shocks by participant. The table lists the same values." viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(height, 520)}">${bars}</svg>`}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${tableRows}</tbody></table></div></section>`;
+  return { width, height, bars, tableRows };
+}
+
+function tornadoSvgMarkup(result, { standalone = false } = {}) {
+  const chart = tornadoChart(result);
+  const xmlns = standalone ? ' xmlns="http://www.w3.org/2000/svg"' : '';
+  const role = standalone ? '' : ' class="chart-svg" role="img" aria-label="Tornado chart of smallest bounded adverse percentage shocks by participant. The table lists the same values."';
+  return `<svg${xmlns}${role} viewBox="0 0 ${chart.width} ${chart.height}" width="${standalone ? chart.width : '100%'}" height="${standalone ? chart.height : Math.min(chart.height, 520)}">${chart.bars}</svg>`;
+}
+
+function tornadoSvgFile(result) {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n${tornadoSvgMarkup(result, { standalone: true })}\n`;
+}
+
+function tornadoSection(result) {
+  const chart = tornadoChart(result);
+  return `<section class="panel print-keep"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
 }
 
 function waterfallSection(result) {
@@ -767,12 +815,12 @@ function render() {
   const casesOpen = app.querySelector?.('.case-details')?.open;
   invalidFieldCount = 0;
   let result = null;
-  try { result = calculatePartnership(state); } catch (error) {
+  try { result = calculatePartnership(displayState()); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
   }
   const inputs = inputPanel(result);
   const results = resultsPanel(result);
-  app.innerHTML = `${coachOverlay()}${helpDialog()}${invalidSummary()}<div class="app-grid">${inputs}${results}</div>`;
+  app.innerHTML = `${coachOverlay()}${helpDialog()}${invalidSummary()}<div class="app-grid${printRedacted ? ' print-redacted' : ''}">${inputs}${results}</div>`;
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
@@ -823,6 +871,7 @@ function attachEvents() {
       || (typeof HTMLTextAreaElement === 'function' && input instanceof HTMLTextAreaElement);
     if (!isField) return;
     if (input.dataset.action === 'case-name') { caseName = input.value; return; }
+    if (input.dataset.action === 'roster-paste') { rosterPasteText = input.value; return; }
     if (input.dataset.path) {
       checkpoint();
       if (input.dataset.type === 'text') {
@@ -846,6 +895,7 @@ function attachEvents() {
       return;
     }
     if (input.dataset.action === 'import' && input.files?.[0]) importFile(input.files[0]);
+    if (input.dataset.action === 'compare-import' && input.files?.[0]) importCompareFile(input.files[0]);
     if (input.dataset.action === 'import-participants-csv' && input.files?.[0]) importParticipantCsv(input.files[0]);
   });
   app.addEventListener('click', (event) => {
@@ -878,7 +928,17 @@ function attachEvents() {
     if (action === 'close-help') { closeHelp(); return; }
     if (action === 'print-report') {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
+      printRedacted = false;
       window.print(); return;
+    }
+    if (action === 'print-redacted') {
+      if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing a redacted report.'); return; }
+      printRedacted = true;
+      render();
+      window.print();
+      printRedacted = false;
+      render();
+      return;
     }
     if (action === 'inspect-stress') { stressPreviewId = button.dataset.scenarioId; render(); document.querySelector('#stress-preview-title')?.focus(); return; }
     if (action === 'close-stress-preview') { stressPreviewId = ''; render(); return; }
@@ -889,6 +949,7 @@ function attachEvents() {
     if (action === 'apply-volume-hold') { applyVolumeHold(); return; }
     if (action === 'close-volume-hold') { volumeHoldPreview = null; render(); return; }
     if (action === 'close-brief-copy') { briefCopyText = ''; render(); return; }
+    if (action === 'close-csv-copy') { csvCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -927,6 +988,7 @@ function attachEvents() {
       return;
     }
     if (action === 'clear-three-compare') { pinFirstId = ''; pinSecondId = ''; render(); return; }
+    if (action === 'clear-imported-compare') { importedCompare = null; render(); return; }
     if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
     if (['save-case', 'load-case', 'remove-case', 'restore-case', 'duplicate-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
     if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
@@ -990,6 +1052,10 @@ function attachEvents() {
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
+    if (action === 'copy-visible-csv') copyVisibleStressCsv();
+    if (action === 'export-participants-csv') exportParticipantsCsv();
+    if (action === 'import-roster-paste') importPastedRoster();
+    if (action === 'export-tornado-svg') exportTornadoSvg();
     if (action === 'apply-stress-proposal') {
       try {
         const proposal = applyStressProposal(state);
@@ -1084,6 +1150,48 @@ function importFile(file) {
   reader.readAsText(file);
 }
 
+function importCompareFile(file) {
+  const sequence = ++importSequence;
+  if (file.size === 0) {
+    setNotice('Compare rejected: the file is empty.');
+    return;
+  }
+  if (file.size > 250_000) {
+    setNotice('Compare rejected: files must be 250 KB or smaller.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    if (sequence !== importSequence) return;
+    const text = String(reader.result ?? '').trim();
+    if (!text) {
+      setNotice('Compare rejected: the file is empty.');
+      return;
+    }
+    try {
+      const candidate = JSON.parse(text);
+      const validation = validateConfiguration(candidate);
+      if (!validation.valid) throw new ValidationError(validation.errors);
+      importedCompare = { config: withStress(candidate), name: typeof file.name === 'string' && file.name.trim() ? file.name.trim().slice(0, 80) : 'Imported JSON' };
+      render();
+      document.querySelector('#imported-compare-title')?.focus();
+      setNotice('Imported JSON compared with the current draft. The current case is unchanged. Different identifiers are labeled, not filled with zeros.');
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        setNotice(`Compare rejected: ${summarizeErrors(error.errors)}`);
+        return;
+      }
+      setNotice(`Compare rejected: ${describeJsonFailure('the file', error)}`);
+    }
+  };
+  reader.onerror = () => {
+    if (sequence !== importSequence) return;
+    const detail = compactErrorMessage(reader.error);
+    setNotice(detail ? `Compare rejected: file could not be read (${detail}).` : 'Compare rejected: file could not be read.');
+  };
+  reader.readAsText(file);
+}
+
 function importParticipantCsv(file) {
   const sequence = ++importSequence;
   if (file.size === 0) {
@@ -1118,6 +1226,23 @@ function importParticipantCsv(file) {
     setNotice(detail ? `Participant CSV rejected: file could not be read (${detail}).` : 'Participant CSV rejected: file could not be read.');
   };
   reader.readAsText(file);
+}
+
+function importPastedRoster() {
+  try {
+    const participants = participantsFromRosterText(rosterPasteText);
+    checkpoint();
+    state.participants = participants;
+    activePreset = '';
+    rosterPasteText = '';
+    refresh('Participant roster replaced from pasted CSV or TSV. Deal terms are unchanged.');
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      setNotice(`Pasted roster rejected: ${summarizeErrors(error.errors)}`);
+      return;
+    }
+    setNotice(`Pasted roster rejected: ${describeJsonFailure('the pasted text', error)}`);
+  }
 }
 
 function nextParticipantId() {
@@ -1199,6 +1324,26 @@ window.addEventListener('keydown', (event) => {
     start?.focus?.({ preventScroll: false });
     start?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'n' || event.key === 'N') {
+    const add = document.querySelector('#add-participant');
+    if (add) {
+      add.focus?.({ preventScroll: false });
+      add.scrollIntoView?.({ block: 'start' });
+      return;
+    }
+    if (state.participants.length < MAX_PARTICIPANTS) {
+      checkpoint();
+      participantSequence += 1;
+      state.participants.push(makeParticipant(nextParticipantId()));
+      activePreset = '';
+      refresh('Participant added. Set shares to reconcile to 1.');
+    }
+  }
+  if (event.key === 's' || event.key === 'S') {
+    const target = document.querySelector('#share-hold-title') ?? document.querySelector('#share-hold-jump');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -1262,6 +1407,23 @@ function threeCompareSection(current) {
     : 'Participant sets differ. Rows that are missing from a case are labeled Not in this roster rather than filled with a zero.';
   const rows = compared.rows.map((row) => `<tr class="${row.rosterMismatch ? 'diff-changed' : ''}"><th scope="row">${escapeAttribute(row.name)}${row.rosterMismatch ? ' <span class="optional">roster mismatch</span>' : ''}</th>${snapshotCell(row.first)}${snapshotCell(row.second)}${snapshotCell(row.current)}</tr>`).join('');
   return `<section class="panel" aria-labelledby="three-compare-title"><div class="panel-heading"><h2 id="three-compare-title" tabindex="-1">Three-snapshot compare</h2><button type="button" data-action="clear-three-compare">Clear pins</button></div><div class="panel-body"><p>First pin: <strong>${escapeAttribute(firstItem.name)}</strong> (${compared.firstViable ? 'holds' : 'exits'}, ${formatMoney(compared.firstTotalProfit)} total profit). Second pin: <strong>${escapeAttribute(secondItem.name)}</strong> (${compared.secondViable ? 'holds' : 'exits'}, ${formatMoney(compared.secondTotalProfit)}). Current draft (${compared.currentViable ? 'holds' : 'exits'}, ${formatMoney(compared.currentTotalProfit)}).</p><p>${rosterNote} This is a difference table, not a ranking of which case is better.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Three-snapshot comparison"><table><caption>Profit and hold or fail for two pinned snapshots plus the current draft. Participants matched by identifier.</caption><thead><tr><th scope="col">Participant</th><th scope="col">${escapeAttribute(firstItem.name)} profit</th><th scope="col">${escapeAttribute(firstItem.name)} exit</th><th scope="col">${escapeAttribute(secondItem.name)} profit</th><th scope="col">${escapeAttribute(secondItem.name)} exit</th><th scope="col">Current profit</th><th scope="col">Current exit</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+function importedCompareSection() {
+  if (!importedCompare) return '';
+  if (!validateConfiguration(state).valid) {
+    return `<section class="panel" aria-labelledby="imported-compare-title"><div class="panel-heading"><h2 id="imported-compare-title" tabindex="-1">Compare with imported JSON</h2><button type="button" data-action="clear-imported-compare">Close comparison</button></div><div class="panel-body"><p>Resolve invalid inputs on the current draft to compare it with <strong>${escapeAttribute(importedCompare.name)}</strong>. The current case is unchanged.</p></div></section>`;
+  }
+  const compared = compareImportedCase(state, importedCompare.config);
+  const rosterNote = compared.sameRoster
+    ? 'Both cases share the same participant identifiers.'
+    : 'Participant sets differ. Missing identifiers are labeled Not in this roster rather than filled with a zero.';
+  const rows = compared.rows.map((row) => {
+    const delta = row.current && row.imported ? row.current.monthlyProfit - row.imported.monthlyProfit : null;
+    const deltaClass = delta == null || Math.abs(delta) <= 1e-9 ? '' : delta > 0 ? 'diff-up' : 'diff-down';
+    return `<tr class="${row.rosterMismatch ? 'diff-changed' : ''}"><th scope="row">${escapeAttribute(row.name)}${row.rosterMismatch ? ' <span class="optional">roster mismatch</span>' : ''}</th>${snapshotCell(row.imported)}${snapshotCell(row.current)}<td class="${deltaClass}">${row.current && row.imported ? formatMoney(delta) : 'n/a'}</td></tr>`;
+  }).join('');
+  return `<section class="panel" aria-labelledby="imported-compare-title"><div class="panel-heading"><h2 id="imported-compare-title" tabindex="-1">Compare with imported JSON</h2><button type="button" data-action="clear-imported-compare">Close comparison</button></div><div class="panel-body"><p>Imported file: <strong>${escapeAttribute(importedCompare.name)}</strong> (${compared.importedViable ? 'holds' : 'exits'}, ${formatMoney(compared.importedTotalProfit)} total profit). Current draft (${compared.currentViable ? 'holds' : 'exits'}, ${formatMoney(compared.currentTotalProfit)}).</p><p>${rosterNote} This is a difference table, not a ranking of which case is better. The current case was not replaced.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Imported JSON comparison"><table><caption>Current minus imported JSON. Participants matched by identifier. Missing identifiers are labeled, not zero-filled.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Imported profit</th><th scope="col">Imported exit</th><th scope="col">Current profit</th><th scope="col">Current exit</th><th scope="col">Profit change</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 function reportText(value) {
@@ -1375,6 +1537,55 @@ function briefCopySection() {
   return `<section class="panel" aria-labelledby="brief-copy-title"><div class="panel-heading"><h2 id="brief-copy-title">Negotiation brief</h2><button type="button" data-action="close-brief-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it.</p><label class="brief-copy-label" for="brief-copy-text">Markdown negotiation brief</label><textarea id="brief-copy-text" readonly rows="16">${escapeAttribute(briefCopyText)}</textarea></div></section>`;
 }
 
+function showCsvCopyFallback(text, message) {
+  csvCopyText = text;
+  render();
+  document.querySelector('#csv-copy-text')?.focus();
+  setNotice(message);
+}
+
+function csvCopySection() {
+  if (!csvCopyText) return '';
+  return `<section class="panel" aria-labelledby="csv-copy-title"><div class="panel-heading"><h2 id="csv-copy-title">Visible stress CSV</h2><button type="button" data-action="close-csv-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the CSV below and copy it. This is the currently visible stress grid, not every tested case.</p><label class="brief-copy-label" for="csv-copy-text">Visible stress-grid CSV</label><textarea id="csv-copy-text" readonly rows="16">${escapeAttribute(csvCopyText)}</textarea></div></section>`;
+}
+
+function copyVisibleStressCsv() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying visible stress CSV. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const stress = evaluateStressGrid(state);
+  const visible = visibleStressScenarios(stress);
+  const text = stressGridCsv(state, { scenarioIds: visible.map((scenario) => scenario.id) });
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = `Visible stress CSV copied. ${visible.length} of ${stress.caseCount} tested cases included. Case counts are not probabilities.`;
+  const fallbackNote = 'Clipboard unavailable. Copy the visible stress CSV from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          csvCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showCsvCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      csvCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showCsvCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showCsvCopyFallback(text, fallbackNote);
+}
+
 function copyNegotiationBrief() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -1409,6 +1620,27 @@ function copyNegotiationBrief() {
   showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
 }
 
+function exportTornadoSvg() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before downloading the tornado SVG. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const result = calculatePartnership(state);
+  downloadText(tornadoSvgFile(result), 'image/svg+xml;charset=utf-8', exportDownloadName('tornado', caseExportTitle()));
+  setNotice('Tornado SVG downloaded. It ranks displayed movements and does not assign probability.');
+}
+
+function exportParticipantsCsv() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before exporting participant CSV. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  downloadText(participantsToCsv(state), 'text/csv;charset=utf-8', exportDownloadName('participants', caseExportTitle()));
+  setNotice('Participant CSV exported. Columns match import. Formula-like names are stored as text.');
+}
+
 function exportStressCsv(visibleOnly = false) {
   const validation = validateConfiguration(state);
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting CSV. ' + summarizeErrors(validation.errors)); return; }
@@ -1427,6 +1659,16 @@ function exportStressCsv(visibleOnly = false) {
 function feeRequirementsSection() {
   const guidance = calculateFeeRequirements(state);
   return `<section class="panel" aria-labelledby="fee-guidance-title"><div class="panel-heading"><h2 id="fee-guidance-title">Fee negotiation guide</h2><span class="optional">fixed volume and shares</span></div><div class="panel-body"><p>At ${formatVolume(guidance.volume)}, the mathematical fee floor for all participant profit requirements is <strong>${guidance.requiredFee === null ? 'unavailable within the input limits' : formatNumber(guidance.requiredFee, 6) + ' units / transaction'}</strong>.</p><p>${guidance.operationallyFeasible ? 'Current capacity and commitment tests hold.' : 'Fee changes cannot repair the capacity or commitment failures below.'} A rounded floor is a guide; recheck the full model after changing a fee. Demand response and compound stress are not included in this floor.</p><div class="button-row"><button type="button" data-action="solve-fee-hold">Solve fee for all to hold</button></div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Participant fee requirements"><table><caption>Fee needed to meet each minimum monthly profit</caption><thead><tr><th scope="col">Participant</th><th scope="col">Fee floor</th><th scope="col">Operational restrictions</th></tr></thead><tbody>${guidance.participants.map((item) => `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${item.requiredFee === null ? 'No bounded fee can fund this share' : formatNumber(item.requiredFee, 6)}</td><td>${item.operationalFailures.length ? escapeAttribute(item.operationalFailures.join(', ')) : 'None at current volume'}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
+
+function duplicateNameWarning() {
+  const dupes = duplicateDisplayNames(state.participants);
+  if (!dupes.length) return '';
+  const details = dupes.map((item) => {
+    const count = item.indexes.length;
+    return `${count} participants share the name ${item.name}`;
+  }).join('. ');
+  return `<p class="duplicate-name-warning" role="status">${escapeAttribute(details)}. This is a label warning. It does not block editing and does not claim they are the same party.</p>`;
 }
 
 function shareBalanceText() {
@@ -1661,6 +1903,8 @@ function helpDialog() {
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON of the current valid case</li>
         <li><kbd>g</kbd> Jump to the results nav or the first results heading</li>
+        <li><kbd>n</kbd> Focus Add participant, or add one if that control is missing</li>
+        <li><kbd>s</kbd> Jump to share-to-hold (preview if open, otherwise the first solver)</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

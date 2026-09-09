@@ -25,7 +25,7 @@ test('launcher serves only workbenches and refuses hostile hosts and methods', a
   assert.match(page.body, /Share-to-hold/);
   assert.match(page.body, /CSV roster, capacity, and notes/);
   assert.match(page.body, /Queue-clear hours and Gantt compare/);
-  assert.match(page.body, /data-app="partnership-breakpoint">1\.4\.2</);
+  assert.match(page.body, /data-app="partnership-breakpoint">1\.4\.3</);
   assert.match(page.body, /Trust and limits/);
   assert.match(page.body, /The workbenches/);
   assert.match(page.body, /Open workbench/);
@@ -205,4 +205,38 @@ test('404 version listing does not expand PUBLIC_PATHS or change CSP', () => {
   assert.equal(publicFile('/package.json'), null);
   assert.equal(publicFile('/apps/weekend-gap/MODEL.md'), null);
   assert.equal(notFoundPage().includes(catalogVersionLine()), true);
+});
+
+test('404 page still names the Decision Labs catalog', async (t) => {
+  assert.match(notFoundPage(), /This path is not in the catalog/);
+  assert.match(notFoundPage(), /Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap/);
+  assert.match(notFoundPage(), /href="\/"/);
+  assert.match(notFoundPage(), /Current catalog:/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-such-catalog-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /Decision Labs catalog/);
+  assert.match(missing.body, /not in the catalog/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
 });

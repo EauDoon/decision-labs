@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.4.3 - 2026-09-09
+
+A workshop follow-up. The solver is still a decision aid, not a decision maker.
+
+### Added
+
+- Formula-safe clause options CSV import and export with named errors. Matching ids keep support scores; new options start at 50.
+- Keyboard `l` jumps to the first locked clause, or the lock controls. Ignored while typing in an input, select, or text area.
+- Filter participant groups to veto-only. Hidden groups still count in the model.
+- Copy the veto-blocker list as Markdown. It is a numerical constraint list, not a legitimacy claim.
+- Compare two workshop JSON files by group and clause identifiers. Missing ids are listed rather than filled with zeros.
+- Persist compact or comfortable clause card density in version-1 workspace JSON and local workspace prefs. The solver ignores density.
+- Export current locks as re-importable JSON. Import replaces every lock. Unknown ids fail closed.
+- Keyboard `/` focuses the clause filter. Shortcut help documents it because `f` already focuses the filter.
+- Undoable reset of one group's support scores to blank. The draft is invalid until those cells are filled.
+- Library Quiet Hours preset: synthetic readers, families, and library staff scoring evening hours, children's-area sound rules, and after-hours events.
+
 ## 1.4.2 - 2026-09-09
 
 A facilitator follow-up. The solver is still a decision aid, not a decision maker.
