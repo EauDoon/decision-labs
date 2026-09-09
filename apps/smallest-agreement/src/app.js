@@ -9,6 +9,7 @@ import {
   explorePackageGaps,
   evaluatePackage,
   lockPackage,
+  clearAllLocks,
   duplicateParticipantGroup,
   sortPackageGapRows,
   formatSupportMatrixCsv,
@@ -356,6 +357,7 @@ function render() {
   const proposal = state.proposal;
   $("[data-action=\"add-group\"]").disabled = proposal.groups.length >= MAX_GROUPS;
   $("[data-action=\"add-clause\"]").disabled = proposal.clauses.length >= MAX_CLAUSES;
+  $("#clear-locks").disabled = !proposal.clauses.some((clause) => clause.lockedOptionId !== undefined);
   $("#proposal-title").value = proposal.title;
   $("#threshold").value = proposal.threshold;
   $("#threshold-number").value = Number.isFinite(proposal.threshold) ? proposal.threshold : "";
@@ -1036,6 +1038,20 @@ document.addEventListener("click", (event) => {
     }
     changeAndRender(() => { state.proposal = locked.proposal; });
     notifyDraft("Locked every clause to that package. Undo restores the previous draft.");
+    return;
+  }
+  if (action === "clear-locks") {
+    const cleared = clearAllLocks(state.proposal);
+    if (cleared.status !== "ok") {
+      notifyDraft(`Could not clear locks: ${cleared.errors[0]}`);
+      return;
+    }
+    if (cleared.cleared === 0) {
+      notifyDraft("No clause locks were set.");
+      return;
+    }
+    changeAndRender(() => { state.proposal = cleared.proposal; });
+    notifyDraft("Cleared every clause lock. Undo restores the previous draft.");
     return;
   }
   if (action === "dismiss-lock-preview") {

@@ -293,7 +293,10 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <section aria-labelledby="clauses-heading">
           <div class="section-heading clause-heading">
             <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading" tabindex="-1">What can change?</h2></div>
-            <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
+            <div class="clause-tools">
+              <button class="text-button" type="button" id="clear-locks" data-action="clear-locks">Clear all locks</button>
+              <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
+            </div>
           </div>
           <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
           <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">
@@ -1132,6 +1135,24 @@ function lockPackage(proposal, optionIds) {
 }
 
 /**
+ * Remove every clause lock in one copy.
+ * Does not mutate the supplied proposal. Invalid drafts fail closed.
+ */
+function clearAllLocks(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const next = canonicalProposal(proposal);
+  let cleared = 0;
+  for (const clause of next.clauses) {
+    if (Object.hasOwn(clause, "lockedOptionId")) {
+      delete clause.lockedOptionId;
+      cleared += 1;
+    }
+  }
+  return { status: "ok", proposal: next, cleared };
+}
+
+/**
  * Copy a participant group, including weight, optional floor, veto, and every option's support score.
  * The copy receives a unique id. The solver still treats it as a separate supplied group.
  */
@@ -1937,6 +1958,7 @@ function render() {
   const proposal = state.proposal;
   $("[data-action=\"add-group\"]").disabled = proposal.groups.length >= MAX_GROUPS;
   $("[data-action=\"add-clause\"]").disabled = proposal.clauses.length >= MAX_CLAUSES;
+  $("#clear-locks").disabled = !proposal.clauses.some((clause) => clause.lockedOptionId !== undefined);
   $("#proposal-title").value = proposal.title;
   $("#threshold").value = proposal.threshold;
   $("#threshold-number").value = Number.isFinite(proposal.threshold) ? proposal.threshold : "";
@@ -2617,6 +2639,20 @@ document.addEventListener("click", (event) => {
     }
     changeAndRender(() => { state.proposal = locked.proposal; });
     notifyDraft("Locked every clause to that package. Undo restores the previous draft.");
+    return;
+  }
+  if (action === "clear-locks") {
+    const cleared = clearAllLocks(state.proposal);
+    if (cleared.status !== "ok") {
+      notifyDraft(`Could not clear locks: ${cleared.errors[0]}`);
+      return;
+    }
+    if (cleared.cleared === 0) {
+      notifyDraft("No clause locks were set.");
+      return;
+    }
+    changeAndRender(() => { state.proposal = cleared.proposal; });
+    notifyDraft("Cleared every clause lock. Undo restores the previous draft.");
     return;
   }
   if (action === "dismiss-lock-preview") {

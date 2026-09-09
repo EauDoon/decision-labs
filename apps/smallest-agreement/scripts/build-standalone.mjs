@@ -23,6 +23,7 @@ const appImport = `import {
   explorePackageGaps,
   evaluatePackage,
   lockPackage,
+  clearAllLocks,
   duplicateParticipantGroup,
   sortPackageGapRows,
   formatSupportMatrixCsv,

@@ -45,6 +45,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
+  assert.match(html, /id="clear-locks"/u);
+  assert.match(html, /Clear all locks/u);
   assert.match(html, /id="near-miss-sort"/u);
   assert.match(html, /Lock this package/u);
   assert.match(html, /workplace-hybrid/u);
@@ -669,6 +671,23 @@ test("locking a package applies every clause lock in one undoable step", async (
   app.clickAction("lock-package", { optionIds: "missing" });
   assert.match(app.message(), /Could not lock that package/u);
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.every((clause) => clause.lockedOptionId === undefined), true);
+});
+
+test("clearing all locks is one undoable draft edit", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for clearing locks");
+  const optionIds = JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.map((clause) => clause.options[1].id);
+  app.clickAction("lock-package", { optionIds: optionIds.join("|") });
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.every((clause) => clause.lockedOptionId !== undefined), true);
+  assert.equal(app.disabled("#clear-locks"), false);
+  app.clickAction("clear-locks");
+  const cleared = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(cleared.clauses.every((clause) => clause.lockedOptionId === undefined), true);
+  assert.match(app.message(), /Cleared every clause lock/u);
+  app.click("#undo-button");
+  const restored = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.deepEqual(restored.clauses.map((clause) => clause.lockedOptionId), optionIds);
 });
 
 test("near-miss explorer can sort closest misses by cost or approval gap", async () => {

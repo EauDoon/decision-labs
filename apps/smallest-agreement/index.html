@@ -120,7 +120,10 @@ SOFTWARE.
         <section aria-labelledby="clauses-heading">
           <div class="section-heading clause-heading">
             <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading" tabindex="-1">What can change?</h2></div>
-            <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
+            <div class="clause-tools">
+              <button class="text-button" type="button" id="clear-locks" data-action="clear-locks">Clear all locks</button>
+              <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
+            </div>
           </div>
           <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
           <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">

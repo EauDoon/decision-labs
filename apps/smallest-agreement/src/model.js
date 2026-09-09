@@ -689,6 +689,24 @@ export function lockPackage(proposal, optionIds) {
 }
 
 /**
+ * Remove every clause lock in one copy.
+ * Does not mutate the supplied proposal. Invalid drafts fail closed.
+ */
+export function clearAllLocks(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const next = canonicalProposal(proposal);
+  let cleared = 0;
+  for (const clause of next.clauses) {
+    if (Object.hasOwn(clause, "lockedOptionId")) {
+      delete clause.lockedOptionId;
+      cleared += 1;
+    }
+  }
+  return { status: "ok", proposal: next, cleared };
+}
+
+/**
  * Copy a participant group, including weight, optional floor, veto, and every option's support score.
  * The copy receives a unique id. The solver still treats it as a separate supplied group.
  */

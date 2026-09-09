@@ -24,6 +24,7 @@ import {
   formatDiscussionWorksheetCsv,
   groupContributions,
   lockPackage,
+  clearAllLocks,
   duplicateParticipantGroup,
   sortPackageGapRows,
   stressPackage,
@@ -793,6 +794,28 @@ test("lockPackage sets every clause lock in one copy and rejects unknown options
   assert.equal(lockPackage(input, ["one-change"]).status, "invalid");
   assert.equal(lockPackage(input, ["missing", "two-change"]).status, "invalid");
   assert.equal(lockPackage(input, ["one-change", "one-change"]).status, "invalid");
+});
+
+test("clearAllLocks removes every clause lock in one copy and rejects invalid drafts", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", lockedOptionId: "one-change", options: [
+        option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", lockedOptionId: "two-original", options: [
+        option("two-original", true, { g: 40 }), option("two-change", false, { g: 90 }, 1), option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const cleared = clearAllLocks(input);
+  assert.equal(cleared.status, "ok");
+  assert.equal(cleared.cleared, 2);
+  assert.equal(cleared.proposal.clauses.every((clause) => Object.hasOwn(clause, "lockedOptionId") === false), true);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(clearAllLocks(cleared.proposal).cleared, 0);
+  assert.equal(clearAllLocks({ title: "" }).status, "invalid");
 });
 
 
