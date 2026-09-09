@@ -64,6 +64,7 @@ let volumeHoldPreview = null;
 let briefCopyText = '';
 let csvCopyText = '';
 let breakpointCopyText = '';
+let shareHoldCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -85,6 +86,7 @@ function checkpoint() {
   briefCopyText = '';
   csvCopyText = '';
   breakpointCopyText = '';
+  shareHoldCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -104,6 +106,7 @@ function travelHistory(direction) {
   briefCopyText = '';
   csvCopyText = '';
   breakpointCopyText = '';
+  shareHoldCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -585,6 +588,7 @@ function resultsPanel(result) {
     ${briefCopySection()}
     ${csvCopySection()}
     ${breakpointCopySection()}
+    ${shareHoldCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -1014,6 +1018,7 @@ function attachEvents() {
     if (action === 'close-brief-copy') { briefCopyText = ''; render(); return; }
     if (action === 'close-csv-copy') { csvCopyText = ''; render(); return; }
     if (action === 'close-breakpoint-copy') { breakpointCopyText = ''; render(); return; }
+    if (action === 'close-share-hold-copy') { shareHoldCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1137,6 +1142,7 @@ function attachEvents() {
     if (action === 'export-report') exportReport();
     if (action === 'copy-brief') copyNegotiationBrief();
     if (action === 'copy-first-breakpoint') copyFirstBreakpoint();
+    if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -1788,6 +1794,72 @@ function copyFirstBreakpoint() {
   showBreakpointCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
 }
 
+function shareHoldPreviewMarkdown(solved) {
+  const target = state.participants.find((item) => item.id === solved.participantId);
+  const name = reportText(target?.name ?? solved.participantId);
+  const lines = ['# Share-to-hold preview', '', 'Participant: ' + name, 'Status: ' + solved.status];
+  if (solved.status === 'possible' && solved.proposal) {
+    lines.push('Minimum revenue share: ' + formatPct(solved.share * 100));
+    lines.push('');
+    lines.push('Current versus proposed shares:');
+    for (const item of solved.proposal) {
+      const current = state.participants.find((participant) => participant.id === item.id);
+      const currentText = current ? formatPct(current.revenueShare * 100) : 'n/a';
+      lines.push('- ' + reportText(item.name) + ': ' + currentText + ' to ' + formatPct(item.revenueShare * 100));
+    }
+  }
+  lines.push('');
+  lines.push(solved.reason);
+  lines.push('');
+  lines.push('This is a deterministic solvability result, not a probability that the participant will stay.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showShareHoldCopyFallback(text, message) {
+  shareHoldCopyText = text;
+  render();
+  document.querySelector('#share-hold-copy-text')?.focus();
+  setNotice(message);
+}
+
+function shareHoldCopySection() {
+  if (!shareHoldCopyText) return '';
+  return `<section class="panel" aria-labelledby="share-hold-copy-title"><div class="panel-heading"><h2 id="share-hold-copy-title">Share-to-hold Markdown</h2><button type="button" data-action="close-share-hold-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is a solvability result, not a probability.</p><label class="brief-copy-label" for="share-hold-copy-text">Share-to-hold preview Markdown</label><textarea id="share-hold-copy-text" readonly rows="12">${escapeAttribute(shareHoldCopyText)}</textarea></div></section>`;
+}
+
+function copyShareHoldPreview() {
+  if (!shareHoldPreview) {
+    setNotice('Open a share-to-hold preview before copying it.');
+    return;
+  }
+  const text = shareHoldPreviewMarkdown(shareHoldPreview);
+  const clipboard = globalThis.navigator?.clipboard;
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          shareHoldCopyText = '';
+          render();
+          setNotice('Share-to-hold preview copied as Markdown. It is a solvability result, not a probability.');
+        }).catch(() => {
+          showShareHoldCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+        });
+        return;
+      }
+      shareHoldCopyText = '';
+      render();
+      setNotice('Share-to-hold preview copied as Markdown. It is a solvability result, not a probability.');
+      return;
+    } catch {
+      showShareHoldCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+      return;
+    }
+  }
+  showShareHoldCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+}
+
 function exportTornadoSvg() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -1962,14 +2034,15 @@ function shareHoldPreviewSection() {
   const solved = shareHoldPreview;
   const target = state.participants.find((item) => item.id === solved.participantId);
   const name = escapeAttribute(target?.name ?? solved.participantId);
+  const copyButton = '<div class="button-row"><button type="button" data-action="copy-share-hold">Copy share-to-hold preview</button></div>';
   if (solved.status === 'impossible') {
-    return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p>${escapeAttribute(solved.reason)}</p><p class="output-note">This is a deterministic solvability result, not a probability that the participant will stay.</p></div></section>`;
+    return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p>${escapeAttribute(solved.reason)}</p><p class="output-note">This is a deterministic solvability result, not a probability that the participant will stay.</p>${copyButton}</div></section>`;
   }
-  const rows = solved.proposal.map((item, index) => {
+  const rows = solved.proposal.map((item) => {
     const current = state.participants.find((participant) => participant.id === item.id);
     return `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${current ? formatPct(current.revenueShare * 100) : 'n/a'}</td><td>${formatPct(item.revenueShare * 100)}</td></tr>`;
   }).join('');
-  return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p><strong>${name}</strong> holds at a minimum revenue share of <strong>${formatPct(solved.share * 100)}</strong>. Remaining participants keep their relative shares of the leftover. Apply is required; the current case is unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Proposed hold shares"><table><caption>Current shares versus proposed hold split</caption><thead><tr><th scope="col">Participant</th><th scope="col">Current share</th><th scope="col">Proposed share</th></tr></thead><tbody>${rows}</tbody></table></div><div class="panel-body"><div class="button-row"><button type="button" class="primary" data-action="apply-share-hold">Apply minimum hold share</button><button type="button" data-action="close-share-hold">Keep current shares</button></div></div></section>`;
+  return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p><strong>${name}</strong> holds at a minimum revenue share of <strong>${formatPct(solved.share * 100)}</strong>. Remaining participants keep their relative shares of the leftover. Apply is required; the current case is unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Proposed hold shares"><table><caption>Current shares versus proposed hold split</caption><thead><tr><th scope="col">Participant</th><th scope="col">Current share</th><th scope="col">Proposed share</th></tr></thead><tbody>${rows}</tbody></table></div><div class="panel-body"><div class="button-row"><button type="button" class="primary" data-action="apply-share-hold">Apply minimum hold share</button><button type="button" data-action="close-share-hold">Keep current shares</button><button type="button" data-action="copy-share-hold">Copy share-to-hold preview</button></div></div></section>`;
 }
 
 function previewFeeHold() {

@@ -52,7 +52,7 @@ async function workbench(protocol = 'file:', options = {}) {
       const focusIds = new Set([
         'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
-        'comparison-title', 'three-compare-title', 'breakpoint-copy-text',
+        'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -866,6 +866,40 @@ test('share-to-hold previews a split and requires an explicit apply', async () =
   assert.notDeepEqual(applied.participants.map((item) => item.revenueShare), originalShares);
   app.click('undo');
   assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
+});
+
+test('copy share-to-hold preview uses Markdown and a clipboard fallback', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  fallback.click('copy-share-hold');
+  assert.match(fallback.notice(), /Open a share-to-hold preview before copying it/);
+  assert.doesNotMatch(fallback.markup(), /id="share-hold-copy-text"/);
+  fallback.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  assert.match(fallback.markup(), /data-action="copy-share-hold"/);
+  fallback.click('copy-share-hold');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="share-hold-copy-text"/);
+  assert.match(fallback.markup(), /Participant: Liquidity Partner/);
+  assert.match(fallback.markup(), /Status: possible/);
+  assert.match(fallback.markup(), /Minimum revenue share: 24\.0%/);
+  assert.match(fallback.markup(), /not a probability that the participant will stay/);
+  fallback.click('close-share-hold-copy');
+  assert.doesNotMatch(fallback.markup(), /id="share-hold-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  withClipboard.click('copy-share-hold');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /Participant: Liquidity Partner/);
+  assert.match(withClipboard.copied()[0], /Minimum revenue share: 24\.0%/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.doesNotMatch(withClipboard.markup(), /id="share-hold-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  denied.click('copy-share-hold');
+  assert.match(denied.markup(), /id="share-hold-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('volume-to-hold previews a floor and requires an explicit apply', async () => {
