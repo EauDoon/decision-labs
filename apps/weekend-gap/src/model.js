@@ -74,6 +74,15 @@ export const PRESETS = Object.freeze({
     payoutOpenEndHour: 14,
     redemptionDemandAud: 2800000,
     mondayHoliday: true
+  }),
+  longWeekendFridayStart: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Long-weekend Friday start (synthetic)",
+    reserveCashAud: 6000000,
+    redemptionDemandAud: 2100000,
+    weekendFxMultiplier: 3,
+    saturdayHoliday: true,
+    mondayHoliday: true
   })
 });
 
