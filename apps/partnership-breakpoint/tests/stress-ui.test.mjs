@@ -48,8 +48,12 @@ async function workbench(protocol = 'file:', options = {}) {
     document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => {
       if (selector === '#workbench') return app;
       if (selector === '#notice') return notice;
-      if ((selector === '#brief-copy-text' || selector === '#results-jump' || selector === '#results-start')
-        && app.innerHTML.includes(`id="${selector.slice(1)}"`)) {
+      const focusIds = new Set([
+        'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
+        'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
+      ]);
+      const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
+      if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
         return {
           focus() { focused.push(selector); },
           scrollIntoView() { focused.push(`scroll:${selector}`); },
@@ -852,6 +856,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
   assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
   assert.match(app.markup(), /<kbd>g<\/kbd> Jump to the results nav/);
+  assert.match(app.markup(), /<kbd>n<\/kbd> Focus Add participant/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -880,6 +885,24 @@ test('keyboard g jumps to the results nav unless a field is focused', async () =
   app.keydown('g');
   assert.ok(app.focused().includes('#results-start'));
   assert.doesNotMatch(app.markup(), /id="results-jump"/);
+});
+
+test('keyboard n focuses Add participant and ignores focused inputs', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="add-participant"/);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const beforeCount = forms();
+  app.keydown('n');
+  assert.ok(app.focused().includes('#add-participant'));
+  assert.ok(app.focused().includes('scroll:#add-participant'));
+  assert.equal(forms(), beforeCount);
+  const before = app.focused().length;
+  app.keydown('n', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  assert.equal(forms(), beforeCount);
+  app.keydown('n', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
 });
 
 test('redacted export replaces names, clears the title, and keeps identifiers', async () => {

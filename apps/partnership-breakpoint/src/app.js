@@ -447,7 +447,7 @@ function inputPanel(result) {
           <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
           <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div><p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
           ${participantForms}
-          <div class="button-row"><button type="button" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
+          <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
@@ -1201,6 +1201,21 @@ window.addEventListener('keydown', (event) => {
     start?.focus?.({ preventScroll: false });
     start?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'n' || event.key === 'N') {
+    const add = document.querySelector('#add-participant');
+    if (add) {
+      add.focus?.({ preventScroll: false });
+      add.scrollIntoView?.({ block: 'start' });
+      return;
+    }
+    if (state.participants.length < MAX_PARTICIPANTS) {
+      checkpoint();
+      participantSequence += 1;
+      state.participants.push(makeParticipant(nextParticipantId()));
+      activePreset = '';
+      refresh('Participant added. Set shares to reconcile to 1.');
+    }
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -1673,6 +1688,7 @@ function helpDialog() {
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON of the current valid case</li>
         <li><kbd>g</kbd> Jump to the results nav or the first results heading</li>
+        <li><kbd>n</kbd> Focus Add participant, or add one if that control is missing</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
