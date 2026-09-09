@@ -217,3 +217,7 @@ The optional review can compare individual funding needs against the single shar
 ### Common fee scenarios
 
 The optional review can test shared fee changes against every participant without applying a proposal. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Commitment and capacity conflicts
+
+The optional review can identify incompatible operational promises independently of economics. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.

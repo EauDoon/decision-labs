@@ -1859,6 +1859,7 @@ const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
   {id:'variable',title:'Variable-cost allowance'},
   {id:'shares',title:'Revenue-share funding needs'},
   {id:'fees',title:'Common fee scenarios'},
+  {id:'operations',title:'Commitment and capacity conflicts'},
 // PB_REVIEW_TOOLS
 ]);
 
@@ -1913,6 +1914,12 @@ function analyzePartnershipReview(rawConfig, tool) {
 
  const rows=[.75,1,1.25,1.5].map(factor=>{const fee=Math.min(MAX_NUMERIC_INPUT,config.deal.feePerTransaction*factor);const evaluated=calculatePartnership({...config,deal:{...config.deal,feePerTransaction:fee}});return[factor,fee,evaluated.participants.filter(p=>p.viable).length,evaluated.totalProfit,Math.min(...evaluated.participants.map(p=>p.monthlyProfit-p.minimumAcceptableProfit)),evaluated.viable?'All hold':'At least one exits'];});
  return report(['Fee multiplier','Tested fee','Participants holding','Total monthly profit','Lowest profit slack','Outcome'],rows,'Four illustrative fee levels, capped at the model input limit. Only the common fee changes. Volume, shares, costs and operational limits stay fixed; these points are not an optimum or forecast.');
+
+ }
+ case 'operations': {
+
+ const required=Math.max(...config.participants.map(p=>p.minimumCommitment??0));const ceiling=Math.min(config.deal.addressableVolume,...config.participants.map(p=>p.capacity??config.deal.addressableVolume));
+ return report(['Participant','Commitment','Capacity','Demand ceiling','Gap from shared requirement'],config.participants.map(p=>[p.name,p.minimumCommitment??0,p.capacity??null,config.deal.addressableVolume,Math.min(p.capacity??config.deal.addressableVolume,config.deal.addressableVolume)-required]).concat([['Shared operational interval',required,ceiling,config.deal.addressableVolume,ceiling-required]]),'Every participant handles the same effective volume. A negative shared gap means no volume satisfies all commitments, capacities and stated demand. A nonnegative gap does not establish profitability.');
 
  }
 // PB_REVIEW_CASES
