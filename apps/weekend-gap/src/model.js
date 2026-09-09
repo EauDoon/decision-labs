@@ -1255,6 +1255,7 @@ export const WEEKEND_REVIEW_TOOLS=Object.freeze([
  {id:'overlap',title:'Operating-window overlap'},
  {id:'reserve',title:'Reserve needed by service target'},
  {id:'throughput',title:'Joint-throughput ladder'},
+ {id:'holidays',title:'Holiday assumption comparison'},
 // WG_REVIEW_TOOLS
 ]);
 function validateWeekendReviewScenario(raw){
@@ -1304,6 +1305,12 @@ export function analyzeWeekendReview(rawScenario,tool){
 
  const fields=['issuerThroughputAudPerHour','fxDepthAudPerHour','payoutThroughputAudPerHour'];const rows=[1,2,4,8].map(multiplier=>{const candidate={...scenario};for(const field of fields)candidate[field]=Math.min(1000000000,scenario[field]*multiplier);const r=runSimulation(candidate);return[multiplier,...fields.map(f=>candidate[f]),r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud];});
  return report(['Multiplier','Issuer AUD/hour','FX AUD/hour before weekend factor','Payout AUD/hour','Settled by 72 AUD','Extra settled AUD','Final queue AUD'],rows,'All three throughput assumptions scale together up to their 1 billion AUD/hour caps. Reserve and windows remain unchanged. Repeated settlements show a plateau only at these four tested points, not a global optimum. Zero rates remain zero.');
+
+ }
+ case 'holidays':{
+
+ const rows=[];for(const saturdayHoliday of [false,true])for(const mondayHoliday of [false,true]){const r=runSimulation({...scenario,saturdayHoliday,mondayHoliday});rows.push([saturdayHoliday?'Yes':'No',mondayHoliday?'Yes':'No',r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud]);}
+ return report(['Saturday holiday','Monday holiday','Settled by 72 AUD','Change from current AUD','Final queue AUD'],rows,'These four declared holiday combinations are synthetic, not a calendar lookup. Saturday is already closed in the current business-day model, so its flag may have no numerical effect. No actual holiday or service availability is verified.');
 
  }
 // WG_REVIEW_CASES
