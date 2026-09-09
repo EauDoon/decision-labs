@@ -171,3 +171,7 @@ Named snapshots contain validated version-1 scenarios, at most 12 per workspace.
 ## Organizer review calculations
 
 Buyer option coverage counts qualified offers whose actual selected cohort contains the buyer ID. Mere category/price compatibility does not count when whole-order capacity excludes that buyer. Every analysis validates the current scenario, uses the existing allocator, and preserves the input.
+
+### Sole-offer dependency
+
+Count buyers whose current whole-order allocation is available from only one qualified offer, and sum their units. This measures current option dependency, not post-withdrawal rematching.

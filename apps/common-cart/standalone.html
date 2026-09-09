@@ -2425,6 +2425,7 @@ function jsonSyntaxHint(error) {
 
 
 const CART_REVIEW_TOOLS = Object.freeze([
+  { id: "dependency", title: "Sole-offer dependency" },
   { id: 'coverage', title: 'Buyer option coverage' },
 ]);
 
@@ -2442,6 +2443,12 @@ function analyzeCartReview(rawScenario, tool) {
         const options = qualified.filter((result) => result.selectedBuyerIds.includes(buyer.id));
         return [buyer.label, buyer.quantity, options.length, options.map((result) => result.offer.merchant).join(', ') || 'None'];
       }), 'Counts use the actual whole-order allocation of each offer in this room. Offers are alternatives, not simultaneous purchases; no inventory is reserved.');
+    case "dependency": {
+      return report(['Merchant', 'Buyers with no other allocated option', 'Dependent units'], qualified.map((result) => {
+        const dependent = scenario.buyers.filter((buyer) => result.selectedBuyerIds.includes(buyer.id) && !qualified.some((other) => other.offer.id !== result.offer.id && other.selectedBuyerIds.includes(buyer.id)));
+        return [result.offer.merchant, dependent.length, dependent.reduce((sum, buyer) => sum + buyer.quantity, 0)];
+      }), 'Dependency is measured against current allocated cohorts. Removing an offer may change other allocations; this is an exposure count, not a forecast.');
+    }
     default: throw new ScenarioError('Review is unavailable.');
   }
 }

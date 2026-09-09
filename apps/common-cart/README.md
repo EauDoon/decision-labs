@@ -209,3 +209,7 @@ MIT. See [LICENSE](./LICENSE).
 ## Organizer review
 
 Open **Review buyer coverage and offer resilience** inside Buyer room. Select a question and run it on demand. Buyer option coverage counts actual whole-order allocations across qualified offers. Results clear after edits, stay out of Merchant table and printing, and respect screenshot-mode labels. These are declared-input alternatives, not reserved orders.
+
+### Sole-offer dependency
+
+Count buyers whose current whole-order allocation is available from only one qualified offer, and sum their units. This measures current option dependency, not post-withdrawal rematching.
