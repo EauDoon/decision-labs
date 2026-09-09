@@ -1055,6 +1055,48 @@ export function deliveryHeatmap(rawScenario) {
   };
 }
 
+function buyerAcceptsVariant(buyer, variantKey) {
+  return buyer.allowedVariants.some((variant) => normalizeText(variant) === variantKey);
+}
+
+/**
+ * Merchant-facing counts of buyers whose accepted variants include each
+ * offered variant. Pairwise cells count buyers who accept both variants.
+ * Buyer labels, IDs, budgets, and allocations are omitted.
+ */
+export function variantOverlapMatrix(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const offered = [];
+  const indexByKey = new Map();
+  for (const offer of scenario.offers) {
+    const key = normalizeText(offer.variant);
+    if (!indexByKey.has(key)) {
+      indexByKey.set(key, offered.length);
+      offered.push({ key, variant: offer.variant, offerCount: 0 });
+    }
+    offered[indexByKey.get(key)].offerCount += 1;
+  }
+  const variants = offered.map((entry) => {
+    const matching = scenario.buyers.filter((buyer) => buyerAcceptsVariant(buyer, entry.key));
+    return {
+      variant: entry.variant,
+      offerCount: entry.offerCount,
+      buyerCount: matching.length,
+      units: matching.reduce((sum, buyer) => sum + buyer.quantity, 0)
+    };
+  });
+  const cells = offered.map((row) => offered.map((column) => {
+    const matching = scenario.buyers.filter((buyer) => buyerAcceptsVariant(buyer, row.key) && buyerAcceptsVariant(buyer, column.key));
+    return {
+      rowVariant: row.variant,
+      columnVariant: column.variant,
+      buyerCount: matching.length,
+      units: matching.reduce((sum, buyer) => sum + buyer.quantity, 0)
+    };
+  }));
+  return { variants, cells };
+}
+
 export function encodeScenario(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const bytes = new TextEncoder().encode(JSON.stringify(scenario));

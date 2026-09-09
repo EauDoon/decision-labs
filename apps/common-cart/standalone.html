@@ -666,6 +666,15 @@ footer {
             <h4>Delivery deadline heatmap</h4>
             <p id="delivery-heatmap-text" class="canvas-note"></p>
             <svg id="delivery-heatmap" class="capacity-bar" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
+            <h4>Offered variant overlap</h4>
+            <p id="variant-overlap-note" class="canvas-note"></p>
+            <div class="table-shell compact">
+              <table>
+                <caption>Buyer counts whose accepted variants include each offered variant. Cells are pairwise overlaps. Labels, IDs, budgets, and allocations are omitted.</caption>
+                <thead id="variant-overlap-head"></thead>
+                <tbody id="variant-overlap-rows"></tbody>
+              </table>
+            </div>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>
@@ -1806,6 +1815,48 @@ function deliveryHeatmap(rawScenario) {
   };
 }
 
+function buyerAcceptsVariant(buyer, variantKey) {
+  return buyer.allowedVariants.some((variant) => normalizeText(variant) === variantKey);
+}
+
+/**
+ * Merchant-facing counts of buyers whose accepted variants include each
+ * offered variant. Pairwise cells count buyers who accept both variants.
+ * Buyer labels, IDs, budgets, and allocations are omitted.
+ */
+function variantOverlapMatrix(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const offered = [];
+  const indexByKey = new Map();
+  for (const offer of scenario.offers) {
+    const key = normalizeText(offer.variant);
+    if (!indexByKey.has(key)) {
+      indexByKey.set(key, offered.length);
+      offered.push({ key, variant: offer.variant, offerCount: 0 });
+    }
+    offered[indexByKey.get(key)].offerCount += 1;
+  }
+  const variants = offered.map((entry) => {
+    const matching = scenario.buyers.filter((buyer) => buyerAcceptsVariant(buyer, entry.key));
+    return {
+      variant: entry.variant,
+      offerCount: entry.offerCount,
+      buyerCount: matching.length,
+      units: matching.reduce((sum, buyer) => sum + buyer.quantity, 0)
+    };
+  });
+  const cells = offered.map((row) => offered.map((column) => {
+    const matching = scenario.buyers.filter((buyer) => buyerAcceptsVariant(buyer, row.key) && buyerAcceptsVariant(buyer, column.key));
+    return {
+      rowVariant: row.variant,
+      columnVariant: column.variant,
+      buyerCount: matching.length,
+      units: matching.reduce((sum, buyer) => sum + buyer.quantity, 0)
+    };
+  }));
+  return { variants, cells };
+}
+
 function encodeScenario(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const bytes = new TextEncoder().encode(JSON.stringify(scenario));
@@ -2440,6 +2491,7 @@ function refresh() {
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
     renderDeliveryHeatmap(market.scenario);
+    renderVariantOverlap(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
     setStatus("");
@@ -2475,6 +2527,11 @@ function refresh() {
     const heatmapText = document.querySelector("#delivery-heatmap-text");
     if (heatmapText) heatmapText.textContent = "Delivery heatmap will appear once every field is valid.";
     document.querySelector("#delivery-heatmap")?.replaceChildren();
+    const overlapNote = document.querySelector("#variant-overlap-note");
+    if (overlapNote) overlapNote.textContent = "Variant overlap will appear once every field is valid.";
+    document.querySelector("#variant-overlap-head")?.replaceChildren();
+    const overlapRows = document.querySelector("#variant-overlap-rows");
+    if (overlapRows) setEmptyState(overlapRows, 2, "Variant overlap will appear once every field is valid.");
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -2911,6 +2968,36 @@ function renderDeliveryHeatmap(rawScenario) {
     append("rect", { x, y: 64 - barHeight, width: 64, height: barHeight, fill: bucket.units ? "#f36f3d" : "#d8d0c3" });
     append("text", { x: x + 32, y: 80, fill: "#636174", "font-size": "9", "text-anchor": "middle" }).textContent = bucket.key;
   });
+}
+
+function renderVariantOverlap(rawScenario) {
+  const note = document.querySelector("#variant-overlap-note");
+  const head = document.querySelector("#variant-overlap-head");
+  const body = document.querySelector("#variant-overlap-rows");
+  if (!note || !head || !body) return;
+  const matrix = variantOverlapMatrix(rawScenario);
+  note.textContent = matrix.variants.map((entry) => `${entry.variant}: ${entry.buyerCount} buyers, ${entry.units} units (${entry.offerCount} offers)`).join(". ") + ".";
+  const headerRow = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.scope = "col";
+  corner.textContent = "Accepted variant";
+  headerRow.append(corner);
+  for (const entry of matrix.variants) {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = entry.variant;
+    headerRow.append(th);
+  }
+  head.replaceChildren(headerRow);
+  body.replaceChildren(...matrix.cells.map((row, index) => {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.scope = "row";
+    th.textContent = matrix.variants[index].variant;
+    tr.append(th);
+    for (const cell of row) addCell(tr, String(cell.buyerCount));
+    return tr;
+  }));
 }
 
 function addCell(row, text, className = "") {

@@ -2,6 +2,7 @@ import {
   ScenarioError,
   aggregateDemand,
   deliveryHeatmap,
+  variantOverlapMatrix,
   clonePreset,
   compareScenarios,
   compareThreeRooms,
@@ -613,6 +614,7 @@ function refresh() {
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
     renderDeliveryHeatmap(market.scenario);
+    renderVariantOverlap(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
     setStatus("");
@@ -648,6 +650,11 @@ function refresh() {
     const heatmapText = document.querySelector("#delivery-heatmap-text");
     if (heatmapText) heatmapText.textContent = "Delivery heatmap will appear once every field is valid.";
     document.querySelector("#delivery-heatmap")?.replaceChildren();
+    const overlapNote = document.querySelector("#variant-overlap-note");
+    if (overlapNote) overlapNote.textContent = "Variant overlap will appear once every field is valid.";
+    document.querySelector("#variant-overlap-head")?.replaceChildren();
+    const overlapRows = document.querySelector("#variant-overlap-rows");
+    if (overlapRows) setEmptyState(overlapRows, 2, "Variant overlap will appear once every field is valid.");
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -1084,6 +1091,36 @@ function renderDeliveryHeatmap(rawScenario) {
     append("rect", { x, y: 64 - barHeight, width: 64, height: barHeight, fill: bucket.units ? "#f36f3d" : "#d8d0c3" });
     append("text", { x: x + 32, y: 80, fill: "#636174", "font-size": "9", "text-anchor": "middle" }).textContent = bucket.key;
   });
+}
+
+function renderVariantOverlap(rawScenario) {
+  const note = document.querySelector("#variant-overlap-note");
+  const head = document.querySelector("#variant-overlap-head");
+  const body = document.querySelector("#variant-overlap-rows");
+  if (!note || !head || !body) return;
+  const matrix = variantOverlapMatrix(rawScenario);
+  note.textContent = matrix.variants.map((entry) => `${entry.variant}: ${entry.buyerCount} buyers, ${entry.units} units (${entry.offerCount} offers)`).join(". ") + ".";
+  const headerRow = document.createElement("tr");
+  const corner = document.createElement("th");
+  corner.scope = "col";
+  corner.textContent = "Accepted variant";
+  headerRow.append(corner);
+  for (const entry of matrix.variants) {
+    const th = document.createElement("th");
+    th.scope = "col";
+    th.textContent = entry.variant;
+    headerRow.append(th);
+  }
+  head.replaceChildren(headerRow);
+  body.replaceChildren(...matrix.cells.map((row, index) => {
+    const tr = document.createElement("tr");
+    const th = document.createElement("th");
+    th.scope = "row";
+    th.textContent = matrix.variants[index].variant;
+    tr.append(th);
+    for (const cell of row) addCell(tr, String(cell.buyerCount));
+    return tr;
+  }));
 }
 
 function addCell(row, text, className = "") {

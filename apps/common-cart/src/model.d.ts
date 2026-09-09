@@ -225,6 +225,24 @@ export interface DeliveryHeatmap {
   buckets: DeliveryBucket[];
 }
 export function deliveryHeatmap(rawScenario: unknown): DeliveryHeatmap;
+
+export interface VariantOverlapCount {
+  variant: string;
+  offerCount: number;
+  buyerCount: number;
+  units: number;
+}
+export interface VariantOverlapCell {
+  rowVariant: string;
+  columnVariant: string;
+  buyerCount: number;
+  units: number;
+}
+export interface VariantOverlapMatrix {
+  variants: VariantOverlapCount[];
+  cells: VariantOverlapCell[][];
+}
+export function variantOverlapMatrix(rawScenario: unknown): VariantOverlapMatrix;
 export function encodeScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;
 

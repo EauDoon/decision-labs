@@ -341,6 +341,15 @@ SOFTWARE.
             <h4>Delivery deadline heatmap</h4>
             <p id="delivery-heatmap-text" class="canvas-note"></p>
             <svg id="delivery-heatmap" class="capacity-bar" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
+            <h4>Offered variant overlap</h4>
+            <p id="variant-overlap-note" class="canvas-note"></p>
+            <div class="table-shell compact">
+              <table>
+                <caption>Buyer counts whose accepted variants include each offered variant. Cells are pairwise overlaps. Labels, IDs, budgets, and allocations are omitted.</caption>
+                <thead id="variant-overlap-head"></thead>
+                <tbody id="variant-overlap-rows"></tbody>
+              </table>
+            </div>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>
