@@ -1,4 +1,6 @@
 import {
+  CART_REVIEW_TOOLS,
+  analyzeCartReview,
   ScenarioError,
   aggregateDemand,
   deliveryHeatmap,
@@ -1017,6 +1019,7 @@ function updateRoot(field, value) {
 }
 
 function refresh() {
+  clearCartReview();
   try {
     const market = evaluateMarket(scenario);
     scenario = market.scenario;
@@ -1831,3 +1834,45 @@ function appJsonSyntaxHint(error) {
   if (position) return ` (at position ${position[1]})`;
   return ` (${message})`;
 }
+
+
+function clearCartReview() {
+  const output = document.querySelector('#cart-review-output');
+  if (output) output.textContent = 'Run a review for the current valid room. Results clear when inputs change.';
+}
+
+function showCartReview(review) {
+  const output = document.querySelector('#cart-review-output');
+  output.replaceChildren();
+  const heading = document.createElement('h3'); heading.textContent = review.title;
+  const note = document.createElement('p'); note.textContent = review.note;
+  const scroll = document.createElement('div'); scroll.className = 'cart-review-table'; scroll.tabIndex = 0;
+  scroll.setAttribute('role', 'region'); scroll.setAttribute('aria-label', review.title + ' results');
+  const table = document.createElement('table');
+  const caption = document.createElement('caption'); caption.textContent = 'Private organizer review. Monetary values use ' + review.currency + '.';
+  table.append(caption);
+  const head = document.createElement('thead'), header = document.createElement('tr');
+  for (const label of review.columns) { const cell = document.createElement('th'); cell.scope = 'col'; cell.textContent = label; header.append(cell); }
+  head.append(header); table.append(head);
+  const body = document.createElement('tbody');
+  for (const values of review.rows) {
+    const row = document.createElement('tr');
+    values.forEach((value, index) => { const cell = document.createElement('td'); cell.dataset.label = review.columns[index]; cell.textContent = value === null ? 'Not available' : typeof value === 'number' ? new Intl.NumberFormat('en', { maximumFractionDigits: 8 }).format(value) : value; row.append(cell); });
+    body.append(row);
+  }
+  if (!review.rows.length) { const row = document.createElement('tr'), cell = document.createElement('td'); cell.colSpan = review.columns.length; cell.textContent = 'No matching rows in this room.'; row.append(cell); body.append(row); }
+  table.append(body); scroll.append(table); output.append(heading, note, scroll);
+}
+
+function initializeCartReview() {
+  const select = document.querySelector('#cart-review-tool');
+  for (const tool of CART_REVIEW_TOOLS) { const option = document.createElement('option'); option.value = tool.id; option.textContent = tool.title; select.append(option); }
+  select.addEventListener('change', clearCartReview);
+  document.querySelector('#cart-review-run').addEventListener('click', () => {
+    try {
+      if (invalidDraft) throw new ScenarioError('Correct invalid room inputs before reviewing.');
+      showCartReview(analyzeCartReview(screenshotMode ? redactBuyerLabels(scenario) : scenario, select.value));
+    } catch (error) { clearCartReview(); setStatus(messageOf(error)); }
+  });
+}
+initializeCartReview();

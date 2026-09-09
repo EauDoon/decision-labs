@@ -205,3 +205,7 @@ Bug reports and focused pull requests are welcome. Read [CONTRIBUTING.md](./CONT
 ## License
 
 MIT. See [LICENSE](./LICENSE).
+
+## Organizer review
+
+Open **Review buyer coverage and offer resilience** inside Buyer room. Select a question and run it on demand. Buyer option coverage counts actual whole-order allocations across qualified offers. Results clear after edits, stay out of Merchant table and printing, and respect screenshot-mode labels. These are declared-input alternatives, not reserved orders.

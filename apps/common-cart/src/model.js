@@ -1543,3 +1543,26 @@ function jsonSyntaxHint(error) {
   if (position) return ` (at position ${position[1]})`;
   return ` (${message})`;
 }
+
+
+export const CART_REVIEW_TOOLS = Object.freeze([
+  { id: 'coverage', title: 'Buyer option coverage' },
+]);
+
+/** On-demand organizer analysis. Never changes matching inputs or places orders. */
+export function analyzeCartReview(rawScenario, tool) {
+  const scenario = validateScenario(rawScenario);
+  const selected = CART_REVIEW_TOOLS.find((entry) => entry.id === tool);
+  if (!selected) throw new ScenarioError('Choose a supported organizer review.');
+  const market = evaluateMarket(scenario);
+  const qualified = market.results.filter((result) => result.qualifies);
+  const report = (columns, rows, note) => ({ tool, title: selected.title, currency: scenario.currency, columns, rows, note });
+  switch (tool) {
+    case 'coverage':
+      return report(['Private buyer', 'Requested units', 'Offers including this buyer', 'Merchant options'], scenario.buyers.map((buyer) => {
+        const options = qualified.filter((result) => result.selectedBuyerIds.includes(buyer.id));
+        return [buyer.label, buyer.quantity, options.length, options.map((result) => result.offer.merchant).join(', ') || 'None'];
+      }), 'Counts use the actual whole-order allocation of each offer in this room. Offers are alternatives, not simultaneous purchases; no inventory is reserved.');
+    default: throw new ScenarioError('Review is unavailable.');
+  }
+}

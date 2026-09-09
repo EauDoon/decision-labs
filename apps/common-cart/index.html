@@ -170,6 +170,13 @@ SOFTWARE.
       </div>
 
       <div id="buyer-panel" role="tabpanel" aria-labelledby="buyer-tab">
+        <details class="panel print-chrome cart-review" id="cart-review">
+          <summary>Review buyer coverage and offer resilience</summary>
+          <p>Choose one question, then review the current room. This organizer-only view can contain private buyer labels. It does not change offers or make purchases.</p>
+          <label for="cart-review-tool">Review question</label>
+          <div class="cart-review-controls"><select id="cart-review-tool"></select><button id="cart-review-run" type="button">Run review</button></div>
+          <div id="cart-review-output" aria-live="polite"></div>
+        </details>
         <section class="panel print-chrome" aria-labelledby="comparison-heading">
           <h2 id="comparison-heading">Compare a decision</h2>
           <button id="pin-baseline" type="button">Pin current as baseline</button>

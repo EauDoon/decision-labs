@@ -342,3 +342,12 @@ footer {
     break-inside: avoid;
   }
 }
+
+.cart-review { margin-block: 1.2rem; }
+.cart-review summary { cursor: pointer; font-weight: 700; padding-block: .5rem; }
+.cart-review-controls { display: flex; flex-wrap: wrap; gap: .7rem; margin-block: .7rem; }
+.cart-review-controls select { min-width: 0; max-width: 100%; flex: 1 1 16rem; }
+.cart-review-controls button { min-height: 44px; }
+.cart-review-table { overflow: auto; max-height: 28rem; }
+.cart-review-table table { min-width: 36rem; }
+.cart-review-table caption { text-align: left; padding-block: .7rem; }
