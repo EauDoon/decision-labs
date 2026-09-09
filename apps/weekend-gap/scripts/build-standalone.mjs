@@ -74,6 +74,7 @@ const exportedNames = Object.freeze([
   "capacityForHour",
   "estimateDiscountBps",
   "nextPayoutTime",
+  "hoursToFirstSettlement",
   "createSnapshot",
   "runSimulation",
   "compareScenarios",

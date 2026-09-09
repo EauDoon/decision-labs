@@ -244,6 +244,13 @@ export function nextPayoutTime(scenarioInput, fromHour, reserveRemainingAud) {
   return null;
 }
 
+/** Hour offset of the first settling interval, or null when none settle in 72 hours. */
+export function hoursToFirstSettlement(timeline) {
+  if (!Array.isArray(timeline)) return null;
+  const point = timeline.find((item) => item.settledThisHour > 0);
+  return point ? point.hour - 1 : null;
+}
+
 export function createSnapshot(scenario, hour, state, demandThisHour = 0, settledThisHour = 0, limitingGate = "none") {
   const capacity = capacityForHour(scenario, hour, state.reserveRemainingAud);
   const immediateAud = capacity.capacityAud;
@@ -311,6 +318,7 @@ export function runSimulation(input = {}) {
         timeline[0],
       ).hour,
       hoursWithQueue: timeline.filter((point) => point.queuedAud > 0).length,
+      hoursToFirstSettlement: hoursToFirstSettlement(timeline),
     })
   });
 }
@@ -323,7 +331,12 @@ export function compareScenarios(baselineInput, candidateInput) {
     .filter((key) => baseline.scenario[key] !== candidate.scenario[key])
     .map((key) => ({ field: key, baseline: baseline.scenario[key], candidate: candidate.scenario[key] }));
   const deltas = Object.fromEntries(Object.keys(baseline.summary)
-    .map((key) => [key, candidate.summary[key] - baseline.summary[key]]));
+    .map((key) => {
+      const before = baseline.summary[key];
+      const after = candidate.summary[key];
+      if (typeof before === "number" && typeof after === "number") return [key, after - before];
+      return [key, before === after ? 0 : null];
+    }));
   return { baseline, candidate, changes, deltas };
 }
 
