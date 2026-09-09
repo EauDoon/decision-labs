@@ -688,6 +688,10 @@ function sanitizeScenario(raw = {}) {
       }
       continue;
     }
+    const validNumeric = finiteNumber(source[field], NaN);
+    if (source[field] !== undefined && !Number.isFinite(validNumeric)) {
+      errors.push(`${field} was not a finite number; the default was used.`);
+    }
     const numeric = finiteNumber(source[field], fallback);
     const rounded = rule.integer ? Math.round(numeric) : numeric;
     const bounded = clamp(rounded, rule.min, rule.max);
@@ -1137,7 +1141,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   render();
   renderPlanning();
   if (message) setMessage(message);
-  else if (cleaned.errors.length) setMessage(cleaned.errors[0]);
+  else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
 }
 
@@ -1438,7 +1442,7 @@ async function importScenario(file) {
       return;
     }
     userEdited = true;
-    setScenario(imported.scenario, { message: "Scenario imported and autosaved." });
+    setScenario(imported.scenario, { message: imported.errors.length ? `Scenario imported with adjustments: ${imported.errors.join(" ")}` : "Scenario imported and autosaved." });
   } catch {
     setMessage("Import failed. Choose a readable JSON file.");
   }

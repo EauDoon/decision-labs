@@ -109,6 +109,10 @@ export function sanitizeScenario(raw = {}) {
       }
       continue;
     }
+    const validNumeric = finiteNumber(source[field], NaN);
+    if (source[field] !== undefined && !Number.isFinite(validNumeric)) {
+      errors.push(`${field} was not a finite number; the default was used.`);
+    }
     const numeric = finiteNumber(source[field], fallback);
     const rounded = rule.integer ? Math.round(numeric) : numeric;
     const bounded = clamp(rounded, rule.min, rule.max);

@@ -202,3 +202,12 @@ test("scenario import does not require the newer Object.hasOwn API", () => {
     Object.hasOwn = originalHasOwn;
   }
 });
+
+test("invalid numeric imports disclose default substitution while missing legacy fields stay quiet", () => {
+  for (const value of [null, false, [], {}, "", " ", "NaN", Infinity]) {
+    const result = sanitizeScenario({ fxDepthAudPerHour: value });
+    assert.equal(result.scenario.fxDepthAudPerHour, DEFAULT_SCENARIO.fxDepthAudPerHour);
+    assert.ok(result.errors.some(error => error.includes("fxDepthAudPerHour was not a finite number")));
+  }
+  assert.deepEqual(sanitizeScenario({}).errors, []);
+});

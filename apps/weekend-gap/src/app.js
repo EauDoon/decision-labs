@@ -134,7 +134,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   render();
   renderPlanning();
   if (message) setMessage(message);
-  else if (cleaned.errors.length) setMessage(cleaned.errors[0]);
+  else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
 }
 
@@ -435,7 +435,7 @@ async function importScenario(file) {
       return;
     }
     userEdited = true;
-    setScenario(imported.scenario, { message: "Scenario imported and autosaved." });
+    setScenario(imported.scenario, { message: imported.errors.length ? `Scenario imported with adjustments: ${imported.errors.join(" ")}` : "Scenario imported and autosaved." });
   } catch {
     setMessage("Import failed. Choose a readable JSON file.");
   }
