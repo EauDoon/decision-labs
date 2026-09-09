@@ -284,3 +284,19 @@ test('applying a missing proposal names the rejected action', async () => {
   app.click('apply-stress-proposal');
   assert.match(app.notice(), /Apply tested revenue split rejected: No verified fixed-share proposal/);
 });
+
+test('undo restores edits and invalid drafts; redo restores the edit and resets clear redo', async () => {
+  const app = await workbench();
+  app.edit('deal.monthlyVolume', '80000');
+  app.edit('deal.monthlyVolume', '');
+  app.click('undo');
+  assert.equal(app.saved().deal.monthlyVolume, 80000);
+  app.click('undo');
+  assert.equal(app.saved().deal.monthlyVolume, 100000);
+  app.click('redo');
+  assert.equal(app.saved().deal.monthlyVolume, 80000);
+  app.click('reset');
+  assert.match(app.markup(), /data-action="redo" disabled/);
+  app.click('undo');
+  assert.equal(app.saved().deal.monthlyVolume, 80000);
+});

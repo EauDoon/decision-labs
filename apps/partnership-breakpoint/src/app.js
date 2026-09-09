@@ -21,6 +21,25 @@ let activePreset = 'balanced';
 let pendingNotice = '';
 let state = withStress(loadInitialState());
 let eventsBound = false;
+const undoHistory = [];
+const redoHistory = [];
+
+function checkpoint() {
+  undoHistory.push(clone(state));
+  if (undoHistory.length > 50) undoHistory.shift();
+  redoHistory.length = 0;
+}
+
+function travelHistory(direction) {
+  const source = direction === 'undo' ? undoHistory : redoHistory;
+  const destination = direction === 'undo' ? redoHistory : undoHistory;
+  if (!source.length) return;
+  destination.push(clone(state));
+  state = source.pop();
+  importSequence += 1;
+  activePreset = '';
+  refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
+}
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
@@ -254,6 +273,8 @@ function inputPanel() {
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
+          <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button></div>
+          <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
           <div class="button-row">
             <button type="button" data-action="export">Export JSON</button>
@@ -442,6 +463,7 @@ function attachEvents() {
     const input = event.target;
     if (!(input instanceof HTMLInputElement)) return;
     if (input.dataset.path) {
+      checkpoint();
       setPath(input.dataset.path, input.dataset.type === 'text' ? input.value.trim() : numberFromInput(input.value, input.dataset.optional === 'true'));
       activePreset = '';
       const validation = validateConfiguration(state);
@@ -456,21 +478,25 @@ function attachEvents() {
     const button = event.target.closest('button[data-action]');
     if (!button) return;
     const action = button.dataset.action;
+    if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
     if (action === 'edit-stress-settings') {
       app.querySelector('input[data-path="stress.volumeDropPct"]')?.focus();
     }
     if (action === 'preset') {
+      checkpoint();
       activePreset = button.dataset.preset;
       state = withStress(clonePreset(activePreset));
       refresh(`${PRESETS[activePreset].name} loaded.`);
     }
     if (action === 'add-participant' && state.participants.length < MAX_PARTICIPANTS) {
+      checkpoint();
       participantSequence += 1;
       state.participants.push(makeParticipant(nextParticipantId()));
       activePreset = '';
       refresh('Participant added. Set shares to reconcile to 1.');
     }
     if (action === 'remove-participant' && state.participants.length > 2) {
+      checkpoint();
       state.participants.splice(Number(button.dataset.index), 1);
       activePreset = '';
       refresh('Participant removed.');
@@ -478,7 +504,9 @@ function attachEvents() {
     if (action === 'export') exportFile();
     if (action === 'apply-stress-proposal') {
       try {
-        state = applyStressProposal(state);
+        const proposal = applyStressProposal(state);
+        checkpoint();
+        state = proposal;
         activePreset = '';
         refresh('Tested revenue split applied. Every selected compound case was rechecked.');
       } catch (error) {
@@ -487,6 +515,7 @@ function attachEvents() {
       }
     }
     if (action === 'reset') {
+      checkpoint();
       activePreset = 'balanced';
       state = withStress(clonePreset('balanced'));
       refresh('Reset to Balanced.');
@@ -532,6 +561,7 @@ function importFile(file) {
       const candidate = JSON.parse(text);
       const validation = validateConfiguration(candidate);
       if (!validation.valid) throw new ValidationError(validation.errors);
+      checkpoint();
       state = withStress(candidate);
       activePreset = '';
       refresh('JSON imported.');
@@ -613,6 +643,7 @@ window.addEventListener('hashchange', () => {
     return;
   }
   importSequence += 1;
+  checkpoint();
   state = withStress(shared.config);
   activePreset = '';
   refresh('Shared case loaded.');
