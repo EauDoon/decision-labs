@@ -21,7 +21,12 @@ test('launcher serves only workbenches and refuses hostile hosts and methods', a
   const page = await get('/');
   assert.equal(page.status, 200);
   assert.match(page.body, /Decision Labs/);
+  assert.match(page.body, /Trust and limits/);
+  assert.match(page.body, /The workbenches/);
+  assert.match(page.body, /Open workbench/);
+  assert.doesNotMatch(page.body, /Index of/);
   assert.match(page.headers['content-security-policy'], /connect-src 'none'/);
+  assert.match(page.headers['content-security-policy'], /script-src 'unsafe-inline'/);
   for (const app of ['partnership-breakpoint', 'common-cart', 'smallest-agreement', 'weekend-gap']) {
     assert.equal((await get(`/apps/${app}/standalone.html`)).status, 200);
   }
