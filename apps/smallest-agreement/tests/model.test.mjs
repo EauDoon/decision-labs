@@ -20,6 +20,8 @@ import {
   parseSupportMatrixCsv,
   parseParticipantGroupsCsv,
   formatParticipantGroupsCsv,
+  parseClauseOptionsCsv,
+  formatClauseOptionsCsv,
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
@@ -1191,6 +1193,58 @@ test("participant groups CSV replaces groups with named errors for unknown colum
   const formula = parseParticipantGroupsCsv("name,weight,one:original,one:alternative,one:other\r\nA,=SUM(1),1,2,3\r\n", input);
   assert.equal(formula.errors[0].code, "formula_cell");
   assert.equal(parseParticipantGroupsCsv("   ", input).errors[0].code, "empty_csv");
+});
+
+test("clause options CSV replaces clauses with named errors and keeps matching support scores", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2 }],
+    clauses: [{ id: "one", title: "One", lockedOptionId: "alternative", note: "Ask first", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const csv = formatClauseOptionsCsv(input);
+  assert.equal(csv.status, "ok");
+  const parsed = parseClauseOptionsCsv(csv.csv, input);
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.importedClauses, 1);
+  assert.equal(parsed.importedOptions, 3);
+  assert.equal(parsed.proposal.clauses[0].title, "One");
+  assert.equal(parsed.proposal.clauses[0].lockedOptionId, "alternative");
+  assert.equal(parsed.proposal.clauses[0].note, "Ask first");
+  assert.equal(parsed.proposal.clauses[0].options[0].support.a, 40);
+  assert.equal(JSON.stringify(input), before);
+
+  const renamed = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost,note,locked\r\none,original,Hours,Keep close,yes,0,Check lighting,no\r\none,alternative,Hours,Seasonal,no,2,,yes\r\none,other,Hours,Pilot,no,3,,no\r\n", input);
+  assert.equal(renamed.status, "ok");
+  assert.equal(renamed.proposal.clauses[0].title, "Hours");
+  assert.equal(renamed.proposal.clauses[0].options[1].label, "Seasonal");
+  assert.equal(renamed.proposal.clauses[0].options[1].changeCost, 2);
+  assert.equal(renamed.proposal.clauses[0].lockedOptionId, "alternative");
+  assert.equal(renamed.proposal.clauses[0].options[0].support.b, 50);
+  assert.equal(renamed.proposal.clauses[0].note, "Check lighting");
+
+  const fresh = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\ntwo,keep,Path,Keep lamps,yes,0\r\ntwo,warm,Path,Warm lights,no,3\r\ntwo,motion,Path,Motion lights,no,4\r\n", input);
+  assert.equal(fresh.status, "ok");
+  assert.equal(fresh.proposal.clauses[0].id, "two");
+  assert.equal(fresh.proposal.clauses[0].options[1].support.a, 50);
+  assert.equal(fresh.proposal.groups.length, 2);
+
+  const unknown = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost,hidden\r\none,original,One,original,yes,0,x\r\n", input);
+  assert.equal(unknown.status, "invalid");
+  assert.equal(unknown.errors[0].code, "unknown_column");
+  const formula = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\none,original,=SUM(1),Keep,yes,0\r\none,alternative,One,Alt,no,1\r\none,other,One,Other,no,2\r\n", input);
+  assert.equal(formula.errors[0].code, "formula_cell");
+  const missingOriginal = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\none,original,One,Keep,no,0\r\none,alternative,One,Alt,no,1\r\none,other,One,Other,no,2\r\n", input);
+  assert.equal(missingOriginal.errors[0].code, "missing_original");
+  const originalCost = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\none,original,One,Keep,yes,1\r\none,alternative,One,Alt,no,1\r\none,other,One,Other,no,2\r\n", input);
+  assert.equal(originalCost.errors[0].code, "invalid_cost");
+  const few = parseClauseOptionsCsv("clause_id,option_id,clause_title,option_label,original,change_cost\r\none,original,One,Keep,yes,0\r\none,alternative,One,Alt,no,1\r\n", input);
+  assert.equal(few.errors[0].code, "too_few_options");
+  assert.equal(parseClauseOptionsCsv("   ", input).errors[0].code, "empty_csv");
+  assert.equal(formatClauseOptionsCsv({ title: "" }).status, "invalid");
 });
 
 test("locking an option for preview re-solves remaining clauses without mutating the draft", () => {

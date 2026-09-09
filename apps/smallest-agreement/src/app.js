@@ -20,6 +20,8 @@ import {
   parseSupportMatrixCsv,
   parseParticipantGroupsCsv,
   formatParticipantGroupsCsv,
+  parseClauseOptionsCsv,
+  formatClauseOptionsCsv,
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
@@ -545,6 +547,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#csv-button").disabled = result.status === "invalid";
   $("#matrix-export-button").disabled = result.status === "invalid";
   $("#groups-export-button").disabled = result.status === "invalid";
+  $("#clauses-export-button").disabled = result.status === "invalid";
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
@@ -1471,6 +1474,35 @@ $("#groups-import-file").addEventListener("change", async (event) => {
   }
   changeAndRender(() => { state.proposal = parsed.proposal; });
   notifyDraft(`Imported ${parsed.importedGroups} participant groups from CSV. Undo restores the previous draft.`);
+});
+$("#clauses-export-button").addEventListener("click", () => {
+  const exported = formatClauseOptionsCsv(state.proposal);
+  if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting the clauses CSV.");
+  downloadText("smallest-agreement-clauses.csv", "\uFEFF" + exported.csv, "text/csv;charset=utf-8");
+  notifyDraft("Clauses CSV downloaded. Import it to replace clause titles, option labels, costs, original flags, notes, and locks. Matching scores are kept.");
+});
+$("#clauses-import-button").addEventListener("click", () => $("#clauses-import-file").click());
+$("#clauses-import-file").addEventListener("change", async (event) => {
+  const sequence = ++importSequence;
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (file.size > 250_000) return notifyDraft("Clauses CSV import failed: files must be 250 KB or smaller.");
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    if (sequence !== importSequence) return;
+    return notifyDraft("Clauses CSV import failed: the file could not be read.");
+  }
+  if (sequence !== importSequence) return;
+  const parsed = parseClauseOptionsCsv(text, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Clauses CSV import failed (${first.code}): ${first.message}`);
+  }
+  changeAndRender(() => { state.proposal = parsed.proposal; });
+  notifyDraft(`Imported ${parsed.importedClauses} clauses (${parsed.importedOptions} options) from CSV. Undo restores the previous draft.`);
 });
 $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");

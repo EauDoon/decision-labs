@@ -34,6 +34,8 @@ const appImport = `import {
   parseSupportMatrixCsv,
   parseParticipantGroupsCsv,
   formatParticipantGroupsCsv,
+  parseClauseOptionsCsv,
+  formatClauseOptionsCsv,
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,

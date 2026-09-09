@@ -1536,3 +1536,276 @@ export function formatRecommendedPackageMarkdown(proposal, result = findSmallest
   lines.push("", "Scores, weights, and costs remain human inputs.");
   return { status: "ok", text: `${lines.join("\n")}\n` };
 }
+
+function parseCsvCost(raw, path) {
+  const neutralized = neutralizeCsvCell(raw).trim();
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  if (!neutralized || !/^[+-]?(?:\d+\.?\d*|\.\d+)$/u.test(neutralized)) {
+    return { error: namedCsvError("invalid_cost", `${path} must be a number from 0 through ${MAX_CHANGE_COST}.`, { path }) };
+  }
+  const changeCost = Number(neutralized);
+  if (!Number.isFinite(changeCost) || changeCost < 0 || changeCost > MAX_CHANGE_COST) {
+    return { error: namedCsvError("invalid_cost", `${path} must be a number from 0 through ${MAX_CHANGE_COST}.`, { path, value: neutralized }) };
+  }
+  return { changeCost };
+}
+
+function parseCsvFlag(raw, path, code, message) {
+  const neutralized = neutralizeCsvCell(raw).trim().toLowerCase();
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  if (neutralized === "" || neutralized === "no" || neutralized === "false" || neutralized === "0") return { value: false };
+  if (neutralized === "yes" || neutralized === "true" || neutralized === "1") return { value: true };
+  return { error: namedCsvError(code, message, { path, value: neutralized }) };
+}
+
+function parseCsvIdentifier(raw, path) {
+  const neutralized = neutralizeCsvCell(raw).trim();
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  if (!ID_PATTERN.test(neutralized) || RESERVED_IDS.has(neutralized)) {
+    return { error: namedCsvError("invalid_id", `${path} must be 1 to 64 safe identifier characters.`, { path, value: neutralized }) };
+  }
+  return { id: neutralized };
+}
+
+function parseCsvLabel(raw, path, code, maxLength) {
+  const neutralized = neutralizeCsvCell(raw);
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  const text = neutralized.trim();
+  if (!text || text.length > maxLength) {
+    return { error: namedCsvError(code, `${path} must be a non-empty string no longer than ${maxLength} characters.`, { path }) };
+  }
+  return { text };
+}
+
+/**
+ * Export clause titles, option labels, original flags, costs, optional notes, and locks.
+ * Support scores are omitted; import copies matching scores or fills 50.
+ */
+export function formatClauseOptionsCsv(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
+  const p = canonicalProposal(proposal);
+  const rows = [["clause_id", "option_id", "clause_title", "option_label", "original", "change_cost", "note", "locked"]];
+  for (const clause of p.clauses) {
+    for (const option of clause.options) {
+      rows.push([
+        clause.id,
+        option.id,
+        clause.title,
+        option.label,
+        option.original ? "yes" : "no",
+        option.changeCost,
+        clause.note ?? "",
+        clause.lockedOptionId === option.id ? "yes" : "no",
+      ]);
+    }
+  }
+  return { status: "ok", csv: serializeCsv(rows) };
+}
+
+/**
+ * Replace clauses from a CSV of clause_id, option_id, clause_title, option_label,
+ * original, and change_cost. Optional note and locked columns are accepted.
+ * Unknown columns are rejected. Groups stay. Matching clause and option ids keep
+ * their support scores; new options receive 50 for every group.
+ * Does not mutate the supplied proposal.
+ */
+export function parseClauseOptionsCsv(csvText, proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
+  const parsed = parseCsvRecords(csvText);
+  if (parsed.status !== "ok") return parsed;
+  const [header, ...body] = parsed.records;
+  if (!header || header.length < 6) {
+    return { status: "invalid", errors: [namedCsvError("missing_header", "CSV needs a header row with clause_id, option_id, clause_title, option_label, original, and change_cost.")] };
+  }
+  const columns = header.map((name) => neutralizeCsvCell(name).trim());
+  if (columns.some((column) => FORMULA_CELL.test(column))) {
+    return { status: "invalid", errors: [namedCsvError("formula_cell", "Header cells must not look like spreadsheet formulas.")] };
+  }
+  const errors = [];
+  const seenHeaders = new Set();
+  for (const column of columns) {
+    if (seenHeaders.has(column)) errors.push(namedCsvError("duplicate_column", `Column ${column} is repeated.`, { column }));
+    seenHeaders.add(column);
+  }
+  if (columns[0] !== "clause_id") errors.push(namedCsvError("missing_clause_id_column", "The first column must be clause_id."));
+  if (columns[1] !== "option_id") errors.push(namedCsvError("missing_option_id_column", "The second column must be option_id."));
+  const allowed = new Set(["clause_id", "option_id", "clause_title", "option_label", "original", "change_cost", "note", "locked"]);
+  const indexOf = (name) => columns.indexOf(name);
+  for (const column of columns) {
+    if (!allowed.has(column)) errors.push(namedCsvError("unknown_column", `Unknown column: ${column}.`, { column }));
+  }
+  for (const required of ["clause_title", "option_label", "original", "change_cost"]) {
+    if (!seenHeaders.has(required)) errors.push(namedCsvError("missing_column", `Missing column: ${required}.`, { column: required }));
+  }
+  if (body.length === 0) errors.push(namedCsvError("empty_csv", "CSV has a header but no option rows."));
+  const titleIndex = indexOf("clause_title");
+  const labelIndex = indexOf("option_label");
+  const originalIndex = indexOf("original");
+  const costIndex = indexOf("change_cost");
+  const noteIndex = indexOf("note");
+  const lockedIndex = indexOf("locked");
+  const clauseOrder = [];
+  const clauseMap = new Map();
+  const seenPairs = new Set();
+  body.forEach((record, index) => {
+    const rowNumber = index + 2;
+    if (record.length !== columns.length) {
+      errors.push(namedCsvError("truncated_row", `Row ${rowNumber} has ${record.length} cells, expected ${columns.length}.`, { row: rowNumber }));
+      return;
+    }
+    const parsedClauseId = parseCsvIdentifier(record[0], `row ${rowNumber} clause_id`);
+    if (parsedClauseId.error) {
+      errors.push(parsedClauseId.error);
+      return;
+    }
+    const parsedOptionId = parseCsvIdentifier(record[1], `row ${rowNumber} option_id`);
+    if (parsedOptionId.error) {
+      errors.push(parsedOptionId.error);
+      return;
+    }
+    const pair = `${parsedClauseId.id}\0${parsedOptionId.id}`;
+    if (seenPairs.has(pair)) {
+      errors.push(namedCsvError("duplicate_row", `Row ${rowNumber} repeats clause ${parsedClauseId.id} option ${parsedOptionId.id}.`, { row: rowNumber, clauseId: parsedClauseId.id, optionId: parsedOptionId.id }));
+      return;
+    }
+    seenPairs.add(pair);
+    if (titleIndex < 0 || labelIndex < 0 || originalIndex < 0 || costIndex < 0) return;
+    const parsedTitle = parseCsvLabel(record[titleIndex], `row ${rowNumber} clause_title`, "invalid_title", 120);
+    if (parsedTitle.error) {
+      errors.push(parsedTitle.error);
+      return;
+    }
+    const parsedLabel = parseCsvLabel(record[labelIndex], `row ${rowNumber} option_label`, "invalid_label", 240);
+    if (parsedLabel.error) {
+      errors.push(parsedLabel.error);
+      return;
+    }
+    const parsedOriginal = parseCsvFlag(record[originalIndex], `row ${rowNumber} original`, "invalid_original", `${`row ${rowNumber} original`} must be yes, no, true, false, 1, 0, or blank.`);
+    if (parsedOriginal.error) {
+      errors.push(parsedOriginal.error);
+      return;
+    }
+    const parsedCost = parseCsvCost(record[costIndex], `row ${rowNumber} change_cost`);
+    if (parsedCost.error) {
+      errors.push(parsedCost.error);
+      return;
+    }
+    if (parsedOriginal.value === true && parsedCost.changeCost !== 0) {
+      errors.push(namedCsvError("invalid_cost", `Row ${rowNumber} original option must have zero change cost.`, { row: rowNumber }));
+      return;
+    }
+    let note;
+    if (noteIndex >= 0) {
+      const noteRaw = neutralizeCsvCell(record[noteIndex]);
+      if (FORMULA_CELL.test(noteRaw)) {
+        errors.push(namedCsvError("formula_cell", `Row ${rowNumber} note looks like a spreadsheet formula.`, { row: rowNumber }));
+        return;
+      }
+      if (noteRaw !== "") {
+        if (noteRaw.length < 1 || noteRaw.length > 240) {
+          errors.push(namedCsvError("invalid_note", `Row ${rowNumber} note must be 1 to 240 characters, or blank.`, { row: rowNumber }));
+          return;
+        }
+        note = noteRaw;
+      }
+    }
+    let locked = false;
+    if (lockedIndex >= 0) {
+      const parsedLock = parseCsvFlag(record[lockedIndex], `row ${rowNumber} locked`, "invalid_lock", `Row ${rowNumber} locked must be yes, no, true, false, 1, 0, or blank.`);
+      if (parsedLock.error) {
+        errors.push(parsedLock.error);
+        return;
+      }
+      locked = parsedLock.value;
+    }
+    let clause = clauseMap.get(parsedClauseId.id);
+    if (!clause) {
+      if (clauseOrder.length >= MAX_CLAUSES) {
+        errors.push(namedCsvError("too_many_clauses", `Between 1 and ${MAX_CLAUSES} clauses are required.`));
+        return;
+      }
+      clause = { id: parsedClauseId.id, title: parsedTitle.text, options: [], note, lockedOptionId: undefined };
+      clauseMap.set(parsedClauseId.id, clause);
+      clauseOrder.push(clause);
+    } else {
+      if (clause.title !== parsedTitle.text) {
+        errors.push(namedCsvError("inconsistent_title", `Row ${rowNumber} clause_title does not match earlier rows for ${parsedClauseId.id}.`, { row: rowNumber, clauseId: parsedClauseId.id }));
+        return;
+      }
+      if (note !== undefined && clause.note !== undefined && clause.note !== note) {
+        errors.push(namedCsvError("inconsistent_note", `Row ${rowNumber} note does not match earlier rows for ${parsedClauseId.id}.`, { row: rowNumber, clauseId: parsedClauseId.id }));
+        return;
+      }
+      if (note !== undefined && clause.note === undefined) clause.note = note;
+    }
+    if (clause.options.some((option) => option.id === parsedOptionId.id)) {
+      errors.push(namedCsvError("duplicate_row", `Row ${rowNumber} repeats option ${parsedOptionId.id} in clause ${parsedClauseId.id}.`, { row: rowNumber }));
+      return;
+    }
+    if (clause.options.length >= MAX_OPTIONS_PER_CLAUSE) {
+      errors.push(namedCsvError("too_many_options", `Clause ${parsedClauseId.id} needs 3 to ${MAX_OPTIONS_PER_CLAUSE} options, including one original.`, { clauseId: parsedClauseId.id }));
+      return;
+    }
+    if (locked) {
+      if (clause.lockedOptionId !== undefined) {
+        errors.push(namedCsvError("duplicate_lock", `Row ${rowNumber} adds a second lock on clause ${parsedClauseId.id}.`, { row: rowNumber, clauseId: parsedClauseId.id }));
+        return;
+      }
+      clause.lockedOptionId = parsedOptionId.id;
+    }
+    const previousClause = proposal.clauses.find((item) => item.id === parsedClauseId.id);
+    const previousOption = previousClause?.options.find((item) => item.id === parsedOptionId.id);
+    const support = previousOption
+      ? Object.fromEntries(proposal.groups.map((group) => [group.id, previousOption.support[group.id]]))
+      : Object.fromEntries(proposal.groups.map((group) => [group.id, 50]));
+    clause.options.push({
+      id: parsedOptionId.id,
+      label: parsedLabel.text,
+      original: parsedOriginal.value,
+      changeCost: parsedCost.changeCost,
+      support,
+    });
+  });
+  if (!errors.length) {
+    if (clauseOrder.length < 1) errors.push(namedCsvError("empty_csv", "CSV has a header but no option rows."));
+    for (const clause of clauseOrder) {
+      if (clause.options.length < 3) {
+        errors.push(namedCsvError("too_few_options", `Clause ${clause.id} needs 3 to ${MAX_OPTIONS_PER_CLAUSE} options, including one original.`, { clauseId: clause.id }));
+      }
+      if (clause.options.length > MAX_OPTIONS_PER_CLAUSE) {
+        errors.push(namedCsvError("too_many_options", `Clause ${clause.id} needs 3 to ${MAX_OPTIONS_PER_CLAUSE} options, including one original.`, { clauseId: clause.id }));
+      }
+      const originals = clause.options.filter((option) => option.original === true);
+      if (originals.length === 0) errors.push(namedCsvError("missing_original", `Clause ${clause.id} must have exactly one original option.`, { clauseId: clause.id }));
+      if (originals.length > 1) errors.push(namedCsvError("extra_original", `Clause ${clause.id} must have exactly one original option.`, { clauseId: clause.id }));
+    }
+  }
+  if (errors.length) return { status: "invalid", errors };
+  const next = canonicalProposal(proposal);
+  next.clauses = clauseOrder.map((clause) => ({
+    id: clause.id,
+    title: clause.title,
+    ...(clause.lockedOptionId !== undefined ? { lockedOptionId: clause.lockedOptionId } : {}),
+    ...(clause.note ? { note: clause.note } : {}),
+    options: clause.options.map((option) => ({
+      id: option.id,
+      label: option.label,
+      original: option.original === true,
+      changeCost: option.changeCost,
+      support: option.support,
+    })),
+  }));
+  const imported = validateProposal(next);
+  if (!imported.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", imported.errors[0])] };
+  return { status: "ok", proposal: canonicalProposal(next), importedClauses: next.clauses.length, importedOptions: next.clauses.reduce((sum, clause) => sum + clause.options.length, 0) };
+}

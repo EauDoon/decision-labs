@@ -38,6 +38,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Import support CSV/u);
   assert.match(html, /Import groups CSV/u);
   assert.match(html, /id="groups-import-file"/u);
+  assert.match(html, /Import clauses CSV/u);
+  assert.match(html, /id="clauses-import-file"/u);
   assert.match(html, /Try this option/u);
   assert.match(html, /Leave one group out/u);
   assert.match(html, /id="coach-overlay"/u);
@@ -130,6 +132,13 @@ async function savedWorkbench(storage, hash = "") {
         value: "groups.csv",
       };
       await element("#groups-import-file").events.get("change")({ target });
+    },
+    importClausesCsv: async (contents, { size } = {}) => {
+      const target = {
+        files: [{ size: size ?? contents.length, text: async () => contents }],
+        value: "clauses.csv",
+      };
+      await element("#clauses-import-file").events.get("change")({ target });
     },
     setTitle: (value) => {
       const target = element("#proposal-title");
@@ -835,6 +844,30 @@ test("groups CSV import replaces the roster with named errors and supports undo"
   assert.match(app.message(), /Imported 1 participant groups/u);
   app.click("#undo-button");
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.length, before.groups.length);
+});
+
+test("clauses CSV import replaces options with named errors and supports undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for clause CSV");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  await app.importClausesCsv("clause_id,option_id,clause_title,option_label,original,change_cost,hidden\nhours,hours-original,Hours,Keep,yes,0,x\n");
+  assert.match(app.message(), /Clauses CSV import failed \(unknown_column\)/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+  const rows = [
+    "hours,hours-original,Park hours,Close at 20:00,yes,0",
+    "hours,hours-seasonal,Park hours,Seasonal close,no,2",
+    "hours,hours-pilot,Park hours,Friday trial,no,3",
+  ].join("\n");
+  await app.importClausesCsv(`clause_id,option_id,clause_title,option_label,original,change_cost\n${rows}\n`);
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses.length, 1);
+  assert.equal(after.clauses[0].title, "Park hours");
+  assert.equal(after.clauses[0].options[0].label, "Close at 20:00");
+  assert.equal(after.clauses[0].options[0].support.residents, before.clauses[0].options[0].support.residents);
+  assert.match(app.message(), /Imported 1 clauses/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
 });
 
 test("renormalize weights requires a preview then apply and can be undone", async () => {
