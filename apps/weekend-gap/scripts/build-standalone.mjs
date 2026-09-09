@@ -80,7 +80,8 @@ const exportedNames = Object.freeze([
   "libraryFromJSON",
   "workspaceToJSON",
   "workspaceFromJSON",
-  "createScenarioHistory"
+  "createScenarioHistory",
+  "timelineToCSV"
 ]);
 
 function normaliseLf(text) {

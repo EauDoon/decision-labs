@@ -171,6 +171,7 @@ function render() {
   const point = simulation.timeline[selectedHour];
   elements.title.textContent = scenario.name;
   timelineRange.value = String(selectedHour);
+  timelineRange.setAttribute("aria-valuetext", point.timeLabel + ", hour " + selectedHour + " of 72");
   elements.timelineLabel.textContent = point.timeLabel;
   elements.immediate.textContent = formatAud(point.immediateAud);
   elements.immediateDetail.textContent = point.immediateAud > 0
@@ -652,3 +653,15 @@ document.querySelector("#redo-scenario").addEventListener("click",()=>{
   setPlaying(false);setScenario(scenarioHistory.redo(),{recordHistory:false,message:"Scenario edit reapplied. Baseline and notes were kept."});
 });
 scenarioHistory=createScenarioHistory(scenario);renderHistory();
+
+document.querySelector("#table-density").addEventListener("change",renderTable);
+document.querySelector("#jump-peak").addEventListener("click",()=>{
+  selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#jump-monday").addEventListener("click",()=>{
+  selectedHour=65;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#export-timeline").addEventListener("click",()=>{
+  downloadText(timelineToCSV(scenario,baselineScenario),"weekend-gap-timeline.csv","text/csv;charset=utf-8");
+  setMessage("Exported all 73 checkpoints. Flow columns describe the preceding interval; capacity describes the next hour.");
+});

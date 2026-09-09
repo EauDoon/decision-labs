@@ -584,11 +584,11 @@ textarea { width: 100%; padding: .7rem; resize: vertical; color: #eef4f5; backgr
                 <p class="eyebrow">Text equivalent</p>
                 <h2 id="table-title">Simulation data table</h2>
               </div>
-              <p>Six-hour snapshots plus selected hour</p>
+              <p>Checkpoint balances, preceding interval flows and next-hour capacity</p>
             </div>
             <div class="table-scroll">
               <table>
-                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th></tr></thead>
+                <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th><th scope="col">Arrived in prior hour</th><th scope="col">Settled in prior hour</th></tr></thead>
                 <tbody id="timeline-table"></tbody>
               </table>
             </div>
@@ -1170,11 +1170,20 @@ function createScenarioHistory(initial, limit = 40) {
   };
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON, createScenarioHistory };
+/** All 73 checkpoints; demand/settlement columns describe the preceding interval. */
+function timelineToCSV(current, baseline = current) {
+  const comparison = compareScenarios(baseline, current);
+  const headers = ["checkpoint_hour", "local_time", "interval_start_hour", "arrived_previous_interval_aud", "settled_previous_interval_aud", "cumulative_settled_aud", "queued_aud", "reserve_remaining_aud", "next_hour_capacity_aud", "baseline_queued_aud"];
+  const rows = comparison.candidate.timeline.map((point, index) => [point.hour, point.timeLabel, point.hour === 0 ? "" : point.hour - 1,
+    point.demandThisHour, point.settledThisHour, point.settledAud, point.queuedAud, point.reserveRemainingAud, point.immediateAud, comparison.baseline.timeline[index].queuedAud]);
+  return [headers, ...rows].map(row => row.join(",")).join("\r\n") + "\r\n";
+}
+
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON, createScenarioHistory } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV } = window.__WeekendGapModel;
 
 let workspaceReady = false;
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
@@ -1333,6 +1342,7 @@ function render() {
   const point = simulation.timeline[selectedHour];
   elements.title.textContent = scenario.name;
   timelineRange.value = String(selectedHour);
+  timelineRange.setAttribute("aria-valuetext", point.timeLabel + ", hour " + selectedHour + " of 72");
   elements.timelineLabel.textContent = point.timeLabel;
   elements.immediate.textContent = formatAud(point.immediateAud);
   elements.immediateDetail.textContent = point.immediateAud > 0
@@ -1814,6 +1824,18 @@ document.querySelector("#redo-scenario").addEventListener("click",()=>{
   setPlaying(false);setScenario(scenarioHistory.redo(),{recordHistory:false,message:"Scenario edit reapplied. Baseline and notes were kept."});
 });
 scenarioHistory=createScenarioHistory(scenario);renderHistory();
+
+document.querySelector("#table-density").addEventListener("change",renderTable);
+document.querySelector("#jump-peak").addEventListener("click",()=>{
+  selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#jump-monday").addEventListener("click",()=>{
+  selectedHour=65;setPlaying(false);render();saveWorkspace();
+});
+document.querySelector("#export-timeline").addEventListener("click",()=>{
+  downloadText(timelineToCSV(scenario,baselineScenario),"weekend-gap-timeline.csv","text/csv;charset=utf-8");
+  setMessage("Exported all 73 checkpoints. Flow columns describe the preceding interval; capacity describes the next hour.");
+});
 
 </script>
   </body>

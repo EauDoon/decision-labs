@@ -554,3 +554,12 @@ export function createScenarioHistory(initial, limit = 40) {
     get size() { return entries.length; }
   };
 }
+
+/** All 73 checkpoints; demand/settlement columns describe the preceding interval. */
+export function timelineToCSV(current, baseline = current) {
+  const comparison = compareScenarios(baseline, current);
+  const headers = ["checkpoint_hour", "local_time", "interval_start_hour", "arrived_previous_interval_aud", "settled_previous_interval_aud", "cumulative_settled_aud", "queued_aud", "reserve_remaining_aud", "next_hour_capacity_aud", "baseline_queued_aud"];
+  const rows = comparison.candidate.timeline.map((point, index) => [point.hour, point.timeLabel, point.hour === 0 ? "" : point.hour - 1,
+    point.demandThisHour, point.settledThisHour, point.settledAud, point.queuedAud, point.reserveRemainingAud, point.immediateAud, comparison.baseline.timeline[index].queuedAud]);
+  return [headers, ...rows].map(row => row.join(",")).join("\r\n") + "\r\n";
+}
