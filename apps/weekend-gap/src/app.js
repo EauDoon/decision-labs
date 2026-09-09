@@ -3,6 +3,7 @@ import {
   PRESETS,
   SIMULATION_HOURS,
   formatTime,
+  weekendCloseOverlapNotice,
   runSimulation,
   sanitizeScenario,
   scenarioFromHash,
@@ -269,6 +270,12 @@ function render() {
     ? `${scenario.mondayHoliday && point.timeLabel.startsWith("Mon") ? "Holiday Monday" : scenario.saturdayHoliday && point.timeLabel.startsWith("Sat") ? "Holiday Saturday" : "Weekend"}: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
     : `${Math.round(point.fxSpreadBps)} bps weekday spread`;
   elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
+  const overlapNotice = weekendCloseOverlapNotice(scenario);
+  const overlapNode = document.querySelector("#weekend-overlap-notice");
+  if (overlapNode) {
+    overlapNode.hidden = !overlapNotice;
+    overlapNode.textContent = overlapNotice;
+  }
 
   for (const button of document.querySelectorAll("[data-preset]")) {
     button.classList.toggle("is-selected", Object.keys(PRESETS[button.dataset.preset]).every(key => PRESETS[button.dataset.preset][key] === scenario[key]));

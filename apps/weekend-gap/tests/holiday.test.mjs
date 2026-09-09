@@ -8,7 +8,8 @@ import {
   isBusinessDay,
   runSimulation,
   sanitizeScenario,
-  scenarioFromJSON
+  scenarioFromJSON,
+  weekendCloseOverlapNotice
 } from "../src/model.js";
 
 test("older scenario JSON without mondayHoliday keeps a weekday Monday", () => {
@@ -116,6 +117,21 @@ test("holiday Saturday toggle is optional in the editor and labels Saturday like
   assert.match(html, /id="saturdayHoliday"/);
   assert.match(html, /Treat Saturday as a public holiday/);
   assert.match(html, /Older scenario files omit this field and keep the existing weekend Saturday/);
+  assert.match(html, /id="weekend-overlap-notice"/);
   assert.match(app, /Holiday Saturday/);
   assert.match(app, /saturdayHoliday && point\.timeLabel\.startsWith\("Sat"\)/);
+});
+
+test("Saturday holiday with Sunday-style close notices that both weekend days are closed", () => {
+  assert.equal(weekendCloseOverlapNotice(DEFAULT_SCENARIO), "");
+  assert.equal(weekendCloseOverlapNotice({ ...DEFAULT_SCENARIO, saturdayHoliday: false }), "");
+  assert.equal(
+    weekendCloseOverlapNotice({ ...DEFAULT_SCENARIO, saturdayHoliday: true }),
+    "Saturday holiday and Sunday-style close overlap. Both weekend days are treated as closed."
+  );
+  const result = runSimulation({ ...DEFAULT_SCENARIO, saturdayHoliday: true });
+  const saturday = result.timeline.filter((point) => point.timeLabel.startsWith("Sat"));
+  const sunday = result.timeline.filter((point) => point.timeLabel.startsWith("Sun"));
+  assert.ok(saturday.every((point) => point.issuerOpen === false && point.weekend === true));
+  assert.ok(sunday.every((point) => point.issuerOpen === false && point.weekend === true));
 });

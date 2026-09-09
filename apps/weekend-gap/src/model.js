@@ -202,6 +202,13 @@ export function isBusinessDay(hourOffset, mondayHoliday = false, saturdayHoliday
   return dayIndex >= 1 && dayIndex <= 5;
 }
 
+/** Visible when Saturday is a holiday like Sunday, so both weekend days are closed. */
+export function weekendCloseOverlapNotice(scenarioInput) {
+  const { scenario } = sanitizeScenario(scenarioInput);
+  if (!scenario.saturdayHoliday) return "";
+  return "Saturday holiday and Sunday-style close overlap. Both weekend days are treated as closed.";
+}
+
 export function isWithinHours(hourOffset, startHour, endHour) {
   const { localHour } = dayAndHourAt(hourOffset);
   return localHour >= startHour && localHour < endHour;

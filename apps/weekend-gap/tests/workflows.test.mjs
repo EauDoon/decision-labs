@@ -173,6 +173,8 @@ test("holiday Saturday checkbox labels Saturday like Sunday and restores from wo
   assert.equal(reloaded.nodes.get("saturdayHoliday").checked, true);
   await reloaded.edit("timeline-range", 21);
   assert.match(reloaded.nodes.get("fx-gate").textContent, /Holiday Saturday/);
+  assert.equal(reloaded.nodes.get("weekend-overlap-notice").hidden, false);
+  assert.match(reloaded.nodes.get("weekend-overlap-notice").textContent, /Both weekend days are treated as closed/);
 });
 test("applying a window shift notices that undo reverts it", async () => {
   const ui = await boot();
