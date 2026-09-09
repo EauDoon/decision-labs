@@ -530,7 +530,7 @@ export function formatEvidenceCsv(proposal, result = findSmallestAgreement(propo
   }
   const cell = (value) => {
     let text = String(value);
-    if (typeof value === "string" && /^\s*[=+@-]/u.test(text)) text = "'" + text;
+    if (typeof value === "string" && /^(?:[\s\u0000-\u001f]*[=+@-]|[\t\r\n])/u.test(text)) text = "'" + text;
     return '"' + text.replaceAll('"', '""') + '"';
   };
   return rows.map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";

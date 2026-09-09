@@ -737,3 +737,18 @@ test("evidence CSV includes every input and protects spreadsheet text cells", ()
   assert.ok(csv.includes('"cheap","cheap","no","yes","1"'));
   assert.equal(csv, formatEvidenceCsv(input));
 });
+
+
+test("CSV neutralizes formula prefixes behind ASCII controls and leading spreadsheet separators", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 60 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 70 }, 1),
+  ] }] });
+  for (let code = 0; code <= 31; code += 1) {
+    input.title = String.fromCharCode(code) + "=SUM(1,2)";
+    assert.ok(formatEvidenceCsv(input).includes('"' + "'" + input.title + '"'), "ASCII control " + code);
+  }
+  for (const prefix of ["\t", "\r", "\n"]) {
+    input.title = prefix + "ordinary text";
+    assert.ok(formatEvidenceCsv(input).includes('"' + "'" + input.title + '"'));
+  }
+});
