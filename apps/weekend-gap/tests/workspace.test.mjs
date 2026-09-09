@@ -7,6 +7,7 @@ test("workspace round trip preserves detached baseline, notes and analysis contr
  assert.equal(result.workspace.current.name,"Market Stress");assert.equal(result.workspace.selectedHour,65);assert.equal(result.workspace.notes,"<b>test</b>");
  assert.equal(result.workspace.ganttDensity,"all");
  assert.equal(result.workspace.selectedChart,"queue");
+ assert.equal(result.workspace.ganttClosedOnly,false);
  assert.equal(scenarioFromJSON(text).scenario,null);assert.deepEqual(workspaceFromJSON("\uFEFF"+text),result);
 });
 test("workspace Gantt density defaults to snapshots and older files remain valid",()=>{
@@ -43,8 +44,19 @@ test("older workspace files omit selectedChart and restore the queue chart",()=>
  assert.deepEqual(legacy.errors,[]);
  assert.equal(workspaceFromJSON(JSON.stringify({...raw,selectedChart:"gantt"})).workspace.selectedChart,"gantt");
 });
+test("older workspace files omit ganttClosedOnly and restore all hours",()=>{
+ const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{ganttClosedOnly:true,notes:"legacy filter"});
+ const raw=JSON.parse(text);
+ assert.equal(raw.ganttClosedOnly,true);
+ delete raw.ganttClosedOnly;
+ const legacy=workspaceFromJSON(JSON.stringify(raw));
+ assert.ok(legacy.workspace);
+ assert.equal(legacy.workspace.ganttClosedOnly,false);
+ assert.deepEqual(legacy.errors,[]);
+ assert.equal(workspaceFromJSON(JSON.stringify({...raw,ganttClosedOnly:true})).workspace.ganttClosedOnly,true);
+});
 test("invalid workspace controls and format cannot replace an active workspace",()=>{
  const valid=JSON.parse(workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO));
- for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
+ for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
  assert.equal(workspaceFromJSON("x".repeat(250001)).workspace,null);
 });

@@ -106,6 +106,7 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   assert.equal(persisted.current.name, "Market Stress"); assert.equal(persisted.selectedHour, 65);
   assert.equal(persisted.ganttDensity, "all");
   assert.equal(persisted.selectedChart, "queue");
+  assert.equal(persisted.ganttClosedOnly, false);
   const reloaded = await boot(ui.storage);
   assert.equal(reloaded.nodes.get("scenario-title").textContent, "Market Stress");
   assert.equal(reloaded.nodes.get("baseline-name").textContent, "Normal Friday");
@@ -113,6 +114,7 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   assert.equal(reloaded.nodes.get("timeline-range").value, "65");
   assert.equal(reloaded.nodes.get("gantt-density").value, "all");
   assert.equal(reloaded.nodes.get("selected-chart").value, "queue");
+  assert.equal(reloaded.nodes.get("gantt-closed-only").checked, false);
   assert.equal(reloaded.nodes.get("scenario-library").children.length, 1);
 });
 
@@ -316,6 +318,19 @@ test("selected chart persists in workspace JSON and restores", async () => {
   delete raw.selectedChart;
   const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
   assert.equal(legacy.nodes.get("selected-chart").value, "queue");
+});
+
+test("closed-hours Gantt filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("gantt-closed-only").checked = true;
+  await ui.nodes.get("gantt-closed-only").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).ganttClosedOnly, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-closed-only").checked, true);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.ganttClosedOnly;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-closed-only").checked, false);
 });
 
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
