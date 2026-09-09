@@ -34,7 +34,8 @@ Every workbench:
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
-What's new section. What's new names current in-workbench tools (share-to-hold,
+What's new section. Skip links jump to What's new, workbenches, keyboard
+shortcuts, and Trust and limits. What's new names current in-workbench tools (share-to-hold,
 residual coverage, veto groups, and the gate Gantt) without implying live
 services. It also names the local 1.4.1 and 1.3.1 extras now on main: Partnership
 Breakpoint CSV roster, capacity, and notes; Common Cart leftover/tertiary fill
@@ -70,8 +71,9 @@ local drafts. A path outside that set still returns HTTP 404; the body is a
 Decision Labs page that points back to the catalog rather than a blank
 "Not found" line. Set `PORT` to an integer from 1 through 65535 to choose another
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
-an input. Press `h` to focus the catalog heading. Press `?` on the catalog for
-the in-page shortcut list. The branded 404 page still returns HTTP 404 and links
+an input. Press `h` to focus the catalog heading. Press `t` to focus Trust and
+limits. Press `?` on the catalog for the in-page shortcut list. The branded 404
+page still returns HTTP 404 and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
 Smallest Agreement, and Weekend Gap.
 
