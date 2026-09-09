@@ -751,6 +751,22 @@ export function unitsToNextTier(rawScenario, offerId) {
   };
 }
 
+export function capacityBar(rawScenario, offerId) {
+  const scenario = validateScenario(rawScenario);
+  const result = evaluateOffer(scenario, offerId);
+  const gap = unitsToNextTier(scenario, offerId);
+  return {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    filledUnits: result.fulfilledUnits,
+    capacity: result.offer.capacity,
+    minimumUnits: result.offer.minimumUnits,
+    nextTierThreshold: gap.nextMinimum,
+    leftoverUnits: Math.max(0, result.offer.capacity - result.fulfilledUnits),
+    qualifies: result.qualifies
+  };
+}
+
 function compareResults(left, right) {
   if (left.qualifies !== right.qualifies) return left.qualifies ? -1 : 1;
   return right.fulfilledUnits - left.fulfilledUnits

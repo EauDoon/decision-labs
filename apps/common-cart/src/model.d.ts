@@ -185,6 +185,19 @@ export interface NextTierGap {
 }
 
 export function unitsToNextTier(rawScenario: unknown, offerId: string): NextTierGap;
+
+export interface CapacityBar {
+  offerId: string;
+  merchant: string;
+  filledUnits: number;
+  capacity: number;
+  minimumUnits: number;
+  nextTierThreshold: number | null;
+  leftoverUnits: number;
+  qualifies: boolean;
+}
+
+export function capacityBar(rawScenario: unknown, offerId: string): CapacityBar;
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
 export function encodeScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;

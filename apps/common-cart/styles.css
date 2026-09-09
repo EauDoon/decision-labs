@@ -72,6 +72,7 @@ kbd {
   background: #eee8dd;
   font: 700 0.8rem ui-monospace, monospace;
 }
+.capacity-bar { display: block; width: min(100%, 520px); height: 48px; margin: 0.4rem 0 1rem; }
 
 .masthead {
   min-height: 76px;

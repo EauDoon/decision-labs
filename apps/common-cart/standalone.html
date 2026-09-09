@@ -105,6 +105,7 @@ kbd {
   background: #eee8dd;
   font: 700 0.8rem ui-monospace, monospace;
 }
+.capacity-bar { display: block; width: min(100%, 520px); height: 48px; margin: 0.4rem 0 1rem; }
 
 .masthead {
   min-height: 76px;
@@ -565,6 +566,9 @@ footer {
           <button id="buyer-report" type="button">Export private buyer report (CSV)</button>
           <p class="canvas-note">Exports the inspected offer, including buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
           <p class="canvas-note">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
+          <h4>Capacity leftover</h4>
+          <p id="capacity-bar-text" class="canvas-note"></p>
+          <svg id="capacity-bar" class="capacity-bar" viewBox="0 0 400 48" role="img" aria-labelledby="capacity-bar-text"></svg>
           <h4>Units to the next cheaper tier</h4>
           <div id="next-tier-summary" class="residual-summary"></div>
           <p id="next-tier-buyers" class="canvas-note"></p>
@@ -1451,6 +1455,22 @@ function unitsToNextTier(rawScenario, offerId) {
   };
 }
 
+function capacityBar(rawScenario, offerId) {
+  const scenario = validateScenario(rawScenario);
+  const result = evaluateOffer(scenario, offerId);
+  const gap = unitsToNextTier(scenario, offerId);
+  return {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    filledUnits: result.fulfilledUnits,
+    capacity: result.offer.capacity,
+    minimumUnits: result.offer.minimumUnits,
+    nextTierThreshold: gap.nextMinimum,
+    leftoverUnits: Math.max(0, result.offer.capacity - result.fulfilledUnits),
+    qualifies: result.qualifies
+  };
+}
+
 function compareResults(left, right) {
   if (left.qualifies !== right.qualifies) return left.qualifies ? -1 : 1;
   return right.fulfilledUnits - left.fulfilledUnits
@@ -2306,6 +2326,40 @@ function renderInspector(market) {
   });
   elements.inspectorRows.replaceChildren(...rows);
   renderNextTierGap(market.scenario, result.offer.id, buyers, formatter);
+  renderCapacityBar(market.scenario, result.offer.id);
+}
+
+function renderCapacityBar(rawScenario, offerId) {
+  const text = document.querySelector("#capacity-bar-text");
+  const svg = document.querySelector("#capacity-bar");
+  if (!text || !svg) return;
+  const bar = capacityBar(rawScenario, offerId);
+  const next = bar.nextTierThreshold === null ? "No cheaper tier threshold." : `Next cheaper tier starts at ${bar.nextTierThreshold} units.`;
+  text.textContent = bar.qualifies
+    ? `${bar.filledUnits} of ${bar.capacity} capacity units are filled. ${bar.leftoverUnits} units remain unused. Offer minimum is ${bar.minimumUnits}. ${next}`
+    : `No units are filled. Capacity is ${bar.capacity} and the offer minimum is ${bar.minimumUnits}. ${next}`;
+  const width = 400;
+  const height = 48;
+  const pad = 8;
+  const trackWidth = width - pad * 2;
+  const scale = (units) => pad + (units / Math.max(bar.capacity, 1)) * trackWidth;
+  const filledWidth = Math.max(0, scale(bar.filledUnits) - pad);
+  const minX = scale(Math.min(bar.minimumUnits, bar.capacity));
+  const nextX = bar.nextTierThreshold === null ? null : scale(Math.min(bar.nextTierThreshold, bar.capacity));
+  svg.replaceChildren();
+  const ns = "http://www.w3.org/2000/svg";
+  const append = (name, attrs) => {
+    const node = document.createElementNS(ns, name);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+    svg.append(node);
+    return node;
+  };
+  append("rect", { x: pad, y: 16, width: trackWidth, height: 16, fill: "#d8d0c3" });
+  append("rect", { x: pad, y: 16, width: filledWidth, height: 16, fill: bar.qualifies ? "#f36f3d" : "#a9a090" });
+  append("line", { x1: minX, y1: 10, x2: minX, y2: 38, stroke: "#211f55", "stroke-width": 2 });
+  if (nextX !== null) append("line", { x1: nextX, y1: 10, x2: nextX, y2: 38, stroke: "#16745a", "stroke-width": 2, "stroke-dasharray": "4 3" });
+  append("text", { x: pad, y: 12, fill: "#636174", "font-size": "10" }).textContent = "0";
+  append("text", { x: width - pad, y: 12, fill: "#636174", "font-size": "10", "text-anchor": "end" }).textContent = String(bar.capacity);
 }
 
 function renderNextTierGap(rawScenario, offerId, buyers, formatter) {
