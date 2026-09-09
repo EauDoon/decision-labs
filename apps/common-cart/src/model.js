@@ -76,6 +76,38 @@ export const presets = Object.freeze({
       offer("O02", "Good Basket", "Pantry box", "Gluten free", 47, 15, 5, 30, 1),
       offer("O03", "Bulk Commons", "Pantry box", "Standard", 39, 50, 6, 80, 0)
     ]
+  },
+  officePantry: {
+    title: "Office pantry bulk",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Floor three kitchen", "Office pantry crate", 6, 38, 5, ["Sweet snack", "Savoury snack"]),
+      buyer("B02", "Design studio", "Office pantry crate", 8, 34, 4, ["Savoury snack"]),
+      buyer("B03", "Support pod", "Office pantry crate", 5, 40, 6, ["Sweet snack"]),
+      buyer("B04", "Night shift", "Office pantry crate", 7, 36, 5, ["Sweet snack", "Savoury snack"]),
+      buyer("B05", "Front desk", "Office pantry crate", 4, 32, 3, ["Savoury snack"])
+    ],
+    offers: [
+      offer("O01", "DeskBite Supply", "Office pantry crate", "Savoury snack", 28, 12, 4, 30, 2),
+      offer("O02", "Sweet Locker", "Office pantry crate", "Sweet snack", 30, 8, 5, 24, 1.5),
+      { ...offer("O03", "Campus Crate Co", "Office pantry crate", "Savoury snack", 32, 10, 6, 40, 0), fulfillment: "pickup" }
+    ]
+  },
+  hardware: {
+    title: "Hardware tools bulk",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Joinery bay", "Hand tool kit", 3, 190, 10, ["Metric", "Imperial"]),
+      buyer("B02", "Site trailer", "Hand tool kit", 5, 175, 8, ["Metric"]),
+      buyer("B03", "Repair bench", "Hand tool kit", 4, 210, 12, ["Imperial"]),
+      buyer("B04", "Apprentice shop", "Hand tool kit", 6, 180, 9, ["Metric", "Imperial"]),
+      buyer("B05", "Mobile crew", "Hand tool kit", 2, 165, 7, ["Metric"])
+    ],
+    offers: [
+      offer("O01", "Forge & Co", "Hand tool kit", "Metric", 148, 10, 8, 20, 12),
+      offer("O02", "Inch Works", "Hand tool kit", "Imperial", 156, 6, 10, 12, 10),
+      { ...offer("O03", "Yard Pickup Tools", "Hand tool kit", "Metric", 142, 12, 6, 24, 18), fulfillment: "pickup", tiers: [{ minimumUnits: 16, unitPrice: 130 }] }
+    ]
   }
 });
 
