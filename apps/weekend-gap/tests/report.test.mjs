@@ -21,6 +21,13 @@ test("report inlines the current-scenario gate Gantt as SVG",()=>{
  assert.match(report,/>First payout /);
  assert.match(report,/Selected Sat 12:00/);
 });
+test("report inlines the paired baseline versus current Gantt",()=>{
+ const report=reportToHTML({...DEFAULT_SCENARIO,mondayHoliday:true},DEFAULT_SCENARIO,{selectedHour:65});
+ assert.match(report,/Baseline versus current Gantt/);
+ assert.match(report,/Issuer current/);
+ assert.match(report,/Issuer baseline/);
+ assert.match(report,/paired rows/);
+});
 test("report lists hours to first settlement for both scenarios",()=>{
  const open=reportToHTML(DEFAULT_SCENARIO,DEFAULT_SCENARIO);
  assert.match(open,/Hours to first settlement/);

@@ -177,6 +177,17 @@ test("applying a window shift notices that undo reverts it", async () => {
   assert.equal(ui.nodes.get("issuerOpenStartHour").value, "8");
   assert.equal(ui.nodes.get("issuerOpenEndHour").value, "17");
 });
+test("baseline versus current Gantt table lists differing hours and keeps a selected-hour fallback", async () => {
+  const ui = await boot();
+  assert.match(ui.nodes.get("compare-gantt-status").textContent, /match/);
+  assert.equal(ui.nodes.get("compare-gantt-table").children.length, 1);
+  ui.nodes.get("mondayHoliday").checked = true;
+  await ui.nodes.get("scenario-form").emit("change");
+  assert.match(ui.nodes.get("compare-gantt-status").textContent, /differ/);
+  assert.ok(ui.nodes.get("compare-gantt-table").children.length > 1);
+  assert.match(ui.nodes.get("compare-gantt").innerHTML, /Issuer current/);
+  assert.match(ui.nodes.get("compare-gantt").innerHTML, /Issuer baseline/);
+});
 test("reduced motion advances a single hour instead of starting playback",async()=>{
   const ui=await boot(new Map(),{reduced:true});assert.equal(ui.nodes.get("play-button").textContent,"Step hour");
   await ui.nodes.get("play-button").click();assert.equal(ui.nodes.get("timeline-range").value,"1");assert.equal(ui.nodes.get("play-button").attributes["aria-pressed"],"false");

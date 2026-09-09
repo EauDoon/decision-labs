@@ -454,6 +454,17 @@ SOFTWARE.
                 <tbody id="gantt-table"></tbody>
               </table>
             </div>
+            <h3 id="compare-gantt-title">Baseline versus current</h3>
+            <p>Each gate has two rows: current above baseline. Green or blue is open or weekday depth; red or gold is closed or weekend thinning. The solid marker is the selected timeline hour. The table lists hours where the calendars differ and always includes the selected hour.</p>
+            <p id="compare-gantt-status" role="status"></p>
+            <div id="compare-gantt" class="gantt-svg"></div>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Baseline versus current Gantt table fallback">
+              <table>
+                <caption>Text equivalent of the paired-row Gantt. Matching hours are omitted except the selected hour. FX weekday means the weekend multiplier is not applied.</caption>
+                <thead><tr><th scope="col">Time</th><th scope="col">Current issuer</th><th scope="col">Baseline issuer</th><th scope="col">Current bank</th><th scope="col">Baseline bank</th><th scope="col">Current payout</th><th scope="col">Baseline payout</th><th scope="col">Current FX</th><th scope="col">Baseline FX</th></tr></thead>
+                <tbody id="compare-gantt-table"></tbody>
+              </table>
+            </div>
           </article>
 
           <article class="table-card card" aria-labelledby="table-title">

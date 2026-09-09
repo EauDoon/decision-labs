@@ -18,6 +18,8 @@ import {
   compareDemandProfiles,
   buildGateGanttSvg,
   buildGateSchedule,
+  compareGateSchedules,
+  buildComparisonGanttSvg,
   buildQueueChartSvg,
   buildSensitivityBarsSvg,
   compareSavedExperiments,
@@ -267,6 +269,7 @@ function render() {
   renderTable();
   drawChart();
   renderGantt();
+  renderCompareGantt();
   renderQueueSvg();
 }
 
@@ -337,6 +340,46 @@ function renderGantt() {
   document.querySelector("#gantt-payout-note").textContent = firstOpen === null
     ? "No first payout window was found in the modeled search period."
     : `First payout window: ${formatTime(firstOpen)} (hour ${firstOpen}). The dashed green marker on the Gantt uses this hour.`;
+}
+
+function gateCellLabel(open, fx = false) {
+  if (fx) return open ? "Weekday depth" : "Weekend thinned";
+  return open ? "Open" : "Closed";
+}
+
+function renderCompareGantt() {
+  document.querySelector("#compare-gantt").innerHTML = buildComparisonGanttSvg(baselineScenario, scenario, selectedHour);
+  const comparison = compareGateSchedules(baselineScenario, scenario);
+  const rowIndexes = new Set([selectedHour]);
+  comparison.hours.forEach((point) => {
+    if (point.differs) rowIndexes.add(point.hour);
+  });
+  const fragment = document.createDocumentFragment();
+  [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
+    const point = comparison.hours[hour];
+    const row = document.createElement("tr");
+    if (hour === selectedHour) row.className = "is-current";
+    for (const value of [
+      point.timeLabel,
+      gateCellLabel(point.current.issuerOpen),
+      gateCellLabel(point.baseline.issuerOpen),
+      gateCellLabel(point.current.bankOpen),
+      gateCellLabel(point.baseline.bankOpen),
+      gateCellLabel(point.current.payoutOpen),
+      gateCellLabel(point.baseline.payoutOpen),
+      gateCellLabel(point.current.fxWeekday, true),
+      gateCellLabel(point.baseline.fxWeekday, true)
+    ]) {
+      const cell = document.createElement("td");
+      cell.textContent = value;
+      row.append(cell);
+    }
+    fragment.append(row);
+  });
+  document.querySelector("#compare-gantt-table").replaceChildren(fragment);
+  document.querySelector("#compare-gantt-status").textContent = comparison.differingHours === 0
+    ? "Current and baseline gate hours match. The table keeps the selected hour as a text equivalent."
+    : `${comparison.differingHours} of 73 checkpoints differ between current and baseline. Matching hours are omitted except the selected hour.`;
 }
 
 function renderQueueSvg() {

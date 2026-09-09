@@ -51,6 +51,8 @@ const appImportMarker = `import {
   compareDemandProfiles,
   buildGateGanttSvg,
   buildGateSchedule,
+  compareGateSchedules,
+  buildComparisonGanttSvg,
   buildQueueChartSvg,
   buildSensitivityBarsSvg,
   compareSavedExperiments,
@@ -110,6 +112,8 @@ const exportedNames = Object.freeze([
   "compareDemandProfiles",
   "buildGateSchedule",
   "buildGateGanttSvg",
+  "compareGateSchedules",
+  "buildComparisonGanttSvg",
   "buildQueueChartSvg",
   "buildSensitivityBarsSvg",
   "compareSavedExperiments"
