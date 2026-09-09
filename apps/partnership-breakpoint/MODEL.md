@@ -163,6 +163,10 @@ A leading apostrophe is stripped when the remaining cell looks like a spreadshee
 
 Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validation errors name the row (`Row 3 revenue share`) or the column. A rejected CSV leaves the current roster unchanged.
 
+## Three-snapshot compare
+
+`compareThreeSnapshots(current, first, second)` evaluates each valid case and aligns participants by identifier. Each row reports monthly profit and hold or fail for the first snapshot, the second snapshot, and the current draft. If an identifier is missing from a case, that cell is empty rather than filled with zero. `sameRoster` is true only when all three cases have the same identifier set. This is a difference table, not a ranking.
+
 ## Charts
 
 The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.

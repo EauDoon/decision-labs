@@ -12,6 +12,7 @@ const appImport = `import {
   calculatePartnership,
   calculateFeeRequirements,
   clonePreset,
+  compareThreeSnapshots,
   duplicateParticipant,
   dropAndReallocate,
   evaluateStressGrid,

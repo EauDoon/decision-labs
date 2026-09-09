@@ -394,6 +394,30 @@ test('snapshot comparison reports participant deltas without mutating the curren
   app.click('clear-comparison'); assert.doesNotMatch(app.markup(), /Compare with Baseline/);
 });
 
+test('three-snapshot compare pins two library cases and flags roster mismatches', async () => {
+  const app = await workbench();
+  app.nameCase('Baseline');
+  app.click('save-case');
+  app.click('preset', { preset: 'thinMargin' });
+  app.nameCase('Thin');
+  app.click('save-case');
+  app.click('pin-first', { caseId: 'case-1' });
+  assert.match(app.markup(), /First pin is empty|Second pin is empty|Pin two saved snapshots/);
+  app.click('pin-second', { caseId: 'case-2' });
+  assert.match(app.markup(), /id="three-compare-title"/);
+  assert.match(app.markup(), /All three cases share the same participant identifiers/);
+  assert.match(app.markup(), /Baseline profit/);
+  assert.match(app.markup(), /Thin profit/);
+  assert.match(app.markup(), /Current profit/);
+  assert.match(app.markup(), /Holds/);
+  app.click('preset', { preset: 'creatorTakeRate' });
+  assert.match(app.markup(), /Participant sets differ/);
+  assert.match(app.markup(), /Not in this roster/);
+  assert.match(app.markup(), /roster mismatch/);
+  app.click('clear-three-compare');
+  assert.doesNotMatch(app.markup(), /id="three-compare-title"/);
+});
+
 test('decision report exports reproducible inputs, outcomes, and safe participant prose', async () => {
   const app = await workbench();
   app.edit('participants.0.name', '<img src=x>|Bad', { type: 'text' });

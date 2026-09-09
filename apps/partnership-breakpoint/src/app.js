@@ -7,6 +7,7 @@ import {
   calculatePartnership,
   calculateFeeRequirements,
   clonePreset,
+  compareThreeSnapshots,
   duplicateParticipant,
   dropAndReallocate,
   evaluateStressGrid,
@@ -38,6 +39,8 @@ let caseName = '';
 let caseLibrary = loadCaseLibrary();
 let removedCase = null;
 let comparisonId = '';
+let pinFirstId = '';
+let pinSecondId = '';
 let stressPreviewId = '';
 let shareHoldPreview = null;
 let feeHoldPreview = null;
@@ -90,7 +93,7 @@ function persistLibrary(candidate) {
 }
 
 function libraryPanel() {
-  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="compare-case" data-case-id="${item.id}" aria-pressed="${comparisonId === item.id}">Compare</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
+  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup. Pin first and Pin second, then compare those two snapshots with the current draft.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="compare-case" data-case-id="${item.id}" aria-pressed="${comparisonId === item.id}">Compare</button><button type="button" data-action="pin-first" data-case-id="${item.id}" aria-pressed="${pinFirstId === item.id}">Pin first</button><button type="button" data-action="pin-second" data-case-id="${item.id}" aria-pressed="${pinSecondId === item.id}">Pin second</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
 }
 
 function handleLibraryAction(action, id) {
@@ -110,7 +113,14 @@ function handleLibraryAction(action, id) {
   }
   if (action === 'remove-case') {
     const item = caseLibrary.find((entry) => entry.id === id);
-    if (item && persistLibrary(caseLibrary.filter((entry) => entry.id !== id))) { removedCase = item; render(); setNotice('Snapshot removed. Restore last removed snapshot is available in this tab.'); }
+    if (item && persistLibrary(caseLibrary.filter((entry) => entry.id !== id))) {
+      removedCase = item;
+      if (comparisonId === id) comparisonId = '';
+      if (pinFirstId === id) pinFirstId = '';
+      if (pinSecondId === id) pinSecondId = '';
+      render();
+      setNotice('Snapshot removed. Restore last removed snapshot is available in this tab.');
+    }
   }
   if (action === 'restore-case' && removedCase && caseLibrary.length < 12) {
     if (persistLibrary([...caseLibrary, removedCase])) { removedCase = null; render(); setNotice('Snapshot restored.'); }
@@ -452,6 +462,7 @@ function resultsPanel(result) {
       <span class="eyebrow">Jump in results</span>
       <a href="#first-breakpoint">First breakpoint</a>
       <a href="#fee-guidance-title">Fee guide</a>
+      <a href="#three-compare-title">Three-snapshot compare</a>
       <a href="#charts-title">Charts</a>
       <a href="#compound-title">Compound stress</a>
       <a href="#participant-ledger">Participant ledger</a>
@@ -460,6 +471,7 @@ function resultsPanel(result) {
     ${feeHoldPreviewSection()}
     ${shareHoldPreviewSection()}
     ${comparisonSection(result)}
+    ${threeCompareSection(result)}
     ${breakpointSection(result)}
     <h2 id="charts-title" class="visually-hidden">Charts</h2>
     ${tornadoSection(result)}
@@ -795,6 +807,19 @@ function attachEvents() {
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
     if (action === 'apply-stress-case') { applyInspectedStressCase(); return; }
     if (action === 'compare-case') { comparisonId = button.dataset.caseId; render(); document.querySelector('#comparison-title')?.focus(); return; }
+    if (action === 'pin-first') {
+      pinFirstId = pinFirstId === button.dataset.caseId ? '' : button.dataset.caseId;
+      render();
+      document.querySelector('#three-compare-title')?.focus();
+      return;
+    }
+    if (action === 'pin-second') {
+      pinSecondId = pinSecondId === button.dataset.caseId ? '' : button.dataset.caseId;
+      render();
+      document.querySelector('#three-compare-title')?.focus();
+      return;
+    }
+    if (action === 'clear-three-compare') { pinFirstId = ''; pinSecondId = ''; render(); return; }
     if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
     if (['save-case', 'load-case', 'remove-case', 'restore-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
     if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
@@ -1088,6 +1113,26 @@ function comparisonSection(current) {
   const profitDelta = current.totalProfit - baseline.totalProfit;
   const profitClass = Math.abs(profitDelta) <= 1e-9 ? '' : profitDelta > 0 ? 'diff-up' : 'diff-down';
   return `<section class="panel" aria-labelledby="comparison-title"><div class="panel-heading"><h2 id="comparison-title" tabindex="-1">Compare with ${escapeAttribute(snapshot.name)}</h2><button type="button" data-action="clear-comparison">Close comparison</button></div><div class="panel-body"><p>Total monthly profit change: <strong class="${profitClass}">${formatMoney(profitDelta)}</strong>. Effective volume change: ${formatNumber(current.effectiveVolume - baseline.effectiveVolume)} txn.</p><p>Snapshot stress cases held: ${baselineStress.passCount} / ${baselineStress.caseCount}. Current: ${currentStress.passCount} / ${currentStress.caseCount}. Each uses its own stress settings, so counts may not be directly comparable. Profit decreases are highlighted; increases use a cooler fill. This is a difference table, not a judgement of which case is better.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Case comparison"><table><caption>Current minus snapshot. Participants matched by stable identifier. Highlighted profit cells changed.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Snapshot profit</th><th scope="col">Current profit</th><th scope="col">Profit change</th><th scope="col">Exit test</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+function snapshotCell(column) {
+  if (!column) return '<td>Not in this roster</td><td>n/a</td>';
+  return `<td>${formatMoney(column.monthlyProfit)}</td><td class="${column.viable ? 'pass-text' : 'failure-text'}">${column.viable ? 'Holds' : 'Fails'}</td>`;
+}
+
+function threeCompareSection(current) {
+  const firstItem = caseLibrary.find((item) => item.id === pinFirstId);
+  const secondItem = caseLibrary.find((item) => item.id === pinSecondId);
+  if (!firstItem && !secondItem) return '';
+  if (!firstItem || !secondItem) {
+    return `<section class="panel" aria-labelledby="three-compare-title"><div class="panel-heading"><h2 id="three-compare-title" tabindex="-1">Three-snapshot compare</h2><button type="button" data-action="clear-three-compare">Clear pins</button></div><div class="panel-body"><p>Pin two saved snapshots to compare them with the current draft. ${firstItem ? `First pin: ${escapeAttribute(firstItem.name)}.` : 'First pin is empty.'} ${secondItem ? `Second pin: ${escapeAttribute(secondItem.name)}.` : 'Second pin is empty.'}</p></div></section>`;
+  }
+  const compared = compareThreeSnapshots(state, firstItem.config, secondItem.config);
+  const rosterNote = compared.sameRoster
+    ? 'All three cases share the same participant identifiers.'
+    : 'Participant sets differ. Rows that are missing from a case are labeled Not in this roster rather than filled with a zero.';
+  const rows = compared.rows.map((row) => `<tr class="${row.rosterMismatch ? 'diff-changed' : ''}"><th scope="row">${escapeAttribute(row.name)}${row.rosterMismatch ? ' <span class="optional">roster mismatch</span>' : ''}</th>${snapshotCell(row.first)}${snapshotCell(row.second)}${snapshotCell(row.current)}</tr>`).join('');
+  return `<section class="panel" aria-labelledby="three-compare-title"><div class="panel-heading"><h2 id="three-compare-title" tabindex="-1">Three-snapshot compare</h2><button type="button" data-action="clear-three-compare">Clear pins</button></div><div class="panel-body"><p>First pin: <strong>${escapeAttribute(firstItem.name)}</strong> (${compared.firstViable ? 'holds' : 'exits'}, ${formatMoney(compared.firstTotalProfit)} total profit). Second pin: <strong>${escapeAttribute(secondItem.name)}</strong> (${compared.secondViable ? 'holds' : 'exits'}, ${formatMoney(compared.secondTotalProfit)}). Current draft (${compared.currentViable ? 'holds' : 'exits'}, ${formatMoney(compared.currentTotalProfit)}).</p><p>${rosterNote} This is a difference table, not a ranking of which case is better.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Three-snapshot comparison"><table><caption>Profit and hold or fail for two pinned snapshots plus the current draft. Participants matched by identifier.</caption><thead><tr><th scope="col">Participant</th><th scope="col">${escapeAttribute(firstItem.name)} profit</th><th scope="col">${escapeAttribute(firstItem.name)} exit</th><th scope="col">${escapeAttribute(secondItem.name)} profit</th><th scope="col">${escapeAttribute(secondItem.name)} exit</th><th scope="col">Current profit</th><th scope="col">Current exit</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 function reportText(value) {

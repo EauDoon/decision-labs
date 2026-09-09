@@ -1170,6 +1170,66 @@ export function participantsFromCsv(text) {
 }
 
 /**
+ * Aligns two saved snapshots with the current case by participant id.
+ * Missing roster members are flagged rather than silently dropped.
+ * @param {PartnershipConfig} currentConfig
+ * @param {PartnershipConfig} firstConfig
+ * @param {PartnershipConfig} secondConfig
+ */
+export function compareThreeSnapshots(currentConfig, firstConfig, secondConfig) {
+  assertValidConfiguration(currentConfig);
+  assertValidConfiguration(firstConfig);
+  assertValidConfiguration(secondConfig);
+  const current = calculatePartnership(currentConfig);
+  const first = calculatePartnership(firstConfig);
+  const second = calculatePartnership(secondConfig);
+  const order = [];
+  const seen = new Set();
+  for (const list of [first.participants, second.participants, current.participants]) {
+    for (const item of list) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        order.push(item.id);
+      }
+    }
+  }
+  const idsOf = (result) => new Set(result.participants.map((item) => item.id));
+  const firstIds = idsOf(first);
+  const secondIds = idsOf(second);
+  const currentIds = idsOf(current);
+  const sameRoster = firstIds.size === secondIds.size && secondIds.size === currentIds.size
+    && [...firstIds].every((id) => secondIds.has(id) && currentIds.has(id));
+  const pick = (result, id) => {
+    const item = result.participants.find((participant) => participant.id === id);
+    if (!item) return null;
+    return { id: item.id, name: item.name, monthlyProfit: item.monthlyProfit, viable: item.viable };
+  };
+  const rows = order.map((id) => {
+    const firstRow = pick(first, id);
+    const secondRow = pick(second, id);
+    const currentRow = pick(current, id);
+    return {
+      id,
+      name: currentRow?.name ?? secondRow?.name ?? firstRow?.name ?? id,
+      first: firstRow,
+      second: secondRow,
+      current: currentRow,
+      rosterMismatch: !(firstRow && secondRow && currentRow),
+    };
+  });
+  return {
+    sameRoster,
+    rows,
+    firstViable: first.viable,
+    secondViable: second.viable,
+    currentViable: current.viable,
+    firstTotalProfit: first.totalProfit,
+    secondTotalProfit: second.totalProfit,
+    currentTotalProfit: current.totalProfit,
+  };
+}
+
+/**
  * Minimum fee per transaction at which every participant holds, with volume
  * and shares held fixed. Capacity and commitment failures cannot be repaired.
  * @param {PartnershipConfig} config
