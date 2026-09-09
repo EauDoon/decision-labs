@@ -354,6 +354,23 @@ const PRESETS = Object.freeze({
       { id: 'liquidity-partner', name: 'Liquidity Partner', revenueShare: 0.24, variableCostPerTransaction: 0.024, fixedMonthlyCost: 2000, minimumAcceptableProfit: 0, capacity: 210000, minimumCommitment: 0, riskCost: 500 },
     ],
   },
+  creatorTakeRate: {
+    name: 'Creator take-rate',
+    deal: { monthlyVolume: 50000, feePerTransaction: 2.5, addressableVolume: 80000, volumeShockPct: 0 },
+    participants: [
+      { id: 'creator', name: 'Creator', revenueShare: 0.7, variableCostPerTransaction: 0.15, fixedMonthlyCost: 400, minimumAcceptableProfit: 75000, capacity: 90000, minimumCommitment: 0, riskCost: 200 },
+      { id: 'platform', name: 'Platform', revenueShare: 0.3, variableCostPerTransaction: 0.35, fixedMonthlyCost: 6000, minimumAcceptableProfit: 2000, capacity: 100000, minimumCommitment: 0, riskCost: 800 },
+    ],
+  },
+  threePartyJv: {
+    name: 'Three-party JV',
+    deal: { monthlyVolume: 12000, feePerTransaction: 40, addressableVolume: 15000, volumeShockPct: 0 },
+    participants: [
+      { id: 'operator', name: 'Operator', revenueShare: 0.45, variableCostPerTransaction: 8, fixedMonthlyCost: 25000, minimumAcceptableProfit: 15000, capacity: 14000, minimumCommitment: 0, riskCost: 4000 },
+      { id: 'capital', name: 'Capital Partner', revenueShare: 0.35, variableCostPerTransaction: 0, fixedMonthlyCost: 0, minimumAcceptableProfit: 80000, capacity: null, minimumCommitment: 0, riskCost: 12000 },
+      { id: 'ip-owner', name: 'IP Owner', revenueShare: 0.2, variableCostPerTransaction: 1.5, fixedMonthlyCost: 8000, minimumAcceptableProfit: 20000, capacity: 20000, minimumCommitment: 5000, riskCost: 2000 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {

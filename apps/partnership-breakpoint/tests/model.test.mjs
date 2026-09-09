@@ -336,12 +336,30 @@ test('already failing participants have a zero adverse shock', () => {
   assert.equal(shocks.volumeIncrease.status, 'already-failing');
 });
 
-test('all three presets are valid, viable starting configurations', () => {
+test('all shipped presets are valid, viable starting configurations', () => {
   for (const key of Object.keys(PRESETS)) {
     const config = clonePreset(key);
     assert.equal(validateConfiguration(config).valid, true, `${key} should validate`);
     assert.equal(calculatePartnership(config).viable, true, `${key} should start viable`);
   }
+});
+
+test('creator take-rate and three-party JV presets calculate interesting first breakpoints', () => {
+  const creator = calculatePartnership(clonePreset('creatorTakeRate'));
+  assert.equal(creator.participants.length, 2);
+  assert.equal(creator.firstBreakpoint.status, 'bounded');
+  assert.equal(creator.firstBreakpoint.participant.id, 'creator');
+  assert.equal(creator.firstBreakpoint.kind, 'fee');
+  assert.ok(creator.firstBreakpoint.shock.changePct < 10);
+  assert.ok(creator.participants.every((item) => item.shocks.volume.status === 'bounded'));
+
+  const jv = calculatePartnership(clonePreset('threePartyJv'));
+  assert.equal(jv.participants.length, 3);
+  assert.equal(jv.firstBreakpoint.status, 'bounded');
+  assert.equal(jv.firstBreakpoint.participant.id, 'operator');
+  assert.equal(jv.firstBreakpoint.kind, 'volumeIncrease');
+  assert.equal(jv.firstBreakpoint.shock.breakpoint, 14000);
+  assert.equal(jv.weakestParticipant.id, 'operator');
 });
 
 test('optional deal title and currency persist when valid and are rejected when illegal', () => {
