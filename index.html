@@ -650,6 +650,12 @@
       document.getElementById('skip-shortcuts')?.addEventListener('click', () => {
         setOpen(true, { focus: false });
       });
+      const hashTargets = ['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'];
+      if (hashTargets.includes(location.hash)) {
+        const id = location.hash.slice(1);
+        if (id === 'shortcuts') setOpen(true, { focus: false });
+        document.getElementById(id)?.focus();
+      }
       document.addEventListener('keydown', (event) => {
         if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
         if (inEditable(event.target)) return;

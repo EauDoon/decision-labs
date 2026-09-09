@@ -218,6 +218,19 @@ test('copy catalog address control exists and stays hidden off http', () => {
   assert.match(html, /The control stays hidden if you open the page from a file/);
 });
 
+test('load focuses skip-link hash targets', () => {
+  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'\]/);
+  assert.match(html, /hashTargets\.includes\(location\.hash\)/);
+  assert.match(html, /location\.hash\.slice\(1\)/);
+  assert.match(html, /if \(id === 'shortcuts'\) setOpen\(true, \{ focus: false \}\)/);
+  assert.match(html, /getElementById\(id\)\?\.focus\(\)/);
+  assert.match(html, /id="whats-new" tabindex="-1"/);
+  assert.match(html, /id="workbenches" tabindex="-1"/);
+  assert.match(html, /id="how-it-works" tabindex="-1"/);
+  assert.match(html, /id="trust" tabindex="-1"/);
+  assert.match(html, /id="shortcuts"[^>]*tabindex="-1"/);
+});
+
 test('copy versions copies catalog names as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-versions"/);
   assert.match(html, />Copy versions</);
