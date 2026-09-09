@@ -38,7 +38,26 @@ test("window-shift preview reports peak queue and settled deltas without applyin
   assert.equal(preview.candidate.totalSettledAud, candidate.totalSettledAud);
   assert.equal(preview.deltas.peakQueuedAud, candidate.peakQueuedAud - current.peakQueuedAud);
   assert.equal(preview.deltas.totalSettledAud, candidate.totalSettledAud - current.totalSettledAud);
+  assert.equal(preview.current.hoursToFirstSettlement, current.hoursToFirstSettlement);
+  assert.equal(preview.candidate.hoursToFirstSettlement, candidate.hoursToFirstSettlement);
+  if (typeof current.hoursToFirstSettlement === "number" && typeof candidate.hoursToFirstSettlement === "number") {
+    assert.equal(preview.deltas.hoursToFirstSettlement, candidate.hoursToFirstSettlement - current.hoursToFirstSettlement);
+  } else {
+    assert.equal(preview.deltas.hoursToFirstSettlement, current.hoursToFirstSettlement === candidate.hoursToFirstSettlement ? 0 : null);
+  }
   assert.ok(preview.deltas.totalSettledAud < 0);
+});
+
+test("window-shift hours-to-first-settlement delta stays null when one side never settles", () => {
+  const closed = { ...DEFAULT_SCENARIO, payoutThroughputAudPerHour: 0 };
+  const preview = previewWindowShift(closed, "payout", 0, 0);
+  assert.equal(preview.current.hoursToFirstSettlement, null);
+  assert.equal(preview.candidate.hoursToFirstSettlement, null);
+  assert.equal(preview.deltas.hoursToFirstSettlement, 0);
+  const mixed = previewWindowShift(DEFAULT_SCENARIO, "payout", 10, 10);
+  assert.equal(mixed.current.hoursToFirstSettlement, 0);
+  assert.equal(mixed.candidate.hoursToFirstSettlement, null);
+  assert.equal(mixed.deltas.hoursToFirstSettlement, null);
 });
 
 test("zero shift preview is a no-op on windows and settlement", () => {
@@ -47,4 +66,5 @@ test("zero shift preview is a no-op on windows and settlement", () => {
   assert.equal(preview.applied.payoutOpenEndHour, DEFAULT_SCENARIO.payoutOpenEndHour);
   assert.equal(preview.deltas.peakQueuedAud, 0);
   assert.equal(preview.deltas.totalSettledAud, 0);
+  assert.equal(preview.deltas.hoursToFirstSettlement, 0);
 });

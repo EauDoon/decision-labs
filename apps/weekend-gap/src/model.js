@@ -694,18 +694,23 @@ export function previewWindowShift(scenarioInput, gate, startDeltaHours, endDelt
     current: Object.freeze({
       peakQueuedAud: current.summary.peakQueuedAud,
       totalSettledAud: current.summary.totalSettledAud,
+      hoursToFirstSettlement: current.summary.hoursToFirstSettlement,
       startHour: current.scenario[startKey],
       endHour: current.scenario[endKey]
     }),
     candidate: Object.freeze({
       peakQueuedAud: candidate.summary.peakQueuedAud,
       totalSettledAud: candidate.summary.totalSettledAud,
+      hoursToFirstSettlement: candidate.summary.hoursToFirstSettlement,
       startHour: applied[startKey],
       endHour: applied[endKey]
     }),
     deltas: Object.freeze({
       peakQueuedAud: candidate.summary.peakQueuedAud - current.summary.peakQueuedAud,
-      totalSettledAud: candidate.summary.totalSettledAud - current.summary.totalSettledAud
+      totalSettledAud: candidate.summary.totalSettledAud - current.summary.totalSettledAud,
+      hoursToFirstSettlement: typeof current.summary.hoursToFirstSettlement === "number" && typeof candidate.summary.hoursToFirstSettlement === "number"
+        ? candidate.summary.hoursToFirstSettlement - current.summary.hoursToFirstSettlement
+        : current.summary.hoursToFirstSettlement === candidate.summary.hoursToFirstSettlement ? 0 : null
     })
   });
 }

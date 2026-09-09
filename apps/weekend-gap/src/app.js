@@ -529,7 +529,8 @@ document.querySelector("#preview-window-shift").addEventListener("click", () => 
     document.querySelector("#window-shift-rows").replaceChildren(...[
       ["Operating window", `${preview.current.startHour}:00-${preview.current.endHour}:00`, `${preview.candidate.startHour}:00-${preview.candidate.endHour}:00`, `${startDelta >= 0 ? "+" : ""}${startDelta} / ${endDelta >= 0 ? "+" : ""}${endDelta} h`],
       ["Peak queue", planningAud(preview.current.peakQueuedAud), planningAud(preview.candidate.peakQueuedAud), signedAud(preview.deltas.peakQueuedAud)],
-      ["Settled total", planningAud(preview.current.totalSettledAud), planningAud(preview.candidate.totalSettledAud), signedAud(preview.deltas.totalSettledAud)]
+      ["Settled total", planningAud(preview.current.totalSettledAud), planningAud(preview.candidate.totalSettledAud), signedAud(preview.deltas.totalSettledAud)],
+      ["Hours to first settlement", formatHoursToFirstSettlement(preview.current.hoursToFirstSettlement), formatHoursToFirstSettlement(preview.candidate.hoursToFirstSettlement), preview.deltas.hoursToFirstSettlement === null ? "Not comparable" : `${preview.deltas.hoursToFirstSettlement >= 0 ? "+" : ""}${preview.deltas.hoursToFirstSettlement}`]
     ].map((cells) => {
       const row = document.createElement("tr");
       for (const value of cells) {
