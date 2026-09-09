@@ -17,6 +17,7 @@ import {
   previewWindowShift,
   compareDemandProfiles,
   buildGateGanttSvg,
+  ganttToCSV,
   buildGateSchedule,
   compareGateSchedules,
   buildComparisonGanttSvg,
@@ -1018,6 +1019,10 @@ document.querySelector("#gantt-density").addEventListener("change",()=>{
 document.querySelector("#export-gantt").addEventListener("click",()=>{
   downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
   setMessage("Gantt SVG downloaded. It is a synthetic operating calendar, not a live market chart.");
+});
+document.querySelector("#export-gantt-csv").addEventListener("click",()=>{
+  downloadText(ganttToCSV(scenario),"weekend-gap-gantt.csv","text/csv;charset=utf-8");
+  setMessage("Gantt CSV downloaded. Open and closed hours match the 72 chart cells.");
 });
 document.querySelector("#export-queue-svg").addEventListener("click",()=>{
   downloadText(buildQueueChartSvg(scenario,baselineScenario,selectedHour),"weekend-gap-queue.svg","image/svg+xml;charset=utf-8");

@@ -867,6 +867,25 @@ export function buildGateGanttSvg(input, selectedHour = 0) {
     "</svg>";
 }
 
+/** Gate open/closed for the same 72 hours drawn on the Gantt chart. */
+export function ganttToCSV(input) {
+  const schedule = buildGateSchedule(input);
+  const headers = ["hour", "time_label", "issuer", "bank", "payout", "fx"];
+  const rows = [];
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    rows.push([
+      point.hour,
+      point.timeLabel,
+      point.issuerOpen ? "open" : "closed",
+      point.bankOpen ? "open" : "closed",
+      point.payoutOpen ? "open" : "closed",
+      point.fxWeekday ? "weekday" : "weekend"
+    ]);
+  }
+  return csvTable([headers, ...rows]);
+}
+
 /** Hourly current versus baseline gate state. Observation only, not a ranking. */
 export function compareGateSchedules(baselineInput, currentInput) {
   const baseline = buildGateSchedule(baselineInput);

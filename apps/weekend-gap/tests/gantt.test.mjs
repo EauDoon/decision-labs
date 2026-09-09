@@ -6,6 +6,7 @@ import {
   SIMULATION_HOURS,
   buildComparisonGanttSvg,
   buildGateGanttSvg,
+  ganttToCSV,
   buildGateSchedule,
   compareGateSchedules,
   formatTime,
@@ -95,6 +96,54 @@ test("comparison Gantt SVG is deterministic and uses paired current and baseline
   assert.match(svg, /paired rows/);
   assert.doesNotMatch(svg, /<\/script/i);
   assert.notEqual(svg, buildComparisonGanttSvg(DEFAULT_SCENARIO, DEFAULT_SCENARIO, 0));
+});
+
+test("Gantt CSV lists open and closed state for the same 72 chart hours", () => {
+  const schedule = buildGateSchedule(DEFAULT_SCENARIO);
+  const rows = ganttToCSV(DEFAULT_SCENARIO).trimEnd().split("\r\n").map((row) => {
+    const cells = [];
+    let current = "";
+    let inQuotes = false;
+    for (let index = 0; index < row.length; index += 1) {
+      const char = row[index];
+      if (inQuotes) {
+        if (char === '"' && row[index + 1] === '"') {
+          current += '"';
+          index += 1;
+        } else if (char === '"') inQuotes = false;
+        else current += char;
+      } else if (char === '"') inQuotes = true;
+      else if (char === ",") {
+        cells.push(current);
+        current = "";
+      } else current += char;
+    }
+    cells.push(current);
+    return cells;
+  });
+  assert.deepEqual(rows[0], ["hour", "time_label", "issuer", "bank", "payout", "fx"]);
+  assert.equal(rows.length, SIMULATION_HOURS + 1);
+  assert.equal(rows[1][0], "0");
+  assert.equal(rows[1][1], "Fri 15:00");
+  assert.equal(rows[SIMULATION_HOURS][0], "71");
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    assert.equal(rows[hour + 1][1], point.timeLabel);
+    assert.equal(rows[hour + 1][2], point.issuerOpen ? "open" : "closed");
+    assert.equal(rows[hour + 1][3], point.bankOpen ? "open" : "closed");
+    assert.equal(rows[hour + 1][4], point.payoutOpen ? "open" : "closed");
+    assert.equal(rows[hour + 1][5], point.fxWeekday ? "weekday" : "weekend");
+  }
+  assert.match(ganttToCSV(DEFAULT_SCENARIO), /^"hour","time_label","issuer","bank","payout","fx"\r\n/);
+});
+
+test("Gantt CSV download is wired beside the Gantt SVG download", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="export-gantt-csv"/);
+  assert.match(html, /Export Gantt CSV/);
+  assert.match(app, /ganttToCSV\(scenario\)/);
+  assert.match(app, /weekend-gap-gantt\.csv/);
 });
 
 test("comparison Gantt markup includes a table fallback", async () => {
