@@ -753,6 +753,18 @@ test('contribution waterfall includes an SVG and a text fallback for each partic
   assert.equal(tornadoAt > 0 && waterfallAt > tornadoAt && stressAt > waterfallAt, true);
 });
 
+test('two-party 50/50 studio preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="twoPartyStudio"/);
+  assert.match(app.markup(), /Two-party 50\/50 studio/);
+  app.click('preset', { preset: 'twoPartyStudio' });
+  assert.equal(app.saved().participants.length, 2);
+  assert.equal(app.saved().participants[0].revenueShare, 0.5);
+  assert.equal(app.saved().participants[1].revenueShare, 0.5);
+  assert.equal(app.saved().deal.feePerTransaction, 18);
+  assert.match(app.notice(), /Two-party 50\/50 studio loaded/);
+});
+
 test('visible tour and shortcut buttons reopen coach and help', async () => {
   const app = await workbench();
   app.click('dismiss-coach');

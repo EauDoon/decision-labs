@@ -373,6 +373,20 @@ test('all shipped presets are valid, viable starting configurations', () => {
   }
 });
 
+test('two-party 50/50 studio preset is a distinct even-split starting point', () => {
+  const studio = clonePreset('twoPartyStudio');
+  assert.equal(PRESETS.twoPartyStudio.name, 'Two-party 50/50 studio');
+  assert.equal(studio.participants.length, 2);
+  assert.equal(studio.participants[0].revenueShare, 0.5);
+  assert.equal(studio.participants[1].revenueShare, 0.5);
+  assert.deepEqual(studio.participants.map((item) => item.id), ['production-studio', 'distribution-studio']);
+  assert.notEqual(studio.deal.feePerTransaction, clonePreset('creatorTakeRate').deal.feePerTransaction);
+  assert.notEqual(studio.participants.length, clonePreset('threePartyJv').participants.length);
+  const result = calculatePartnership(studio);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.revenueShare === 0.5));
+});
+
 test('creator take-rate and three-party JV presets calculate interesting first breakpoints', () => {
   const creator = calculatePartnership(clonePreset('creatorTakeRate'));
   assert.equal(creator.participants.length, 2);

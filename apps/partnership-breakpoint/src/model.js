@@ -106,6 +106,14 @@ export const PRESETS = Object.freeze({
       { id: 'ip-owner', name: 'IP Owner', revenueShare: 0.2, variableCostPerTransaction: 1.5, fixedMonthlyCost: 8000, minimumAcceptableProfit: 20000, capacity: 20000, minimumCommitment: 5000, riskCost: 2000 },
     ],
   },
+  twoPartyStudio: {
+    name: 'Two-party 50/50 studio',
+    deal: { monthlyVolume: 6000, feePerTransaction: 18, addressableVolume: 9000, volumeShockPct: 0 },
+    participants: [
+      { id: 'production-studio', name: 'Production studio', revenueShare: 0.5, variableCostPerTransaction: 4.5, fixedMonthlyCost: 12000, minimumAcceptableProfit: 8000, capacity: 7500, minimumCommitment: 1500, riskCost: 2000 },
+      { id: 'distribution-studio', name: 'Distribution studio', revenueShare: 0.5, variableCostPerTransaction: 2.25, fixedMonthlyCost: 6000, minimumAcceptableProfit: 5000, capacity: 12000, minimumCommitment: 0, riskCost: 1500 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
