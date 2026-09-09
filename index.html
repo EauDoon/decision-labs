@@ -53,7 +53,8 @@
       align-items: start;
     }
     .workbench p { margin: 0; max-width: 640px; color: var(--muted); }
-    .sample { margin-top: 10px !important; font-size: 15px; }
+    .workbench p + p { margin-top: 10px; }
+    .sample { font-size: 15px; }
     .index {
       font-family: Georgia, "Times New Roman", serif;
       font-size: 28px;
@@ -101,6 +102,7 @@
     .trust ul { margin: 12px 0 0; padding-left: 1.2rem; color: var(--muted); }
     .trust li { margin: 8px 0; }
     .site-footer { padding-top: 8px; font-size: 14px; color: var(--muted); }
+    .site-footer p { margin: 0 0 8px; max-width: 46rem; }
     .skip {
       position: absolute;
       top: -100px;
@@ -238,7 +240,10 @@
       </ul>
     </section>
   </main>
-  <footer class="site-footer">Transparent assumptions. Deterministic calculations. Decisions remain with people.</footer>
+  <footer class="site-footer">
+    <p>This page is the catalog. It is not a combined product version. Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap each ship their own version and changelog.</p>
+    <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
+  </footer>
   <script>
     document.addEventListener('keydown', (event) => {
       if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;

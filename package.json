@@ -2,7 +2,7 @@
   "name": "decision-labs",
   "private": true,
   "type": "module",
-  "description": "Four independent, offline decision workbenches.",
+  "description": "A local catalog of four independent, offline decision workbenches.",
   "engines": { "node": ">=20" },
   "scripts": {
     "start": "node scripts/serve.mjs",
