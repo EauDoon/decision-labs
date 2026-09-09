@@ -432,6 +432,7 @@ function resultsPanel(result) {
     ${stressSection()}
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
     ${participantTable(result)}
+    ${waterfallSection(result)}
     ${shockSection(result)}
     ${tornadoSection(result)}
     ${sensitivitySection(result)}
@@ -553,6 +554,63 @@ function tornadoSection(result) {
   }).join('');
   const tableRows = rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('');
   return `<section class="panel"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="chart-frame">${`<svg class="chart-svg" role="img" aria-label="Tornado chart of smallest bounded adverse percentage shocks by participant. The table lists the same values." viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(height, 520)}">${bars}</svg>`}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${tableRows}</tbody></table></div></section>`;
+}
+
+function waterfallSection(result) {
+  const charts = result.participants.map((participant, index) => {
+    const minimum = state.participants[index].minimumAcceptableProfit;
+    const afterVariable = participant.revenue - participant.variableCost;
+    const afterFixed = afterVariable - participant.fixedCost;
+    const columns = [
+      { label: 'Revenue', start: 0, end: participant.revenue, fill: '#1558d6' },
+      { label: 'Variable', start: participant.revenue, end: afterVariable, fill: '#d94f3d' },
+      { label: 'Fixed', start: afterVariable, end: afterFixed, fill: '#d94f3d' },
+      { label: 'Risk', start: afterFixed, end: participant.monthlyProfit, fill: '#d94f3d' },
+      { label: 'Profit', start: 0, end: participant.monthlyProfit, fill: participant.monthlyProfit + 1e-9 >= minimum ? '#0b5c78' : '#d94f3d' },
+    ];
+    const peaks = [0, participant.revenue, afterVariable, afterFixed, participant.monthlyProfit, minimum];
+    const yMin = Math.min(...peaks);
+    const yMax = Math.max(...peaks, 1);
+    const width = 640;
+    const height = 220;
+    const margin = { top: 18, right: 12, bottom: 36, left: 8 };
+    const innerW = width - margin.left - margin.right;
+    const innerH = height - margin.top - margin.bottom;
+    const y = (value) => margin.top + innerH * (1 - (value - yMin) / (yMax - yMin || 1));
+    const gap = 10;
+    const colW = (innerW - gap * (columns.length - 1)) / columns.length;
+    const rects = columns.map((column, columnIndex) => {
+      const x = margin.left + columnIndex * (colW + gap);
+      const top = y(Math.max(column.start, column.end));
+      const bottom = y(Math.min(column.start, column.end));
+      return `<rect x="${x}" y="${top}" width="${colW}" height="${Math.max(1, bottom - top)}" fill="${column.fill}"></rect>
+        <text x="${x + colW / 2}" y="${height - 14}" text-anchor="middle" font-size="11" fill="#1f2328">${column.label}</text>`;
+    }).join('');
+    const zeroY = y(0);
+    const minY = y(minimum);
+    const connectors = columns.slice(0, 4).map((column, columnIndex) => {
+      const x1 = margin.left + columnIndex * (colW + gap) + colW;
+      const x2 = x1 + gap;
+      const y1 = y(column.end);
+      return `<line x1="${x1}" x2="${x2}" y1="${y1}" y2="${y1}" stroke="#5b6269"></line>`;
+    }).join('');
+    const svg = `<svg class="chart-svg" role="img" aria-label="Contribution waterfall for ${escapeAttribute(participant.name)} showing revenue, costs, profit, and the minimum acceptable profit. The table lists the same values." viewBox="0 0 ${width} ${height}" width="100%">
+      <line x1="${margin.left}" x2="${width - margin.right}" y1="${zeroY}" y2="${zeroY}" stroke="#1f2328"></line>
+      <line x1="${margin.left}" x2="${width - margin.right}" y1="${minY}" y2="${minY}" stroke="#8a5a05" stroke-dasharray="4 3"></line>
+      <text x="${width - margin.right}" y="${minY - 4}" text-anchor="end" font-size="10" fill="#8a5a05">Minimum ${escapeAttribute(formatMoney(minimum))}</text>
+      ${connectors}${rects}
+    </svg>`;
+    return `<section class="input-section"><h3>${escapeAttribute(participant.name)}</h3>${svg}
+      <div class="table-wrap" tabindex="0" role="region" aria-label="Waterfall values for ${escapeAttribute(participant.name)}"><table><caption>Text equivalent for ${escapeAttribute(participant.name)}</caption><thead><tr><th scope="col">Step</th><th scope="col">Amount</th></tr></thead><tbody>
+        <tr><th scope="row">Revenue</th><td>${formatMoney(participant.revenue)}</td></tr>
+        <tr><th scope="row">Variable cost</th><td>${formatMoney(participant.variableCost)}</td></tr>
+        <tr><th scope="row">Fixed cost</th><td>${formatMoney(participant.fixedCost)}</td></tr>
+        <tr><th scope="row">Risk cost</th><td>${formatMoney(participant.riskCost)}</td></tr>
+        <tr><th scope="row">Monthly profit</th><td>${formatMoney(participant.monthlyProfit)}</td></tr>
+        <tr><th scope="row">Minimum acceptable profit</th><td>${formatMoney(minimum)}</td></tr>
+      </tbody></table></div></section>`;
+  }).join('');
+  return `<section class="panel"><div class="panel-heading"><h2>Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p>${charts}</div></section>`;
 }
 
 function sensitivityGrid() {

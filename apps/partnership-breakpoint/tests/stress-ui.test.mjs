@@ -505,3 +505,11 @@ test('tornado chart includes an SVG and a text-equivalent table', async () => {
   assert.match(app.markup(), /Volume down/);
   assert.match(app.markup(), /Fee down/);
 });
+
+test('contribution waterfall includes an SVG and a text fallback for each participant', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /Contribution waterfall/);
+  assert.match(app.markup(), /aria-label="Contribution waterfall for Platform/);
+  assert.match(app.markup(), /<caption>Text equivalent for Platform<\/caption>/);
+  assert.match(app.markup(), /Minimum acceptable profit/);
+});
