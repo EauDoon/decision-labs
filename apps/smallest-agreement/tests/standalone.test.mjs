@@ -51,6 +51,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /id="coach-again"/u);
   assert.match(html, /Duplicate option/u);
+  assert.match(html, /Move up/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
@@ -442,6 +443,19 @@ test("printable worksheet lists every clause option without recording a vote", a
   assert.match(app.ballot(), /Park access hours/u);
   assert.match(app.ballot(), /Close at 20:00 every day \(original\)/u);
   assert.match(app.ballot(), /ballot-box/u);
+});
+
+test("moving a clause changes documented tie-breaker order and supports undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for clause order");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  app.clickAction("move-clause", { clauseId: "hours", direction: "down" });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses[0].id, before.clauses[1].id);
+  assert.equal(after.clauses[1].id, "hours");
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].id, "hours");
 });
 
 test("duplicate option copies an alternative's scores and cost with a new identifier", async () => {

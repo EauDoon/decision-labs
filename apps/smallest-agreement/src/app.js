@@ -389,6 +389,8 @@ function renderClauses() {
       <div class="clause-top">
         <label><span class="visually-hidden">Clause title</span><input class="clause-title-input" data-field="clause-title" data-clause-id="${escapeHtml(clause.id)}" value="${escapeHtml(clause.title)}" maxlength="120" aria-label="Clause ${clauseIndex + 1} title"></label>
         <div class="clause-tools">
+          <button class="text-button" type="button" data-action="move-clause" data-direction="up" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses[0].id === clause.id ? "disabled" : ""}>Move up</button>
+          <button class="text-button" type="button" data-action="move-clause" data-direction="down" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses.at(-1).id === clause.id ? "disabled" : ""}>Move down</button>
           <button class="text-button" type="button" data-action="duplicate-clause" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses.length >= MAX_CLAUSES ? "disabled" : ""}>Duplicate clause</button>
           <button class="text-button danger" type="button" data-action="remove-clause" data-clause-id="${escapeHtml(clause.id)}" ${state.proposal.clauses.length <= 1 ? "disabled" : ""}>Remove clause</button>
         </div>
@@ -823,6 +825,7 @@ function changeAndRender(mutator) {
     const copy = state.proposal.clauses[sourceIndex + 1];
     if (copy) selector = '[data-field="clause-title"][data-clause-id="' + copy.id + '"]';
   }
+  if (context.action === "move-clause") selector = '[data-field="clause-title"][data-clause-id="' + context.clauseId + '"]';
   if (context.action === "remove-option") selector = '[data-action="add-option"][data-clause-id="' + context.clauseId + '"]';
   if (selector) $(selector)?.focus();
 }
@@ -964,6 +967,14 @@ document.addEventListener("click", (event) => {
     ] });
   });
   if (action === "remove-clause") changeAndRender(() => { state.proposal.clauses = state.proposal.clauses.filter((clause) => clause.id !== button.dataset.clauseId); });
+  if (action === "move-clause") changeAndRender(() => {
+    const index = state.proposal.clauses.findIndex((clause) => clause.id === button.dataset.clauseId);
+    const offset = button.dataset.direction === "up" ? -1 : 1;
+    const target = index + offset;
+    if (index < 0 || target < 0 || target >= state.proposal.clauses.length) return;
+    const [row] = state.proposal.clauses.splice(index, 1);
+    state.proposal.clauses.splice(target, 0, row);
+  });
   if (action === "duplicate-clause") changeAndRender(() => {
     if (state.proposal.clauses.length >= MAX_CLAUSES) return;
     const source = clauseById(button.dataset.clauseId);
