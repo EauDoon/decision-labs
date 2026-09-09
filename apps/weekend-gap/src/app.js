@@ -44,6 +44,7 @@ import {
   reportToHTML,
   reportToMarkdown,
   dashboardToMarkdown,
+  dashboardToCSV,
   compareScenarioFiles,
   compareThreeScenarioFiles
 } from "./model.js";
@@ -1383,6 +1384,10 @@ document.querySelector("#copy-dashboard-markdown").addEventListener("click", asy
   } catch (error) {
     document.querySelector("#workspace-status").textContent = error.message;
   }
+});
+document.querySelector("#export-dashboard-csv").addEventListener("click", () => {
+  downloadText(dashboardToCSV(scenario), "weekend-gap-dashboard.csv", "text/csv;charset=utf-8");
+  setMessage("Dashboard CSV downloaded. Hours to clear and first settlement are empty when those events never occur. Cells are formula-safe and have no timestamps.");
 });
 document.querySelector("#copy-markdown-report").addEventListener("click", async () => {
   try {

@@ -856,6 +856,21 @@ export function dashboardToMarkdown(input) {
   ].join("\n");
 }
 
+/** One-row formula-safe dashboard CSV. Empty cells mean the queue never cleared or never settled. */
+export function dashboardToCSV(input) {
+  const result = runSimulation(input);
+  const summary = result.summary;
+  const hoursToClear = summary.hoursToClearQueue === null ? "" : String(summary.hoursToClearQueue);
+  const peakLabel = summary.peakQueuedAud > 0
+    ? formatTime(summary.peakQueueHour) + " (hour " + summary.peakQueueHour + ")"
+    : "";
+  const firstSettle = summary.hoursToFirstSettlement === null ? "" : String(summary.hoursToFirstSettlement);
+  return csvTable([
+    ["hours_to_clear", "peak_hour_label", "hours_to_first_settlement"],
+    [hoursToClear, peakLabel, firstSettle]
+  ]);
+}
+
 export const BOTTLENECK_LABELS = Object.freeze([
   "issuer",
   "bank",
