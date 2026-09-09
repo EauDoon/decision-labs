@@ -343,7 +343,7 @@ function inputPanel() {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-report">Export decision report</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="export-csv">Export stress CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <button type="button" data-action="reset">Reset</button>
           </div>
@@ -574,6 +574,7 @@ function attachEvents() {
     }
     if (action === 'export') exportFile();
     if (action === 'export-report') exportReport();
+    if (action === 'export-csv') exportStressCsv();
     if (action === 'apply-stress-proposal') {
       try {
         const proposal = applyStressProposal(state);
@@ -778,4 +779,26 @@ function exportReport() {
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting a report. ' + summarizeErrors(validation.errors)); return; }
   downloadText(decisionReport(state, caseName.trim() || 'Current case'), 'text/markdown;charset=utf-8', 'partnership-breakpoint-report.md');
   setNotice('Decision report exported with assumptions and reproducible case JSON.');
+}
+
+function csvCell(value) {
+  let text = String(value ?? '');
+  if (typeof value === 'string' && /^[\s\u0000-\u001f]*[=+@-]/.test(text)) text = "'" + text;
+  return '"' + text.replace(/"/g, '""') + '"';
+}
+
+function stressCsv(config) {
+  const stress = evaluateStressGrid(config);
+  const rows = [['Case', 'Volume change percent', 'Fee reduction percent', 'Variable cost increase percent', 'Effective volume', 'Fee per transaction', 'Participant ID', 'Participant', 'Revenue share', 'Revenue', 'Variable cost', 'Fixed cost', 'Risk cost', 'Monthly profit', 'Minimum profit', 'Profit gap', 'Participant holds', 'Failure reasons']];
+  for (const scenario of stress.scenarios) {
+    scenario.participants.forEach((participant, index) => rows.push([scenario.id, scenario.volumeChangePct, scenario.feeDropPct, scenario.variableCostRisePct, scenario.volume, scenario.fee, participant.id, participant.name, config.participants[index].revenueShare, participant.revenue, participant.variableCost, participant.fixedCost, participant.riskCost, participant.monthlyProfit, config.participants[index].minimumAcceptableProfit, participant.monthlyProfit - config.participants[index].minimumAcceptableProfit, participant.viable, participant.failureReasons.join('; ')]));
+  }
+  return rows.map((row) => row.map(csvCell).join(',')).join('\r\n') + '\r\n';
+}
+
+function exportStressCsv() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) { setNotice('Resolve invalid inputs before exporting CSV. ' + summarizeErrors(validation.errors)); return; }
+  downloadText(stressCsv(state), 'text/csv;charset=utf-8', 'partnership-breakpoint-stress.csv');
+  setNotice('Stress CSV exported. Each row is one participant in one selected case; case counts are not probabilities.');
 }

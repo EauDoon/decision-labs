@@ -373,3 +373,16 @@ test('decision report exports reproducible inputs, outcomes, and safe participan
   app.edit('deal.monthlyVolume', ''); app.click('export-report');
   assert.equal(app.downloads().length, 1);
 });
+
+test('stress CSV exports every participant case and neutralizes formula names', async () => {
+  const app = await workbench();
+  app.edit('participants.0.name', '=HYPERLINK("bad")', { type: 'text' });
+  app.click('export-csv');
+  const file = app.downloads()[0]; const csv = await file.blob.text();
+  assert.equal(file.filename, 'partnership-breakpoint-stress.csv');
+  assert.equal(csv.trim().split('\r\n').length, 82);
+  assert.ok(csv.includes("\"'=HYPERLINK(\"\"bad\"\")\""));
+  assert.match(csv, /Profit gap/);
+  app.edit('deal.monthlyVolume', ''); app.click('export-csv');
+  assert.equal(app.downloads().length, 1);
+});
