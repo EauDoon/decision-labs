@@ -394,6 +394,27 @@ test('edits and resets supersede a pending import', async () => {
   }
 });
 
+test('duplicate current case saves an independent snapshot with a unique title suffix', async () => {
+  const app = await workbench();
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.edit('deal.monthlyVolume', '88000');
+  app.click('duplicate-case');
+  assert.equal(app.library().length, 1);
+  assert.equal(app.library()[0].name, 'Harbor JV copy');
+  assert.equal(app.library()[0].config.deal.title, 'Harbor JV copy');
+  assert.equal(app.library()[0].config.deal.monthlyVolume, 88000);
+  assert.equal(app.saved().deal.monthlyVolume, 88000);
+  assert.equal(app.saved().deal.title, 'Harbor JV');
+  app.edit('deal.monthlyVolume', '50000');
+  assert.equal(app.library()[0].config.deal.monthlyVolume, 88000);
+  app.click('duplicate-case');
+  assert.equal(app.library()[1].name, 'Harbor JV copy 2');
+  app.edit('deal.monthlyVolume', '');
+  app.click('duplicate-case');
+  assert.equal(app.library().length, 2);
+  assert.match(app.notice(), /Resolve invalid inputs before duplicating/);
+});
+
 test('named snapshots are separate, escaped, reloadable and removable with recovery', async () => {
   const app = await workbench();
   app.nameCase('<b>Baseline</b>'); app.click('save-case');

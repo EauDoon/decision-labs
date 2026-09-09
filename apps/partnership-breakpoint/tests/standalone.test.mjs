@@ -25,6 +25,7 @@ const appImport = `import {
   solveFeeForAllHold,
   solveMinimumShareToHold,
   solveMinimumVolumeToHold,
+  uniqueCopyName,
   validateConfiguration,
 } from './model.js';
 

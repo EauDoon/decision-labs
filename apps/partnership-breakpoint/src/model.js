@@ -1375,3 +1375,31 @@ export function solveMinimumVolumeToHold(config, participantId) {
     reason: 'Minimum monthly volume at which this participant holds, with fee and shares held fixed. Addressable demand and volume shock stay unchanged.',
   };
 }
+
+/**
+ * Builds a unique display name by appending ` copy`, then ` copy 2`, and so on.
+ * Names stay within `maxLength`. This is a label helper, not a timestamp.
+ * @param {unknown} base
+ * @param {Iterable<string>} used
+ * @param {number} [maxLength]
+ */
+export function uniqueCopyName(base, used, maxLength = 80) {
+  const source = typeof base === 'string' && base.trim() !== '' ? base.trim() : 'Current case';
+  const usedSet = new Set(used);
+  const suffix = ' copy';
+  const fit = (stem, extra) => {
+    const room = maxLength - extra.length;
+    const clipped = room < 1 ? extra.trim().slice(0, maxLength) : `${stem.slice(0, room)}${extra}`;
+    const trimmed = clipped.trim();
+    return trimmed === '' ? extra.trim().slice(0, maxLength) : trimmed;
+  };
+  let name = fit(source, suffix);
+  if (!usedSet.has(name)) return name;
+  let sequence = 2;
+  while (sequence < 10000) {
+    name = fit(source, `${suffix} ${sequence}`);
+    if (!usedSet.has(name)) return name;
+    sequence += 1;
+  }
+  throw new ValidationError(['Could not assign a unique copy name.']);
+}

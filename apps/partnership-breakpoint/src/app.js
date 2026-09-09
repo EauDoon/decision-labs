@@ -20,6 +20,7 @@ import {
   solveFeeForAllHold,
   solveMinimumShareToHold,
   solveMinimumVolumeToHold,
+  uniqueCopyName,
   validateConfiguration,
 } from './model.js';
 
@@ -104,7 +105,7 @@ function persistLibrary(candidate) {
 }
 
 function libraryPanel() {
-  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup. Pin first and Pin second, then compare those two snapshots with the current draft.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="compare-case" data-case-id="${item.id}" aria-pressed="${comparisonId === item.id}">Compare</button><button type="button" data-action="pin-first" data-case-id="${item.id}" aria-pressed="${pinFirstId === item.id}">Pin first</button><button type="button" data-action="pin-second" data-case-id="${item.id}" aria-pressed="${pinSecondId === item.id}">Pin second</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
+  return `<section class="input-section" aria-labelledby="library-title"><h2 id="library-title">Saved cases</h2><p class="notice">Up to 12 named snapshots in this browser. Saving creates a separate case; export JSON for a portable backup. Pin first and Pin second, then compare those two snapshots with the current draft.</p><label>Snapshot name<input type="text" data-action="case-name" maxlength="80" value="${escapeAttribute(caseName)}" /></label><div class="button-row"><button type="button" data-action="save-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Save new snapshot</button><button type="button" data-action="duplicate-case" ${caseLibrary.length >= 12 ? 'disabled' : ''}>Duplicate current case as snapshot</button><button type="button" data-action="restore-case" ${removedCase && caseLibrary.length < 12 ? '' : 'disabled'}>Restore last removed snapshot</button></div><ul class="saved-cases">${caseLibrary.map((item) => `<li><strong>${escapeAttribute(item.name)}</strong><div class="button-row"><button type="button" data-action="load-case" data-case-id="${item.id}">Load</button><button type="button" data-action="compare-case" data-case-id="${item.id}" aria-pressed="${comparisonId === item.id}">Compare</button><button type="button" data-action="pin-first" data-case-id="${item.id}" aria-pressed="${pinFirstId === item.id}">Pin first</button><button type="button" data-action="pin-second" data-case-id="${item.id}" aria-pressed="${pinSecondId === item.id}">Pin second</button><button type="button" data-action="remove-case" data-case-id="${item.id}">Remove snapshot</button></div></li>`).join('') || '<li>No named snapshots yet.</li>'}</ul></section>`;
 }
 
 function handleLibraryAction(action, id) {
@@ -115,6 +116,27 @@ function handleLibraryAction(action, id) {
     let sequence = 1;
     while (caseLibrary.some((item) => item.id === `case-${sequence}`) || removedCase?.id === `case-${sequence}`) sequence += 1;
     if (persistLibrary([...caseLibrary, { id: `case-${sequence}`, name: caseName.trim(), config: clone(state) }])) { render(); setNotice('Named snapshot saved locally.'); }
+  }
+  if (action === 'duplicate-case') {
+    if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before duplicating the case.'); return; }
+    if (caseLibrary.length >= 12) { setNotice('The library holds 12 snapshots. Remove one before duplicating.'); return; }
+    const base = (typeof state.deal.title === 'string' && state.deal.title.trim()) || caseName.trim() || 'Current case';
+    let name;
+    try {
+      name = uniqueCopyName(base, caseLibrary.map((item) => item.name));
+    } catch (error) {
+      if (!(error instanceof ValidationError)) throw error;
+      setNotice(`Duplicate rejected: ${summarizeErrors(error.errors)}`);
+      return;
+    }
+    let sequence = 1;
+    while (caseLibrary.some((item) => item.id === `case-${sequence}`) || removedCase?.id === `case-${sequence}`) sequence += 1;
+    const config = clone(state);
+    config.deal.title = name;
+    if (persistLibrary([...caseLibrary, { id: `case-${sequence}`, name, config }])) {
+      render();
+      setNotice(`Independent snapshot saved as ${name}. Later edits to the current draft do not change it.`);
+    }
   }
   if (action === 'load-case') {
     const item = caseLibrary.find((entry) => entry.id === id);
@@ -874,7 +896,7 @@ function attachEvents() {
     }
     if (action === 'clear-three-compare') { pinFirstId = ''; pinSecondId = ''; render(); return; }
     if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
-    if (['save-case', 'load-case', 'remove-case', 'restore-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
+    if (['save-case', 'load-case', 'remove-case', 'restore-case', 'duplicate-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
     if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
     if (action === 'edit-stress-settings') {
       app.querySelector('input[data-path="stress.volumeDropPct"]')?.focus();

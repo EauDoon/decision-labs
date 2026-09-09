@@ -146,6 +146,8 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 `duplicateParticipant` copies costs and constraints, assigns `nextUnusedParticipantId`, appends ` copy` to the name (trimmed to 80 characters), and sets `revenueShare` to 0 so the original allocation still sums to the same total. `moveParticipant` swaps two adjacent rows without changing shares. `dropAndReallocate` removes one participant when more than two remain and spreads that share across whoever remains in proportion to their current weights. If remaining weights are all zero, the dropped share is split equally. The last remaining participant absorbs floating-point remainder so a previously valid split still sums to 1.
 
+`uniqueCopyName` appends ` copy`, then ` copy 2`, and so on, staying within 80 characters. The GUI uses it when duplicating the current case as an independent snapshot. The copy receives its own title and library entry. Later draft edits do not change the snapshot.
+
 ## Share-to-hold solver
 
 `solveMinimumShareToHold(config, participantId)` binary-searches the minimum revenue share in `[0, 1]` at which that participant holds. Remaining participants keep their relative shares of `1 - targetShare`. If remaining current shares sum to 0, leftover is split equally among them. The search is deterministic and does not assign probability. If the participant holds at share 0, the result is 0. If the participant still fails at share 1, the result is `impossible` with a reason. Capacity and commitment tests do not depend on share, so those failures remain impossible to repair this way. Applying a proposal is an explicit GUI action and changes only revenue shares.
