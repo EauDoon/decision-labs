@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -148,6 +148,8 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(notFoundPage(), /The Smallest Agreement/);
   assert.match(notFoundPage(), /Weekend Gap/);
   assert.match(notFoundPage(), /href="\/"/);
+  assert.match(notFoundPage(), /Current catalog:/);
+  assert.equal(notFoundPage().includes(catalogVersionLine()), true);
   assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
 
   const missing = await get('/README.md');
@@ -157,6 +159,8 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /<!doctype html>/i);
   assert.match(missing.body, /Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap/);
   assert.match(missing.body, /href="\/"/);
+  assert.match(missing.body, /Current catalog:/);
+  assert.equal(missing.body.includes(catalogVersionLine()), true);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
   assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
 
@@ -182,4 +186,23 @@ test('launcher port rejects ambiguous, empty and out-of-range values', () => {
   for (const raw of ['', '0', '65536', '-1', '1.5', '0x1000', ' 4170', 'NaN']) {
     assert.throws(() => parsePort(raw), /PORT/);
   }
+});
+
+test('404 version listing does not expand PUBLIC_PATHS or change CSP', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(
+    CONTENT_SECURITY_POLICY,
+    "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+  );
+  assert.equal(publicFile('/package.json'), null);
+  assert.equal(publicFile('/apps/weekend-gap/MODEL.md'), null);
+  assert.equal(notFoundPage().includes(catalogVersionLine()), true);
 });

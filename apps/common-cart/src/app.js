@@ -5,8 +5,14 @@ import {
   variantOverlapMatrix,
   applyBuyerSort,
   previewBuyerSort,
+  previewOfferSort,
+  applyOfferSort,
   filterOfferIdsByFulfillment,
+  acceptedVariantFilterOptions,
+  filterBuyerIdsByAcceptedVariant,
+  organizerBuyerVariantCounts,
   restoreRemovedBuyer,
+  restoreExampleOffers,
   duplicateRoom,
   winnerBudgetLeftover,
   clonePreset,
@@ -23,8 +29,10 @@ import {
   importOffersFromCsv,
   buyerCsvTemplate,
   offerCsvTemplate,
+  createOfferCsv,
   redactBuyerLabels,
   createOrganizerBriefing,
+  createWinnerAggregatesMarkdown,
   decodeScenario,
   duplicateEntry,
   copyOfferAsNewTierSet,
@@ -74,13 +82,15 @@ let scenario = loadInitialScenario();
 const history = createScenarioHistory(scenario);
 let invalidDraft = false;
 let workspaceReadFailed = false;
+let offerFulfillmentFilter = "all";
 let savedRooms = loadWorkspace();
 let baseline = null;
 let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
 let buyerSortPreviewIds = null;
-let offerFulfillmentFilter = "all";
+let offerSortPreviewIds = null;
+let buyerVariantFilter = "all";
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -93,7 +103,9 @@ function loadWorkspace() {
   try {
     const raw = localStorage.getItem(WORKSPACE_KEY);
     if (!raw) return [];
-    return validateWorkspace(JSON.parse(raw)).rooms;
+    const workspace = validateWorkspace(JSON.parse(raw));
+    offerFulfillmentFilter = workspace.fulfillmentFilter;
+    return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
     queueMicrotask(() => setStatus(`Saved rooms could not be opened: ${messageOf(error)} Export your current room before closing.`));
@@ -135,10 +147,19 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
+}
+
+function persistFulfillmentFilter() {
+  if (workspaceReadFailed) return;
+  try {
+    storeWorkspace(savedRooms);
+  } catch (error) {
+    setStatus(`Could not save fulfillment filter: ${messageOf(error)}`);
+  }
 }
 
 function loadInitialScenario() {
@@ -218,6 +239,23 @@ function bindStaticEvents() {
       downloadFile(csv, "common-cart-variant-overlap.csv", "text/csv;charset=utf-8");
       setStatus("Overlap CSV downloaded. It contains buyer counts only.", true);
     } catch (error) { setStatus(`Overlap copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#copy-winner-aggregates").addEventListener("click", () => {
+    try {
+      const markdown = createWinnerAggregatesMarkdown(scenario);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(markdown).then(
+          () => setStatus("Winner aggregates copied as Markdown. Counts and totals only. Buyer labels, IDs, budgets, and allocations are omitted.", true),
+          () => {
+            downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
+            setStatus("Clipboard was blocked, so winner aggregates were downloaded instead. Aggregates only.", true);
+          }
+        );
+        return;
+      }
+      downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
+      setStatus("Winner aggregates downloaded as Markdown. Counts and totals only.", true);
+    } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }
@@ -310,7 +348,7 @@ function bindStaticEvents() {
   });
 
   document.querySelector("#add-buyer").addEventListener("click", () => {
-    if (scenario.buyers.length >= 40) return setStatus("A room can have at most 40 buyers.");
+    if (scenario.buyers.length >= 40) return setStatus("Local matching cap: a room can have at most 40 buyers. That is not a server quota.");
     const next = nextId(scenario.buyers, "B");
     scenario.buyers.push({
       id: next,
@@ -339,8 +377,23 @@ function bindStaticEvents() {
     elements.buyerRows.querySelector("input")?.focus();
   });
 
+  document.querySelector("#restore-example-offers").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    try {
+      scenario = restoreExampleOffers(scenario, "neighbourhood");
+      inspectedOfferId = scenario.offers[0]?.id ?? "";
+      offerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Example offers restored. Buyers were left unchanged. Undo returns to the empty offer list.", true);
+      elements.offerRows.querySelector("input")?.focus();
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+
   document.querySelector("#add-offer").addEventListener("click", () => {
-    if (scenario.offers.length >= 40) return setStatus("A room can have at most 40 offers.");
+    if (scenario.offers.length >= 40) return setStatus("Local matching cap: a room can have at most 40 offers. That is not a server quota.");
     const next = nextId(scenario.offers, "O");
     scenario.offers.push({
       id: next,
@@ -355,6 +408,7 @@ function bindStaticEvents() {
       fulfillment: "shipping"
     });
     inspectedOfferId = next;
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     elements.offerRows.lastElementChild?.querySelector("input")?.focus();
@@ -393,20 +447,66 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#preview-offer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#offer-sort-mode").value;
+      const preview = previewOfferSort(scenario, mode);
+      offerSortPreviewIds = preview.map((offer) => offer.id);
+      renderEditor();
+      setStatus(mode === "capacity"
+        ? "Previewing capacity high to low. Saved order is unchanged until you apply the sort."
+        : "Previewing unit price low to high. Saved order is unchanged until you apply the sort.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#apply-offer-sort").addEventListener("click", () => {
+    try {
+      const mode = document.querySelector("#offer-sort-mode").value;
+      scenario = applyOfferSort(scenario, mode);
+      offerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Offer list order applied. Undo restores the previous saved order. IDs are unchanged.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#import-offers").addEventListener("click", () => document.querySelector("#import-offers-file").click());
   document.querySelector("#offer-csv-template").addEventListener("click", () => {
     downloadFile(offerCsvTemplate(), "common-cart-offers-template.csv", "text/csv;charset=utf-8");
     setStatus("Offer CSV template downloaded. Fill name, capacity, unit price, shipping, fulfillment, and variants, then import.", true);
   });
+  document.querySelector("#export-offers-csv").addEventListener("click", () => {
+    try {
+      downloadFile(createOfferCsv(scenario), "common-cart-offers.csv", "text/csv;charset=utf-8");
+      setStatus("Offer CSV exported. Formula-like text is escaped. Buyer labels, IDs, budgets, and allocations are omitted. Quantity tiers stay in JSON export.", true);
+    } catch (error) {
+      setStatus(`Offer CSV export failed: ${messageOf(error)}`);
+    }
+  });
   document.querySelector("#import-offers-file").addEventListener("change", importOffersCsv);
   document.querySelector("#offer-fulfillment-filter").addEventListener("change", (event) => {
     offerFulfillmentFilter = event.target.value;
+    persistFulfillmentFilter();
     try {
       applyOfferFulfillmentFilter();
       const shown = filterOfferIdsByFulfillment(scenario, offerFulfillmentFilter).length;
       setStatus(offerFulfillmentFilter === "all"
-        ? "Showing every offer. Saved order is unchanged."
-        : `Showing ${shown} ${offerFulfillmentFilter} offer${shown === 1 ? "" : "s"}. Saved offers are unchanged.`, true);
+        ? "Showing every offer. Saved order is unchanged. The last fulfillment filter is kept in this browser."
+        : `Showing ${shown} ${offerFulfillmentFilter} offer${shown === 1 ? "" : "s"}. Saved offers are unchanged. The last fulfillment filter is kept in this browser.`, true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#buyer-variant-filter").addEventListener("change", (event) => {
+    buyerVariantFilter = event.target.value;
+    try {
+      applyBuyerVariantFilter();
+      const shown = filterBuyerIdsByAcceptedVariant(scenario, buyerVariantFilter).length;
+      setStatus(buyerVariantFilter === "all"
+        ? "Showing every buyer. Saved buyers and matching are unchanged."
+        : `Showing ${shown} buyer${shown === 1 ? "" : "s"} who accept ${buyerVariantFilter}. Saved buyers are unchanged.`, true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -544,7 +644,34 @@ function handleShortcut(event) {
   if (key === "o") {
     event.preventDefault();
     focusOffersList();
+    return;
   }
+  if (key === "b") {
+    event.preventDefault();
+    focusBuyersList();
+    return;
+  }
+  if (key === "w") {
+    event.preventDefault();
+    focusWinnerSummary();
+  }
+}
+
+function focusBuyersList() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#buyers-list")?.focus();
+}
+
+function focusWinnerSummary() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const summary = document.querySelector("#winner-summary");
+  if (summary) {
+    summary.focus();
+    return;
+  }
+  document.querySelector("#inspector-summary")?.focus();
 }
 
 function focusOffersList() {
@@ -613,19 +740,36 @@ function renderEditor() {
   if (scenario.buyers.length === 0) {
     setEmptyState(elements.buyerRows, 8, "No buyers are in this room.");
   }
-  elements.offerRows.replaceChildren(...scenario.offers.map(renderOfferRow));
+  if (offerSortPreviewIds) {
+    const current = new Set(scenario.offers.map((offer) => offer.id));
+    if (offerSortPreviewIds.length !== scenario.offers.length || offerSortPreviewIds.some((id) => !current.has(id))) {
+      offerSortPreviewIds = null;
+    }
+  }
+  const offersForDisplay = offerSortPreviewIds
+    ? offerSortPreviewIds.map((id) => scenario.offers.find((offer) => offer.id === id)).filter(Boolean)
+    : scenario.offers;
+  elements.offerRows.replaceChildren(...offersForDisplay.map(renderOfferRow));
+  if (scenario.offers.length === 0) {
+    setEmptyState(elements.offerRows, 10, "No offers are in this room.");
+  }
   const recovery = document.querySelector("#empty-buyer-recovery");
   if (recovery) recovery.hidden = scenario.buyers.length > 0;
+  const offerRecovery = document.querySelector("#empty-offer-recovery");
+  if (offerRecovery) offerRecovery.hidden = scenario.offers.length > 0;
   const addBuyer = document.querySelector("#add-buyer");
   const addOffer = document.querySelector("#add-offer");
   addBuyer.disabled = scenario.buyers.length >= 40;
   addOffer.disabled = scenario.offers.length >= 40;
-  addBuyer.title = addBuyer.disabled ? "A room can have at most 40 buyers." : "";
-  addOffer.title = addOffer.disabled ? "A room can have at most 40 offers." : "";
+  addBuyer.title = addBuyer.disabled ? "Local matching cap: at most 40 buyers. Not a server quota." : "";
+  addOffer.title = addOffer.disabled ? "Local matching cap: at most 40 offers. Not a server quota." : "";
+  renderEntryCapWarning();
   const filterSelect = document.querySelector("#offer-fulfillment-filter");
   if (filterSelect) filterSelect.value = offerFulfillmentFilter;
   renderTierEditors();
   applyOfferFulfillmentFilter();
+  populateBuyerVariantFilter();
+  applyBuyerVariantFilter();
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -635,6 +779,26 @@ function renderEditor() {
         : "Remove a buyer this session to restore it here."
       : "Restore the buyer removed most recently in this session.";
   }
+}
+
+function renderEntryCapWarning() {
+  const note = document.querySelector("#entry-cap-warning");
+  if (!note) return;
+  const buyersFull = scenario.buyers.length >= 40;
+  const offersFull = scenario.offers.length >= 40;
+  if (!buyersFull && !offersFull) {
+    note.hidden = true;
+    note.textContent = "";
+    return;
+  }
+  note.hidden = false;
+  if (buyersFull && offersFull) {
+    note.textContent = "This room is at the local matching cap of 40 buyers and 40 offers. That bound keeps the exact allocator responsive. It is not a server quota.";
+    return;
+  }
+  note.textContent = buyersFull
+    ? "This room is at the local matching cap of 40 buyers. That bound keeps the exact allocator responsive. It is not a server quota."
+    : "This room is at the local matching cap of 40 offers. That bound keeps the exact allocator responsive. It is not a server quota.";
 }
 
 function applyOfferFulfillmentFilter() {
@@ -657,6 +821,50 @@ function applyOfferFulfillmentFilter() {
   note.textContent = hiddenCount === 0
     ? "The filter hides rows on screen. Saved offers and matching stay unchanged."
     : `Showing ${visibleIds.size} of ${scenario.offers.length} offers. Hidden rows stay in the room and still match.`;
+}
+
+function populateBuyerVariantFilter() {
+  const select = document.querySelector("#buyer-variant-filter");
+  if (!select) return;
+  let variants = [];
+  try {
+    variants = acceptedVariantFilterOptions(scenario);
+  } catch {
+    variants = [];
+  }
+  if (buyerVariantFilter !== "all" && !variants.some((variant) => variant === buyerVariantFilter)) {
+    buyerVariantFilter = "all";
+  }
+  select.replaceChildren();
+  const all = document.createElement("option");
+  all.value = "all";
+  all.textContent = "All";
+  select.append(all);
+  for (const variant of variants) {
+    const option = document.createElement("option");
+    option.value = variant;
+    option.textContent = variant;
+    select.append(option);
+  }
+  select.value = buyerVariantFilter;
+}
+
+function applyBuyerVariantFilter() {
+  let visibleIds;
+  try {
+    visibleIds = new Set(filterBuyerIdsByAcceptedVariant(scenario, buyerVariantFilter));
+  } catch {
+    visibleIds = new Set(scenario.buyers.map((buyer) => buyer.id));
+  }
+  elements.buyerRows.querySelectorAll("tr[data-id]").forEach((row) => {
+    row.hidden = !visibleIds.has(row.dataset.id);
+  });
+  const note = document.querySelector("#buyer-variant-filter-note");
+  if (!note) return;
+  const hiddenCount = scenario.buyers.length - visibleIds.size;
+  note.textContent = hiddenCount === 0
+    ? "The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only."
+    : `Showing ${visibleIds.size} of ${scenario.buyers.length} buyers. Hidden rows stay in the room and still match. Merchant views still show counts only.`;
 }
 
 function buyerDisplayLabel(buyer) {
@@ -728,11 +936,15 @@ function renderOfferRow(entry) {
     });
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
-    if (scenario.offers.length === 1) return setStatus("A room needs at least one offer.");
     const index = scenario.offers.findIndex(({ id }) => id === row.dataset.id);
     scenario.offers = scenario.offers.filter(({ id }) => id !== row.dataset.id);
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
+    if (scenario.offers.length === 0) {
+      document.querySelector("#restore-example-offers")?.focus();
+      return;
+    }
     elements.offerRows.children[Math.min(index, scenario.offers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
@@ -818,6 +1030,7 @@ function refresh() {
     renderInspector(market);
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
+    renderOrganizerBuyerVariantCounts(market.scenario);
     renderDeliveryHeatmap(market.scenario);
     renderVariantOverlap(market.scenario);
     drawChart(market);
@@ -860,6 +1073,8 @@ function refresh() {
     document.querySelector("#variant-overlap-head")?.replaceChildren();
     const overlapRows = document.querySelector("#variant-overlap-rows");
     if (overlapRows) setEmptyState(overlapRows, 2, "Variant overlap will appear once every field is valid.");
+    const variantCounts = document.querySelector("#buyer-variant-counts");
+    if (variantCounts) setEmptyState(variantCounts, 3, "Buyer variant counts will appear once every field is valid.");
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -942,7 +1157,6 @@ function renderThreeRoomComparison(comparison) {
 
 function addDuplicateAction(row, kind, entry) {
   row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? buyerDisplayLabel(entry) : entry.merchant} (${entry.id})`);
-  row.querySelector(".remove-row").disabled = kind === "offers" && scenario.offers.length === 1;
   row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
   const button = document.createElement("button");
   button.type = "button";
@@ -1001,6 +1215,7 @@ function updateHistoryButtons() {
 
 function restoreHistory(forward) {
   buyerSortPreviewIds = null;
+  offerSortPreviewIds = null;
   scenario = invalidDraft ? history.current() : forward ? history.redo() : history.undo();
   renderEditor();
   refresh();
@@ -1306,6 +1521,23 @@ function renderDemand(rawScenario) {
   elements.demandGroups.replaceChildren(...cards);
 }
 
+function renderOrganizerBuyerVariantCounts(rawScenario) {
+  const body = document.querySelector("#buyer-variant-counts");
+  if (!body) return;
+  const groups = organizerBuyerVariantCounts(rawScenario);
+  if (groups.length === 0) {
+    setEmptyState(body, 3, "No buyers are in this room, so there are no accepted-variant counts.");
+    return;
+  }
+  body.replaceChildren(...groups.map((group) => {
+    const row = document.createElement("tr");
+    addCell(row, group.variant);
+    addCell(row, String(group.buyerCount));
+    addCell(row, String(group.units));
+    return row;
+  }));
+}
+
 function renderDeliveryHeatmap(rawScenario) {
   const text = document.querySelector("#delivery-heatmap-text");
   const svg = document.querySelector("#delivery-heatmap");
@@ -1477,6 +1709,8 @@ async function importScenario(event) {
     if (!allowReplaceDraft()) return;
     scenario = imported;
     inspectedOfferId = scenario.offers[0]?.id ?? "";
+    buyerSortPreviewIds = null;
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     setStatus("Scenario imported.", true);
@@ -1498,6 +1732,7 @@ async function importOffersCsv(event) {
     if (!allowReplaceDraft()) return;
     scenario = imported;
     inspectedOfferId = scenario.offers[0]?.id ?? "";
+    offerSortPreviewIds = null;
     renderEditor();
     refresh();
     setStatus(`Imported ${imported.offers.length} offers from CSV. Buyers were left unchanged.`, true);

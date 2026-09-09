@@ -56,10 +56,10 @@ npm run check
 
 - A deterministic 72-hour Friday-to-Monday simulation.
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
-- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), and Long-weekend Friday start (synthetic) presets.
+- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), and Compressed Friday close (synthetic) presets.
 - Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, hours to first settlement, and hours to clear the queue.
-- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains).
-- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, Gantt, peak queue, first settlement, undo, redo and export.
+- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains). Copy dashboard numbers as Markdown.
+- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, peak queue, first settlement, undo, redo and export.
 - Canvas chart with a printable SVG queue path that can be downloaded as a file, a formula-safe hourly queue CSV, and a text-equivalent data table.
 - A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
@@ -124,6 +124,21 @@ scripts/dev-server.mjs Dependency-free local development server
 
 MIT. See [LICENSE](LICENSE).
 
+## New in v1.4.3: dashboard copy, file compare and a compressed Friday close
+
+1. Copy dashboard numbers as Markdown: hours to clear the queue, peak queue hour, and hours to first settlement.
+2. Press `D` to jump to the dashboard outcome summary when not typing in an input, textarea or select.
+3. Compare two scenario JSON files. Queue and settlement diffs use honest nulls when only one run settles or clears.
+4. When Monday holiday and Saturday holiday are both on, a notice says Saturday, Sunday and Monday stay closed under Sunday-style rules.
+5. Preview an earlier or later demand-timing step, then apply it. Friday burst is earlier, Monday rush is later, and there is no randomness.
+6. Workspace JSON stores the last queue or Gantt chart view. Older files that omit the field restore the queue chart.
+7. The hourly table highlights the peak queue row and labels it in text.
+8. Analysis JSON still has no timestamps. Tests reject created or exported clocks.
+9. Press `Q` to jump to the queue chart. The key is ignored while typing in an input, textarea or select.
+10. Use the Compressed Friday close (synthetic) preset. It is distinct from Normal Friday, Thin FX, Tight Windows, and Long-weekend Friday start.
+
+v1.4.2 queue CSV, Gantt tools and the long-weekend preset remain below.
+
 ## New in v1.4.2: queue CSV, Gantt tools and a long-weekend preset
 
 1. Export a formula-safe hourly queue CSV with the hour label and queue size at every checkpoint.
@@ -161,7 +176,7 @@ v1.4.0 operating-calendar tools remain below.
 5. Optionally treat Monday as a public holiday. Older scenario files omit the field and keep a weekday Monday. Settlement cannot occur on a holiday Monday.
 6. Run the five sensitivity cases as SVG bars for settled total or peak queue. The numeric table remains the text equivalent.
 7. A first-run coach explains synthetic assumptions, gates and the Friday-Monday frame. It is skipped on share links and closes with Escape.
-8. Keyboard shortcuts: `?` help, Space play/pause, `G` Gantt, `P` peak queue, `J` first settlement, `U` undo, `R` redo, `E` export. Keys are ignored while typing in an input, textarea or select.
+8. Keyboard shortcuts: `?` help, Space play/pause, `D` dashboard, `Q` queue chart, `G` Gantt, `P` peak queue, `J` first settlement, `U` undo, `R` redo, `E` export. Keys are ignored while typing in an input, textarea or select.
 9. Print a light SVG of queue versus hour. The canvas playhead stays available on screen.
 10. Use the Thin FX, Tight Windows (synthetic) preset for thin depth, compressed hours and a holiday Monday.
 11. Hours to first settlement appear on the dashboard, or "No settlement in 72h" when the chain never pays.
@@ -182,7 +197,7 @@ v1.3.0 repeatable-experiment workflows remain: demand timing, pinned baselines, 
 | Export | Contents | Importable here |
 | --- | --- | --- |
 | Scenario JSON / share link | Current editable scenario | Scenario import / URL hash |
-| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour, Gantt density | Workspace import |
+| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour, Gantt density, selected chart | Workspace import |
 | Analysis JSON | Both scenarios, results, reserve plan and hourly comparison | No, report only |
 | Hourly CSV | All 73 checkpoints, prior-interval flows and next-hour capacity | No, spreadsheet data |
 | Queue CSV | Hour label and queue size at every checkpoint, formula-safe cells | No, spreadsheet data |

@@ -28,10 +28,11 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     node.type = match[0].match(/\btype="([^"]*)"/)?.[1] || "";
     node.checked = /\bchecked\b/.test(match[0]);
     node.hidden = /\shidden(?:\s|>)/.test(match[0]);
+    node.disabled = /\sdisabled(?:\s|>)/.test(match[0]);
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -87,18 +88,24 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   await ui.edit("table-density", "all", "change");
   assert.equal(ui.nodes.get("timeline-table").children.length, 73);
   assert.equal(ui.nodes.get("timeline-table").children[0].children.length, 9);
+  const peakRow = ui.nodes.get("timeline-table").children.find((row) => /is-peak-queue/.test(row.className));
+  assert.ok(peakRow);
+  assert.match(peakRow.children[0].textContent, /Peak queue/);
+  assert.match(ui.nodes.get("peak-queue-row-note").textContent, /peak queue checkpoint/);
   await ui.edit("gantt-density", "all", "change");
   assert.equal(ui.nodes.get("gantt-table").children.length, 73);
   await ui.edit("timeline-range", 65);
   const persisted = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
   assert.equal(persisted.current.name, "Market Stress"); assert.equal(persisted.selectedHour, 65);
   assert.equal(persisted.ganttDensity, "all");
+  assert.equal(persisted.selectedChart, "queue");
   const reloaded = await boot(ui.storage);
   assert.equal(reloaded.nodes.get("scenario-title").textContent, "Market Stress");
   assert.equal(reloaded.nodes.get("baseline-name").textContent, "Normal Friday");
   assert.equal(reloaded.nodes.get("workspace-notes").value, "Keep this baseline");
   assert.equal(reloaded.nodes.get("timeline-range").value, "65");
   assert.equal(reloaded.nodes.get("gantt-density").value, "all");
+  assert.equal(reloaded.nodes.get("selected-chart").value, "queue");
   assert.equal(reloaded.nodes.get("scenario-library").children.length, 1);
 });
 
@@ -175,6 +182,11 @@ test("holiday Saturday checkbox labels Saturday like Sunday and restores from wo
   assert.match(reloaded.nodes.get("fx-gate").textContent, /Holiday Saturday/);
   assert.equal(reloaded.nodes.get("weekend-overlap-notice").hidden, false);
   assert.match(reloaded.nodes.get("weekend-overlap-notice").textContent, /Both weekend days are treated as closed/);
+  assert.equal(reloaded.nodes.get("monday-saturday-holiday-notice").hidden, true);
+  reloaded.nodes.get("mondayHoliday").checked = true;
+  await reloaded.nodes.get("scenario-form").emit("change");
+  assert.equal(reloaded.nodes.get("monday-saturday-holiday-notice").hidden, false);
+  assert.match(reloaded.nodes.get("monday-saturday-holiday-notice").textContent, /Monday holiday and Saturday holiday are both on/);
 });
 test("applying a window shift notices that undo reverts it", async () => {
   const ui = await boot();
@@ -225,6 +237,38 @@ test("keyboard p jumps to peak queue and is a no-op when demand never queues", a
   assert.equal(ui.nodes.get("jump-peak").disabled, true);
 });
 
+test("keyboard d jumps to the outcome summary and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("coach-overlay").hidden, true);
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  await ui.keydown("d");
+  assert.equal(ui.nodes.get("outcome-title").focused, true);
+  assert.equal(ui.nodes.get("outcome-title").attributes.tabindex, "-1");
+  ui.nodes.get("outcome-title").focused = false;
+  await ui.keydown("D", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("outcome-title").focused, false);
+  await ui.keydown("d", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("outcome-title").focused, false);
+  await ui.keydown("d", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("outcome-title").focused, false);
+});
+
+test("keyboard q jumps to the queue chart and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.edit("selected-chart", "gantt", "change");
+  await ui.keydown("q");
+  assert.equal(ui.nodes.get("chart-title").focused, true);
+  assert.equal(ui.nodes.get("chart-title").attributes.tabindex, "-1");
+  assert.equal(ui.nodes.get("selected-chart").value, "queue");
+  ui.nodes.get("chart-title").focused = false;
+  await ui.keydown("Q", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("chart-title").focused, false);
+  await ui.keydown("q", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("chart-title").focused, false);
+  await ui.keydown("q", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("chart-title").focused, false);
+});
+
 test("keyboard g jumps to the Gantt heading and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);
@@ -239,6 +283,16 @@ test("keyboard g jumps to the Gantt heading and ignores the key while typing", a
   assert.equal(ui.nodes.get("gantt-title").focused, false);
   await ui.keydown("g", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("gantt-title").focused, false);
+});
+
+test("selected chart persists in workspace JSON and restores", async () => {
+  const ui = await boot();
+  await ui.edit("selected-chart", "gantt", "change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).selectedChart, "gantt");
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.selectedChart;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("selected-chart").value, "queue");
 });
 
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
@@ -260,4 +314,40 @@ test("keyboard j jumps to first settlement and ignores the key while typing", as
   await ui.edit("timeline-range", 12);
   await ui.keydown("j");
   assert.equal(ui.nodes.get("timeline-range").value, "12");
+});
+
+test("comparing two scenario JSON files shows queue diffs and honest null settlement hours", async () => {
+  const { scenarioToJSON, DEFAULT_SCENARIO, PRESETS } = await import(new URL("../src/model.js", import.meta.url));
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.nodes.get("compare-scenario-files").click();
+  assert.match(ui.nodes.get("file-compare-status").textContent, /Choose two scenario JSON files/);
+  const open = scenarioToJSON(DEFAULT_SCENARIO);
+  const closed = scenarioToJSON({ ...DEFAULT_SCENARIO, payoutThroughputAudPerHour: 0, name: "Closed payout" });
+  ui.nodes.get("compare-file-a").files = [{ size: open.length, text: async () => open }];
+  ui.nodes.get("compare-file-b").files = [{ size: closed.length, text: async () => closed }];
+  await ui.nodes.get("compare-scenario-files").click();
+  assert.equal(ui.nodes.get("file-compare-rows").children.length, 5);
+  assert.match(ui.nodes.get("file-compare-status").textContent, /Closed payout/);
+  const hourRow = ui.nodes.get("file-compare-rows").children[3];
+  assert.match(hourRow.children[3].textContent, /Not comparable/);
+});
+
+test("demand timing earlier and later previews apply without randomness", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("demandProfile").value, "flat");
+  assert.equal(ui.nodes.get("apply-demand-step").disabled, true);
+  await ui.nodes.get("preview-demand-later").click();
+  assert.equal(ui.nodes.get("apply-demand-step").disabled, false);
+  assert.match(ui.nodes.get("demand-step-status").textContent, /mondayRush/);
+  assert.match(ui.nodes.get("demand-step-status").textContent, /no randomness/);
+  await ui.nodes.get("apply-demand-step").click();
+  assert.equal(ui.nodes.get("demandProfile").value, "mondayRush");
+  await ui.nodes.get("preview-demand-later").click();
+  assert.equal(ui.nodes.get("apply-demand-step").disabled, true);
+  assert.match(ui.nodes.get("demand-step-status").textContent, /Already at the later end/);
+  await ui.nodes.get("preview-demand-earlier").click();
+  await ui.nodes.get("apply-demand-step").click();
+  assert.equal(ui.nodes.get("demandProfile").value, "flat");
+  await ui.nodes.get("undo-scenario").click();
+  assert.equal(ui.nodes.get("demandProfile").value, "mondayRush");
 });

@@ -49,7 +49,7 @@ For a tiered offer, `unitPrice` means the price of the band being evaluated. The
 
 The allocator performs an exact bounded whole-order search. It chooses a set of complete buyer quantities with the greatest total units that does not exceed merchant capacity. It never splits a buyer's quantity. Buyer IDs provide a stable deterministic order when more than one set reaches the same unit total.
 
-To keep this exact search responsive, a scenario accepts at most 40 buyers and 40 offers, and each buyer quantity, merchant minimum, and merchant capacity is capped at 5,000 units. A room may have zero buyers. That empty room has no demand, so no offer qualifies until buyers are added or the neighbourhood example is restored.
+To keep this exact search responsive, a scenario accepts at most 40 buyers and 40 offers, and each buyer quantity, merchant minimum, and merchant capacity is capped at 5,000 units. Those 40-entry bounds are a local matching cap, not a server quota. A room may have zero buyers. That empty room has no demand, so no offer qualifies until buyers are added or the neighbourhood example is restored. A room may have zero offers. That empty list unlocks nothing until an offer is added or example offers are restored. Restoring example offers copies neighbourhood bids and leaves buyers, title, and currency in place.
 
 ## Quantity price bands
 
@@ -140,15 +140,23 @@ The model can test whether a declared offer satisfies declared constraints. It c
 
 `Buyer.maxOrderTotal` optionally limits `quantity * band.unitPrice + shippingPerBuyer`. Pickup fulfillment evaluates that shipping term as 0. The budget is independent of the item-price ceiling and is evaluated separately at each price band before exact whole-buyer allocation. Omitting it preserves existing behavior. A budget mismatch produces the `budget` incompatibility reason. Validation accepts totals from 0 to 5,001,000,000. Existing fractional-price precision is preserved; the comparison allows only a small floating-point tolerance (four machine epsilons at the magnitude of the total), not a currency-unit allowance.
 
-Buyer CSV import accepts a header row of label, category, quantity, max unit price, latest delivery days, variants, and optional max order total. Offer CSV import accepts name, capacity, unit price, shipping, fulfillment, and variants. Category, minimum, and delivery may be omitted and then default from the room. Cells that were escaped for spreadsheet safety by a leading apostrophe have that apostrophe stripped. Formula-like labels are stored as text, not evaluated. Invalid rows name the CSV buyer or offer and field.
+Buyer CSV import accepts a header row of label, category, quantity, max unit price, latest delivery days, variants, and optional max order total. Offer CSV import accepts name, capacity, unit price, shipping, fulfillment, and variants. Category, minimum, and delivery may be omitted and then default from the room. `createOfferCsv` writes those same six columns for the current offers, escapes spreadsheet formula prefixes, and omits buyer IDs, labels, budgets, allocations, and quantity tiers. Cells that were escaped for spreadsheet safety by a leading apostrophe have that apostrophe stripped. Formula-like labels are stored as text, not evaluated. Invalid rows name the CSV buyer or offer and field.
 
 `previewBuyerSort` and `applyBuyerSort` reorder buyers by label A-Z or quantity high-low. Identifiers are unchanged. Preview does not write the saved order. Applied sort is a new validated room state, so session undo can restore the previous order.
 
+`previewOfferSort` and `applyOfferSort` reorder offers by unit price low-high or capacity high-low. Identifiers are unchanged. Preview does not write the saved order. Applied sort is undoable.
+
 `createVariantOverlapCsv` writes pairwise buyer counts and per-variant offer, buyer, and unit totals. It omits labels, IDs, budgets, and allocations, and escapes spreadsheet formula prefixes.
+
+`organizerBuyerVariantCounts` groups organizer buyers by accepted variant and returns buyer and unit counts only. Merchant views still report counts only.
 
 `filterOfferIdsByFulfillment` returns offer ids for all, shipping, or pickup without mutating the room.
 
+`filterBuyerIdsByAcceptedVariant` returns buyer ids whose accepted variants include the chosen name, or every buyer id for `all`. It does not mutate the room.
+
 `restoreRemovedBuyer` inserts one previously removed buyer when that id is free. The app keeps one session slot; the model does not store the slot.
+
+`restoreExampleOffers` replaces offers with a named preset's offers and keeps the current buyers, title, and currency.
 
 Compared rooms that use different currencies set `currencyWarning` and omit landed totals. The model does not convert currencies.
 
@@ -156,4 +164,6 @@ Compared rooms that use different currencies set `currencyWarning` and omit land
 
 `winnerBudgetLeftover` sums unused item-ceiling headroom for buyers included in the winner. Organizer briefing may include that aggregate. Merchant JSON stays on its existing aggregate whitelist.
 
-Named snapshots contain validated version-1 scenarios, at most 12 per workspace. Valid history contains at most 50 detached states. Baseline and three-room comparisons do not claim welfare or savings from differing cohorts. They do report leftover and unfilled residual counts. Merchant reports use an explicit whitelist and omit the scenario title as well as private buyer records. Buyer CSV is explicitly private and escapes spreadsheet formula prefixes. Organizer briefing markdown, merchant residual JSON, heatmap CSV, variant overlap, and overlap CSV omit private buyer rows. `redactBuyerLabels` replaces labels with Buyer 1 through N without changing identifiers or constraints. `encodeRedactedScenario` encodes that redacted room; `encodeScenario` still keeps saved labels. `copyOfferAsPickup` duplicates an offer with `fulfillment` set to pickup and `shippingPerBuyer` set to 0.
+`createWinnerAggregatesMarkdown` copies winner merchant, units, included-buyer counts, landed total, headroom, and residual fills. It omits the room title, labels, IDs, budgets, and allocations.
+
+Named snapshots contain validated version-1 scenarios, at most 12 per workspace. Workspace JSON may include `fulfillmentFilter` of `all`, `shipping`, or `pickup`. Older files that omit it still validate and behave as `all`. Valid history contains at most 50 detached states. Baseline and three-room comparisons do not claim welfare or savings from differing cohorts. They do report leftover and unfilled residual counts. Merchant reports use an explicit whitelist and omit the scenario title as well as private buyer records. Buyer CSV is explicitly private and escapes spreadsheet formula prefixes. Organizer briefing markdown, winner aggregate markdown, merchant residual JSON, heatmap CSV, offer CSV export, variant overlap, and overlap CSV omit private buyer rows. `redactBuyerLabels` replaces labels with Buyer 1 through N without changing identifiers or constraints. `encodeRedactedScenario` encodes that redacted room; `encodeScenario` still keeps saved labels. `copyOfferAsPickup` duplicates an offer with `fulfillment` set to pickup and `shippingPerBuyer` set to 0.

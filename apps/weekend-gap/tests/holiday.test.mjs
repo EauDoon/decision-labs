@@ -3,9 +3,11 @@ import test from "node:test";
 import { readFile } from "node:fs/promises";
 import {
   DEFAULT_SCENARIO,
+  PRESETS,
   formatTime,
   getOperationalStatus,
   isBusinessDay,
+  mondaySaturdayHolidayNotice,
   runSimulation,
   sanitizeScenario,
   scenarioFromJSON,
@@ -134,4 +136,19 @@ test("Saturday holiday with Sunday-style close notices that both weekend days ar
   const sunday = result.timeline.filter((point) => point.timeLabel.startsWith("Sun"));
   assert.ok(saturday.every((point) => point.issuerOpen === false && point.weekend === true));
   assert.ok(sunday.every((point) => point.issuerOpen === false && point.weekend === true));
+});
+
+test("Monday holiday and Saturday holiday together notice a three-day close", async () => {
+  assert.equal(mondaySaturdayHolidayNotice(DEFAULT_SCENARIO), "");
+  assert.equal(mondaySaturdayHolidayNotice({ ...DEFAULT_SCENARIO, mondayHoliday: true }), "");
+  assert.equal(mondaySaturdayHolidayNotice({ ...DEFAULT_SCENARIO, saturdayHoliday: true }), "");
+  assert.equal(
+    mondaySaturdayHolidayNotice({ ...DEFAULT_SCENARIO, mondayHoliday: true, saturdayHoliday: true }),
+    "Monday holiday and Saturday holiday are both on. Saturday, Sunday and Monday stay closed under Sunday-style rules."
+  );
+  assert.match(mondaySaturdayHolidayNotice(PRESETS.longWeekendFridayStart), /both on/);
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="monday-saturday-holiday-notice"/);
+  assert.match(app, /mondaySaturdayHolidayNotice/);
 });

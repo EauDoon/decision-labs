@@ -1,4 +1,5 @@
 import { createServer } from 'node:http';
+import { readFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
@@ -21,7 +22,21 @@ export function publicFile(pathname) {
   return pathname === '/' ? 'index.html' : pathname.slice(1);
 }
 
+export function catalogVersionLine() {
+  const apps = [
+    ['partnership-breakpoint', 'Partnership Breakpoint'],
+    ['common-cart', 'Common Cart'],
+    ['smallest-agreement', 'The Smallest Agreement'],
+    ['weekend-gap', 'Weekend Gap'],
+  ];
+  return apps.map(([id, label]) => {
+    const version = JSON.parse(readFileSync(new URL(`apps/${id}/package.json`, root), 'utf8')).version;
+    return `${label} ${version}`;
+  }).join(', ');
+}
+
 export function notFoundPage() {
+  const versions = catalogVersionLine();
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -35,6 +50,7 @@ export function notFoundPage() {
     .eyebrow { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0a4439; }
     h1 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; font-size: 2rem; line-height: 1.2; margin: 0 0 14px; }
     p { line-height: 1.6; color: #0e1f23; }
+    .version-line { font-weight: 650; }
     a {
       display: inline-flex;
       align-items: center;
@@ -54,6 +70,7 @@ export function notFoundPage() {
     <p class="eyebrow">Decision Labs</p>
     <h1>This path is not in the catalog</h1>
     <p>The local launcher serves only the Decision Labs catalog page and the four workbenches. It does not serve source, notes, or drafts.</p>
+    <p class="version-line">Current catalog: ${versions}.</p>
     <p><a href="/">Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap</a></p>
   </main>
 </body>
