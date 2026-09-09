@@ -463,7 +463,23 @@ function renderPlanning() {
       const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
     }
     return row;
-  }));
+  }), (() => {
+    const row = document.createElement("tr");
+    const before = comparison.baseline.summary.hoursToFirstSettlement;
+    const after = simulation.summary.hoursToFirstSettlement;
+    const delta = typeof before === "number" && typeof after === "number"
+      ? after - before
+      : before === after ? 0 : null;
+    for (const value of [
+      "Hours to first settlement",
+      formatHoursToFirstSettlement(before),
+      formatHoursToFirstSettlement(after),
+      delta === null ? "Not comparable" : `${delta >= 0 ? "+" : ""}${delta}`
+    ]) {
+      const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+    }
+    return row;
+  })());
   document.querySelector("#changed-assumptions").textContent = comparison.changes.length
     ? comparison.changes.map(({ field, baseline, candidate }) => `${field}: ${baseline} to ${candidate}`).join("; ")
     : "No assumptions changed. Pin a baseline, then edit the scenario or choose a preset.";

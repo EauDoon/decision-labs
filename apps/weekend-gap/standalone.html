@@ -594,7 +594,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
               <table>
-                <caption>Current minus baseline. Parentheses indicate decreases. Compare demand as well as queue size.</caption>
+                <caption>Current minus baseline. Parentheses indicate decreases. Hours to first settlement uses hour offsets; mixed settlement and no-settlement runs are not subtracted.</caption>
                 <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th><th scope="col">Change</th></tr></thead>
                 <tbody id="comparison-rows"></tbody>
               </table>
@@ -2159,7 +2159,23 @@ function renderPlanning() {
       const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
     }
     return row;
-  }));
+  }), (() => {
+    const row = document.createElement("tr");
+    const before = comparison.baseline.summary.hoursToFirstSettlement;
+    const after = simulation.summary.hoursToFirstSettlement;
+    const delta = typeof before === "number" && typeof after === "number"
+      ? after - before
+      : before === after ? 0 : null;
+    for (const value of [
+      "Hours to first settlement",
+      formatHoursToFirstSettlement(before),
+      formatHoursToFirstSettlement(after),
+      delta === null ? "Not comparable" : `${delta >= 0 ? "+" : ""}${delta}`
+    ]) {
+      const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+    }
+    return row;
+  })());
   document.querySelector("#changed-assumptions").textContent = comparison.changes.length
     ? comparison.changes.map(({ field, baseline, candidate }) => `${field}: ${baseline} to ${candidate}`).join("; ")
     : "No assumptions changed. Pin a baseline, then edit the scenario or choose a preset.";

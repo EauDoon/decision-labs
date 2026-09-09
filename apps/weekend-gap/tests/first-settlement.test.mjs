@@ -56,6 +56,14 @@ test("dashboard surfaces hours to first settlement or the 72-hour empty result",
   assert.match(app, /hoursToFirstSettlement/);
 });
 
+test("comparison table includes hours to first settlement with incomparable mixed nulls", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="comparison-rows"/);
+  assert.match(app, /Hours to first settlement/);
+  assert.match(app, /Not comparable/);
+});
+
 test("jump to first settlement uses the checkpoint after the first settling interval", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
