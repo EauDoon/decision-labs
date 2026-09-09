@@ -15,6 +15,7 @@ async function workbench(protocol = 'file:', options = {}) {
   const downloads = [];
   let downloadBlob;
   let prints = 0;
+  const printSnapshots = [];
   const copied = [];
   const focused = [];
   const app = { innerHTML: '', querySelectorAll: () => [],
@@ -44,7 +45,7 @@ async function workbench(protocol = 'file:', options = {}) {
     history: { replaceState(_state, _title, url) {
       if (typeof url === 'string' && url.includes('#')) locationState.hash = url.slice(url.indexOf('#'));
     } },
-    window: { print: () => { prints += 1; }, location: locationState, addEventListener: (name, callback) => windowEvents.set(name, callback) },
+    window: { print: () => { prints += 1; printSnapshots.push(app.innerHTML); }, location: locationState, addEventListener: (name, callback) => windowEvents.set(name, callback) },
     document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => {
       if (selector === '#workbench') return app;
       if (selector === '#notice') return notice;
@@ -76,6 +77,7 @@ async function workbench(protocol = 'file:', options = {}) {
     copied: () => copied,
     focused: () => focused,
     prints: () => prints,
+    lastPrint: () => printSnapshots.at(-1) ?? '',
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
     edit: (path, value, extra = {}) => events.get('change')({ target: new Input({ path, ...extra }, value) }),
@@ -617,6 +619,26 @@ test('print one-pager keeps tornado, waterfall, ledger, and notes and hides chro
   assert.match(html, /\.panel:not\(\.print-keep\)/);
   assert.match(html, /@page \{ size: portrait;/);
   assert.match(html, /\.coach-overlay, \.help-overlay/);
+});
+
+test('redacted print uses Participant 1 through N in the print path and stylesheet', async () => {
+  const app = await workbench();
+  const html = await buildStandalone();
+  app.click('print-redacted');
+  assert.equal(app.prints(), 1);
+  const snapshot = app.lastPrint();
+  assert.match(snapshot, /class="app-grid print-redacted"/);
+  assert.match(snapshot, /Participant 1/);
+  assert.match(snapshot, /class="participant-redacted-name">Participant 1</);
+  assert.doesNotMatch(snapshot, /class="participant-live-name">Platform</);
+  assert.match(html, /\.print-redacted \.participant-live-name/);
+  assert.match(html, /\.print-redacted \.participant-redacted-name/);
+  assert.match(app.markup(), /class="participant-live-name">Platform</);
+  assert.doesNotMatch(app.markup(), /class="app-grid print-redacted"/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('print-redacted');
+  assert.equal(app.prints(), 1);
+  assert.match(app.notice(), /Resolve invalid inputs before printing a redacted report/);
 });
 
 test('invalid fields expose accessible state and printing requires a valid case', async () => {

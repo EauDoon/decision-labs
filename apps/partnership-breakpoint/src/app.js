@@ -63,6 +63,7 @@ let dialogOpener = null;
 let dialogNeedsInitialFocus = coachVisible;
 const mutedStressIds = new Set();
 let collapseAllHoldCases = false;
+let printRedacted = false;
 const undoHistory = [];
 const redoHistory = [];
 
@@ -170,6 +171,19 @@ function handleLibraryAction(action, id) {
 
 function clone(value) {
   return JSON.parse(JSON.stringify(value));
+}
+
+function displayState() {
+  if (!printRedacted) return state;
+  const copy = clone(state);
+  copy.participants.forEach((item, index) => {
+    item.name = `Participant ${index + 1}`;
+  });
+  return copy;
+}
+
+function printSafeName(index, name) {
+  return `<span class="participant-live-name">${escapeAttribute(name)}</span><span class="participant-redacted-name">Participant ${index + 1}</span>`;
 }
 
 function withStress(config) {
@@ -466,7 +480,7 @@ function inputPanel(result) {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Compare imported JSON shows honest diffs against the current draft without replacing it. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged. Export participant CSV uses those same columns and formula-safe cells.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="print-redacted">Print redacted</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <label class="file-button">Compare imported JSON<input type="file" data-action="compare-import" accept="application/json,.json" /></label>
             <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
@@ -615,9 +629,9 @@ function capacityUtilizationCell(participant) {
 }
 
 function participantTable(result) {
-  const rows = result.participants.map((participant) => `
+  const rows = result.participants.map((participant, index) => `
     <tr>
-      <td><strong>${escapeAttribute(participant.name)}</strong></td>
+      <td><strong>${printSafeName(index, participant.name)}</strong></td>
       <td>${formatMoney(participant.revenue)}</td>
       <td>${formatMoney(participant.variableCost)}</td>
       <td>${formatMoney(participant.fixedCost)}</td>
@@ -797,12 +811,12 @@ function render() {
   const casesOpen = app.querySelector?.('.case-details')?.open;
   invalidFieldCount = 0;
   let result = null;
-  try { result = calculatePartnership(state); } catch (error) {
+  try { result = calculatePartnership(displayState()); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
   }
   const inputs = inputPanel(result);
   const results = resultsPanel(result);
-  app.innerHTML = `${coachOverlay()}${helpDialog()}${invalidSummary()}<div class="app-grid">${inputs}${results}</div>`;
+  app.innerHTML = `${coachOverlay()}${helpDialog()}${invalidSummary()}<div class="app-grid${printRedacted ? ' print-redacted' : ''}">${inputs}${results}</div>`;
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
@@ -910,7 +924,17 @@ function attachEvents() {
     if (action === 'close-help') { closeHelp(); return; }
     if (action === 'print-report') {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
+      printRedacted = false;
       window.print(); return;
+    }
+    if (action === 'print-redacted') {
+      if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing a redacted report.'); return; }
+      printRedacted = true;
+      render();
+      window.print();
+      printRedacted = false;
+      render();
+      return;
     }
     if (action === 'inspect-stress') { stressPreviewId = button.dataset.scenarioId; render(); document.querySelector('#stress-preview-title')?.focus(); return; }
     if (action === 'close-stress-preview') { stressPreviewId = ''; render(); return; }

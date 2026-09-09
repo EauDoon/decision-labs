@@ -290,6 +290,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
   font-weight: 700;
   text-align: center;
 }
+.participant-redacted-name { display: none; }
 @media print {
   @page { size: portrait; margin: 12mm; }
   body { background: white; color: black; font-size: 10pt; }
@@ -305,4 +306,6 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
   .print-only pre { white-space: pre-wrap; columns: 2; font-size: 7pt; }
   .sensitivity-layout { display: block; }
   a { color: black; }
+  .print-redacted .participant-live-name { display: none !important; }
+  .print-redacted .participant-redacted-name { display: inline !important; }
 }
