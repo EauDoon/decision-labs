@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios, compareThreeRooms, copyOfferAsNewTierSet, copyOfferAsPickup, evaluateOffer } from "../src/model.js";
+import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios, compareThreeRooms, copyOfferAsNewTierSet, copyOfferAsPickup, evaluateOffer, landedTotalsComparison } from "../src/model.js";
 
 test("history detaches states, caps memory, and truncates branches", () => {
   const s = clonePreset(); const h = createScenarioHistory(s);
@@ -16,16 +16,22 @@ test("history detaches states, caps memory, and truncates branches", () => {
   assert.throws(() => h.record({}));
 });
 
-test("comparison distinguishes changed demand, currency and missing allocations", () => {
-  const before = clonePreset(); const after = clonePreset();
-  assert.ok(compareScenarios(before, after).sameDemand);
-  after.buyers[0].quantity++;
+test("mixed currencies omit landed totals instead of converting them", () => {
+  const before = clonePreset("neighbourhood");
+  const after = clonePreset("neighbourhood");
   after.currency = "USD";
-  after.offers.forEach(o => { o.deliveryDays = 365; });
   const comparison = compareScenarios(before, after);
-  assert.equal(comparison.sameDemand, false);
   assert.equal(comparison.sameCurrency, false);
+  assert.equal(comparison.sameDemand, true);
+  assert.equal(comparison.baseline.cost, null);
   assert.equal(comparison.current.cost, null);
+  assert.match(comparison.currencyWarning, /different currencies/);
+  assert.match(comparison.currencyWarning, /not compared/);
+  assert.equal(JSON.stringify(comparison).includes("0.67"), false);
+  const note = landedTotalsComparison("aud", "USD");
+  assert.equal(note.comparable, false);
+  assert.equal(landedTotalsComparison("AUD", "AUD").comparable, true);
+  assert.throws(() => landedTotalsComparison("__proto__", "AUD"));
 });
 
 test("duplicate gives a unique id and independent nested constraints", () => {
@@ -108,6 +114,8 @@ test("three-room comparison reports winners without mixing currencies", () => {
   const comparison = compareThreeRooms(a, b, c);
   assert.equal(comparison.rooms.length, 3);
   assert.equal(comparison.sameCurrency, false);
+  assert.match(comparison.currencyWarning, /not compared/);
+  assert.ok(comparison.rooms.every((room) => room.cost === null));
   assert.equal(comparison.rooms[0].winner, compareScenarios(a, a).baseline.winner);
   assert.ok(comparison.rooms.every((room) => typeof room.fulfilled === "number"));
   assert.ok(comparison.rooms.every((room) => typeof room.leftoverBuyers === "number"));

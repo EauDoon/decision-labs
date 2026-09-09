@@ -880,7 +880,8 @@ function renderComparison() {
   for (const values of rows) { const tr = document.createElement("tr"); for (const value of values) addCell(tr, String(value)); body.append(tr); }
   table.append(body);
   const note = document.createElement("p");
-  note.textContent = `${comparison.sameDemand ? "Buyer demand is unchanged." : "Buyer demand changed; cost differences are not like-for-like savings."} ${comparison.sameCurrency ? "Totals may cover different allocated orders." : "Currencies differ; monetary comparisons are omitted."}`;
+  note.textContent = `${comparison.sameDemand ? "Buyer demand is unchanged." : "Buyer demand changed; cost differences are not like-for-like savings."} ${comparison.currencyWarning ?? "Totals may cover different allocated orders."}`;
+  if (comparison.currencyWarning) note.className = "status-short";
   summary.replaceChildren(table, note);
 }
 
@@ -889,9 +890,10 @@ function renderThreeRoomComparison(comparison) {
   if (!host) return;
   const table = document.createElement("table");
   const caption = document.createElement("caption");
-  caption.textContent = comparison.sameCurrency
-    ? "Current room and two snapshots. Landed totals may cover different allocated orders."
-    : "Current room and two snapshots. Currencies differ, so monetary totals are omitted.";
+  caption.textContent = comparison.currencyWarning
+    ?? (comparison.sameCurrency
+      ? "Current room and two snapshots. Landed totals may cover different allocated orders."
+      : "Current room and two snapshots. Currencies differ, so monetary totals are omitted.");
   const head = document.createElement("thead");
   const header = document.createElement("tr");
   for (const text of ["Metric", "Current", "Snapshot A", "Snapshot B"]) {

@@ -269,7 +269,8 @@ export interface ComparisonMetrics {
   unfilledBuyers: number;
   unfilledUnits: number;
 }
-export interface ScenarioComparison { baseline: ComparisonMetrics; current: ComparisonMetrics; sameCurrency: boolean; sameDemand: boolean; }
+export interface ScenarioComparison { baseline: ComparisonMetrics; current: ComparisonMetrics; sameCurrency: boolean; sameDemand: boolean; currencyWarning: string | null; }
+export interface MerchantReport {
 export interface MerchantReport {
   report: string; version: number; currency: string; limitations: string;
   requestedUnits: number; buyerCount: number;
@@ -305,8 +306,9 @@ export interface ThreeRoomRow {
   unfilledBuyers: number;
   unfilledUnits: number;
 }
-export interface ThreeRoomComparison { sameCurrency: boolean; rooms: ThreeRoomRow[]; }
+export interface ThreeRoomComparison { sameCurrency: boolean; currencyWarning: string | null; rooms: ThreeRoomRow[]; }
 export function compareThreeRooms(first: unknown, second: unknown, third: unknown): ThreeRoomComparison;
+export function landedTotalsComparison(leftCurrency: unknown, rightCurrency: unknown): { sameCurrency: boolean; comparable: boolean; warning: string | null };
 export function createMerchantReport(rawScenario: unknown): MerchantReport;
 export function createMerchantResidualReport(rawScenario: unknown): MerchantResidualReport;
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;

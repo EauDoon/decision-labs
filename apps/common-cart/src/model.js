@@ -274,9 +274,14 @@ function marketComparisonMetrics(market) {
 export function compareScenarios(before, after) {
   const baseline = evaluateMarket(before);
   const current = evaluateMarket(after);
-  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
-  return { baseline: marketComparisonMetrics(baseline), current: marketComparisonMetrics(current), sameCurrency,
-    sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
+  const currency = landedTotalsComparison(baseline.scenario.currency, current.scenario.currency);
+  return {
+    baseline: withComparableCost(marketComparisonMetrics(baseline), currency.comparable),
+    current: withComparableCost(marketComparisonMetrics(current), currency.comparable),
+    sameCurrency: currency.sameCurrency,
+    sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers),
+    currencyWarning: currency.warning
+  };
 }
 
 export function compareThreeRooms(first, second, third) {
@@ -288,20 +293,45 @@ export function compareThreeRooms(first, second, third) {
     }
   });
   const markets = rooms.map((room) => evaluateMarket(room));
-  const sameCurrency = rooms.every((room) => room.currency === rooms[0].currency);
+  const currency = landedTotalsComparison(rooms[0].currency, rooms[1].currency);
+  const thirdCurrency = landedTotalsComparison(rooms[0].currency, rooms[2].currency);
+  const comparable = currency.comparable && thirdCurrency.comparable;
+  const warning = comparable ? null : "These rooms use different currencies. Landed totals are not compared.";
   return {
-    sameCurrency,
+    sameCurrency: comparable,
+    currencyWarning: warning,
     rooms: rooms.map((room, index) => ({
       title: room.title,
       currency: room.currency,
       requested: markets[index].totalRequestedUnits,
       fulfilled: markets[index].winner?.fulfilledUnits ?? 0,
       buyers: markets[index].winner?.deliveredBuyers ?? 0,
-      cost: markets[index].winner?.totalCost ?? null,
+      cost: comparable ? (markets[index].winner?.totalCost ?? null) : null,
       winner: markets[index].winner?.offer.merchant ?? "No qualifying offer",
       ...residualCoverageCounts(room)
     }))
   };
+}
+
+export function landedTotalsComparison(leftCurrency, rightCurrency) {
+  if (typeof leftCurrency !== "string" || typeof rightCurrency !== "string") {
+    throw new ScenarioError("Currency codes must be strings.");
+  }
+  const left = leftCurrency.trim().toUpperCase();
+  const right = rightCurrency.trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(left) || !/^[A-Z]{3}$/.test(right)) {
+    throw new ScenarioError("Currency must be a three-letter ASCII code, such as AUD.");
+  }
+  const sameCurrency = left === right;
+  return {
+    sameCurrency,
+    comparable: sameCurrency,
+    warning: sameCurrency ? null : "These rooms use different currencies. Landed totals are not compared."
+  };
+}
+
+function withComparableCost(metrics, comparable) {
+  return { ...metrics, cost: comparable ? metrics.cost : null };
 }
 
 /** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
