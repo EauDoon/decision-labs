@@ -425,3 +425,30 @@ test('optional deal title and currency persist when valid and are rejected when 
     assert.match(validation.errors.join(' '), /Deal currency/);
   }
 });
+
+test('optional deal notes persist when valid and reject unknown abuse', () => {
+  const omitted = clonePreset('balanced');
+  assert.equal(omitted.deal.notes, undefined);
+  assert.equal(validateConfiguration(omitted).valid, true);
+
+  const noted = clonePreset('balanced');
+  noted.deal.notes = 'Harbor counterparty wants a 90-day review.';
+  assert.equal(validateConfiguration(noted).valid, true);
+  assert.equal(calculatePartnership(noted).deal.notes, 'Harbor counterparty wants a 90-day review.');
+
+  noted.deal.notes = 'x'.repeat(500);
+  assert.equal(validateConfiguration(noted).valid, true);
+
+  const invalidNotes = ['', '   ', 'x'.repeat(501), 12, null, true, { text: 'no' }];
+  for (const notes of invalidNotes) {
+    const config = clonePreset('balanced');
+    config.deal.notes = notes;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(notes));
+    assert.match(validation.errors.join(' '), /Deal notes/);
+  }
+
+  const unknown = clonePreset('balanced');
+  unknown.deal.memo = 'secret';
+  assert.match(validateConfiguration(unknown).errors.join(' '), /unknown field: memo/);
+});

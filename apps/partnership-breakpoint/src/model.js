@@ -9,6 +9,7 @@
  * @property {number} [volumeShockPct] Optional reduction from planned volume, 0 through 100.
  * @property {string} [title] Optional display name, 1 through 80 characters after trimming.
  * @property {string} [currency] Optional 3-letter uppercase display prefix such as USD. Omitted values keep the word units.
+ * @property {string} [notes] Optional notes, 1 through 500 characters after trimming.
  *
  * @typedef {object} ParticipantInput
  * @property {string} id Unique identifier, at most 64 characters.
@@ -45,7 +46,7 @@ export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
 const CONFIG_KEYS = new Set(['deal', 'participants', 'stress']);
-const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency']);
+const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 /** @type {Readonly<StressSettings>} Illustrative GUI defaults; not forecasts. */
@@ -195,6 +196,12 @@ export function validateConfiguration(config) {
       const currency = own(deal, 'currency');
       if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) {
         errors.push('Deal currency must be a 3-letter uppercase code such as USD.');
+      }
+    }
+    if (Object.hasOwn(deal, 'notes')) {
+      const notes = own(deal, 'notes');
+      if (typeof notes !== 'string' || notes.trim() === '' || notes.trim().length > 500) {
+        errors.push('Deal notes must be a string of 1 to 500 characters after trimming.');
       }
     }
   }
@@ -925,7 +932,7 @@ export function solveMinimumShareToHold(config, participantId) {
 }
 
 /**
- * Portable case JSON with participant display names replaced and the deal title cleared.
+ * Portable case JSON with participant display names replaced and the deal title and notes cleared.
  * Identifiers, shares, costs, and stress settings are unchanged.
  * @param {PartnershipConfig} config
  */
@@ -937,6 +944,7 @@ export function redactConfiguration(config) {
     ...(Object.hasOwn(config, 'stress') ? { stress: { ...config.stress } } : {}),
   };
   delete copy.deal.title;
+  delete copy.deal.notes;
   copy.participants.forEach((item, index) => {
     item.name = `Participant ${index + 1}`;
   });

@@ -252,15 +252,17 @@ function field({ label, path, value, optional = false, min = 0, max = null, step
   const textInvalid = pattern
     ? (optional ? textValue !== '' && !pattern.test(textValue) : !pattern.test(textValue))
     : (optional ? textValue !== '' && (textValue.trim() === '' || textValue.trim().length > maxLength) : !textValue.trim() || textValue.trim().length > maxLength);
-  const invalid = type === 'text'
+  const invalid = type === 'text' || type === 'textarea'
     ? textInvalid
     : !(optional && value == null) && (!Number.isFinite(value) || value < min || (max !== null && value > max) || sharesInvalid);
   if (invalid) invalidFieldCount += 1;
   const inputId = `field-${path.replace(/\./g, '-')}`;
   const optionalAttr = optional ? ' data-optional="true"' : '';
-  const input = type === 'text'
-    ? `<input id="${inputId}" aria-invalid="${invalid}" type="text" data-path="${path}" data-type="text"${optionalAttr} value="${escapeAttribute(value ?? '')}" maxlength="${maxLength}" ${optional ? '' : 'required '}${titleAttr} />`
-    : `<input id="${inputId}" aria-invalid="${invalid}" type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'}${titleAttr} />`;
+  const input = type === 'textarea'
+    ? `<textarea id="${inputId}" aria-invalid="${invalid}" data-path="${path}" data-type="text"${optionalAttr} maxlength="${maxLength}" rows="4" ${optional ? '' : 'required '}${titleAttr}>${escapeAttribute(value ?? '')}</textarea>`
+    : type === 'text'
+      ? `<input id="${inputId}" aria-invalid="${invalid}" type="text" data-path="${path}" data-type="text"${optionalAttr} value="${escapeAttribute(value ?? '')}" maxlength="${maxLength}" ${optional ? '' : 'required '}${titleAttr} />`
+      : `<input id="${inputId}" aria-invalid="${invalid}" type="number" data-path="${path}" ${optional ? 'data-optional="true"' : ''} min="${min}" ${max === null ? '' : `max="${max}"`} step="${step}" value="${inputValue(value)}" ${optional ? '' : 'required'}${titleAttr} />`;
   return `<div class="field ${wide ? 'wide' : ''}"><label>${label} ${optionalText}${input}</label></div>`;
 }
 
@@ -374,7 +376,7 @@ function inputPanel() {
       <div class="panel-body">
         <section class="input-section" aria-labelledby="deal-inputs-title">
           <h2 id="deal-inputs-title">Shared deal</h2>
-          <p class="notice">Volume shock % is the only baseline volume reduction, 0 through 100. Addressable volume caps realized demand. Empty required fields are not saved. An optional title and 3-letter currency code travel with JSON, hash links, and autosave. Currency is a display prefix only; omitted currency keeps the word units.</p>
+          <p class="notice">Volume shock % is the only baseline volume reduction, 0 through 100. Addressable volume caps realized demand. Empty required fields are not saved. An optional title, notes, and 3-letter currency code travel with JSON, hash links, and autosave. Currency is a display prefix only; omitted currency keeps the word units.</p>
           <div class="field-grid">
             ${field({ label: 'Deal title', path: 'deal.title', value: state.deal.title ?? '', optional: true, wide: true, type: 'text', title: 'Optional display name, 1 through 80 characters after trimming. Leave blank to omit.' })}
             ${field({ label: 'Currency code', path: 'deal.currency', value: state.deal.currency ?? '', optional: true, type: 'text', maxLength: 3, pattern: /^[A-Z]{3}$/, title: 'Optional 3-letter uppercase code such as USD. Leave blank to display units. The model does not convert currencies.' })}
@@ -382,6 +384,7 @@ function inputPanel() {
             ${field({ label: 'Fee / transaction', path: 'deal.feePerTransaction', value: state.deal.feePerTransaction, step: '0.0001', title: 'Gross fee collected per transaction, zero or greater.' })}
             ${field({ label: 'Addressable volume', path: 'deal.addressableVolume', value: state.deal.addressableVolume, step: '1', title: 'Maximum transactions available from demand, zero or greater.' })}
             ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, max: 100, step: '0.1', title: 'Baseline volume reduction, 0 through 100. There is no separate churn field.' })}
+            ${field({ label: 'Deal notes', path: 'deal.notes', value: state.deal.notes ?? '', optional: true, wide: true, type: 'textarea', maxLength: 500, title: 'Optional notes, 1 through 500 characters after trimming. Leave blank to omit. Shown in reports and print.' })}
           </div>
         </section>
         <section class="input-section" aria-labelledby="stress-inputs-title">
@@ -457,7 +460,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
-    <section class="print-only"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
+    <section class="print-only"><h2>Case assumptions</h2>${state.deal.notes ? `<p><strong>Notes:</strong> ${escapeAttribute(state.deal.notes)}</p>` : ''}<p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
     <nav class="results-jump" aria-label="Jump in results" id="results-jump">
       <span class="eyebrow">Jump in results</span>
       <a href="#first-breakpoint">First breakpoint</a>
@@ -738,7 +741,7 @@ function refresh(message = '') {
   saveState();
   render();
   if (focusedPath) {
-    const replacement = [...app.querySelectorAll('input[data-path]')].find((input) => input.dataset.path === focusedPath);
+    const replacement = [...app.querySelectorAll('[data-path]')].find((node) => node.dataset.path === focusedPath);
     replacement?.focus({ preventScroll: true });
   } else if (focusedAction) {
     [...app.querySelectorAll('button[data-action]')].find((button) => button.dataset.action === focusedAction && button.dataset.caseId === focusedCase)?.focus({ preventScroll: true });
@@ -751,7 +754,9 @@ function attachEvents() {
   eventsBound = true;
   app.addEventListener('change', (event) => {
     const input = event.target;
-    if (!(input instanceof HTMLInputElement)) return;
+    const isField = input instanceof HTMLInputElement
+      || (typeof HTMLTextAreaElement === 'function' && input instanceof HTMLTextAreaElement);
+    if (!isField) return;
     if (input.dataset.action === 'case-name') { caseName = input.value; return; }
     if (input.dataset.path) {
       checkpoint();
@@ -1143,6 +1148,7 @@ function decisionReport(config, title = 'Current case') {
   const result = calculatePartnership(config);
   const stress = evaluateStressGrid(config);
   const lines = ['# Partnership Breakpoint decision report', '', 'Case: ' + reportText(title), '',
+    ...(config.deal.notes ? ['Notes: ' + reportText(config.deal.notes), ''] : []),
     'Deterministic monthly contribution analysis. All money uses one consistent currency unit.', '',
     '## Current outcome', '',
     'Partnership: ' + (result.viable ? 'all participants hold' : 'at least one participant exits') + '.',
@@ -1190,6 +1196,7 @@ function negotiationBrief(config, title = 'Current case') {
   return [
     '# Partnership Breakpoint negotiation brief', '',
     'Case: ' + reportText(title), '',
+    ...(config.deal.notes ? ['Notes: ' + reportText(config.deal.notes), ''] : []),
     'Deterministic monthly contribution snapshot. Money uses ' + unit + '. This is not a forecast or a recommendation.', '',
     '## Outcome',
     result.viable ? 'Every participant holds at current inputs.' : 'At least one participant exits at current inputs.',

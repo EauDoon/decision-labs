@@ -12,6 +12,7 @@ Shared deal inputs:
 - `volumeShockPct`: an optional reduction from planned volume, from 0 to 100.
 - `title`: optional case name. If present, it must be a string of 1 to 80 characters after trimming.
 - `currency`: optional 3-letter uppercase display code. If present, it must match `^[A-Z]{3}$`.
+- `notes`: optional free-text notes. If present, it must be a string of 1 to 500 characters after trimming. Notes travel with JSON, hash links, and autosave, and they appear in printed and Markdown reports. They are not interpreted as formulas or instructions.
 
 Participant inputs:
 
@@ -151,7 +152,7 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 ## Redacted export
 
-`redactConfiguration` copies a valid case, deletes `deal.title` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption.
+`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption.
 
 ## Participant CSV import
 

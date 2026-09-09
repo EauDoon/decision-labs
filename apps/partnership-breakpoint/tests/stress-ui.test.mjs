@@ -508,6 +508,26 @@ test('deal title and currency persist, display as a prefix, and reject illegal c
   assert.match(app.markup(), /20,000\.00 units/);
 });
 
+test('deal notes persist, print, and export, and reject overlong or unknown values', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /<textarea[^>]*data-path="deal.notes"/);
+  app.edit('deal.notes', '  Review the capacity clause.  ', { type: 'text', optional: 'true' });
+  assert.equal(app.saved().deal.notes, 'Review the capacity clause.');
+  assert.match(app.markup(), /<strong>Notes:<\/strong> Review the capacity clause\./);
+  app.click('export-report');
+  const report = await app.downloads()[0].blob.text();
+  assert.match(report, /Notes: Review the capacity clause\./);
+  app.click('copy-brief');
+  const brief = await app.downloads()[1].blob.text();
+  assert.match(brief, /Notes: Review the capacity clause\./);
+  app.edit('deal.notes', 'x'.repeat(501), { type: 'text', optional: 'true' });
+  assert.match(app.markup(), /Resolve these inputs/);
+  assert.match(app.notice(), /Deal notes/);
+  assert.equal(app.saved().deal.notes, 'Review the capacity clause.');
+  app.edit('deal.notes', '', { type: 'text', optional: 'true' });
+  assert.equal(Object.hasOwn(app.saved().deal, 'notes'), false);
+});
+
 test('duplicate and move roster controls keep unique ids and the original share sum', async () => {
   const app = await workbench();
   app.click('duplicate-participant', { index: '0' });
