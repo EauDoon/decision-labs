@@ -551,6 +551,74 @@ export function computeResidualCoverage(rawScenario) {
   };
 }
 
+/**
+ * Additional whole units needed to unlock the next cheaper quantity band
+ * for one offer, or an explicit reason the band is unreachable.
+ */
+export function unitsToNextTier(rawScenario, offerId) {
+  const scenario = validateScenario(rawScenario);
+  const result = evaluateOffer(scenario, offerId);
+  const selectedIndex = result.activeTierIndex ?? 0;
+  const next = result.tierProgress.find((tier) => tier.index === selectedIndex + 1);
+  const emptySuppliers = { supplierBuyerIds: [], supplierBuyerCount: 0, supplierUnits: 0 };
+  const base = {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    currentUnits: result.fulfilledUnits,
+    currentTierIndex: result.activeTierIndex,
+    nextMinimum: next?.minimumUnits ?? null,
+    nextPrice: next?.unitPrice ?? null,
+    compatibleUnitsAtNext: next?.compatibleUnits ?? null,
+    allocatedUnitsAtNext: next?.allocatedUnits ?? null,
+    unitsNeeded: null,
+    reachable: false,
+    reason: "",
+    ...emptySuppliers
+  };
+  if (!next) {
+    return {
+      ...base,
+      reason: result.tierProgress.length <= 1
+        ? "No cheaper quantity tier is declared."
+        : "No cheaper quantity tier remains after the selected band."
+    };
+  }
+  if (next.minimumUnits > result.offer.capacity) {
+    return { ...base, reason: "The next cheaper tier's minimum exceeds this offer's capacity." };
+  }
+  const currentIds = new Set(result.selectedBuyerIds);
+  const suppliers = scenario.buyers.filter((buyer) => {
+    if (currentIds.has(buyer.id)) return false;
+    return incompatibilityReasons(buyer, { ...result.offer, unitPrice: next.unitPrice }).length === 0;
+  });
+  const supplierUnits = suppliers.reduce((sum, buyer) => sum + buyer.quantity, 0);
+  const supplierFields = {
+    supplierBuyerIds: suppliers.map((buyer) => buyer.id),
+    supplierBuyerCount: suppliers.length,
+    supplierUnits
+  };
+  const unitsNeeded = next.unitsShort;
+  if (next.qualifies) {
+    return {
+      ...base,
+      ...supplierFields,
+      unitsNeeded: 0,
+      reachable: true,
+      reason: "The cheaper band already fits a whole-order cohort. The allocator kept the larger current cohort."
+    };
+  }
+  const packingBlocked = next.compatibleUnits >= next.minimumUnits && next.allocatedUnits < next.minimumUnits;
+  return {
+    ...base,
+    ...supplierFields,
+    unitsNeeded,
+    reachable: false,
+    reason: packingBlocked
+      ? "Compatible demand exists, but whole orders cannot pack into the next cheaper band inside capacity."
+      : "Compatible whole-order demand cannot reach the next cheaper tier."
+  };
+}
+
 function compareResults(left, right) {
   if (left.qualifies !== right.qualifies) return left.qualifies ? -1 : 1;
   return right.fulfilledUnits - left.fulfilledUnits

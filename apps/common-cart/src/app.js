@@ -11,6 +11,7 @@ import {
   duplicateEntry,
   encodeScenario,
   evaluateMarket,
+  unitsToNextTier,
   validateWorkspace,
   validateScenario
 } from "./model.js";
@@ -452,7 +453,7 @@ function refresh() {
     setEmptyState(elements.resultRows, 8, "Ranked offers will appear once every field is valid.");
     setEmptyState(elements.inspectorRows, 9, "Buyer outcomes will appear once every field is valid.");
     setEmptyState(elements.tierRows, 6, "Price-band feasibility will appear once every field is valid.");
-    setEmptyState(elements.merchantResults, 6, "Aggregate offer outcomes will appear once every field is valid.");
+    setEmptyState(elements.merchantResults, 7, "Aggregate offer outcomes will appear once every field is valid.");
     const residualSummary = document.querySelector("#residual-summary");
     if (residualSummary) {
       residualSummary.replaceChildren();
@@ -567,12 +568,14 @@ function renderResults(market) {
   elements.resultRows.replaceChildren(...rows);
   elements.merchantResults.replaceChildren(...market.ranked.map((result) => {
     const row = document.createElement("tr");
+    const gap = unitsToNextTier(market.scenario, result.offer.id);
     addCell(row, result.offer.merchant);
     addCell(row, result.qualifies ? "Unlocked" : "Locked");
     addCell(row, String(result.fulfilledUnits));
     addCell(row, String(result.deliveredBuyers));
     addCell(row, result.effectiveUnitPrice === null ? "Not available" : formatter.format(result.effectiveUnitPrice));
     addCell(row, formatter.format(result.totalCost));
+    addCell(row, gap.unitsNeeded === null ? gap.reason : `${gap.unitsNeeded} units (${gap.supplierBuyerCount} excluded buyers, ${gap.supplierUnits} units they hold)`);
     return row;
   }));
 }
@@ -661,6 +664,36 @@ function renderInspector(market) {
     return row;
   });
   elements.inspectorRows.replaceChildren(...rows);
+  renderNextTierGap(market.scenario, result.offer.id, buyers, formatter);
+}
+
+function renderNextTierGap(rawScenario, offerId, buyers, formatter) {
+  const summary = document.querySelector("#next-tier-summary");
+  const names = document.querySelector("#next-tier-buyers");
+  if (!summary) return;
+  const gap = unitsToNextTier(rawScenario, offerId);
+  const list = document.createElement("dl");
+  appendDetail(list, "Current fulfilled units", gap.currentUnits);
+  if (gap.nextMinimum === null) {
+    appendDetail(list, "Next cheaper tier", "None");
+  } else {
+    appendDetail(list, "Next cheaper tier", `${gap.nextMinimum} units at ${formatter.format(gap.nextPrice)}`);
+    appendDetail(list, "Whole units still needed", gap.unitsNeeded === null ? "Not available" : gap.unitsNeeded);
+    appendDetail(list, "Compatible units at next price", gap.compatibleUnitsAtNext);
+    appendDetail(list, "Whole units that already fit next band", gap.allocatedUnitsAtNext);
+    appendDetail(list, "Excluded buyers who could add units", `${gap.supplierBuyerCount} buyers, ${gap.supplierUnits} units`);
+  }
+  appendDetail(list, "Reachable with current buyers", gap.reachable ? "Yes" : "No");
+  const reason = document.createElement("p");
+  reason.className = "canvas-note";
+  reason.textContent = gap.reason;
+  summary.replaceChildren(list, reason);
+  if (!names) return;
+  if (gap.supplierBuyerIds.length === 0) {
+    names.textContent = "No currently excluded buyer can add whole units at the next cheaper price.";
+    return;
+  }
+  names.textContent = `Organizer view: ${gap.supplierBuyerIds.map((id) => buyers.get(id)?.label ?? id).join(", ")}. Merchant-facing views show counts only.`;
 }
 
 function outcomePresentation(outcome) {

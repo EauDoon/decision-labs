@@ -217,6 +217,9 @@ SOFTWARE.
           <button id="buyer-report" type="button">Export private buyer report (CSV)</button>
           <p class="canvas-note">Exports the inspected offer, including buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
           <p class="canvas-note">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
+          <h4>Units to the next cheaper tier</h4>
+          <div id="next-tier-summary" class="residual-summary"></div>
+          <p id="next-tier-buyers" class="canvas-note"></p>
           <h4>Price-band feasibility</h4>
           <div class="table-shell compact">
             <table>
@@ -260,8 +263,8 @@ SOFTWARE.
         </section>
         <div class="table-shell">
           <table>
-            <caption>Aggregate offer outcomes, no buyer labels or individual allocations</caption>
-            <thead><tr><th scope="col">Merchant</th><th scope="col">Status</th><th scope="col">Units</th><th scope="col">Buyers</th><th scope="col">Item price</th><th scope="col">Landed total</th></tr></thead>
+            <caption>Aggregate offer outcomes, no buyer labels, IDs, or individual allocations. Next-tier gap uses unit counts only.</caption>
+            <thead><tr><th scope="col">Merchant</th><th scope="col">Status</th><th scope="col">Units</th><th scope="col">Buyers</th><th scope="col">Item price</th><th scope="col">Landed total</th><th scope="col">Next-tier gap</th></tr></thead>
             <tbody id="merchant-result-rows"></tbody>
           </table>
         </div>

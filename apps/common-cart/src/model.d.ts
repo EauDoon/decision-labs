@@ -166,6 +166,25 @@ export interface ResidualCoverage {
 }
 
 export function computeResidualCoverage(rawScenario: unknown): ResidualCoverage;
+
+export interface NextTierGap {
+  offerId: string;
+  merchant: string;
+  currentUnits: number;
+  currentTierIndex: number | null;
+  nextMinimum: number | null;
+  nextPrice: number | null;
+  compatibleUnitsAtNext: number | null;
+  allocatedUnitsAtNext: number | null;
+  unitsNeeded: number | null;
+  reachable: boolean;
+  reason: string;
+  supplierBuyerIds: string[];
+  supplierBuyerCount: number;
+  supplierUnits: number;
+}
+
+export function unitsToNextTier(rawScenario: unknown, offerId: string): NextTierGap;
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
 export function encodeScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;
