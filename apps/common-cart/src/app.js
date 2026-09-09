@@ -7,6 +7,7 @@ import {
   previewBuyerSort,
   filterOfferIdsByFulfillment,
   restoreRemovedBuyer,
+  duplicateRoom,
   clonePreset,
   compareScenarios,
   compareThreeRooms,
@@ -111,6 +112,8 @@ function renderWorkspace() {
   document.querySelector("#load-room").disabled = savedRooms.length === 0;
   document.querySelector("#delete-room").disabled = savedRooms.length === 0;
   document.querySelector("#save-room").disabled = workspaceReadFailed || savedRooms.length >= 12;
+  const duplicateRoomButton = document.querySelector("#duplicate-room");
+  if (duplicateRoomButton) duplicateRoomButton.disabled = workspaceReadFailed || savedRooms.length >= 12;
   for (const id of ["compare-room-a", "compare-room-b"]) {
     const select = document.querySelector(`#${id}`);
     if (!select) continue;
@@ -238,6 +241,14 @@ function bindStaticEvents() {
       document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
       setStatus("Named snapshot saved locally. Later edits do not alter it.", true);
     } catch (error) { setStatus(`Could not save snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#duplicate-room").addEventListener("click", () => {
+    try {
+      const copy = duplicateRoom(scenario, savedRooms.map((room) => room.title));
+      storeWorkspace([...savedRooms, copy]);
+      document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
+      setStatus(`Duplicated this room as snapshot "${copy.title}". Compare uses the copy, not live edits.`, true);
+    } catch (error) { setStatus(`Could not duplicate room: ${messageOf(error)}`); }
   });
   document.querySelector("#load-room").addEventListener("click", () => {
     if (!allowReplaceDraft()) return;

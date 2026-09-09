@@ -250,6 +250,33 @@ export function restoreRemovedBuyer(rawScenario, rawBuyer) {
   return validateScenario({ ...scenario, buyers: [...scenario.buyers, buyer] });
 }
 
+export function uniqueCopyTitle(title, existingTitles = []) {
+  if (typeof title !== "string") throw new ScenarioError("Room name must be 1 to 80 characters.");
+  if (!Array.isArray(existingTitles)) throw new ScenarioError("Existing titles must be an array.");
+  for (const entry of existingTitles) {
+    if (typeof entry !== "string") throw new ScenarioError("Existing titles must be strings.");
+  }
+  const taken = new Set(existingTitles);
+  for (let number = 1; number <= 99; number += 1) {
+    const suffix = number === 1 ? " (copy)" : ` (copy ${number})`;
+    const maxBase = 80 - suffix.length;
+    const trimmed = title.trim();
+    const base = trimmed.length <= maxBase ? trimmed : trimmed.slice(0, maxBase).trim();
+    const candidate = `${base}${suffix}`;
+    if (candidate.length > 80) continue;
+    if (!taken.has(candidate)) return candidate;
+  }
+  throw new ScenarioError("Could not assign a unique copy title.");
+}
+
+export function duplicateRoom(rawScenario, existingTitles = []) {
+  if (!Array.isArray(existingTitles)) throw new ScenarioError("Existing titles must be an array.");
+  const scenario = validateScenario(rawScenario);
+  const copy = JSON.parse(JSON.stringify(scenario));
+  copy.title = uniqueCopyTitle(scenario.title, [...existingTitles, scenario.title]);
+  return validateScenario(copy);
+}
+
 function residualCoverageCounts(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   return {

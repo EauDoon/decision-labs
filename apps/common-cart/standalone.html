@@ -475,6 +475,7 @@ footer {
     <section class="snapshot-bar print-chrome" aria-label="Saved room workspace">
       <label>Saved rooms <select id="saved-rooms" aria-describedby="snapshot-help"></select></label>
       <button id="save-room" type="button">Save named snapshot</button>
+      <button id="duplicate-room" type="button">Duplicate room as snapshot</button>
       <button id="load-room" type="button">Load snapshot</button>
       <button id="delete-room" type="button">Delete snapshot</button>
       <p id="snapshot-help">Up to 12 local snapshots, named by the room title. Export JSON for a portable backup. Browser data can be cleared.</p>
@@ -1066,6 +1067,33 @@ function restoreRemovedBuyer(rawScenario, rawBuyer) {
     throw new ScenarioError(`Buyer ${buyer.id} is already in the room.`);
   }
   return validateScenario({ ...scenario, buyers: [...scenario.buyers, buyer] });
+}
+
+function uniqueCopyTitle(title, existingTitles = []) {
+  if (typeof title !== "string") throw new ScenarioError("Room name must be 1 to 80 characters.");
+  if (!Array.isArray(existingTitles)) throw new ScenarioError("Existing titles must be an array.");
+  for (const entry of existingTitles) {
+    if (typeof entry !== "string") throw new ScenarioError("Existing titles must be strings.");
+  }
+  const taken = new Set(existingTitles);
+  for (let number = 1; number <= 99; number += 1) {
+    const suffix = number === 1 ? " (copy)" : ` (copy ${number})`;
+    const maxBase = 80 - suffix.length;
+    const trimmed = title.trim();
+    const base = trimmed.length <= maxBase ? trimmed : trimmed.slice(0, maxBase).trim();
+    const candidate = `${base}${suffix}`;
+    if (candidate.length > 80) continue;
+    if (!taken.has(candidate)) return candidate;
+  }
+  throw new ScenarioError("Could not assign a unique copy title.");
+}
+
+function duplicateRoom(rawScenario, existingTitles = []) {
+  if (!Array.isArray(existingTitles)) throw new ScenarioError("Existing titles must be an array.");
+  const scenario = validateScenario(rawScenario);
+  const copy = JSON.parse(JSON.stringify(scenario));
+  copy.title = uniqueCopyTitle(scenario.title, [...existingTitles, scenario.title]);
+  return validateScenario(copy);
 }
 
 function residualCoverageCounts(rawScenario) {
@@ -2240,6 +2268,8 @@ function renderWorkspace() {
   document.querySelector("#load-room").disabled = savedRooms.length === 0;
   document.querySelector("#delete-room").disabled = savedRooms.length === 0;
   document.querySelector("#save-room").disabled = workspaceReadFailed || savedRooms.length >= 12;
+  const duplicateRoomButton = document.querySelector("#duplicate-room");
+  if (duplicateRoomButton) duplicateRoomButton.disabled = workspaceReadFailed || savedRooms.length >= 12;
   for (const id of ["compare-room-a", "compare-room-b"]) {
     const select = document.querySelector(`#${id}`);
     if (!select) continue;
@@ -2367,6 +2397,14 @@ function bindStaticEvents() {
       document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
       setStatus("Named snapshot saved locally. Later edits do not alter it.", true);
     } catch (error) { setStatus(`Could not save snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#duplicate-room").addEventListener("click", () => {
+    try {
+      const copy = duplicateRoom(scenario, savedRooms.map((room) => room.title));
+      storeWorkspace([...savedRooms, copy]);
+      document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
+      setStatus(`Duplicated this room as snapshot "${copy.title}". Compare uses the copy, not live edits.`, true);
+    } catch (error) { setStatus(`Could not duplicate room: ${messageOf(error)}`); }
   });
   document.querySelector("#load-room").addEventListener("click", () => {
     if (!allowReplaceDraft()) return;

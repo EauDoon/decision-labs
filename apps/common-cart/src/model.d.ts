@@ -292,6 +292,8 @@ export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "
 export function previewBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Buyer[];
 export function applyBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Scenario;
 export function restoreRemovedBuyer(rawScenario: unknown, rawBuyer: unknown): Scenario;
+export function uniqueCopyTitle(title: unknown, existingTitles?: unknown): string;
+export function duplicateRoom(rawScenario: unknown, existingTitles?: unknown): Scenario;
 export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;
 export interface ThreeRoomRow {
   title: string;
