@@ -919,6 +919,26 @@ export function attributeBottlenecks(input) {
   });
 }
 
+/** Markdown table of 72-hour limiting-gate observation counts. Not a causal ranking. */
+export function bottleneckCountsToMarkdown(input) {
+  const attribution = attributeBottlenecks(input);
+  const rows = attribution.rows.map((row) =>
+    "| " + markdownPlain(row.label) + " | " + row.hours + " | " + (row.share * 100).toFixed(1) + "% |"
+  );
+  return [
+    "# Weekend Gap hourly limiting-gate counts",
+    "",
+    "Observation counts of the 72 interval-start limitingGate values. Not a causal ranking.",
+    "",
+    "| Limiter | Hours | Share of 72h |",
+    "| --- | --- | --- |",
+    ...rows,
+    "",
+    "Synthetic educational counts. Not financial advice or live operations.",
+    ""
+  ].join("\n");
+}
+
 export const WINDOW_GATES = Object.freeze(["issuer", "bank", "payout"]);
 
 /** Shift one operating window by whole hours, then clamp to a valid one-hour-minimum window. */

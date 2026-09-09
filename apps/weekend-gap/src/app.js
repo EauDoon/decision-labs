@@ -20,6 +20,7 @@ import {
   analysisToJSON,
   analyzeTimeline,
   attributeBottlenecks,
+  bottleneckCountsToMarkdown,
   previewWindowShift,
   compareDemandProfiles,
   previewDemandProfileStep,
@@ -1286,6 +1287,10 @@ async function copyTextWithFallback(text, fallbackId, successMessage) {
 document.querySelector("#copy-gantt-hour").addEventListener("click", async () => {
   const text = selectedGanttHourToMarkdown(scenario, selectedHour);
   await copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
+});
+document.querySelector("#copy-bottleneck-markdown").addEventListener("click", async () => {
+  const text = bottleneckCountsToMarkdown(scenario);
+  await copyTextWithFallback(text, "#bottleneck-copy-fallback", "Limiting-gate counts copied as Markdown. These are observation counts, not a causal ranking.");
 });
 document.querySelector("#export-queue-svg").addEventListener("click",()=>{
   downloadText(buildQueueChartSvg(scenario,baselineScenario,selectedHour),"weekend-gap-queue.svg","image/svg+xml;charset=utf-8");

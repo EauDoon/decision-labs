@@ -305,6 +305,11 @@ SOFTWARE.
             <p id="diagnostic-summary"></p><ul id="bottleneck-list"></ul><p id="milestone-summary"></p>
             <h3 id="attribution-title">Hourly limiting gate</h3>
             <p id="bottleneck-explanation">Each of the 72 hours is tagged with the single limitingGate value at the start of the interval. Closed issuer, bank or payout gates are named first. This is a count of observations, not a ranking of which change would raise settlement.</p>
+            <div class="planning-actions">
+              <button id="copy-bottleneck-markdown" type="button">Copy limiting-gate counts</button>
+            </div>
+            <label class="sr-only" for="bottleneck-copy-fallback">Limiting-gate Markdown fallback</label>
+            <textarea id="bottleneck-copy-fallback" rows="10" hidden readonly></textarea>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly limiting gate counts">
               <table>
                 <caption>Hours limited by each named gate versus none. Shares are hours divided by 72.</caption>
