@@ -89,6 +89,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .group-floor { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 6rem; gap: .5rem; align-items: center; padding-bottom: .35rem; }
 .group-veto { grid-column: 1 / -1; display: flex; align-items: center; gap: .5rem; font-size: .82rem; padding-bottom: .65rem; border-bottom: 1px solid var(--line); }
 .group-veto input { width: auto; }
+.veto-groups-filter { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 0; font-size: .82rem; }
+.veto-groups-filter input { width: auto; }
 .veto-blocking { background: #faeee9; outline: 2px solid var(--brick); outline-offset: 2px; }
 .veto-blocking-note { grid-column: 1 / -1; margin: 0 0 .5rem; color: var(--brick); font-size: .78rem; line-height: 1.35; }
 .clause-lock { display: grid; gap: .4rem; margin: .75rem 0; font-size: .82rem; }
@@ -182,7 +184,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay, #coach-again, #shortcut-overlay { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay, #coach-again, #shortcut-overlay { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -289,6 +291,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         </section>
         <section class="panel-section">
           <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" id="add-group" data-action="add-group">Add group</button></div>
+          <label class="veto-groups-filter" for="veto-groups-only"><input id="veto-groups-only" type="checkbox"> Show veto groups only</label>
+          <p id="veto-groups-filter-note" class="field-note">The filter hides group cards. Every group still participates in search and export. A veto is a numerical constraint, not a legal right.</p>
+          <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <div id="groups-editor" class="groups-editor"></div>
           <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
           <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
@@ -2474,6 +2479,7 @@ let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
 let lockPreview = null;
 let clauseFilter = "";
+let vetoGroupsOnly = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
 let weightPreviewKey = "";
@@ -2669,7 +2675,21 @@ function blockingVetoIds(result) {
 }
 
 function renderGroups(vetoBlocks = new Set()) {
-  $("#groups-editor").innerHTML = state.proposal.groups.map((group) => `
+  const checkbox = $("#veto-groups-only");
+  if (checkbox) checkbox.checked = vetoGroupsOnly;
+  const visible = vetoGroupsOnly
+    ? state.proposal.groups.filter((group) => group.veto === true)
+    : state.proposal.groups;
+  const status = $("#veto-groups-status");
+  if (!visible.length) {
+    const message = vetoGroupsOnly
+      ? "No veto groups match this filter. Clear it to see every group. Hidden groups still count in the model."
+      : "Add a participant group to begin.";
+    if (status) status.textContent = vetoGroupsOnly ? message : "";
+    $("#groups-editor").innerHTML = `<p class="empty-state">${message}</p>`;
+  } else {
+    if (status) status.textContent = vetoGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
+    $("#groups-editor").innerHTML = visible.map((group) => `
     <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}">
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
@@ -2679,6 +2699,7 @@ function renderGroups(vetoBlocks = new Set()) {
       <label class="group-veto"><input data-field="group-veto" data-group-id="${escapeHtml(group.id)}" type="checkbox" ${group.veto === true ? "checked" : ""} aria-describedby="veto-note" aria-label="${escapeHtml(group.name)} veto"> Veto group (average support must meet the threshold)</label>
       ${vetoBlocks.has(group.id) ? '<p class="veto-blocking-note">Veto not met on the inspected package. This is a numerical constraint, not a legal right.</p>' : ""}
     </div>`).join("");
+  }
   const total = state.proposal.groups.reduce((sum, group) => sum + (Number.isFinite(group.weight) && group.weight > 0 ? group.weight : 0), 0);
   if (!(total > 0)) {
     $("#weight-shares").innerHTML = '<p class="field-note">Weight shares need positive finite weights.</p>';
@@ -3280,6 +3301,10 @@ document.addEventListener("input", (event) => {
 $("#clause-filter").addEventListener("input", (event) => {
   clauseFilter = event.target.value;
   renderClauses();
+});
+$("#veto-groups-only").addEventListener("change", (event) => {
+  vetoGroupsOnly = event.target.checked === true;
+  renderGroups(blockingVetoIds(currentResult()));
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";

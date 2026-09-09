@@ -238,6 +238,7 @@ let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
 let lockPreview = null;
 let clauseFilter = "";
+let vetoGroupsOnly = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
 let weightPreviewKey = "";
@@ -433,7 +434,21 @@ function blockingVetoIds(result) {
 }
 
 function renderGroups(vetoBlocks = new Set()) {
-  $("#groups-editor").innerHTML = state.proposal.groups.map((group) => `
+  const checkbox = $("#veto-groups-only");
+  if (checkbox) checkbox.checked = vetoGroupsOnly;
+  const visible = vetoGroupsOnly
+    ? state.proposal.groups.filter((group) => group.veto === true)
+    : state.proposal.groups;
+  const status = $("#veto-groups-status");
+  if (!visible.length) {
+    const message = vetoGroupsOnly
+      ? "No veto groups match this filter. Clear it to see every group. Hidden groups still count in the model."
+      : "Add a participant group to begin.";
+    if (status) status.textContent = vetoGroupsOnly ? message : "";
+    $("#groups-editor").innerHTML = `<p class="empty-state">${message}</p>`;
+  } else {
+    if (status) status.textContent = vetoGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
+    $("#groups-editor").innerHTML = visible.map((group) => `
     <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}">
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
@@ -443,6 +458,7 @@ function renderGroups(vetoBlocks = new Set()) {
       <label class="group-veto"><input data-field="group-veto" data-group-id="${escapeHtml(group.id)}" type="checkbox" ${group.veto === true ? "checked" : ""} aria-describedby="veto-note" aria-label="${escapeHtml(group.name)} veto"> Veto group (average support must meet the threshold)</label>
       ${vetoBlocks.has(group.id) ? '<p class="veto-blocking-note">Veto not met on the inspected package. This is a numerical constraint, not a legal right.</p>' : ""}
     </div>`).join("");
+  }
   const total = state.proposal.groups.reduce((sum, group) => sum + (Number.isFinite(group.weight) && group.weight > 0 ? group.weight : 0), 0);
   if (!(total > 0)) {
     $("#weight-shares").innerHTML = '<p class="field-note">Weight shares need positive finite weights.</p>';
@@ -1044,6 +1060,10 @@ document.addEventListener("input", (event) => {
 $("#clause-filter").addEventListener("input", (event) => {
   clauseFilter = event.target.value;
   renderClauses();
+});
+$("#veto-groups-only").addEventListener("change", (event) => {
+  vetoGroupsOnly = event.target.checked === true;
+  renderGroups(blockingVetoIds(currentResult()));
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";

@@ -110,6 +110,9 @@ SOFTWARE.
         </section>
         <section class="panel-section">
           <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" id="add-group" data-action="add-group">Add group</button></div>
+          <label class="veto-groups-filter" for="veto-groups-only"><input id="veto-groups-only" type="checkbox"> Show veto groups only</label>
+          <p id="veto-groups-filter-note" class="field-note">The filter hides group cards. Every group still participates in search and export. A veto is a numerical constraint, not a legal right.</p>
+          <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <div id="groups-editor" class="groups-editor"></div>
           <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
           <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>

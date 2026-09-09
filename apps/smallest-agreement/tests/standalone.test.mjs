@@ -61,6 +61,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /club-constitution/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
+  assert.match(html, /id="veto-groups-only"/u);
+  assert.match(html, /Show veto groups only/u);
+  assert.match(html, /id="veto-groups-status"/u);
   assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /id="printable-ballot"/u);
@@ -157,6 +160,12 @@ async function savedWorkbench(storage, hash = "") {
       target.events.get("input")({ target });
     },
     filterStatus: () => element("#clause-filter-status").textContent,
+    filterVetoGroups: (checked) => {
+      const target = element("#veto-groups-only");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
+    vetoGroupsStatus: () => element("#veto-groups-status").textContent,
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
     coalition: () => element("#coalition-table").innerHTML,
@@ -720,6 +729,29 @@ test("clause filter live region announces when no clauses match", async () => {
   assert.match(app.filterStatus(), /No clauses match this filter/u);
   app.filterClauses("");
   assert.equal(app.filterStatus(), "");
+});
+
+test("veto-only group filter hides non-veto cards without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="veto-groups-status"[^>]*role="status"/u);
+  assert.match(html, /id="veto-groups-status"[^>]*aria-live="polite"/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterVetoGroups(true);
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  assert.match(app.vetoGroupsStatus(), /No veto groups match this filter/u);
+  assert.match(app.shares(), /Residents/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.filterVetoGroups(false);
+  app.field("#preset-select", "club-constitution");
+  app.click("#load-preset");
+  app.filterVetoGroups(true);
+  assert.match(app.groups(), /Officers/u);
+  assert.doesNotMatch(app.groups(), /Club staff/u);
+  assert.doesNotMatch(app.groups(), /data-group-id="members"/u);
+  assert.match(app.shares(), /Members/u);
+  assert.match(app.vetoGroupsStatus(), /Showing 1 of 3 groups/u);
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {
