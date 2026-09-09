@@ -175,3 +175,7 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 ## Charts
 
 The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.
+
+## Display-only stress mute
+
+Hiding a participant row in the stress ledger is a display filter. Case counts, hold counts, worst profit gaps, operational failures, and any tested proposal still include that participant. Showing the row again does not recalculate the grid.

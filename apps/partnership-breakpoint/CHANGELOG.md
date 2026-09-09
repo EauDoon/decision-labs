@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.4.1
+
+- Kept the results jump nav sticky at the top of the results column so in-page links stay visible while scrolling. Links remain keyboard accessible and are hidden in print.
+- Added participant CSV import for name, revenue share, variable cost, fixed cost, min profit, optional capacity, commitment, and risk. Formula prefixes are stored as text. Named row and column errors reject the file. A valid file replaces participants only; deal terms are unchanged.
+- Showed capacity utilization in the participant ledger as volume over capacity, or Unbounded when capacity is omitted, with an SVG meter and text.
+- Added a three-snapshot compare: pin two saved snapshots against the current draft. The table reports profit and hold or fail per participant. Different identifier sets are labeled rather than filled with zeros.
+- Stored optional deal notes (1 to 500 characters) on the case. Notes appear in printed and Markdown reports. Unknown sibling fields are rejected. Redacted export clears notes with the title.
+- Trapped Tab inside the coach and help dialogs and restored focus to the opener on close.
+- Included a sanitized deal title in export filenames (`partnership-breakpoint-harbor-jv.json`). Empty or unusable titles keep the previous names.
+- Kept Duplicate, Move, and Remove usable at 390px outside the participant disclosure. Cards still default to open.
+- Added Copy share URL in locally served http mode. File URLs hide the control. Hide in table on the stress ledger is display-only and does not change case counts or proposals.
+
 ## 1.4.0
 
 - Added optional deal title (1 to 80 characters) and optional 3-letter uppercase currency display prefix. Omitted currency still shows units. Illegal strings are rejected rather than coerced.
