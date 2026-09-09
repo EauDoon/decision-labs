@@ -126,3 +126,9 @@ This is a feasible split for the selected discrete cases, not a bargaining recom
 The model treats costs, shares, risk cost, capacity, and minimum acceptable profit as known fixed inputs for one representative month. It assumes every effective transaction completes, the entered revenue split applies to every transaction, and no participant receives value outside the model unless it is represented in its acceptable-profit floor.
 
 It cannot establish a counterparty's actual reservation value, legal right to exit, cash availability, demand elasticity, cost curve, risk distribution, default loss, compliance obligations, tax treatment, or long-term strategic value. It also cannot infer probability, causality, or negotiation leverage from a threshold. Use it to make assumptions explicit and to challenge a proposed deal before relying on it.
+
+## Fee negotiation guide
+
+At current effective volume V, the fee floor for participant i is (V times variable cost + fixed cost + risk cost + minimum acceptable profit) divided by (V times revenue share). When the numerator is zero the floor is zero. A positive numerator with zero denominator has no finite floor. Values beyond the numeric input limit are unavailable. The partnership floor is the maximum participant floor. This diagnostic holds volume and shares fixed and does not include demand response or compound stress. Capacity and commitment tests remain separate. Display rounding can move a floor across a boundary, so rerun the model after entering any proposed fee.
+
+Applying a compound case copies its realized volume, shocked fee and participant variable costs to a new baseline. It resets baseline volume shock to zero, keeps addressable demand and other inputs, and validates the result against input bounds. Stress settings remain the same, so the next grid represents additional shocks from the new baseline.

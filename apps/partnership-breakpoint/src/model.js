@@ -656,3 +656,31 @@ export function makeParticipant(id) {
     riskCost: 0,
   };
 }
+
+/** Fee floors at current effective volume and fixed shares, not a demand forecast. */
+export function calculateFeeRequirements(config) {
+  assertValidConfiguration(config);
+  const volume = effectiveVolume(config.deal);
+  const participants = config.participants.map((participant) => {
+    const overhead = participant.fixedMonthlyCost + participant.riskCost + participant.minimumAcceptableProfit;
+    const needsRevenue = overhead > 0 || (volume > 0 && participant.variableCostPerTransaction > 0);
+    const floor = !needsRevenue ? 0 : volume > 0 && participant.revenueShare > 0
+      ? (participant.variableCostPerTransaction + overhead / volume) / participant.revenueShare : null;
+    const requiredFee = floor !== null && Number.isFinite(floor) && floor <= MAX_NUMERIC_INPUT ? floor : null;
+    const operationalFailures = [];
+    if (volume < (participant.minimumCommitment ?? 0)) operationalFailures.push('minimum commitment');
+    if (participant.capacity != null && volume > participant.capacity) operationalFailures.push('capacity');
+    return { id: participant.id, name: participant.name, requiredFee, operationalFailures };
+  });
+  const requiredFee = participants.some((item) => item.requiredFee === null) ? null : Math.max(...participants.map((item) => item.requiredFee));
+  return { volume, requiredFee, operationallyFeasible: participants.every((item) => !item.operationalFailures.length), participants };
+}
+
+/** Materialize one displayed compound case as new baseline inputs. */
+export function materializeStressCase(config, scenarioId) {
+  const scenario = evaluateStressGrid(config).scenarios.find((item) => item.id === scenarioId);
+  if (!scenario) throw new ValidationError(['Choose a current compound case.']);
+  const candidate = { ...config, deal: { ...config.deal, monthlyVolume: scenario.volume, feePerTransaction: scenario.fee, volumeShockPct: 0 }, participants: config.participants.map((item) => ({ ...item, variableCostPerTransaction: item.variableCostPerTransaction * (1 + scenario.variableCostRisePct / 100) })), ...(config.stress ? { stress: { ...config.stress } } : {}) };
+  assertValidConfiguration(candidate);
+  return candidate;
+}

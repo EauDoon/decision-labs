@@ -11,6 +11,9 @@ async function workbench(protocol = 'file:', options = {}) {
   const windowEvents = new Map();
   const storage = new Map();
   const notice = { textContent: '' };
+  const downloads = [];
+  let downloadBlob;
+  let prints = 0;
   const app = { innerHTML: '', querySelectorAll: () => [],
     addEventListener: (name, callback) => {
       assert.equal(events.has(name), false, `duplicate ${name} handler`);
@@ -25,19 +28,23 @@ async function workbench(protocol = 'file:', options = {}) {
       else this.onload();
     }
   }
-  const context = vm.createContext({ console, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
+  const context = vm.createContext({ console, Blob, setTimeout: (callback) => callback(), URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
     history: { replaceState() {} },
-    window: { location: { protocol, hash: options.hash ?? '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
-    document: { activeElement: null, querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
-    localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
+    window: { print: () => { prints += 1; }, location: { protocol, hash: options.hash ?? '', pathname: '/', search: '' }, addEventListener: (name, callback) => windowEvents.set(name, callback) },
+    document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
+    localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
   });
   new vm.Script(script).runInContext(context, { timeout: 2000 });
   return {
     markup: () => app.innerHTML,
+    downloads: () => downloads,
+    prints: () => prints,
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
     edit: (path, value, extra = {}) => events.get('change')({ target: new Input({ path, ...extra }, value) }),
-    click: (action) => events.get('click')({ target: { closest: () => ({ dataset: { action } }) } }),
+    click: (action, extra = {}) => events.get('click')({ target: { closest: () => ({ dataset: { action, ...extra } }) } }),
+    nameCase: (value) => events.get('change')({ target: new Input({ action: 'case-name' }, value) }),
+    library: () => JSON.parse(storage.get('partnership-breakpoint.cases.v1') ?? '[]'),
     navigate: (config) => {
       context.window.location.hash = `#deal=${Buffer.from(JSON.stringify(config)).toString('base64url')}`;
       windowEvents.get('hashchange')?.();
@@ -283,4 +290,142 @@ test('applying a missing proposal names the rejected action', async () => {
   const app = await workbench();
   app.click('apply-stress-proposal');
   assert.match(app.notice(), /Apply tested revenue split rejected: No verified fixed-share proposal/);
+});
+
+test('undo restores edits and invalid drafts; redo restores the edit and resets clear redo', async () => {
+  const app = await workbench();
+  app.edit('deal.monthlyVolume', '80000');
+  app.edit('deal.monthlyVolume', '');
+  app.click('undo');
+  assert.equal(app.saved().deal.monthlyVolume, 80000);
+  app.click('undo');
+  assert.equal(app.saved().deal.monthlyVolume, 100000);
+  app.click('redo');
+  assert.equal(app.saved().deal.monthlyVolume, 80000);
+  app.click('reset');
+  assert.match(app.markup(), /data-action="redo" disabled/);
+  app.click('undo');
+  assert.equal(app.saved().deal.monthlyVolume, 80000);
+});
+
+test('local saving failures are visible and do not claim persistence', async () => {
+  const app = await workbench('file:', { blockStorage: true });
+  app.edit('deal.monthlyVolume', '80000');
+  assert.match(app.notice(), /Local saving is unavailable/);
+  assert.doesNotMatch(app.notice(), /Saved locally/);
+  assert.match(app.markup(), /value="80000"/);
+});
+test('edits and resets supersede a pending import', async () => {
+  for (const action of ['edit', 'reset']) {
+    const app = await workbench();
+    const pending = [];
+    const imported = clonePreset('thinMargin');
+    app.import(imported, pending);
+    if (action === 'edit') app.edit('deal.monthlyVolume', '70000'); else app.click('reset');
+    pending[0]();
+    assert.equal(app.saved().deal.monthlyVolume, action === 'edit' ? 70000 : 100000);
+    assert.equal(app.saved().deal.feePerTransaction, 0.2);
+  }
+});
+
+test('named snapshots are separate, escaped, reloadable and removable with recovery', async () => {
+  const app = await workbench();
+  app.nameCase('<b>Baseline</b>'); app.click('save-case');
+  assert.equal(app.library().length, 1);
+  assert.match(app.markup(), /&lt;b&gt;Baseline&lt;\/b&gt;/);
+  app.edit('deal.monthlyVolume', '80000');
+  assert.equal(app.library()[0].config.deal.monthlyVolume, 100000);
+  app.click('load-case', { caseId: 'case-1' });
+  assert.equal(app.saved().deal.monthlyVolume, 100000);
+  app.click('undo'); assert.equal(app.saved().deal.monthlyVolume, 80000);
+  app.click('remove-case', { caseId: 'case-1' }); assert.equal(app.library().length, 0);
+  app.click('restore-case'); assert.equal(app.library().length, 1);
+});
+test('library refuses invalid unnamed snapshots and reports blocked persistence', async () => {
+  const app = await workbench(); app.click('save-case');
+  assert.match(app.notice(), /Enter a snapshot name/);
+  const blocked = await workbench('file:', { blockStorage: true });
+  blocked.nameCase('A'); blocked.click('save-case');
+  assert.match(blocked.notice(), /could not be saved/);
+  assert.equal(blocked.library().length, 0);
+});
+
+test('snapshot comparison reports participant deltas without mutating the current case', async () => {
+  const app = await workbench(); app.nameCase('Baseline'); app.click('save-case');
+  app.edit('participants.0.fixedMonthlyCost', '1900');
+  const current = app.saved();
+  app.click('compare-case', { caseId: 'case-1' });
+  assert.match(app.markup(), /Compare with Baseline/);
+  assert.match(app.markup(), /-100.00 units/);
+  assert.match(app.markup(), /matched by stable identifier/);
+  assert.deepEqual(app.saved(), current);
+  app.click('clear-comparison'); assert.doesNotMatch(app.markup(), /Compare with Baseline/);
+});
+
+test('decision report exports reproducible inputs, outcomes, and safe participant prose', async () => {
+  const app = await workbench();
+  app.edit('participants.0.name', '<img src=x>|Bad', { type: 'text' });
+  app.click('export-report');
+  const file = app.downloads()[0]; assert.equal(file.filename, 'partnership-breakpoint-report.md');
+  const text = await file.blob.text();
+  assert.match(text, /Counts are not probabilities/);
+  assert.match(text, /&lt;img src=x&gt;/);
+  const config = JSON.parse(text.split('\x60\x60\x60json\n')[1].split('\n\x60\x60\x60')[0]);
+  assert.deepEqual(config, app.saved());
+  app.edit('deal.monthlyVolume', ''); app.click('export-report');
+  assert.equal(app.downloads().length, 1);
+});
+
+test('stress CSV exports every participant case and neutralizes formula names', async () => {
+  const app = await workbench();
+  app.edit('participants.0.name', '=HYPERLINK("bad")', { type: 'text' });
+  app.click('export-csv');
+  const file = app.downloads()[0]; const csv = await file.blob.text();
+  assert.equal(file.filename, 'partnership-breakpoint-stress.csv');
+  assert.equal(csv.trim().split('\r\n').length, 82);
+  assert.ok(csv.includes("\"'=HYPERLINK(\"\"bad\"\")\""));
+  assert.match(csv, /Profit gap/);
+  app.edit('deal.monthlyVolume', ''); app.click('export-csv');
+  assert.equal(app.downloads().length, 1);
+});
+
+test('share reconciliation repairs overallocations and preserves participant costs', async () => {
+  const app = await workbench();
+  app.edit('participants.0.revenueShare', '0.8');
+  assert.match(app.markup(), /is overallocated/);
+  app.click('normalize-shares');
+  const normalized = app.saved();
+  assert.ok(Math.abs(normalized.participants.reduce((sum, p) => sum + p.revenueShare, 0) - 1) < 1e-9);
+  assert.ok(Math.abs(normalized.participants[0].revenueShare / normalized.participants[1].revenueShare - 0.8 / 0.35) < 1e-9);
+  assert.equal(normalized.participants[0].fixedMonthlyCost, 1800);
+  app.click('equal-shares');
+  assert.ok(app.saved().participants.every((p) => Math.abs(p.revenueShare - 1 / 3) < 1e-9));
+  app.click('undo'); assert.deepEqual(app.saved(), normalized);
+});
+test('normalization refuses missing shares and equal split recovers them explicitly', async () => {
+ const app = await workbench(); app.edit('participants.0.revenueShare', '');
+ app.click('normalize-shares'); assert.match(app.notice(), /Normalize requires/);
+ app.click('equal-shares'); assert.doesNotMatch(app.markup(), /Resolve these inputs/);
+});
+
+test('compound case inspection requires explicit application and supports undo', async () => {
+  const app = await workbench(); app.click('reset'); const original = app.saved();
+  app.click('inspect-stress', { scenarioId: 'case-27' });
+  assert.match(app.markup(), /Inspect case-27 as a new baseline/);
+  assert.deepEqual(app.saved(), original);
+  app.click('apply-stress-case');
+  assert.equal(app.saved().deal.monthlyVolume, 120000);
+  assert.equal(app.saved().deal.feePerTransaction, 0.2 * 0.9);
+  app.click('undo'); assert.deepEqual(app.saved(), original);
+});
+
+test('invalid fields expose accessible state and printing requires a valid case', async () => {
+ const app = await workbench();
+ app.click('print-report'); assert.equal(app.prints(), 1);
+ app.edit('deal.monthlyVolume', '');
+ assert.match(app.markup(), /id="field-deal-monthlyVolume" aria-invalid="true"/);
+ assert.match(app.markup(), /Go to first invalid field/);
+ app.click('print-report'); assert.equal(app.prints(), 1);
+ app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
+ assert.match(app.markup(), /Case assumptions/);
 });
