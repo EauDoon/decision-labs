@@ -18,6 +18,8 @@ import {
   evaluatePackage,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
+  parseParticipantGroupsCsv,
+  formatParticipantGroupsCsv,
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
@@ -1112,6 +1114,49 @@ test("support matrix CSV round-trips scores and names formula, identity, and hea
   assert.equal(empty.errors[0].code, "empty_csv");
   const score = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,101,0\r\n", input);
   assert.equal(score.errors[0].code, "invalid_score");
+});
+
+test("participant groups CSV replaces groups with named errors for unknown columns and bad values", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2, minSupport: 40, veto: true }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const csv = formatParticipantGroupsCsv(input);
+  const parsed = parseParticipantGroupsCsv(csv, input);
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.importedGroups, 2);
+  assert.equal(parsed.proposal.groups[0].name, "A");
+  assert.equal(parsed.proposal.groups[1].veto, true);
+  assert.equal(parsed.proposal.groups[1].minSupport, 40);
+  assert.equal(parsed.proposal.clauses[0].options[0].support[parsed.proposal.groups[0].id], 40);
+  assert.equal(JSON.stringify(input), before);
+
+  const replacement = parseParticipantGroupsCsv("name,weight,min_support,veto,one:original,one:alternative,one:other\r\nResidents,3,,yes,90,80,70\r\n", input);
+  assert.equal(replacement.status, "ok");
+  assert.equal(replacement.importedGroups, 1);
+  assert.equal(replacement.proposal.groups[0].id, "residents");
+  assert.equal(replacement.proposal.groups[0].weight, 3);
+  assert.equal(replacement.proposal.groups[0].veto, true);
+  assert.equal(Object.hasOwn(replacement.proposal.groups[0], "minSupport"), false);
+  assert.equal(replacement.proposal.clauses[0].options[0].support.residents, 90);
+
+  const unknown = parseParticipantGroupsCsv("name,weight,hidden,one:original,one:alternative,one:other\r\nA,1,x,1,2,3\r\n", input);
+  assert.equal(unknown.status, "invalid");
+  assert.equal(unknown.errors[0].code, "unknown_column");
+  const missing = parseParticipantGroupsCsv("name,weight\r\nA,1\r\n", input);
+  assert.equal(missing.errors.some((error) => error.code === "missing_support_column"), true);
+  const badWeight = parseParticipantGroupsCsv("name,weight,one:original,one:alternative,one:other\r\nA,0,1,2,3\r\n", input);
+  assert.equal(badWeight.errors[0].code, "invalid_weight");
+  const badVeto = parseParticipantGroupsCsv("name,weight,veto,one:original,one:alternative,one:other\r\nA,1,maybe,1,2,3\r\n", input);
+  assert.equal(badVeto.errors[0].code, "invalid_veto");
+  const formula = parseParticipantGroupsCsv("name,weight,one:original,one:alternative,one:other\r\nA,=SUM(1),1,2,3\r\n", input);
+  assert.equal(formula.errors[0].code, "formula_cell");
+  assert.equal(parseParticipantGroupsCsv("   ", input).errors[0].code, "empty_csv");
 });
 
 test("locking an option for preview re-solves remaining clauses without mutating the draft", () => {

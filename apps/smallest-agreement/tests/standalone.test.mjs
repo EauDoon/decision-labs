@@ -36,6 +36,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /aria-describedby="floor-note"/u);
   assert.match(html, /id="veto-note"/u);
   assert.match(html, /Import support CSV/u);
+  assert.match(html, /Import groups CSV/u);
+  assert.match(html, /id="groups-import-file"/u);
   assert.match(html, /Try this option/u);
   assert.match(html, /Leave one group out/u);
   assert.match(html, /id="coach-overlay"/u);
@@ -117,6 +119,13 @@ async function savedWorkbench(storage, hash = "") {
         value: "draft.json",
       };
       await element("#import-file").events.get("change")({ target });
+    },
+    importGroupsCsv: async (contents, { size } = {}) => {
+      const target = {
+        files: [{ size: size ?? contents.length, text: async () => contents }],
+        value: "groups.csv",
+      };
+      await element("#groups-import-file").events.get("change")({ target });
     },
     setTitle: (value) => {
       const target = element("#proposal-title");
@@ -768,4 +777,24 @@ test("copy recommended package writes Markdown to the clipboard", async () => {
   assert.match(app.clipboardText(), /Neighbourhood Plan: the shared green/u);
   assert.match(app.clipboardText(), /not a recorded vote or a claim of legitimacy/u);
   assert.match(app.message(), /Recommended package copied as Markdown/u);
+});
+
+test("groups CSV import replaces the roster with named errors and supports undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for group CSV");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  await app.importGroupsCsv("name,weight,hidden\nA,1,x\n");
+  assert.match(app.message(), /Groups CSV import failed \(unknown_column\)/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.length, before.groups.length);
+  const supportHeaders = before.clauses.flatMap((clause) => clause.options.map((option) => `${clause.id}:${option.id}`));
+  const row = ["New residents", "4", "", "no", ...supportHeaders.map(() => "55")].join(",");
+  await app.importGroupsCsv(`name,weight,min_support,veto,${supportHeaders.join(",")}\n${row}\n`);
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.groups.length, 1);
+  assert.equal(after.groups[0].name, "New residents");
+  assert.equal(after.groups[0].weight, 4);
+  assert.match(app.message(), /Imported 1 participant groups/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.length, before.groups.length);
 });

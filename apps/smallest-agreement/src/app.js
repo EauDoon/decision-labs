@@ -16,6 +16,8 @@ import {
   sortPackageGapRows,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
+  parseParticipantGroupsCsv,
+  formatParticipantGroupsCsv,
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
@@ -483,6 +485,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#export-button").disabled = result.status === "invalid";
   $("#csv-button").disabled = result.status === "invalid";
   $("#matrix-export-button").disabled = result.status === "invalid";
+  $("#groups-export-button").disabled = result.status === "invalid";
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
@@ -1352,6 +1355,34 @@ $("#matrix-import-file").addEventListener("change", async (event) => {
   state.saveMessage = `Imported ${parsed.updatedCells} support scores from CSV.`;
   save();
   render();
+});
+$("#groups-export-button").addEventListener("click", () => {
+  if (!validateProposal(state.proposal).valid) return notifyDraft("Fix the draft before exporting the groups CSV.");
+  downloadText("smallest-agreement-groups.csv", "\uFEFF" + formatParticipantGroupsCsv(state.proposal), "text/csv;charset=utf-8");
+  notifyDraft("Groups CSV downloaded. Import it to replace participant groups, weights, optional floors and vetoes, and support scores.");
+});
+$("#groups-import-button").addEventListener("click", () => $("#groups-import-file").click());
+$("#groups-import-file").addEventListener("change", async (event) => {
+  const sequence = ++importSequence;
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (file.size > 250_000) return notifyDraft("Groups CSV import failed: files must be 250 KB or smaller.");
+  let text;
+  try {
+    text = await file.text();
+  } catch {
+    if (sequence !== importSequence) return;
+    return notifyDraft("Groups CSV import failed: the file could not be read.");
+  }
+  if (sequence !== importSequence) return;
+  const parsed = parseParticipantGroupsCsv(text, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Groups CSV import failed (${first.code}): ${first.message}`);
+  }
+  changeAndRender(() => { state.proposal = parsed.proposal; });
+  notifyDraft(`Imported ${parsed.importedGroups} participant groups from CSV. Undo restores the previous draft.`);
 });
 $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");

@@ -30,6 +30,8 @@ const appImport = `import {
   sortPackageGapRows,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
+  parseParticipantGroupsCsv,
+  formatParticipantGroupsCsv,
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
