@@ -113,6 +113,9 @@ tbody tr:last-child td { border-bottom: 0; }
 .swatch.viable { background: var(--cobalt); border-color: var(--cobalt); }
 .swatch.fail { background: var(--coral); border-color: var(--coral); }
 canvas { width: 100%; height: auto; display: block; border: 1px solid var(--line); background: white; }
+.chart-frame { overflow-x: auto; }
+.chart-svg { width: 100%; height: auto; display: block; background: white; border: 1px solid var(--line); }
+.tornado-table { min-width: 0; }
 .sensitivity-table { min-width: 0; font-size: .73rem; }
 .sensitivity-table th, .sensitivity-table td { padding: .35rem; min-width: 2.8rem; }
 .sensitivity-table td { text-align: center; }

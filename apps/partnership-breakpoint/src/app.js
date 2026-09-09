@@ -433,6 +433,7 @@ function resultsPanel(result) {
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
     ${participantTable(result)}
     ${shockSection(result)}
+    ${tornadoSection(result)}
     ${sensitivitySection(result)}
     ${methodAndLimits()}
   </section>`;
@@ -505,6 +506,53 @@ function shockCard(label, shock, units) {
 
 function shockSection(result) {
   return `<section class="panel"><div class="panel-heading"><h2>Smallest adverse shock by participant</h2><span class="optional">threshold is not a forecast</span></div><div class="panel-body">${result.participants.map((participant) => `<section class="input-section"><h2>${escapeAttribute(participant.name)}</h2><div class="shock-grid">${shockCard('Volume decrease', participant.shocks.volume, 'txn')}${shockCard('Volume increase', participant.shocks.volumeIncrease, 'txn')}${shockCard('Fee decrease', participant.shocks.fee, 'units / txn')}${shockCard('Variable cost increase', participant.shocks.variableCost, 'units / txn')}</div></section>`).join('')}</div></section>`;
+}
+
+function chartLabel(value, max = 24) {
+  const text = String(value ?? '');
+  return text.length <= max ? text : `${text.slice(0, max - 1)}…`;
+}
+
+function tornadoSection(result) {
+  const kinds = [
+    ['volume', 'Volume down'],
+    ['volumeIncrease', 'Volume up'],
+    ['fee', 'Fee down'],
+    ['variableCost', 'Cost up'],
+  ];
+  const rows = [];
+  for (const participant of result.participants) {
+    for (const [kind, label] of kinds) {
+      const shock = participant.shocks[kind];
+      const bounded = shock.status === 'bounded' && shock.changePct != null && Number.isFinite(shock.changePct);
+      rows.push({
+        name: participant.name,
+        label,
+        status: shock.status,
+        changePct: bounded ? shock.changePct : null,
+        display: shock.status === 'already-failing' ? 'Already failing'
+          : shock.status === 'at-breakpoint' ? 'At breakpoint'
+          : bounded ? formatPct(shock.changePct)
+            : 'No bounded shock',
+      });
+    }
+  }
+  const finite = rows.map((row) => row.changePct).filter((value) => value != null);
+  const maxPct = Math.max(1, ...finite);
+  const rowHeight = 22;
+  const left = 190;
+  const width = 720;
+  const height = 28 + rows.length * rowHeight;
+  const barMax = width - left - 90;
+  const bars = rows.map((row, index) => {
+    const y = 8 + index * rowHeight;
+    const barWidth = row.changePct == null ? 0 : (row.changePct / maxPct) * barMax;
+    return `<text x="8" y="${y + 13}" font-size="11" fill="#1f2328">${escapeAttribute(chartLabel(`${row.name} / ${row.label}`, 28))}</text>
+      <rect x="${left}" y="${y}" width="${Math.max(0, barWidth)}" height="14" fill="${row.changePct == null ? '#eae7de' : '#1558d6'}"></rect>
+      <text x="${left + Math.max(0, barWidth) + 6}" y="${y + 13}" font-size="11" fill="#1f2328">${escapeAttribute(row.display)}</text>`;
+  }).join('');
+  const tableRows = rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('');
+  return `<section class="panel"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="chart-frame">${`<svg class="chart-svg" role="img" aria-label="Tornado chart of smallest bounded adverse percentage shocks by participant. The table lists the same values." viewBox="0 0 ${width} ${height}" width="100%" height="${Math.min(height, 520)}">${bars}</svg>`}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${tableRows}</tbody></table></div></section>`;
 }
 
 function sensitivityGrid() {

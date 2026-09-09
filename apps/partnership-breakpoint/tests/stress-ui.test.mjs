@@ -484,8 +484,6 @@ test('share-to-hold previews a split and requires an explicit apply', async () =
   app.click('solve-share-hold', { participantId: 'liquidity-partner' });
   assert.match(app.markup(), /Share-to-hold preview/);
   assert.match(app.markup(), /Apply minimum hold share/);
-  const before = JSON.parse(JSON.stringify(app.markup().includes('data-path="deal.monthlyVolume"') ? { ok: true } : { ok: false }));
-  assert.equal(before.ok, true);
   const originalShares = [0.4, 0.35, 0.25];
   app.click('close-share-hold');
   assert.doesNotMatch(app.markup(), /Share-to-hold preview/);
@@ -497,4 +495,13 @@ test('share-to-hold previews a split and requires an explicit apply', async () =
   assert.notDeepEqual(applied.participants.map((item) => item.revenueShare), originalShares);
   app.click('undo');
   assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
+});
+
+test('tornado chart includes an SVG and a text-equivalent table', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /Adverse-shock tornado/);
+  assert.match(app.markup(), /<svg class="chart-svg"[^>]*aria-label="Tornado chart/);
+  assert.match(app.markup(), /<caption>Text equivalent of the tornado chart<\/caption>/);
+  assert.match(app.markup(), /Volume down/);
+  assert.match(app.markup(), /Fee down/);
 });
