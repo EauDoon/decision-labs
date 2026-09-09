@@ -10,6 +10,8 @@ test('catalog page keeps language, landmarks, skip, and focus contract', () => {
   assert.match(html, /<html lang="en">/);
   assert.match(html, /class="skip" href="#whats-new">Skip to what's new/);
   assert.match(html, /class="skip" href="#workbenches">Skip to workbenches/);
+  assert.match(html, /href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts/);
+  assert.match(html, /id="catalog-heading" tabindex="-1"/);
   assert.match(html, /<header class="shell hero">/);
   assert.match(html, /<nav class="shell site-nav" aria-label="On this page">/);
   assert.match(html, /<main class="shell" id="main">/);
@@ -81,13 +83,28 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
   assert.match(html, /Gate Gantt in Weekend Gap/);
+  assert.match(html, /CSV roster, capacity, and notes in Partnership Breakpoint 1\.4\.1/);
+  assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
+  assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
+  assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
   assert.match(html, /not checkout, inventory, or a second live order/);
   assert.match(html, /not a legal right/);
   assert.match(html, /does not connect to a bank or a live redemption queue/);
+  assert.match(html, /do not sync a live roster or quote capacity from a partner system/);
+  assert.match(html, /not checkout or live inventory/);
+  assert.match(html, /not a recorded vote or a legal hold/);
   assert.match(html, /href="#whats-new">What's new/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
   assert.match(readme, /What's new/);
   assert.match(readme, /share-to-hold, residual\s+coverage, veto groups, and the gate Gantt/);
+  assert.match(readme, /CSV roster, capacity, and notes/);
+  assert.match(readme, /leftover\/tertiary fill/);
+  assert.match(readme, /package pin, locks, and notes/);
+  assert.match(readme, /queue-clear hours and Gantt compare/);
+  assert.match(readme, /not hosted APIs/);
+  assert.match(readme, /does not serve those\s+markdown files/);
 });
 
 test('question-mark shortcut toggles an in-page panel and skips inputs', () => {
@@ -98,5 +115,15 @@ test('question-mark shortcut toggles an in-page panel and skips inputs', () => {
   assert.match(html, /input, textarea, select, \[contenteditable="true"\]/);
   assert.match(html, /@media print[\s\S]*\.shortcuts/);
   assert.match(html, /@media print[\s\S]*\.whats-new/);
+  assert.match(html, /@media print[\s\S]*\.version-line/);
   assert.match(html, /\.skip, \.skips, \.keys-note, \.how, \.site-nav, \.shortcuts/);
+  assert.match(html, /@media print[\s\S]*\.shortcuts, \.shortcuts-open \{ display: none !important; \}/);
+});
+
+test('h focuses the catalog heading when focus is not in an input', () => {
+  assert.match(html, /id="catalog-heading" tabindex="-1"/);
+  assert.match(html, /event\.key === 'h'/);
+  assert.match(html, /getElementById\('catalog-heading'\)\?\.focus\(\)/);
+  assert.match(html, /<kbd>h<\/kbd><\/dt><dd>Focus the catalog heading/);
+  assert.match(html, /inEditable\(event\.target\)/);
 });
