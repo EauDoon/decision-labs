@@ -173,3 +173,7 @@ The optional package review can show whether nearby approval rules change the le
 ### Budget scenarios
 
 The optional package review can compare discrete cost limits without changing scores or locks. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Single-lock opportunity cost
+
+The optional package review can compare removing one lock while retaining every other declared constraint. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.

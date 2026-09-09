@@ -2091,6 +2091,7 @@ export const AGREEMENT_REVIEW_TOOLS=Object.freeze([
  {id:'rollback',title:'Rollback contribution'},
  {id:'thresholds',title:'Threshold scenarios'},
  {id:'budgets',title:'Budget scenarios'},
+ {id:'locks',title:'Single-lock opportunity cost'},
 // SA_REVIEW_TOOLS
 ]);
 export function analyzeAgreementReview(rawProposal,tool){
@@ -2139,6 +2140,13 @@ export function analyzeAgreementReview(rawProposal,tool){
  const maximum=proposal.clauses.reduce((sum,c)=>sum+Math.max(...c.options.map(o=>o.changeCost)),0);const reference=proposal.maxChangeCost??selected.changeCost;const levels=[...new Set([0,reference/2,reference,Math.min(maximum,reference*1.5),maximum])].sort((a,b)=>a-b);
  const rows=levels.map(maxChangeCost=>{const r=findSmallestAgreement({...proposal,maxChangeCost},{maxCombinations:10000});return[maxChangeCost,r.status,r.agreement?.changeCost??null,r.agreement?.approval??null,r.agreement?.options.map(o=>o.id).join(', ')??'Unavailable'];});
  return report(['Tested maximum cost','Search status','Least passing cost','Approval %','Option IDs in clause order'],rows,'At most five discrete budgets around the current budget or selected cost, plus the maximum sum of clause costs. This is not a continuous frontier. Each search is capped at 10,000 combinations; too_large means unavailable.');
+
+ }
+ case 'locks':{
+
+ const locked=proposal.clauses.filter(c=>c.lockedOptionId);const perSearch=Math.max(1,Math.floor(50000/Math.max(1,locked.length)));
+ const rows=locked.map(clause=>{const changed={...proposal,clauses:proposal.clauses.map(c=>{const copy={...c};if(c.id===clause.id)delete copy.lockedOptionId;return copy;})};const r=findSmallestAgreement(changed,{maxCombinations:perSearch});return[clause.title,clause.lockedOptionId,r.status,r.agreement?.changeCost??null,solved.agreement&&r.agreement?solved.agreement.changeCost-r.agreement.changeCost:null,r.agreement?.options.map(o=>o.id).join(', ')??'Unavailable'];});
+ return report(['Unlocked clause','Original lock ID','Search status','Cost with one lock removed','Cost saved vs recommendation','New option IDs'],rows,'One lock is removed per row without changing the current proposal. Across rows at most 50,000 candidate combinations are allowed. A too_large result is unavailable and is not evidence that the lock is necessary.');
 
  }
 // SA_REVIEW_CASES
