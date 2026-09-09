@@ -166,6 +166,16 @@ test('w focuses the workbenches when focus is not in an input', () => {
   assert.match(readme, /Press `w` to focus the\s+workbenches/);
 });
 
+test('k focuses How it works when focus is not in an input', () => {
+  assert.match(html, /id="how-it-works" tabindex="-1"/);
+  assert.match(html, /event\.key === 'k'/);
+  assert.match(html, /getElementById\('how-it-works'\)\?\.focus\(\)/);
+  assert.match(html, /<kbd>k<\/kbd><\/dt><dd>Focus How it works/);
+  assert.match(html, /Press <kbd>k<\/kbd> to focus How it works/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `k` to focus How it works/);
+});
+
 test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(html, /id="trust" tabindex="-1"/);
   assert.match(html, /event\.key === 't'/);
