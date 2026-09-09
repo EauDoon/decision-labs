@@ -1861,6 +1861,7 @@ const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
   {id:'fees',title:'Common fee scenarios'},
   {id:'operations',title:'Commitment and capacity conflicts'},
   {id:'volumes',title:'Effective-volume scenarios'},
+  {id:'zero',title:'Zero-volume obligations'},
 // PB_REVIEW_TOOLS
 ]);
 
@@ -1927,6 +1928,11 @@ function analyzePartnershipReview(rawConfig, tool) {
 
  const rows=[];for(const share of [0,.25,.5,.75,1]){const volume=config.deal.addressableVolume*share;const evaluated=calculatePartnership({...config,deal:{...config.deal,monthlyVolume:volume,volumeShockPct:0}});for(const p of evaluated.participants)rows.push([share,volume,p.name,p.monthlyProfit,p.viable?'Hold':p.failureReasons.join('; ')]);}
  return report(['Fraction of demand ceiling','Effective volume','Participant','Monthly profit','Current tests'],rows,'Five effective-volume points from zero through declared addressable demand. The counterfactual resets the volume shock to zero so it is not counted twice. Capacity violations remain visible; inputs are not changed.');
+
+ }
+ case 'zero': {
+
+ return report(['Participant','Monthly cash cost at zero','Profit at zero','Unfunded profit requirement','Minimum committed transactions','Zero-volume tests'],config.participants.map(p=>{const tested=evaluateParticipant(p,config.deal,0);return[p.name,p.fixedMonthlyCost+p.riskCost,tested.monthlyProfit,p.fixedMonthlyCost+p.riskCost+p.minimumAcceptableProfit,p.minimumCommitment??0,tested.viable?'Hold':tested.failureReasons.join('; ')];}),'At zero transactions, modeled variable cost and fee revenue are zero. Fixed and risk costs remain. Unfunded profit requirement includes the declared profit floor, so it is not the same as a cash bill. No exit or legal obligation is inferred.');
 
  }
 // PB_REVIEW_CASES

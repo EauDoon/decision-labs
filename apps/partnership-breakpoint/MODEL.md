@@ -225,3 +225,7 @@ The optional review can identify incompatible operational promises independently
 ### Effective-volume scenarios
 
 The optional review can expose how specific demand levels change participant failures. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Zero-volume obligations
+
+The optional review can make fixed monthly exposure and unfulfilled commitments explicit at zero activity. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
