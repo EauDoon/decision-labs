@@ -731,6 +731,33 @@ export function toggleClauseLock(proposal, clauseId, optionId) {
 }
 
 /**
+ * Groups whose veto constraint is not met on the inspected package.
+ * This names a numerical constraint failure. It is not a legal veto or a
+ * legitimacy claim.
+ */
+export function vetoBlockingGroups(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const summary = selectionSummary(proposal, selected);
+  return {
+    status: "ok",
+    groups: summary.constraints.vetoes.filter((veto) => !veto.met).map((veto) => ({
+      id: veto.id,
+      name: veto.name,
+      required: veto.required,
+      actual: veto.actual,
+    })),
+  };
+}
+
+/**
  * Copy a participant group, including weight, optional floor, veto, and every option's support score.
  * The copy receives a unique id. The solver still treats it as a separate supplied group.
  */

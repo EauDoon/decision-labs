@@ -49,6 +49,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /data-action="toggle-clause-lock"/u);
   assert.match(html, /id="clear-locks"/u);
   assert.match(html, /Clear all locks/u);
+  assert.match(html, /veto-blocking/u);
   assert.match(html, /id="near-miss-sort"/u);
   assert.match(html, /Lock this package/u);
   assert.match(html, /workplace-hybrid/u);
@@ -132,6 +133,8 @@ async function savedWorkbench(storage, hash = "") {
     filterStatus: () => element("#clause-filter-status").textContent,
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
+    coalition: () => element("#coalition-table").innerHTML,
+    constraints: () => element("#constraint-checks").innerHTML,
     sideBySide: () => element("#side-by-side").innerHTML,
     nearMisses: () => element("#near-misses-list").innerHTML,
     sortNearMisses: (value) => {
@@ -728,4 +731,28 @@ test("near-miss explorer can sort closest misses by cost or approval gap", async
   assert.ok(byCost.indexOf("Cheap miss") < byCost.indexOf("Near miss"));
   app.sortNearMisses("approval_gap");
   assert.ok(app.nearMisses().indexOf("Near miss") < app.nearMisses().indexOf("Cheap miss"));
+});
+
+test("veto-blocking groups are highlighted as a numerical constraint, not a legitimacy claim", async () => {
+  const key = "smallest-agreement:proposal:v1";
+  const draft = {
+    title: "Veto block workshop",
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { majority: 90, minority: 10 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { majority: 88, minority: 20 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { majority: 85, minority: 30 } },
+    ] }],
+  };
+  const app = await savedWorkbench(new Map([[key, JSON.stringify(draft)]]));
+  assert.match(app.groups(), /group-row veto-blocking/u);
+  assert.match(app.groups(), /numerical constraint, not a legal right/u);
+  assert.doesNotMatch(app.groups(), /legitimacy/u);
+  assert.match(app.coalition(), /veto-blocking/u);
+  assert.match(app.constraints(), /Highlighted veto rows failed/u);
+  assert.match(app.ballot(), /Veto not met on the inspected package for: Minority/u);
 });

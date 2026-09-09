@@ -26,6 +26,7 @@ import {
   lockPackage,
   clearAllLocks,
   toggleClauseLock,
+  vetoBlockingGroups,
   duplicateParticipantGroup,
   sortPackageGapRows,
   stressPackage,
@@ -839,6 +840,32 @@ test("toggleClauseLock locks or unlocks one option on a copy and rejects unknown
   assert.equal(Object.hasOwn(unlocked.proposal.clauses[0], "lockedOptionId"), false);
   assert.equal(toggleClauseLock(input, "missing", "one-change").status, "invalid");
   assert.equal(toggleClauseLock(input, "one", "missing").status, "invalid");
+});
+
+test("vetoBlockingGroups names groups whose veto fails on the inspected package", () => {
+  const input = proposal({
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { majority: 90, minority: 20 }),
+      option("alt", false, { majority: 70, minority: 85 }, 1),
+      option("other", false, { majority: 60, minority: 90 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const blocked = vetoBlockingGroups(input, [input.clauses[0].options[0]]);
+  assert.equal(blocked.status, "ok");
+  assert.equal(blocked.groups.length, 1);
+  assert.equal(blocked.groups[0].id, "minority");
+  assert.equal(blocked.groups[0].required, 80);
+  assert.ok(blocked.groups[0].actual < 80);
+  const cleared = vetoBlockingGroups(input, [input.clauses[0].options[1]]);
+  assert.equal(cleared.groups.length, 0);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(vetoBlockingGroups(input, []).status, "invalid");
 });
 
 

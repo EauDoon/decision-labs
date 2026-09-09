@@ -25,6 +25,7 @@ const appImport = `import {
   lockPackage,
   clearAllLocks,
   toggleClauseLock,
+  vetoBlockingGroups,
   duplicateParticipantGroup,
   sortPackageGapRows,
   formatSupportMatrixCsv,

@@ -120,6 +120,7 @@ Use the result to focus a human conversation. Establish process rules, evidence 
 - `lockPackage(proposal, optionIds)` copies the proposal and sets every clause lock to those option IDs. It does not mutate the input. The GUI applies that copy as one undoable draft edit.
 - `clearAllLocks(proposal)` copies the proposal and removes every `lockedOptionId`. It does not mutate the input. The GUI applies that copy as one undoable draft edit.
 - `toggleClauseLock(proposal, clauseId, optionId)` locks that option or removes the lock when it is already selected. It does not mutate the input. The clause card exposes this as Lock this option / Unlock option, separate from applying a whole package.
+- `vetoBlockingGroups(proposal, options)` lists veto groups whose average misses the required value on that package. The GUI highlights those groups as a numerical constraint failure, not a legal right or legitimacy claim.
 - `sortPackageGapRows(rows, sortBy)` reorders described near-miss rows by `approval_gap` or `change_cost`. It does not change which combinations the solver retained.
 - `duplicateParticipantGroup(proposal, groupId)` copies a group with a unique id, the same weight, optional floor and veto, and every option's support score for that group. It does not mutate the input.
 - `stressPackage(proposal, optionIds, supportDrop)` accepts a finite 0 to 100 point reduction, clamps every support score at zero, and evaluates the same choices. It reports the original and downside summaries. The scenario is hypothetical, not probabilistic.
