@@ -47,6 +47,7 @@ const appImportMarker = `import {
   analysisToJSON,
   analyzeTimeline,
   attributeBottlenecks,
+  previewWindowShift,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -94,7 +95,10 @@ const exportedNames = Object.freeze([
   "timelineToCSV",
   "reportToHTML",
   "BOTTLENECK_LABELS",
-  "attributeBottlenecks"
+  "attributeBottlenecks",
+  "WINDOW_GATES",
+  "shiftOperatingWindow",
+  "previewWindowShift"
 ]);
 
 function normaliseLf(text) {

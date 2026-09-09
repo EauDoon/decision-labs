@@ -309,6 +309,40 @@ SOFTWARE.
             <p>Analysis exports include both scenarios, target, deadline, results, and hourly queue comparison. They are reports, not scenario-import files. Scenario JSON and share links continue to contain only the current scenario.</p>
           </article>
 
+          <article class="planning-card card" aria-labelledby="window-shift-title">
+            <p class="eyebrow">Window what-if</p>
+            <h2 id="window-shift-title">Shift one operating window</h2>
+            <p>Move a gate start and end by whole hours. The shifted window is clamped to valid hours with a one-hour minimum. Preview peak queue and settled total against the current scenario. Apply is a separate action and keeps the pinned baseline.</p>
+            <label for="window-shift-gate">Gate</label>
+            <select id="window-shift-gate">
+              <option value="issuer">Issuer</option>
+              <option value="bank">Bank</option>
+              <option value="payout">Payout</option>
+            </select>
+            <div class="input-grid">
+              <div class="input-group">
+                <label for="window-shift-start">Start shift (hours)</label>
+                <input id="window-shift-start" type="number" step="1" value="-1">
+              </div>
+              <div class="input-group">
+                <label for="window-shift-end">End shift (hours)</label>
+                <input id="window-shift-end" type="number" step="1" value="1">
+              </div>
+            </div>
+            <div class="planning-actions">
+              <button id="preview-window-shift" type="button">Preview shift</button>
+              <button id="apply-window-shift" type="button" disabled>Apply previewed shift</button>
+            </div>
+            <p id="window-shift-status" role="status">Choose a gate and whole-hour offsets, then preview. Nothing is applied until you confirm.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Window shift preview">
+              <table>
+                <caption>Peak queue and settled total after the clamped window, compared with the current scenario.</caption>
+                <thead><tr><th scope="col">Metric</th><th scope="col">Current</th><th scope="col">Preview</th><th scope="col">Change</th></tr></thead>
+                <tbody id="window-shift-rows"></tbody>
+              </table>
+            </div>
+          </article>
+
           <article class="chart-card card" aria-labelledby="chart-title">
             <div class="card-heading chart-heading">
               <div>

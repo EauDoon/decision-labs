@@ -644,3 +644,49 @@ export function attributeBottlenecks(input) {
   });
 }
 
+export const WINDOW_GATES = Object.freeze(["issuer", "bank", "payout"]);
+
+/** Shift one operating window by whole hours, then clamp to a valid one-hour-minimum window. */
+export function shiftOperatingWindow(scenarioInput, gate, startDeltaHours, endDeltaHours) {
+  if (!WINDOW_GATES.includes(gate)) throw new RangeError("Choose issuer, bank or payout.");
+  if (!Number.isInteger(startDeltaHours) || !Number.isInteger(endDeltaHours)) {
+    throw new RangeError("Window shifts must be whole hours.");
+  }
+  const { scenario } = sanitizeScenario(scenarioInput);
+  const startKey = `${gate}OpenStartHour`;
+  const endKey = `${gate}OpenEndHour`;
+  const [start, end] = normaliseWindow(scenario[startKey] + startDeltaHours, scenario[endKey] + endDeltaHours);
+  return sanitizeScenario({ ...scenario, [startKey]: start, [endKey]: end }).scenario;
+}
+
+/** Re-run the simulation after a window shift. Does not mutate the input scenario. */
+export function previewWindowShift(scenarioInput, gate, startDeltaHours, endDeltaHours) {
+  const current = runSimulation(scenarioInput);
+  const applied = shiftOperatingWindow(current.scenario, gate, startDeltaHours, endDeltaHours);
+  const candidate = runSimulation(applied);
+  const startKey = `${gate}OpenStartHour`;
+  const endKey = `${gate}OpenEndHour`;
+  return Object.freeze({
+    gate,
+    startDeltaHours,
+    endDeltaHours,
+    applied,
+    current: Object.freeze({
+      peakQueuedAud: current.summary.peakQueuedAud,
+      totalSettledAud: current.summary.totalSettledAud,
+      startHour: current.scenario[startKey],
+      endHour: current.scenario[endKey]
+    }),
+    candidate: Object.freeze({
+      peakQueuedAud: candidate.summary.peakQueuedAud,
+      totalSettledAud: candidate.summary.totalSettledAud,
+      startHour: applied[startKey],
+      endHour: applied[endKey]
+    }),
+    deltas: Object.freeze({
+      peakQueuedAud: candidate.summary.peakQueuedAud - current.summary.peakQueuedAud,
+      totalSettledAud: candidate.summary.totalSettledAud - current.summary.totalSettledAud
+    })
+  });
+}
+

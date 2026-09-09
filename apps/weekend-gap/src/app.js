@@ -14,6 +14,7 @@ import {
   analysisToJSON,
   analyzeTimeline,
   attributeBottlenecks,
+  previewWindowShift,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -67,6 +68,7 @@ let simulation = runSimulation(scenario);
 let baselineScenario = { ...scenario };
 let comparison = compareScenarios(baselineScenario, scenario);
 let reservePlan = null;
+let windowShiftPreview = null;
 let selectedHour = 0;
 let playing = false;
 let playTimer = null;
@@ -161,6 +163,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   renderDiagnostics();
   document.querySelector("#sensitivity-rows").replaceChildren();
   document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
+  clearWindowShiftPreview("Assumptions changed. Preview the window shift again before applying.");
   if (message) setMessage(message);
   else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
@@ -452,6 +455,61 @@ document.querySelector("#analysis-export").addEventListener("click", () => {
   document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url);
   setMessage("Analysis exported with both scenarios, changed assumptions, hourly queue comparison, and reserve plan.");
 });
+
+function clearWindowShiftPreview(status = "Choose a gate and whole-hour offsets, then preview. Nothing is applied until you confirm.") {
+  windowShiftPreview = null;
+  const apply = document.querySelector("#apply-window-shift");
+  const rows = document.querySelector("#window-shift-rows");
+  const output = document.querySelector("#window-shift-status");
+  if (apply) apply.disabled = true;
+  if (rows) rows.replaceChildren();
+  if (output) output.textContent = status;
+}
+
+document.querySelector("#preview-window-shift").addEventListener("click", () => {
+  const gate = document.querySelector("#window-shift-gate").value;
+  const startDelta = document.querySelector("#window-shift-start").valueAsNumber;
+  const endDelta = document.querySelector("#window-shift-end").valueAsNumber;
+  try {
+    if (!Number.isInteger(startDelta) || !Number.isInteger(endDelta)) {
+      throw new RangeError("Window shifts must be whole hours.");
+    }
+    windowShiftPreview = previewWindowShift(scenario, gate, startDelta, endDelta);
+    const preview = windowShiftPreview;
+    document.querySelector("#window-shift-rows").replaceChildren(...[
+      ["Operating window", `${preview.current.startHour}:00-${preview.current.endHour}:00`, `${preview.candidate.startHour}:00-${preview.candidate.endHour}:00`, `${startDelta >= 0 ? "+" : ""}${startDelta} / ${endDelta >= 0 ? "+" : ""}${endDelta} h`],
+      ["Peak queue", planningAud(preview.current.peakQueuedAud), planningAud(preview.candidate.peakQueuedAud), signedAud(preview.deltas.peakQueuedAud)],
+      ["Settled total", planningAud(preview.current.totalSettledAud), planningAud(preview.candidate.totalSettledAud), signedAud(preview.deltas.totalSettledAud)]
+    ].map((cells) => {
+      const row = document.createElement("tr");
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      }
+      return row;
+    }));
+    document.querySelector("#apply-window-shift").disabled = preview.applied.issuerOpenStartHour === scenario.issuerOpenStartHour
+      && preview.applied.issuerOpenEndHour === scenario.issuerOpenEndHour
+      && preview.applied.bankOpenStartHour === scenario.bankOpenStartHour
+      && preview.applied.bankOpenEndHour === scenario.bankOpenEndHour
+      && preview.applied.payoutOpenStartHour === scenario.payoutOpenStartHour
+      && preview.applied.payoutOpenEndHour === scenario.payoutOpenEndHour;
+    document.querySelector("#window-shift-status").textContent = `Preview only. ${preview.gate} window becomes ${preview.candidate.startHour}:00 to ${preview.candidate.endHour}:00 local. Peak queue change ${signedAud(preview.deltas.peakQueuedAud)}; settled total change ${signedAud(preview.deltas.totalSettledAud)}. Apply to copy this window into the editor.`;
+  } catch (error) {
+    clearWindowShiftPreview(error instanceof RangeError ? error.message : "Window shift could not be previewed.");
+  }
+});
+document.querySelector("#apply-window-shift").addEventListener("click", () => {
+  if (!windowShiftPreview) return;
+  const next = windowShiftPreview.applied;
+  setScenario(next, { message: `Applied ${windowShiftPreview.gate} window ${next[`${windowShiftPreview.gate}OpenStartHour`]}:00 to ${next[`${windowShiftPreview.gate}OpenEndHour`]}:00. Other assumptions and the pinned baseline were kept.` });
+});
+for (const id of ["window-shift-gate", "window-shift-start", "window-shift-end"]) {
+  document.getElementById(id).addEventListener("input", () => {
+    clearWindowShiftPreview("Offsets changed. Preview again before applying.");
+  });
+}
 
 async function copyShareLink() {
   const hash = scenarioToHash(scenario);
