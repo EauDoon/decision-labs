@@ -134,6 +134,8 @@
     .skip:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
     #whats-new:focus-visible,
     #workbenches:focus-visible,
+    #how-it-works:focus,
+    #how-it-works:focus-visible,
     #catalog-heading:focus,
     #catalog-heading:focus-visible,
     #shortcuts:focus,
@@ -349,6 +351,7 @@
   <nav class="skips" aria-label="Skip">
     <a class="skip" href="#whats-new">Skip to what's new</a>
     <a class="skip" href="#workbenches">Skip to workbenches</a>
+    <a class="skip" href="#how-it-works">Skip to How it works</a>
     <a class="skip" href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts</a>
     <a class="skip" href="#trust">Skip to Trust and limits</a>
   </nav>
@@ -516,7 +519,7 @@
         </div>
       </article>
     </section>
-    <section class="guide" id="how-it-works" aria-labelledby="how-title">
+    <section class="guide" id="how-it-works" tabindex="-1" aria-labelledby="how-title">
       <h2 id="how-title">How it works</h2>
       <p>This page is a catalog. Each Open workbench link loads one generated file from this repository. You can also open that file from disk. Node.js is only required if you want the loopback launcher or to run tests.</p>
       <h3>Standalone files</h3>

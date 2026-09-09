@@ -10,8 +10,10 @@ test('catalog page keeps language, landmarks, skip, and focus contract', () => {
   assert.match(html, /<html lang="en">/);
   assert.match(html, /class="skip" href="#whats-new">Skip to what's new/);
   assert.match(html, /class="skip" href="#workbenches">Skip to workbenches/);
+  assert.match(html, /class="skip" href="#how-it-works">Skip to How it works/);
   assert.match(html, /href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts/);
   assert.match(html, /class="skip" href="#trust">Skip to Trust and limits/);
+  assert.match(html, /id="how-it-works" tabindex="-1"/);
   assert.match(html, /id="catalog-heading" tabindex="-1"/);
   assert.match(html, /<header class="shell hero">/);
   assert.match(html, /<nav class="shell site-nav" aria-label="On this page">/);
@@ -138,6 +140,13 @@ test('question-mark shortcut toggles an in-page panel and skips inputs', () => {
   assert.match(html, /@media print[\s\S]*\.shortcuts, \.shortcuts-open \{ display: none !important; \}/);
 });
 
+test('skip link reaches How it works and the section can take focus', () => {
+  assert.match(html, /class="skip" href="#how-it-works">Skip to How it works/);
+  assert.match(html, /id="how-it-works" tabindex="-1"/);
+  assert.match(html, /#how-it-works:focus-visible/);
+  assert.match(html, /href="#how-it-works">How it works/);
+});
+
 test('h focuses the catalog heading when focus is not in an input', () => {
   assert.match(html, /id="catalog-heading" tabindex="-1"/);
   assert.match(html, /event\.key === 'h'/);
@@ -156,7 +165,7 @@ test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(html, /#trust:focus-visible/);
   assert.match(html, /@media print[\s\S]*\.trust \{ display: block !important; \}/);
   assert.match(readme, /Press `t` to focus Trust and\s+limits/);
-  assert.match(readme, /Skip links jump to What's new, workbenches, keyboard\s+shortcuts, and Trust and limits/);
+  assert.match(readme, /Skip links jump to What's new, workbenches, How it works,\s+keyboard shortcuts, and Trust and limits/);
 });
 
 test('catalog does not use CSS animation', () => {

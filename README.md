@@ -34,8 +34,8 @@ Every workbench:
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
-What's new section. Skip links jump to What's new, workbenches, keyboard
-shortcuts, and Trust and limits. What's new names current in-workbench tools (share-to-hold,
+What's new section. Skip links jump to What's new, workbenches, How it works,
+keyboard shortcuts, and Trust and limits. What's new names current in-workbench tools (share-to-hold,
 residual coverage, veto groups, and the gate Gantt) without implying live
 services. It also names the local 1.4.1 and 1.3.1 extras now on main: Partnership
 Breakpoint CSV roster, capacity, and notes; Common Cart leftover/tertiary fill
