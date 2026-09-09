@@ -60,6 +60,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Lock this package/u);
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /club-constitution/u);
+  assert.match(html, /library-quiet-hours/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -600,6 +601,27 @@ test("club constitution preset loads a distinct synthetic membership-meeting wor
   assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
   assert.doesNotMatch(app.clauses(), /Weekly office presence/u);
   assert.doesNotMatch(app.clauses(), /Park access hours/u);
+});
+
+test("library quiet hours preset loads a distinct synthetic reading-room workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "library-quiet-hours");
+  app.click("#load-preset");
+  assert.match(app.title(), /Library Quiet Hours: shared reading rooms/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Evening hours/u);
+  assert.match(app.clauses(), /Children&#39;s area sound rules/u);
+  assert.match(app.clauses(), /After-hours events/u);
+  assert.match(app.groups(), /Readers/u);
+  assert.match(app.groups(), /Families/u);
+  assert.match(app.groups(), /Library staff/u);
+  assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Club Constitution/u);
+  assert.doesNotMatch(app.clauses(), /Weekly office presence/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Meeting quorum/u);
 });
 
 test("keyboard f focuses the clause filter unless an input is active", async () => {

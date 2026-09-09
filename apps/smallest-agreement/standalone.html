@@ -232,6 +232,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="protected-access">Protected Access</option>
             <option value="workplace-hybrid">Workplace Hybrid</option>
             <option value="club-constitution">Club Constitution</option>
+            <option value="library-quiet-hours">Library Quiet Hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -2768,6 +2769,38 @@ const presets = {
           { id: "guests-original", original: true, label: "Officers may invite speakers without notice", changeCost: 0, support: { members: 44, officers: 86, staff: 60 } },
           { id: "guests-notice", original: false, label: "Publish speaker names seven days in advance", changeCost: 2, support: { members: 84, officers: 72, staff: 78 } },
           { id: "guests-vote", original: false, label: "Require a members vote before each invitation", changeCost: 3, support: { members: 80, officers: 38, staff: 52 } },
+        ],
+      },
+    ],
+  },
+  "library-quiet-hours": {
+    title: "Library Quiet Hours: shared reading rooms",
+    threshold: 70,
+    groups: [
+      { id: "readers", name: "Readers", weight: 4 },
+      { id: "families", name: "Families", weight: 2 },
+      { id: "staff", name: "Library staff", weight: 2, veto: true },
+    ],
+    clauses: [
+      {
+        id: "evening", title: "Evening hours", options: [
+          { id: "evening-original", original: true, label: "Close reading rooms at 18:00", changeCost: 0, support: { readers: 48, families: 72, staff: 82 } },
+          { id: "evening-extended", original: false, label: "Keep two quiet rooms open until 20:00", changeCost: 2, support: { readers: 86, families: 64, staff: 70 } },
+          { id: "evening-late", original: false, label: "Staff a late desk until 21:00 on weekdays", changeCost: 4, support: { readers: 80, families: 50, staff: 42 } },
+        ],
+      },
+      {
+        id: "children", title: "Children's area sound rules", options: [
+          { id: "children-original", original: true, label: "Keep the children's area open to the main floor", changeCost: 0, support: { readers: 40, families: 88, staff: 60 } },
+          { id: "children-doors", original: false, label: "Add doors and a posted quiet-hour sign", changeCost: 2, support: { readers: 84, families: 70, staff: 74 } },
+          { id: "children-split", original: false, label: "Split story time into a separate room", changeCost: 3, support: { readers: 78, families: 76, staff: 68 } },
+        ],
+      },
+      {
+        id: "events", title: "After-hours events", options: [
+          { id: "events-original", original: true, label: "Allow evening events in the reading rooms", changeCost: 0, support: { readers: 36, families: 70, staff: 55 } },
+          { id: "events-hall", original: false, label: "Move evening events to the community hall", changeCost: 2, support: { readers: 82, families: 74, staff: 78 } },
+          { id: "events-none", original: false, label: "End after-hours events on weeknights", changeCost: 3, support: { readers: 74, families: 42, staff: 80 } },
         ],
       },
     ],
