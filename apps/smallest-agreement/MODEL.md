@@ -72,7 +72,7 @@ Calculations use JavaScript floating-point numbers. Comparisons use an absolute 
 
 The search evaluates the Cartesian product of permitted clause options: exactly one selected option for each clause. A locked clause contributes one choice. It starts by evaluating the status quo, meaning every original option, even if a lock requires a different option.
 
-If status quo meets the threshold and every constraint, it is returned with cost 0 after one baseline check. This is optimal because costs are non-negative and no alternative can use fewer than zero changes. Otherwise, all permitted combinations are evaluated and passing combinations are ordered by:
+When alternatives are not requested and status quo meets the threshold and every constraint, it is returned with cost 0 after one baseline check. This is optimal because costs are non-negative and no alternative can use fewer than zero changes. Otherwise, all permitted combinations are evaluated and passing combinations are ordered by:
 
 1. Lowest total change cost.
 2. Fewest changed clauses.
@@ -87,9 +87,9 @@ For an enumerated result, `eligibleCombinations` counts combinations meeting eve
 
 ## Bound and outcomes
 
-The default maximum is 50,000 lock-permitted combinations. The count is calculated before enumeration or the baseline shortcut. If it exceeds that maximum, the result is `too_large`; no partial search, sampling, or recommendation occurs. Budgets and floors do not reduce the counted search space. `possibleCombinations` is the permitted search-space size (or a cap-plus-one sentinel when too large). `checkedCombinations` is 1 for an already-passing baseline and the full space for an enumerated result; it does not count the separately reported baseline again.
+The default maximum is 50,000 lock-permitted combinations. The count is calculated before enumeration or the baseline shortcut. If it exceeds that maximum, the result is `too_large`; no partial search, sampling, or recommendation occurs. Budgets and floors do not reduce the counted search space. `possibleCombinations` is the permitted search-space size (or a cap-plus-one sentinel when too large). `checkedCombinations` is 1 for the already-passing baseline shortcut and the full space for an enumerated result; it does not count the separately reported baseline again.
 
-`findSmallestAgreement(proposal, options)` accepts a plain object with only `maxCombinations` (integer from 1 through 50,000) and `nearMissLimit` (integer from 0 through 5). Both default to those maxima. `null`, non-objects, unknown keys, inherited values, and values outside those ranges return `invalid`. A caller can lower a cap for tests or a tighter bound, but cannot raise either cap.
+`findSmallestAgreement(proposal, options)` accepts a plain object with only `maxCombinations` (integer from 1 through 50,000), `nearMissLimit` (integer from 0 through 5), and `alternativesLimit` (integer from 0 through 5). The first two default to those maxima; `alternativesLimit` defaults to zero. When alternatives are requested, every permitted combination is enumerated, including an already-passing original. `passingCombinations` counts all passing candidates, and `alternatives` contains only the requested best candidates. The GUI requests five alternatives. `null`, non-objects, unknown keys, inherited values, and values outside those ranges return `invalid`. A caller can lower a cap for tests or a tighter bound, but cannot raise either cap.
 
 Other explicit outcomes are:
 
@@ -108,3 +108,13 @@ The formula assumes that support can be represented as a 0 to 100 score, group w
 Small textual edits can have large semantic, legal, financial, or lived effects. Costs can omit implementation burden, power differences, dependency effects, and who is excluded from the room. A numerical result cannot prove consensus, democratic legitimacy, consent, fairness, representation, legal compliance, or authority to adopt a policy.
 
 Use the result to focus a human conversation. Establish process rules, evidence standards, decision rights, and adoption requirements separately.
+
+
+## Inspection APIs and local workflows
+
+- `evaluatePackage(proposal, optionIds)` requires exactly one valid option ID per clause and returns `passing`, `not_passing`, or `invalid`. It tests all constraints, including locks, without modifying the proposal or performing an optimization.
+- `stressPackage(proposal, optionIds, supportDrop)` accepts a finite 0 to 100 point reduction, clamps every support score at zero, and evaluates the same choices. It reports the original and downside summaries. The scenario is hypothetical, not probabilistic.
+- `compareScenarioInputs(before, after)` compares canonical fields by stable IDs, including clause order because that order participates in the tie breaker. The GUI shows the first 100 changed fields with an explicit truncation message.
+- `formatEvidenceCsv(proposal, result)` includes every modeled input and recommendation markers. Text formula prefixes are neutralized, CSV quoting preserves commas, quotes, and newlines, and the GUI emits a UTF-8 byte-order mark.
+
+Snapshot libraries hold at most 20 canonical proposals and reject stored payloads over 5,000,000 characters. Single-draft JSON import remains bounded at 250 KB. Undo keeps at most 50 prior draft states in memory; undo history, custom choices, and downside settings are not part of the proposal schema.

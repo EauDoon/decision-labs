@@ -261,7 +261,7 @@ export function findSmallestAgreement(proposal, options = {}) {
   if (!isPlainObject(options)) {
     return { status: "invalid", errors: ["Search options must be a plain object."] };
   }
-  const unknown = Object.keys(options).filter((key) => key !== "maxCombinations" && key !== "nearMissLimit");
+  const unknown = Object.keys(options).filter((key) => key !== "maxCombinations" && key !== "nearMissLimit" && key !== "alternativesLimit");
   if (unknown.length > 0) {
     return { status: "invalid", errors: [`Unknown search option: ${unknown.join(", ")}.`] };
   }
@@ -273,17 +273,23 @@ export function findSmallestAgreement(proposal, options = {}) {
   if (!Number.isSafeInteger(nearMissLimit) || nearMissLimit < 0 || nearMissLimit > MAX_NEAR_MISSES) {
     return { status: "invalid", errors: [`nearMissLimit must be an integer from 0 through ${MAX_NEAR_MISSES}.`] };
   }
+  const alternativesLimit = Object.hasOwn(options, "alternativesLimit") ? options.alternativesLimit : 0;
+  if (!Number.isSafeInteger(alternativesLimit) || alternativesLimit < 0 || alternativesLimit > 5) {
+    return { status: "invalid", errors: ["alternativesLimit must be an integer from 0 through 5."] };
+  }
   const possibleCombinations = combinationCount(proposal.clauses, maxCombinations);
   if (possibleCombinations > maxCombinations) {
     return { status: "too_large", possibleCombinations, maxCombinations, nearMisses: [] };
   }
 
   const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
-  if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met) {
+  if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met && alternativesLimit === 0) {
     return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
   }
 
   let best = null;
+  const alternatives = [];
+  let passingCombinations = 0;
   const nearMisses = [];
   const rejected = { budget: 0, floors: 0, anyConstraint: 0 };
   let eligibleCombinations = 0;
@@ -299,7 +305,13 @@ export function findSmallestAgreement(proposal, options = {}) {
       }
       eligibleCombinations += 1;
       if (summary.approval + EPSILON >= proposal.threshold) {
+        passingCombinations += 1;
         if (!best || compareAgreements(summary, best) < 0) best = summary;
+        if (alternativesLimit > 0) {
+          alternatives.push(summary);
+          alternatives.sort(compareAgreements);
+          if (alternatives.length > alternativesLimit) alternatives.pop();
+        }
       } else if (nearMissLimit > 0) {
         nearMisses.push(summary);
         nearMisses.sort((a, b) => compareNearMisses(proposal.threshold, a, b));
@@ -316,7 +328,9 @@ export function findSmallestAgreement(proposal, options = {}) {
   };
   visit(0);
   const result = {
-    status: best ? "found" : "infeasible",
+    status: best ? (best.changedClauseCount === 0 ? "already_passing" : "found") : "infeasible",
+    alternatives,
+    passingCombinations,
     possibleCombinations,
     checkedCombinations: possibleCombinations,
     eligibleCombinations,
@@ -390,7 +404,7 @@ export function formatDecisionBrief(proposal, result) {
   else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "Every configured constraint is met.", "");
   else lines.push("No permitted combination meets both the threshold and every configured constraint.", "");
   lines.push(`Search combinations checked: ${Number(result.checkedCombinations).toLocaleString("en-US")}`, `Lock-permitted search space: ${Number(result.possibleCombinations).toLocaleString("en-US")}`);
-  if (result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
+  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
   lines.push(`Current approval: ${formatPercent(current.approval)}`, `Original proposal meets constraints: ${current.constraints.met ? "yes" : "no"}`);
 
   if (agreement) {
@@ -423,6 +437,14 @@ export function formatDecisionBrief(proposal, result) {
     lines.push("");
   }
 
+  if (result.alternatives?.length) {
+    lines.push("## Passing packages", "", "Ranked by cost, changed clauses, approval, then option IDs. This ordering does not establish fairness.", "");
+    for (const [index, candidate] of result.alternatives.entries()) {
+      lines.push((index + 1) + ". Cost " + candidate.changeCost.toFixed(1) + ", approval " + formatPercent(candidate.approval) + ": " + candidate.options.map((option, i) => briefText(proposal.clauses[i].title) + ": " + briefText(option.label)).join("; "));
+    }
+    lines.push("");
+  }
+
   if (result.nearMisses?.length) {
     lines.push("## Near misses", "", "These meet every configured constraint but fall below the overall threshold.", "");
     for (const miss of result.nearMisses) {
@@ -433,4 +455,83 @@ export function formatDecisionBrief(proposal, result) {
   }
   lines.push("Scores, weights, and costs remain human inputs. This brief is a deliberation aid, not a decision or a claim of legitimacy.");
   return `${lines.join("\n")}\n`;
+}
+
+
+/** Evaluate a human-selected package, including locks, without changing the proposal. */
+export function evaluatePackage(proposal, optionIds) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(optionIds) || optionIds.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === optionIds[index]));
+  if (selected.some((option) => !option)) return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  const summary = selectionSummary(proposal, selected);
+  return { status: summary.constraints.met && summary.approval + EPSILON >= proposal.threshold ? "passing" : "not_passing", summary };
+}
+
+
+/** A deterministic downside scenario, not a probability estimate or a new optimization. */
+export function stressPackage(proposal, optionIds, supportDrop) {
+  if (!Number.isFinite(supportDrop) || supportDrop < 0 || supportDrop > 100) {
+    return { status: "invalid", errors: ["Support drop must be a number from 0 to 100."] };
+  }
+  const original = evaluatePackage(proposal, optionIds);
+  if (original.status === "invalid") return original;
+  const pessimistic = canonicalProposal(proposal);
+  for (const clause of pessimistic.clauses) for (const option of clause.options) {
+    for (const group of pessimistic.groups) option.support[group.id] = Math.max(0, option.support[group.id] - supportDrop);
+  }
+  return { ...evaluatePackage(pessimistic, optionIds), original: original.summary, supportDrop };
+}
+
+
+/** Compare declared assumptions by stable IDs, including additions and removals. */
+export function compareScenarioInputs(before, after) {
+  const flatten = (proposal) => {
+    const p = canonicalProposal(proposal);
+    const fields = new Map([["Proposal title", p.title], ["Approval threshold", p.threshold], ["Maximum change cost", p.maxChangeCost]]);
+    for (const group of p.groups) {
+      const prefix = "Group " + group.id + ": ";
+      fields.set(prefix + "name", group.name);
+      fields.set(prefix + "weight", group.weight);
+      fields.set(prefix + "minimum support", group.minSupport);
+    }
+    for (const clause of p.clauses) {
+      const prefix = "Clause " + clause.id + ": ";
+      fields.set(prefix + "title", clause.title);
+      fields.set(prefix + "locked option", clause.lockedOptionId);
+      for (const option of clause.options) {
+        const optionPrefix = prefix + option.id + ": ";
+        fields.set(optionPrefix + "label", option.label);
+        fields.set(optionPrefix + "original", option.original);
+        fields.set(optionPrefix + "change cost", option.changeCost);
+        for (const group of p.groups) fields.set(optionPrefix + group.id + " support", option.support[group.id]);
+      }
+    }
+    // Clause order participates in deterministic tie breaking.
+    fields.set("Clause order", p.clauses.map((clause) => clause.id).join(", "));
+    return fields;
+  };
+  const previous = flatten(before);
+  const current = flatten(after);
+  return [...new Set([...previous.keys(), ...current.keys()])].filter((field) => previous.get(field) !== current.get(field))
+    .map((field) => ({ field, before: previous.get(field), after: current.get(field) }));
+}
+
+
+/** Export every modeled input with spreadsheet-safe text cells and explicit recommendation status. */
+export function formatEvidenceCsv(proposal, result = findSmallestAgreement(proposal)) {
+  const p = canonicalProposal(proposal);
+  const rows = [["proposal", "threshold", "maximum_change_cost", "search_status", "clause_id", "clause", "locked_option_id", "option_id", "option", "original", "recommended", "change_cost", "group_id", "group", "weight", "minimum_support", "support"]];
+  for (const [index, clause] of p.clauses.entries()) for (const option of clause.options) for (const group of p.groups) {
+    rows.push([p.title, p.threshold, p.maxChangeCost ?? "unlimited", result.status, clause.id, clause.title, clause.lockedOptionId ?? "none", option.id, option.label, option.original ? "yes" : "no", result.agreement ? (result.agreement.options[index].id === option.id ? "yes" : "no") : "no recommendation", option.changeCost, group.id, group.name, group.weight, group.minSupport ?? "none", option.support[group.id]]);
+  }
+  const cell = (value) => {
+    let text = String(value);
+    if (typeof value === "string" && /^(?:[\s\u0000-\u001f]*[=+@-]|[\t\r\n])/u.test(text)) text = "'" + text;
+    return '"' + text.replaceAll('"', '""') + '"';
+  };
+  return rows.map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";
 }

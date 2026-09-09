@@ -54,6 +54,8 @@ async function savedWorkbench(storage, hash = "") {
   });
   new vm.Script(script).runInContext(context, { timeout: 5000 });
   return {
+    numberInput: (selector, value) => element(selector).events.get("input")({ target: { valueAsNumber: value } }),
+    field: (selector, value) => { element(selector).value = value; },
     title: () => element("#proposal-title").value,
     message: () => element("#autosave-status").textContent,
     alert: () => element("#result-alert").textContent,
@@ -73,8 +75,8 @@ async function savedWorkbench(storage, hash = "") {
       target.value = value;
       target.events.get("input")({ target });
     },
-    edit: (field, value) => {
-      const target = { value: String(value), valueAsNumber: value, validity: { badInput: false }, dataset: { field: "group-floor", groupId: "g" } };
+    edit: (field, value, dataset = {}) => {
+      const target = { value: String(value), valueAsNumber: value, validity: { badInput: false }, dataset: { field: "group-floor", groupId: "g", ...dataset } };
       if (field === "budget") element("#max-change-cost").events.get("input")({ target });
       else documentEvents.get("input")({ target });
     },
@@ -277,4 +279,98 @@ test("editor disables add controls at the model's validation caps", async () => 
     id: `extra-${index}`, label: `Extra ${index}`, original: false, changeCost: index + 3, support: { g: 50 },
   })));
   assert.match((await savedWorkbench(new Map([[key, JSON.stringify(optionCapped)]]))).clauses(), /data-action="add-option"[^>]*disabled/u);
+});
+
+
+test("undo and redo restore edits and replacement imports; new edits clear redo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const original = app.title();
+  assert.equal(app.disabled("#undo-button"), true);
+  app.setTitle("Negotiation draft");
+  app.click("#undo-button");
+  assert.equal(app.title(), original);
+  app.click("#redo-button");
+  assert.equal(app.title(), "Negotiation draft");
+  app.click("#undo-button");
+  app.setTitle("Another round");
+  assert.equal(app.disabled("#redo-button"), true);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).title, "Another round");
+});
+
+
+test("named snapshots survive reload, load independently, and support undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("First round");
+  app.field("#scenario-name", "Working group");
+  app.click("#save-scenario");
+  app.setTitle("Second round");
+  app.field("#scenario-select", "0");
+  app.click("#load-scenario");
+  assert.equal(app.title(), "First round");
+  app.click("#undo-button");
+  assert.equal(app.title(), "Second round");
+  const next = await savedWorkbench(storage);
+  next.field("#scenario-select", "0");
+  next.click("#load-scenario");
+  assert.equal(next.title(), "First round");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:scenarios:v1"))[0].name, "Working group");
+});
+
+test("invalid scenario libraries are preserved and cannot be overwritten", async () => {
+  const key = "smallest-agreement:scenarios:v1";
+  const storage = new Map([[key, "{broken"]]);
+  const app = await savedWorkbench(storage);
+  assert.equal(app.disabled("#save-scenario"), true);
+  app.click("#save-scenario");
+  assert.equal(storage.get(key), "{broken");
+});
+
+
+test("required numeric edits remain invalid instead of silently changing support, cost, or weight", async () => {
+  for (const [field, value, details] of [
+    ["group-weight", 0, { groupId: "residents" }],
+    ["group-weight", NaN, { groupId: "residents" }],
+    ["option-support", 101, { clauseId: "hours", optionId: "hours-original", groupId: "residents" }],
+    ["option-support", NaN, { clauseId: "hours", optionId: "hours-original", groupId: "residents" }],
+    ["option-cost", -1, { clauseId: "hours", optionId: "hours-seasonal" }],
+  ]) {
+    const storage = new Map();
+    const app = await savedWorkbench(storage);
+    app.setTitle("Valid saved draft");
+    const before = storage.get("smallest-agreement:proposal:v1");
+    app.edit(field, value, { field, ...details });
+    assert.match(app.alert(), /Fix the proposal before searching/);
+    assert.equal(app.disabled("#export-button"), true);
+    assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+    app.click("#undo-button");
+    assert.doesNotMatch(app.alert(), /Fix the proposal/);
+  }
+});
+
+
+test("exact thresholds preserve decimals and reject missing values without corrupting autosave", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.numberInput("#threshold-number", 68.125);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).threshold, 68.125);
+  app.numberInput("#threshold-number", NaN);
+  assert.match(app.alert(), /Fix the proposal/);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).threshold, 68.125);
+  app.click("#undo-button");
+  assert.doesNotMatch(app.alert(), /Fix the proposal/);
+});
+
+
+test("saving snapshots cannot overwrite a library changed by another tab", async () => {
+  const storage = new Map();
+  const first = await savedWorkbench(storage);
+  const second = await savedWorkbench(storage);
+  first.field("#scenario-name", "First tab snapshot");
+  first.click("#save-scenario");
+  const saved = storage.get("smallest-agreement:scenarios:v1");
+  second.click("#save-scenario");
+  assert.equal(storage.get("smallest-agreement:scenarios:v1"), saved);
+  assert.match(second.message(), /changed in another tab/);
 });

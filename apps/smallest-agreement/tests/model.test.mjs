@@ -11,6 +11,10 @@ import {
   MAX_WEIGHT,
   approvalForOptions,
   canonicalProposal,
+  evaluatePackage,
+  stressPackage,
+  compareScenarioInputs,
+  formatEvidenceCsv,
   findSmallestAgreement,
   formatDecisionBrief,
   validateProposal,
@@ -647,5 +651,104 @@ test("constrained search matches an independent Cartesian-product oracle across 
       const expectedMisses = summarized.filter((s) => s.eligible && s.approval + 1e-9 < input.threshold).sort((a, b) => b.approval - a.approval || rank(a, b)).slice(0, 5);
       assert.deepEqual(actual.nearMisses.map((s) => s.options.map((o) => o.id)), expectedMisses.map((s) => s.ids));
     }
+  }
+});
+
+
+test("passing alternatives are complete, deterministically ranked, and respect floors and budget", () => {
+  const input = proposal({ threshold: 50, clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 60 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 70 }, 1),
+  ] }] });
+  const result = findSmallestAgreement(input, { alternativesLimit: 5 });
+  assert.equal(result.status, "already_passing");
+  assert.equal(result.checkedCombinations, 3);
+  assert.equal(result.passingCombinations, 3);
+  assert.deepEqual(result.alternatives.map(row => row.options[0].id), ["original", "cheap", "better"]);
+  input.groups[0].minSupport = 65;
+  input.maxChangeCost = 1;
+  const constrained = findSmallestAgreement(input, { alternativesLimit: 5 });
+  assert.deepEqual(constrained.alternatives.map(row => row.options[0].id), ["cheap"]);
+  for (const limit of [-1, 6, 1.5, "3"]) assert.equal(findSmallestAgreement(input, { alternativesLimit: limit }).status, "invalid");
+});
+
+
+test("custom packages evaluate all constraints without changing the draft", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "One", lockedOptionId: "better", options: [
+    option("original", true, { g: 80 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 75 }, 1),
+  ] }] });
+  const before = JSON.stringify(input);
+  assert.equal(evaluatePackage(input, ["original"]).status, "not_passing");
+  assert.equal(evaluatePackage(input, ["better"]).status, "passing");
+  assert.equal(evaluatePackage(input, ["missing"]).status, "invalid");
+  assert.equal(evaluatePackage(input, []).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+  input.maxChangeCost = 1;
+  assert.equal(evaluatePackage(input, ["better"]).status, "not_passing");
+});
+
+
+test("downside stress tests preserve inputs and expose protected-group failures", () => {
+  const input = proposal({ threshold: 50, groups: [{ id: "a", name: "A", weight: 9 }, { id: "b", name: "B", weight: 1, minSupport: 70 }], clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { a: 90, b: 80 }), option("other", false, { a: 80, b: 80 }, 1), option("third", false, { a: 70, b: 75 }, 2),
+  ] }] });
+  const before = JSON.stringify(input);
+  assert.equal(stressPackage(input, ["original"], 10).status, "passing");
+  const failed = stressPackage(input, ["original"], 11);
+  assert.equal(failed.status, "not_passing");
+  assert.ok(failed.summary.approval > input.threshold);
+  assert.equal(failed.summary.constraints.floors[0].met, false);
+  assert.equal(stressPackage(input, ["original"], 100).summary.approval, 0);
+  for (const drop of [-1, 101, NaN, "5"]) assert.equal(stressPackage(input, ["original"], drop).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+});
+
+
+test("scenario comparison identifies input changes and does not invent unchanged fields", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 60 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 70 }, 1),
+  ] }] });
+  assert.deepEqual(compareScenarioInputs(input, structuredClone(input)), []);
+  const after = structuredClone(input);
+  after.threshold = 80;
+  after.groups[0].minSupport = 60;
+  after.clauses[0].options[1].support.g = 85;
+  const changes = compareScenarioInputs(input, after);
+  assert.equal(changes.length, 3);
+  assert.ok(changes.some(row => row.field === "Approval threshold" && row.before === 70 && row.after === 80));
+  assert.ok(changes.some(row => row.field.includes("minimum support") && row.before === undefined));
+  assert.ok(changes.some(row => row.before === 90 && row.after === 85));
+});
+
+
+test("evidence CSV includes every input and protects spreadsheet text cells", () => {
+  const input = proposal({ clauses: [{ id: "one", title: 'Clause, "quoted"', options: [
+    option("original", true, { g: 60 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 70 }, 1),
+  ] }] });
+  input.title = '=HYPERLINK("unsafe")';
+  input.groups[0].name = '  +SUM(1,2)';
+  input.groups[0].minSupport = 65;
+  input.maxChangeCost = 1;
+  const csv = formatEvidenceCsv(input);
+  assert.equal(csv.split("\r\n").length, 5);
+  assert.ok(csv.includes("\"'=HYPERLINK(\"\"unsafe\"\")\""));
+  assert.ok(csv.includes("\"'  +SUM(1,2)\""));
+  assert.ok(csv.includes('Clause, ""quoted""'));
+  assert.ok(csv.includes('"minimum_support","support"'));
+  assert.ok(csv.includes('"cheap","cheap","no","yes","1"'));
+  assert.equal(csv, formatEvidenceCsv(input));
+});
+
+
+test("CSV neutralizes formula prefixes behind ASCII controls and leading spreadsheet separators", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 60 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 70 }, 1),
+  ] }] });
+  for (let code = 0; code <= 31; code += 1) {
+    input.title = String.fromCharCode(code) + "=SUM(1,2)";
+    assert.ok(formatEvidenceCsv(input).includes('"' + "'" + input.title + '"'), "ASCII control " + code);
+  }
+  for (const prefix of ["\t", "\r", "\n"]) {
+    input.title = prefix + "ordinary text";
+    assert.ok(formatEvidenceCsv(input).includes('"' + "'" + input.title + '"'));
   }
 });
