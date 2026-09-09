@@ -1546,6 +1546,7 @@ function jsonSyntaxHint(error) {
 
 
 export const CART_REVIEW_TOOLS = Object.freeze([
+  { id: "shipping", title: "Shipping exposure and headroom" },
   { id: "withdrawal", title: "Winner withdrawal stress" },
   { id: "frontier", title: "Same-cohort offer alternatives" },
   { id: "stranded", title: "Unserved buyer reasons" },
@@ -1598,6 +1599,16 @@ export function analyzeCartReview(rawScenario, tool) {
         const retained = originalOther.filter((entry) => result.selectedBuyerIds.includes(entry.id)).reduce((sum, entry) => sum + entry.quantity, 0);
         return [buyer.label, buyer.quantity, originalUnits, retained, originalUnits - retained];
       }), 'Rematches only the current winning offer after one included buyer withdraws. Other buyers can fill freed capacity. Lost units exclude the withdrawn order; this is not a withdrawal probability.');
+    }
+    case "shipping": {
+      return report(['Merchant', 'Included buyers', 'Shipping total', 'Landed total', 'Shipping share (%)', 'Item ceilings exceeded after shipping', 'Least remaining ceiling'], qualified.map((result) => {
+        const shipping = result.allocations.reduce((sum, allocation) => sum + allocation.shippingCost, 0);
+        const headrooms = result.allocations.map((allocation) => {
+          const buyer = scenario.buyers.find((entry) => entry.id === allocation.buyerId);
+          return Math.min(buyer.quantity * buyer.maxUnitPrice, buyer.maxOrderTotal ?? Infinity) - allocation.totalCost;
+        });
+        return [result.offer.merchant, result.deliveredBuyers, shipping, result.totalCost, result.totalCost > 0 ? shipping / result.totalCost * 100 : null, result.allocations.filter((allocation) => allocation.exceedsCeilingAfterShipping).length, Math.min(...headrooms)];
+      }), 'Pickup shipping is zero. Item-price ceilings and optional landed-order budgets remain different constraints; negative item-ceiling headroom is shown honestly. A zero landed total has no shipping percentage.');
     }
     default: throw new ScenarioError('Review is unavailable.');
   }

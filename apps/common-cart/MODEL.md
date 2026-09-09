@@ -187,3 +187,7 @@ Compare qualified offers only when their selected buyer-ID sets are identical. A
 ### Winner withdrawal stress
 
 Remove each included buyer from the current winner in turn and rerun the existing whole-order allocator on that same offer. Report originally served units retained/lost among the other buyers. No cross-merchant or behavioral prediction is made.
+
+### Shipping exposure and headroom
+
+Sum actual charged shipping across allocated buyers and divide by landed total when nonzero. Least remaining ceiling is the minimum of item-ceiling total and optional order budget, minus actual landed cost. Pickup charges zero shipping.
