@@ -1287,6 +1287,14 @@ test("clause options CSV replaces clauses with named errors and keeps matching s
   assert.equal(few.errors[0].code, "too_few_options");
   assert.equal(parseClauseOptionsCsv("   ", input).errors[0].code, "empty_csv");
   assert.equal(formatClauseOptionsCsv({ title: "" }).status, "invalid");
+
+  const tsv = parseClauseOptionsCsv("clause_id\toption_id\tclause_title\toption_label\toriginal\tchange_cost\none\toriginal\tHours\tKeep close\tyes\t0\none\talternative\tHours\tSeasonal\tno\t2\none\tother\tHours\tPilot\tno\t3\n", input);
+  assert.equal(tsv.status, "ok");
+  assert.equal(tsv.proposal.clauses[0].title, "Hours");
+  assert.equal(tsv.proposal.clauses[0].options[1].label, "Seasonal");
+  assert.equal(tsv.proposal.clauses[0].options[0].support.b, 50);
+  const tsvUnknown = parseClauseOptionsCsv("clause_id\toption_id\tclause_title\toption_label\toriginal\tchange_cost\thidden\none\toriginal\tOne\toriginal\tyes\t0\tx\n", input);
+  assert.equal(tsvUnknown.errors[0].code, "unknown_column");
 });
 
 test("locking an option for preview re-solves remaining clauses without mutating the draft", () => {

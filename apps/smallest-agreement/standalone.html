@@ -97,6 +97,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
 .package-table-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #package-table-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
+.clause-paste-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
+#clause-paste { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .constraint-card { margin-bottom: 1rem; }
 
 .workbench { padding: clamp(1.4rem, 4vw, 3.7rem); min-width: 0; }
@@ -192,7 +194,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -366,6 +368,10 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           </label>
           <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, or that have no lock when Show locked clauses only is on. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
+          <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
+          <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
+          <p id="clause-paste-note" class="field-note">Use the same columns as clause CSV import. A first line with tabs is treated as TSV. Import is undoable. Matching ids keep support scores; new options start at 50. The solver still ignores notes.</p>
+          <button class="text-button" type="button" id="clause-paste-button">Import pasted clauses</button>
           <div id="clauses-editor" class="clauses-editor"></div>
         </section>
 
@@ -2496,12 +2502,27 @@ function formatClauseOptionsCsv(proposal) {
  * original, and change_cost. Optional note and locked columns are accepted.
  * Unknown columns are rejected. Groups stay. Matching clause and option ids keep
  * their support scores; new options receive 50 for every group.
- * Does not mutate the supplied proposal.
+ * A first line that contains tabs is treated as TSV and converted to CSV before
+ * the same validation. Does not mutate the supplied proposal.
  */
+function clauseTableTextToCsv(text) {
+  const source = String(text ?? "").replace(/^\uFEFF/u, "");
+  const newline = source.search(/\r\n|\n|\r/u);
+  const firstLine = newline === -1 ? source : source.slice(0, newline);
+  if (!firstLine.includes("\t")) return source;
+  const rows = [];
+  for (const line of source.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n").split("\n")) {
+    if (line === "") continue;
+    rows.push(line.split("\t"));
+  }
+  if (rows.length === 0) return source;
+  return serializeCsv(rows);
+}
+
 function parseClauseOptionsCsv(csvText, proposal) {
   const validation = validateProposal(proposal);
   if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
-  const parsed = parseCsvRecords(csvText);
+  const parsed = parseCsvRecords(clauseTableTextToCsv(csvText));
   if (parsed.status !== "ok") return parsed;
   const [header, ...body] = parsed.records;
   if (!header || header.length < 6) {
@@ -4578,6 +4599,16 @@ $("#clauses-import-file").addEventListener("change", async (event) => {
   }
   changeAndRender(() => { state.proposal = parsed.proposal; });
   notifyDraft(`Imported ${parsed.importedClauses} clauses (${parsed.importedOptions} options) from CSV. Undo restores the previous draft.`);
+});
+$("#clause-paste-button").addEventListener("click", () => {
+  const pasted = $("#clause-paste")?.value ?? "";
+  const parsed = parseClauseOptionsCsv(pasted, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Pasted clauses failed (${first.code}): ${first.message}`);
+  }
+  changeAndRender(() => { state.proposal = parsed.proposal; });
+  notifyDraft(`Imported ${parsed.importedClauses} clauses (${parsed.importedOptions} options) from the pasted table. Undo restores the previous draft.`);
 });
 $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");

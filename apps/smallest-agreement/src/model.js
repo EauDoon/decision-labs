@@ -1967,12 +1967,27 @@ export function formatClauseOptionsCsv(proposal) {
  * original, and change_cost. Optional note and locked columns are accepted.
  * Unknown columns are rejected. Groups stay. Matching clause and option ids keep
  * their support scores; new options receive 50 for every group.
- * Does not mutate the supplied proposal.
+ * A first line that contains tabs is treated as TSV and converted to CSV before
+ * the same validation. Does not mutate the supplied proposal.
  */
+function clauseTableTextToCsv(text) {
+  const source = String(text ?? "").replace(/^\uFEFF/u, "");
+  const newline = source.search(/\r\n|\n|\r/u);
+  const firstLine = newline === -1 ? source : source.slice(0, newline);
+  if (!firstLine.includes("\t")) return source;
+  const rows = [];
+  for (const line of source.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n").split("\n")) {
+    if (line === "") continue;
+    rows.push(line.split("\t"));
+  }
+  if (rows.length === 0) return source;
+  return serializeCsv(rows);
+}
+
 export function parseClauseOptionsCsv(csvText, proposal) {
   const validation = validateProposal(proposal);
   if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
-  const parsed = parseCsvRecords(csvText);
+  const parsed = parseCsvRecords(clauseTableTextToCsv(csvText));
   if (parsed.status !== "ok") return parsed;
   const [header, ...body] = parsed.records;
   if (!header || header.length < 6) {

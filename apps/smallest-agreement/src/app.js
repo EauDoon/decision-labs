@@ -1842,6 +1842,16 @@ $("#clauses-import-file").addEventListener("change", async (event) => {
   changeAndRender(() => { state.proposal = parsed.proposal; });
   notifyDraft(`Imported ${parsed.importedClauses} clauses (${parsed.importedOptions} options) from CSV. Undo restores the previous draft.`);
 });
+$("#clause-paste-button").addEventListener("click", () => {
+  const pasted = $("#clause-paste")?.value ?? "";
+  const parsed = parseClauseOptionsCsv(pasted, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Pasted clauses failed (${first.code}): ${first.message}`);
+  }
+  changeAndRender(() => { state.proposal = parsed.proposal; });
+  notifyDraft(`Imported ${parsed.importedClauses} clauses (${parsed.importedOptions} options) from the pasted table. Undo restores the previous draft.`);
+});
 $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");
   state.saveMessage = "Decision brief downloaded.";

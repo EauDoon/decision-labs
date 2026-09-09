@@ -100,6 +100,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="copy-packages-table-button"/u);
   assert.match(html, /Copy package table/u);
   assert.match(html, /id="package-table-fallback"/u);
+  assert.match(html, /id="clause-paste"/u);
+  assert.match(html, /Paste clause options TSV or CSV/u);
+  assert.match(html, /id="clause-paste-button"/u);
   assert.match(html, /id="file-compare-heading"/u);
   assert.match(html, /id="compare-files-button"/u);
   assert.match(html, /id="coach-again"/u);
@@ -210,6 +213,7 @@ async function savedWorkbench(storage, hash = "") {
       };
       await element("#clauses-import-file").events.get("change")({ target });
     },
+    pasteClauses: (value) => { element("#clause-paste").value = value; },
     importLocksJson: async (contents, { size } = {}) => {
       const target = {
         files: [{ size: size ?? contents.length, text: async () => contents }],
@@ -772,7 +776,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /#coach-again, #shortcut-overlay, \.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /#coach-again, #shortcut-overlay, \.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
   const storage = new Map();
@@ -1282,6 +1286,45 @@ test("clauses CSV import replaces options with named errors and supports undo", 
   assert.match(app.message(), /Imported 1 clauses/u);
   app.click("#undo-button");
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+});
+
+test("pasting TSV or CSV clause options uses the same validation and is undoable", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for pasted clauses");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  app.pasteClauses("clause_id\toption_id\tclause_title\toption_label\toriginal\tchange_cost\thidden\nhours\thours-original\tHours\tKeep\tyes\t0\tx\n");
+  app.click("#clause-paste-button");
+  assert.match(app.message(), /Pasted clauses failed \(unknown_column\)/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+  const tsv = [
+    "clause_id\toption_id\tclause_title\toption_label\toriginal\tchange_cost",
+    "hours\thours-original\tPark hours\tClose at 20:00\tyes\t0",
+    "hours\thours-seasonal\tPark hours\tSeasonal close\tno\t2",
+    "hours\thours-pilot\tPark hours\tFriday trial\tno\t3",
+  ].join("\n");
+  app.pasteClauses(tsv);
+  app.click("#clause-paste-button");
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses.length, 1);
+  assert.equal(after.clauses[0].title, "Park hours");
+  assert.equal(after.clauses[0].options[0].label, "Close at 20:00");
+  assert.equal(after.clauses[0].options[0].support.residents, before.clauses[0].options[0].support.residents);
+  assert.match(app.message(), /Imported 1 clauses \(3 options\) from the pasted table/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+  const csv = [
+    "clause_id,option_id,clause_title,option_label,original,change_cost",
+    "path,path-original,Path lighting,Keep lamps,yes,0",
+    "path,path-warm,Path lighting,Warm lights,no,3",
+    "path,path-motion,Path lighting,Motion lights,no,4",
+  ].join("\n");
+  app.pasteClauses(csv);
+  app.click("#clause-paste-button");
+  const csvAfter = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(csvAfter.clauses[0].id, "path");
+  assert.equal(csvAfter.clauses[0].title, "Path lighting");
+  assert.match(app.message(), /from the pasted table/u);
 });
 
 test("locks JSON import replaces every lock, fails closed on unknown ids, and can be undone", async () => {

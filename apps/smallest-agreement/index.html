@@ -167,6 +167,10 @@ SOFTWARE.
           </label>
           <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, or that have no lock when Show locked clauses only is on. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
+          <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
+          <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
+          <p id="clause-paste-note" class="field-note">Use the same columns as clause CSV import. A first line with tabs is treated as TSV. Import is undoable. Matching ids keep support scores; new options start at 50. The solver still ignores notes.</p>
+          <button class="text-button" type="button" id="clause-paste-button">Import pasted clauses</button>
           <div id="clauses-editor" class="clauses-editor"></div>
         </section>
 
