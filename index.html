@@ -132,7 +132,9 @@
     }
     .skip:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
     #whats-new:focus-visible,
-    #workbenches:focus-visible {
+    #workbenches:focus-visible,
+    #catalog-heading:focus-visible,
+    #shortcuts:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 6px;
     }
@@ -314,7 +316,7 @@
   </nav>
   <header class="shell hero">
     <p class="eyebrow">Local catalog of four workbenches</p>
-    <h1>Decision Labs</h1>
+    <h1 id="catalog-heading" tabindex="-1">Decision Labs</h1>
     <p class="lede">Make the assumptions visible. Change one input, see who is affected, and take the evidence into the conversation that actually decides.</p>
     <p class="support">Each workbench is a static page that runs in your browser. There is no shared account, no hosted service, and no model that claims to decide for you.</p>
   </header>
@@ -371,7 +373,7 @@
         <li data-app="smallest-agreement">1.4.1</li>
         <li data-app="weekend-gap">1.4.1</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -379,6 +381,7 @@
           <dt><kbd>2</kbd></dt><dd>Open Common Cart</dd>
           <dt><kbd>3</kbd></dt><dd>Open The Smallest Agreement</dd>
           <dt><kbd>4</kbd></dt><dd>Open Weekend Gap</dd>
+          <dt><kbd>h</kbd></dt><dd>Focus the catalog heading</dd>
           <dt><kbd>?</kbd></dt><dd>Show or hide this list</dd>
           <dt><kbd>Esc</kbd></dt><dd>Hide this list</dd>
         </dl>
@@ -498,6 +501,11 @@
         if (event.key === '?') {
           event.preventDefault();
           setOpen(shortcuts.hidden);
+          return;
+        }
+        if (event.key === 'h') {
+          event.preventDefault();
+          document.getElementById('catalog-heading')?.focus();
           return;
         }
         if (event.key === 'Escape' && shortcuts && !shortcuts.hidden) {
