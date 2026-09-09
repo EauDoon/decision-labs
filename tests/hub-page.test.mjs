@@ -156,3 +156,15 @@ test('catalog does not use CSS animation', () => {
   assert.doesNotMatch(style, /animation\s*:/);
   assert.match(style, /prefers-reduced-motion:\s*reduce[\s\S]*transition:\s*none/);
 });
+
+test('copy catalog address control exists and stays hidden off http', () => {
+  assert.match(html, /id="catalog-url-tools" hidden/);
+  assert.match(html, /id="copy-catalog-url"/);
+  assert.match(html, /Copy catalog address/);
+  assert.match(html, /\/\^https\?:\$\/\.test\(location\.protocol\)/);
+  assert.match(html, /urlTools\.hidden = false/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /\.copy-catalog-url:focus-visible/);
+  assert.match(html, /@media print[\s\S]*\.catalog-url-tools \{ display: none !important; \}/);
+  assert.match(html, /The control stays hidden if you open the page from a file/);
+});
