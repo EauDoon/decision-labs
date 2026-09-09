@@ -154,6 +154,11 @@ SOFTWARE.
             <p>Lock one alternative and re-run the solver on the remaining unlocked clauses. Review the preview before applying. Apply is an ordinary draft edit, so undo restores the previous locks.</p>
             <div id="lock-preview"></div>
           </section>
+          <section class="result-card" aria-labelledby="leave-one-heading">
+            <h3 id="leave-one-heading">Leave one group out</h3>
+            <p>Each row omits that group's weight from the weighted average. Remaining weights are used as written, which renormalizes them. This is a sensitivity readout of the supplied scores, not a forecast of what people would do without that group.</p>
+            <div id="leave-one-out"></div>
+          </section>
           <section class="result-card" aria-labelledby="manual-heading">
             <h3 id="manual-heading" tabindex="-1">Try your own package</h3>
             <p>Choose one option per clause to inspect tradeoffs. This comparison does not change the draft, locks, or recommendation. Choices reset when you reload.</p>

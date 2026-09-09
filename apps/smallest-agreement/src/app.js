@@ -10,6 +10,7 @@ import {
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
   previewLockedOption,
+  leaveOneGroupOut,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -389,6 +390,7 @@ function renderResults(result) {
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable when the full search is over the safety bound.</p>';
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable when the full search is over the safety bound.</p>';
     $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable when the full search is over the safety bound.</p>';
+    $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out is unavailable when the full search is over the safety bound.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
     return;
@@ -402,6 +404,7 @@ function renderResults(result) {
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable for invalid inputs.</p>';
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable for invalid inputs.</p>';
     $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable for invalid inputs.</p>';
+    $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out is unavailable for invalid inputs.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
     return;
@@ -429,6 +432,7 @@ function renderResults(result) {
   renderNearMissExplorer(result);
   renderClauseContribution(result);
   renderLockPreview();
+  renderLeaveOneOut(result);
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
 }
@@ -540,6 +544,21 @@ function renderLockPreview() {
     ? `Preview status: ${previewResult.status.replaceAll("_", " ")}. Approval ${formatPercent(agreement.approval)}. Cost ${agreement.changeCost.toFixed(1)}.`
     : `Preview status: ${previewResult.status.replaceAll("_", " ")}.`;
   target.innerHTML = `<p>Lock <strong>${escapeHtml(lockPreview.clauseTitle)}</strong> to <strong>${escapeHtml(lockPreview.optionLabel)}</strong> and keep every other current lock.</p><p>${statusText}</p><p>${packageText}</p><p>This is a preview of the solver under that lock. It is not a decision.</p><div class="scenario-actions"><button class="button button-brick" type="button" data-action="apply-lock-preview">Apply lock</button> <button class="button button-secondary" type="button" data-action="dismiss-lock-preview">Dismiss preview</button></div>`;
+}
+
+function renderLeaveOneOut(result) {
+  const packageOptions = result.agreement?.options ?? result.baseline?.options;
+  if (!packageOptions) {
+    $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out needs a valid package to inspect.</p>';
+    return;
+  }
+  const table = leaveOneGroupOut(state.proposal, packageOptions);
+  if (table.status !== "ok") {
+    $("#leave-one-out").innerHTML = `<p class="empty-state">${escapeHtml(table.errors[0])}</p>`;
+    return;
+  }
+  const source = result.agreement ? "recommended package" : "original package";
+  $("#leave-one-out").innerHTML = `<p>Inspecting the ${source}. Full weighted approval ${formatPercent(table.fullApproval)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Omitted group</th><th scope="col">Weight</th><th scope="col">Approval without the group</th><th scope="col">Change from full approval</th></tr></thead><tbody>${table.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.weight}</td><td>${row.approval == null ? "Not defined with one group" : formatPercent(row.approval)}</td><td class="${row.delta > 0.0001 ? "positive" : row.delta < -0.0001 ? "negative" : ""}">${row.delta == null ? "Not defined" : formatMargin(row.delta)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function renderConstraints(result) {

@@ -37,6 +37,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="veto-note"/u);
   assert.match(html, /Import support CSV/u);
   assert.match(html, /Try this option/u);
+  assert.match(html, /Leave one group out/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 

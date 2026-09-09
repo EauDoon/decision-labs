@@ -858,3 +858,30 @@ export function previewLockedOption(proposal, clauseId, optionId, searchOptions 
     optionLabel: option.label,
   };
 }
+
+/**
+ * Overall approval if each group is omitted from the weighted average.
+ * Remaining weights are used as-is, which renormalizes because the formula
+ * divides by remaining total weight. This is a sensitivity readout, not a forecast.
+ */
+export function leaveOneGroupOut(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const fullApproval = approvalForOptions(proposal.groups, selected);
+  const rows = proposal.groups.map((group) => {
+    const remaining = proposal.groups.filter((item) => item.id !== group.id);
+    if (remaining.length === 0) {
+      return { id: group.id, name: group.name, weight: group.weight, approval: null, delta: null, omitted: true };
+    }
+    const approval = approvalForOptions(remaining, selected);
+    return { id: group.id, name: group.name, weight: group.weight, approval, delta: approval - fullApproval, omitted: true };
+  });
+  return { status: "ok", method: "omit", fullApproval, rows };
+}

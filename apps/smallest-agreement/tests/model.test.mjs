@@ -18,6 +18,7 @@ import {
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
   previewLockedOption,
+  leaveOneGroupOut,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -937,4 +938,37 @@ test("locking an option for preview re-solves remaining clauses without mutating
   assert.equal(JSON.stringify(input), before);
   assert.equal(previewLockedOption(input, "missing", "one-change").status, "invalid");
   assert.equal(previewLockedOption(input, "one", "missing").status, "invalid");
+});
+
+test("leave-one-group-out omits a group from the weighted average without forecasting", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 3 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 100, b: 0 }),
+      option("alternative", false, { a: 50, b: 50 }, 1),
+      option("other", false, { a: 0, b: 100 }, 2),
+    ] }],
+  });
+  const selected = [input.clauses[0].options[0]];
+  const before = JSON.stringify(input);
+  const table = leaveOneGroupOut(input, selected);
+  assert.equal(table.status, "ok");
+  assert.equal(table.method, "omit");
+  assert.equal(table.fullApproval, 25);
+  assert.equal(table.rows[0].approval, 0);
+  assert.equal(table.rows[1].approval, 100);
+  assert.equal(table.rows[0].delta, -25);
+  assert.equal(table.rows[1].delta, 75);
+  assert.equal(JSON.stringify(input), before);
+  const lone = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 80 }),
+      option("alternative", false, { a: 90 }, 1),
+      option("other", false, { a: 70 }, 2),
+    ] }],
+  });
+  const alone = leaveOneGroupOut(lone, [lone.clauses[0].options[0]]);
+  assert.equal(alone.status, "ok");
+  assert.equal(alone.rows[0].approval, null);
 });

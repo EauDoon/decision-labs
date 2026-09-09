@@ -306,6 +306,11 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
             <p>Lock one alternative and re-run the solver on the remaining unlocked clauses. Review the preview before applying. Apply is an ordinary draft edit, so undo restores the previous locks.</p>
             <div id="lock-preview"></div>
           </section>
+          <section class="result-card" aria-labelledby="leave-one-heading">
+            <h3 id="leave-one-heading">Leave one group out</h3>
+            <p>Each row omits that group's weight from the weighted average. Remaining weights are used as written, which renormalizes them. This is a sensitivity readout of the supplied scores, not a forecast of what people would do without that group.</p>
+            <div id="leave-one-out"></div>
+          </section>
           <section class="result-card" aria-labelledby="manual-heading">
             <h3 id="manual-heading" tabindex="-1">Try your own package</h3>
             <p>Choose one option per clause to inspect tradeoffs. This comparison does not change the draft, locks, or recommendation. Choices reset when you reload.</p>
@@ -1211,6 +1216,33 @@ function previewLockedOption(proposal, clauseId, optionId, searchOptions = {}) {
   };
 }
 
+/**
+ * Overall approval if each group is omitted from the weighted average.
+ * Remaining weights are used as-is, which renormalizes because the formula
+ * divides by remaining total weight. This is a sensitivity readout, not a forecast.
+ */
+function leaveOneGroupOut(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const fullApproval = approvalForOptions(proposal.groups, selected);
+  const rows = proposal.groups.map((group) => {
+    const remaining = proposal.groups.filter((item) => item.id !== group.id);
+    if (remaining.length === 0) {
+      return { id: group.id, name: group.name, weight: group.weight, approval: null, delta: null, omitted: true };
+    }
+    const approval = approvalForOptions(remaining, selected);
+    return { id: group.id, name: group.name, weight: group.weight, approval, delta: approval - fullApproval, omitted: true };
+  });
+  return { status: "ok", method: "omit", fullApproval, rows };
+}
+
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const MAX_SCENARIOS = 20;
@@ -1581,6 +1613,7 @@ function renderResults(result) {
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable when the full search is over the safety bound.</p>';
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable when the full search is over the safety bound.</p>';
     $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable when the full search is over the safety bound.</p>';
+    $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out is unavailable when the full search is over the safety bound.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
     return;
@@ -1594,6 +1627,7 @@ function renderResults(result) {
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable for invalid inputs.</p>';
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable for invalid inputs.</p>';
     $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable for invalid inputs.</p>';
+    $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out is unavailable for invalid inputs.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
     return;
@@ -1621,6 +1655,7 @@ function renderResults(result) {
   renderNearMissExplorer(result);
   renderClauseContribution(result);
   renderLockPreview();
+  renderLeaveOneOut(result);
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
 }
@@ -1732,6 +1767,21 @@ function renderLockPreview() {
     ? `Preview status: ${previewResult.status.replaceAll("_", " ")}. Approval ${formatPercent(agreement.approval)}. Cost ${agreement.changeCost.toFixed(1)}.`
     : `Preview status: ${previewResult.status.replaceAll("_", " ")}.`;
   target.innerHTML = `<p>Lock <strong>${escapeHtml(lockPreview.clauseTitle)}</strong> to <strong>${escapeHtml(lockPreview.optionLabel)}</strong> and keep every other current lock.</p><p>${statusText}</p><p>${packageText}</p><p>This is a preview of the solver under that lock. It is not a decision.</p><div class="scenario-actions"><button class="button button-brick" type="button" data-action="apply-lock-preview">Apply lock</button> <button class="button button-secondary" type="button" data-action="dismiss-lock-preview">Dismiss preview</button></div>`;
+}
+
+function renderLeaveOneOut(result) {
+  const packageOptions = result.agreement?.options ?? result.baseline?.options;
+  if (!packageOptions) {
+    $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out needs a valid package to inspect.</p>';
+    return;
+  }
+  const table = leaveOneGroupOut(state.proposal, packageOptions);
+  if (table.status !== "ok") {
+    $("#leave-one-out").innerHTML = `<p class="empty-state">${escapeHtml(table.errors[0])}</p>`;
+    return;
+  }
+  const source = result.agreement ? "recommended package" : "original package";
+  $("#leave-one-out").innerHTML = `<p>Inspecting the ${source}. Full weighted approval ${formatPercent(table.fullApproval)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Omitted group</th><th scope="col">Weight</th><th scope="col">Approval without the group</th><th scope="col">Change from full approval</th></tr></thead><tbody>${table.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.weight}</td><td>${row.approval == null ? "Not defined with one group" : formatPercent(row.approval)}</td><td class="${row.delta > 0.0001 ? "positive" : row.delta < -0.0001 ? "negative" : ""}">${row.delta == null ? "Not defined" : formatMargin(row.delta)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function renderConstraints(result) {
