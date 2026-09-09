@@ -10,6 +10,7 @@ async function workbench(protocol = 'file:', options = {}) {
   const events = new Map();
   const windowEvents = new Map();
   const storage = new Map();
+  if (options.storage) Object.entries(options.storage).forEach(([key, value]) => storage.set(key, value));
   const notice = { textContent: '' };
   const downloads = [];
   let downloadBlob;
@@ -59,6 +60,14 @@ async function workbench(protocol = 'file:', options = {}) {
       input.files = [{ size: file.size ?? String(contents).length, contents, pending, error }];
       events.get('change')({ target: input });
     },
+    keydown: (key, extra = {}) => {
+      windowEvents.get('keydown')?.({
+        key,
+        target: extra.target ?? { tagName: extra.tagName ?? 'BODY' },
+        preventDefault() {},
+      });
+    },
+    stored: (key) => storage.get(key) ?? null,
   };
 }
 
@@ -357,6 +366,8 @@ test('snapshot comparison reports participant deltas without mutating the curren
   app.click('compare-case', { caseId: 'case-1' });
   assert.match(app.markup(), /Compare with Baseline/);
   assert.match(app.markup(), /-100.00 units/);
+  assert.match(app.markup(), /class="diff-down"/);
+  assert.match(app.markup(), /Highlighted profit cells changed/);
   assert.match(app.markup(), /matched by stable identifier/);
   assert.deepEqual(app.saved(), current);
   app.click('clear-comparison'); assert.doesNotMatch(app.markup(), /Compare with Baseline/);
@@ -425,7 +436,181 @@ test('invalid fields expose accessible state and printing requires a valid case'
  app.edit('deal.monthlyVolume', '');
  assert.match(app.markup(), /id="field-deal-monthlyVolume" aria-invalid="true"/);
  assert.match(app.markup(), /Go to first invalid field/);
+ assert.match(app.markup(), /[0-9]+ field[s]? need/);
+ assert.match(app.markup(), /<details class="participant-details">/);
  app.click('print-report'); assert.equal(app.prints(), 1);
  app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
  assert.match(app.markup(), /Case assumptions/);
+});
+
+test('deal title and currency persist, display as a prefix, and reject illegal codes', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-path="deal.title"/);
+  assert.match(app.markup(), /data-path="deal.currency"/);
+  app.edit('deal.title', '  Harbor JV  ', { type: 'text' });
+  app.edit('deal.currency', 'USD', { type: 'text' });
+  assert.equal(app.saved().deal.title, 'Harbor JV');
+  assert.equal(app.saved().deal.currency, 'USD');
+  assert.match(app.markup(), /Harbor JV/);
+  assert.match(app.markup(), /USD 20,000\.00/);
+  assert.doesNotMatch(app.markup(), /20,000\.00 units/);
+  app.edit('deal.currency', 'usd', { type: 'text' });
+  assert.match(app.markup(), /Resolve these inputs/);
+  assert.match(app.notice(), /Deal currency/);
+  assert.equal(app.saved().deal.currency, 'USD');
+  app.edit('deal.currency', '', { type: 'text', optional: 'true' });
+  assert.equal(Object.hasOwn(app.saved().deal, 'currency'), false);
+  assert.match(app.markup(), /20,000\.00 units/);
+});
+
+test('duplicate and move roster controls keep unique ids and the original share sum', async () => {
+  const app = await workbench();
+  app.click('duplicate-participant', { index: '0' });
+  const duplicated = app.saved();
+  assert.equal(duplicated.participants.length, 4);
+  assert.equal(new Set(duplicated.participants.map((item) => item.id)).size, 4);
+  assert.equal(duplicated.participants[1].name, 'Platform copy');
+  assert.equal(duplicated.participants[1].revenueShare, 0);
+  assert.equal(duplicated.participants.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+  app.click('move-participant-down', { index: '0' });
+  assert.equal(app.saved().participants[0].id, 'participant-1');
+  assert.equal(app.saved().participants[1].id, 'platform');
+  app.click('move-participant-up', { index: '1' });
+  assert.deepEqual(app.saved().participants.map((item) => item.id), duplicated.participants.map((item) => item.id));
+  assert.equal(app.saved().participants.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+});
+
+test('removing a participant reallocates their share and blocks dropping the last two', async () => {
+  const app = await workbench();
+  app.click('remove-participant', { index: '0' });
+  const remaining = app.saved().participants;
+  assert.equal(remaining.length, 2);
+  assert.equal(remaining.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+  assert.match(app.notice(), /reallocated/);
+  assert.match(app.markup(), /data-action="remove-participant"[^>]*disabled/);
+  app.click('remove-participant', { index: '0' });
+  assert.equal(app.saved().participants.length, 2);
+});
+
+test('share-to-hold previews a split and requires an explicit apply', async () => {
+  const app = await workbench();
+  app.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  assert.match(app.markup(), /Share-to-hold preview/);
+  assert.match(app.markup(), /Apply minimum hold share/);
+  const originalShares = [0.4, 0.35, 0.25];
+  app.click('close-share-hold');
+  assert.doesNotMatch(app.markup(), /Share-to-hold preview/);
+  app.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  app.click('apply-share-hold');
+  const applied = app.saved();
+  assert.ok(Math.abs(applied.participants.find((item) => item.id === 'liquidity-partner').revenueShare - 0.24) < 1e-8);
+  assert.equal(applied.participants.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+  assert.notDeepEqual(applied.participants.map((item) => item.revenueShare), originalShares);
+  app.click('undo');
+  assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
+});
+
+test('tornado chart includes an SVG and a text-equivalent table', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /Adverse-shock tornado/);
+  assert.match(app.markup(), /<svg class="chart-svg"[^>]*aria-label="Tornado chart/);
+  assert.match(app.markup(), /<caption>Text equivalent of the tornado chart<\/caption>/);
+  assert.match(app.markup(), /Volume down/);
+  assert.match(app.markup(), /Fee down/);
+});
+
+test('contribution waterfall includes an SVG and a text fallback for each participant', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /Contribution waterfall/);
+  assert.match(app.markup(), /aria-label="Contribution waterfall for Platform/);
+  assert.match(app.markup(), /<caption>Text equivalent for Platform<\/caption>/);
+  assert.match(app.markup(), /Minimum acceptable profit/);
+});
+
+test('first-run coach explains the three-step flow, dismisses to localStorage, and skips share links', async () => {
+  const fresh = await workbench();
+  assert.match(fresh.markup(), /Three steps to a first read/);
+  assert.match(fresh.markup(), /role="dialog"/);
+  fresh.click('dismiss-coach');
+  assert.doesNotMatch(fresh.markup(), /Three steps to a first read/);
+  assert.equal(fresh.stored('partnership-breakpoint.coach.v1'), 'dismissed');
+  const dismissed = await workbench('file:', { storage: { 'partnership-breakpoint.coach.v1': 'dismissed' } });
+  assert.doesNotMatch(dismissed.markup(), /Three steps to a first read/);
+  const shared = clonePreset('balanced');
+  shared.deal.monthlyVolume = 88_000;
+  const encoded = Buffer.from(JSON.stringify(shared)).toString('base64url');
+  const linked = await workbench('http:', { hash: `#deal=${encoded}` });
+  assert.doesNotMatch(linked.markup(), /Three steps to a first read/);
+  assert.match(linked.markup(), /value="88000"/);
+  const escapeApp = await workbench();
+  escapeApp.keydown('Escape');
+  assert.doesNotMatch(escapeApp.markup(), /Three steps to a first read/);
+});
+
+test('keyboard shortcuts open help, undo, redo, and export without stealing from inputs', async () => {
+  const app = await workbench();
+  app.keydown('?');
+  assert.match(app.markup(), /Keyboard shortcuts/);
+  assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
+  assert.match(app.markup(), /ignored while a text or number field is focused/);
+  app.keydown('Escape');
+  assert.doesNotMatch(app.markup(), /Keyboard shortcuts/);
+  app.edit('deal.monthlyVolume', '80000');
+  app.keydown('u');
+  assert.equal(app.saved().deal.monthlyVolume, 100000);
+  app.keydown('r');
+  assert.equal(app.saved().deal.monthlyVolume, 80000);
+  app.keydown('e');
+  assert.equal(app.downloads()[0].filename, 'partnership-breakpoint.json');
+  app.edit('deal.monthlyVolume', '70000');
+  app.keydown('u', { tagName: 'INPUT' });
+  assert.equal(app.saved().deal.monthlyVolume, 70000);
+});
+
+test('redacted export replaces names, clears the title, and keeps identifiers', async () => {
+  const app = await workbench();
+  app.edit('deal.title', 'Secret Alliance', { type: 'text' });
+  app.click('export-redacted');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-redacted.json');
+  const parsed = JSON.parse(await file.blob.text());
+  assert.equal(Object.hasOwn(parsed.deal, 'title'), false);
+  assert.deepEqual(parsed.participants.map((item) => item.name), ['Participant 1', 'Participant 2', 'Participant 3']);
+  assert.deepEqual(parsed.participants.map((item) => item.id), ['platform', 'distributor', 'liquidity-partner']);
+  assert.match(app.markup(), /Export redacted JSON \(names replaced, title cleared\)/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-redacted');
+  assert.equal(app.downloads().length, 1);
+});
+
+test('negotiation brief downloads Markdown focused on weakest participant and first breakpoint', async () => {
+  const app = await workbench();
+  app.click('copy-brief');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-brief.md');
+  const text = await file.blob.text();
+  assert.match(text, /negotiation brief/);
+  assert.match(text, /Weakest participant/);
+  assert.match(text, /First breakpoint/);
+  assert.match(text, /Counts are not probabilities/);
+  assert.match(app.notice(), /downloaded instead/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('copy-brief');
+  assert.equal(app.downloads().length, 1);
+});
+
+test('fee-to-hold previews the floor and requires an explicit apply', async () => {
+  const app = await workbench();
+  app.click('solve-fee-hold');
+  assert.match(app.markup(), /Fee-to-hold preview/);
+  assert.match(app.markup(), /Apply hold fee/);
+  const original = 0.2;
+  app.click('close-fee-hold');
+  assert.doesNotMatch(app.markup(), /Fee-to-hold preview/);
+  app.click('solve-fee-hold');
+  app.click('apply-fee-hold');
+  assert.ok(app.saved().deal.feePerTransaction < original);
+  assert.equal(app.saved().participants[0].revenueShare, 0.4);
+  app.click('undo');
+  assert.equal(app.saved().deal.feePerTransaction, original);
 });
