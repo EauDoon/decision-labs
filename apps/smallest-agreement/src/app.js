@@ -530,7 +530,7 @@ function renderGroups(vetoBlocks = new Set()) {
   } else {
     if (status) status.textContent = vetoGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
     $("#groups-editor").innerHTML = visible.map((group) => `
-    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}">
+    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}"${vetoBlocks.has(group.id) ? ` data-veto-block="${escapeHtml(group.id)}" tabindex="-1"` : ""}>
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
       <button class="text-button" type="button" data-action="duplicate-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length >= MAX_GROUPS ? "disabled" : ""}>Duplicate group</button>
@@ -1983,6 +1983,20 @@ function jumpToLocks() {
   }
   $("#clear-locks")?.focus?.();
 }
+function jumpToVetoBlockers() {
+  const blocking = blockingVetoIds(currentResult());
+  const first = state.proposal.groups.find((group) => blocking.has(group.id));
+  if (first) {
+    const target = $(`[data-veto-block="${first.id}"]`);
+    if (target?.focus) {
+      target.focus();
+      return;
+    }
+  }
+  $("#constraint-checks")?.focus?.();
+  notifyDraft("No veto-blocker highlight is on screen. Review the veto list in Constraint checks. A veto is a numerical constraint, not a legal right.");
+}
+
 function findAgreement() {
   $("#results-heading")?.focus?.();
   notifyDraft("Search already runs as you edit. Review the recommendation below.");
@@ -2034,6 +2048,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "v" || event.key === "V") {
     event.preventDefault();
     setVetoGroupsOnly(!vetoGroupsOnly);
+  } else if (event.key === "b" || event.key === "B") {
+    event.preventDefault();
+    jumpToVetoBlockers();
   }
 });
 

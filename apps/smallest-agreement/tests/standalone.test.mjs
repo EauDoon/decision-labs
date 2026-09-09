@@ -49,6 +49,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Focus Add group/u);
   assert.match(html, /Jump to the first locked clause/u);
   assert.match(html, /<kbd>v<\/kbd> Toggle the veto-only group filter/u);
+  assert.match(html, /<kbd>b<\/kbd> Jump to the first veto-blocker highlight, or the veto list/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -910,6 +911,37 @@ test("keyboard v toggles the veto-only group filter unless an input is active", 
   assert.doesNotMatch(app.groups(), /Club staff/u);
   assert.doesNotMatch(app.groups(), /data-group-id="members"/u);
   assert.match(app.shares(), /Members/u);
+});
+
+test("keyboard b jumps to the first veto-blocker highlight unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>b<\/kbd> Jump to the first veto-blocker highlight, or the veto list/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("b");
+  assert.equal(app.focused(), "#constraint-checks");
+  app.clearFocus();
+  app.keydown("b", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("b", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const key = "smallest-agreement:proposal:v1";
+  const draft = {
+    title: "Veto jump workshop",
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { majority: 90, minority: 10 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { majority: 88, minority: 20 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { majority: 85, minority: 30 } },
+    ] }],
+  };
+  const blocked = await savedWorkbench(new Map([[key, JSON.stringify(draft)]]));
+  assert.match(blocked.groups(), /data-veto-block="minority"/u);
+  blocked.keydown("B");
+  assert.equal(blocked.focused(), '[data-veto-block="minority"]');
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {
