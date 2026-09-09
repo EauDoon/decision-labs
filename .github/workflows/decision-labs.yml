@@ -22,5 +22,7 @@ jobs:
         with:
           node-version: "20.x"
           package-manager-cache: false
-      - run: npm test
-      - run: npm run check
+      - name: Test catalog launcher and every workbench
+        run: npm test
+      - name: Check hub syntax and every workbench
+        run: npm run check
