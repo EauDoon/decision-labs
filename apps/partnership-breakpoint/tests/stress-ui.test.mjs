@@ -575,6 +575,60 @@ test('visible stress CSV follows the collapsed case filter and keeps all-case ex
   assert.match(app.notice(), /Resolve invalid inputs before exporting CSV/);
 });
 
+test('copy visible stress CSV uses a second control and does not download', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-visible-csv"/);
+  assert.match(fallback.markup(), /Copy visible stress CSV/);
+  assert.match(fallback.markup(), /Copy visible cases CSV/);
+  assert.match(fallback.markup(), /data-action="export-visible-csv"/);
+  fallback.click('copy-visible-csv');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="csv-copy-text"/);
+  assert.match(fallback.markup(), /currently visible stress grid/);
+  assert.match(fallback.markup(), /&quot;case-1&quot;/);
+  assert.match(fallback.notice(), /Copy the visible stress CSV from the text area/);
+  fallback.click('close-csv-copy');
+  assert.doesNotMatch(fallback.markup(), /id="csv-copy-text"/);
+
+  fallback.click('collapse-all-hold-cases');
+  fallback.click('copy-visible-csv');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="csv-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /&quot;case-1&quot;/);
+  assert.match(fallback.markup(), /&quot;case-2&quot;/);
+  fallback.click('close-csv-copy');
+
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-visible-csv');
+  assert.equal(fallback.downloads().length, 0);
+  assert.doesNotMatch(fallback.markup(), /id="csv-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying visible stress CSV/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-visible-csv');
+  assert.equal(withClipboard.downloads().length, 0);
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].trim().split('\r\n').length, 82);
+  assert.match(withClipboard.notice(), /27 of 27 tested cases included/);
+  assert.match(withClipboard.notice(), /not probabilities/);
+  assert.doesNotMatch(withClipboard.markup(), /id="csv-copy-text"/);
+  withClipboard.click('collapse-all-hold-cases');
+  withClipboard.click('copy-visible-csv');
+  assert.equal(withClipboard.copied().length, 2);
+  assert.equal(withClipboard.copied()[1].trim().split('\r\n').length, 79);
+  assert.doesNotMatch(withClipboard.copied()[1], /"case-1"/);
+  assert.match(withClipboard.copied()[1], /"case-2"/);
+  assert.match(withClipboard.notice(), /26 of 27 tested cases included/);
+  assert.equal(withClipboard.downloads().length, 0);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-visible-csv');
+  assert.equal(denied.downloads().length, 0);
+  assert.match(denied.markup(), /id="csv-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
 test('share reconciliation repairs overallocations and preserves participant costs', async () => {
   const app = await workbench();
   app.edit('participants.0.revenueShare', '0.8');

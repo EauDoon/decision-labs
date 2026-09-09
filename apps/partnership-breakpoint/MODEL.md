@@ -158,7 +158,7 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 ## Redacted export
 
-`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption.
+`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case.
 
 ## Participant CSV import
 
@@ -182,7 +182,7 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 
 `escapeCsvCell` quotes every field and prefixes string values that look like spreadsheet formulas with an apostrophe. Negative numbers are not treated as formulas.
 
-`stressGridCsv(config, options)` writes one row per participant in each selected case. Omit `options` or omit `scenarioIds` to include every tested case. `scenarioIds` is an optional array of case identifiers; grid order is preserved; unknown identifiers are skipped. Unknown option keys and reserved keys (`__proto__`, `constructor`, `prototype`) are rejected. Row counts describe selected cases, not likelihoods. The GUI Export visible stress CSV uses the currently displayed cases, including after collapsing all-hold rows.
+`stressGridCsv(config, options)` writes one row per participant in each selected case. Omit `options` or omit `scenarioIds` to include every tested case. `scenarioIds` is an optional array of case identifiers; grid order is preserved; unknown identifiers are skipped. Unknown option keys and reserved keys (`__proto__`, `constructor`, `prototype`) are rejected. Row counts describe selected cases, not likelihoods. The GUI Export visible stress CSV uses the currently displayed cases, including after collapsing all-hold rows. Copy visible cases CSV copies that same visible subset to the clipboard, or to a textarea when the clipboard is unavailable. It does not replace the download control.
 
 ## Three-snapshot compare
 
