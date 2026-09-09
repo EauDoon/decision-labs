@@ -39,9 +39,13 @@ export function notFoundPage() {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
+      max-width: 100%;
+      flex-wrap: wrap;
       color: #0a4439;
       font-weight: 650;
+      text-underline-offset: 3px;
     }
+    a:hover { text-decoration-thickness: 2px; }
     a:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
   </style>
 </head>
