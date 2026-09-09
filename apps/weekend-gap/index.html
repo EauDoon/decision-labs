@@ -53,7 +53,7 @@ SOFTWARE.
         <p class="notice"><strong>Educational simulator only.</strong> Every assumption is synthetic and editable. This is not financial advice, live market data or a statement about any issuer.</p>
       </section>
 
-      <nav class="section-links" aria-label="Simulator sections"><a href="#assumptions-title">Edit assumptions</a><a href="#comparison-title">Compare experiments</a><a href="#table-title">Inspect hourly data</a></nav>
+      <nav class="section-links" aria-label="Simulator sections"><a href="#assumptions-title">Edit assumptions</a><a href="#comparison-title">Compare experiments</a><a href="#demand-compare-title">Compare demand timing</a><a href="#table-title">Inspect hourly data</a></nav>
       <section class="workspace" aria-label="Weekend liquidity scenario workspace">
         <aside class="controls card" aria-labelledby="assumptions-title">
           <div class="card-heading">
@@ -341,6 +341,20 @@ SOFTWARE.
                 <tbody id="window-shift-rows"></tbody>
               </table>
             </div>
+          </article>
+
+          <article class="planning-card card" aria-labelledby="demand-compare-title">
+            <p class="eyebrow">Demand timing experiment</p>
+            <h2 id="demand-compare-title">Compare flat, Friday burst and Monday rush</h2>
+            <p>The three rows reuse every other current assumption and only change when demand joins the queue. Total demand is the same. This is a timing experiment, not a forecast of real redemptions.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Demand profile comparison">
+              <table>
+                <caption>Peak queue, remaining queue, settled total and hours to first settlement for each synthetic arrival profile.</caption>
+                <thead><tr><th scope="col">Arrival profile</th><th scope="col">Peak queue</th><th scope="col">Final queue</th><th scope="col">Settled</th><th scope="col">Hours to first settlement</th></tr></thead>
+                <tbody id="demand-compare-rows"></tbody>
+              </table>
+            </div>
+            <p id="demand-compare-status">The highlighted row matches the demand timing currently selected in the scenario editor.</p>
           </article>
 
           <article class="chart-card card" aria-labelledby="chart-title">

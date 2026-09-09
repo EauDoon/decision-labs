@@ -48,6 +48,7 @@ const appImportMarker = `import {
   analyzeTimeline,
   attributeBottlenecks,
   previewWindowShift,
+  compareDemandProfiles,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -98,7 +99,9 @@ const exportedNames = Object.freeze([
   "attributeBottlenecks",
   "WINDOW_GATES",
   "shiftOperatingWindow",
-  "previewWindowShift"
+  "previewWindowShift",
+  "DEMAND_PROFILES",
+  "compareDemandProfiles"
 ]);
 
 function normaliseLf(text) {

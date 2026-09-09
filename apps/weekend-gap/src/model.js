@@ -690,3 +690,27 @@ export function previewWindowShift(scenarioInput, gate, startDeltaHours, endDelt
   });
 }
 
+export const DEMAND_PROFILES = Object.freeze(["flat", "fridayBurst", "mondayRush"]);
+
+const DEMAND_PROFILE_LABELS = Object.freeze({
+  flat: "Even across 72 hours",
+  fridayBurst: "Friday burst",
+  mondayRush: "Monday rush"
+});
+
+/** Same other inputs, three arrival timings. Timing experiment, not a forecast. */
+export function compareDemandProfiles(input) {
+  const { scenario } = sanitizeScenario(input);
+  return Object.freeze(DEMAND_PROFILES.map((demandProfile) => {
+    const result = runSimulation({ ...scenario, demandProfile });
+    return Object.freeze({
+      demandProfile,
+      label: DEMAND_PROFILE_LABELS[demandProfile],
+      peakQueuedAud: result.summary.peakQueuedAud,
+      finalQueuedAud: result.summary.finalQueuedAud,
+      totalSettledAud: result.summary.totalSettledAud,
+      hoursToFirstSettlement: result.summary.hoursToFirstSettlement
+    });
+  }));
+}
+

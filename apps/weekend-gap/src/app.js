@@ -15,6 +15,7 @@ import {
   analyzeTimeline,
   attributeBottlenecks,
   previewWindowShift,
+  compareDemandProfiles,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -161,6 +162,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   render();
   renderPlanning();
   renderDiagnostics();
+  renderDemandProfiles();
   document.querySelector("#sensitivity-rows").replaceChildren();
   document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
   clearWindowShiftPreview("Assumptions changed. Preview the window shift again before applying.");
@@ -649,7 +651,33 @@ function renderDiagnostics() {
     ? `Of 72 hours, ${active.map((row) => `${row.hours} were limited by ${row.label}`).join(", ")}. Hours labeled none had no recorded limiter. This does not say which assumption to change.`
     : "No limiting-gate hours were recorded for this run.";
 }
+
+function formatHoursToFirstSettlement(hours) {
+  return hours === null ? "No settlement in 72h" : `${hours} hour${hours === 1 ? "" : "s"}`;
+}
+
+function renderDemandProfiles() {
+  const rows = compareDemandProfiles(scenario);
+  document.querySelector("#demand-compare-rows").replaceChildren(...rows.map((item) => {
+    const tr = document.createElement("tr");
+    if (item.demandProfile === scenario.demandProfile) tr.className = "is-current";
+    for (const value of [
+      item.label,
+      planningAud(item.peakQueuedAud),
+      planningAud(item.finalQueuedAud),
+      planningAud(item.totalSettledAud),
+      formatHoursToFirstSettlement(item.hoursToFirstSettlement)
+    ]) {
+      const td = document.createElement("td");
+      td.textContent = value;
+      tr.append(td);
+    }
+    return tr;
+  }));
+  document.querySelector("#demand-compare-status").textContent = "Highlighted row is the currently selected arrival profile. The other two rows are the same scenario with only demand timing changed. This is not a forecast.";
+}
 renderDiagnostics();
+renderDemandProfiles();
 
 document.querySelector("#run-sensitivity").addEventListener("click", () => {
   const field = document.querySelector("#sensitivity-field").value;
