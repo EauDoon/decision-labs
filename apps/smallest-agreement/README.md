@@ -1,6 +1,6 @@
 # The Smallest Agreement
 
-The Smallest Agreement is a local, static workshop for a group that wants to test structured clause changes against a chosen approval threshold. It finds the lowest-cost combination that also respects optional group support floors, a change-cost budget, and locked clause choices.
+The Smallest Agreement is a local, static workshop for a group that wants to test structured clause changes against a chosen approval threshold. It finds the lowest-cost combination that also respects optional group support floors, optional veto groups, a change-cost budget, and locked clause choices.
 
 It is deliberately a decision aid, not a decision maker. People define the groups, weights, support scores, clauses, alternatives, and change costs. The app does not interpret policy text or infer what an option means.
 
@@ -63,16 +63,16 @@ npm run check
 1. Choose a synthetic preset or make a new proposal from the controls.
 2. Set the approval threshold and participant group weights.
 3. Give every option a support score from 0 to 100 for each group. Set each alternative's explicit change cost. Original options always have cost 0.
-4. Optionally set a minimum average support for any group, a maximum total change cost, and an option lock on a clause. Blank budget and floor inputs mean no limit. Zero is an active limit. Unlock an option before removing it.
+4. Optionally set a minimum average support for any group, mark a veto group, a maximum total change cost, and an option lock on a clause. Blank budget and floor inputs mean no limit. Zero is an active limit. Unlock an option before removing it. A veto is a numerical constraint, not a legal right.
 5. Save a named snapshot before changing assumptions. The local library holds up to 20 independent snapshots. Loading, importing, resetting, and editing can be undone through up to 50 in-tab changes; a new edit clears redo.
-6. Review up to five ranked passing packages, their lowest group support, and groups losing support. If no package satisfies every requirement, inspect constraint checks and near misses.
-7. Try a custom package, start it from the recommendation, and inspect every violated constraint. Reduce support by a chosen number of points to test the recommendation under a deterministic downside scenario.
+6. Review up to five ranked passing packages, their lowest group support, and groups losing support. If no package satisfies every requirement, inspect constraint checks and near misses. Clause contribution and group contribution explain the arithmetic; they are not bargaining power.
+7. Try a custom package, preview locking an option, start from the recommendation, and inspect every violated constraint. Reduce support by a chosen number of points to test the recommendation under a deterministic downside scenario. Leave-one-group-out omits a group's weight from the average as a sensitivity check, not a forecast.
 8. Compare the working draft with a saved snapshot. Review changed inputs before comparing output metrics, especially when groups, weights, or clauses differ.
-9. Export JSON to reopen the draft, CSV for all modeled input evidence, or a Markdown brief with ranked packages. Print readout creates a browser-printable discussion report. When served, Share link places the draft in the URL hash.
+9. Export JSON to reopen the draft, CSV for all modeled input evidence, a support-matrix CSV of scores only, or a Markdown brief with ranked packages. Print readout and the discussion worksheet are conversation aids, not recorded votes. When served, Share link places the draft in the URL hash.
 
 Each clause keeps one original option and at least two alternatives, so the workshop always compares a structured choice set.
 
-The synthetic presets are Neighbourhood Plan, Open Source Policy, Association Budget, and Protected Access. Protected Access demonstrates why majority-weighted approval alone can miss a group's minimum support. It starts with a budget of 3, a 60% floor for new participants, and a locked safety-training clause. The recommendation costs 3 and gives that group 70% average support. Lower the budget to 2 to see an infeasible result.
+The synthetic presets are Neighbourhood Plan, Open Source Policy, Association Budget, Protected Access, and Workplace Hybrid. Protected Access demonstrates why majority-weighted approval alone can miss a group's minimum support. It starts with a budget of 3, a 60% floor for new participants, and a locked safety-training clause. The recommendation costs 3 and gives that group 70% average support. Lower the budget to 2 to see an infeasible result. Workplace Hybrid is a three-group office presence policy with on-site staff, remote staff, and managers.
 
 ## Local data and sharing
 
@@ -82,9 +82,9 @@ When the app is served locally, Share link serializes the complete proposal in t
 
 ## Search boundary
 
-The app exhaustively checks up to 50,000 lock-permitted combinations. Locks reduce the choice set; budgets and support floors do not bypass this limit. It does not sample, guess, or use hidden randomness. If the number of combinations is higher, it returns an explicit `too_large` result and does not recommend an agreement. Reduce alternatives or clauses, or lock choices, before relying on the result. The GUI enumerates the bounded space to show passing alternatives even when the original already passes. Direct model callers retain the one-check baseline shortcut unless they request alternatives.
+The app exhaustively checks up to 50,000 lock-permitted combinations. Locks reduce the choice set; budgets, support floors, and vetoes do not bypass this limit. It does not sample, guess, or use hidden randomness. If the number of combinations is higher, it returns an explicit `too_large` result and does not recommend an agreement. Reduce alternatives or clauses, or lock choices, before relying on the result. The GUI enumerates the bounded space to show passing alternatives even when the original already passes. Direct model callers retain the one-check baseline shortcut unless they request alternatives.
 
-Near misses meet every configured constraint but miss the overall approval threshold. An over-budget or below-floor result is never offered as a near miss. Rejection counts can overlap when a combination fails both the budget and a floor.
+Near misses meet every configured constraint but miss the overall approval threshold. An over-budget, below-floor, or below-veto result is never offered as a near miss. Rejection counts can overlap when a combination fails more than one constraint.
 
 See [MODEL.md](MODEL.md) for the formula, deterministic ordering, assumptions, and limits.
 
@@ -92,7 +92,20 @@ See [MODEL.md](MODEL.md) for the formula, deterministic ordering, assumptions, a
 
 A score can be incomplete, a weight can be contested, and a low numerical change cost can mask a large semantic shift. A passing result cannot confer legitimacy, consent, representation, fairness, legal validity, or authority to adopt the proposal. Keep deliberation, governing rules, and accountable human judgment outside the calculation.
 
-Support floors protect only the numerical average you enter. They do not establish consent or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority.
+Support floors and veto marks protect only the numerical averages you enter. They do not establish consent, a legal veto, or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority.
+
+## v1.4.0, 09-09-2026
+
+- Added clause contribution and group contribution tables that account for how selected scores pull overall approval. These are arithmetic readouts, not bargaining power.
+- Added a near-miss explorer for cheaper misses and later passing packages, with approval-point and cost gaps.
+- Added optional veto groups. A veto group's average must meet the threshold, or the higher of threshold and that group's support floor. Old JSON without `veto` remains valid.
+- Added support-matrix CSV import and export. Formula-like cells are neutralized or rejected with named errors. Import replaces scores only.
+- Added Try this option: lock one alternative, re-solve the rest, and preview before apply. Apply is an ordinary undoable edit.
+- Added leave-one-group-out sensitivity (omit method), a first-run coach that skips share-link loads, keyboard shortcuts (`?`, `u`, `r`, `e`, `s`), and a side-by-side original vs recommendation view.
+- Added the Workplace Hybrid office-policy preset, clause filtering by title or option label, clearer downside stress controls, printable and downloadable discussion worksheets, clause and option duplication, and clause reordering.
+- Added weight-share accounting and leftover change-cost budget on recommendations.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ## v1.3.0, 09-09-2026
 
@@ -120,6 +133,7 @@ CSV includes every clause option and group score, weights, floors, locks, budget
 
 ## Project files
 
+- `CHANGELOG.md`: version history for this app.
 - `index.html` and `styles.css`: accessible responsive interface.
 - `src/model.js`: pure validation, calculation, deterministic search, and Markdown brief functions.
 - `src/app.js`: local browser state, editing controls, import/export, brief download, URL sharing, and canvas display.

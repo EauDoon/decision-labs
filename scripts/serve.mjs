@@ -3,7 +3,52 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
-const apps = new Set(['partnership-breakpoint', 'common-cart', 'smallest-agreement', 'weekend-gap']);
+
+// Exact public surface. Add a path here only together with a launcher test.
+export const PUBLIC_PATHS = Object.freeze([
+  '/',
+  '/index.html',
+  '/apps/partnership-breakpoint/standalone.html',
+  '/apps/common-cart/standalone.html',
+  '/apps/smallest-agreement/standalone.html',
+  '/apps/weekend-gap/standalone.html',
+]);
+
+export const CONTENT_SECURITY_POLICY = "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'";
+
+export function publicFile(pathname) {
+  if (!PUBLIC_PATHS.includes(pathname)) return null;
+  return pathname === '/' ? 'index.html' : pathname.slice(1);
+}
+
+export function notFoundPage() {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Not found · Decision Labs</title>
+  <style>
+    :root { color-scheme: light; font-family: "Segoe UI", system-ui, sans-serif; }
+    body { margin: 0; border-top: 7px solid #0f5a4b; background: #f2f6f5; color: #0e1f23; }
+    main { max-width: 40rem; margin: 48px auto; padding: 0 24px; }
+    .eyebrow { margin: 0 0 12px; font-size: 13px; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: #0a4439; }
+    h1 { font-family: Georgia, "Times New Roman", serif; font-weight: 500; font-size: 2rem; line-height: 1.2; margin: 0 0 14px; }
+    p { line-height: 1.6; color: #0e1f23; }
+    a { color: #0a4439; font-weight: 650; }
+    a:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
+  </style>
+</head>
+<body>
+  <main>
+    <p class="eyebrow">Decision Labs</p>
+    <h1>This path is not in the catalog</h1>
+    <p>The local launcher serves only the Decision Labs catalog page and the four workbenches. It does not serve source, notes, or drafts.</p>
+    <p><a href="/">Open the Decision Labs catalog</a></p>
+  </main>
+</body>
+</html>`;
+}
 
 // Serve only the launch page and generated self-contained applications.
 // Source, hidden files, local drafts and repository metadata stay outside this surface.
@@ -16,7 +61,7 @@ export function createLauncher() {
       'X-Frame-Options': 'DENY',
       'Referrer-Policy': 'no-referrer',
       'Permissions-Policy': 'camera=(), microphone=(), geolocation=()',
-      'Content-Security-Policy': "default-src 'none'; script-src 'unsafe-inline'; style-src 'unsafe-inline'; img-src data:; connect-src 'none'; base-uri 'none'; form-action 'none'; frame-ancestors 'none'",
+      'Content-Security-Policy': CONTENT_SECURITY_POLICY,
     };
     const finish = (status, body, extra = {}) => {
       response.writeHead(status, { ...headers, ...extra });
@@ -32,19 +77,16 @@ export function createLauncher() {
       return;
     }
     const pathname = (request.url ?? '').split('?')[0];
-    const match = /^\/apps\/([a-z-]+)\/standalone\.html$/.exec(pathname);
-    const relative = pathname === '/' || pathname === '/index.html'
-      ? 'index.html'
-      : match && apps.has(match[1]) ? `apps/${match[1]}/standalone.html` : null;
+    const relative = publicFile(pathname);
     if (!relative) {
-      finish(404, 'Not found');
+      finish(404, notFoundPage());
       return;
     }
     try {
       const content = await readFile(new URL(relative, root));
       finish(200, content);
     } catch {
-      finish(404, 'Not found');
+      finish(404, notFoundPage());
     }
   });
 }

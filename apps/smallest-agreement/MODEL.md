@@ -59,12 +59,13 @@ An agreement passes when overall approval is at least the threshold and every co
 | JSON field | Accepted values | Meaning |
 | --- | --- | --- |
 | `groups[].minSupport` | Finite number from 0 to 100 | That group's average across selected clause options must meet this minimum, regardless of weight. |
+| `groups[].veto` | Boolean `true` | That group's average must be at least the overall threshold. If the group also has `minSupport`, the required value is `max(threshold, minSupport)`. |
 | `maxChangeCost` | Finite number from 0 to 20,000,000,000 | Sum of selected alternatives' change costs cannot exceed this budget. |
 | `clauses[].lockedOptionId` | An option ID belonging to that clause | The search must select this option. Other choices stay in the draft but are excluded from search. |
 
-Omit an optional field to disable it. `null`, numeric strings, unknown option references, and out-of-range values are invalid. In the GUI, a blank budget or floor omits the field; zero remains a real constraint. Locks may select originals or alternatives. A locked alternative still contributes its full cost and counts as a changed clause. Removing a locked option requires unlocking it first.
+Omit an optional field to disable it. `null`, numeric strings, unknown option references, and out-of-range values are invalid. `groups[].veto` must be a boolean if present; `false` and omitted are equivalent and are dropped from canonical JSON. In the GUI, a blank budget or floor omits the field; zero remains a real constraint. Locks may select originals or alternatives. A locked alternative still contributes its full cost and counts as a changed clause. Removing a locked option requires unlocking it first.
 
-All constraints apply together. No priority rule silently relaxes a budget, floor, or lock to make a proposal pass. A group floor applies to an average, not to every individual clause and not to semantic consent. JSON canonicalization preserves understood constraints and drops unrelated fields. Unconstrained v1 drafts remain valid and retain their original field shape.
+All constraints apply together. No priority rule silently relaxes a budget, floor, veto, or lock to make a proposal pass. A group floor or veto applies to an average, not to every individual clause and not to semantic consent or a legal right. JSON canonicalization preserves understood constraints and drops unrelated fields. Unconstrained v1 drafts remain valid and retain their original field shape. Drafts without `veto` stay valid; the field is not added during canonicalization.
 
 Calculations use JavaScript floating-point numbers. Comparisons use an absolute tolerance of `1e-9` for approval, support floors, costs, and numeric tie breakers. Display rounding never decides feasibility.
 
@@ -81,9 +82,9 @@ When alternatives are not requested and status quo meets the threshold and every
 
 This final option-ID rule makes otherwise equal choices reproducible. It does not represent a substantive preference.
 
-Constraint-compliant combinations below the approval threshold are ordered as near misses by smallest approval gap, then by the same ordering above. At most five are returned. Over-budget and below-floor combinations are excluded rather than presented as adoptable alternatives.
+Constraint-compliant combinations below the approval threshold are ordered as near misses by smallest approval gap, then by the same ordering above. At most five are returned. Over-budget, below-floor, and below-veto combinations are excluded rather than presented as adoptable alternatives.
 
-For an enumerated result, `eligibleCombinations` counts combinations meeting every constraint, whether or not they meet the approval threshold. `rejected.anyConstraint` counts rejected combinations once each; `rejected.budget` and `rejected.floors` can overlap. A floor rejection means one or more groups miss their floor. Locks remove options before enumeration, so excluded options are not counted as rejected candidates.
+For an enumerated result, `eligibleCombinations` counts combinations meeting every constraint, whether or not they meet the approval threshold. `rejected.anyConstraint` counts rejected combinations once each; `rejected.budget`, `rejected.floors`, and `rejected.vetoes` can overlap. A floor rejection means one or more groups miss their floor. A veto rejection means one or more veto groups miss the required average. Locks remove options before enumeration, so excluded options are not counted as rejected candidates. Near misses still exclude over-budget, below-floor, and below-veto combinations.
 
 ## Bound and outcomes
 
@@ -115,6 +116,13 @@ Use the result to focus a human conversation. Establish process rules, evidence 
 - `evaluatePackage(proposal, optionIds)` requires exactly one valid option ID per clause and returns `passing`, `not_passing`, or `invalid`. It tests all constraints, including locks, without modifying the proposal or performing an optimization.
 - `stressPackage(proposal, optionIds, supportDrop)` accepts a finite 0 to 100 point reduction, clamps every support score at zero, and evaluates the same choices. It reports the original and downside summaries. The scenario is hypothetical, not probabilistic.
 - `compareScenarioInputs(before, after)` compares canonical fields by stable IDs, including clause order because that order participates in the tie breaker. The GUI shows the first 100 changed fields with an explicit truncation message.
-- `formatEvidenceCsv(proposal, result)` includes every modeled input and recommendation markers. Text formula prefixes are neutralized, CSV quoting preserves commas, quotes, and newlines, and the GUI emits a UTF-8 byte-order mark.
+- `formatEvidenceCsv(proposal, result)` includes every modeled input and recommendation markers, including a `veto` column. Text formula prefixes are neutralized, CSV quoting preserves commas, quotes, and newlines, and the GUI emits a UTF-8 byte-order mark.
+- `clauseContributions(proposal, options)` reports each selected option's weighted support versus the original option. Overall approval is the mean of per-clause weighted support, so `overallPull` is `delta / clauseCount`. This is score accounting, not bargaining power.
+- `groupContributions(proposal, options)` reports each group's pull as `weight share * group average`. Pulls sum to the change in overall approval. Method name: `weight_share`.
+- `leaveOneGroupOut(proposal, options)` omits one group at a time from the weighted average (method `omit`). Remaining weights are used as written, which renormalizes them. A single-group proposal returns `approval: null` for that row. This is sensitivity, not a forecast.
+- `explorePackageGaps(proposal, result)` names cheaper near misses, closest misses, and later passing packages, with approval-point and cost gaps versus the recommendation.
+- `previewLockedOption(proposal, clauseId, optionId)` copies the proposal, locks that option, and re-runs search. It does not mutate the input.
+- `parseSupportMatrixCsv(csvText, proposal)` replaces group scores from a CSV whose header is `clause_id,option_id` then every group id. It does not change labels, costs, locks, or constraints. Named errors include `empty_csv`, `missing_header`, `missing_clause_id_column`, `missing_option_id_column`, `unknown_group_column`, `missing_group_column`, `unknown_clause`, `unknown_option`, `formula_cell`, `invalid_score`, `duplicate_row`, `truncated_row`, and `invalid_proposal`. Leading apostrophes are stripped before formula detection. `formatSupportMatrixCsv` writes the same matrix.
+- `formatDiscussionWorksheet(proposal)` returns unmarked option boxes as plain text. It is a conversation aid, not a recorded vote or legal ballot.
 
 Snapshot libraries hold at most 20 canonical proposals and reject stored payloads over 5,000,000 characters. Single-draft JSON import remains bounded at 250 KB. Undo keeps at most 50 prior draft states in memory; undo history, custom choices, and downside settings are not part of the proposal schema.

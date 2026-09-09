@@ -18,10 +18,13 @@ Each merchant offer supplies:
 - a unit price;
 - a minimum order in units;
 - delivery time in days;
-- capacity in units; and
-- shipping cost per included buyer.
+- capacity in units;
+- shipping cost per included buyer; and
+- optional `fulfillment` of `shipping` or `pickup`.
 
-An offer can also supply `tiers`, an optional array of up to eight `{ minimumUnits, unitPrice }` objects. Thresholds must be whole numbers, strictly increase above the previous minimum, and fit capacity. Prices must be nonnegative and strictly decrease below the previous price. Missing or empty tiers retain the original flat-price behavior. Tier objects survive JSON, autosave, and share-link round trips.
+If `fulfillment` is omitted, validation stores `shipping`, so older JSON keeps working. The only accepted values are `shipping` and `pickup`. Unknown strings are rejected. Pickup does not rewrite the stored `shippingPerBuyer` field. During compatibility, budgets, allocations, and totals, pickup treats shipping as 0.
+
+An offer can also supply `tiers`, an optional array of up to eight `{ minimumUnits, unitPrice }` objects. Thresholds must be whole numbers, strictly increase above the previous minimum, and fit capacity. Prices must be nonnegative and strictly decrease below the previous price. Missing or empty tiers retain the original flat-price behavior. Tier objects survive JSON, autosave, and share-link round trips. Adding `fulfillment` does not change those tier rules.
 
 All money values use the scenario's currency code. The code must be exactly three ASCII letters and is stored uppercase. The app does not perform currency conversion. Numeric fields accept JSON numbers and plain decimal strings; hexadecimal, binary, octal, exponential, and plus-prefixed strings are rejected rather than coerced.
 
@@ -101,6 +104,18 @@ Qualified offers always rank above unqualified offers. The remaining order is:
 
 The final rule makes exact ties deterministic.
 
+## Residual coverage
+
+After a winning offer is chosen, leftover buyers (those not in the winner's selected set) may be matched to the next-best other offer using the same exact whole-order allocator. A buyer's quantity is never split across offers. If no winner exists, every buyer remains leftover. If leftover buyers or leftover offers are missing, there is no secondary fill.
+
+This is a planning aid. It is not a dual checkout, split invoice, or promise that two merchants will jointly fulfill one room.
+
+Organizer views may list leftover buyer identifiers. Merchant residual JSON reports leftover buyer counts and units only.
+
+## Units to the next cheaper tier
+
+For one offer, the next cheaper quantity band is the band after the selected index, or after the base band when the offer does not qualify. The model reports how many additional whole units that independent band still needs, which currently excluded buyers are compatible at the next price, and whether the band is unreachable because of packing inside capacity or insufficient compatible demand. When no cheaper band remains, the reason says so. Organizer views may name those buyers. Merchant-facing tables use counts only.
+
 ## Aggregate merchant signal
 
 Demand is grouped by product category. For each category, the merchant view reports buyer count, total units, the range of price ceilings, the range of delivery limits, and the union of accepted variants. It does not report buyer labels or buyer-to-offer matches.
@@ -119,6 +134,8 @@ Demand is grouped by product category. For each category, the merchant view repo
 The model can test whether a declared offer satisfies declared constraints. It cannot prove that a purchase is wise, fair, available, safe, or legally compliant.
 # Optional landed budgets and decision tools
 
-`Buyer.maxOrderTotal` optionally limits `quantity * band.unitPrice + shippingPerBuyer`. It is independent of the item-price ceiling and is evaluated separately at each price band before exact whole-buyer allocation. Omitting it preserves existing behavior. A budget mismatch produces the `budget` incompatibility reason. Validation accepts totals from 0 to 5,001,000,000. Existing fractional-price precision is preserved; the comparison allows only a small floating-point tolerance (four machine epsilons at the magnitude of the total), not a currency-unit allowance.
+`Buyer.maxOrderTotal` optionally limits `quantity * band.unitPrice + shippingPerBuyer`. Pickup fulfillment evaluates that shipping term as 0. The budget is independent of the item-price ceiling and is evaluated separately at each price band before exact whole-buyer allocation. Omitting it preserves existing behavior. A budget mismatch produces the `budget` incompatibility reason. Validation accepts totals from 0 to 5,001,000,000. Existing fractional-price precision is preserved; the comparison allows only a small floating-point tolerance (four machine epsilons at the magnitude of the total), not a currency-unit allowance.
 
-Named snapshots contain validated version-1 scenarios, at most 12 per workspace. Valid history contains at most 50 detached states. Baseline comparisons do not claim welfare or savings from differing cohorts. Merchant reports use an explicit whitelist and omit the scenario title as well as private buyer records. Buyer CSV is explicitly private and escapes spreadsheet formula prefixes.
+Buyer CSV import accepts a header row of label, category, quantity, max unit price, latest delivery days, variants, and optional max order total. Cells that were escaped for spreadsheet safety by a leading apostrophe have that apostrophe stripped. Formula-like labels are stored as text, not evaluated. Invalid rows name the CSV buyer and field.
+
+Named snapshots contain validated version-1 scenarios, at most 12 per workspace. Valid history contains at most 50 detached states. Baseline and three-room comparisons do not claim welfare or savings from differing cohorts. Merchant reports use an explicit whitelist and omit the scenario title as well as private buyer records. Buyer CSV is explicitly private and escapes spreadsheet formula prefixes. Organizer briefing markdown and merchant residual JSON omit private buyer rows. `redactBuyerLabels` replaces labels with Buyer 1 through N without changing identifiers or constraints.

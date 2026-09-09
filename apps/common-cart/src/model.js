@@ -5,7 +5,7 @@ const MAX_TIERS = 8;
 const MAX_SHARE_LENGTH = 60_000;
 const SCENARIO_FIELDS = ["title", "currency", "buyers", "offers"];
 const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "maxOrderTotal", "latestDeliveryDays", "allowedVariants"];
-const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers"];
+const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers", "fulfillment"];
 const TIER_FIELDS = ["minimumUnits", "unitPrice"];
 
 export class ScenarioError extends Error {
@@ -76,6 +76,38 @@ export const presets = Object.freeze({
       offer("O02", "Good Basket", "Pantry box", "Gluten free", 47, 15, 5, 30, 1),
       offer("O03", "Bulk Commons", "Pantry box", "Standard", 39, 50, 6, 80, 0)
     ]
+  },
+  officePantry: {
+    title: "Office pantry bulk",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Floor three kitchen", "Office pantry crate", 6, 38, 5, ["Sweet snack", "Savoury snack"]),
+      buyer("B02", "Design studio", "Office pantry crate", 8, 34, 4, ["Savoury snack"]),
+      buyer("B03", "Support pod", "Office pantry crate", 5, 40, 6, ["Sweet snack"]),
+      buyer("B04", "Night shift", "Office pantry crate", 7, 36, 5, ["Sweet snack", "Savoury snack"]),
+      buyer("B05", "Front desk", "Office pantry crate", 4, 32, 3, ["Savoury snack"])
+    ],
+    offers: [
+      offer("O01", "DeskBite Supply", "Office pantry crate", "Savoury snack", 28, 12, 4, 30, 2),
+      offer("O02", "Sweet Locker", "Office pantry crate", "Sweet snack", 30, 8, 5, 24, 1.5),
+      { ...offer("O03", "Campus Crate Co", "Office pantry crate", "Savoury snack", 32, 10, 6, 40, 0), fulfillment: "pickup" }
+    ]
+  },
+  hardware: {
+    title: "Hardware tools bulk",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Joinery bay", "Hand tool kit", 3, 190, 10, ["Metric", "Imperial"]),
+      buyer("B02", "Site trailer", "Hand tool kit", 5, 175, 8, ["Metric"]),
+      buyer("B03", "Repair bench", "Hand tool kit", 4, 210, 12, ["Imperial"]),
+      buyer("B04", "Apprentice shop", "Hand tool kit", 6, 180, 9, ["Metric", "Imperial"]),
+      buyer("B05", "Mobile crew", "Hand tool kit", 2, 165, 7, ["Metric"])
+    ],
+    offers: [
+      offer("O01", "Forge & Co", "Hand tool kit", "Metric", 148, 10, 8, 20, 12),
+      offer("O02", "Inch Works", "Hand tool kit", "Imperial", 156, 6, 10, 12, 10),
+      { ...offer("O03", "Yard Pickup Tools", "Hand tool kit", "Metric", 142, 12, 6, 24, 18), fulfillment: "pickup", tiers: [{ minimumUnits: 16, unitPrice: 130 }] }
+    ]
   }
 });
 
@@ -139,6 +171,26 @@ export function duplicateEntry(rawScenario, kind, id) {
   return clean;
 }
 
+export function copyOfferAsNewTierSet(rawScenario, offerId) {
+  const clean = duplicateEntry(rawScenario, "offers", offerId);
+  const source = clean.offers.find((offer) => offer.id === offerId);
+  const copy = clean.offers.at(-1);
+  copy.merchant = `${source.merchant.slice(0, 48)} (tier set)`;
+  const previous = source.tiers?.at(-1) ?? source;
+  const nextMinimum = Math.min(source.capacity, previous.minimumUnits + Math.max(1, Math.ceil((source.capacity - previous.minimumUnits) / 2)));
+  const nextPrice = Math.floor(previous.unitPrice * 80) / 100;
+  if (
+    nextMinimum > previous.minimumUnits
+    && nextPrice < previous.unitPrice
+    && nextPrice >= 0
+    && nextMinimum <= source.capacity
+    && (source.tiers?.length ?? 0) < 8
+  ) {
+    copy.tiers = [...(source.tiers ?? []).map((tier) => ({ ...tier })), { minimumUnits: nextMinimum, unitPrice: nextPrice }];
+  }
+  return validateScenario(clean);
+}
+
 export function compareScenarios(before, after) {
   const baseline = evaluateMarket(before);
   const current = evaluateMarket(after);
@@ -154,6 +206,30 @@ export function compareScenarios(before, after) {
     sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
 }
 
+export function compareThreeRooms(first, second, third) {
+  const rooms = [first, second, third].map((entry, index) => {
+    try {
+      return validateScenario(entry);
+    } catch (error) {
+      throw new ScenarioError(`Room ${index + 1} is invalid: ${error.message}`);
+    }
+  });
+  const markets = rooms.map((room) => evaluateMarket(room));
+  const sameCurrency = rooms.every((room) => room.currency === rooms[0].currency);
+  return {
+    sameCurrency,
+    rooms: rooms.map((room, index) => ({
+      title: room.title,
+      currency: room.currency,
+      requested: markets[index].totalRequestedUnits,
+      fulfilled: markets[index].winner?.fulfilledUnits ?? 0,
+      buyers: markets[index].winner?.deliveredBuyers ?? 0,
+      cost: markets[index].winner?.totalCost ?? null,
+      winner: markets[index].winner?.offer.merchant ?? "No qualifying offer"
+    }))
+  };
+}
+
 /** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
 export function createMerchantReport(rawScenario) {
   const market = evaluateMarket(rawScenario);
@@ -163,10 +239,35 @@ export function createMerchantReport(rawScenario) {
     requestedUnits: market.totalRequestedUnits, buyerCount: market.buyerCount,
     offers: market.ranked.map(result => ({
       merchant: result.offer.merchant, category: result.offer.category, variant: result.offer.variant,
+      fulfillment: result.offer.fulfillment,
       status: result.qualifies ? "Unlocked" : "Locked", fulfilledUnits: result.fulfilledUnits,
       includedBuyerCount: result.deliveredBuyers, itemPrice: result.effectiveUnitPrice,
       landedTotal: result.qualifies ? result.totalCost : null, deliveryDays: result.offer.deliveryDays
     }))
+  };
+}
+
+export function createMerchantResidualReport(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const publicOffer = (entry) => entry && ({
+    merchant: entry.merchant,
+    category: entry.category,
+    variant: entry.variant,
+    fulfilledUnits: entry.fulfilledUnits,
+    deliveredBuyers: entry.deliveredBuyers,
+    totalCost: entry.totalCost
+  });
+  return {
+    report: "Common Cart residual coverage (merchant aggregate)",
+    version: 1,
+    currency: evaluateMarket(rawScenario).scenario.currency,
+    limitations: coverage.note,
+    primary: publicOffer(coverage.primary),
+    secondary: publicOffer(coverage.secondary),
+    leftoverBuyerCount: coverage.leftoverBuyerCount,
+    leftoverUnits: coverage.leftoverUnits,
+    unfilledBuyerCount: coverage.unfilledBuyerCount,
+    unfilledUnits: coverage.unfilledUnits
   };
 }
 
@@ -181,12 +282,205 @@ export function createBuyerCsv(rawScenario, offerId) {
     const allocation = allocations.get(outcome.buyerId);
     rows.push([buyer.label, result.offer.merchant, market.scenario.currency, buyer.quantity, outcome.status, outcome.reasons.join("; "), allocation?.quantity ?? 0, allocation?.itemsCost ?? "", allocation?.shippingCost ?? "", allocation?.totalCost ?? "", result.offer.deliveryDays]);
   }
-  const cell = value => {
-    let text = typeof value === "number" ? String(Math.round(value * 1e8) / 1e8) : String(value);
-    if (typeof value === "string" && (/^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text))) text = `'${text}`;
-    return `"${text.replaceAll('"', '""')}"`;
+  return rows.map(row => row.map(escapeCsvCell).join(",")).join("\r\n") + "\r\n";
+}
+
+const BUYER_CSV_HEADERS = {
+  label: "label",
+  "private label": "label",
+  "private buyer label": "label",
+  buyer: "label",
+  category: "category",
+  quantity: "quantity",
+  qty: "quantity",
+  "max unit price": "maxUnitPrice",
+  "max item price": "maxUnitPrice",
+  "latest delivery days": "latestDeliveryDays",
+  "delivery by": "latestDeliveryDays",
+  variants: "allowedVariants",
+  "max order total": "maxOrderTotal"
+};
+
+const REQUIRED_BUYER_CSV_FIELDS = ["label", "category", "quantity", "maxUnitPrice", "latestDeliveryDays", "allowedVariants"];
+
+function spreadsheetUnsafe(text) {
+  return /^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text);
+}
+
+function escapeCsvCell(value) {
+  let text = typeof value === "number" ? String(Math.round(value * 1e8) / 1e8) : String(value);
+  if (typeof value === "string" && spreadsheetUnsafe(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+export function neutralizeSpreadsheetCell(value) {
+  if (typeof value !== "string") return value;
+  if (value.startsWith("'") && spreadsheetUnsafe(value.slice(1))) return value.slice(1);
+  return value;
+}
+
+function parseCsvRows(text) {
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let quoted = false;
+  const source = text.replace(/^\uFEFF/u, "");
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (quoted) {
+      if (character === '"') {
+        if (source[index + 1] === '"') {
+          cell += '"';
+          index += 1;
+        } else {
+          quoted = false;
+        }
+      } else {
+        cell += character;
+      }
+    } else if (character === '"') {
+      quoted = true;
+    } else if (character === ",") {
+      row.push(cell);
+      cell = "";
+    } else if (character === "\n") {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+    } else if (character !== "\r") {
+      cell += character;
+    }
+  }
+  if (quoted) throw new ScenarioError("Buyer CSV has an unclosed quote.");
+  if (cell.length > 0 || row.length > 0) {
+    row.push(cell);
+    rows.push(row);
+  }
+  return rows.filter((entry) => entry.some((value) => value.trim() !== ""));
+}
+
+export function parseBuyerCsv(text) {
+  if (typeof text !== "string") throw new ScenarioError("Buyer CSV must be text.");
+  if (text.trim() === "") throw new ScenarioError("Buyer CSV is empty.");
+  const rows = parseCsvRows(text);
+  if (rows.length < 2) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
+  const header = rows[0].map((value) => neutralizeSpreadsheetCell(value).trim().toLowerCase().replaceAll("_", " "));
+  const columns = header.map((name) => BUYER_CSV_HEADERS[name] ?? null);
+  if (columns.some((field) => field === null)) {
+    const unknown = rows[0].filter((_, index) => columns[index] === null).map((value) => value.trim() || "(empty)");
+    throw new ScenarioError(`Buyer CSV has unknown column: ${unknown[0]}.`);
+  }
+  for (const required of REQUIRED_BUYER_CSV_FIELDS) {
+    if (!columns.includes(required)) {
+      throw new ScenarioError("Buyer CSV must include label, category, quantity, max unit price, latest delivery days, and variants.");
+    }
+  }
+  const dataRows = rows.slice(1);
+  if (dataRows.length > MAX_BUYERS) throw new ScenarioError(`Buyers must contain 1 to ${MAX_BUYERS} entries.`);
+  return dataRows.map((row, index) => {
+    const prefix = `CSV buyer ${index + 1}`;
+    const record = {};
+    for (const [columnIndex, field] of columns.entries()) {
+      if (!field) continue;
+      record[field] = neutralizeSpreadsheetCell(row[columnIndex] ?? "");
+    }
+    const variants = String(record.allowedVariants ?? "").split(",").map((value) => value.trim()).filter(Boolean);
+    const buyer = {
+      id: `B${String(index + 1).padStart(2, "0")}`,
+      label: record.label,
+      category: record.category,
+      quantity: record.quantity,
+      maxUnitPrice: record.maxUnitPrice,
+      latestDeliveryDays: record.latestDeliveryDays,
+      allowedVariants: variants
+    };
+    const total = String(record.maxOrderTotal ?? "").trim();
+    if (total !== "") buyer.maxOrderTotal = record.maxOrderTotal;
+    try {
+      return validateBuyer(buyer, index);
+    } catch (error) {
+      throw new ScenarioError(`${prefix}: ${error.message.replace(/^Buyer \d+\s/u, "")}`);
+    }
+  });
+}
+
+export function importBuyersFromCsv(rawScenario, text) {
+  const scenario = validateScenario(rawScenario);
+  const buyers = parseBuyerCsv(text);
+  if (buyers.length < 1) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
+  return validateScenario({ ...scenario, buyers });
+}
+
+export function buyerCsvTemplate() {
+  return "label,category,quantity,max unit price,latest delivery days,variants,max order total\r\n";
+}
+
+export function createOrganizerBriefing(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const residual = computeResidualCoverage(rawScenario);
+  const winner = market.winner;
+  const gap = winner ? unitsToNextTier(rawScenario, winner.offer.id) : null;
+  const excludedCount = winner
+    ? winner.buyerOutcomes.filter((outcome) => outcome.status !== "included").length
+    : market.buyerCount;
+  const lines = [
+    `# Common Cart organizer briefing`,
+    ``,
+    `- Room: ${market.scenario.title}`,
+    `- Currency: ${market.scenario.currency}`,
+    `- Requested units: ${market.totalRequestedUnits}`,
+    `- Buyers in the room: ${market.buyerCount}`,
+    `- Categories: ${market.categoryCount}`,
+    ``,
+    `## Winning offer`,
+    winner
+      ? [
+        `- Merchant: ${winner.offer.merchant}`,
+        `- Category: ${winner.offer.category}`,
+        `- Variant: ${winner.offer.variant}`,
+        `- Fulfillment: ${winner.offer.fulfillment}`,
+        `- Fulfilled units: ${winner.fulfilledUnits}`,
+        `- Included buyers: ${winner.deliveredBuyers}`,
+        `- Item price: ${winner.effectiveUnitPrice}`,
+        `- Landed total: ${winner.totalCost}`,
+        `- Group headroom: ${winner.savings}`,
+        `- Excluded buyers: ${excludedCount}`
+      ].join("\n")
+      : `- No qualifying offer. ${excludedCount} buyers remain unfilled.`,
+    ``,
+    `## Next cheaper tier`,
+    gap
+      ? [
+        `- Reachable with current buyers: ${gap.reachable ? "yes" : "no"}`,
+        `- Units still needed: ${gap.unitsNeeded === null ? "none" : gap.unitsNeeded}`,
+        `- Next minimum: ${gap.nextMinimum === null ? "none" : gap.nextMinimum}`,
+        `- Excluded buyers who could add units: ${gap.supplierBuyerCount} (${gap.supplierUnits} units)`,
+        `- Note: ${gap.reason}`
+      ].join("\n")
+      : `- No winning offer to inspect.`,
+    ``,
+    `## Residual coverage`,
+    `- ${residual.note}`,
+    residual.secondary
+      ? `- Leftover fill: ${residual.secondary.merchant} / ${residual.secondary.variant}, ${residual.secondary.fulfilledUnits} units, ${residual.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
+    `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
+    ``,
+    `This briefing is a planning aid. It omits private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+export function redactBuyerLabels(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  return {
+    title: scenario.title,
+    currency: scenario.currency,
+    buyers: scenario.buyers.map((buyer, index) => ({ ...buyer, label: `Buyer ${index + 1}` })),
+    offers: scenario.offers.map((offer) => ({ ...offer, tiers: offer.tiers ? offer.tiers.map((tier) => ({ ...tier })) : offer.tiers }))
   };
-  return rows.map(row => row.map(cell).join(",")).join("\r\n") + "\r\n";
 }
 
 export function validateScenario(candidate) {
@@ -247,6 +541,16 @@ function validateOffer(entry, index) {
     capacity: integer(own(entry, "capacity"), `${prefix} capacity`, 1, MAX_UNITS),
     shippingPerBuyer: finite(own(entry, "shippingPerBuyer"), `${prefix} shipping`, 0, 1_000_000)
   };
+  const fulfillmentValue = own(entry, "fulfillment");
+  if (fulfillmentValue === undefined) {
+    normalized.fulfillment = "shipping";
+  } else {
+    const fulfillment = requiredText(fulfillmentValue, `${prefix} fulfillment`, 16);
+    if (fulfillment !== "shipping" && fulfillment !== "pickup") {
+      throw new ScenarioError(`${prefix} fulfillment must be shipping or pickup.`);
+    }
+    normalized.fulfillment = fulfillment;
+  }
   const tiers = own(entry, "tiers");
   if (tiers !== undefined) {
     if (!Array.isArray(tiers) || tiers.length > MAX_TIERS) {
@@ -335,13 +639,14 @@ export function evaluateOffer(rawScenario, rawOffer) {
     ? scenario.offers.find(({ id }) => id === rawOffer)
     : validateOffer(rawOffer, 0);
   if (!offerEntry) throw new ScenarioError("Offer was not found.");
+  const chargedShippingCost = chargedShipping(offerEntry);
 
   const bands = [{ minimumUnits: offerEntry.minimumUnits, unitPrice: offerEntry.unitPrice }, ...(offerEntry.tiers ?? [])];
   const candidates = bands.map((band, index) => {
     const maximumUnits = Math.min(offerEntry.capacity, (bands[index + 1]?.minimumUnits ?? offerEntry.capacity + 1) - 1);
     const compatibility = scenario.buyers.map((entry) => ({
       buyer: entry,
-      reasons: incompatibilityReasons(entry, { ...offerEntry, unitPrice: band.unitPrice })
+      reasons: incompatibilityReasons(entry, { ...offerEntry, unitPrice: band.unitPrice, shippingPerBuyer: chargedShippingCost })
     }));
     const compatible = compatibility.filter(({ reasons }) => reasons.length === 0).map(({ buyer }) => buyer);
     const selected = selectWholeBuyers(compatible, maximumUnits);
@@ -356,7 +661,7 @@ export function evaluateOffer(rawScenario, rawOffer) {
   const qualifies = active.qualifies;
   const deliveredBuyers = qualifies ? selected.length : 0;
   const units = qualifies ? fulfilledUnits : 0;
-  const totalCost = qualifies ? (units * evaluatedUnitPrice) + (deliveredBuyers * offerEntry.shippingPerBuyer) : 0;
+  const totalCost = qualifies ? (units * evaluatedUnitPrice) + (deliveredBuyers * chargedShippingCost) : 0;
   const reservationValue = qualifies
     ? selected.reduce((sum, entry) => sum + (entry.maxUnitPrice * entry.quantity), 0)
     : 0;
@@ -365,11 +670,11 @@ export function evaluateOffer(rawScenario, rawOffer) {
   const selectedIds = new Set(selected.map(({ id }) => id));
   const allocations = qualifies ? selected.map((entry) => {
     const itemsCost = entry.quantity * evaluatedUnitPrice;
-    const totalCost = itemsCost + offerEntry.shippingPerBuyer;
+    const totalCost = itemsCost + chargedShippingCost;
     const ceilingTotal = entry.quantity * entry.maxUnitPrice;
     return {
       buyerId: entry.id, quantity: entry.quantity, unitPrice: evaluatedUnitPrice,
-      itemsCost, shippingCost: offerEntry.shippingPerBuyer, totalCost,
+      itemsCost, shippingCost: chargedShippingCost, totalCost,
       landedUnitCost: totalCost / entry.quantity,
       ceilingTotal, headroom: ceilingTotal - totalCost,
       exceedsCeilingAfterShipping: totalCost > ceilingTotal
@@ -414,6 +719,10 @@ export function evaluateOffer(rawScenario, rawOffer) {
     averageLandedUnitCost: units > 0 ? totalCost / units : null,
     fulfillmentRate: totalRequestedUnits > 0 ? units / totalRequestedUnits : 0
   };
+}
+
+function chargedShipping(offer) {
+  return offer.fulfillment === "pickup" ? 0 : offer.shippingPerBuyer;
 }
 
 function incompatibilityReasons(buyer, offer) {
@@ -473,6 +782,201 @@ export function evaluateMarket(rawScenario) {
   };
 }
 
+const RESIDUAL_PLANNING_NOTE = "Planning aid only. Residual fill is not a dual checkout, split invoice, or second purchase. Each offer is still a separate whole-order match on leftover buyers.";
+
+function coverageOfferSummary(result) {
+  return {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    category: result.offer.category,
+    variant: result.offer.variant,
+    fulfilledUnits: result.fulfilledUnits,
+    deliveredBuyers: result.deliveredBuyers,
+    totalCost: result.totalCost
+  };
+}
+
+/**
+ * After the winning offer is chosen, leftover whole-buyer demand may be filled
+ * by the next-best other offer using the same exact allocator. A buyer's quantity
+ * is never split across offers.
+ */
+export function computeResidualCoverage(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  if (!market.winner) {
+    return {
+      planningAid: true,
+      note: RESIDUAL_PLANNING_NOTE,
+      primary: null,
+      secondary: null,
+      leftoverBuyerCount: market.buyerCount,
+      leftoverUnits: market.totalRequestedUnits,
+      leftoverBuyerIds: market.scenario.buyers.map(({ id }) => id),
+      unfilledBuyerCount: market.buyerCount,
+      unfilledUnits: market.totalRequestedUnits
+    };
+  }
+  const taken = new Set(market.winner.selectedBuyerIds);
+  const leftoverBuyers = market.scenario.buyers.filter((buyer) => !taken.has(buyer.id));
+  const leftoverUnits = leftoverBuyers.reduce((sum, buyer) => sum + buyer.quantity, 0);
+  const leftoverBuyerIds = leftoverBuyers.map(({ id }) => id);
+  const otherOffers = market.scenario.offers.filter((offer) => offer.id !== market.winner.offer.id);
+  const primary = coverageOfferSummary(market.winner);
+  if (leftoverBuyers.length === 0 || otherOffers.length === 0) {
+    return {
+      planningAid: true,
+      note: RESIDUAL_PLANNING_NOTE,
+      primary,
+      secondary: null,
+      leftoverBuyerCount: leftoverBuyers.length,
+      leftoverUnits,
+      leftoverBuyerIds,
+      unfilledBuyerCount: leftoverBuyers.length,
+      unfilledUnits: leftoverUnits
+    };
+  }
+  const residual = evaluateMarket({
+    title: market.scenario.title,
+    currency: market.scenario.currency,
+    buyers: leftoverBuyers,
+    offers: otherOffers
+  });
+  const secondary = residual.winner ? coverageOfferSummary(residual.winner) : null;
+  if (secondary) {
+    secondary.selectedBuyerIds = residual.winner.selectedBuyerIds;
+  }
+  const secondaryTaken = new Set(residual.winner?.selectedBuyerIds ?? []);
+  const unfilledBuyers = leftoverBuyers.filter((buyer) => !secondaryTaken.has(buyer.id));
+  return {
+    planningAid: true,
+    note: RESIDUAL_PLANNING_NOTE,
+    primary,
+    secondary,
+    leftoverBuyerCount: leftoverBuyers.length,
+    leftoverUnits,
+    leftoverBuyerIds,
+    unfilledBuyerCount: unfilledBuyers.length,
+    unfilledUnits: unfilledBuyers.reduce((sum, buyer) => sum + buyer.quantity, 0)
+  };
+}
+
+/**
+ * Additional whole units needed to unlock the next cheaper quantity band
+ * for one offer, or an explicit reason the band is unreachable.
+ */
+export function unitsToNextTier(rawScenario, offerId) {
+  const scenario = validateScenario(rawScenario);
+  const result = evaluateOffer(scenario, offerId);
+  const selectedIndex = result.activeTierIndex ?? 0;
+  const next = result.tierProgress.find((tier) => tier.index === selectedIndex + 1);
+  const emptySuppliers = { supplierBuyerIds: [], supplierBuyerCount: 0, supplierUnits: 0 };
+  const base = {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    currentUnits: result.fulfilledUnits,
+    currentTierIndex: result.activeTierIndex,
+    nextMinimum: next?.minimumUnits ?? null,
+    nextPrice: next?.unitPrice ?? null,
+    compatibleUnitsAtNext: next?.compatibleUnits ?? null,
+    allocatedUnitsAtNext: next?.allocatedUnits ?? null,
+    unitsNeeded: null,
+    reachable: false,
+    reason: "",
+    ...emptySuppliers
+  };
+  if (!next) {
+    return {
+      ...base,
+      reason: result.tierProgress.length <= 1
+        ? "No cheaper quantity tier is declared."
+        : "No cheaper quantity tier remains after the selected band."
+    };
+  }
+  if (next.minimumUnits > result.offer.capacity) {
+    return { ...base, reason: "The next cheaper tier's minimum exceeds this offer's capacity." };
+  }
+  const currentIds = new Set(result.selectedBuyerIds);
+  const suppliers = scenario.buyers.filter((buyer) => {
+    if (currentIds.has(buyer.id)) return false;
+    return incompatibilityReasons(buyer, {
+      ...result.offer,
+      unitPrice: next.unitPrice,
+      shippingPerBuyer: chargedShipping(result.offer)
+    }).length === 0;
+  });
+  const supplierUnits = suppliers.reduce((sum, buyer) => sum + buyer.quantity, 0);
+  const supplierFields = {
+    supplierBuyerIds: suppliers.map((buyer) => buyer.id),
+    supplierBuyerCount: suppliers.length,
+    supplierUnits
+  };
+  const unitsNeeded = next.unitsShort;
+  if (next.qualifies) {
+    return {
+      ...base,
+      ...supplierFields,
+      unitsNeeded: 0,
+      reachable: true,
+      reason: "The cheaper band already fits a whole-order cohort. The allocator kept the larger current cohort."
+    };
+  }
+  const packingBlocked = next.compatibleUnits >= next.minimumUnits && next.allocatedUnits < next.minimumUnits;
+  return {
+    ...base,
+    ...supplierFields,
+    unitsNeeded,
+    reachable: false,
+    reason: packingBlocked
+      ? "Compatible demand exists, but whole orders cannot pack into the next cheaper band inside capacity."
+      : "Compatible whole-order demand cannot reach the next cheaper tier."
+  };
+}
+
+export function capacityBar(rawScenario, offerId) {
+  const scenario = validateScenario(rawScenario);
+  const result = evaluateOffer(scenario, offerId);
+  const gap = unitsToNextTier(scenario, offerId);
+  return {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    filledUnits: result.fulfilledUnits,
+    capacity: result.offer.capacity,
+    minimumUnits: result.offer.minimumUnits,
+    nextTierThreshold: gap.nextMinimum,
+    leftoverUnits: Math.max(0, result.offer.capacity - result.fulfilledUnits),
+    qualifies: result.qualifies
+  };
+}
+
+const EXCLUSION_CODES = ["price", "delivery", "variant", "category", "budget", "capacity_leftover", "quantity_vs_capacity", "minimum"];
+
+export function groupExclusionReasons(rawScenario, offerId) {
+  const scenario = validateScenario(rawScenario);
+  const result = evaluateOffer(scenario, offerId);
+  const buyers = new Map(scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const groups = new Map();
+  const add = (code, buyerId) => {
+    const current = groups.get(code) ?? { code, count: 0, buyerIds: [] };
+    current.count += 1;
+    current.buyerIds.push(buyerId);
+    groups.set(code, current);
+  };
+  for (const outcome of result.buyerOutcomes) {
+    if (outcome.status === "included") continue;
+    if (outcome.status === "capacity") {
+      const buyer = buyers.get(outcome.buyerId);
+      add(buyer && buyer.quantity > result.offer.capacity ? "quantity_vs_capacity" : "capacity_leftover", outcome.buyerId);
+      continue;
+    }
+    if (outcome.status === "minimum") {
+      add("minimum", outcome.buyerId);
+      continue;
+    }
+    for (const reason of outcome.reasons) add(reason, outcome.buyerId);
+  }
+  return EXCLUSION_CODES.filter((code) => groups.has(code)).map((code) => groups.get(code));
+}
+
 function compareResults(left, right) {
   if (left.qualifies !== right.qualifies) return left.qualifies ? -1 : 1;
   return right.fulfilledUnits - left.fulfilledUnits
@@ -510,6 +1014,27 @@ export function aggregateDemand(rawScenario) {
     groups.set(key, current);
   }
   return [...groups.values()].map((group) => ({ ...group, variants: [...group.variants.values()].sort() }));
+}
+
+export function deliveryHeatmap(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const buckets = [
+    { key: "0-3", label: "0 to 3 days", min: 0, max: 3, buyerCount: 0, units: 0 },
+    { key: "4-7", label: "4 to 7 days", min: 4, max: 7, buyerCount: 0, units: 0 },
+    { key: "8-14", label: "8 to 14 days", min: 8, max: 14, buyerCount: 0, units: 0 },
+    { key: "15-30", label: "15 to 30 days", min: 15, max: 30, buyerCount: 0, units: 0 },
+    { key: "31-365", label: "31 to 365 days", min: 31, max: 365, buyerCount: 0, units: 0 }
+  ];
+  for (const buyer of scenario.buyers) {
+    const bucket = buckets.find((entry) => buyer.latestDeliveryDays >= entry.min && buyer.latestDeliveryDays <= entry.max);
+    bucket.buyerCount += 1;
+    bucket.units += buyer.quantity;
+  }
+  return {
+    buyerCount: scenario.buyers.length,
+    units: scenario.buyers.reduce((sum, buyer) => sum + buyer.quantity, 0),
+    buckets
+  };
 }
 
 export function encodeScenario(rawScenario) {

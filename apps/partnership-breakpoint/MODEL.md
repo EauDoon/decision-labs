@@ -2,7 +2,7 @@
 
 ## Units and inputs
 
-All money inputs and outputs are monthly currency units unless a field says per transaction. The application does not select a currency, so use one consistent currency for every input in a case.
+All money inputs and outputs are monthly currency units unless a field says per transaction. An optional `title` (1 to 80 characters after trimming) names the case in the workbench and in exported JSON. An optional `currency` must be exactly three uppercase ASCII letters such as `USD` and is a display prefix only. The model never converts currencies. Omit `currency` to keep the word `units`. Lowercase codes, longer or shorter strings, and non-strings are rejected rather than coerced.
 
 Shared deal inputs:
 
@@ -10,6 +10,8 @@ Shared deal inputs:
 - `feePerTransaction`: gross fee collected per transaction.
 - `addressableVolume`: maximum transactions per month available from addressable demand.
 - `volumeShockPct`: an optional reduction from planned volume, from 0 to 100.
+- `title`: optional case name. If present, it must be a string of 1 to 80 characters after trimming.
+- `currency`: optional 3-letter uppercase display code. If present, it must match `^[A-Z]{3}$`.
 
 Participant inputs:
 
@@ -132,3 +134,23 @@ It cannot establish a counterparty's actual reservation value, legal right to ex
 At current effective volume V, the fee floor for participant i is (V times variable cost + fixed cost + risk cost + minimum acceptable profit) divided by (V times revenue share). When the numerator is zero the floor is zero. A positive numerator with zero denominator has no finite floor. Values beyond the numeric input limit are unavailable. The partnership floor is the maximum participant floor. This diagnostic holds volume and shares fixed and does not include demand response or compound stress. Capacity and commitment tests remain separate. Display rounding can move a floor across a boundary, so rerun the model after entering any proposed fee.
 
 Applying a compound case copies its realized volume, shocked fee and participant variable costs to a new baseline. It resets baseline volume shock to zero, keeps addressable demand and other inputs, and validates the result against input bounds. Stress settings remain the same, so the next grid represents additional shocks from the new baseline.
+
+## Roster edits
+
+`duplicateParticipant` copies costs and constraints, assigns `nextUnusedParticipantId`, appends ` copy` to the name (trimmed to 80 characters), and sets `revenueShare` to 0 so the original allocation still sums to the same total. `moveParticipant` swaps two adjacent rows without changing shares. `dropAndReallocate` removes one participant when more than two remain and spreads that share across whoever remains in proportion to their current weights. If remaining weights are all zero, the dropped share is split equally. The last remaining participant absorbs floating-point remainder so a previously valid split still sums to 1.
+
+## Share-to-hold solver
+
+`solveMinimumShareToHold(config, participantId)` binary-searches the minimum revenue share in `[0, 1]` at which that participant holds. Remaining participants keep their relative shares of `1 - targetShare`. If remaining current shares sum to 0, leftover is split equally among them. The search is deterministic and does not assign probability. If the participant holds at share 0, the result is 0. If the participant still fails at share 1, the result is `impossible` with a reason. Capacity and commitment tests do not depend on share, so those failures remain impossible to repair this way. Applying a proposal is an explicit GUI action and changes only revenue shares.
+
+## Fee-to-hold solver
+
+`solveFeeForAllHold` returns the partnership fee floor from `calculateFeeRequirements` when every capacity and commitment test already holds. Otherwise it returns `impossible`. The GUI previews the fee and requires Apply. Volume, shares, and costs stay unchanged until then. Demand response is not included.
+
+## Redacted export
+
+`redactConfiguration` copies a valid case, deletes `deal.title` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption.
+
+## Charts
+
+The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.

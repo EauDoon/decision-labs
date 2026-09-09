@@ -63,6 +63,9 @@ export function validateProposal(proposal) {
       if (isPlainObject(group) && Object.hasOwn(group, "minSupport") && (!isFiniteNumber(group.minSupport) || group.minSupport < 0 || group.minSupport > 100)) {
         errors.push(`groups[${index}].minSupport must be from 0 to 100, or omitted.`);
       }
+      if (isPlainObject(group) && Object.hasOwn(group, "veto") && typeof group.veto !== "boolean") {
+        errors.push(`groups[${index}].veto must be a boolean, or omitted.`);
+      }
     });
   }
   if (!Array.isArray(proposal.clauses) || proposal.clauses.length < 1 || proposal.clauses.length > MAX_CLAUSES) {
@@ -133,6 +136,7 @@ export function canonicalProposal(proposal) {
       name: group.name,
       weight: group.weight,
       ...(Object.hasOwn(group, "minSupport") ? { minSupport: group.minSupport } : {}),
+      ...(group.veto === true ? { veto: true } : {}),
     })),
     clauses: proposal.clauses.map((clause) => ({
       id: clause.id,
@@ -172,6 +176,59 @@ export function approvalByGroup(groups, options) {
   }));
 }
 
+/** Weighted support for one option using the same group weights as overall approval. */
+export function clauseWeightedSupport(groups, option) {
+  const totalWeight = groups.reduce((sum, group) => sum + group.weight, 0);
+  const totalSupport = groups.reduce((sum, group) => sum + group.weight * option.support[group.id], 0);
+  return totalWeight === 0 ? 0 : totalSupport / totalWeight;
+}
+
+/**
+ * Show how each selected clause option contributes to overall approval versus the original options.
+ * Overall approval is the mean of per-clause weighted support, so each clause pulls equally.
+ * This is an accounting of supplied scores, not bargaining power or a forecast.
+ */
+export function clauseContributions(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => {
+    const match = clause.options.find((option) => option.id === options[index]?.id);
+    return match ?? null;
+  });
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const originals = getOriginalOptions(proposal);
+  const clauseCount = proposal.clauses.length;
+  const rows = proposal.clauses.map((clause, index) => {
+    const selectedSupport = clauseWeightedSupport(proposal.groups, selected[index]);
+    const originalSupport = clauseWeightedSupport(proposal.groups, originals[index]);
+    const delta = selectedSupport - originalSupport;
+    return {
+      clauseId: clause.id,
+      clauseTitle: clause.title,
+      optionId: selected[index].id,
+      optionLabel: selected[index].label,
+      originalOptionId: originals[index].id,
+      originalLabel: originals[index].label,
+      selectedSupport,
+      originalSupport,
+      delta,
+      overallPull: delta / clauseCount,
+    };
+  });
+  return {
+    status: "ok",
+    clauseCount,
+    overallApproval: approvalForOptions(proposal.groups, selected),
+    originalApproval: approvalForOptions(proposal.groups, originals),
+    rows,
+  };
+}
+
 export function selectionSummary(proposal, options, baselineOptions = getOriginalOptions(proposal)) {
   const changes = options
     .map((option, index) => ({ clause: proposal.clauses[index], option, baseline: baselineOptions[index] }))
@@ -194,6 +251,11 @@ export function selectionSummary(proposal, options, baselineOptions = getOrigina
     const actual = byGroup.find((row) => row.id === group.id).approval;
     return { id: group.id, name: group.name, minimum: group.minSupport, actual, met: actual + EPSILON >= group.minSupport };
   });
+  const vetoes = proposal.groups.filter((group) => group.veto === true).map((group) => {
+    const actual = byGroup.find((row) => row.id === group.id).approval;
+    const required = group.minSupport === undefined ? proposal.threshold : Math.max(proposal.threshold, group.minSupport);
+    return { id: group.id, name: group.name, required, actual, met: actual + EPSILON >= required };
+  });
   const locks = proposal.clauses.flatMap((clause, index) => clause.lockedOptionId === undefined ? [] : [{
     clauseId: clause.id, clauseTitle: clause.title, optionId: clause.lockedOptionId,
     label: clause.options.find((option) => option.id === clause.lockedOptionId).label,
@@ -206,7 +268,7 @@ export function selectionSummary(proposal, options, baselineOptions = getOrigina
     byGroup,
     changes,
     changeCost,
-    constraints: { floors, locks, budget, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) },
+    constraints: { floors, locks, budget, vetoes, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) && vetoes.every((veto) => veto.met) },
     changedClauseCount: changes.length,
     groupDeltas,
     supportersGained: groupDeltas.filter((group) => group.delta > EPSILON),
@@ -239,6 +301,52 @@ export function compareNearMisses(threshold, a, b) {
   const gapB = threshold - b.approval;
   if (Math.abs(gapA - gapB) > EPSILON) return gapA - gapB;
   return compareAgreements(a, b);
+}
+
+function samePackage(a, b) {
+  if (!a || !b || a.options.length !== b.options.length) return false;
+  return a.options.every((option, index) => option.id === b.options[index].id);
+}
+
+/**
+ * Explain the model's constraint-compliant near misses and the next passing packages.
+ * Cheaper misses cost less than the recommended package and still miss the threshold.
+ * Next-over packages are later passing alternatives, not a claim that they are fairer.
+ */
+export function explorePackageGaps(proposal, result) {
+  if (!isPlainObject(proposal) || !isPlainObject(result) || result.status === "invalid" || result.status === "too_large") {
+    return {
+      status: result?.status ?? "invalid",
+      errors: result?.errors,
+      cheaperMisses: [],
+      closestMisses: [],
+      nextOverThreshold: [],
+      recommended: null,
+    };
+  }
+  const recommended = result.agreement ?? null;
+  const describe = (summary) => ({
+    approval: summary.approval,
+    changeCost: summary.changeCost,
+    changedClauseCount: summary.changedClauseCount,
+    approvalGap: proposal.threshold - summary.approval,
+    costVsRecommended: recommended ? summary.changeCost - recommended.changeCost : null,
+    cheaperThanRecommended: recommended ? summary.changeCost + EPSILON < recommended.changeCost : true,
+    meetsThreshold: summary.approval + EPSILON >= proposal.threshold,
+    labels: summary.options.map((option, index) => `${proposal.clauses[index].title}: ${option.label}`).join("; "),
+  });
+  const closestMisses = (result.nearMisses ?? []).map(describe);
+  const cheaperMisses = closestMisses.filter((row) => row.cheaperThanRecommended);
+  const nextOverThreshold = (result.alternatives ?? [])
+    .filter((candidate) => !samePackage(candidate, recommended))
+    .map(describe);
+  return {
+    status: "ok",
+    recommended: recommended ? describe(recommended) : null,
+    cheaperMisses,
+    closestMisses,
+    nextOverThreshold,
+  };
 }
 
 export function combinationCount(clauses, cap = Number.MAX_SAFE_INTEGER) {
@@ -284,14 +392,14 @@ export function findSmallestAgreement(proposal, options = {}) {
 
   const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
   if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met && alternativesLimit === 0) {
-    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
+    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, vetoes: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
   }
 
   let best = null;
   const alternatives = [];
   let passingCombinations = 0;
   const nearMisses = [];
-  const rejected = { budget: 0, floors: 0, anyConstraint: 0 };
+  const rejected = { budget: 0, floors: 0, vetoes: 0, anyConstraint: 0 };
   let eligibleCombinations = 0;
   const selected = [];
   const visit = (clauseIndex) => {
@@ -301,6 +409,7 @@ export function findSmallestAgreement(proposal, options = {}) {
         rejected.anyConstraint += 1;
         if (summary.constraints.budget && !summary.constraints.budget.met) rejected.budget += 1;
         if (summary.constraints.floors.some((floor) => !floor.met)) rejected.floors += 1;
+        if (summary.constraints.vetoes.some((veto) => !veto.met)) rejected.vetoes += 1;
         return;
       }
       eligibleCombinations += 1;
@@ -387,6 +496,12 @@ export function formatDecisionBrief(proposal, result) {
   const protectedGroups = proposal.groups.filter((group) => group.minSupport !== undefined);
   if (!protectedGroups.length) lines.push("No group support floors set.");
   for (const group of protectedGroups) lines.push(`- ${briefText(group.name)}: average support must be at least ${group.minSupport}%.`);
+  const vetoGroups = proposal.groups.filter((group) => group.veto === true);
+  if (!vetoGroups.length) lines.push("No veto groups set.");
+  for (const group of vetoGroups) {
+    const required = group.minSupport === undefined ? proposal.threshold : Math.max(proposal.threshold, group.minSupport);
+    lines.push(`- ${briefText(group.name)} has a veto: average support must be at least ${required}%.`);
+  }
   const lockedClauses = proposal.clauses.filter((clause) => clause.lockedOptionId !== undefined);
   if (!lockedClauses.length) lines.push("No clause options locked.");
   for (const clause of lockedClauses) lines.push(`- Lock ${briefText(clause.title)} to ${briefOption(clause.options.find((option) => option.id === clause.lockedOptionId).label)}.`);
@@ -404,7 +519,7 @@ export function formatDecisionBrief(proposal, result) {
   else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "Every configured constraint is met.", "");
   else lines.push("No permitted combination meets both the threshold and every configured constraint.", "");
   lines.push(`Search combinations checked: ${Number(result.checkedCombinations).toLocaleString("en-US")}`, `Lock-permitted search space: ${Number(result.possibleCombinations).toLocaleString("en-US")}`);
-  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
+  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}; by veto groups: ${result.rejected.vetoes}. Rejection counts may overlap.`);
   lines.push(`Current approval: ${formatPercent(current.approval)}`, `Original proposal meets constraints: ${current.constraints.met ? "yes" : "no"}`);
 
   if (agreement) {
@@ -431,9 +546,10 @@ export function formatDecisionBrief(proposal, result) {
   }
   lines.push("");
 
-  if (agreement && protectedGroups.length) {
+  if (agreement && (protectedGroups.length || vetoGroups.length)) {
     lines.push("## Protected-group checks", "");
     for (const floor of agreement.constraints.floors) lines.push(`- ${briefText(floor.name)}: ${formatPercent(floor.actual)} against minimum ${floor.minimum}%, ${floor.met ? "met" : "not met"}.`);
+    for (const veto of agreement.constraints.vetoes) lines.push(`- ${briefText(veto.name)} veto: ${formatPercent(veto.actual)} against ${veto.required}%, ${veto.met ? "met" : "not met"}.`);
     lines.push("");
   }
 
@@ -497,6 +613,7 @@ export function compareScenarioInputs(before, after) {
       fields.set(prefix + "name", group.name);
       fields.set(prefix + "weight", group.weight);
       fields.set(prefix + "minimum support", group.minSupport);
+      fields.set(prefix + "veto", group.veto);
     }
     for (const clause of p.clauses) {
       const prefix = "Clause " + clause.id + ": ";
@@ -524,14 +641,331 @@ export function compareScenarioInputs(before, after) {
 /** Export every modeled input with spreadsheet-safe text cells and explicit recommendation status. */
 export function formatEvidenceCsv(proposal, result = findSmallestAgreement(proposal)) {
   const p = canonicalProposal(proposal);
-  const rows = [["proposal", "threshold", "maximum_change_cost", "search_status", "clause_id", "clause", "locked_option_id", "option_id", "option", "original", "recommended", "change_cost", "group_id", "group", "weight", "minimum_support", "support"]];
+  const rows = [["proposal", "threshold", "maximum_change_cost", "search_status", "clause_id", "clause", "locked_option_id", "option_id", "option", "original", "recommended", "change_cost", "group_id", "group", "weight", "minimum_support", "veto", "support"]];
   for (const [index, clause] of p.clauses.entries()) for (const option of clause.options) for (const group of p.groups) {
-    rows.push([p.title, p.threshold, p.maxChangeCost ?? "unlimited", result.status, clause.id, clause.title, clause.lockedOptionId ?? "none", option.id, option.label, option.original ? "yes" : "no", result.agreement ? (result.agreement.options[index].id === option.id ? "yes" : "no") : "no recommendation", option.changeCost, group.id, group.name, group.weight, group.minSupport ?? "none", option.support[group.id]]);
+    rows.push([p.title, p.threshold, p.maxChangeCost ?? "unlimited", result.status, clause.id, clause.title, clause.lockedOptionId ?? "none", option.id, option.label, option.original ? "yes" : "no", result.agreement ? (result.agreement.options[index].id === option.id ? "yes" : "no") : "no recommendation", option.changeCost, group.id, group.name, group.weight, group.minSupport ?? "none", group.veto === true ? "yes" : "no", option.support[group.id]]);
   }
-  const cell = (value) => {
-    let text = String(value);
-    if (typeof value === "string" && /^(?:[\s\u0000-\u001f]*[=+@-]|[\t\r\n])/u.test(text)) text = "'" + text;
-    return '"' + text.replaceAll('"', '""') + '"';
+  return serializeCsv(rows);
+}
+
+const FORMULA_CELL = /^(?:[\s\u0000-\u001f]*[=+@-]|[\t\r\n])/u;
+
+function quoteCsvCell(value) {
+  let text = String(value);
+  if (typeof value === "string" && FORMULA_CELL.test(text)) text = `'${text}`;
+  return `"${text.replaceAll('"', '""')}"`;
+}
+
+function serializeCsv(rows) {
+  return `${rows.map((row) => row.map(quoteCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
+/** Strip a leading apostrophe added for spreadsheet safety. */
+export function neutralizeCsvCell(raw) {
+  const text = String(raw ?? "");
+  return text.startsWith("'") ? text.slice(1) : text;
+}
+
+function namedCsvError(code, message, extra = {}) {
+  return { code, message, ...extra };
+}
+
+function parseCsvRecords(text) {
+  const source = String(text ?? "").replace(/^\uFEFF/u, "");
+  if (source.trim() === "") return { status: "invalid", errors: [namedCsvError("empty_csv", "CSV is empty.")] };
+  const rows = [];
+  let row = [];
+  let cell = "";
+  let inQuotes = false;
+  for (let index = 0; index < source.length; index += 1) {
+    const character = source[index];
+    if (inQuotes) {
+      if (character === '"') {
+        if (source[index + 1] === '"') {
+          cell += '"';
+          index += 1;
+        } else inQuotes = false;
+      } else cell += character;
+      continue;
+    }
+    if (character === '"') {
+      inQuotes = true;
+      continue;
+    }
+    if (character === ",") {
+      row.push(cell);
+      cell = "";
+      continue;
+    }
+    if (character === "\n" || character === "\r") {
+      if (character === "\r" && source[index + 1] === "\n") index += 1;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = "";
+      continue;
+    }
+    cell += character;
+  }
+  if (inQuotes) return { status: "invalid", errors: [namedCsvError("truncated_row", "CSV quote was not closed.")] };
+  if (cell !== "" || row.length > 0) {
+    row.push(cell);
+    rows.push(row);
+  }
+  const records = rows.filter((entry) => entry.some((value) => value !== ""));
+  if (records.length === 0) return { status: "invalid", errors: [namedCsvError("empty_csv", "CSV is empty.")] };
+  return { status: "ok", records };
+}
+
+function parseSupportScore(raw, path) {
+  const neutralized = neutralizeCsvCell(raw);
+  if (FORMULA_CELL.test(neutralized)) {
+    return { error: namedCsvError("formula_cell", `${path} looks like a spreadsheet formula and was not imported.`, { path, value: neutralized }) };
+  }
+  if (typeof neutralized !== "string" || neutralized.trim() === "") {
+    return { error: namedCsvError("invalid_score", `${path} must be a number from 0 to 100.`, { path }) };
+  }
+  if (!/^[+-]?(?:\d+\.?\d*|\.\d+)$/u.test(neutralized.trim())) {
+    return { error: namedCsvError("invalid_score", `${path} must be a number from 0 to 100.`, { path, value: neutralized }) };
+  }
+  const score = Number(neutralized);
+  if (!Number.isFinite(score) || score < 0 || score > 100) {
+    return { error: namedCsvError("invalid_score", `${path} must be a number from 0 to 100.`, { path, value: neutralized }) };
+  }
+  return { score };
+}
+
+/**
+ * Import a clause-option vs group support matrix.
+ * Header must be clause_id, option_id, then every group id. Unknown columns are rejected.
+ * Formula-like cells are named formula_cell errors after neutralizing a leading apostrophe.
+ */
+export function parseSupportMatrixCsv(csvText, proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
+  const parsed = parseCsvRecords(csvText);
+  if (parsed.status !== "ok") return parsed;
+  const [header, ...body] = parsed.records;
+  if (!header || header.length < 3) {
+    return { status: "invalid", errors: [namedCsvError("missing_header", "CSV needs a header row with clause_id, option_id, and every group id.")] };
+  }
+  const columns = header.map((name) => neutralizeCsvCell(name).trim());
+  if (FORMULA_CELL.test(columns[0]) || FORMULA_CELL.test(columns[1])) {
+    return { status: "invalid", errors: [namedCsvError("formula_cell", "Header cells must not look like spreadsheet formulas.")] };
+  }
+  if (columns[0] !== "clause_id") return { status: "invalid", errors: [namedCsvError("missing_clause_id_column", "The first column must be clause_id.")] };
+  if (columns[1] !== "option_id") return { status: "invalid", errors: [namedCsvError("missing_option_id_column", "The second column must be option_id.")] };
+  const groupColumns = columns.slice(2);
+  const errors = [];
+  const seenGroups = new Set();
+  for (const groupId of groupColumns) {
+    if (FORMULA_CELL.test(groupId)) {
+      errors.push(namedCsvError("formula_cell", `Group column ${groupId} looks like a spreadsheet formula.`));
+      continue;
+    }
+    if (!proposal.groups.some((group) => group.id === groupId)) {
+      errors.push(namedCsvError("unknown_group_column", `Unknown group column: ${groupId}.`, { groupId }));
+    }
+    if (seenGroups.has(groupId)) errors.push(namedCsvError("duplicate_row", `Group column ${groupId} is repeated.`, { groupId }));
+    seenGroups.add(groupId);
+  }
+  for (const group of proposal.groups) {
+    if (!seenGroups.has(group.id)) errors.push(namedCsvError("missing_group_column", `Missing group column: ${group.id}.`, { groupId: group.id }));
+  }
+  if (body.length === 0) errors.push(namedCsvError("empty_csv", "CSV has a header but no support rows."));
+  const next = canonicalProposal(proposal);
+  const seenPairs = new Set();
+  let updatedCells = 0;
+  body.forEach((record, index) => {
+    const rowNumber = index + 2;
+    if (record.length !== columns.length) {
+      errors.push(namedCsvError("truncated_row", `Row ${rowNumber} has ${record.length} cells, expected ${columns.length}.`, { row: rowNumber }));
+      return;
+    }
+    const clauseId = neutralizeCsvCell(record[0]).trim();
+    const optionId = neutralizeCsvCell(record[1]).trim();
+    if (FORMULA_CELL.test(clauseId) || FORMULA_CELL.test(optionId)) {
+      errors.push(namedCsvError("formula_cell", `Row ${rowNumber} identifier looks like a spreadsheet formula.`, { row: rowNumber }));
+      return;
+    }
+    const pair = `${clauseId}\0${optionId}`;
+    if (seenPairs.has(pair)) {
+      errors.push(namedCsvError("duplicate_row", `Row ${rowNumber} repeats clause ${clauseId} option ${optionId}.`, { row: rowNumber, clauseId, optionId }));
+      return;
+    }
+    seenPairs.add(pair);
+    const clause = next.clauses.find((item) => item.id === clauseId);
+    if (!clause) {
+      errors.push(namedCsvError("unknown_clause", `Row ${rowNumber} clause_id ${clauseId} is not in this proposal.`, { row: rowNumber, clauseId }));
+      return;
+    }
+    const option = clause.options.find((item) => item.id === optionId);
+    if (!option) {
+      errors.push(namedCsvError("unknown_option", `Row ${rowNumber} option_id ${optionId} is not in clause ${clauseId}.`, { row: rowNumber, clauseId, optionId }));
+      return;
+    }
+    groupColumns.forEach((groupId, groupIndex) => {
+      const path = `row ${rowNumber} ${clauseId}/${optionId}/${groupId}`;
+      const parsedScore = parseSupportScore(record[groupIndex + 2], path);
+      if (parsedScore.error) {
+        errors.push(parsedScore.error);
+        return;
+      }
+      option.support[groupId] = parsedScore.score;
+      updatedCells += 1;
+    });
+  });
+  if (errors.length) return { status: "invalid", errors };
+  return { status: "ok", proposal: next, updatedCells };
+}
+
+/** Export only the support matrix used by parseSupportMatrixCsv. */
+export function formatSupportMatrixCsv(proposal) {
+  const p = canonicalProposal(proposal);
+  const header = ["clause_id", "option_id", ...p.groups.map((group) => group.id)];
+  const rows = [header];
+  for (const clause of p.clauses) for (const option of clause.options) {
+    rows.push([clause.id, option.id, ...p.groups.map((group) => option.support[group.id])]);
+  }
+  return serializeCsv(rows);
+}
+
+/**
+ * Lock one option, re-run search on remaining unlocked clauses, and return a preview.
+ * Does not mutate the supplied proposal.
+ */
+export function previewLockedOption(proposal, clauseId, optionId, searchOptions = {}) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof clauseId !== "string" || typeof optionId !== "string") {
+    return { status: "invalid", errors: ["Clause and option identifiers are required."] };
+  }
+  const clause = proposal.clauses.find((item) => item.id === clauseId);
+  if (!clause) return { status: "invalid", errors: ["Unknown clause."] };
+  const option = clause.options.find((item) => item.id === optionId);
+  if (!option) return { status: "invalid", errors: ["Unknown option."] };
+  const next = canonicalProposal(proposal);
+  next.clauses.find((item) => item.id === clauseId).lockedOptionId = optionId;
+  const result = findSmallestAgreement(next, searchOptions);
+  if (result.status === "invalid") return result;
+  return {
+    status: "preview",
+    proposal: next,
+    result,
+    clauseId,
+    optionId,
+    clauseTitle: clause.title,
+    optionLabel: option.label,
   };
-  return rows.map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";
+}
+
+/**
+ * Overall approval if each group is omitted from the weighted average.
+ * Remaining weights are used as-is, which renormalizes because the formula
+ * divides by remaining total weight. This is a sensitivity readout, not a forecast.
+ */
+export function leaveOneGroupOut(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const fullApproval = approvalForOptions(proposal.groups, selected);
+  const rows = proposal.groups.map((group) => {
+    const remaining = proposal.groups.filter((item) => item.id !== group.id);
+    if (remaining.length === 0) {
+      return { id: group.id, name: group.name, weight: group.weight, approval: null, delta: null, omitted: true };
+    }
+    const approval = approvalForOptions(remaining, selected);
+    return { id: group.id, name: group.name, weight: group.weight, approval, delta: approval - fullApproval, omitted: true };
+  });
+  return { status: "ok", method: "omit", fullApproval, rows };
+}
+
+/**
+ * Each group's pull on overall approval is its weight share times its average support.
+ * This is an accounting of supplied scores, not bargaining power or a forecast.
+ */
+export function groupContributions(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const originals = getOriginalOptions(proposal);
+  const totalWeight = proposal.groups.reduce((sum, group) => sum + group.weight, 0);
+  const selectedByGroup = approvalByGroup(proposal.groups, selected);
+  const originalByGroup = approvalByGroup(proposal.groups, originals);
+  const rows = proposal.groups.map((group, index) => {
+    const share = group.weight / totalWeight;
+    const selectedApproval = selectedByGroup[index].approval;
+    const originalApproval = originalByGroup[index].approval;
+    const contribution = share * selectedApproval;
+    const originalContribution = share * originalApproval;
+    return {
+      id: group.id,
+      name: group.name,
+      weight: group.weight,
+      share,
+      selectedApproval,
+      originalApproval,
+      contribution,
+      originalContribution,
+      overallPull: contribution - originalContribution,
+    };
+  });
+  return {
+    status: "ok",
+    method: "weight_share",
+    overallApproval: approvalForOptions(proposal.groups, selected),
+    originalApproval: approvalForOptions(proposal.groups, originals),
+    rows,
+  };
+}
+
+/**
+ * Plain-text discussion worksheet. Labels are copied as supplied text.
+ * This is a conversation aid, not a recorded vote or legal ballot.
+ */
+export function formatDiscussionWorksheet(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const lines = [
+    "Discussion worksheet",
+    "",
+    p.title,
+    `Approval threshold: ${p.threshold}%`,
+    p.maxChangeCost === undefined ? "Change-cost budget: unlimited" : `Change-cost budget: ${p.maxChangeCost}`,
+    "",
+    "Mark preferred options during conversation. This sheet is a worksheet, not a recorded vote, legal ballot, or collective decision.",
+    "",
+  ];
+  for (const group of p.groups) {
+    const marks = [];
+    if (group.veto === true) marks.push("veto");
+    if (group.minSupport !== undefined) marks.push(`floor ${group.minSupport}%`);
+    lines.push(`Group: ${group.name} (weight ${group.weight}${marks.length ? `; ${marks.join(", ")}` : ""})`);
+  }
+  lines.push("");
+  for (const clause of p.clauses) {
+    lines.push(clause.title + (clause.lockedOptionId ? " [locked]" : ""));
+    for (const option of clause.options) {
+      const tags = [];
+      if (option.original === true) tags.push("original");
+      if (option.changeCost) tags.push(`cost ${option.changeCost}`);
+      if (clause.lockedOptionId === option.id) tags.push("locked");
+      lines.push(`  [ ] ${option.label}${tags.length ? ` (${tags.join(", ")})` : ""}`);
+    }
+    lines.push("");
+  }
+  return { status: "ok", text: `${lines.join("\n").trim()}\n` };
 }

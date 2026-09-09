@@ -46,6 +46,34 @@ a { color: var(--indigo-2); text-underline-offset: 3px; }
 }
 .skip-link:focus { transform: none; }
 
+#coach-dialog {
+  width: min(36rem, calc(100% - 2rem));
+  padding: 0;
+  border: 1px solid var(--line-strong);
+  background: var(--surface);
+  color: var(--ink);
+  box-shadow: var(--shadow);
+}
+#coach-dialog::backdrop { background: rgba(23, 22, 43, 0.55); }
+.coach-card { padding: 1.4rem 1.5rem 1.5rem; }
+.coach-card h2 { margin: 0.2rem 0 0.9rem; font-size: 1.7rem; }
+.coach-steps { margin: 0 0 1rem; padding-left: 1.2rem; }
+.coach-steps li { margin-bottom: 0.75rem; color: #4f4c5e; }
+.coach-card .primary { margin-top: 0.4rem; }
+.shortcut-list { margin: 0 0 1rem; padding: 0; list-style: none; }
+.shortcut-list li { display: flex; gap: 0.75rem; align-items: baseline; margin-bottom: 0.45rem; }
+kbd {
+  display: inline-grid;
+  place-items: center;
+  min-width: 1.6rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--line-strong);
+  border-radius: 3px;
+  background: #eee8dd;
+  font: 700 0.8rem ui-monospace, monospace;
+}
+.capacity-bar { display: block; width: min(100%, 520px); height: 48px; margin: 0.4rem 0 1rem; }
+
 .masthead {
   min-height: 76px;
   display: flex;
@@ -162,6 +190,16 @@ th { padding: 0.65rem; color: #4f4c5e; background: #eee8dd; text-align: left; fo
 td.empty-state { color: var(--muted); font-style: italic; }
 td { padding: 0.48rem; border-top: 1px solid var(--line); vertical-align: middle; }
 td input { min-width: 86px; border-color: transparent; background: transparent; }
+td select {
+  min-width: 86px;
+  width: 100%;
+  border: 1px solid transparent;
+  border-radius: 2px;
+  padding: 0.58rem 0.45rem;
+  color: var(--ink);
+  background: transparent;
+}
+td select:hover, td select:focus { border-color: var(--line-strong); background: white; }
 td input:hover, td input:focus { border-color: var(--line-strong); background: white; }
 .unit-input { min-width: 112px; }
 .unit-input input { min-width: 60px; }
@@ -187,6 +225,10 @@ canvas { display: block; width: 100%; height: 280px; }
 .inspector-summary { margin: 0; color: var(--muted); }
 .inspector-picker { min-width: min(100%, 270px); color: var(--muted); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .inspector-picker select { width: 100%; margin-top: 0.35rem; color: var(--text); letter-spacing: 0; text-transform: none; }
+.residual-panel { margin-top: 1rem; }
+.residual-summary dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin: 0.75rem 0 0; }
+.residual-summary dt { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.residual-summary dd { margin: 0.15rem 0 0; font-weight: 800; }
 .tier-section { margin: 1.5rem 0; }
 .tier-editors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 1rem; }
 .tier-editor { min-width: 0; border: 1px solid var(--line); padding: 1rem; }
@@ -269,3 +311,14 @@ footer {
  .snapshot-bar label { display: grid; gap: .35rem; min-width: 180px; max-width: 100%; }
  .snapshot-bar select { max-width: 100%; }
  .snapshot-bar p { flex-basis: 100%; margin: 0; font-size: .85rem; }
+
+@media print {
+  .skip-link, .header-actions, .preset-bar .button-row, #coach-dialog, #shortcut-help,
+  #add-buyer, #import-buyers, #add-offer, .icon-button, .tabs button[aria-selected="false"] {
+    display: none !important;
+  }
+  body { background: white; color: black; }
+  .masthead, .scoreboard, .local-note, .privacy-panel { color: black; background: white; border: 1px solid #333; box-shadow: none; }
+  a { text-decoration: none; color: black; }
+  [role="tabpanel"][hidden] { display: block !important; break-before: page; }
+}

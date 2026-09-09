@@ -45,24 +45,32 @@ SOFTWARE.
             <option value="open-source">Open Source Policy</option>
             <option value="association-budget">Association Budget</option>
             <option value="protected-access">Protected Access</option>
+            <option value="workplace-hybrid">Workplace Hybrid</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
         <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
         <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
         <button class="button button-secondary" type="button" id="print-button">Print readout</button>
+        <button class="button button-secondary" type="button" id="worksheet-button">Export worksheet</button>
         <button class="button button-secondary" type="button" id="csv-button">Export evidence CSV</button>
+        <button class="button button-secondary" type="button" id="matrix-export-button">Export support CSV</button>
+        <button class="button button-secondary" type="button" id="matrix-import-button">Import support CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
         <button class="button button-secondary" type="button" id="redo-button" disabled>Redo</button>
+        <button class="button button-secondary" type="button" id="find-agreement">Find agreement</button>
+        <button class="button button-secondary" type="button" id="shortcut-help-button">Keyboard shortcuts</button>
+        <button class="button button-quiet" type="button" id="coach-again">Show workshop tour</button>
         <button class="button button-quiet" type="button" id="reset-button">Reset</button>
         <input id="import-file" type="file" accept="application/json,.json" hidden>
+        <input id="matrix-import-file" type="file" accept="text/csv,.csv" hidden>
       </div>
     </header>
 
     <nav class="workshop-nav" aria-label="Workshop sections"><a href="#workspace">Setup</a><a href="#clauses-heading">Clauses</a><a href="#results-heading">Recommendation</a><a href="#manual-heading">Custom package</a><a href="#comparison-heading">Compare rounds</a></nav>
-    <details class="workshop-guide"><summary>Run a useful negotiation round</summary><ol><li>Agree who is represented and how weights, scores, and costs were obtained. Presets contain synthetic assumptions.</li><li>Set an exact threshold, group floors, a cost budget, and any non-negotiable clause choices.</li><li>Save a named snapshot before changing assumptions. Undo restores up to 50 edits within this tab.</li><li>Compare passing packages and inspect who loses support. Try a custom package and test downside support.</li><li>Compare the working draft against an earlier snapshot. Take the changed assumptions back to participants.</li><li>Export JSON for reopening, CSV for all input evidence, and a brief or printed readout for discussion. Human participants decide next steps.</li></ol><p>Custom choices and support-drop settings are temporary analysis controls. JSON, CSV, and the Markdown brief describe the working proposal and optimized recommendation. Print includes the visible custom comparison and downside result.</p></details>
+    <details class="workshop-guide"><summary>Run a useful negotiation round</summary><ol><li>Agree who is represented and how weights, scores, and costs were obtained. Presets contain synthetic assumptions.</li><li>Set an exact threshold, group floors, a cost budget, and any non-negotiable clause choices.</li><li>Save a named snapshot before changing assumptions. Undo restores up to 50 edits within this tab.</li><li>Compare passing packages and inspect who loses support. Try a custom package and test downside support.</li><li>Compare the working draft against an earlier snapshot. Take the changed assumptions back to participants.</li><li>Export JSON for reopening, CSV for all input evidence, and a brief or printed readout for discussion. Print readout includes a discussion worksheet with unmarked option boxes. It is a worksheet, not a recorded vote. Human participants decide next steps.</li></ol><p>Custom choices and support-drop settings are temporary analysis controls. JSON, CSV, and the Markdown brief describe the working proposal and optimized recommendation. Print includes the visible custom comparison, downside result, and discussion worksheet.</p></details>
     <main id="workspace" class="workspace">
       <aside class="control-panel" aria-label="Proposal controls">
         <div class="margin-note"><span>01</span> Shape the room before you ask it to decide.</div>
@@ -80,7 +88,7 @@ SOFTWARE.
           <div class="scenario-actions"><button class="text-button" id="load-scenario" type="button">Load snapshot</button> <button class="text-button danger" id="delete-scenario" type="button">Delete snapshot</button></div>
           <p id="scenario-count" class="field-note"></p>
         </section>
-        <section class="panel-section threshold-panel">
+        <section class="panel-section threshold-panel" id="threshold-setup">
           <div class="label-row"><label for="threshold">Approval threshold</label><output id="threshold-output"></output></div>
           <input id="threshold" type="range" min="0" max="100" step="any">
           <label for="threshold-number">Exact threshold (%)</label><input id="threshold-number" type="number" min="0" max="100" step="any" required>
@@ -96,6 +104,8 @@ SOFTWARE.
           <div id="groups-editor" class="groups-editor"></div>
           <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
           <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
+          <p id="veto-note" class="field-note">A veto group must reach the overall threshold (or its higher support floor, if one is set). Old drafts without this mark stay valid. A veto is a numerical constraint, not a legal right.</p>
+          <div id="weight-shares"></div>
         </section>
       </aside>
 
@@ -111,6 +121,9 @@ SOFTWARE.
             <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading" tabindex="-1">What can change?</h2></div>
             <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
           </div>
+          <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
+          <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order.</p>
           <div id="clauses-editor" class="clauses-editor"></div>
         </section>
 
@@ -121,6 +134,11 @@ SOFTWARE.
           </div>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
+          <section class="result-card" aria-labelledby="side-by-side-heading">
+            <h3 id="side-by-side-heading">Side-by-side package</h3>
+            <p>Pin the current original selections against the solver recommendation. Each row is one clause. Group scores and overall approval use the same formula as the rest of the workshop.</p>
+            <div id="side-by-side"></div>
+          </section>
           <section class="result-card constraint-card" aria-labelledby="constraints-heading">
             <h3 id="constraints-heading">Constraint checks</h3>
             <div id="constraint-checks"></div>
@@ -139,7 +157,27 @@ SOFTWARE.
               <div id="support-shifts"></div>
             </section>
           </div>
+          <section class="result-card" aria-labelledby="contribution-heading">
+            <h3 id="contribution-heading">Clause contribution</h3>
+            <p>Each clause contributes equally to overall approval. The chart shows how the recommended package's clause scores differ from the original options. This is an accounting of the supplied scores, not bargaining power or a forecast.</p>
+            <div id="clause-contribution"></div>
+          </section>
           <section class="result-card" aria-labelledby="alternatives-heading"><h3 id="alternatives-heading">Passing packages</h3><div id="passing-alternatives"></div></section>
+          <section class="result-card" aria-labelledby="lock-preview-heading">
+            <h3 id="lock-preview-heading" tabindex="-1">Try this option</h3>
+            <p>Lock one alternative and re-run the solver on the remaining unlocked clauses. Review the preview before applying. Apply is an ordinary draft edit, so undo restores the previous locks.</p>
+            <div id="lock-preview"></div>
+          </section>
+          <section class="result-card" aria-labelledby="leave-one-heading">
+            <h3 id="leave-one-heading">Leave one group out</h3>
+            <p>Each row omits that group's weight from the weighted average. Remaining weights are used as written, which renormalizes them. This is a sensitivity readout of the supplied scores, not a forecast of what people would do without that group.</p>
+            <div id="leave-one-out"></div>
+          </section>
+          <section class="result-card" aria-labelledby="group-contribution-heading">
+            <h3 id="group-contribution-heading">Group contribution</h3>
+            <p>Each group's pull on overall approval is its weight share times its average support. That is an accounting of the supplied scores, not bargaining power or a forecast of what a group could extract.</p>
+            <div id="group-contribution"></div>
+          </section>
           <section class="result-card" aria-labelledby="manual-heading">
             <h3 id="manual-heading" tabindex="-1">Try your own package</h3>
             <p>Choose one option per clause to inspect tradeoffs. This comparison does not change the draft, locks, or recommendation. Choices reset when you reload.</p>
@@ -150,7 +188,12 @@ SOFTWARE.
           <section class="result-card" aria-labelledby="stress-heading">
             <h3 id="stress-heading">Stress-test the recommendation</h3>
             <p>Reduce every entered support score by the same number of percentage points, stopping at zero. Test the same package against the same threshold and group floors. Costs and locks stay fixed. This is a hypothetical downside scenario, not a forecast or a probability of consent.</p>
-            <label for="support-drop">Support drop (percentage points)</label><input id="support-drop" type="number" min="0" max="100" step="any" value="5">
+            <div class="stress-controls">
+              <label for="support-drop-range">Support drop slider</label>
+              <input id="support-drop-range" type="range" min="0" max="100" step="1" value="5" aria-describedby="support-drop-output">
+              <div class="label-row"><label for="support-drop">Exact drop (percentage points)</label><output id="support-drop-output">5 points</output></div>
+              <input id="support-drop" type="number" min="0" max="100" step="any" value="5">
+            </div>
             <div id="stress-result" role="status" aria-live="polite"></div>
           </section>
           <section class="result-card" aria-labelledby="comparison-heading">
@@ -159,9 +202,15 @@ SOFTWARE.
             <div id="scenario-comparison"></div>
           </section>
           <section class="near-misses" aria-labelledby="near-misses-heading">
-            <div class="section-heading"><div><p class="eyebrow">Alternatives</p><h3 id="near-misses-heading">Near misses</h3></div></div>
+            <div class="section-heading"><div><p class="eyebrow">Alternatives</p><h3 id="near-misses-heading">Near-miss explorer</h3></div></div>
+            <p>Near misses meet every configured constraint but miss the overall threshold. Cheaper misses cost less than the recommended package. Next packages over the threshold are later passing combinations, not a fairness ranking. Gaps are in approval points and change cost only.</p>
             <div id="near-misses-list"></div>
           </section>
+        </section>
+        <section id="printable-ballot" class="print-only" aria-labelledby="ballot-heading">
+          <h2 id="ballot-heading">Discussion worksheet</h2>
+          <p>Use this printed sheet to mark preferred options during conversation. It is a worksheet, not a recorded vote, legal ballot, or collective decision.</p>
+          <div id="ballot-body"></div>
         </section>
 
         <section class="method-grid" aria-label="Method and limits">
@@ -169,7 +218,7 @@ SOFTWARE.
             <p class="eyebrow">Method</p>
             <h2>Count what changes</h2>
             <p>For each combination of one option per clause, the workshop computes a weighted average of the group support scores. It selects a passing combination by lowest change cost, then fewest changed clauses, then higher approval, then option ID order.</p>
-            <p>Only combinations meeting every support floor, cost budget, and clause lock can pass. Near misses meet those constraints but miss the overall threshold.</p>
+            <p>Only combinations meeting every support floor, cost budget, veto, and clause lock can pass. Near misses meet those constraints but miss the overall threshold.</p>
             <p>The search is exhaustive only up to 50,000 lock-permitted combinations. Above that, it stops and tells you to reduce the choice set. The workshop also enumerates passing alternatives for comparison, even when the original already passes.</p>
           </article>
           <article>
@@ -182,6 +231,32 @@ SOFTWARE.
       </section>
     </main>
     <footer class="site-footer">Local only. Your draft is stored in this browser unless you export or share it.</footer>
+    <div id="coach-overlay" class="coach-overlay" hidden>
+      <div class="coach-dialog" role="dialog" aria-modal="true" aria-labelledby="coach-title" tabindex="-1">
+        <h2 id="coach-title">Workshop tour</h2>
+        <p id="coach-copy"></p>
+        <p id="coach-step" class="field-note"></p>
+        <div class="scenario-actions">
+          <button class="button button-secondary" type="button" id="coach-skip">Skip tour</button>
+          <button class="button button-brick" type="button" id="coach-next">Next</button>
+        </div>
+      </div>
+    </div>
+    <div id="shortcut-overlay" class="coach-overlay" hidden>
+      <div class="coach-dialog" role="dialog" aria-modal="true" aria-labelledby="shortcut-title" tabindex="-1">
+        <h2 id="shortcut-title">Keyboard shortcuts</h2>
+        <p>Shortcuts are ignored while you type in an input, select, or text area.</p>
+        <ul class="shortcut-list">
+          <li><kbd>?</kbd> Open this help</li>
+          <li><kbd>u</kbd> Undo</li>
+          <li><kbd>r</kbd> Redo</li>
+          <li><kbd>e</kbd> Export JSON</li>
+          <li><kbd>s</kbd> Find agreement (jump to the live recommendation)</li>
+          <li><kbd>Esc</kbd> Close help or the tour</li>
+        </ul>
+        <button class="button button-brick" type="button" id="shortcut-close">Close</button>
+      </div>
+    </div>
     <script type="module" src="src/app.js"></script>
   </body>
 </html>

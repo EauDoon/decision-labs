@@ -46,7 +46,7 @@ Demand timing is explicitly selected: flat, Friday burst, or Monday rush. Total 
 
 ## Timeline and gates
 
-The timeline has 72 one-hour events beginning Friday 15:00, plus an initial state at hour zero. For each event `t`, demand enters the queue. An issuer redemption gate, bank settlement gate and Australian AUD payout gate must all be open for settlement to occur. Each gate is available only on Monday through Friday and only inside its editable local-hour window.
+The timeline has 72 one-hour events beginning Friday 15:00, plus an initial state at hour zero. For each event `t`, demand enters the queue. An issuer redemption gate, bank settlement gate and Australian AUD payout gate must all be open for settlement to occur. Each gate is available only on Monday through Friday and only inside its editable local-hour window. An optional `mondayHoliday` flag, default false, treats Monday as a non-business day like Sunday: issuer, bank and payout windows stay closed, and the weekend FX multiplier applies. Older scenario JSON without the field keeps a weekday Monday.
 
 The FX weekend multiplier applies on Saturday and Sunday:
 
@@ -101,7 +101,7 @@ Explicit failure states include a closed issuer, bank or payout gate, zero reser
 - The model cannot prove the actual liquidity, reserves, redemption rights, compliance status or operating hours of any issuer or financial institution.
 - It does not represent a real bank, FX desk, off-ramp, blockchain, exchange, legal jurisdiction or payment scheme.
 - It assumes one aggregate queue and one settlement route. It does not simulate priority, partial fills across venues, credit lines, fees, counterparty default, holidays, queue cancellation, token transfers, market makers or arbitrage.
-- Business-day hours are illustrative local hours. Public holidays and daylight-saving transitions are outside the model.
+- Business-day hours are illustrative local hours. The only holiday in the model is the optional synthetic Monday holiday. Other public holidays and daylight-saving transitions remain outside the model.
 - A cash reserve is treated as immediately available once all operating gates are open. This is an assumption, not a claim about custody or settlement finality.
 
 Use the simulator to compare assumptions and reason about dependencies, not to make a trading, redemption, investment, legal or operational decision.
@@ -118,6 +118,16 @@ Blocker counts include every closed gate and exhausted reserve observed in an in
 
 Sensitivity holds other assumptions fixed and scales one supported field by 50%, 75%, 100%, 125% and 150%. Effective values are sanitized and any cap is labeled. Starting from zero gives five zero cases. Increasing reserve cannot repair non-overlapping windows or throughput limits. The pinned baseline is separate from the sensitivity experiment's current-scenario reference.
 
+Hours to first settlement is the 0-based hour offset of the first interval with positive settlement. The dashboard reports "No settlement in 72h" when none of the 72 intervals settle. Comparison deltas for this field are numeric only when both runs settle; a mixed null and number is stored as null rather than coerced through zero.
+
+Hourly limiting-gate attribution counts `limitingGate` at the start of each of the 72 intervals. Closed issuer, bank or payout gates are named before throughput or reserve. The count is an observation, not the marginal effect of changing one assumption. It is separate from overlapping backlog-blocker counts in the diagnostics list.
+
+A window-shift preview adds whole hours to one gate's start and end, then clamps with the existing one-hour minimum window and re-runs the simulation. Peak queue and settled total deltas are relative to the current scenario. Apply is a separate action.
+
+Demand-profile comparison reuses every other current assumption and runs flat, Friday burst and Monday rush. Saved-experiment comparison accepts two or three library copies only. Neither comparison is a forecast.
+
+The gate Gantt plots 72 hours of issuer, bank and payout open/closed state plus weekday versus weekend FX. The selected-hour marker follows the timeline. The first-payout marker is `nextPayoutTime` from hour zero given starting reserve. Printable queue and sensitivity bar SVGs are light-background paths. Reports may inline the Gantt SVG, the queue path and the hourly limiting-gate table. None of these drawings contain timestamps.
+
 ## Recovery and output boundaries
 
-Workspace v1 stores canonical current and baseline scenarios, bounded notes (4000 characters), target, deadline and selected hour. Imports are size-bounded and atomically decoded before replacing state; computed results are regenerated. The library contains at most 12 canonical scenarios. Scenario undo keeps at most 40 snapshots in memory. Portable reports are static escaped HTML with a restrictive content security policy. CSV contains only fixed headers, model-generated time labels and numeric values, so scenario names cannot inject spreadsheet formulas.
+Workspace v1 stores canonical current and baseline scenarios, bounded notes (4000 characters), target, deadline and selected hour. Imports are size-bounded and atomically decoded before replacing state; computed results are regenerated. The library contains at most 12 canonical scenarios. Scenario undo keeps at most 40 snapshots in memory. Portable reports are static escaped HTML with a restrictive content security policy and may inline the current gate Gantt, queue path and limiting-gate counts. CSV contains only fixed headers, model-generated time labels and numeric values, so scenario names cannot inject spreadsheet formulas.

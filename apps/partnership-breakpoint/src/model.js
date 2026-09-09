@@ -7,6 +7,8 @@
  * @property {number} feePerTransaction Gross fee collected per transaction.
  * @property {number} addressableVolume Maximum transactions available from demand.
  * @property {number} [volumeShockPct] Optional reduction from planned volume, 0 through 100.
+ * @property {string} [title] Optional display name, 1 through 80 characters after trimming.
+ * @property {string} [currency] Optional 3-letter uppercase display prefix such as USD. Omitted values keep the word units.
  *
  * @typedef {object} ParticipantInput
  * @property {string} id Unique identifier, at most 64 characters.
@@ -43,7 +45,7 @@ export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
 const CONFIG_KEYS = new Set(['deal', 'participants', 'stress']);
-const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct']);
+const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
 /** @type {Readonly<StressSettings>} Illustrative GUI defaults; not forecasts. */
@@ -84,6 +86,23 @@ export const PRESETS = Object.freeze({
       { id: 'platform', name: 'Platform', revenueShare: 0.43, variableCostPerTransaction: 0.028, fixedMonthlyCost: 2800, minimumAcceptableProfit: 2500, capacity: 225000, minimumCommitment: 0, riskCost: 600 },
       { id: 'distributor', name: 'Distributor', revenueShare: 0.33, variableCostPerTransaction: 0.044, fixedMonthlyCost: 750, minimumAcceptableProfit: 500, capacity: 190000, minimumCommitment: 0, riskCost: 250 },
       { id: 'liquidity-partner', name: 'Liquidity Partner', revenueShare: 0.24, variableCostPerTransaction: 0.024, fixedMonthlyCost: 2000, minimumAcceptableProfit: 0, capacity: 210000, minimumCommitment: 0, riskCost: 500 },
+    ],
+  },
+  creatorTakeRate: {
+    name: 'Creator take-rate',
+    deal: { monthlyVolume: 50000, feePerTransaction: 2.5, addressableVolume: 80000, volumeShockPct: 0 },
+    participants: [
+      { id: 'creator', name: 'Creator', revenueShare: 0.7, variableCostPerTransaction: 0.15, fixedMonthlyCost: 400, minimumAcceptableProfit: 75000, capacity: 90000, minimumCommitment: 0, riskCost: 200 },
+      { id: 'platform', name: 'Platform', revenueShare: 0.3, variableCostPerTransaction: 0.35, fixedMonthlyCost: 6000, minimumAcceptableProfit: 2000, capacity: 100000, minimumCommitment: 0, riskCost: 800 },
+    ],
+  },
+  threePartyJv: {
+    name: 'Three-party JV',
+    deal: { monthlyVolume: 12000, feePerTransaction: 40, addressableVolume: 15000, volumeShockPct: 0 },
+    participants: [
+      { id: 'operator', name: 'Operator', revenueShare: 0.45, variableCostPerTransaction: 8, fixedMonthlyCost: 25000, minimumAcceptableProfit: 15000, capacity: 14000, minimumCommitment: 0, riskCost: 4000 },
+      { id: 'capital', name: 'Capital Partner', revenueShare: 0.35, variableCostPerTransaction: 0, fixedMonthlyCost: 0, minimumAcceptableProfit: 80000, capacity: null, minimumCommitment: 0, riskCost: 12000 },
+      { id: 'ip-owner', name: 'IP Owner', revenueShare: 0.2, variableCostPerTransaction: 1.5, fixedMonthlyCost: 8000, minimumAcceptableProfit: 20000, capacity: 20000, minimumCommitment: 5000, riskCost: 2000 },
     ],
   },
 });
@@ -164,6 +183,18 @@ export function validateConfiguration(config) {
       const shock = own(deal, 'volumeShockPct');
       if (!isFiniteNumber(shock) || shock < 0 || shock > 100) {
         errors.push('Deal volume shock must be a finite percentage from 0 through 100.');
+      }
+    }
+    if (Object.hasOwn(deal, 'title')) {
+      const title = own(deal, 'title');
+      if (typeof title !== 'string' || title.trim() === '' || title.trim().length > 80) {
+        errors.push('Deal title must be a string of 1 to 80 characters after trimming.');
+      }
+    }
+    if (Object.hasOwn(deal, 'currency')) {
+      const currency = own(deal, 'currency');
+      if (typeof currency !== 'string' || !/^[A-Z]{3}$/.test(currency)) {
+        errors.push('Deal currency must be a 3-letter uppercase code such as USD.');
       }
     }
   }
@@ -657,6 +688,105 @@ export function makeParticipant(id) {
   };
 }
 
+/** @param {ParticipantInput[]} participants @param {string} [prefix] */
+export function nextUnusedParticipantId(participants, prefix = 'participant') {
+  const used = new Set(participants.map((item) => item.id));
+  let sequence = 1;
+  while (used.has(`${prefix}-${sequence}`)) sequence += 1;
+  return `${prefix}-${sequence}`;
+}
+
+/**
+ * Copies costs and constraints. The duplicate receives a unique id, a name suffix,
+ * and a zero revenue share so the original allocation still sums to the same total.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+export function duplicateParticipant(participants, index) {
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  if (participants.length >= MAX_PARTICIPANTS) {
+    throw new ValidationError([`Between 2 and ${MAX_PARTICIPANTS} participants are required.`]);
+  }
+  const source = participants[index];
+  let name = `${source.name} copy`;
+  if (name.length > 80) name = name.slice(0, 80);
+  if (name.trim() === '') name = 'Participant copy';
+  const copy = { ...source, id: nextUnusedParticipantId(participants), name, revenueShare: 0 };
+  const next = participants.map((item) => ({ ...item }));
+  next.splice(index + 1, 0, copy);
+  return next;
+}
+
+/**
+ * Reorders one participant. Out-of-range moves return a shallow copy unchanged.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ * @param {'up'|'down'} direction
+ */
+export function moveParticipant(participants, index, direction) {
+  const target = index + (direction === 'up' ? -1 : 1);
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length
+    || target < 0 || target >= participants.length) {
+    return Array.isArray(participants) ? participants.map((item) => ({ ...item })) : [];
+  }
+  const next = participants.map((item) => ({ ...item }));
+  const displaced = next[target];
+  next[target] = next[index];
+  next[index] = displaced;
+  return next;
+}
+
+/**
+ * Removes one participant and reallocates that share across whoever remains.
+ * Remaining participants keep their relative weights. The last remaining
+ * participant absorbs floating-point remainder so a previously valid split
+ * still sums to 1. The last two participants cannot be removed.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+export function dropAndReallocate(participants, index) {
+  if (!Array.isArray(participants) || participants.length <= 2) {
+    throw new ValidationError(['At least two participants must remain.']);
+  }
+  if (!Number.isInteger(index) || index < 0 || index >= participants.length) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  const originalSum = participants.reduce((sum, item) => sum + item.revenueShare, 0);
+  const droppedShare = participants[index].revenueShare;
+  const remaining = participants.filter((_, itemIndex) => itemIndex !== index).map((item) => ({ ...item }));
+  const remainingTotal = remaining.reduce((sum, item) => sum + item.revenueShare, 0);
+  if (Number.isFinite(droppedShare) && droppedShare > 0) {
+    if (remainingTotal > 0) {
+      let assigned = 0;
+      remaining.forEach((item, itemIndex) => {
+        if (itemIndex === remaining.length - 1) item.revenueShare += droppedShare - assigned;
+        else {
+          const add = droppedShare * (item.revenueShare / remainingTotal);
+          item.revenueShare += add;
+          assigned += add;
+        }
+      });
+    } else {
+      let assigned = 0;
+      remaining.forEach((item, itemIndex) => {
+        if (itemIndex === remaining.length - 1) item.revenueShare += droppedShare - assigned;
+        else {
+          const add = droppedShare / remaining.length;
+          item.revenueShare += add;
+          assigned += add;
+        }
+      });
+    }
+  }
+  if (Number.isFinite(originalSum)) {
+    const now = remaining.reduce((sum, item) => sum + item.revenueShare, 0);
+    remaining[remaining.length - 1].revenueShare += originalSum - now;
+  }
+  return remaining;
+}
+
 /** Fee floors at current effective volume and fixed shares, not a demand forecast. */
 export function calculateFeeRequirements(config) {
   assertValidConfiguration(config);
@@ -683,4 +813,155 @@ export function materializeStressCase(config, scenarioId) {
   const candidate = { ...config, deal: { ...config.deal, monthlyVolume: scenario.volume, feePerTransaction: scenario.fee, volumeShockPct: 0 }, participants: config.participants.map((item) => ({ ...item, variableCostPerTransaction: item.variableCostPerTransaction * (1 + scenario.variableCostRisePct / 100) })), ...(config.stress ? { stress: { ...config.stress } } : {}) };
   assertValidConfiguration(candidate);
   return candidate;
+}
+
+/**
+ * Rebuilds the split so `targetId` receives `targetShare` and everyone else
+ * keeps their relative claim on the leftover. The last remaining participant
+ * absorbs floating-point remainder so the shares sum to 1.
+ * @param {ParticipantInput[]} participants
+ * @param {string} targetId
+ * @param {number} targetShare
+ */
+export function proposalWithTargetShare(participants, targetId, targetShare) {
+  const targetIndex = participants.findIndex((item) => item.id === targetId);
+  if (targetIndex < 0) throw new ValidationError(['Choose a current participant.']);
+  if (!isFiniteNumber(targetShare) || targetShare < 0 || targetShare > 1) {
+    throw new ValidationError(['Target share must be a finite number from zero through 1.']);
+  }
+  const leftover = 1 - targetShare;
+  const others = participants.map((_, index) => index).filter((index) => index !== targetIndex);
+  const othersTotal = others.reduce((sum, index) => sum + participants[index].revenueShare, 0);
+  const next = participants.map((item) => ({ ...item }));
+  next[targetIndex].revenueShare = targetShare;
+  if (!others.length) return next;
+  if (othersTotal > 0) {
+    let assigned = 0;
+    others.forEach((index, order) => {
+      if (order === others.length - 1) next[index].revenueShare = leftover - assigned;
+      else {
+        const share = leftover * (participants[index].revenueShare / othersTotal);
+        next[index].revenueShare = share;
+        assigned += share;
+      }
+    });
+  } else {
+    let assigned = 0;
+    others.forEach((index, order) => {
+      if (order === others.length - 1) next[index].revenueShare = leftover - assigned;
+      else {
+        const share = leftover / others.length;
+        next[index].revenueShare = share;
+        assigned += share;
+      }
+    });
+  }
+  const total = next.reduce((sum, item) => sum + item.revenueShare, 0);
+  next[others[others.length - 1]].revenueShare += 1 - total;
+  return next;
+}
+
+function targetHoldsAtShare(config, participantId, share) {
+  const participants = proposalWithTargetShare(config.participants, participantId, share);
+  const participant = participants.find((item) => item.id === participantId);
+  return evaluateParticipant(participant, config.deal).viable;
+}
+
+/**
+ * Binary-searches the minimum revenue share in [0, 1] at which `participantId`
+ * holds, while remaining participants keep their relative shares of the leftover.
+ * Does not assign probabilities. Capacity and commitment failures that persist
+ * at a 100% share are reported as impossible.
+ * @param {PartnershipConfig} config
+ * @param {string} participantId
+ */
+export function solveMinimumShareToHold(config, participantId) {
+  assertValidConfiguration(config);
+  if (!config.participants.some((item) => item.id === participantId)) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  if (targetHoldsAtShare(config, participantId, 0)) {
+    return {
+      status: 'possible',
+      share: 0,
+      participantId,
+      proposal: proposalWithTargetShare(config.participants, participantId, 0),
+      reason: 'This participant holds even with a zero revenue share under the current volume, fee, costs, capacity, and commitment.',
+    };
+  }
+  if (!targetHoldsAtShare(config, participantId, 1)) {
+    const participant = config.participants.find((item) => item.id === participantId);
+    const atFull = evaluateParticipant({ ...participant, revenueShare: 1 }, config.deal);
+    const detail = atFull.failureReasons.length ? atFull.failureReasons.join('; ') : 'fee revenue cannot fund the profit floor';
+    return {
+      status: 'impossible',
+      share: null,
+      participantId,
+      proposal: null,
+      reason: `Even a 100% revenue share cannot make this participant hold (${detail}). Revenue share cannot repair capacity or commitment failures.`,
+    };
+  }
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 60; step += 1) {
+    const mid = (low + high) / 2;
+    if (targetHoldsAtShare(config, participantId, mid)) high = mid;
+    else low = mid;
+  }
+  const share = targetHoldsAtShare(config, participantId, high) ? high : 1;
+  return {
+    status: 'possible',
+    share,
+    participantId,
+    proposal: proposalWithTargetShare(config.participants, participantId, share),
+    reason: 'Minimum revenue share at which this participant holds. Remaining participants keep their relative shares of the leftover.',
+  };
+}
+
+/**
+ * Portable case JSON with participant display names replaced and the deal title cleared.
+ * Identifiers, shares, costs, and stress settings are unchanged.
+ * @param {PartnershipConfig} config
+ */
+export function redactConfiguration(config) {
+  assertValidConfiguration(config);
+  const copy = {
+    deal: { ...config.deal },
+    participants: config.participants.map((item) => ({ ...item })),
+    ...(Object.hasOwn(config, 'stress') ? { stress: { ...config.stress } } : {}),
+  };
+  delete copy.deal.title;
+  copy.participants.forEach((item, index) => {
+    item.name = `Participant ${index + 1}`;
+  });
+  return copy;
+}
+
+/**
+ * Minimum fee per transaction at which every participant holds, with volume
+ * and shares held fixed. Capacity and commitment failures cannot be repaired.
+ * @param {PartnershipConfig} config
+ */
+export function solveFeeForAllHold(config) {
+  assertValidConfiguration(config);
+  const guide = calculateFeeRequirements(config);
+  if (!guide.operationallyFeasible) {
+    return {
+      status: 'impossible',
+      fee: null,
+      reason: 'Capacity or commitment failures cannot be repaired by changing the fee.',
+    };
+  }
+  if (guide.requiredFee === null) {
+    return {
+      status: 'impossible',
+      fee: null,
+      reason: 'No finite fee can fund every participant profit floor at the current volume and shares.',
+    };
+  }
+  return {
+    status: 'possible',
+    fee: guide.requiredFee,
+    reason: 'Minimum fee per transaction at which every participant holds, with volume and shares held fixed. Demand response is not included.',
+  };
 }

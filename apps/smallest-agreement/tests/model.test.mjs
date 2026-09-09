@@ -11,7 +11,16 @@ import {
   MAX_WEIGHT,
   approvalForOptions,
   canonicalProposal,
+  clauseContributions,
+  clauseWeightedSupport,
+  explorePackageGaps,
   evaluatePackage,
+  formatSupportMatrixCsv,
+  parseSupportMatrixCsv,
+  previewLockedOption,
+  leaveOneGroupOut,
+  formatDiscussionWorksheet,
+  groupContributions,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -493,7 +502,7 @@ test("budget and floors jointly produce honest infeasibility without unsafe near
   assert.equal(result.agreement, null);
   assert.equal(result.eligibleCombinations, 0);
   assert.deepEqual(result.nearMisses, []);
-  assert.deepEqual(result.rejected, { budget: 1, floors: 2, anyConstraint: 3 });
+  assert.deepEqual(result.rejected, { budget: 1, floors: 2, vetoes: 0, anyConstraint: 3 });
   const brief = formatDecisionBrief(input, result);
   assert.match(brief, /No permitted combination meets both/u);
   assert.match(brief, /Maximum total change cost: 2/u);
@@ -558,7 +567,7 @@ test("near misses honor all constraints and rejection counts disclose overlap", 
   input.groups[1].minSupport = 20;
   input.maxChangeCost = 0;
   const result = findSmallestAgreement(input);
-  assert.deepEqual(result.rejected, { budget: 2, floors: 1, anyConstraint: 3 });
+  assert.deepEqual(result.rejected, { budget: 2, floors: 1, vetoes: 0, anyConstraint: 3 });
   input.maxChangeCost = 2;
   input.groups[1].minSupport = 60;
   const overlapping = findSmallestAgreement(input);
@@ -733,7 +742,7 @@ test("evidence CSV includes every input and protects spreadsheet text cells", ()
   assert.ok(csv.includes("\"'=HYPERLINK(\"\"unsafe\"\")\""));
   assert.ok(csv.includes("\"'  +SUM(1,2)\""));
   assert.ok(csv.includes('Clause, ""quoted""'));
-  assert.ok(csv.includes('"minimum_support","support"'));
+  assert.ok(csv.includes('"minimum_support","veto","support"'));
   assert.ok(csv.includes('"cheap","cheap","no","yes","1"'));
   assert.equal(csv, formatEvidenceCsv(input));
 });
@@ -751,4 +760,274 @@ test("CSV neutralizes formula prefixes behind ASCII controls and leading spreads
     input.title = prefix + "ordinary text";
     assert.ok(formatEvidenceCsv(input).includes('"' + "'" + input.title + '"'));
   }
+});
+
+test("clause contributions report weighted support and equal overall pull versus originals", () => {
+  const groups = [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 3 }];
+  const input = proposal({
+    groups,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { a: 100, b: 40 }),
+        option("one-change", false, { a: 80, b: 80 }, 1),
+        option("one-other", false, { a: 0, b: 0 }, 2),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { a: 20, b: 20 }),
+        option("two-change", false, { a: 100, b: 100 }, 1),
+        option("two-other", false, { a: 0, b: 0 }, 2),
+      ] },
+    ],
+  });
+  const originals = [input.clauses[0].options[0], input.clauses[1].options[0]];
+  const selected = [input.clauses[0].options[1], input.clauses[1].options[1]];
+  assert.equal(clauseWeightedSupport(groups, originals[0]), 55);
+  const original = clauseContributions(input, originals);
+  assert.equal(original.status, "ok");
+  assert.equal(original.rows[0].delta, 0);
+  assert.equal(original.rows[0].overallPull, 0);
+  assert.equal(original.overallApproval, original.originalApproval);
+
+  const changed = clauseContributions(input, selected);
+  assert.equal(changed.status, "ok");
+  assert.equal(changed.rows[0].selectedSupport, 80);
+  assert.equal(changed.rows[0].originalSupport, 55);
+  assert.equal(changed.rows[0].delta, 25);
+  assert.equal(changed.rows[0].overallPull, 12.5);
+  assert.equal(changed.rows[1].delta, 80);
+  assert.equal(changed.rows[1].overallPull, 40);
+  const pullSum = changed.rows.reduce((sum, row) => sum + row.overallPull, 0);
+  assert.equal(Number((changed.overallApproval - changed.originalApproval).toFixed(10)), Number(pullSum.toFixed(10)));
+  const snapshot = proposal({ groups, clauses: input.clauses });
+  assert.equal(JSON.stringify(input), JSON.stringify(snapshot));
+});
+
+test("clause contributions reject mismatched packages without mutating the proposal", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 50 }), option("alternative", false, { g: 80 }, 1), option("other", false, { g: 70 }, 2),
+  ] }] });
+  const before = JSON.stringify(input);
+  assert.equal(clauseContributions(input, []).status, "invalid");
+  assert.equal(clauseContributions(input, [{ id: "missing" }]).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("package gap explorer names cheaper misses and the next packages over threshold", () => {
+  const input = proposal({
+    threshold: 80,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 40 }),
+      option("near", false, { g: 70 }, 1),
+      option("pass", false, { g: 90 }, 3),
+    ] }],
+  });
+  const result = findSmallestAgreement(input, { alternativesLimit: 5 });
+  assert.equal(result.status, "found");
+  const gaps = explorePackageGaps(input, result);
+  assert.equal(gaps.status, "ok");
+  assert.equal(gaps.recommended.changeCost, 3);
+  assert.ok(gaps.cheaperMisses.some((row) => row.labels.includes("near") && row.approvalGap > 0 && row.changeCost === 1));
+  assert.ok(gaps.closestMisses.every((row) => row.approvalGap > 0 && row.meetsThreshold === false));
+  assert.equal(gaps.nextOverThreshold.length, 0);
+  const extra = proposal({
+    threshold: 50,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 60 }),
+      option("cheap", false, { g: 70 }, 1),
+      option("better", false, { g: 90 }, 2),
+    ] }],
+  });
+  const passing = findSmallestAgreement(extra, { alternativesLimit: 5 });
+  const over = explorePackageGaps(extra, passing);
+  assert.ok(over.nextOverThreshold.length >= 1);
+  assert.ok(over.nextOverThreshold.every((row) => row.meetsThreshold && row.approvalGap <= 0));
+  assert.ok(over.nextOverThreshold.every((row) => row.costVsRecommended > 0 || row.changedClauseCount > 0));
+});
+
+test("veto groups require threshold support and leave old JSON valid without the field", () => {
+  const input = constrainedProposal();
+  assert.equal(findSmallestAgreement(input).status, "already_passing");
+  assert.equal(Object.hasOwn(canonicalProposal(input).groups[1], "veto"), false);
+  input.groups[1].veto = false;
+  assert.equal(validateProposal(input).valid, true);
+  assert.equal(Object.hasOwn(canonicalProposal(input).groups[1], "veto"), false);
+  input.groups[1].veto = true;
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "found");
+  assert.equal(result.agreement.options[0].id, "balanced");
+  assert.equal(result.baseline.constraints.vetoes[0].met, false);
+  assert.equal(result.agreement.constraints.vetoes[0].required, 70);
+  assert.ok(result.rejected.vetoes >= 1);
+  const brief = formatDecisionBrief(input, result);
+  assert.match(brief, /has a veto/u);
+  assert.doesNotMatch(brief, /[\u2013\u2014]/u);
+  input.groups[1].minSupport = 80;
+  const stricter = findSmallestAgreement(input);
+  assert.equal(stricter.status, "infeasible");
+  assert.equal(stricter.baseline.constraints.vetoes[0].required, 80);
+  for (const value of [null, "true", 1, {}, []]) {
+    const bad = constrainedProposal();
+    bad.groups[1].veto = value;
+    assert.equal(findSmallestAgreement(bad).status, "invalid", `veto ${String(value)}`);
+  }
+});
+
+test("support matrix CSV round-trips scores and names formula, identity, and header errors", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const csv = formatSupportMatrixCsv(input);
+  const parsed = parseSupportMatrixCsv(csv, input);
+  assert.equal(parsed.status, "ok");
+  assert.deepEqual(parsed.proposal, canonicalProposal(input));
+  assert.equal(JSON.stringify(input.clauses[0].options[0].support), JSON.stringify({ a: 40, b: 50 }));
+
+  const edited = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,55,65\r\n", input);
+  assert.equal(edited.status, "ok");
+  assert.equal(edited.proposal.clauses[0].options[0].support.a, 55);
+  assert.equal(input.clauses[0].options[0].support.a, 40);
+
+  const apostrophe = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,'60,'70\r\n", input);
+  assert.equal(apostrophe.status, "ok");
+  assert.equal(apostrophe.proposal.clauses[0].options[0].support.a, 60);
+
+  const formula = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,=SUM(1),50\r\n", input);
+  assert.equal(formula.status, "invalid");
+  assert.equal(formula.errors[0].code, "formula_cell");
+
+  const unknown = parseSupportMatrixCsv("clause_id,option_id,a,b\r\nmissing,original,1,2\r\n", input);
+  assert.equal(unknown.errors[0].code, "unknown_clause");
+  const missingOption = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,nope,1,2\r\n", input);
+  assert.equal(missingOption.errors[0].code, "unknown_option");
+  const extra = parseSupportMatrixCsv("clause_id,option_id,a,b,hidden\r\none,original,1,2,3\r\n", input);
+  assert.equal(extra.errors[0].code, "unknown_group_column");
+  const header = parseSupportMatrixCsv("option_id,a,b\r\n", input);
+  assert.equal(header.errors[0].code, "missing_clause_id_column");
+  const empty = parseSupportMatrixCsv("   ", input);
+  assert.equal(empty.errors[0].code, "empty_csv");
+  const score = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,101,0\r\n", input);
+  assert.equal(score.errors[0].code, "invalid_score");
+});
+
+test("locking an option for preview re-solves remaining clauses without mutating the draft", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { g: 40 }),
+        option("one-change", false, { g: 90 }, 2),
+        option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 40 }),
+        option("two-change", false, { g: 90 }, 1),
+        option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const preview = previewLockedOption(input, "one", "one-change");
+  assert.equal(preview.status, "preview");
+  assert.equal(preview.result.status, "found");
+  assert.equal(preview.result.agreement.options[0].id, "one-change");
+  assert.equal(preview.result.agreement.options[1].id, "two-change");
+  assert.equal(preview.proposal.clauses[0].lockedOptionId, "one-change");
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(previewLockedOption(input, "missing", "one-change").status, "invalid");
+  assert.equal(previewLockedOption(input, "one", "missing").status, "invalid");
+});
+
+test("leave-one-group-out omits a group from the weighted average without forecasting", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 3 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 100, b: 0 }),
+      option("alternative", false, { a: 50, b: 50 }, 1),
+      option("other", false, { a: 0, b: 100 }, 2),
+    ] }],
+  });
+  const selected = [input.clauses[0].options[0]];
+  const before = JSON.stringify(input);
+  const table = leaveOneGroupOut(input, selected);
+  assert.equal(table.status, "ok");
+  assert.equal(table.method, "omit");
+  assert.equal(table.fullApproval, 25);
+  assert.equal(table.rows[0].approval, 0);
+  assert.equal(table.rows[1].approval, 100);
+  assert.equal(table.rows[0].delta, -25);
+  assert.equal(table.rows[1].delta, 75);
+  assert.equal(JSON.stringify(input), before);
+  const lone = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 80 }),
+      option("alternative", false, { a: 90 }, 1),
+      option("other", false, { a: 70 }, 2),
+    ] }],
+  });
+  const alone = leaveOneGroupOut(lone, [lone.clauses[0].options[0]]);
+  assert.equal(alone.status, "ok");
+  assert.equal(alone.rows[0].approval, null);
+});
+
+test("group contributions weight each group's average by its share of total weight", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 3 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 100, b: 0 }),
+      option("alternative", false, { a: 0, b: 100 }, 1),
+      option("other", false, { a: 50, b: 50 }, 2),
+    ] }],
+  });
+  const originals = [input.clauses[0].options[0]];
+  const selected = [input.clauses[0].options[1]];
+  const before = JSON.stringify(input);
+  const original = groupContributions(input, originals);
+  assert.equal(original.status, "ok");
+  assert.equal(original.method, "weight_share");
+  assert.equal(original.overallApproval, 25);
+  assert.equal(original.rows[0].share, 0.25);
+  assert.equal(original.rows[0].contribution, 25);
+  assert.equal(original.rows[1].contribution, 0);
+  const changed = groupContributions(input, selected);
+  assert.equal(changed.overallApproval, 75);
+  assert.equal(changed.rows[0].overallPull, -25);
+  assert.equal(changed.rows[1].overallPull, 75);
+  assert.equal(changed.rows[0].overallPull + changed.rows[1].overallPull, 50);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(groupContributions(input, []).status, "invalid");
+});
+
+test("discussion worksheet lists every option as unmarked text and rejects invalid drafts", () => {
+  const input = proposal({
+    groups: [{ id: "g", name: "Residents", weight: 2, minSupport: 40, veto: true }],
+    clauses: [{ id: "one", title: "Hours", lockedOptionId: "one-change", options: [
+      option("one-original", true, { g: 50 }),
+      option("one-change", false, { g: 80 }, 2),
+      option("one-other", false, { g: 90 }, 3),
+    ] }],
+  });
+  input.title = "Park sheet";
+  input.maxChangeCost = 4;
+  const before = JSON.stringify(input);
+  const worksheet = formatDiscussionWorksheet(input);
+  assert.equal(worksheet.status, "ok");
+  assert.match(worksheet.text, /^Discussion worksheet\n/u);
+  assert.match(worksheet.text, /Park sheet/u);
+  assert.match(worksheet.text, /Approval threshold: 70%/u);
+  assert.match(worksheet.text, /Change-cost budget: 4/u);
+  assert.match(worksheet.text, /not a recorded vote/u);
+  assert.match(worksheet.text, /Group: Residents \(weight 2; veto, floor 40%\)/u);
+  assert.match(worksheet.text, /Hours \[locked\]/u);
+  assert.match(worksheet.text, /\[ \] one-original \(original\)/u);
+  assert.match(worksheet.text, /\[ \] one-change \(cost 2, locked\)/u);
+  assert.doesNotMatch(worksheet.text, /\[x\]/iu);
+  assert.equal(JSON.stringify(input), before);
+  const invalid = formatDiscussionWorksheet({ title: "" });
+  assert.equal(invalid.status, "invalid");
 });
