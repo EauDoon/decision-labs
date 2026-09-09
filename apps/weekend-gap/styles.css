@@ -115,7 +115,7 @@ h3 { margin-bottom: 0.3rem; font-size: 1rem; }
 fieldset { min-width: 0; margin: 1.12rem 0 0; padding: 1rem 0 0; border: 0; border-top: 1px solid var(--line); }
 legend { padding: 0; color: #d9e5e7; font-family: Arial, Helvetica, sans-serif; font-size: 0.78rem; font-weight: 800; letter-spacing: 0.04em; }
 .preset-set { margin-top: 1rem; padding-top: 0.9rem; }
-.preset-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0.45rem; margin-top: 0.65rem; }
+.preset-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.45rem; margin-top: 0.65rem; }
 .preset-button { min-height: 52px; border-color: var(--line); background: transparent; color: var(--muted); font-size: 0.72rem; line-height: 1.15; padding: 0.45rem; }
 .preset-button:hover { border-color: var(--amber); background: rgba(244, 185, 66, 0.08); color: var(--ink); }
 .preset-button.is-selected { border-color: var(--amber); background: rgba(244, 185, 66, 0.14); color: var(--amber-soft); }

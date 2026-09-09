@@ -55,6 +55,24 @@ export const PRESETS = Object.freeze({
     weekendFxMultiplier: 6,
     payoutThroughputAudPerHour: 95000,
     redemptionDemandAud: 7200000
+  }),
+  thinFxTightWindows: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Thin FX, Tight Windows (synthetic)",
+    reserveCashAud: 4800000,
+    issuerThroughputAudPerHour: 220000,
+    issuerOpenStartHour: 10,
+    issuerOpenEndHour: 15,
+    bankOpenStartHour: 10,
+    bankOpenEndHour: 14,
+    fxDepthAudPerHour: 90000,
+    fxSpreadBps: 45,
+    weekendFxMultiplier: 4.5,
+    payoutThroughputAudPerHour: 140000,
+    payoutOpenStartHour: 11,
+    payoutOpenEndHour: 14,
+    redemptionDemandAud: 2800000,
+    mondayHoliday: true
   })
 });
 
