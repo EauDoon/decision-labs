@@ -2,6 +2,7 @@ import {
   ScenarioError,
   aggregateDemand,
   clonePreset,
+  createScenarioHistory,
   decodeScenario,
   encodeScenario,
   evaluateMarket,
@@ -37,6 +38,8 @@ const elements = {
 };
 
 let scenario = loadInitialScenario();
+const history = createScenarioHistory(scenario);
+let invalidDraft = false;
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
@@ -73,6 +76,8 @@ function loadInitialScenario() {
 }
 
 function bindStaticEvents() {
+  document.querySelector("#undo-button").addEventListener("click", () => restoreHistory(false));
+  document.querySelector("#redo-button").addEventListener("click", () => restoreHistory(true));
   elements.title.addEventListener("input", (event) => updateRoot("title", event.target.value));
   elements.currency.addEventListener("input", (event) => updateRoot("currency", event.target.value.toUpperCase()));
   elements.inspector.addEventListener("change", () => {
@@ -317,6 +322,9 @@ function refresh() {
   try {
     const market = evaluateMarket(scenario);
     scenario = market.scenario;
+    invalidDraft = false;
+    history.record(scenario);
+    updateHistoryButtons();
     renderSummary(market);
     renderResults(market);
     renderInspector(market);
@@ -325,6 +333,8 @@ function refresh() {
     scheduleSave(market.scenario);
     setStatus("");
   } catch (error) {
+    invalidDraft = true;
+    updateHistoryButtons();
     clearTimeout(saveTimer);
     elements.winner.textContent = "Check inputs";
     elements.winnerNote.textContent = "Results are unavailable until the scenario is valid.";
@@ -342,6 +352,18 @@ function refresh() {
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
   }
+}
+
+function updateHistoryButtons() {
+  document.querySelector("#undo-button").disabled = !invalidDraft && !history.canUndo;
+  document.querySelector("#redo-button").disabled = invalidDraft || !history.canRedo;
+}
+
+function restoreHistory(forward) {
+  scenario = invalidDraft ? history.current() : forward ? history.redo() : history.undo();
+  renderEditor();
+  refresh();
+  setStatus(forward ? "Change restored." : "Previous valid room restored.", true);
 }
 
 function renderSummary(market) {

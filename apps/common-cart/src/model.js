@@ -92,6 +92,27 @@ export function clonePreset(name = "neighbourhood") {
   return structuredClone(presets[name]);
 }
 
+/** Bounded, detached valid states. A new edit after undo clears the redo branch. */
+export function createScenarioHistory(initial) {
+  const entries = [JSON.stringify(validateScenario(initial))];
+  let cursor = 0;
+  return {
+    record(value) {
+      const next = JSON.stringify(validateScenario(value));
+      if (entries[cursor] === next) return;
+      entries.splice(cursor + 1);
+      entries.push(next);
+      if (entries.length > 50) entries.shift();
+      cursor = entries.length - 1;
+    },
+    get canUndo() { return cursor > 0; },
+    get canRedo() { return cursor < entries.length - 1; },
+    current() { return JSON.parse(entries[cursor]); },
+    undo() { if (cursor > 0) cursor--; return this.current(); },
+    redo() { if (cursor < entries.length - 1) cursor++; return this.current(); }
+  };
+}
+
 export function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");

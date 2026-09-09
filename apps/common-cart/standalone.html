@@ -308,6 +308,8 @@ footer {
       </div>
     </div>
     <nav class="header-actions" aria-label="Scenario actions">
+      <button class="quiet" id="undo-button" type="button" disabled>Undo</button>
+      <button class="quiet" id="redo-button" type="button" disabled>Redo</button>
       <button class="quiet" id="import-button" type="button">Import</button>
       <input id="import-file" type="file" accept="application/json" hidden>
       <button class="quiet" id="export-button" type="button">Export</button>
@@ -671,6 +673,27 @@ function offer(id, merchant, category, variant, unitPrice, minimumUnits, deliver
 function clonePreset(name = "neighbourhood") {
   if (!Object.hasOwn(presets, name)) throw new ScenarioError(`Unknown preset: ${name}`);
   return structuredClone(presets[name]);
+}
+
+/** Bounded, detached valid states. A new edit after undo clears the redo branch. */
+function createScenarioHistory(initial) {
+  const entries = [JSON.stringify(validateScenario(initial))];
+  let cursor = 0;
+  return {
+    record(value) {
+      const next = JSON.stringify(validateScenario(value));
+      if (entries[cursor] === next) return;
+      entries.splice(cursor + 1);
+      entries.push(next);
+      if (entries.length > 50) entries.shift();
+      cursor = entries.length - 1;
+    },
+    get canUndo() { return cursor > 0; },
+    get canRedo() { return cursor < entries.length - 1; },
+    current() { return JSON.parse(entries[cursor]); },
+    undo() { if (cursor > 0) cursor--; return this.current(); },
+    redo() { if (cursor < entries.length - 1) cursor++; return this.current(); }
+  };
 }
 
 function validateScenario(candidate) {
@@ -1072,6 +1095,8 @@ const elements = {
 };
 
 let scenario = loadInitialScenario();
+const history = createScenarioHistory(scenario);
+let invalidDraft = false;
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
@@ -1108,6 +1133,8 @@ function loadInitialScenario() {
 }
 
 function bindStaticEvents() {
+  document.querySelector("#undo-button").addEventListener("click", () => restoreHistory(false));
+  document.querySelector("#redo-button").addEventListener("click", () => restoreHistory(true));
   elements.title.addEventListener("input", (event) => updateRoot("title", event.target.value));
   elements.currency.addEventListener("input", (event) => updateRoot("currency", event.target.value.toUpperCase()));
   elements.inspector.addEventListener("change", () => {
@@ -1352,6 +1379,9 @@ function refresh() {
   try {
     const market = evaluateMarket(scenario);
     scenario = market.scenario;
+    invalidDraft = false;
+    history.record(scenario);
+    updateHistoryButtons();
     renderSummary(market);
     renderResults(market);
     renderInspector(market);
@@ -1360,6 +1390,8 @@ function refresh() {
     scheduleSave(market.scenario);
     setStatus("");
   } catch (error) {
+    invalidDraft = true;
+    updateHistoryButtons();
     clearTimeout(saveTimer);
     elements.winner.textContent = "Check inputs";
     elements.winnerNote.textContent = "Results are unavailable until the scenario is valid.";
@@ -1377,6 +1409,18 @@ function refresh() {
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
   }
+}
+
+function updateHistoryButtons() {
+  document.querySelector("#undo-button").disabled = !invalidDraft && !history.canUndo;
+  document.querySelector("#redo-button").disabled = invalidDraft || !history.canRedo;
+}
+
+function restoreHistory(forward) {
+  scenario = invalidDraft ? history.current() : forward ? history.redo() : history.undo();
+  renderEditor();
+  refresh();
+  setStatus(forward ? "Change restored." : "Previous valid room restored.", true);
 }
 
 function renderSummary(market) {
