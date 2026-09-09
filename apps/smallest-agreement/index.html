@@ -90,7 +90,9 @@ SOFTWARE.
       <summary>Review the package before discussion</summary>
       <p>Choose one question about the recommended package, or the original when no recommendation is available. Review calculations do not edit the proposal.</p>
       <label for="agreement-review-tool">Review question</label>
-      <div class="review-controls"><select id="agreement-review-tool"></select><button id="agreement-review-run" type="button">Run review</button></div>
+      <div class="review-controls"><select id="agreement-review-tool"></select><button class="button button-secondary" id="agreement-review-run" type="button">Run review</button></div>
+      <div class="review-controls"><button class="button button-secondary" id="agreement-review-export" type="button" disabled>Export review packet</button><button class="button button-secondary" id="agreement-review-import" type="button">Inspect review packet</button><input id="agreement-review-file" type="file" accept="application/json,.json" hidden></div>
+      <p>Packets contain proposal names, scores and notes. They are unsigned consistency records; inspect before sharing.</p><p id="agreement-review-origin"></p>
       <div id="agreement-review-output" aria-live="polite"></div>
     </details>
     <main id="workspace" class="workspace">

@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0 - 2026-09-10
+
+- Add one optional package review for margins, floors/vetoes, dominance, substitutions, rollbacks, threshold/budget scenarios, lock costs and targeted uncertainty.
+- Export and inspect bounded review packets without replacing the current workshop, with exact recomputation and stale-read cancellation.
+- Preserve all 1.4.3 workshop, CSV, workspace, lock and preset features.
+
+
 ## 1.4.3 - 2026-09-09
 
 A workshop follow-up. The solver is still a decision aid, not a decision maker.

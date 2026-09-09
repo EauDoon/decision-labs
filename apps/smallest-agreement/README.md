@@ -178,3 +178,9 @@ CSV includes every clause option and group score, weights, floors, locks, budget
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## Package review (v1.5.0)
+
+Open **Review the package before discussion** to inspect approval margin, group floor/veto slack, option dominance, one-clause substitutions, rollback effects, threshold and budget scenarios, one-lock opportunity cost, or targeted group-score uncertainty. The recommended package is the context when available; otherwise the original is clearly labeled with the solver status. Counterfactual searches have explicit combination caps and never turn unavailable into infeasible. Budget results are discrete scenarios, not a continuous frontier.
+
+Export review packet saves the canonical proposal, exact source snapshot and recomputed table. Inspect review packet verifies every output value and preserves the working proposal, library and autosave. Packets are limited to 1 MiB, include names, scores and notes, and are unsigned. Editing, changing questions or running another review discards old results and pending reads. This checks consistency, not authentic votes, authorship or the validity of the proposal's assumptions.

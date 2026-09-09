@@ -181,3 +181,7 @@ The optional package review can compare removing one lock while retaining every 
 ### Targeted support uncertainty
 
 The optional package review can stress one group at a time while holding the selected package fixed. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Review packet contract
+
+`createAgreementReviewPacket(proposal, tool)` and `replayAgreementReviewPacket(packet)` bind canonical inputs to exact review result primitives. Version 1 uses format `agreement-review`, six strict top-level fields and a 1 MiB serialized cap. Replay recomputes; changing an input snapshot or result rejects the packet. These are unsigned records, not authenticated decisions. Aggregate calculations preserve full floating-point values in the packet even when the display rounds. The normal solver retains its 50,000-combination cap. Threshold/budget reviews cap each of at most five additional searches at 10,000; single-lock reviews share a total 50,000-candidate budget across their counterfactual searches.

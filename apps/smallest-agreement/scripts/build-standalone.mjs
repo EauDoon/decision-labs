@@ -13,6 +13,8 @@ const stylesheetMarker = '<link rel="stylesheet" href="styles.css">';
 const scriptMarker = '<script type="module" src="src/app.js"></script>';
 const cspMarker = "    <title>The Smallest Agreement</title>";
 const appImport = `import {
+  createAgreementReviewPacket,
+  replayAgreementReviewPacket,
   AGREEMENT_REVIEW_TOOLS,
   analyzeAgreementReview,
   MAX_CLAUSES,

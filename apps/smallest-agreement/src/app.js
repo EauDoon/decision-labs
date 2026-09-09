@@ -1,4 +1,6 @@
 import {
+  createAgreementReviewPacket,
+  replayAgreementReviewPacket,
   AGREEMENT_REVIEW_TOOLS,
   analyzeAgreementReview,
   MAX_CLAUSES,
@@ -275,6 +277,8 @@ const presets = {
   },
 };
 
+let agreementReviewPacket = null;
+let agreementReviewSequence = 0;
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
 let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
@@ -426,6 +430,7 @@ function updateHistoryButtons() {
 }
 
 function save(recordHistory = true) {
+  clearAgreementReview();
   hasUnsavedEdits = true;
   const snapshot = JSON.stringify(state.proposal);
   if (recordHistory && snapshot !== historySnapshot) {
@@ -2014,7 +2019,13 @@ clauseDensity = loadClauseDensity();
 render();
 startCoachIfNeeded();
 
-function clearAgreementReview(){const output=document.querySelector('#agreement-review-output');if(output)output.textContent='Run a review for the current valid proposal. Results clear when inputs change.';}
+function clearAgreementReview() {
+ agreementReviewPacket=null;agreementReviewSequence++;
+ const exportButton=document.querySelector('#agreement-review-export');if(exportButton)exportButton.disabled=true;
+ const origin=document.querySelector('#agreement-review-origin');if(origin)origin.textContent='';
+ const output=document.querySelector('#agreement-review-output');
+ if(output) output.textContent='Run a review for the current valid inputs. Results clear when the case changes.';
+}
 function showAgreementReview(review) {
  const output=document.querySelector('#agreement-review-output');output.replaceChildren();
  const title=document.createElement('h2');title.textContent=review.title;const note=document.createElement('p');note.textContent=review.note;output.append(title,note);
@@ -2027,6 +2038,23 @@ function initializeAgreementReview(){
  const select=document.querySelector('#agreement-review-tool');if(!select)return;
  for(const tool of AGREEMENT_REVIEW_TOOLS){const option=document.createElement('option');option.value=tool.id;option.textContent=tool.title;select.append(option);}
  select.value='margin';select.addEventListener('change',clearAgreementReview);
- document.querySelector('#agreement-review-run').addEventListener('click',()=>{try{showAgreementReview(analyzeAgreementReview(state.proposal,select.value));}catch(error){clearAgreementReview();document.querySelector('#agreement-review-output').textContent='Review unavailable. '+error.message;}});
+ document.querySelector('#agreement-review-run').addEventListener('click',()=>{clearAgreementReview();try{agreementReviewPacket=createAgreementReviewPacket(state.proposal,select.value);showAgreementReview(agreementReviewPacket.review);document.querySelector('#agreement-review-export').disabled=false;document.querySelector('#agreement-review-origin').textContent='Current case: '+(state.proposal.title);}catch(error){clearAgreementReview();document.querySelector('#agreement-review-output').textContent='Review unavailable. '+(error.errors?.join(' ')||error.message);}});
 }
 initializeAgreementReview();
+
+function initializeAgreementReviewPacket(){
+ const button=document.querySelector('#agreement-review-export');if(!button)return;
+ button.addEventListener('click',()=>{if(agreementReviewPacket)downloadText('agreement-review.json',JSON.stringify(agreementReviewPacket),'application/json');});
+ document.querySelector('#agreement-review-import').addEventListener('click',()=>document.querySelector('#agreement-review-file').click());
+ document.querySelector('#agreement-review-file').addEventListener('change',async event=>{
+  const file=event.target.files[0];event.target.value='';if(!file)return;clearAgreementReview();const sequence=agreementReviewSequence;
+  try{
+   if(file.size>1048576)throw new Error('Review packet exceeds 1 MiB.');
+   const text=await file.text();if(sequence!==agreementReviewSequence)return;
+   const packet=replayAgreementReviewPacket(JSON.parse(text));agreementReviewPacket=packet;
+   document.querySelector('#agreement-review-tool').value=packet.tool;showAgreementReview(packet.review);button.disabled=false;
+   document.querySelector('#agreement-review-origin').textContent='Inspected saved case: '+(packet.scenario.title)+'. Current case and autosave unchanged.';
+  }catch(error){if(sequence!==agreementReviewSequence)return;clearAgreementReview();document.querySelector('#agreement-review-output').textContent='Review rejected: '+(error.errors?.join(' ')||error.message);}
+ });
+}
+initializeAgreementReviewPacket();
