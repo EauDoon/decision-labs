@@ -1490,6 +1490,7 @@ export function stressGridCsv(config, options) {
 
 export const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
   {id:'interval',title:'Feasible effective volume interval'},
+  {id:'slack',title:'Constraint slack ledger'},
 // PB_REVIEW_TOOLS
 ]);
 
@@ -1514,6 +1515,11 @@ export function analyzePartnershipReview(rawConfig, tool) {
       }
       const feasible=!impossible.length&&lower<=upper;
       return report(['Required effective volume','Maximum effective volume','Interval','Reason'],[[lower,upper,feasible?'Feasible':'Empty',impossible.join('; ')||(lower>upper?'Lower bound exceeds upper bound':'All declared constraints overlap')]],'Continuous effective transactions, with fee, shares and costs fixed. Bounds use exact inequalities; the existing evaluator has a tiny numerical tolerance. This is not planned pre-shock volume or evidence that demand will occur.');
+
+ }
+ case 'slack': {
+
+ return report(['Participant','Profit above floor','Volume above commitment','Capacity remaining','Current tests'],result.participants.map(p=>[p.name,p.monthlyProfit-p.minimumAcceptableProfit,p.volume-(p.minimumCommitment??0),p.capacity==null?null:p.capacity-p.volume,p.viable?'Hold':p.failureReasons.join('; ')]),'Signed slack uses current effective volume. Negative values are breaches; a blank capacity is unbounded. Monetary and transaction slacks are distinct units and cannot be added.');
 
  }
 // PB_REVIEW_CASES

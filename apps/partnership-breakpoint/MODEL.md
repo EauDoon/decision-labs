@@ -197,3 +197,7 @@ Collapsing cases every participant holds hides those case-evidence rows from the
 ### Feasible effective volume interval
 
 The optional review can intersect participant profit, commitment, capacity and demand limits. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Constraint slack ledger
+
+The optional review can separate profit, commitment and capacity gaps at the actual effective volume. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
