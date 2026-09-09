@@ -386,3 +386,22 @@ test('stress CSV exports every participant case and neutralizes formula names', 
   app.edit('deal.monthlyVolume', ''); app.click('export-csv');
   assert.equal(app.downloads().length, 1);
 });
+
+test('share reconciliation repairs overallocations and preserves participant costs', async () => {
+  const app = await workbench();
+  app.edit('participants.0.revenueShare', '0.8');
+  assert.match(app.markup(), /is overallocated/);
+  app.click('normalize-shares');
+  const normalized = app.saved();
+  assert.ok(Math.abs(normalized.participants.reduce((sum, p) => sum + p.revenueShare, 0) - 1) < 1e-9);
+  assert.ok(Math.abs(normalized.participants[0].revenueShare / normalized.participants[1].revenueShare - 0.8 / 0.35) < 1e-9);
+  assert.equal(normalized.participants[0].fixedMonthlyCost, 1800);
+  app.click('equal-shares');
+  assert.ok(app.saved().participants.every((p) => Math.abs(p.revenueShare - 1 / 3) < 1e-9));
+  app.click('undo'); assert.deepEqual(app.saved(), normalized);
+});
+test('normalization refuses missing shares and equal split recovers them explicitly', async () => {
+ const app = await workbench(); app.edit('participants.0.revenueShare', '');
+ app.click('normalize-shares'); assert.match(app.notice(), /Normalize requires/);
+ app.click('equal-shares'); assert.doesNotMatch(app.markup(), /Resolve these inputs/);
+});

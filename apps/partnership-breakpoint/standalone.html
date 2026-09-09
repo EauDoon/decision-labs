@@ -1203,6 +1203,7 @@ function inputPanel() {
         <section class="input-section" aria-labelledby="participant-inputs-title">
           <h2 id="participant-inputs-title">Participants</h2>
           <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent.</p>
+          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div><p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
           ${participantForms}
           <div class="button-row"><button type="button" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
         </section>
@@ -1443,6 +1444,7 @@ function attachEvents() {
       activePreset = '';
       refresh('Participant removed.');
     }
+    if (action === 'equal-shares' || action === 'normalize-shares') reconcileShares(action);
     if (action === 'export') exportFile();
     if (action === 'export-report') exportReport();
     if (action === 'export-csv') exportStressCsv();
@@ -1677,6 +1679,28 @@ function exportStressCsv() {
 function feeRequirementsSection() {
   const guidance = calculateFeeRequirements(state);
   return `<section class="panel" aria-labelledby="fee-guidance-title"><div class="panel-heading"><h2 id="fee-guidance-title">Fee negotiation guide</h2><span class="optional">fixed volume and shares</span></div><div class="panel-body"><p>At ${formatVolume(guidance.volume)}, the mathematical fee floor for all participant profit requirements is <strong>${guidance.requiredFee === null ? 'unavailable within the input limits' : formatNumber(guidance.requiredFee, 6) + ' units / transaction'}</strong>.</p><p>${guidance.operationallyFeasible ? 'Current capacity and commitment tests hold.' : 'Fee changes cannot repair the capacity or commitment failures below.'} A rounded floor is a guide; recheck the full model after changing a fee. Demand response and compound stress are not included in this floor.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Participant fee requirements"><table><caption>Fee needed to meet each minimum monthly profit</caption><thead><tr><th scope="col">Participant</th><th scope="col">Fee floor</th><th scope="col">Operational restrictions</th></tr></thead><tbody>${guidance.participants.map((item) => `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${item.requiredFee === null ? 'No bounded fee can fund this share' : formatNumber(item.requiredFee, 6)}</td><td>${item.operationalFailures.length ? escapeAttribute(item.operationalFailures.join(', ')) : 'None at current volume'}</td></tr>`).join('')}</tbody></table></div></section>`;
+}
+
+function shareBalanceText() {
+  const total = state.participants.reduce((sum, item) => sum + item.revenueShare, 0);
+  if (!Number.isFinite(total)) return 'Enter each revenue share to calculate the allocation balance.';
+  return 'Allocated: ' + formatPct(total * 100) + '. ' + (Math.abs(total - 1) <= 1e-9 ? 'Shares reconcile to 100%.' : total < 1 ? formatPct((1 - total) * 100) + ' remains unallocated.' : formatPct((total - 1) * 100) + ' is overallocated.');
+}
+
+function reconcileShares(action) {
+  const equal = action === 'equal-shares';
+  const total = state.participants.reduce((sum, item) => sum + item.revenueShare, 0);
+  if (!equal && (!(total > 0) || !Number.isFinite(total) || state.participants.some((item) => !Number.isFinite(item.revenueShare) || item.revenueShare < 0))) {
+    setNotice('Normalize requires non-negative numeric shares with a positive total. Use Equal split to start over.'); return;
+  }
+  checkpoint();
+  let assigned = 0;
+  state.participants.forEach((item, index) => {
+    const share = index === state.participants.length - 1 ? Math.max(0, 1 - assigned) : equal ? 1 / state.participants.length : item.revenueShare / total;
+    item.revenueShare = share; assigned += share;
+  });
+  activePreset = '';
+  refresh('Revenue shares reconciled. Review participant outcomes; Undo restores the previous allocation.');
 }
 </script>
   </body>
