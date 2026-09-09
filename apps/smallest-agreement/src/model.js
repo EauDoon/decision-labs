@@ -1113,3 +1113,54 @@ export function formatDiscussionWorksheet(proposal) {
   }
   return { status: "ok", text: `${lines.join("\n").trim()}\n` };
 }
+
+/**
+ * Formula-safe discussion worksheet CSV.
+ * Groups, weights, clause options, and facilitator notes are exported as text.
+ * This is a conversation aid, not a recorded vote or legal ballot.
+ */
+export function formatDiscussionWorksheetCsv(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const rows = [["row_type", "group_id", "group_name", "weight", "min_support", "veto", "clause_id", "clause_title", "clause_note", "option_id", "option_label", "original", "change_cost", "locked"]];
+  for (const group of p.groups) {
+    rows.push([
+      "group",
+      group.id,
+      group.name,
+      group.weight,
+      group.minSupport ?? "",
+      group.veto === true ? "yes" : "no",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+    ]);
+  }
+  for (const clause of p.clauses) {
+    for (const option of clause.options) {
+      rows.push([
+        "option",
+        "",
+        "",
+        "",
+        "",
+        "",
+        clause.id,
+        clause.title,
+        clause.note ?? "",
+        option.id,
+        option.label,
+        option.original ? "yes" : "no",
+        option.changeCost,
+        clause.lockedOptionId === option.id ? "yes" : "no",
+      ]);
+    }
+  }
+  return { status: "ok", csv: serializeCsv(rows) };
+}

@@ -16,6 +16,7 @@ import {
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
+  formatDiscussionWorksheetCsv,
   groupContributions,
   stressPackage,
   compareScenarioInputs,
@@ -459,6 +460,7 @@ function renderResults(result) {
   $("#csv-button").disabled = result.status === "invalid";
   $("#matrix-export-button").disabled = result.status === "invalid";
   $("#worksheet-button").disabled = result.status === "invalid";
+  $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -1249,6 +1251,12 @@ $("#worksheet-button").addEventListener("click", () => {
   if (worksheet.status !== "ok") return notifyDraft("Fix the draft before exporting the discussion worksheet.");
   downloadText("smallest-agreement-worksheet.txt", worksheet.text, "text/plain");
   notifyDraft("Discussion worksheet downloaded. It is a conversation aid, not a recorded vote.");
+});
+$("#worksheet-csv-button").addEventListener("click", () => {
+  const worksheet = formatDiscussionWorksheetCsv(state.proposal);
+  if (worksheet.status !== "ok") return notifyDraft("Fix the draft before exporting the discussion worksheet CSV.");
+  downloadText("smallest-agreement-worksheet.csv", "\uFEFF" + worksheet.csv, "text/csv;charset=utf-8");
+  notifyDraft("Discussion worksheet CSV downloaded. Groups, weights, options, and notes are text. It is a conversation aid, not a recorded vote.");
 });
 window.addEventListener("beforeunload", (event) => {
   if (!hasUnsavedEdits) return;

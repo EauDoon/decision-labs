@@ -21,6 +21,7 @@ import {
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
+  formatDiscussionWorksheetCsv,
   groupContributions,
   lockPackage,
   duplicateParticipantGroup,
@@ -1155,6 +1156,28 @@ test("discussion worksheet lists every option as unmarked text and rejects inval
   assert.equal(JSON.stringify(input), before);
   const invalid = formatDiscussionWorksheet({ title: "" });
   assert.equal(invalid.status, "invalid");
+});
+
+test("discussion worksheet CSV lists groups, weights, options, and notes as formula-safe text", () => {
+  const input = proposal({
+    groups: [{ id: "g", name: "=SUM(1,2)", weight: 2, minSupport: 40, veto: true }],
+    clauses: [{ id: "one", title: "Hours", lockedOptionId: "one-change", note: "+cmd notes", options: [
+      option("one-original", true, { g: 50 }),
+      option("one-change", false, { g: 80 }, 2),
+      option("one-other", false, { g: 90 }, 3),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const worksheet = formatDiscussionWorksheetCsv(input);
+  assert.equal(worksheet.status, "ok");
+  assert.match(worksheet.csv, /^"row_type","group_id","group_name","weight","min_support","veto","clause_id","clause_title","clause_note","option_id","option_label","original","change_cost","locked"/u);
+  assert.ok(worksheet.csv.includes('"group","g","\'=SUM(1,2)","2","40","yes"'));
+  assert.ok(worksheet.csv.includes('"option","","","","","","one","Hours","\'+cmd notes","one-change","one-change","no","2","yes"'));
+  assert.ok(worksheet.csv.includes('"one-original","one-original","yes","0","no"'));
+  assert.doesNotMatch(worksheet.csv, /,"support"/u);
+  assert.equal(worksheet.csv, formatDiscussionWorksheetCsv(input).csv);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(formatDiscussionWorksheetCsv({ title: "" }).status, "invalid");
 });
 
 test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {

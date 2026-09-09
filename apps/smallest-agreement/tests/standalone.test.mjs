@@ -57,6 +57,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Duplicate group/u);
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
+  assert.match(html, /id="worksheet-csv-button"/u);
   assert.match(html, /id="coach-again"/u);
   assert.match(html, /Duplicate option/u);
   assert.match(html, /Move up/u);
