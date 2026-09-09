@@ -36,6 +36,7 @@ const appImportMarker = `import {
   PRESETS,
   SIMULATION_HOURS,
   formatTime,
+  weekendCloseOverlapNotice,
   runSimulation,
   sanitizeScenario,
   scenarioFromHash,
@@ -50,6 +51,7 @@ const appImportMarker = `import {
   previewWindowShift,
   compareDemandProfiles,
   buildGateGanttSvg,
+  ganttToCSV,
   buildGateSchedule,
   compareGateSchedules,
   buildComparisonGanttSvg,
@@ -62,7 +64,9 @@ const appImportMarker = `import {
   workspaceFromJSON,
   createScenarioHistory,
   timelineToCSV,
-  reportToHTML
+  queueToCSV,
+  reportToHTML,
+  reportToMarkdown
 } from "./model.js";`;
 const exportedNames = Object.freeze([
   "SIMULATION_HOURS",
@@ -77,6 +81,7 @@ const exportedNames = Object.freeze([
   "dayAndHourAt",
   "formatTime",
   "isBusinessDay",
+  "weekendCloseOverlapNotice",
   "isWithinHours",
   "isOperational",
   "getOperationalStatus",
@@ -102,7 +107,9 @@ const exportedNames = Object.freeze([
   "workspaceFromJSON",
   "createScenarioHistory",
   "timelineToCSV",
+  "queueToCSV",
   "reportToHTML",
+  "reportToMarkdown",
   "BOTTLENECK_LABELS",
   "attributeBottlenecks",
   "WINDOW_GATES",
@@ -112,6 +119,7 @@ const exportedNames = Object.freeze([
   "compareDemandProfiles",
   "buildGateSchedule",
   "buildGateGanttSvg",
+  "ganttToCSV",
   "compareGateSchedules",
   "buildComparisonGanttSvg",
   "buildQueueChartSvg",

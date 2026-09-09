@@ -7,7 +7,7 @@ let runId = 0;
 
 class Element {
   constructor(value = "") { this.value = value; this.checked = false; this.selected = false; this.type = ""; this.textContent = ""; this.innerHTML = ""; this.hidden = false; this.children = []; this.handlers = {}; this.dataset = {}; this.disabled = false; this.attributes = {}; this.classList = { toggle() {} }; }
-  focus() {}
+  focus() { this.focused = true; }
   get valueAsNumber() { return this.value.trim() === "" ? NaN : Number(this.value); }
   addEventListener(type, handler) { (this.handlers[type] ||= []).push(handler); }
   async emit(type) { for (const handler of this.handlers[type] || []) await handler({ target: this }); }
@@ -31,7 +31,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -102,6 +102,17 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   assert.equal(reloaded.nodes.get("scenario-library").children.length, 1);
 });
 
+test("workspace restore without selectedHour keeps hour zero", async () => {
+  const ui = await boot();
+  await ui.edit("timeline-range", 21);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.selectedHour;
+  const reloaded = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(reloaded.nodes.get("timeline-range").value, "0");
+  await reloaded.edit("timeline-range", 9);
+  assert.equal(JSON.parse(reloaded.storage.get("weekend-gap:workspace:v1")).selectedHour, 9);
+});
+
 test("workspace import replaces both scenarios and survives reload; invalid import preserves state", async () => {
   const ui = await boot();
   await ui.edit("workspace-notes", "portable");
@@ -162,6 +173,8 @@ test("holiday Saturday checkbox labels Saturday like Sunday and restores from wo
   assert.equal(reloaded.nodes.get("saturdayHoliday").checked, true);
   await reloaded.edit("timeline-range", 21);
   assert.match(reloaded.nodes.get("fx-gate").textContent, /Holiday Saturday/);
+  assert.equal(reloaded.nodes.get("weekend-overlap-notice").hidden, false);
+  assert.match(reloaded.nodes.get("weekend-overlap-notice").textContent, /Both weekend days are treated as closed/);
 });
 test("applying a window shift notices that undo reverts it", async () => {
   const ui = await boot();
@@ -191,6 +204,41 @@ test("baseline versus current Gantt table lists differing hours and keeps a sele
 test("reduced motion advances a single hour instead of starting playback",async()=>{
   const ui=await boot(new Map(),{reduced:true});assert.equal(ui.nodes.get("play-button").textContent,"Step hour");
   await ui.nodes.get("play-button").click();assert.equal(ui.nodes.get("timeline-range").value,"1");assert.equal(ui.nodes.get("play-button").attributes["aria-pressed"],"false");
+});
+
+test("keyboard p jumps to peak queue and is a no-op when demand never queues", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.edit("timeline-range", 12);
+  await ui.keydown("p");
+  const peakHour = ui.nodes.get("timeline-range").value;
+  assert.equal(peakHour, "65");
+  await ui.edit("timeline-range", 12);
+  await ui.keydown("P", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("timeline-range").value, "12");
+  await ui.keydown("p", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("timeline-range").value, "12");
+  ui.nodes.get("redemptionDemandAud").value = "0";
+  await ui.nodes.get("scenario-form").emit("change");
+  await ui.edit("timeline-range", 40);
+  await ui.keydown("p");
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+  assert.equal(ui.nodes.get("jump-peak").disabled, true);
+});
+
+test("keyboard g jumps to the Gantt heading and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("coach-overlay").hidden, true);
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  await ui.keydown("g");
+  assert.equal(ui.nodes.get("gantt-title").focused, true);
+  assert.equal(ui.nodes.get("gantt-title").attributes.tabindex, "-1");
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("G", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("g", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("g", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
 });
 
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {

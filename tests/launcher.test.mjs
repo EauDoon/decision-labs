@@ -23,6 +23,9 @@ test('launcher serves only workbenches and refuses hostile hosts and methods', a
   assert.match(page.body, /Decision Labs/);
   assert.match(page.body, /What's new/);
   assert.match(page.body, /Share-to-hold/);
+  assert.match(page.body, /CSV roster, capacity, and notes/);
+  assert.match(page.body, /Queue-clear hours and Gantt compare/);
+  assert.match(page.body, /data-app="partnership-breakpoint">1\.4\.1</);
   assert.match(page.body, /Trust and limits/);
   assert.match(page.body, /The workbenches/);
   assert.match(page.body, /Open workbench/);
@@ -140,6 +143,11 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   });
 
   assert.match(notFoundPage(), /Decision Labs/);
+  assert.match(notFoundPage(), /Partnership Breakpoint/);
+  assert.match(notFoundPage(), /Common Cart/);
+  assert.match(notFoundPage(), /The Smallest Agreement/);
+  assert.match(notFoundPage(), /Weekend Gap/);
+  assert.match(notFoundPage(), /href="\/"/);
   assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
 
   const missing = await get('/README.md');
@@ -147,6 +155,8 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /Decision Labs/);
   assert.match(missing.body, /not in the catalog/);
   assert.match(missing.body, /<!doctype html>/i);
+  assert.match(missing.body, /Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap/);
+  assert.match(missing.body, /href="\/"/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
   assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
 

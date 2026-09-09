@@ -3,6 +3,7 @@ import {
   PRESETS,
   SIMULATION_HOURS,
   formatTime,
+  weekendCloseOverlapNotice,
   runSimulation,
   sanitizeScenario,
   scenarioFromHash,
@@ -17,6 +18,7 @@ import {
   previewWindowShift,
   compareDemandProfiles,
   buildGateGanttSvg,
+  ganttToCSV,
   buildGateSchedule,
   compareGateSchedules,
   buildComparisonGanttSvg,
@@ -29,11 +31,13 @@ import {
   workspaceFromJSON,
   createScenarioHistory,
   timelineToCSV,
-  reportToHTML
+  queueToCSV,
+  reportToHTML,
+  reportToMarkdown
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots" };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0 };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -236,6 +240,10 @@ function render() {
   if (jumpFirst) {
     jumpFirst.disabled = hoursToFirstSettlement === null;
   }
+  const jumpPeak = document.querySelector("#jump-peak");
+  if (jumpPeak) {
+    jumpPeak.disabled = !(peakQueuedAud > 0);
+  }
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
     : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
@@ -262,6 +270,12 @@ function render() {
     ? `${scenario.mondayHoliday && point.timeLabel.startsWith("Mon") ? "Holiday Monday" : scenario.saturdayHoliday && point.timeLabel.startsWith("Sat") ? "Holiday Saturday" : "Weekend"}: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
     : `${Math.round(point.fxSpreadBps)} bps weekday spread`;
   elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
+  const overlapNotice = weekendCloseOverlapNotice(scenario);
+  const overlapNode = document.querySelector("#weekend-overlap-notice");
+  if (overlapNode) {
+    overlapNode.hidden = !overlapNotice;
+    overlapNode.textContent = overlapNotice;
+  }
 
   for (const button of document.querySelectorAll("[data-preset]")) {
     button.classList.toggle("is-selected", Object.keys(PRESETS[button.dataset.preset]).every(key => PRESETS[button.dataset.preset][key] === scenario[key]));
@@ -940,7 +954,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -952,8 +966,8 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots" };
-  baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour;setPlaying(false);
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0 };
+  baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
   document.querySelector("#workspace-notes").value=saved.notes;
@@ -1014,13 +1028,29 @@ document.querySelector("#export-gantt").addEventListener("click",()=>{
   downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
   setMessage("Gantt SVG downloaded. It is a synthetic operating calendar, not a live market chart.");
 });
+document.querySelector("#export-gantt-csv").addEventListener("click",()=>{
+  downloadText(ganttToCSV(scenario),"weekend-gap-gantt.csv","text/csv;charset=utf-8");
+  setMessage("Gantt CSV downloaded. Open and closed hours match the 72 chart cells.");
+});
 document.querySelector("#export-queue-svg").addEventListener("click",()=>{
   downloadText(buildQueueChartSvg(scenario,baselineScenario,selectedHour),"weekend-gap-queue.svg","image/svg+xml;charset=utf-8");
   setMessage("Queue SVG downloaded. It is a synthetic path, not a live market chart.");
 });
-document.querySelector("#jump-peak").addEventListener("click",()=>{
-  selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
+document.querySelector("#export-queue-csv").addEventListener("click",()=>{
+  downloadText(queueToCSV(scenario,baselineScenario),"weekend-gap-queue.csv","text/csv;charset=utf-8");
+  setMessage("Queue CSV downloaded. Hour labels and queue size are formula-safe spreadsheet cells.");
 });
+document.querySelector("#jump-peak").addEventListener("click",()=>{
+  jumpToPeakQueue();
+});
+function jumpToPeakQueue() {
+  if (!(simulation.summary.peakQueuedAud > 0)) return false;
+  selectedHour = simulation.summary.peakQueueHour;
+  setPlaying(false);
+  render();
+  saveWorkspace();
+  return true;
+}
 function jumpToFirstSettlement() {
   const hours = simulation.summary.hoursToFirstSettlement;
   if (hours === null) return false;
@@ -1033,6 +1063,14 @@ function jumpToFirstSettlement() {
 document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
   jumpToFirstSettlement();
 });
+function jumpToGantt() {
+  const heading = document.querySelector("#gantt-title");
+  if (!heading) return false;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  return true;
+}
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
 });
@@ -1047,6 +1085,22 @@ document.querySelector("#export-report").addEventListener("click",()=>{
     downloadText(reportToHTML(saved.current,saved.baseline,saved),"weekend-gap-report.html","text/html;charset=utf-8");
     document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
   } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+document.querySelector("#copy-markdown-report").addEventListener("click", async () => {
+  try {
+    const saved = JSON.parse(currentWorkspace());
+    const text = reportToMarkdown(saved.current, saved.baseline, saved);
+    const clipboard = globalThis.navigator?.clipboard;
+    if (clipboard && typeof clipboard.writeText === "function") {
+      await clipboard.writeText(text);
+      document.querySelector("#workspace-status").textContent = "Markdown report copied. It includes hours to clear the queue and the peak queue hour.";
+      return;
+    }
+    downloadText(text, "weekend-gap-report.md", "text/markdown;charset=utf-8");
+    document.querySelector("#workspace-status").textContent = "Clipboard unavailable. Markdown report downloaded instead.";
+  } catch (error) {
+    document.querySelector("#workspace-status").textContent = error.message;
+  }
 });
 
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) setPlaying(false); });
@@ -1125,6 +1179,16 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "j" || event.key === "J") {
     event.preventDefault();
     jumpToFirstSettlement();
+    return;
+  }
+  if (event.key === "g" || event.key === "G") {
+    event.preventDefault();
+    jumpToGantt();
+    return;
+  }
+  if (event.key === "p" || event.key === "P") {
+    event.preventDefault();
+    jumpToPeakQueue();
     return;
   }
   if (event.key === "u" || event.key === "U") {
