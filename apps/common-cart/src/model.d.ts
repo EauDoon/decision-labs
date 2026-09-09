@@ -209,6 +209,21 @@ export interface ExclusionGroup {
 }
 export function groupExclusionReasons(rawScenario: unknown, offerId: string): ExclusionGroup[];
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
+
+export interface DeliveryBucket {
+  key: string;
+  label: string;
+  min: number;
+  max: number;
+  buyerCount: number;
+  units: number;
+}
+export interface DeliveryHeatmap {
+  buyerCount: number;
+  units: number;
+  buckets: DeliveryBucket[];
+}
+export function deliveryHeatmap(rawScenario: unknown): DeliveryHeatmap;
 export function encodeScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;
 

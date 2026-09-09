@@ -650,6 +650,9 @@ footer {
           <article class="panel">
             <div class="panel-heading"><div><p class="section-number">Aggregate signal</p><h3>Demand merchants may see</h3></div></div>
             <div id="demand-groups" class="demand-groups"></div>
+            <h4>Delivery deadline heatmap</h4>
+            <p id="delivery-heatmap-text" class="canvas-note"></p>
+            <svg id="delivery-heatmap" class="capacity-bar" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>
@@ -1722,6 +1725,27 @@ function aggregateDemand(rawScenario) {
   return [...groups.values()].map((group) => ({ ...group, variants: [...group.variants.values()].sort() }));
 }
 
+function deliveryHeatmap(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const buckets = [
+    { key: "0-3", label: "0 to 3 days", min: 0, max: 3, buyerCount: 0, units: 0 },
+    { key: "4-7", label: "4 to 7 days", min: 4, max: 7, buyerCount: 0, units: 0 },
+    { key: "8-14", label: "8 to 14 days", min: 8, max: 14, buyerCount: 0, units: 0 },
+    { key: "15-30", label: "15 to 30 days", min: 15, max: 30, buyerCount: 0, units: 0 },
+    { key: "31-365", label: "31 to 365 days", min: 31, max: 365, buyerCount: 0, units: 0 }
+  ];
+  for (const buyer of scenario.buyers) {
+    const bucket = buckets.find((entry) => buyer.latestDeliveryDays >= entry.min && buyer.latestDeliveryDays <= entry.max);
+    bucket.buyerCount += 1;
+    bucket.units += buyer.quantity;
+  }
+  return {
+    buyerCount: scenario.buyers.length,
+    units: scenario.buyers.reduce((sum, buyer) => sum + buyer.quantity, 0),
+    buckets
+  };
+}
+
 function encodeScenario(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const bytes = new TextEncoder().encode(JSON.stringify(scenario));
@@ -2345,6 +2369,7 @@ function refresh() {
     renderInspector(market);
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
+    renderDeliveryHeatmap(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
     setStatus("");
@@ -2377,6 +2402,9 @@ function refresh() {
     demandNote.className = "canvas-note";
     demandNote.textContent = "Aggregate demand will appear once every field is valid.";
     elements.demandGroups.append(demandNote);
+    const heatmapText = document.querySelector("#delivery-heatmap-text");
+    if (heatmapText) heatmapText.textContent = "Delivery heatmap will appear once every field is valid.";
+    document.querySelector("#delivery-heatmap")?.replaceChildren();
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -2775,6 +2803,29 @@ function renderDemand(rawScenario) {
     return card;
   });
   elements.demandGroups.replaceChildren(...cards);
+}
+
+function renderDeliveryHeatmap(rawScenario) {
+  const text = document.querySelector("#delivery-heatmap-text");
+  const svg = document.querySelector("#delivery-heatmap");
+  if (!text || !svg) return;
+  const map = deliveryHeatmap(rawScenario);
+  text.textContent = map.buckets.map((bucket) => `${bucket.label}: ${bucket.buyerCount} buyers, ${bucket.units} units`).join(". ") + ".";
+  svg.replaceChildren();
+  const ns = "http://www.w3.org/2000/svg";
+  const maxUnits = Math.max(1, ...map.buckets.map((bucket) => bucket.units));
+  const append = (name, attrs) => {
+    const node = document.createElementNS(ns, name);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+    svg.append(node);
+    return node;
+  };
+  map.buckets.forEach((bucket, index) => {
+    const x = 8 + index * 78;
+    const barHeight = (bucket.units / maxUnits) * 48;
+    append("rect", { x, y: 64 - barHeight, width: 64, height: barHeight, fill: bucket.units ? "#f36f3d" : "#d8d0c3" });
+    append("text", { x: x + 32, y: 80, fill: "#636174", "font-size": "9", "text-anchor": "middle" }).textContent = bucket.key;
+  });
 }
 
 function addCell(row, text, className = "") {

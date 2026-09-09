@@ -1,6 +1,7 @@
 import {
   ScenarioError,
   aggregateDemand,
+  deliveryHeatmap,
   clonePreset,
   compareScenarios,
   compareThreeRooms,
@@ -599,6 +600,7 @@ function refresh() {
     renderInspector(market);
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
+    renderDeliveryHeatmap(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
     setStatus("");
@@ -631,6 +633,9 @@ function refresh() {
     demandNote.className = "canvas-note";
     demandNote.textContent = "Aggregate demand will appear once every field is valid.";
     elements.demandGroups.append(demandNote);
+    const heatmapText = document.querySelector("#delivery-heatmap-text");
+    if (heatmapText) heatmapText.textContent = "Delivery heatmap will appear once every field is valid.";
+    document.querySelector("#delivery-heatmap")?.replaceChildren();
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -1029,6 +1034,29 @@ function renderDemand(rawScenario) {
     return card;
   });
   elements.demandGroups.replaceChildren(...cards);
+}
+
+function renderDeliveryHeatmap(rawScenario) {
+  const text = document.querySelector("#delivery-heatmap-text");
+  const svg = document.querySelector("#delivery-heatmap");
+  if (!text || !svg) return;
+  const map = deliveryHeatmap(rawScenario);
+  text.textContent = map.buckets.map((bucket) => `${bucket.label}: ${bucket.buyerCount} buyers, ${bucket.units} units`).join(". ") + ".";
+  svg.replaceChildren();
+  const ns = "http://www.w3.org/2000/svg";
+  const maxUnits = Math.max(1, ...map.buckets.map((bucket) => bucket.units));
+  const append = (name, attrs) => {
+    const node = document.createElementNS(ns, name);
+    for (const [key, value] of Object.entries(attrs)) node.setAttribute(key, String(value));
+    svg.append(node);
+    return node;
+  };
+  map.buckets.forEach((bucket, index) => {
+    const x = 8 + index * 78;
+    const barHeight = (bucket.units / maxUnits) * 48;
+    append("rect", { x, y: 64 - barHeight, width: 64, height: barHeight, fill: bucket.units ? "#f36f3d" : "#d8d0c3" });
+    append("text", { x: x + 32, y: 80, fill: "#636174", "font-size": "9", "text-anchor": "middle" }).textContent = bucket.key;
+  });
 }
 
 function addCell(row, text, className = "") {

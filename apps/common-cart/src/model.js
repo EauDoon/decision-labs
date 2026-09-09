@@ -987,6 +987,27 @@ export function aggregateDemand(rawScenario) {
   return [...groups.values()].map((group) => ({ ...group, variants: [...group.variants.values()].sort() }));
 }
 
+export function deliveryHeatmap(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const buckets = [
+    { key: "0-3", label: "0 to 3 days", min: 0, max: 3, buyerCount: 0, units: 0 },
+    { key: "4-7", label: "4 to 7 days", min: 4, max: 7, buyerCount: 0, units: 0 },
+    { key: "8-14", label: "8 to 14 days", min: 8, max: 14, buyerCount: 0, units: 0 },
+    { key: "15-30", label: "15 to 30 days", min: 15, max: 30, buyerCount: 0, units: 0 },
+    { key: "31-365", label: "31 to 365 days", min: 31, max: 365, buyerCount: 0, units: 0 }
+  ];
+  for (const buyer of scenario.buyers) {
+    const bucket = buckets.find((entry) => buyer.latestDeliveryDays >= entry.min && buyer.latestDeliveryDays <= entry.max);
+    bucket.buyerCount += 1;
+    bucket.units += buyer.quantity;
+  }
+  return {
+    buyerCount: scenario.buyers.length,
+    units: scenario.buyers.reduce((sum, buyer) => sum + buyer.quantity, 0),
+    buckets
+  };
+}
+
 export function encodeScenario(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const bytes = new TextEncoder().encode(JSON.stringify(scenario));
