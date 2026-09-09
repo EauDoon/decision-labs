@@ -875,6 +875,35 @@ export function capacityBar(rawScenario, offerId) {
   };
 }
 
+const EXCLUSION_CODES = ["price", "delivery", "variant", "category", "budget", "capacity_leftover", "quantity_vs_capacity", "minimum"];
+
+export function groupExclusionReasons(rawScenario, offerId) {
+  const scenario = validateScenario(rawScenario);
+  const result = evaluateOffer(scenario, offerId);
+  const buyers = new Map(scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const groups = new Map();
+  const add = (code, buyerId) => {
+    const current = groups.get(code) ?? { code, count: 0, buyerIds: [] };
+    current.count += 1;
+    current.buyerIds.push(buyerId);
+    groups.set(code, current);
+  };
+  for (const outcome of result.buyerOutcomes) {
+    if (outcome.status === "included") continue;
+    if (outcome.status === "capacity") {
+      const buyer = buyers.get(outcome.buyerId);
+      add(buyer && buyer.quantity > result.offer.capacity ? "quantity_vs_capacity" : "capacity_leftover", outcome.buyerId);
+      continue;
+    }
+    if (outcome.status === "minimum") {
+      add("minimum", outcome.buyerId);
+      continue;
+    }
+    for (const reason of outcome.reasons) add(reason, outcome.buyerId);
+  }
+  return EXCLUSION_CODES.filter((code) => groups.has(code)).map((code) => groups.get(code));
+}
+
 function compareResults(left, right) {
   if (left.qualifies !== right.qualifies) return left.qualifies ? -1 : 1;
   return right.fulfilledUnits - left.fulfilledUnits

@@ -200,6 +200,14 @@ export interface CapacityBar {
 }
 
 export function capacityBar(rawScenario: unknown, offerId: string): CapacityBar;
+
+export type ExclusionGroupCode = "price" | "delivery" | "variant" | "category" | "budget" | "capacity_leftover" | "quantity_vs_capacity" | "minimum";
+export interface ExclusionGroup {
+  code: ExclusionGroupCode;
+  count: number;
+  buyerIds: string[];
+}
+export function groupExclusionReasons(rawScenario: unknown, offerId: string): ExclusionGroup[];
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
 export function encodeScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;

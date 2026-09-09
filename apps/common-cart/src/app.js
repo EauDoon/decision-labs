@@ -16,6 +16,7 @@ import {
   evaluateMarket,
   unitsToNextTier,
   capacityBar,
+  groupExclusionReasons,
   validateWorkspace,
   validateScenario
 } from "./model.js";
@@ -583,6 +584,7 @@ function refresh() {
     for (const element of [elements.units, elements.buyers, elements.fulfilled, elements.delivered, elements.savings]) element.textContent = "Not available";
     setEmptyState(elements.resultRows, 8, "Ranked offers will appear once every field is valid.");
     setEmptyState(elements.inspectorRows, 9, "Buyer outcomes will appear once every field is valid.");
+    setEmptyState(document.querySelector("#exclusion-groups"), 3, "Exclusion groups will appear once every field is valid.");
     setEmptyState(elements.tierRows, 6, "Price-band feasibility will appear once every field is valid.");
     setEmptyState(elements.merchantResults, 7, "Aggregate offer outcomes will appear once every field is valid.");
     const residualSummary = document.querySelector("#residual-summary");
@@ -795,6 +797,7 @@ function renderInspector(market) {
     return row;
   });
   elements.inspectorRows.replaceChildren(...rows);
+  renderExclusionGroups(market.scenario, result.offer.id, buyers);
   renderNextTierGap(market.scenario, result.offer.id, buyers, formatter);
   renderCapacityBar(market.scenario, result.offer.id);
 }
@@ -859,6 +862,44 @@ function renderNextTierGap(rawScenario, offerId, buyers, formatter) {
     return;
   }
   names.textContent = `Organizer view: ${gap.supplierBuyerIds.map((id) => buyerDisplayLabel(buyers.get(id) ?? { id, label: id })).join(", ")}. Merchant-facing views show counts only.`;
+}
+
+function renderExclusionGroups(rawScenario, offerId, buyers) {
+  const body = document.querySelector("#exclusion-groups");
+  if (!body) return;
+  const groups = groupExclusionReasons(rawScenario, offerId);
+  if (groups.length === 0) {
+    setEmptyState(body, 3, "No buyers are excluded from this offer.");
+    return;
+  }
+  const copy = {
+    price: "Unit price is above the item ceiling.",
+    delivery: "Delivery is later than the buyer's limit.",
+    variant: "The offered variant is not accepted.",
+    category: "The product category does not match.",
+    budget: "Items plus shipping exceed the order budget.",
+    capacity_leftover: "The whole order fits merchant capacity but was omitted from the maximizing cohort.",
+    quantity_vs_capacity: "The whole order is larger than merchant capacity.",
+    minimum: "Constraints pass, but the offer misses its minimum."
+  };
+  const titles = {
+    price: "Price",
+    delivery: "Delivery",
+    variant: "Variant",
+    category: "Category",
+    budget: "Budget",
+    capacity_leftover: "Capacity leftover",
+    quantity_vs_capacity: "Quantity vs remaining capacity",
+    minimum: "Below minimum"
+  };
+  body.replaceChildren(...groups.map((group) => {
+    const row = document.createElement("tr");
+    addCell(row, titles[group.code] ?? group.code);
+    addCell(row, String(group.count));
+    const names = group.buyerIds.map((id) => buyerDisplayLabel(buyers.get(id) ?? { id, label: id })).join(", ");
+    addCell(row, `${copy[group.code] ?? group.code} Organizer detail: ${names}.`);
+    return row;
+  }));
 }
 
 function outcomePresentation(outcome) {
