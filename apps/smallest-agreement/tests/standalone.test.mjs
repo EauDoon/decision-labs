@@ -45,6 +45,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="coach-overlay"/u);
   assert.match(html, /id="shortcut-overlay"/u);
   assert.match(html, /Focus the clause filter/u);
+  assert.match(html, /<kbd>\/<\/kbd> Focus the clause filter/u);
   assert.match(html, /Focus Add group/u);
   assert.match(html, /Jump to the first locked clause/u);
   assert.match(html, /id="find-agreement"/u);
@@ -610,6 +611,19 @@ test("keyboard f focuses the clause filter unless an input is active", async () 
   assert.equal(app.focused(), "");
   app.keydown("F");
   assert.equal(app.focused(), "#clause-filter");
+});
+
+test("keyboard slash focuses the clause filter unless an input is active", async () => {
+  const app = await savedWorkbench(new Map());
+  app.keydown("/");
+  assert.equal(app.focused(), "#clause-filter");
+  app.clearFocus();
+  app.keydown("/", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("/", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("/", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
 });
 
 test("keyboard n focuses Add group unless an input is active", async () => {

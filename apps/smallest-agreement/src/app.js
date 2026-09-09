@@ -1950,7 +1950,7 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "s" || event.key === "S") {
     event.preventDefault();
     findAgreement();
-  } else if (event.key === "f" || event.key === "F") {
+  } else if (event.key === "f" || event.key === "F" || event.key === "/") {
     event.preventDefault();
     $("#clause-filter")?.focus?.();
   } else if (event.key === "n" || event.key === "N") {
