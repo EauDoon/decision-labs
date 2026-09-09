@@ -496,7 +496,7 @@ test("budget and floors jointly produce honest infeasibility without unsafe near
   assert.equal(result.agreement, null);
   assert.equal(result.eligibleCombinations, 0);
   assert.deepEqual(result.nearMisses, []);
-  assert.deepEqual(result.rejected, { budget: 1, floors: 2, anyConstraint: 3 });
+  assert.deepEqual(result.rejected, { budget: 1, floors: 2, vetoes: 0, anyConstraint: 3 });
   const brief = formatDecisionBrief(input, result);
   assert.match(brief, /No permitted combination meets both/u);
   assert.match(brief, /Maximum total change cost: 2/u);
@@ -561,7 +561,7 @@ test("near misses honor all constraints and rejection counts disclose overlap", 
   input.groups[1].minSupport = 20;
   input.maxChangeCost = 0;
   const result = findSmallestAgreement(input);
-  assert.deepEqual(result.rejected, { budget: 2, floors: 1, anyConstraint: 3 });
+  assert.deepEqual(result.rejected, { budget: 2, floors: 1, vetoes: 0, anyConstraint: 3 });
   input.maxChangeCost = 2;
   input.groups[1].minSupport = 60;
   const overlapping = findSmallestAgreement(input);
@@ -736,7 +736,7 @@ test("evidence CSV includes every input and protects spreadsheet text cells", ()
   assert.ok(csv.includes("\"'=HYPERLINK(\"\"unsafe\"\")\""));
   assert.ok(csv.includes("\"'  +SUM(1,2)\""));
   assert.ok(csv.includes('Clause, ""quoted""'));
-  assert.ok(csv.includes('"minimum_support","support"'));
+  assert.ok(csv.includes('"minimum_support","veto","support"'));
   assert.ok(csv.includes('"cheap","cheap","no","yes","1"'));
   assert.equal(csv, formatEvidenceCsv(input));
 });
@@ -836,4 +836,32 @@ test("package gap explorer names cheaper misses and the next packages over thres
   assert.ok(over.nextOverThreshold.length >= 1);
   assert.ok(over.nextOverThreshold.every((row) => row.meetsThreshold && row.approvalGap <= 0));
   assert.ok(over.nextOverThreshold.every((row) => row.costVsRecommended > 0 || row.changedClauseCount > 0));
+});
+
+test("veto groups require threshold support and leave old JSON valid without the field", () => {
+  const input = constrainedProposal();
+  assert.equal(findSmallestAgreement(input).status, "already_passing");
+  assert.equal(Object.hasOwn(canonicalProposal(input).groups[1], "veto"), false);
+  input.groups[1].veto = false;
+  assert.equal(validateProposal(input).valid, true);
+  assert.equal(Object.hasOwn(canonicalProposal(input).groups[1], "veto"), false);
+  input.groups[1].veto = true;
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "found");
+  assert.equal(result.agreement.options[0].id, "balanced");
+  assert.equal(result.baseline.constraints.vetoes[0].met, false);
+  assert.equal(result.agreement.constraints.vetoes[0].required, 70);
+  assert.ok(result.rejected.vetoes >= 1);
+  const brief = formatDecisionBrief(input, result);
+  assert.match(brief, /has a veto/u);
+  assert.doesNotMatch(brief, /[\u2013\u2014]/u);
+  input.groups[1].minSupport = 80;
+  const stricter = findSmallestAgreement(input);
+  assert.equal(stricter.status, "infeasible");
+  assert.equal(stricter.baseline.constraints.vetoes[0].required, 80);
+  for (const value of [null, "true", 1, {}, []]) {
+    const bad = constrainedProposal();
+    bad.groups[1].veto = value;
+    assert.equal(findSmallestAgreement(bad).status, "invalid", `veto ${String(value)}`);
+  }
 });

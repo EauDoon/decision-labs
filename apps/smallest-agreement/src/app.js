@@ -330,6 +330,7 @@ function renderGroups() {
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
       <button class="text-button danger" type="button" data-action="remove-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length <= 1 ? "disabled" : ""}>Remove</button>
       <label class="group-floor">Minimum support (%)<input data-field="group-floor" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" value="${group.minSupport ?? ""}" placeholder="No floor" aria-label="${escapeHtml(group.name)} minimum support" aria-describedby="floor-note"></label>
+      <label class="group-veto"><input data-field="group-veto" data-group-id="${escapeHtml(group.id)}" type="checkbox" ${group.veto === true ? "checked" : ""} aria-describedby="veto-note" aria-label="${escapeHtml(group.name)} veto"> Veto group (average support must meet the threshold)</label>
     </div>`).join("");
 }
 
@@ -484,6 +485,7 @@ function renderManualPackage(result) {
   if (summary.approval + 1e-9 < state.proposal.threshold) failures.push('Below the overall threshold');
   if (summary.constraints.budget && !summary.constraints.budget.met) failures.push('Over the cost budget');
   for (const floor of summary.constraints.floors) if (!floor.met) failures.push(escapeHtml(floor.name) + ' below its support floor');
+  for (const veto of summary.constraints.vetoes ?? []) if (!veto.met) failures.push(escapeHtml(veto.name) + ' below its veto threshold');
   for (const lock of summary.constraints.locks) if (!lock.met) failures.push(escapeHtml(lock.clauseTitle) + ' does not use its locked option');
   $("#manual-result").innerHTML = '<p><strong>' + (evaluated.status === 'passing' ? 'Passes all configured requirements.' : 'Does not pass: ' + failures.join('; ') + '.') + '</strong></p><p>Approval ' + formatPercent(summary.approval) + '. Change cost ' + summary.changeCost.toFixed(1) + '. ' + summary.changedClauseCount + ' changed clauses.' + (result.agreement ? ' Cost difference from the recommendation: ' + (summary.changeCost - result.agreement.changeCost).toFixed(1) + '.' : '') + '</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Custom support</th><th scope="col">Change from original</th></tr></thead><tbody>' + summary.groupDeltas.map((group) => '<tr><th scope="row">' + escapeHtml(group.name) + '</th><td>' + formatPercent(group.after) + '</td><td>' + formatMargin(group.delta) + '</td></tr>').join('') + '</tbody></table></div>';
 }
@@ -506,10 +508,11 @@ function renderConstraints(result) {
   const mark = (met) => met ? "Met" : "Not met";
   if (checks.budget) rows.push(`<tr><th scope="row">Total change cost</th><td>At most ${checks.budget.maximum}</td><td>${checks.budget.actual}</td><td>${mark(checks.budget.met)}</td></tr>`);
   for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(floor.name)} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
+  for (const veto of checks.vetoes ?? []) rows.push(`<tr><th scope="row">${escapeHtml(veto.name)} veto</th><td>At least ${veto.required}%</td><td>${formatPercent(veto.actual)}</td><td>${mark(veto.met)}</td></tr>`);
   for (const lock of checks.locks) rows.push(`<tr><th scope="row">${escapeHtml(lock.clauseTitle)}</th><td>${escapeHtml(lock.label)}</td><td>Locked option</td><td>${mark(lock.met)}</td></tr>`);
   const inspected = result.agreement ? "Recommended combination" : "Original proposal, no recommendation found";
-  const counts = result.checkedCombinations === 1 && result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget and ${result.rejected.floors.toLocaleString()} below a group floor. These counts can overlap. Locks exclude other options before enumeration.`;
-  $("#constraint-checks").innerHTML = `<p>${counts}</p>${rows.length ? `<p>${inspected}</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Constraint</th><th scope="col">Required</th><th scope="col">Actual</th><th scope="col">Status</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>` : '<p>No group floors, budget, or clause locks set.</p>'}`;
+  const counts = result.checkedCombinations === 1 && result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget, ${result.rejected.floors.toLocaleString()} below a group floor, and ${result.rejected.vetoes.toLocaleString()} below a veto. These counts can overlap. Locks exclude other options before enumeration.`;
+  $("#constraint-checks").innerHTML = `<p>${counts}</p>${rows.length ? `<p>${inspected}</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Constraint</th><th scope="col">Required</th><th scope="col">Actual</th><th scope="col">Status</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>` : '<p>No group floors, vetoes, budget, or clause locks set.</p>'}`;
 }
 
 function emptyResults() {
@@ -679,7 +682,7 @@ document.addEventListener("input", (event) => {
   const target = event.target;
   const field = target.dataset.field;
   if (!field) return;
-  if (field === "clause-lock" || field === "manual-option") return;
+  if (field === "clause-lock" || field === "manual-option" || field === "group-veto") return;
   if (field === "group-floor") {
     const group = groupById(target.dataset.groupId);
     if (target.value === "" && !target.validity.badInput) delete group.minSupport;
@@ -736,6 +739,15 @@ $("#max-change-cost").addEventListener("input", (event) => {
 });
 document.addEventListener("change", (event) => {
   const target = event.target;
+  if (target.dataset.field === "group-veto") {
+    const group = groupById(target.dataset.groupId);
+    if (target.checked) group.veto = true;
+    else delete group.veto;
+    save();
+    $("#autosave-status").textContent = state.saveMessage;
+    renderResults(currentResult());
+    return;
+  }
   if (target.dataset.field === "manual-option") {
     manualSelection[target.dataset.clauseId] = target.value;
     renderManualPackage(currentResult());

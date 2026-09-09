@@ -63,6 +63,9 @@ export function validateProposal(proposal) {
       if (isPlainObject(group) && Object.hasOwn(group, "minSupport") && (!isFiniteNumber(group.minSupport) || group.minSupport < 0 || group.minSupport > 100)) {
         errors.push(`groups[${index}].minSupport must be from 0 to 100, or omitted.`);
       }
+      if (isPlainObject(group) && Object.hasOwn(group, "veto") && typeof group.veto !== "boolean") {
+        errors.push(`groups[${index}].veto must be a boolean, or omitted.`);
+      }
     });
   }
   if (!Array.isArray(proposal.clauses) || proposal.clauses.length < 1 || proposal.clauses.length > MAX_CLAUSES) {
@@ -133,6 +136,7 @@ export function canonicalProposal(proposal) {
       name: group.name,
       weight: group.weight,
       ...(Object.hasOwn(group, "minSupport") ? { minSupport: group.minSupport } : {}),
+      ...(group.veto === true ? { veto: true } : {}),
     })),
     clauses: proposal.clauses.map((clause) => ({
       id: clause.id,
@@ -247,6 +251,11 @@ export function selectionSummary(proposal, options, baselineOptions = getOrigina
     const actual = byGroup.find((row) => row.id === group.id).approval;
     return { id: group.id, name: group.name, minimum: group.minSupport, actual, met: actual + EPSILON >= group.minSupport };
   });
+  const vetoes = proposal.groups.filter((group) => group.veto === true).map((group) => {
+    const actual = byGroup.find((row) => row.id === group.id).approval;
+    const required = group.minSupport === undefined ? proposal.threshold : Math.max(proposal.threshold, group.minSupport);
+    return { id: group.id, name: group.name, required, actual, met: actual + EPSILON >= required };
+  });
   const locks = proposal.clauses.flatMap((clause, index) => clause.lockedOptionId === undefined ? [] : [{
     clauseId: clause.id, clauseTitle: clause.title, optionId: clause.lockedOptionId,
     label: clause.options.find((option) => option.id === clause.lockedOptionId).label,
@@ -259,7 +268,7 @@ export function selectionSummary(proposal, options, baselineOptions = getOrigina
     byGroup,
     changes,
     changeCost,
-    constraints: { floors, locks, budget, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) },
+    constraints: { floors, locks, budget, vetoes, met: floors.every((floor) => floor.met) && locks.every((lock) => lock.met) && (!budget || budget.met) && vetoes.every((veto) => veto.met) },
     changedClauseCount: changes.length,
     groupDeltas,
     supportersGained: groupDeltas.filter((group) => group.delta > EPSILON),
@@ -383,14 +392,14 @@ export function findSmallestAgreement(proposal, options = {}) {
 
   const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
   if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met && alternativesLimit === 0) {
-    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
+    return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, vetoes: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
   }
 
   let best = null;
   const alternatives = [];
   let passingCombinations = 0;
   const nearMisses = [];
-  const rejected = { budget: 0, floors: 0, anyConstraint: 0 };
+  const rejected = { budget: 0, floors: 0, vetoes: 0, anyConstraint: 0 };
   let eligibleCombinations = 0;
   const selected = [];
   const visit = (clauseIndex) => {
@@ -400,6 +409,7 @@ export function findSmallestAgreement(proposal, options = {}) {
         rejected.anyConstraint += 1;
         if (summary.constraints.budget && !summary.constraints.budget.met) rejected.budget += 1;
         if (summary.constraints.floors.some((floor) => !floor.met)) rejected.floors += 1;
+        if (summary.constraints.vetoes.some((veto) => !veto.met)) rejected.vetoes += 1;
         return;
       }
       eligibleCombinations += 1;
@@ -486,6 +496,12 @@ export function formatDecisionBrief(proposal, result) {
   const protectedGroups = proposal.groups.filter((group) => group.minSupport !== undefined);
   if (!protectedGroups.length) lines.push("No group support floors set.");
   for (const group of protectedGroups) lines.push(`- ${briefText(group.name)}: average support must be at least ${group.minSupport}%.`);
+  const vetoGroups = proposal.groups.filter((group) => group.veto === true);
+  if (!vetoGroups.length) lines.push("No veto groups set.");
+  for (const group of vetoGroups) {
+    const required = group.minSupport === undefined ? proposal.threshold : Math.max(proposal.threshold, group.minSupport);
+    lines.push(`- ${briefText(group.name)} has a veto: average support must be at least ${required}%.`);
+  }
   const lockedClauses = proposal.clauses.filter((clause) => clause.lockedOptionId !== undefined);
   if (!lockedClauses.length) lines.push("No clause options locked.");
   for (const clause of lockedClauses) lines.push(`- Lock ${briefText(clause.title)} to ${briefOption(clause.options.find((option) => option.id === clause.lockedOptionId).label)}.`);
@@ -503,7 +519,7 @@ export function formatDecisionBrief(proposal, result) {
   else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "Every configured constraint is met.", "");
   else lines.push("No permitted combination meets both the threshold and every configured constraint.", "");
   lines.push(`Search combinations checked: ${Number(result.checkedCombinations).toLocaleString("en-US")}`, `Lock-permitted search space: ${Number(result.possibleCombinations).toLocaleString("en-US")}`);
-  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
+  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}; by veto groups: ${result.rejected.vetoes}. Rejection counts may overlap.`);
   lines.push(`Current approval: ${formatPercent(current.approval)}`, `Original proposal meets constraints: ${current.constraints.met ? "yes" : "no"}`);
 
   if (agreement) {
@@ -530,9 +546,10 @@ export function formatDecisionBrief(proposal, result) {
   }
   lines.push("");
 
-  if (agreement && protectedGroups.length) {
+  if (agreement && (protectedGroups.length || vetoGroups.length)) {
     lines.push("## Protected-group checks", "");
     for (const floor of agreement.constraints.floors) lines.push(`- ${briefText(floor.name)}: ${formatPercent(floor.actual)} against minimum ${floor.minimum}%, ${floor.met ? "met" : "not met"}.`);
+    for (const veto of agreement.constraints.vetoes) lines.push(`- ${briefText(veto.name)} veto: ${formatPercent(veto.actual)} against ${veto.required}%, ${veto.met ? "met" : "not met"}.`);
     lines.push("");
   }
 
@@ -596,6 +613,7 @@ export function compareScenarioInputs(before, after) {
       fields.set(prefix + "name", group.name);
       fields.set(prefix + "weight", group.weight);
       fields.set(prefix + "minimum support", group.minSupport);
+      fields.set(prefix + "veto", group.veto);
     }
     for (const clause of p.clauses) {
       const prefix = "Clause " + clause.id + ": ";
@@ -623,9 +641,9 @@ export function compareScenarioInputs(before, after) {
 /** Export every modeled input with spreadsheet-safe text cells and explicit recommendation status. */
 export function formatEvidenceCsv(proposal, result = findSmallestAgreement(proposal)) {
   const p = canonicalProposal(proposal);
-  const rows = [["proposal", "threshold", "maximum_change_cost", "search_status", "clause_id", "clause", "locked_option_id", "option_id", "option", "original", "recommended", "change_cost", "group_id", "group", "weight", "minimum_support", "support"]];
+  const rows = [["proposal", "threshold", "maximum_change_cost", "search_status", "clause_id", "clause", "locked_option_id", "option_id", "option", "original", "recommended", "change_cost", "group_id", "group", "weight", "minimum_support", "veto", "support"]];
   for (const [index, clause] of p.clauses.entries()) for (const option of clause.options) for (const group of p.groups) {
-    rows.push([p.title, p.threshold, p.maxChangeCost ?? "unlimited", result.status, clause.id, clause.title, clause.lockedOptionId ?? "none", option.id, option.label, option.original ? "yes" : "no", result.agreement ? (result.agreement.options[index].id === option.id ? "yes" : "no") : "no recommendation", option.changeCost, group.id, group.name, group.weight, group.minSupport ?? "none", option.support[group.id]]);
+    rows.push([p.title, p.threshold, p.maxChangeCost ?? "unlimited", result.status, clause.id, clause.title, clause.lockedOptionId ?? "none", option.id, option.label, option.original ? "yes" : "no", result.agreement ? (result.agreement.options[index].id === option.id ? "yes" : "no") : "no recommendation", option.changeCost, group.id, group.name, group.weight, group.minSupport ?? "none", group.veto === true ? "yes" : "no", option.support[group.id]]);
   }
   const cell = (value) => {
     let text = String(value);
