@@ -31,6 +31,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /data-field="group-floor"/u);
   assert.match(html, /data-field="clause-lock"/u);
   assert.match(html, /Constraint checks/u);
+  assert.match(html, /Clause contribution/u);
   assert.match(html, /aria-describedby="floor-note"/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });

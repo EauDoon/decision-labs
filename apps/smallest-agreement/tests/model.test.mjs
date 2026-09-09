@@ -11,6 +11,8 @@ import {
   MAX_WEIGHT,
   approvalForOptions,
   canonicalProposal,
+  clauseContributions,
+  clauseWeightedSupport,
   evaluatePackage,
   stressPackage,
   compareScenarioInputs,
@@ -751,4 +753,55 @@ test("CSV neutralizes formula prefixes behind ASCII controls and leading spreads
     input.title = prefix + "ordinary text";
     assert.ok(formatEvidenceCsv(input).includes('"' + "'" + input.title + '"'));
   }
+});
+
+test("clause contributions report weighted support and equal overall pull versus originals", () => {
+  const groups = [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 3 }];
+  const input = proposal({
+    groups,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { a: 100, b: 40 }),
+        option("one-change", false, { a: 80, b: 80 }, 1),
+        option("one-other", false, { a: 0, b: 0 }, 2),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { a: 20, b: 20 }),
+        option("two-change", false, { a: 100, b: 100 }, 1),
+        option("two-other", false, { a: 0, b: 0 }, 2),
+      ] },
+    ],
+  });
+  const originals = [input.clauses[0].options[0], input.clauses[1].options[0]];
+  const selected = [input.clauses[0].options[1], input.clauses[1].options[1]];
+  assert.equal(clauseWeightedSupport(groups, originals[0]), 55);
+  const original = clauseContributions(input, originals);
+  assert.equal(original.status, "ok");
+  assert.equal(original.rows[0].delta, 0);
+  assert.equal(original.rows[0].overallPull, 0);
+  assert.equal(original.overallApproval, original.originalApproval);
+
+  const changed = clauseContributions(input, selected);
+  assert.equal(changed.status, "ok");
+  assert.equal(changed.rows[0].selectedSupport, 80);
+  assert.equal(changed.rows[0].originalSupport, 55);
+  assert.equal(changed.rows[0].delta, 25);
+  assert.equal(changed.rows[0].overallPull, 12.5);
+  assert.equal(changed.rows[1].delta, 80);
+  assert.equal(changed.rows[1].overallPull, 40);
+  const pullSum = changed.rows.reduce((sum, row) => sum + row.overallPull, 0);
+  assert.equal(Number((changed.overallApproval - changed.originalApproval).toFixed(10)), Number(pullSum.toFixed(10)));
+  const snapshot = proposal({ groups, clauses: input.clauses });
+  assert.equal(JSON.stringify(input), JSON.stringify(snapshot));
+});
+
+test("clause contributions reject mismatched packages without mutating the proposal", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 50 }), option("alternative", false, { g: 80 }, 1), option("other", false, { g: 70 }, 2),
+  ] }] });
+  const before = JSON.stringify(input);
+  assert.equal(clauseContributions(input, []).status, "invalid");
+  assert.equal(clauseContributions(input, [{ id: "missing" }]).status, "invalid");
+  assert.equal(clauseContributions({ title: "" }, []).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
 });

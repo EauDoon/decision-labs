@@ -18,6 +18,7 @@ const appImport = `import {
   MAX_GROUPS,
   MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
+  clauseContributions,
   evaluatePackage,
   stressPackage,
   compareScenarioInputs,

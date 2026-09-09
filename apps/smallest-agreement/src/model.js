@@ -172,6 +172,59 @@ export function approvalByGroup(groups, options) {
   }));
 }
 
+/** Weighted support for one option using the same group weights as overall approval. */
+export function clauseWeightedSupport(groups, option) {
+  const totalWeight = groups.reduce((sum, group) => sum + group.weight, 0);
+  const totalSupport = groups.reduce((sum, group) => sum + group.weight * option.support[group.id], 0);
+  return totalWeight === 0 ? 0 : totalSupport / totalWeight;
+}
+
+/**
+ * Show how each selected clause option contributes to overall approval versus the original options.
+ * Overall approval is the mean of per-clause weighted support, so each clause pulls equally.
+ * This is an accounting of supplied scores, not bargaining power or a forecast.
+ */
+export function clauseContributions(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => {
+    const match = clause.options.find((option) => option.id === options[index]?.id);
+    return match ?? null;
+  });
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const originals = getOriginalOptions(proposal);
+  const clauseCount = proposal.clauses.length;
+  const rows = proposal.clauses.map((clause, index) => {
+    const selectedSupport = clauseWeightedSupport(proposal.groups, selected[index]);
+    const originalSupport = clauseWeightedSupport(proposal.groups, originals[index]);
+    const delta = selectedSupport - originalSupport;
+    return {
+      clauseId: clause.id,
+      clauseTitle: clause.title,
+      optionId: selected[index].id,
+      optionLabel: selected[index].label,
+      originalOptionId: originals[index].id,
+      originalLabel: originals[index].label,
+      selectedSupport,
+      originalSupport,
+      delta,
+      overallPull: delta / clauseCount,
+    };
+  });
+  return {
+    status: "ok",
+    clauseCount,
+    overallApproval: approvalForOptions(proposal.groups, selected),
+    originalApproval: approvalForOptions(proposal.groups, originals),
+    rows,
+  };
+}
+
 export function selectionSummary(proposal, options, baselineOptions = getOriginalOptions(proposal)) {
   const changes = options
     .map((option, index) => ({ clause: proposal.clauses[index], option, baseline: baselineOptions[index] }))

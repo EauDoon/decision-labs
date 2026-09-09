@@ -102,6 +102,7 @@ canvas { display: block; width: 100%; height: auto; min-height: 190px; margin-to
 .miss-item { display: grid; grid-template-columns: auto 1fr; gap: .8rem; }
 .miss-score { color: var(--brick); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-weight: 800; }
 .empty-state { color: var(--ink-soft); font-style: italic; }
+.contribution-chart { display: block; width: 100%; max-width: 36rem; height: auto; margin: .75rem 0; background: #fffdf7; border: 1px solid var(--line); }
 .method-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 3rem; }
 .method-grid article { padding: 1.2rem 1.2rem 1.25rem; border-top: 3px solid var(--ink); background: #ece4d5; }
 .method-grid h2 { margin: 0 0 .65rem; font-size: 1.3rem; font-weight: 500; }.method-grid p:not(.eyebrow) { color: var(--ink-soft); line-height: 1.45; }

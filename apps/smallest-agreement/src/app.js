@@ -4,6 +4,7 @@ import {
   MAX_GROUPS,
   MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
+  clauseContributions,
   evaluatePackage,
   stressPackage,
   compareScenarioInputs,
@@ -379,6 +380,7 @@ function renderResults(result) {
     $("#changed-clauses").innerHTML = '<p class="empty-state">No recommendation was evaluated.</p>';
     $("#support-shifts").innerHTML = "";
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable when the full search is over the safety bound.</p>';
+    $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable when the full search is over the safety bound.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
     return;
@@ -390,6 +392,7 @@ function renderResults(result) {
     $("#changed-clauses").innerHTML = '<p class="empty-state">No recommendation was evaluated.</p>';
     $("#support-shifts").innerHTML = "";
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable for invalid inputs.</p>';
+    $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable for invalid inputs.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
     return;
@@ -415,6 +418,7 @@ function renderResults(result) {
   renderChanges(agreement, current);
   renderConstraints(result);
   renderNearMisses(result.nearMisses);
+  renderClauseContribution(result);
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
 }
@@ -529,6 +533,39 @@ function renderNearMisses(nearMisses) {
     const labels = miss.changes.length ? miss.changes.map((change) => `${change.clauseTitle}: ${change.to}`).join("; ") : "Keep every original option";
     return `<div class="miss-item"><span class="miss-score">${formatPercent(miss.approval)}</span><span>${escapeHtml(labels)}<br><small>Short by ${(state.proposal.threshold - miss.approval).toFixed(1)} points. Cost ${miss.changeCost.toFixed(1)}.</small></span></div>`;
   }).join("") : '<p class="empty-state">No constraint-compliant near misses to show.</p>';
+}
+
+function contributionBarSvg(rows) {
+  const width = 420;
+  const rowHeight = 32;
+  const height = Math.max(rowHeight * rows.length + 8, 40);
+  const mid = 285;
+  const maxAbs = Math.max(5, ...rows.map((row) => Math.abs(row.overallPull)));
+  const scale = 120 / maxAbs;
+  const bars = rows.map((row, index) => {
+    const y = 10 + index * rowHeight;
+    const pull = row.overallPull;
+    const barWidth = Math.abs(pull) * scale;
+    const x = pull >= 0 ? mid : mid - barWidth;
+    const fill = Math.abs(pull) < 1e-9 ? "#9c907d" : pull > 0 ? "#286842" : "#a64431";
+    return `<text x="8" y="${y + 12}" fill="#19352d" font-size="11">${escapeHtml(row.clauseTitle.slice(0, 24))}</text><rect x="${x.toFixed(1)}" y="${y}" width="${Math.max(barWidth, 1).toFixed(1)}" height="14" fill="${fill}"></rect>`;
+  }).join("");
+  return `<svg class="contribution-chart" viewBox="0 0 ${width} ${height}" width="100%" height="${height}" role="img" aria-label="Clause contribution to overall approval versus the original options">${bars}<line x1="${mid}" y1="0" x2="${mid}" y2="${height}" stroke="#9c907d" stroke-width="1"></line></svg>`;
+}
+
+function renderClauseContribution(result) {
+  const packageOptions = result.agreement?.options ?? result.baseline?.options;
+  if (!packageOptions) {
+    $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution needs a valid package to inspect.</p>';
+    return;
+  }
+  const analysis = clauseContributions(state.proposal, packageOptions);
+  if (analysis.status !== "ok") {
+    $("#clause-contribution").innerHTML = `<p class="empty-state">${escapeHtml(analysis.errors[0])}</p>`;
+    return;
+  }
+  const source = result.agreement ? "recommended package" : "original package";
+  $("#clause-contribution").innerHTML = `<p>Inspecting the ${source}. Overall approval ${formatPercent(analysis.overallApproval)}. Original ${formatPercent(analysis.originalApproval)}. Green bars raise overall approval versus the original options; brick bars lower it. The zero line is no change from the original wording.</p>${contributionBarSvg(analysis.rows)}<div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Selected option</th><th scope="col">Clause support</th><th scope="col">Original support</th><th scope="col">Pull on overall approval</th></tr></thead><tbody>${analysis.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.clauseTitle)}</th><td>${escapeHtml(row.optionLabel)}</td><td>${formatPercent(row.selectedSupport)}</td><td>${formatPercent(row.originalSupport)}</td><td class="${row.overallPull > 0.0001 ? "positive" : row.overallPull < -0.0001 ? "negative" : ""}">${formatMargin(row.overallPull)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function drawCoalition(current, agreement) {
