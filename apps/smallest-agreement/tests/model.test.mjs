@@ -22,6 +22,7 @@ import {
   leaveOneGroupOut,
   formatDiscussionWorksheet,
   formatDiscussionWorksheetCsv,
+  formatRecommendedPackageMarkdown,
   groupContributions,
   lockPackage,
   clearAllLocks,
@@ -1251,6 +1252,37 @@ test("discussion worksheet CSV lists groups, weights, options, and notes as form
   assert.equal(worksheet.csv, formatDiscussionWorksheetCsv(input).csv);
   assert.equal(JSON.stringify(input), before);
   assert.equal(formatDiscussionWorksheetCsv({ title: "" }).status, "invalid");
+});
+
+test("recommended package Markdown copies selected options without claiming legitimacy", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("one-original", true, { g: 50 }),
+      option("one-change", false, { g: 90 }, 2),
+      option("one-other", false, { g: 60 }, 4),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const result = findSmallestAgreement(input);
+  const markdown = formatRecommendedPackageMarkdown(input, result);
+  assert.equal(markdown.status, "ok");
+  assert.match(markdown.text, /^# Recommended package\n/u);
+  assert.match(markdown.text, /Proposal: Test proposal/u);
+  assert.match(markdown.text, /not a recorded vote or a claim of legitimacy/u);
+  assert.match(markdown.text, /Hours: "one-change" \(cost 2\.0\)/u);
+  assert.doesNotMatch(markdown.text, /[\u2014\u2013]/u);
+  assert.equal(markdown.text, formatRecommendedPackageMarkdown(input, result).text);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(formatRecommendedPackageMarkdown({ title: "" }).status, "invalid");
+  const infeasible = proposal({
+    threshold: 99,
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("one-original", true, { g: 10 }),
+      option("one-change", false, { g: 11 }, 1),
+      option("one-other", false, { g: 12 }, 2),
+    ] }],
+  });
+  assert.equal(formatRecommendedPackageMarkdown(infeasible).status, "unavailable");
 });
 
 test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {

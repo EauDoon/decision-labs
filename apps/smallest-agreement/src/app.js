@@ -20,6 +20,7 @@ import {
   leaveOneGroupOut,
   formatDiscussionWorksheet,
   formatDiscussionWorksheetCsv,
+  formatRecommendedPackageMarkdown,
   groupContributions,
   stressPackage,
   compareScenarioInputs,
@@ -484,6 +485,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#matrix-export-button").disabled = result.status === "invalid";
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
+  $("#copy-package-button").disabled = result.status === "invalid";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -1355,6 +1357,17 @@ $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");
   state.saveMessage = "Decision brief downloaded.";
   $("#autosave-status").textContent = state.saveMessage;
+});
+$("#copy-package-button").addEventListener("click", async () => {
+  const packaged = formatRecommendedPackageMarkdown(state.proposal, currentResult());
+  if (packaged.status === "invalid") return notifyDraft("Fix the draft before copying the recommended package.");
+  if (packaged.status !== "ok") return notifyDraft(packaged.text.trim());
+  try {
+    await navigator.clipboard.writeText(packaged.text);
+    notifyDraft("Recommended package copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    notifyDraft("Could not copy to the clipboard. Export the brief instead.");
+  }
 });
 $("#import-button").addEventListener("click", () => $("#import-file").click());
 $("#import-file").addEventListener("change", async (event) => {

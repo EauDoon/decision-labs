@@ -1233,3 +1233,44 @@ export function formatDiscussionWorksheetCsv(proposal) {
   }
   return { status: "ok", csv: serializeCsv(rows) };
 }
+
+/**
+ * Compact Markdown of the solver recommendation for clipboard handoff.
+ * This is a decision aid, not a recorded vote or a legitimacy claim.
+ */
+export function formatRecommendedPackageMarkdown(proposal, result = findSmallestAgreement(proposal)) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || result.status === "invalid") {
+    return { status: "invalid", errors: result?.errors ?? ["No result was available."] };
+  }
+  if (result.status === "too_large") {
+    return { status: "unavailable", text: "The search is over the safety bound, so there is no recommended package to copy.\n" };
+  }
+  if (!result.agreement) {
+    return { status: "unavailable", text: "No recommended package is available to copy. This workshop is a decision aid, not a recorded vote.\n" };
+  }
+  const p = canonicalProposal(proposal);
+  const agreement = result.agreement;
+  const lines = [
+    "# Recommended package",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This is a decision aid, not a recorded vote or a claim of legitimacy.",
+    "",
+    `Approval: ${formatPercent(agreement.approval)}`,
+    `Change cost: ${agreement.changeCost.toFixed(1)}`,
+    `Threshold: ${formatPercent(p.threshold)}`,
+    "",
+    "## Selected options",
+    "",
+  ];
+  for (let index = 0; index < p.clauses.length; index += 1) {
+    const clause = p.clauses[index];
+    const option = agreement.options[index];
+    lines.push(`- ${briefText(clause.title)}: ${briefOption(option.label)} (cost ${option.changeCost.toFixed(1)})`);
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}

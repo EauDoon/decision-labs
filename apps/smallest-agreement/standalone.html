@@ -235,6 +235,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="matrix-export-button">Export support CSV</button>
         <button class="button button-secondary" type="button" id="matrix-import-button">Import support CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
+        <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
         <button class="button button-secondary" type="button" id="redo-button" disabled>Redo</button>
@@ -1684,6 +1685,47 @@ function formatDiscussionWorksheetCsv(proposal) {
   return { status: "ok", csv: serializeCsv(rows) };
 }
 
+/**
+ * Compact Markdown of the solver recommendation for clipboard handoff.
+ * This is a decision aid, not a recorded vote or a legitimacy claim.
+ */
+function formatRecommendedPackageMarkdown(proposal, result = findSmallestAgreement(proposal)) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || result.status === "invalid") {
+    return { status: "invalid", errors: result?.errors ?? ["No result was available."] };
+  }
+  if (result.status === "too_large") {
+    return { status: "unavailable", text: "The search is over the safety bound, so there is no recommended package to copy.\n" };
+  }
+  if (!result.agreement) {
+    return { status: "unavailable", text: "No recommended package is available to copy. This workshop is a decision aid, not a recorded vote.\n" };
+  }
+  const p = canonicalProposal(proposal);
+  const agreement = result.agreement;
+  const lines = [
+    "# Recommended package",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This is a decision aid, not a recorded vote or a claim of legitimacy.",
+    "",
+    `Approval: ${formatPercent(agreement.approval)}`,
+    `Change cost: ${agreement.changeCost.toFixed(1)}`,
+    `Threshold: ${formatPercent(p.threshold)}`,
+    "",
+    "## Selected options",
+    "",
+  ];
+  for (let index = 0; index < p.clauses.length; index += 1) {
+    const clause = p.clauses[index];
+    const option = agreement.options[index];
+    lines.push(`- ${briefText(clause.title)}: ${briefOption(option.label)} (cost ${option.changeCost.toFixed(1)})`);
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const COACH_KEY = "smallest-agreement:coach:v1";
@@ -2138,6 +2180,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#matrix-export-button").disabled = result.status === "invalid";
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
+  $("#copy-package-button").disabled = result.status === "invalid";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -3009,6 +3052,17 @@ $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");
   state.saveMessage = "Decision brief downloaded.";
   $("#autosave-status").textContent = state.saveMessage;
+});
+$("#copy-package-button").addEventListener("click", async () => {
+  const packaged = formatRecommendedPackageMarkdown(state.proposal, currentResult());
+  if (packaged.status === "invalid") return notifyDraft("Fix the draft before copying the recommended package.");
+  if (packaged.status !== "ok") return notifyDraft(packaged.text.trim());
+  try {
+    await navigator.clipboard.writeText(packaged.text);
+    notifyDraft("Recommended package copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    notifyDraft("Could not copy to the clipboard. Export the brief instead.");
+  }
 });
 $("#import-button").addEventListener("click", () => $("#import-file").click());
 $("#import-file").addEventListener("change", async (event) => {

@@ -64,6 +64,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /id="worksheet-csv-button"/u);
+  assert.match(html, /id="copy-package-button"/u);
   assert.match(html, /id="coach-again"/u);
   assert.match(html, /Duplicate option/u);
   assert.match(html, /Move up/u);
@@ -86,13 +87,15 @@ async function savedWorkbench(storage, hash = "") {
       events: new Map(), addEventListener(name, callback) { this.events.set(name, callback); }, getContext: () => canvasContext, focus() { focusedSelector = selector; } });
     return elements.get(selector);
   };
+  const clipboard = { text: "", writeText(value) { this.text = value; return Promise.resolve(); } };
   const context = vm.createContext({ console, TextDecoder, Uint8Array, atob,
     document: {
       querySelector: element,
       querySelectorAll: () => [],
       addEventListener: (name, callback) => documentEvents.set(name, callback),
     },
-    window: { devicePixelRatio: 1, addEventListener() {} },
+    window: { devicePixelRatio: 1, addEventListener() {}, navigator: { clipboard } },
+    navigator: { clipboard },
     location: { hash, protocol: "file:" },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
   });
@@ -158,6 +161,7 @@ async function savedWorkbench(storage, hash = "") {
       });
     },
     focused: () => focusedSelector,
+    clipboardText: () => clipboard.text,
     clearFocus: () => { focusedSelector = ""; },
     keydown: (key, target = { tagName: "BODY", isContentEditable: false }) => {
       documentEvents.get("keydown")({
@@ -755,4 +759,13 @@ test("veto-blocking groups are highlighted as a numerical constraint, not a legi
   assert.match(app.coalition(), /veto-blocking/u);
   assert.match(app.constraints(), /Highlighted veto rows failed/u);
   assert.match(app.ballot(), /Veto not met on the inspected package for: Minority/u);
+});
+
+test("copy recommended package writes Markdown to the clipboard", async () => {
+  const app = await savedWorkbench(new Map());
+  await app.click("#copy-package-button");
+  assert.match(app.clipboardText(), /^# Recommended package\n/u);
+  assert.match(app.clipboardText(), /Neighbourhood Plan: the shared green/u);
+  assert.match(app.clipboardText(), /not a recorded vote or a claim of legitimacy/u);
+  assert.match(app.message(), /Recommended package copied as Markdown/u);
 });
