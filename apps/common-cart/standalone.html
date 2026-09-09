@@ -471,6 +471,8 @@ footer {
             </table>
           </div>
           <p class="canvas-note">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
+          <button id="buyer-report" type="button">Export private buyer report (CSV)</button>
+          <p class="canvas-note">Exports the inspected offer, including buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
           <p class="canvas-note">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
           <h4>Price-band feasibility</h4>
           <div class="table-shell compact">
@@ -772,6 +774,25 @@ function createMerchantReport(rawScenario) {
       landedTotal: result.qualifies ? result.totalCost : null, deliveryDays: result.offer.deliveryDays
     }))
   };
+}
+
+function createBuyerCsv(rawScenario, offerId) {
+  const market = evaluateMarket(rawScenario);
+  const result = market.results.find(entry => entry.offer.id === offerId);
+  if (!result) throw new ScenarioError("Select an existing offer for the buyer report.");
+  const allocations = new Map(result.allocations.map(entry => [entry.buyerId, entry]));
+  const rows = [["Private buyer label", "Offer", "Currency", "Requested quantity", "Outcome", "Reasons", "Allocated quantity", "Items cost", "Shipping", "Order total", "Delivery days"]];
+  for (const outcome of result.buyerOutcomes) {
+    const buyer = market.scenario.buyers.find(entry => entry.id === outcome.buyerId);
+    const allocation = allocations.get(outcome.buyerId);
+    rows.push([buyer.label, result.offer.merchant, market.scenario.currency, buyer.quantity, outcome.status, outcome.reasons.join("; "), allocation?.quantity ?? 0, allocation?.itemsCost ?? "", allocation?.shippingCost ?? "", allocation?.totalCost ?? "", result.offer.deliveryDays]);
+  }
+  const cell = value => {
+    let text = typeof value === "number" ? String(Math.round(value * 1e8) / 1e8) : String(value);
+    if (typeof value === "string" && (/^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text))) text = `'${text}`;
+    return `"${text.replaceAll('"', '""')}"`;
+  };
+  return rows.map(row => row.map(cell).join(",")).join("\r\n") + "\r\n";
 }
 
 function validateScenario(candidate) {
@@ -1247,6 +1268,12 @@ function loadInitialScenario() {
 }
 
 function bindStaticEvents() {
+  document.querySelector("#buyer-report").addEventListener("click", () => {
+    try {
+      downloadFile(createBuyerCsv(scenario, inspectedOfferId), "common-cart-private-buyer-report.csv", "text/csv;charset=utf-8");
+      setStatus("Private buyer report exported for the inspected offer. It contains labels and individual allocations.", true);
+    } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
   document.querySelector("#merchant-report").addEventListener("click", () => {
     try {
       downloadFile(`${JSON.stringify(createMerchantReport(scenario), null, 2)}\n`, "common-cart-merchant-report.json", "application/json");

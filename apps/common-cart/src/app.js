@@ -5,6 +5,7 @@ import {
   compareScenarios,
   createScenarioHistory,
   createMerchantReport,
+  createBuyerCsv,
   decodeScenario,
   duplicateEntry,
   encodeScenario,
@@ -116,6 +117,12 @@ function loadInitialScenario() {
 }
 
 function bindStaticEvents() {
+  document.querySelector("#buyer-report").addEventListener("click", () => {
+    try {
+      downloadFile(createBuyerCsv(scenario, inspectedOfferId), "common-cart-private-buyer-report.csv", "text/csv;charset=utf-8");
+      setStatus("Private buyer report exported for the inspected offer. It contains labels and individual allocations.", true);
+    } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
+  });
   document.querySelector("#merchant-report").addEventListener("click", () => {
     try {
       downloadFile(`${JSON.stringify(createMerchantReport(scenario), null, 2)}\n`, "common-cart-merchant-report.json", "application/json");

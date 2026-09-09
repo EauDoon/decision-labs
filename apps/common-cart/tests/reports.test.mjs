@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, createMerchantReport, evaluateMarket } from "../src/model.js";
+import { clonePreset, createMerchantReport, createBuyerCsv, evaluateMarket } from "../src/model.js";
 
 test("merchant report has an explicit privacy boundary and recomputed totals", () => {
   const s = clonePreset();
@@ -12,4 +12,16 @@ test("merchant report has an explicit privacy boundary and recomputed totals", (
   assert.equal(report.requestedUnits, evaluateMarket(s).totalRequestedUnits);
   assert.deepEqual(Object.keys(report.offers[0]), ["merchant", "category", "variant", "status", "fulfilledUnits", "includedBuyerCount", "itemPrice", "landedTotal", "deliveryDays"]);
   assert.throws(() => createMerchantReport({}));
+});
+
+test("private CSV includes every buyer outcome and neutralizes formula-like text", () => {
+  const s = clonePreset();
+  s.buyers[0].label = '=HYPERLINK("malicious")';
+  s.offers[0].merchant = "+cmd";
+  const csv = createBuyerCsv(s, s.offers[0].id);
+  assert.ok(csv.includes('"\'=HYPERLINK(""malicious"")"'));
+  assert.ok(csv.includes('"\'+cmd"'));
+  assert.equal(csv.trim().split("\r\n").length, s.buyers.length + 1);
+  assert.ok(csv.includes("Order total"));
+  assert.throws(() => createBuyerCsv(s, "missing"));
 });

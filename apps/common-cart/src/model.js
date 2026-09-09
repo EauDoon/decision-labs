@@ -170,6 +170,25 @@ export function createMerchantReport(rawScenario) {
   };
 }
 
+export function createBuyerCsv(rawScenario, offerId) {
+  const market = evaluateMarket(rawScenario);
+  const result = market.results.find(entry => entry.offer.id === offerId);
+  if (!result) throw new ScenarioError("Select an existing offer for the buyer report.");
+  const allocations = new Map(result.allocations.map(entry => [entry.buyerId, entry]));
+  const rows = [["Private buyer label", "Offer", "Currency", "Requested quantity", "Outcome", "Reasons", "Allocated quantity", "Items cost", "Shipping", "Order total", "Delivery days"]];
+  for (const outcome of result.buyerOutcomes) {
+    const buyer = market.scenario.buyers.find(entry => entry.id === outcome.buyerId);
+    const allocation = allocations.get(outcome.buyerId);
+    rows.push([buyer.label, result.offer.merchant, market.scenario.currency, buyer.quantity, outcome.status, outcome.reasons.join("; "), allocation?.quantity ?? 0, allocation?.itemsCost ?? "", allocation?.shippingCost ?? "", allocation?.totalCost ?? "", result.offer.deliveryDays]);
+  }
+  const cell = value => {
+    let text = typeof value === "number" ? String(Math.round(value * 1e8) / 1e8) : String(value);
+    if (typeof value === "string" && (/^[\s\u0000-\u001f]*[=+@-]/u.test(text) || /^[\t\r\n]/u.test(text))) text = `'${text}`;
+    return `"${text.replaceAll('"', '""')}"`;
+  };
+  return rows.map(row => row.map(cell).join(",")).join("\r\n") + "\r\n";
+}
+
 export function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");
