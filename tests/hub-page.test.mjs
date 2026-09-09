@@ -149,3 +149,10 @@ test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(readme, /Press `t` to focus Trust and\s+limits/);
   assert.match(readme, /Skip links jump to What's new, workbenches, keyboard\s+shortcuts, and Trust and limits/);
 });
+
+test('catalog does not use CSS animation', () => {
+  const style = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
+  assert.doesNotMatch(style, /@keyframes/);
+  assert.doesNotMatch(style, /animation\s*:/);
+  assert.match(style, /prefers-reduced-motion:\s*reduce[\s\S]*transition:\s*none/);
+});
