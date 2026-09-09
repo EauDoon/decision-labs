@@ -109,6 +109,7 @@ const exportedNames = Object.freeze([
   "analyzeTimeline",
   "runSensitivity",
   "libraryFromJSON",
+  "CHART_VIEWS",
   "workspaceToJSON",
   "workspaceFromJSON",
   "createScenarioHistory",

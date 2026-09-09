@@ -41,7 +41,7 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0 };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, selectedChart: "queue" };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -1053,7 +1053,8 @@ renderLibrary();
 function currentWorkspace() {
   return workspaceToJSON(scenario,baselineScenario,{ targetPercent:document.querySelector("#reserve-target").valueAsNumber,
     deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value,
-    ganttDensity: document.querySelector("#gantt-density").value });
+    ganttDensity: document.querySelector("#gantt-density").value,
+    selectedChart: document.querySelector("#selected-chart").value });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -1063,7 +1064,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, selectedChart: saved.selectedChart };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -1075,12 +1076,13 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0 };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue" };
   baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
   document.querySelector("#workspace-notes").value=saved.notes;
   document.querySelector("#gantt-density").value = saved.ganttDensity || "snapshots";
+  document.querySelector("#selected-chart").value = saved.selectedChart || "queue";
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -1133,6 +1135,17 @@ document.querySelector("#gantt-density").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
+document.querySelector("#selected-chart").addEventListener("change",()=>{
+  const view = document.querySelector("#selected-chart").value;
+  saveWorkspace();
+  if (view === "gantt") jumpToGantt();
+  else {
+    const heading = document.querySelector("#chart-title");
+    heading?.setAttribute("tabindex", "-1");
+    heading?.focus();
+    heading?.scrollIntoView?.({ block: "start" });
+  }
+});
 document.querySelector("#export-gantt").addEventListener("click",()=>{
   downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
   setMessage("Gantt SVG downloaded. It is a synthetic operating calendar, not a live market chart.");
@@ -1180,12 +1193,19 @@ function jumpToDashboard() {
   heading.scrollIntoView?.({ block: "start" });
   return true;
 }
+function rememberChart(view) {
+  const select = document.querySelector("#selected-chart");
+  if (!select || (view !== "queue" && view !== "gantt")) return;
+  if (select.value !== view) select.value = view;
+  saveWorkspace();
+}
 function jumpToGantt() {
   const heading = document.querySelector("#gantt-title");
   if (!heading) return false;
   heading.setAttribute("tabindex", "-1");
   heading.focus();
   heading.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
   return true;
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{

@@ -428,7 +428,7 @@ SOFTWARE.
             <div class="card-heading chart-heading">
               <div>
                 <p class="eyebrow">72-hour ledger</p>
-                <h2 id="chart-title">Queue and redeemable capacity</h2>
+                <h2 id="chart-title" tabindex="-1">Queue and redeemable capacity</h2>
               </div>
               <p id="gate-summary" class="gate-summary">Checking gates</p>
             </div>
@@ -438,6 +438,11 @@ SOFTWARE.
             <div class="planning-actions">
               <button id="export-queue-svg" type="button">Download queue SVG</button>
               <button id="export-queue-csv" type="button">Export queue CSV</button>
+              <label for="selected-chart">Last chart view</label>
+              <select id="selected-chart">
+                <option value="queue">Queue chart</option>
+                <option value="gantt">Gate Gantt</option>
+              </select>
             </div>
             <div id="queue-svg" class="queue-svg"></div>
             <p class="chart-print-note">The SVG is a printable queue path. Download saves the same light-background drawing as a file. The canvas keeps a live playhead while you scrub.</p>

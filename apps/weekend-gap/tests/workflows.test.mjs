@@ -94,12 +94,14 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   const persisted = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
   assert.equal(persisted.current.name, "Market Stress"); assert.equal(persisted.selectedHour, 65);
   assert.equal(persisted.ganttDensity, "all");
+  assert.equal(persisted.selectedChart, "queue");
   const reloaded = await boot(ui.storage);
   assert.equal(reloaded.nodes.get("scenario-title").textContent, "Market Stress");
   assert.equal(reloaded.nodes.get("baseline-name").textContent, "Normal Friday");
   assert.equal(reloaded.nodes.get("workspace-notes").value, "Keep this baseline");
   assert.equal(reloaded.nodes.get("timeline-range").value, "65");
   assert.equal(reloaded.nodes.get("gantt-density").value, "all");
+  assert.equal(reloaded.nodes.get("selected-chart").value, "queue");
   assert.equal(reloaded.nodes.get("scenario-library").children.length, 1);
 });
 
@@ -261,6 +263,16 @@ test("keyboard g jumps to the Gantt heading and ignores the key while typing", a
   assert.equal(ui.nodes.get("gantt-title").focused, false);
   await ui.keydown("g", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("gantt-title").focused, false);
+});
+
+test("selected chart persists in workspace JSON and restores", async () => {
+  const ui = await boot();
+  await ui.edit("selected-chart", "gantt", "change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).selectedChart, "gantt");
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.selectedChart;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("selected-chart").value, "queue");
 });
 
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
