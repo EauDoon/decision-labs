@@ -13,7 +13,9 @@ import {
   createBuyerCsv,
   createDeliveryHeatmapCsv,
   importBuyersFromCsv,
+  importOffersFromCsv,
   buyerCsvTemplate,
+  offerCsvTemplate,
   redactBuyerLabels,
   createOrganizerBriefing,
   decodeScenario,
@@ -314,6 +316,12 @@ function bindStaticEvents() {
     setStatus("Buyer CSV template downloaded. Fill the header row, then import.", true);
   });
   document.querySelector("#import-buyers-file").addEventListener("change", importBuyersCsv);
+  document.querySelector("#import-offers").addEventListener("click", () => document.querySelector("#import-offers-file").click());
+  document.querySelector("#offer-csv-template").addEventListener("click", () => {
+    downloadFile(offerCsvTemplate(), "common-cart-offers-template.csv", "text/csv;charset=utf-8");
+    setStatus("Offer CSV template downloaded. Fill name, capacity, unit price, shipping, fulfillment, and variants, then import.", true);
+  });
+  document.querySelector("#import-offers-file").addEventListener("change", importOffersCsv);
   document.querySelector("#export-button").addEventListener("click", exportScenario);
   document.querySelector("#screenshot-mode").addEventListener("click", () => {
     screenshotMode = !screenshotMode;
@@ -1320,6 +1328,27 @@ async function importScenario(event) {
     setStatus("Scenario imported.", true);
   } catch (error) {
     setStatus(`Import failed: ${messageOf(error)}`);
+  }
+}
+
+async function importOffersCsv(event) {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) return;
+  if (file.size === 0) return setStatus("Offer CSV import failed: the file is empty.");
+  if (file.size > 250_000) return setStatus("Offer CSV files must be smaller than 250 KB.");
+  try {
+    const text = await file.text();
+    if (!text.trim()) return setStatus("Offer CSV import failed: the file is empty.");
+    const imported = importOffersFromCsv(scenario, text);
+    if (!allowReplaceDraft()) return;
+    scenario = imported;
+    inspectedOfferId = scenario.offers[0]?.id ?? "";
+    renderEditor();
+    refresh();
+    setStatus(`Imported ${imported.offers.length} offers from CSV. Buyers were left unchanged.`, true);
+  } catch (error) {
+    setStatus(`Offer CSV import failed: ${messageOf(error)}`);
   }
 }
 

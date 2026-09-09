@@ -378,7 +378,7 @@ function parseCsvRows(text) {
       cell += character;
     }
   }
-  if (quoted) throw new ScenarioError("Buyer CSV has an unclosed quote.");
+  if (quoted) throw new ScenarioError("CSV has an unclosed quote.");
   if (cell.length > 0 || row.length > 0) {
     row.push(cell);
     rows.push(row);
@@ -440,6 +440,93 @@ export function importBuyersFromCsv(rawScenario, text) {
 
 export function buyerCsvTemplate() {
   return "label,category,quantity,max unit price,latest delivery days,variants,max order total\r\n";
+}
+
+const OFFER_CSV_HEADERS = {
+  name: "merchant",
+  merchant: "merchant",
+  capacity: "capacity",
+  "unit price": "unitPrice",
+  price: "unitPrice",
+  shipping: "shippingPerBuyer",
+  "shipping per buyer": "shippingPerBuyer",
+  fulfillment: "fulfillment",
+  variants: "variant",
+  variant: "variant",
+  category: "category",
+  minimum: "minimumUnits",
+  "minimum units": "minimumUnits",
+  delivery: "deliveryDays",
+  "delivery days": "deliveryDays"
+};
+
+const REQUIRED_OFFER_CSV_FIELDS = ["merchant", "capacity", "unitPrice", "shippingPerBuyer", "fulfillment", "variant"];
+
+export function parseOfferCsv(text, defaults = {}) {
+  if (defaults && (typeof defaults !== "object" || Array.isArray(defaults))) {
+    throw new ScenarioError("Offer CSV defaults must be an object.");
+  }
+  rejectUnknownFields(defaults ?? {}, ["category", "minimumUnits", "deliveryDays"], "Offer CSV defaults");
+  if (typeof text !== "string") throw new ScenarioError("Offer CSV must be text.");
+  if (text.trim() === "") throw new ScenarioError("Offer CSV is empty.");
+  const rows = parseCsvRows(text);
+  if (rows.length < 2) throw new ScenarioError("Offer CSV needs a header row and at least one offer.");
+  const header = rows[0].map((value) => neutralizeSpreadsheetCell(value).trim().toLowerCase().replaceAll("_", " "));
+  const columns = header.map((name) => OFFER_CSV_HEADERS[name] ?? null);
+  if (columns.some((field) => field === null)) {
+    const unknown = rows[0].filter((_, index) => columns[index] === null).map((value) => value.trim() || "(empty)");
+    throw new ScenarioError(`Offer CSV has unknown column: ${unknown[0]}.`);
+  }
+  for (const required of REQUIRED_OFFER_CSV_FIELDS) {
+    if (!columns.includes(required)) {
+      throw new ScenarioError("Offer CSV must include name, capacity, unit price, shipping, fulfillment, and variants.");
+    }
+  }
+  const dataRows = rows.slice(1);
+  if (dataRows.length < 1 || dataRows.length > MAX_OFFERS) {
+    throw new ScenarioError(`Offers must contain 1 to ${MAX_OFFERS} entries.`);
+  }
+  const categoryDefault = defaults?.category ?? "Product";
+  const minimumDefault = defaults?.minimumUnits ?? 1;
+  const deliveryDefault = defaults?.deliveryDays ?? 7;
+  return dataRows.map((row, index) => {
+    const prefix = `CSV offer ${index + 1}`;
+    const record = {};
+    for (const [columnIndex, field] of columns.entries()) {
+      if (!field) continue;
+      record[field] = neutralizeSpreadsheetCell(row[columnIndex] ?? "");
+    }
+    const fulfillmentText = String(record.fulfillment ?? "").trim().toLowerCase();
+    const offer = {
+      id: `O${String(index + 1).padStart(2, "0")}`,
+      merchant: record.merchant,
+      category: String(record.category ?? "").trim() === "" ? categoryDefault : record.category,
+      variant: record.variant,
+      unitPrice: record.unitPrice,
+      minimumUnits: String(record.minimumUnits ?? "").trim() === "" ? minimumDefault : record.minimumUnits,
+      deliveryDays: String(record.deliveryDays ?? "").trim() === "" ? deliveryDefault : record.deliveryDays,
+      capacity: record.capacity,
+      shippingPerBuyer: record.shippingPerBuyer,
+      fulfillment: fulfillmentText
+    };
+    try {
+      return validateOffer(offer, index);
+    } catch (error) {
+      throw new ScenarioError(`${prefix}: ${error.message.replace(/^Offer \d+\s/u, "")}`);
+    }
+  });
+}
+
+export function importOffersFromCsv(rawScenario, text) {
+  const scenario = validateScenario(rawScenario);
+  const offers = parseOfferCsv(text, {
+    category: scenario.buyers[0]?.category ?? scenario.offers[0]?.category ?? "Product"
+  });
+  return validateScenario({ ...scenario, offers });
+}
+
+export function offerCsvTemplate() {
+  return "name,capacity,unit price,shipping,fulfillment,variants\r\n";
 }
 
 export function createOrganizerBriefing(rawScenario) {

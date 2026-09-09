@@ -311,9 +311,14 @@ SOFTWARE.
           <div>
             <p class="section-number">02 / merchants</p>
             <h2>Test conditional offers</h2>
-            <p>Each bid is evaluated against the cohort without revealing any buyer's record.</p>
+            <p>Each bid is evaluated against the cohort without revealing any buyer's record. Offer CSV columns: name, capacity, unit price, shipping, fulfillment, and variants. Category, minimum, and delivery default from this room when omitted.</p>
           </div>
-          <button id="add-offer" class="primary" type="button">Add offer</button>
+          <div class="button-row">
+            <button id="add-offer" class="primary" type="button">Add offer</button>
+            <button id="import-offers" type="button">Import offer CSV</button>
+            <button id="offer-csv-template" type="button">Download offer CSV template</button>
+            <input id="import-offers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
+          </div>
         </div>
         <div class="table-shell">
           <table>
