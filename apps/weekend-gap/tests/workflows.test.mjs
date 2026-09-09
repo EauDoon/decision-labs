@@ -137,6 +137,16 @@ test("blocked storage and missing canvas leave the usable table and persistent w
   assert.match(ui.nodes.get("workspace-status").textContent,/could not be saved/);
   assert.ok(ui.nodes.get("timeline-table").children.length>0);
 });
+test("dashboard reports hours to clear the queue or that the queue remains", async () => {
+  const ui = await boot();
+  assert.match(ui.nodes.get("queue-clear-value").textContent, /hour/);
+  assert.doesNotMatch(ui.nodes.get("queue-clear-value").textContent, /queue remains/);
+  await ui.presets[2].click();
+  assert.equal(ui.nodes.get("queue-clear-value").textContent, "queue remains");
+  ui.nodes.get("redemptionDemandAud").value = "0";
+  await ui.nodes.get("scenario-form").emit("change");
+  assert.equal(ui.nodes.get("queue-clear-value").textContent, "No queue in 72h");
+});
 test("reduced motion advances a single hour instead of starting playback",async()=>{
   const ui=await boot(new Map(),{reduced:true});assert.equal(ui.nodes.get("play-button").textContent,"Step hour");
   await ui.nodes.get("play-button").click();assert.equal(ui.nodes.get("timeline-range").value,"1");assert.equal(ui.nodes.get("play-button").attributes["aria-pressed"],"false");

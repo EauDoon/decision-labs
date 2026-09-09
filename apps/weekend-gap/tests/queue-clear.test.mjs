@@ -1,5 +1,6 @@
 import assert from "node:assert/strict";
 import test from "node:test";
+import { readFile } from "node:fs/promises";
 import {
   DEFAULT_SCENARIO,
   PRESETS,
@@ -49,4 +50,15 @@ test("comparison deltas stay numeric when both runs clear and stay null when onl
   assert.equal(mixed.baseline.summary.hoursToClearQueue, runSimulation(DEFAULT_SCENARIO).summary.hoursToClearQueue);
   assert.equal(mixed.candidate.summary.hoursToClearQueue, null);
   assert.equal(mixed.deltas.hoursToClearQueue, null);
+});
+
+test("dashboard shows hours to clear the queue or queue remains", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="queue-clear-value"/);
+  assert.match(html, /Hours to clear queue/);
+  assert.match(app, /queue remains/);
+  assert.match(app, /formatHoursToClearQueue/);
+  assert.match(app, /hoursToClearQueue/);
+  assert.match(app, /No queue in 72h/);
 });

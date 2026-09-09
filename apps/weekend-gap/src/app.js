@@ -56,6 +56,7 @@ const elements = {
   peakQueue: document.querySelector("#peak-queue-value"),
   backlogHours: document.querySelector("#backlog-hours-value"),
   firstSettlement: document.querySelector("#first-settlement-value"),
+  queueClear: document.querySelector("#queue-clear-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -218,7 +219,7 @@ function render() {
   elements.queueDetail.textContent = `${formatAud(point.settledAud)} paid so far`;
   elements.ratio.textContent = formatPercent(point.liquidityRatio);
   elements.discount.textContent = formatPercent(point.discountBps / 10000, 2);
-  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour, hoursWithQueue, hoursToFirstSettlement } = simulation.summary;
+  const { totalDemandAud, totalSettledAud, finalQueuedAud, peakQueuedAud, peakQueueHour, hoursWithQueue, hoursToFirstSettlement, hoursToClearQueue } = simulation.summary;
   const settledShare = totalDemandAud > 0 ? totalSettledAud / totalDemandAud : 1;
   elements.outcomeSummary.textContent = `${formatPercent(settledShare)} of demand settled`;
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
@@ -228,6 +229,7 @@ function render() {
   elements.firstSettlement.textContent = hoursToFirstSettlement === null
     ? "No settlement in 72h"
     : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
+  elements.queueClear.textContent = formatHoursToClearQueue(hoursToClearQueue, peakQueuedAud);
   const jumpFirst = document.querySelector("#jump-first-settlement");
   if (jumpFirst) {
     jumpFirst.disabled = hoursToFirstSettlement === null;
@@ -479,6 +481,24 @@ function renderPlanning() {
       const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
     }
     return row;
+  })(), (() => {
+    const row = document.createElement("tr");
+    const before = comparison.baseline.summary.hoursToClearQueue;
+    const after = simulation.summary.hoursToClearQueue;
+    const peakBefore = comparison.baseline.summary.peakQueuedAud;
+    const peakAfter = simulation.summary.peakQueuedAud;
+    const delta = typeof before === "number" && typeof after === "number"
+      ? after - before
+      : before === after ? 0 : null;
+    for (const value of [
+      "Hours to clear queue",
+      formatHoursToClearQueue(before, peakBefore),
+      formatHoursToClearQueue(after, peakAfter),
+      delta === null ? "Not comparable" : `${delta >= 0 ? "+" : ""}${delta}`
+    ]) {
+      const cell = document.createElement("td"); cell.textContent = value; row.append(cell);
+    }
+    return row;
   })());
   document.querySelector("#changed-assumptions").textContent = comparison.changes.length
     ? comparison.changes.map(({ field, baseline, candidate }) => `${field}: ${baseline} to ${candidate}`).join("; ")
@@ -725,6 +745,11 @@ function renderDiagnostics() {
 
 function formatHoursToFirstSettlement(hours) {
   return hours === null ? "No settlement in 72h" : `${hours} hour${hours === 1 ? "" : "s"}`;
+}
+
+function formatHoursToClearQueue(hours, peakQueuedAud = 0) {
+  if (hours === null) return peakQueuedAud > 0 ? "queue remains" : "No queue in 72h";
+  return `${hours} hour${hours === 1 ? "" : "s"}`;
 }
 
 function renderDemandProfiles() {

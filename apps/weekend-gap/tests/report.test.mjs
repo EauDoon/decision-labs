@@ -38,3 +38,10 @@ test("report inlines the queue path and hourly limiting-gate table",()=>{
  const hours=attributeBottlenecks(PRESETS.weekendRush).rows.find((row)=>row.label==="none").hours;
  assert.match(report,new RegExp(">"+String(hours)+"<"));
 });
+test("report lists hours to clear the queue including residual-queue wording",()=>{
+ const open=reportToHTML(DEFAULT_SCENARIO,DEFAULT_SCENARIO);
+ assert.match(open,/Hours to clear queue/);
+ assert.doesNotMatch(open,/queue remains/);
+ const leftover=reportToHTML(PRESETS.marketStress,DEFAULT_SCENARIO);
+ assert.match(leftover,/queue remains/);
+});
