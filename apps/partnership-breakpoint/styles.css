@@ -45,6 +45,8 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .field label { font-size: .73rem; color: var(--muted); line-height: 1.2; }
 .field input, .field textarea { width: 100%; min-width: 0; border: 1px solid #5d625d; border-radius: 2px; background: white; color: var(--ink); padding: .42rem .48rem; }
 .field textarea { min-height: 5rem; resize: vertical; }
+.brief-copy-label { display: block; font-size: .73rem; color: var(--muted); margin-bottom: .25rem; }
+#brief-copy-text { width: 100%; min-height: 12rem; font: inherit; padding: .5rem; border: 1px solid var(--line); background: white; }
 .field input:invalid, .field textarea:invalid { border-color: var(--coral); }
 .optional { color: var(--muted); font-size: .67rem; }
 .participant-form { border: 1px solid var(--line); background: var(--paper); padding: .75rem; margin-top: .7rem; }

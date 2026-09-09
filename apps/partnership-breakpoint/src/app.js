@@ -47,6 +47,7 @@ let stressPreviewId = '';
 let shareHoldPreview = null;
 let feeHoldPreview = null;
 let volumeHoldPreview = null;
+let briefCopyText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
 let helpOpen = false;
@@ -61,6 +62,7 @@ function checkpoint() {
   shareHoldPreview = null;
   feeHoldPreview = null;
   volumeHoldPreview = null;
+  briefCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -77,6 +79,7 @@ function travelHistory(direction) {
   shareHoldPreview = null;
   feeHoldPreview = null;
   volumeHoldPreview = null;
+  briefCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -482,6 +485,7 @@ function resultsPanel(result) {
     ${feeHoldPreviewSection()}
     ${shareHoldPreviewSection()}
     ${volumeHoldPreviewSection()}
+    ${briefCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${breakpointSection(result)}
@@ -839,6 +843,7 @@ function attachEvents() {
     if (action === 'solve-volume-hold') { previewVolumeHold(button.dataset.participantId); return; }
     if (action === 'apply-volume-hold') { applyVolumeHold(); return; }
     if (action === 'close-volume-hold') { volumeHoldPreview = null; render(); return; }
+    if (action === 'close-brief-copy') { briefCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1296,6 +1301,18 @@ function copyShareUrl() {
   setNotice(`Clipboard unavailable. Share URL: ${url}`);
 }
 
+function showBriefCopyFallback(text, message) {
+  briefCopyText = text;
+  render();
+  document.querySelector('#brief-copy-text')?.focus();
+  setNotice(message);
+}
+
+function briefCopySection() {
+  if (!briefCopyText) return '';
+  return `<section class="panel" aria-labelledby="brief-copy-title"><div class="panel-heading"><h2 id="brief-copy-title">Negotiation brief</h2><button type="button" data-action="close-brief-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it.</p><label class="brief-copy-label" for="brief-copy-text">Markdown negotiation brief</label><textarea id="brief-copy-text" readonly rows="16">${escapeAttribute(briefCopyText)}</textarea></div></section>`;
+}
+
 function copyNegotiationBrief() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -1306,16 +1323,28 @@ function copyNegotiationBrief() {
   const text = negotiationBrief(state, title);
   const clipboard = globalThis.navigator?.clipboard;
   if (clipboard && typeof clipboard.writeText === 'function') {
-    Promise.resolve(clipboard.writeText(text)).then(() => {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          briefCopyText = '';
+          render();
+          setNotice('Negotiation brief copied as Markdown.');
+        }).catch(() => {
+          showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+        });
+        return;
+      }
+      briefCopyText = '';
+      render();
       setNotice('Negotiation brief copied as Markdown.');
-    }).catch(() => {
-      downloadText(text, 'text/markdown;charset=utf-8', exportDownloadName('brief', caseExportTitle()));
-      setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
-    });
-    return;
+      return;
+    } catch {
+      showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+      return;
+    }
   }
-  downloadText(text, 'text/markdown;charset=utf-8', exportDownloadName('brief', caseExportTitle()));
-  setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
+  showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
 }
 
 function csvCell(value) {

@@ -15,6 +15,7 @@ async function workbench(protocol = 'file:', options = {}) {
   const downloads = [];
   let downloadBlob;
   let prints = 0;
+  const copied = [];
   const app = { innerHTML: '', querySelectorAll: () => [],
     addEventListener: (name, callback) => {
       assert.equal(events.has(name), false, `duplicate ${name} handler`);
@@ -38,18 +39,25 @@ async function workbench(protocol = 'file:', options = {}) {
       return `${this.protocol}${host}${this.pathname}${this.search}${this.hash}`;
     },
   });
-  const context = vm.createContext({ console, Blob, setTimeout: (callback) => callback(), URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
+  const sandbox = { console, Blob, setTimeout: (callback) => callback(), URL: { createObjectURL: (blob) => { downloadBlob = blob; return 'blob:test'; }, revokeObjectURL() {} }, HTMLInputElement: Input, FileReader: Reader, TextEncoder, atob, btoa,
     history: { replaceState(_state, _title, url) {
       if (typeof url === 'string' && url.includes('#')) locationState.hash = url.slice(url.indexOf('#'));
     } },
     window: { print: () => { prints += 1; }, location: locationState, addEventListener: (name, callback) => windowEvents.set(name, callback) },
-    document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : null },
+    document: { activeElement: null, createElement: () => ({ click() { downloads.push({ filename: this.download, blob: downloadBlob }); } }), querySelector: (selector) => selector === '#workbench' ? app : selector === '#notice' ? notice : selector === '#brief-copy-text' ? { focus() {} } : null },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
-  });
+  };
+  if (options.clipboard === 'ok') {
+    sandbox.navigator = { clipboard: { writeText: (text) => { copied.push(text); } } };
+  } else if (options.clipboard === 'fail') {
+    sandbox.navigator = { clipboard: { writeText: () => { throw new Error('denied'); } } };
+  }
+  const context = vm.createContext(sandbox);
   new vm.Script(script).runInContext(context, { timeout: 2000 });
   return {
     markup: () => app.innerHTML,
     downloads: () => downloads,
+    copied: () => copied,
     prints: () => prints,
     notice: () => notice.textContent,
     saved: () => JSON.parse(storage.get('partnership-breakpoint.v1')),
@@ -532,8 +540,8 @@ test('deal notes persist, print, and export, and reject overlong or unknown valu
   const report = await app.downloads()[0].blob.text();
   assert.match(report, /Notes: Review the capacity clause\./);
   app.click('copy-brief');
-  const brief = await app.downloads()[1].blob.text();
-  assert.match(brief, /Notes: Review the capacity clause\./);
+  assert.match(app.markup(), /id="brief-copy-text"/);
+  assert.match(app.markup(), /Notes: Review the capacity clause\./);
   app.edit('deal.notes', 'x'.repeat(501), { type: 'text', optional: 'true' });
   assert.match(app.markup(), /Resolve these inputs/);
   assert.match(app.notice(), /Deal notes/);
@@ -759,20 +767,33 @@ test('redacted export replaces names, clears the title, and keeps identifiers', 
   assert.equal(app.downloads().length, 1);
 });
 
-test('negotiation brief downloads Markdown focused on weakest participant and first breakpoint', async () => {
-  const app = await workbench();
-  app.click('copy-brief');
-  const file = app.downloads()[0];
-  assert.equal(file.filename, 'partnership-breakpoint-brief.md');
-  const text = await file.blob.text();
-  assert.match(text, /negotiation brief/);
-  assert.match(text, /Weakest participant/);
-  assert.match(text, /First breakpoint/);
-  assert.match(text, /Counts are not probabilities/);
-  assert.match(app.notice(), /downloaded instead/);
-  app.edit('deal.monthlyVolume', '');
-  app.click('copy-brief');
-  assert.equal(app.downloads().length, 1);
+test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
+  const fallback = await workbench();
+  fallback.click('copy-brief');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="brief-copy-text"/);
+  assert.match(fallback.markup(), /Markdown negotiation brief/);
+  assert.match(fallback.markup(), /Weakest participant/);
+  assert.match(fallback.markup(), /First breakpoint/);
+  assert.match(fallback.markup(), /Counts are not probabilities/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-brief-copy');
+  assert.doesNotMatch(fallback.markup(), /id="brief-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-brief');
+  assert.doesNotMatch(fallback.markup(), /id="brief-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-brief');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /negotiation brief/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.doesNotMatch(withClipboard.markup(), /id="brief-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-brief');
+  assert.match(denied.markup(), /id="brief-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('fee-to-hold previews the floor and requires an explicit apply', async () => {
@@ -806,7 +827,8 @@ test('export filenames include a sanitized deal title and fall back without one'
   app.click('export-csv');
   assert.equal(app.downloads()[4].filename, 'partnership-breakpoint-harbor-jv-stress.csv');
   app.click('copy-brief');
-  assert.equal(app.downloads()[5].filename, 'partnership-breakpoint-harbor-jv-brief.md');
+  assert.equal(app.downloads().length, 5);
+  assert.match(app.markup(), /id="brief-copy-text"/);
 });
 
 test('participant CSV replaces the roster only after validation and leaves the deal unchanged', async () => {
