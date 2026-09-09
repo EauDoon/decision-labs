@@ -145,3 +145,7 @@ The optional timing review can attribute hourly settlement to earliest arrivals 
 ### Settlement checkpoints
 
 The optional timing review can compare service progress against both arrived and full-horizon demand. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Complete-chain closure spells
+
+The optional timing review can locate continuous intervals when operating windows prevent any complete payout chain. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
