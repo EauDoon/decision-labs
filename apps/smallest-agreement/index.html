@@ -134,6 +134,7 @@ SOFTWARE.
               <div id="support-shifts"></div>
             </section>
           </div>
+          <section class="result-card" aria-labelledby="alternatives-heading"><h3 id="alternatives-heading">Passing packages</h3><div id="passing-alternatives"></div></section>
           <section class="near-misses" aria-labelledby="near-misses-heading">
             <div class="section-heading"><div><p class="eyebrow">Alternatives</p><h3 id="near-misses-heading">Near misses</h3></div></div>
             <div id="near-misses-list"></div>
@@ -146,7 +147,7 @@ SOFTWARE.
             <h2>Count what changes</h2>
             <p>For each combination of one option per clause, the workshop computes a weighted average of the group support scores. It selects a passing combination by lowest change cost, then fewest changed clauses, then higher approval, then option ID order.</p>
             <p>Only combinations meeting every support floor, cost budget, and clause lock can pass. Near misses meet those constraints but miss the overall threshold.</p>
-            <p>The search is exhaustive only up to 50,000 lock-permitted combinations. Above that, it stops and tells you to reduce the choice set. An already-passing original proposal needs only one check.</p>
+            <p>The search is exhaustive only up to 50,000 lock-permitted combinations. Above that, it stops and tells you to reduce the choice set. The workshop also enumerates passing alternatives for comparison, even when the original already passes.</p>
           </article>
           <article>
             <p class="eyebrow">Limits</p>

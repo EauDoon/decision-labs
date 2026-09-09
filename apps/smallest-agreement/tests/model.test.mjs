@@ -649,3 +649,20 @@ test("constrained search matches an independent Cartesian-product oracle across 
     }
   }
 });
+
+
+test("passing alternatives are complete, deterministically ranked, and respect floors and budget", () => {
+  const input = proposal({ threshold: 50, clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 60 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 70 }, 1),
+  ] }] });
+  const result = findSmallestAgreement(input, { alternativesLimit: 5 });
+  assert.equal(result.status, "already_passing");
+  assert.equal(result.checkedCombinations, 3);
+  assert.equal(result.passingCombinations, 3);
+  assert.deepEqual(result.alternatives.map(row => row.options[0].id), ["original", "cheap", "better"]);
+  input.groups[0].minSupport = 65;
+  input.maxChangeCost = 1;
+  const constrained = findSmallestAgreement(input, { alternativesLimit: 5 });
+  assert.deepEqual(constrained.alternatives.map(row => row.options[0].id), ["cheap"]);
+  for (const limit of [-1, 6, 1.5, "3"]) assert.equal(findSmallestAgreement(input, { alternativesLimit: limit }).status, "invalid");
+});

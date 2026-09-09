@@ -261,7 +261,7 @@ export function findSmallestAgreement(proposal, options = {}) {
   if (!isPlainObject(options)) {
     return { status: "invalid", errors: ["Search options must be a plain object."] };
   }
-  const unknown = Object.keys(options).filter((key) => key !== "maxCombinations" && key !== "nearMissLimit");
+  const unknown = Object.keys(options).filter((key) => key !== "maxCombinations" && key !== "nearMissLimit" && key !== "alternativesLimit");
   if (unknown.length > 0) {
     return { status: "invalid", errors: [`Unknown search option: ${unknown.join(", ")}.`] };
   }
@@ -273,17 +273,23 @@ export function findSmallestAgreement(proposal, options = {}) {
   if (!Number.isSafeInteger(nearMissLimit) || nearMissLimit < 0 || nearMissLimit > MAX_NEAR_MISSES) {
     return { status: "invalid", errors: [`nearMissLimit must be an integer from 0 through ${MAX_NEAR_MISSES}.`] };
   }
+  const alternativesLimit = options.alternativesLimit ?? 0;
+  if (!Number.isSafeInteger(alternativesLimit) || alternativesLimit < 0 || alternativesLimit > 5) {
+    return { status: "invalid", errors: ["alternativesLimit must be an integer from 0 through 5."] };
+  }
   const possibleCombinations = combinationCount(proposal.clauses, maxCombinations);
   if (possibleCombinations > maxCombinations) {
     return { status: "too_large", possibleCombinations, maxCombinations, nearMisses: [] };
   }
 
   const baseline = selectionSummary(proposal, getOriginalOptions(proposal));
-  if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met) {
+  if (baseline.approval + EPSILON >= proposal.threshold && baseline.constraints.met && alternativesLimit === 0) {
     return { status: "already_passing", possibleCombinations, checkedCombinations: 1, baseline, agreement: baseline, nearMisses: [], rejected: { budget: 0, floors: 0, anyConstraint: 0 }, eligibleCombinations: 1 };
   }
 
   let best = null;
+  const alternatives = [];
+  let passingCombinations = 0;
   const nearMisses = [];
   const rejected = { budget: 0, floors: 0, anyConstraint: 0 };
   let eligibleCombinations = 0;
@@ -299,7 +305,13 @@ export function findSmallestAgreement(proposal, options = {}) {
       }
       eligibleCombinations += 1;
       if (summary.approval + EPSILON >= proposal.threshold) {
+        passingCombinations += 1;
         if (!best || compareAgreements(summary, best) < 0) best = summary;
+        if (alternativesLimit > 0) {
+          alternatives.push(summary);
+          alternatives.sort(compareAgreements);
+          if (alternatives.length > alternativesLimit) alternatives.pop();
+        }
       } else if (nearMissLimit > 0) {
         nearMisses.push(summary);
         nearMisses.sort((a, b) => compareNearMisses(proposal.threshold, a, b));
@@ -316,7 +328,9 @@ export function findSmallestAgreement(proposal, options = {}) {
   };
   visit(0);
   const result = {
-    status: best ? "found" : "infeasible",
+    status: best ? (best.changedClauseCount === 0 ? "already_passing" : "found") : "infeasible",
+    alternatives,
+    passingCombinations,
     possibleCombinations,
     checkedCombinations: possibleCombinations,
     eligibleCombinations,

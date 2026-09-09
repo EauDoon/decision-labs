@@ -273,7 +273,7 @@ function save(recordHistory = true) {
 }
 
 function currentResult() {
-  return findSmallestAgreement(state.proposal, { maxCombinations: MAX_COMBINATIONS });
+  return findSmallestAgreement(state.proposal, { maxCombinations: MAX_COMBINATIONS, alternativesLimit: 5 });
 }
 
 function number(value, fallback = 0) {
@@ -344,6 +344,7 @@ function renderClauses() {
 
 function renderResults(result) {
   const { proposal } = state;
+  renderAlternatives(result);
   const alert = $("#result-alert");
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
@@ -396,6 +397,11 @@ function renderResults(result) {
   renderCoalitionTable(current, agreement);
 }
 
+function renderAlternatives(result) {
+  const candidates = result.alternatives ?? [];
+  $("#passing-alternatives").innerHTML = candidates.length ? '<p>' + result.passingCombinations + ' passing combinations. Showing the first ' + candidates.length + ' by lowest cost, fewest changes, higher approval, then option IDs. These are ranked choices, not a fairness ranking.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Rank and package</th><th scope="col">Cost</th><th scope="col">Approval</th><th scope="col">Lowest group support</th><th scope="col">Groups losing support</th></tr></thead><tbody>' + candidates.map((candidate, index) => '<tr><th scope="row">' + (index + 1) + '. ' + candidate.options.map((option, i) => escapeHtml(state.proposal.clauses[i].title) + ': ' + escapeHtml(option.label)).join('<br>') + '</th><td>' + candidate.changeCost.toFixed(1) + '</td><td>' + formatPercent(candidate.approval) + '</td><td>' + formatPercent(Math.min(...candidate.byGroup.map((group) => group.approval))) + '</td><td>' + (candidate.supportersLost.map((group) => escapeHtml(group.name)).join(', ') || 'None') + '</td></tr>').join('') + '</tbody></table></div>' : '<p class="empty-state">No passing packages available to compare. Review the inputs and constraints.</p>';
+}
+
 function renderConstraints(result) {
   const checks = result.agreement?.constraints ?? result.baseline.constraints;
   const rows = [];
@@ -404,7 +410,7 @@ function renderConstraints(result) {
   for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(floor.name)} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
   for (const lock of checks.locks) rows.push(`<tr><th scope="row">${escapeHtml(lock.clauseTitle)}</th><td>${escapeHtml(lock.label)}</td><td>Locked option</td><td>${mark(lock.met)}</td></tr>`);
   const inspected = result.agreement ? "Recommended combination" : "Original proposal, no recommendation found";
-  const counts = result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget and ${result.rejected.floors.toLocaleString()} below a group floor. These counts can overlap. Locks exclude other options before enumeration.`;
+  const counts = result.checkedCombinations === 1 && result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget and ${result.rejected.floors.toLocaleString()} below a group floor. These counts can overlap. Locks exclude other options before enumeration.`;
   $("#constraint-checks").innerHTML = `<p>${counts}</p>${rows.length ? `<p>${inspected}</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Constraint</th><th scope="col">Required</th><th scope="col">Actual</th><th scope="col">Status</th></tr></thead><tbody>${rows.join("")}</tbody></table></div>` : '<p>No group floors, budget, or clause locks set.</p>'}`;
 }
 
