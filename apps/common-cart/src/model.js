@@ -653,6 +653,24 @@ export function buyerCsvTemplate() {
   return "label,category,quantity,max unit price,latest delivery days,variants,max order total\r\n";
 }
 
+/** Organizer-only buyer rows using the same columns as import. Formula-safe. Private labels and budgets included. */
+export function createOrganizerBuyerCsv(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const rows = [["label", "category", "quantity", "max unit price", "latest delivery days", "variants", "max order total"]];
+  for (const buyer of scenario.buyers) {
+    rows.push([
+      buyer.label,
+      buyer.category,
+      buyer.quantity,
+      buyer.maxUnitPrice,
+      buyer.latestDeliveryDays,
+      buyer.allowedVariants.join(", "),
+      Object.hasOwn(buyer, "maxOrderTotal") ? buyer.maxOrderTotal : ""
+    ]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
 const OFFER_CSV_HEADERS = {
   name: "merchant",
   merchant: "merchant",

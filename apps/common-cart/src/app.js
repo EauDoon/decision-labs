@@ -32,6 +32,7 @@ import {
   importBuyersFromCsv,
   importOffersFromCsv,
   buyerCsvTemplate,
+  createOrganizerBuyerCsv,
   offerCsvTemplate,
   createOfferCsv,
   redactBuyerLabels,
@@ -426,6 +427,14 @@ function bindStaticEvents() {
   document.querySelector("#buyer-csv-template").addEventListener("click", () => {
     downloadFile(buyerCsvTemplate(), "common-cart-buyers-template.csv", "text/csv;charset=utf-8");
     setStatus("Buyer CSV template downloaded. Fill the header row, then import.", true);
+  });
+  document.querySelector("#export-buyers-csv").addEventListener("click", () => {
+    try {
+      downloadFile(createOrganizerBuyerCsv(scenario), "common-cart-organizer-buyers.csv", "text/csv;charset=utf-8");
+      setStatus("Organizer buyer CSV exported. Private labels and budgets are included. This is not a merchant export. Formula-like text is escaped.", true);
+    } catch (error) {
+      setStatus(`Organizer buyer CSV export failed: ${messageOf(error)}`);
+    }
   });
   document.querySelector("#import-buyers-file").addEventListener("change", importBuyersCsv);
   document.querySelector("#preview-buyer-sort").addEventListener("click", () => {
