@@ -262,6 +262,11 @@ canvas { display: block; width: 100%; height: auto; min-height: 190px; margin-to
             <label for="support-drop">Support drop (percentage points)</label><input id="support-drop" type="number" min="0" max="100" step="any" value="5">
             <div id="stress-result" role="status" aria-live="polite"></div>
           </section>
+          <section class="result-card" aria-labelledby="comparison-heading">
+            <h3 id="comparison-heading">Compare negotiation rounds</h3>
+            <label for="comparison-select">Saved scenario</label><select id="comparison-select"></select>
+            <div id="scenario-comparison"></div>
+          </section>
           <section class="near-misses" aria-labelledby="near-misses-heading">
             <div class="section-heading"><div><p class="eyebrow">Alternatives</p><h3 id="near-misses-heading">Near misses</h3></div></div>
             <div id="near-misses-list"></div>
@@ -767,6 +772,40 @@ function stressPackage(proposal, optionIds, supportDrop) {
   return { ...evaluatePackage(pessimistic, optionIds), original: original.summary, supportDrop };
 }
 
+
+/** Compare declared assumptions by stable IDs, including additions and removals. */
+function compareScenarioInputs(before, after) {
+  const flatten = (proposal) => {
+    const p = canonicalProposal(proposal);
+    const fields = new Map([["Proposal title", p.title], ["Approval threshold", p.threshold], ["Maximum change cost", p.maxChangeCost]]);
+    for (const group of p.groups) {
+      const prefix = "Group " + group.id + ": ";
+      fields.set(prefix + "name", group.name);
+      fields.set(prefix + "weight", group.weight);
+      fields.set(prefix + "minimum support", group.minSupport);
+    }
+    for (const clause of p.clauses) {
+      const prefix = "Clause " + clause.id + ": ";
+      fields.set(prefix + "title", clause.title);
+      fields.set(prefix + "locked option", clause.lockedOptionId);
+      for (const option of clause.options) {
+        const optionPrefix = prefix + option.id + ": ";
+        fields.set(optionPrefix + "label", option.label);
+        fields.set(optionPrefix + "original", option.original);
+        fields.set(optionPrefix + "change cost", option.changeCost);
+        for (const group of p.groups) fields.set(optionPrefix + group.id + " support", option.support[group.id]);
+      }
+    }
+    // Clause order participates in deterministic tie breaking.
+    fields.set("Clause order", p.clauses.map((clause) => clause.id).join(", "));
+    return fields;
+  };
+  const previous = flatten(before);
+  const current = flatten(after);
+  return [...new Set([...previous.keys(), ...current.keys()])].filter((field) => previous.get(field) !== current.get(field))
+    .map((field) => ({ field, before: previous.get(field), after: current.get(field) }));
+}
+
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const MAX_SCENARIOS = 20;
@@ -1105,6 +1144,7 @@ function renderResults(result) {
   renderAlternatives(result);
   renderManualPackage(result);
   renderStressTest(result);
+  renderScenarioComparison(result);
   const alert = $("#result-alert");
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
@@ -1156,6 +1196,27 @@ function renderResults(result) {
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
 }
+
+function renderScenarioComparison(result) {
+  const selected = $("#comparison-select").value;
+  const row = selected === "" ? null : scenarios[Number(selected)];
+  if (!row || result.status === "invalid") {
+    $("#scenario-comparison").textContent = result.status === "invalid" ? "Fix the draft before comparing snapshots." : "Save a snapshot, then select it here to compare with the working draft.";
+    return;
+  }
+  const previous = findSmallestAgreement(row.proposal);
+  const changes = compareScenarioInputs(row.proposal, state.proposal);
+  const metric = (label, get) => '<tr><th scope="row">' + label + '</th><td>' + get(row.proposal, previous) + '</td><td>' + get(state.proposal, result) + '</td></tr>';
+  const value = (input) => input === undefined ? 'Not set / absent' : escapeHtml(input);
+  $("#scenario-comparison").innerHTML = '<p>Comparing <strong>' + escapeHtml(row.name) + '</strong> with the working draft. Changes to groups, weights, or clauses change what approval measures; review the assumptions before interpreting differences.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Metric</th><th scope="col">Saved snapshot</th><th scope="col">Working draft</th></tr></thead><tbody>' +
+    metric('Search status', (_, evaluated) => escapeHtml(evaluated.status.replaceAll('_', ' '))) +
+    metric('Threshold', (proposal) => formatPercent(proposal.threshold)) +
+    metric('Recommended approval', (_, evaluated) => evaluated.agreement ? formatPercent(evaluated.agreement.approval) : 'No recommendation') +
+    metric('Change cost', (_, evaluated) => evaluated.agreement ? evaluated.agreement.changeCost.toFixed(1) : 'No recommendation') +
+    metric('Changed clauses', (_, evaluated) => evaluated.agreement ? evaluated.agreement.changedClauseCount : 'No recommendation') +
+    '</tbody></table></div><details><summary>' + changes.length + ' changed input fields</summary>' + (changes.length ? '<ul>' + changes.slice(0, 100).map((change) => '<li><strong>' + escapeHtml(change.field) + '</strong>: ' + value(change.before) + ' → ' + value(change.after) + '</li>').join('') + '</ul>' + (changes.length > 100 ? '<p>Showing the first 100 changes. Export each scenario as JSON for the complete inputs.</p>' : '') : '<p>The saved and working assumptions match.</p>') + '</details>';
+}
+$("#comparison-select").addEventListener("change", () => renderScenarioComparison(currentResult()));
 
 function renderStressTest(result) {
   if (!result.agreement) {
@@ -1433,6 +1494,10 @@ function renderScenarios() {
   const selected = select.value;
   select.innerHTML = '<option value="">Choose a saved scenario</option>' + scenarios.map((row, index) => '<option value="' + index + '">' + escapeHtml(row.name) + '</option>').join("");
   if (selected !== "" && scenarios[Number(selected)]) select.value = selected;
+  const comparison = $("#comparison-select");
+  const previousComparison = comparison.value;
+  comparison.innerHTML = '<option value="">Choose a snapshot to compare</option>' + scenarios.map((row, index) => '<option value="' + index + '">' + escapeHtml(row.name) + '</option>').join("");
+  if (previousComparison !== "" && scenarios[Number(previousComparison)]) comparison.value = previousComparison;
   $("#scenario-count").textContent = libraryBlocked ? "Scenario storage is unavailable or invalid. Existing stored bytes are preserved. Export JSON to keep your work." : scenarios.length + " of " + MAX_SCENARIOS + " snapshots saved in this browser. Loading can be undone.";
   $("#save-scenario").disabled = libraryBlocked || scenarios.length >= MAX_SCENARIOS;
   $("#load-scenario").disabled = !scenarios.length;

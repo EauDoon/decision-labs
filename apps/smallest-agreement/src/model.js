@@ -477,3 +477,37 @@ export function stressPackage(proposal, optionIds, supportDrop) {
   }
   return { ...evaluatePackage(pessimistic, optionIds), original: original.summary, supportDrop };
 }
+
+
+/** Compare declared assumptions by stable IDs, including additions and removals. */
+export function compareScenarioInputs(before, after) {
+  const flatten = (proposal) => {
+    const p = canonicalProposal(proposal);
+    const fields = new Map([["Proposal title", p.title], ["Approval threshold", p.threshold], ["Maximum change cost", p.maxChangeCost]]);
+    for (const group of p.groups) {
+      const prefix = "Group " + group.id + ": ";
+      fields.set(prefix + "name", group.name);
+      fields.set(prefix + "weight", group.weight);
+      fields.set(prefix + "minimum support", group.minSupport);
+    }
+    for (const clause of p.clauses) {
+      const prefix = "Clause " + clause.id + ": ";
+      fields.set(prefix + "title", clause.title);
+      fields.set(prefix + "locked option", clause.lockedOptionId);
+      for (const option of clause.options) {
+        const optionPrefix = prefix + option.id + ": ";
+        fields.set(optionPrefix + "label", option.label);
+        fields.set(optionPrefix + "original", option.original);
+        fields.set(optionPrefix + "change cost", option.changeCost);
+        for (const group of p.groups) fields.set(optionPrefix + group.id + " support", option.support[group.id]);
+      }
+    }
+    // Clause order participates in deterministic tie breaking.
+    fields.set("Clause order", p.clauses.map((clause) => clause.id).join(", "));
+    return fields;
+  };
+  const previous = flatten(before);
+  const current = flatten(after);
+  return [...new Set([...previous.keys(), ...current.keys()])].filter((field) => previous.get(field) !== current.get(field))
+    .map((field) => ({ field, before: previous.get(field), after: current.get(field) }));
+}

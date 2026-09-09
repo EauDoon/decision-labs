@@ -6,6 +6,7 @@ import {
   canonicalProposal,
   evaluatePackage,
   stressPackage,
+  compareScenarioInputs,
   findSmallestAgreement,
   formatPercent,
   formatDecisionBrief,
@@ -350,6 +351,7 @@ function renderResults(result) {
   renderAlternatives(result);
   renderManualPackage(result);
   renderStressTest(result);
+  renderScenarioComparison(result);
   const alert = $("#result-alert");
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
@@ -401,6 +403,27 @@ function renderResults(result) {
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
 }
+
+function renderScenarioComparison(result) {
+  const selected = $("#comparison-select").value;
+  const row = selected === "" ? null : scenarios[Number(selected)];
+  if (!row || result.status === "invalid") {
+    $("#scenario-comparison").textContent = result.status === "invalid" ? "Fix the draft before comparing snapshots." : "Save a snapshot, then select it here to compare with the working draft.";
+    return;
+  }
+  const previous = findSmallestAgreement(row.proposal);
+  const changes = compareScenarioInputs(row.proposal, state.proposal);
+  const metric = (label, get) => '<tr><th scope="row">' + label + '</th><td>' + get(row.proposal, previous) + '</td><td>' + get(state.proposal, result) + '</td></tr>';
+  const value = (input) => input === undefined ? 'Not set / absent' : escapeHtml(input);
+  $("#scenario-comparison").innerHTML = '<p>Comparing <strong>' + escapeHtml(row.name) + '</strong> with the working draft. Changes to groups, weights, or clauses change what approval measures; review the assumptions before interpreting differences.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Metric</th><th scope="col">Saved snapshot</th><th scope="col">Working draft</th></tr></thead><tbody>' +
+    metric('Search status', (_, evaluated) => escapeHtml(evaluated.status.replaceAll('_', ' '))) +
+    metric('Threshold', (proposal) => formatPercent(proposal.threshold)) +
+    metric('Recommended approval', (_, evaluated) => evaluated.agreement ? formatPercent(evaluated.agreement.approval) : 'No recommendation') +
+    metric('Change cost', (_, evaluated) => evaluated.agreement ? evaluated.agreement.changeCost.toFixed(1) : 'No recommendation') +
+    metric('Changed clauses', (_, evaluated) => evaluated.agreement ? evaluated.agreement.changedClauseCount : 'No recommendation') +
+    '</tbody></table></div><details><summary>' + changes.length + ' changed input fields</summary>' + (changes.length ? '<ul>' + changes.slice(0, 100).map((change) => '<li><strong>' + escapeHtml(change.field) + '</strong>: ' + value(change.before) + ' → ' + value(change.after) + '</li>').join('') + '</ul>' + (changes.length > 100 ? '<p>Showing the first 100 changes. Export each scenario as JSON for the complete inputs.</p>' : '') : '<p>The saved and working assumptions match.</p>') + '</details>';
+}
+$("#comparison-select").addEventListener("change", () => renderScenarioComparison(currentResult()));
 
 function renderStressTest(result) {
   if (!result.agreement) {
@@ -678,6 +701,10 @@ function renderScenarios() {
   const selected = select.value;
   select.innerHTML = '<option value="">Choose a saved scenario</option>' + scenarios.map((row, index) => '<option value="' + index + '">' + escapeHtml(row.name) + '</option>').join("");
   if (selected !== "" && scenarios[Number(selected)]) select.value = selected;
+  const comparison = $("#comparison-select");
+  const previousComparison = comparison.value;
+  comparison.innerHTML = '<option value="">Choose a snapshot to compare</option>' + scenarios.map((row, index) => '<option value="' + index + '">' + escapeHtml(row.name) + '</option>').join("");
+  if (previousComparison !== "" && scenarios[Number(previousComparison)]) comparison.value = previousComparison;
   $("#scenario-count").textContent = libraryBlocked ? "Scenario storage is unavailable or invalid. Existing stored bytes are preserved. Export JSON to keep your work." : scenarios.length + " of " + MAX_SCENARIOS + " snapshots saved in this browser. Loading can be undone.";
   $("#save-scenario").disabled = libraryBlocked || scenarios.length >= MAX_SCENARIOS;
   $("#load-scenario").disabled = !scenarios.length;

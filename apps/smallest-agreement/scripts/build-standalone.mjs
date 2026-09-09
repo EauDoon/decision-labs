@@ -20,6 +20,7 @@ const appImport = `import {
   canonicalProposal,
   evaluatePackage,
   stressPackage,
+  compareScenarioInputs,
   findSmallestAgreement,
   formatPercent,
   formatDecisionBrief,

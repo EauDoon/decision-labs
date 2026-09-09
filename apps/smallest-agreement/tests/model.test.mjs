@@ -13,6 +13,7 @@ import {
   canonicalProposal,
   evaluatePackage,
   stressPackage,
+  compareScenarioInputs,
   findSmallestAgreement,
   formatDecisionBrief,
   validateProposal,
@@ -698,4 +699,21 @@ test("downside stress tests preserve inputs and expose protected-group failures"
   assert.equal(stressPackage(input, ["original"], 100).summary.approval, 0);
   for (const drop of [-1, 101, NaN, "5"]) assert.equal(stressPackage(input, ["original"], drop).status, "invalid");
   assert.equal(JSON.stringify(input), before);
+});
+
+
+test("scenario comparison identifies input changes and does not invent unchanged fields", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "One", options: [
+    option("original", true, { g: 60 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 70 }, 1),
+  ] }] });
+  assert.deepEqual(compareScenarioInputs(input, structuredClone(input)), []);
+  const after = structuredClone(input);
+  after.threshold = 80;
+  after.groups[0].minSupport = 60;
+  after.clauses[0].options[1].support.g = 85;
+  const changes = compareScenarioInputs(input, after);
+  assert.equal(changes.length, 3);
+  assert.ok(changes.some(row => row.field === "Approval threshold" && row.before === 70 && row.after === 80));
+  assert.ok(changes.some(row => row.field.includes("minimum support") && row.before === undefined));
+  assert.ok(changes.some(row => row.before === 90 && row.after === 85));
 });
