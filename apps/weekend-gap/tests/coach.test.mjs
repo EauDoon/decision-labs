@@ -32,6 +32,8 @@ test("keyboard shortcuts skip inputs and cover help, play, first settlement, und
   assert.match(html, /Jump the timeline to the first settlement/);
   assert.match(html, /<kbd>G<\/kbd>/);
   assert.match(html, /Jump to the gate Gantt/);
+  assert.match(html, /<kbd>P<\/kbd>/);
+  assert.match(html, /Jump the timeline to the peak queue/);
   assert.match(appSource, /isEditableTarget/);
   assert.match(appSource, /event\.key === "\?"/);
   assert.match(appSource, /event\.key === " "/);
@@ -39,6 +41,8 @@ test("keyboard shortcuts skip inputs and cover help, play, first settlement, und
   assert.match(appSource, /jumpToFirstSettlement\(\)/);
   assert.match(appSource, /event\.key === "g"/);
   assert.match(appSource, /jumpToGantt\(\)/);
+  assert.match(appSource, /event\.key === "p"/);
+  assert.match(appSource, /jumpToPeakQueue\(\)/);
   assert.match(appSource, /event\.key === "u"/);
   assert.match(appSource, /event\.key === "r"/);
   assert.match(appSource, /event\.key === "e"/);

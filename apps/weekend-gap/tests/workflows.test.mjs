@@ -193,6 +193,25 @@ test("reduced motion advances a single hour instead of starting playback",async(
   await ui.nodes.get("play-button").click();assert.equal(ui.nodes.get("timeline-range").value,"1");assert.equal(ui.nodes.get("play-button").attributes["aria-pressed"],"false");
 });
 
+test("keyboard p jumps to peak queue and is a no-op when demand never queues", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.edit("timeline-range", 12);
+  await ui.keydown("p");
+  const peakHour = ui.nodes.get("timeline-range").value;
+  assert.equal(peakHour, "65");
+  await ui.edit("timeline-range", 12);
+  await ui.keydown("P", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("timeline-range").value, "12");
+  await ui.keydown("p", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("timeline-range").value, "12");
+  ui.nodes.get("redemptionDemandAud").value = "0";
+  await ui.nodes.get("scenario-form").emit("change");
+  await ui.edit("timeline-range", 40);
+  await ui.keydown("p");
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+  assert.equal(ui.nodes.get("jump-peak").disabled, true);
+});
+
 test("keyboard g jumps to the Gantt heading and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);

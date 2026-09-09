@@ -237,6 +237,10 @@ function render() {
   if (jumpFirst) {
     jumpFirst.disabled = hoursToFirstSettlement === null;
   }
+  const jumpPeak = document.querySelector("#jump-peak");
+  if (jumpPeak) {
+    jumpPeak.disabled = !(peakQueuedAud > 0);
+  }
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
     : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
@@ -1024,8 +1028,16 @@ document.querySelector("#export-queue-csv").addEventListener("click",()=>{
   setMessage("Queue CSV downloaded. Hour labels and queue size are formula-safe spreadsheet cells.");
 });
 document.querySelector("#jump-peak").addEventListener("click",()=>{
-  selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
+  jumpToPeakQueue();
 });
+function jumpToPeakQueue() {
+  if (!(simulation.summary.peakQueuedAud > 0)) return false;
+  selectedHour = simulation.summary.peakQueueHour;
+  setPlaying(false);
+  render();
+  saveWorkspace();
+  return true;
+}
 function jumpToFirstSettlement() {
   const hours = simulation.summary.hoursToFirstSettlement;
   if (hours === null) return false;
@@ -1143,6 +1155,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "g" || event.key === "G") {
     event.preventDefault();
     jumpToGantt();
+    return;
+  }
+  if (event.key === "p" || event.key === "P") {
+    event.preventDefault();
+    jumpToPeakQueue();
     return;
   }
   if (event.key === "u" || event.key === "U") {
