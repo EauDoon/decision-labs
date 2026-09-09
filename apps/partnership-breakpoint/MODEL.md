@@ -221,3 +221,7 @@ The optional review can test shared fee changes against every participant withou
 ### Commitment and capacity conflicts
 
 The optional review can identify incompatible operational promises independently of economics. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Effective-volume scenarios
+
+The optional review can expose how specific demand levels change participant failures. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.

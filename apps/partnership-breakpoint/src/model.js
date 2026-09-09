@@ -1496,6 +1496,7 @@ export const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
   {id:'shares',title:'Revenue-share funding needs'},
   {id:'fees',title:'Common fee scenarios'},
   {id:'operations',title:'Commitment and capacity conflicts'},
+  {id:'volumes',title:'Effective-volume scenarios'},
 // PB_REVIEW_TOOLS
 ]);
 
@@ -1556,6 +1557,12 @@ export function analyzePartnershipReview(rawConfig, tool) {
 
  const required=Math.max(...config.participants.map(p=>p.minimumCommitment??0));const ceiling=Math.min(config.deal.addressableVolume,...config.participants.map(p=>p.capacity??config.deal.addressableVolume));
  return report(['Participant','Commitment','Capacity','Demand ceiling','Gap from shared requirement'],config.participants.map(p=>[p.name,p.minimumCommitment??0,p.capacity??null,config.deal.addressableVolume,Math.min(p.capacity??config.deal.addressableVolume,config.deal.addressableVolume)-required]).concat([['Shared operational interval',required,ceiling,config.deal.addressableVolume,ceiling-required]]),'Every participant handles the same effective volume. A negative shared gap means no volume satisfies all commitments, capacities and stated demand. A nonnegative gap does not establish profitability.');
+
+ }
+ case 'volumes': {
+
+ const rows=[];for(const share of [0,.25,.5,.75,1]){const volume=config.deal.addressableVolume*share;const evaluated=calculatePartnership({...config,deal:{...config.deal,monthlyVolume:volume,volumeShockPct:0}});for(const p of evaluated.participants)rows.push([share,volume,p.name,p.monthlyProfit,p.viable?'Hold':p.failureReasons.join('; ')]);}
+ return report(['Fraction of demand ceiling','Effective volume','Participant','Monthly profit','Current tests'],rows,'Five effective-volume points from zero through declared addressable demand. The counterfactual resets the volume shock to zero so it is not counted twice. Capacity violations remain visible; inputs are not changed.');
 
  }
 // PB_REVIEW_CASES
