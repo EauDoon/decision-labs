@@ -1,4 +1,6 @@
 import {
+  PARTNERSHIP_REVIEW_TOOLS,
+  analyzePartnershipReview,
   PRESETS,
   DEFAULT_STRESS,
   MAX_PARTICIPANTS,
@@ -764,6 +766,7 @@ function methodAndLimits() {
 }
 
 function render() {
+  clearPartnershipReview();
   const casesOpen = app.querySelector?.('.case-details')?.open;
   invalidFieldCount = 0;
   let result = null;
@@ -1669,3 +1672,23 @@ function helpDialog() {
     </div>
   </div>`;
 }
+
+function clearPartnershipReview() {
+ const output=document.querySelector('#partnership-review-output');
+ if(output) output.textContent='Run a review for the current valid inputs. Results clear when the case changes.';
+}
+function showPartnershipReview(review) {
+ const output=document.querySelector('#partnership-review-output');output.replaceChildren();
+ const title=document.createElement('h2');title.textContent=review.title;const note=document.createElement('p');note.textContent=review.note;output.append(title,note);
+ const scroll=document.createElement('div');scroll.className='review-scroll';scroll.tabIndex=0;
+ const table=document.createElement('table');const caption=document.createElement('caption');caption.textContent='Declared-input review. Monetary values use '+review.currency+'. Blank cells mean unavailable or unbounded as explained above.';table.append(caption);
+ const head=document.createElement('thead');const headings=document.createElement('tr');for(const label of review.columns){const th=document.createElement('th');th.scope='col';th.textContent=label;headings.append(th);}head.append(headings);table.append(head);
+ const body=document.createElement('tbody');for(const values of review.rows){const row=document.createElement('tr');for(const value of values){const cell=document.createElement('td');cell.textContent=value===null?'':typeof value==='number'?new Intl.NumberFormat('en-US',{maximumSignificantDigits:10}).format(value):value;row.append(cell);}body.append(row);}table.append(body);scroll.append(table);output.append(scroll);
+}
+function initializePartnershipReview(){
+ const select=document.querySelector('#partnership-review-tool');if(!select)return;
+ for(const tool of PARTNERSHIP_REVIEW_TOOLS){const option=document.createElement('option');option.value=tool.id;option.textContent=tool.title;select.append(option);}
+ select.value='interval';select.addEventListener('change',clearPartnershipReview);
+ document.querySelector('#partnership-review-run').addEventListener('click',()=>{try{showPartnershipReview(analyzePartnershipReview(state,select.value));}catch(error){clearPartnershipReview();document.querySelector('#partnership-review-output').textContent='Review unavailable. '+(error.errors?.join(' ')||error.message);}});
+}
+initializePartnershipReview();

@@ -1487,3 +1487,36 @@ export function stressGridCsv(config, options) {
   }
   return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}\r\n`;
 }
+
+export const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
+  {id:'interval',title:'Feasible effective volume interval'},
+// PB_REVIEW_TOOLS
+]);
+
+/** Bounded declared-input reviews. Rows contain display primitives only. */
+export function analyzePartnershipReview(rawConfig, tool) {
+ const config=assertValidConfiguration(rawConfig);
+ const selected=PARTNERSHIP_REVIEW_TOOLS.find(entry=>entry.id===tool);
+ if(!selected) throw new ValidationError(['Unknown partnership review.']);
+ const result=calculatePartnership(config);
+ const report=(columns,rows,note)=>({tool,title:selected.title,currency:config.deal.currency??'units',columns,rows,note});
+ switch(tool){
+ case 'interval': {
+
+      let lower=0,upper=config.deal.addressableVolume; const impossible=[];
+      for(const p of config.participants){
+        const contribution=p.revenueShare*config.deal.feePerTransaction-p.variableCostPerTransaction;
+        const obligation=p.fixedMonthlyCost+p.riskCost+p.minimumAcceptableProfit;
+        lower=Math.max(lower,p.minimumCommitment??0); upper=Math.min(upper,p.capacity??upper);
+        if(contribution>0) lower=Math.max(lower,obligation/contribution);
+        else if(obligation>0) impossible.push(p.name+' cannot fund its profit floor');
+        else if(contribution<0) upper=0;
+      }
+      const feasible=!impossible.length&&lower<=upper;
+      return report(['Required effective volume','Maximum effective volume','Interval','Reason'],[[lower,upper,feasible?'Feasible':'Empty',impossible.join('; ')||(lower>upper?'Lower bound exceeds upper bound':'All declared constraints overlap')]],'Continuous effective transactions, with fee, shares and costs fixed. Bounds use exact inequalities; the existing evaluator has a tiny numerical tolerance. This is not planned pre-shock volume or evidence that demand will occur.');
+
+ }
+// PB_REVIEW_CASES
+ default: throw new ValidationError(['Unavailable partnership review.']);
+ }
+}
