@@ -11,6 +11,7 @@ import {
   MAX_WEIGHT,
   approvalForOptions,
   canonicalProposal,
+  evaluatePackage,
   findSmallestAgreement,
   formatDecisionBrief,
   validateProposal,
@@ -665,4 +666,19 @@ test("passing alternatives are complete, deterministically ranked, and respect f
   const constrained = findSmallestAgreement(input, { alternativesLimit: 5 });
   assert.deepEqual(constrained.alternatives.map(row => row.options[0].id), ["cheap"]);
   for (const limit of [-1, 6, 1.5, "3"]) assert.equal(findSmallestAgreement(input, { alternativesLimit: limit }).status, "invalid");
+});
+
+
+test("custom packages evaluate all constraints without changing the draft", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "One", lockedOptionId: "better", options: [
+    option("original", true, { g: 80 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 75 }, 1),
+  ] }] });
+  const before = JSON.stringify(input);
+  assert.equal(evaluatePackage(input, ["original"]).status, "not_passing");
+  assert.equal(evaluatePackage(input, ["better"]).status, "passing");
+  assert.equal(evaluatePackage(input, ["missing"]).status, "invalid");
+  assert.equal(evaluatePackage(input, []).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+  input.maxChangeCost = 1;
+  assert.equal(evaluatePackage(input, ["better"]).status, "not_passing");
 });

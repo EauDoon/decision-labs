@@ -4,6 +4,7 @@ import {
   MAX_GROUPS,
   MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
+  evaluatePackage,
   findSmallestAgreement,
   formatPercent,
   formatDecisionBrief,
@@ -141,6 +142,7 @@ const presets = {
 
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
 let scenarios = loadScenarios();
+let manualSelection = Object.create(null);
 const undoStack = [];
 const redoStack = [];
 let historySnapshot = JSON.stringify(state.proposal);
@@ -345,6 +347,7 @@ function renderClauses() {
 function renderResults(result) {
   const { proposal } = state;
   renderAlternatives(result);
+  renderManualPackage(result);
   const alert = $("#result-alert");
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
@@ -396,6 +399,35 @@ function renderResults(result) {
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
 }
+
+function renderManualPackage(result) {
+  const valid = result.status !== "invalid";
+  $("#use-recommendation").disabled = !result.agreement;
+  if (!valid) {
+    $("#manual-options").innerHTML = "";
+    $("#manual-result").textContent = "Fix the draft before comparing a custom package.";
+    return;
+  }
+  for (const clause of state.proposal.clauses) {
+    if (!clause.options.some((option) => option.id === manualSelection[clause.id])) manualSelection[clause.id] = clause.options.find((option) => option.original).id;
+  }
+  $("#manual-options").innerHTML = state.proposal.clauses.map((clause) => '<label>' + escapeHtml(clause.title) + '<select data-field="manual-option" data-clause-id="' + escapeHtml(clause.id) + '">' + clause.options.map((option) => '<option value="' + escapeHtml(option.id) + '" ' + (manualSelection[clause.id] === option.id ? 'selected' : '') + '>' + escapeHtml(option.label) + '</option>').join('') + '</select></label>').join('');
+  const evaluated = evaluatePackage(state.proposal, state.proposal.clauses.map((clause) => manualSelection[clause.id]));
+  const summary = evaluated.summary;
+  const failures = [];
+  if (summary.approval + 1e-9 < state.proposal.threshold) failures.push('Below the overall threshold');
+  if (summary.constraints.budget && !summary.constraints.budget.met) failures.push('Over the cost budget');
+  for (const floor of summary.constraints.floors) if (!floor.met) failures.push(escapeHtml(floor.name) + ' below its support floor');
+  for (const lock of summary.constraints.locks) if (!lock.met) failures.push(escapeHtml(lock.clauseTitle) + ' does not use its locked option');
+  $("#manual-result").innerHTML = '<p><strong>' + (evaluated.status === 'passing' ? 'Passes all configured requirements.' : 'Does not pass: ' + failures.join('; ') + '.') + '</strong></p><p>Approval ' + formatPercent(summary.approval) + '. Change cost ' + summary.changeCost.toFixed(1) + '. ' + summary.changedClauseCount + ' changed clauses.' + (result.agreement ? ' Cost difference from the recommendation: ' + (summary.changeCost - result.agreement.changeCost).toFixed(1) + '.' : '') + '</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Custom support</th><th scope="col">Change from original</th></tr></thead><tbody>' + summary.groupDeltas.map((group) => '<tr><th scope="row">' + escapeHtml(group.name) + '</th><td>' + formatPercent(group.after) + '</td><td>' + formatMargin(group.delta) + '</td></tr>').join('') + '</tbody></table></div>';
+}
+
+$("#use-recommendation").addEventListener("click", () => {
+  const result = currentResult();
+  if (!result.agreement) return;
+  manualSelection = Object.fromEntries(state.proposal.clauses.map((clause, index) => [clause.id, result.agreement.options[index].id]));
+  renderManualPackage(result);
+});
 
 function renderAlternatives(result) {
   const candidates = result.alternatives ?? [];
@@ -499,7 +531,7 @@ document.addEventListener("input", (event) => {
   const target = event.target;
   const field = target.dataset.field;
   if (!field) return;
-  if (field === "clause-lock") return;
+  if (field === "clause-lock" || field === "manual-option") return;
   if (field === "group-floor") {
     const group = groupById(target.dataset.groupId);
     if (target.value === "" && !target.validity.badInput) delete group.minSupport;
@@ -547,6 +579,12 @@ $("#max-change-cost").addEventListener("input", (event) => {
 });
 document.addEventListener("change", (event) => {
   const target = event.target;
+  if (target.dataset.field === "manual-option") {
+    manualSelection[target.dataset.clauseId] = target.value;
+    renderManualPackage(currentResult());
+    [...document.querySelectorAll('[data-field="manual-option"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId)?.focus();
+    return;
+  }
   if (target.dataset.field !== "clause-lock") return;
   changeAndRender(() => {
     const clause = clauseById(target.dataset.clauseId);

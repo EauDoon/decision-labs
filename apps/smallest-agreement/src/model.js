@@ -448,3 +448,17 @@ export function formatDecisionBrief(proposal, result) {
   lines.push("Scores, weights, and costs remain human inputs. This brief is a deliberation aid, not a decision or a claim of legitimacy.");
   return `${lines.join("\n")}\n`;
 }
+
+
+/** Evaluate a human-selected package, including locks, without changing the proposal. */
+export function evaluatePackage(proposal, optionIds) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(optionIds) || optionIds.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === optionIds[index]));
+  if (selected.some((option) => !option)) return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  const summary = selectionSummary(proposal, selected);
+  return { status: summary.constraints.met && summary.approval + EPSILON >= proposal.threshold ? "passing" : "not_passing", summary };
+}
