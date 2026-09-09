@@ -296,6 +296,7 @@ export function applyOfferSort(rawScenario: unknown, mode: "unitPrice" | "capaci
 export function previewBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Buyer[];
 export function applyBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Scenario;
 export function restoreRemovedBuyer(rawScenario: unknown, rawBuyer: unknown): Scenario;
+export function restoreExampleOffers(rawScenario: unknown, name?: keyof typeof presets): Scenario;
 export function uniqueCopyTitle(title: unknown, existingTitles?: unknown): string;
 export function duplicateRoom(rawScenario: unknown, existingTitles?: unknown): Scenario;
 export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;

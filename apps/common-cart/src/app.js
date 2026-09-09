@@ -11,6 +11,7 @@ import {
   acceptedVariantFilterOptions,
   filterBuyerIdsByAcceptedVariant,
   restoreRemovedBuyer,
+  restoreExampleOffers,
   duplicateRoom,
   winnerBudgetLeftover,
   clonePreset,
@@ -364,6 +365,21 @@ function bindStaticEvents() {
     elements.buyerRows.querySelector("input")?.focus();
   });
 
+  document.querySelector("#restore-example-offers").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    try {
+      scenario = restoreExampleOffers(scenario, "neighbourhood");
+      inspectedOfferId = scenario.offers[0]?.id ?? "";
+      offerSortPreviewIds = null;
+      renderEditor();
+      refresh();
+      setStatus("Example offers restored. Buyers were left unchanged. Undo returns to the empty offer list.", true);
+      elements.offerRows.querySelector("input")?.focus();
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+
   document.querySelector("#add-offer").addEventListener("click", () => {
     if (scenario.offers.length >= 40) return setStatus("A room can have at most 40 offers.");
     const next = nextId(scenario.offers, "O");
@@ -705,8 +721,13 @@ function renderEditor() {
     ? offerSortPreviewIds.map((id) => scenario.offers.find((offer) => offer.id === id)).filter(Boolean)
     : scenario.offers;
   elements.offerRows.replaceChildren(...offersForDisplay.map(renderOfferRow));
+  if (scenario.offers.length === 0) {
+    setEmptyState(elements.offerRows, 10, "No offers are in this room.");
+  }
   const recovery = document.querySelector("#empty-buyer-recovery");
   if (recovery) recovery.hidden = scenario.buyers.length > 0;
+  const offerRecovery = document.querySelector("#empty-offer-recovery");
+  if (offerRecovery) offerRecovery.hidden = scenario.offers.length > 0;
   const addBuyer = document.querySelector("#add-buyer");
   const addOffer = document.querySelector("#add-offer");
   addBuyer.disabled = scenario.buyers.length >= 40;
@@ -865,12 +886,15 @@ function renderOfferRow(entry) {
     });
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
-    if (scenario.offers.length === 1) return setStatus("A room needs at least one offer.");
     const index = scenario.offers.findIndex(({ id }) => id === row.dataset.id);
     scenario.offers = scenario.offers.filter(({ id }) => id !== row.dataset.id);
     offerSortPreviewIds = null;
     renderEditor();
     refresh();
+    if (scenario.offers.length === 0) {
+      document.querySelector("#restore-example-offers")?.focus();
+      return;
+    }
     elements.offerRows.children[Math.min(index, scenario.offers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
@@ -1080,7 +1104,6 @@ function renderThreeRoomComparison(comparison) {
 
 function addDuplicateAction(row, kind, entry) {
   row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? buyerDisplayLabel(entry) : entry.merchant} (${entry.id})`);
-  row.querySelector(".remove-row").disabled = kind === "offers" && scenario.offers.length === 1;
   row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
   const button = document.createElement("button");
   button.type = "button";

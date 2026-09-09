@@ -302,6 +302,17 @@ export function restoreRemovedBuyer(rawScenario, rawBuyer) {
   return validateScenario({ ...scenario, buyers: [...scenario.buyers, buyer] });
 }
 
+export function restoreExampleOffers(rawScenario, name = "neighbourhood") {
+  const scenario = validateScenario(rawScenario);
+  const example = clonePreset(name);
+  return validateScenario({
+    title: scenario.title,
+    currency: scenario.currency,
+    buyers: scenario.buyers,
+    offers: example.offers
+  });
+}
+
 export function uniqueCopyTitle(title, existingTitles = []) {
   if (typeof title !== "string") throw new ScenarioError("Room name must be 1 to 80 characters.");
   if (!Array.isArray(existingTitles)) throw new ScenarioError("Existing titles must be an array.");
@@ -852,8 +863,8 @@ export function validateScenario(candidate) {
   if (!Array.isArray(buyers) || buyers.length > MAX_BUYERS) {
     throw new ScenarioError(`Buyers must contain at most ${MAX_BUYERS} entries.`);
   }
-  if (!Array.isArray(offers) || offers.length < 1 || offers.length > MAX_OFFERS) {
-    throw new ScenarioError(`Offers must contain 1 to ${MAX_OFFERS} entries.`);
+  if (!Array.isArray(offers) || offers.length > MAX_OFFERS) {
+    throw new ScenarioError(`Offers must contain at most ${MAX_OFFERS} entries.`);
   }
   const normalizedBuyers = buyers.map((entry, index) => validateBuyer(entry, index));
   const normalizedOffers = offers.map((entry, index) => validateOffer(entry, index));
