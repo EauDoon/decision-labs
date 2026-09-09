@@ -157,3 +157,7 @@ The optional timing review can show individually open hours that cannot form a c
 ### Reserve needed by service target
 
 The optional timing review can compare minimum whole-cent reserves for four full-horizon settlement targets. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Joint-throughput ladder
+
+The optional timing review can test coordinated throughput increases while retaining reserve, demand and operating windows. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.

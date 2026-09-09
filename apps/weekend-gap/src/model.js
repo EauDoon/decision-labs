@@ -1254,6 +1254,7 @@ export const WEEKEND_REVIEW_TOOLS=Object.freeze([
  {id:'closures',title:'Complete-chain closure spells'},
  {id:'overlap',title:'Operating-window overlap'},
  {id:'reserve',title:'Reserve needed by service target'},
+ {id:'throughput',title:'Joint-throughput ladder'},
 // WG_REVIEW_TOOLS
 ]);
 function validateWeekendReviewScenario(raw){
@@ -1297,6 +1298,12 @@ export function analyzeWeekendReview(rawScenario,tool){
  case 'reserve':{
 
  return report(['Target of total demand %','Target AUD','Status','Minimum starting reserve AUD','Change from current AUD','Maximum possible settlement AUD'],[25,50,75,100].map(target=>{const p=planReserve(scenario,target,72);return[target,p.targetAud,p.status,p.minimumReserveAud,p.reserveChangeAud,p.maximumSettledAud];}),'Four targets at hour 72 use the existing whole-cent reserve planner. All gates, throughput and demand timing stay fixed. Unreachable means reserve alone cannot meet that target within nominal liquidity. Synthetic calculation only; no funding action or recommendation.');
+
+ }
+ case 'throughput':{
+
+ const fields=['issuerThroughputAudPerHour','fxDepthAudPerHour','payoutThroughputAudPerHour'];const rows=[1,2,4,8].map(multiplier=>{const candidate={...scenario};for(const field of fields)candidate[field]=Math.min(1000000000,scenario[field]*multiplier);const r=runSimulation(candidate);return[multiplier,...fields.map(f=>candidate[f]),r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud];});
+ return report(['Multiplier','Issuer AUD/hour','FX AUD/hour before weekend factor','Payout AUD/hour','Settled by 72 AUD','Extra settled AUD','Final queue AUD'],rows,'All three throughput assumptions scale together up to their 1 billion AUD/hour caps. Reserve and windows remain unchanged. Repeated settlements show a plateau only at these four tested points, not a global optimum. Zero rates remain zero.');
 
  }
 // WG_REVIEW_CASES
