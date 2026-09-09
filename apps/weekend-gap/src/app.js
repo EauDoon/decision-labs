@@ -891,3 +891,28 @@ document.querySelector("#export-report").addEventListener("click",()=>{
 document.addEventListener("visibilitychange",()=>{ if(document.hidden) setPlaying(false); });
 reducedMotion?.addEventListener?.("change",()=>setPlaying(false));
 setPlaying(false);
+
+const COACH_KEY = "weekend-gap:coach:v1";
+const coachOverlay = document.querySelector("#coach-overlay");
+function closeCoach() {
+  coachOverlay.hidden = true;
+  try { localStorage.setItem(COACH_KEY, "dismissed"); } catch { /* dismissal is best-effort */ }
+}
+function maybeShowCoach() {
+  if (window.location.hash.startsWith("#scenario=")) return;
+  try {
+    if (localStorage.getItem(COACH_KEY) === "dismissed") return;
+  } catch {
+    return;
+  }
+  coachOverlay.hidden = false;
+  document.querySelector("#coach-dismiss").focus();
+}
+document.querySelector("#coach-dismiss").addEventListener("click", closeCoach);
+document.addEventListener("keydown", (event) => {
+  if (event.key === "Escape" && !coachOverlay.hidden) {
+    event.preventDefault();
+    closeCoach();
+  }
+});
+maybeShowCoach();

@@ -270,4 +270,28 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
   .gantt-svg, .queue-svg { border: 1px solid #9aa9b0; }
   .chart-wrap canvas { display: none; }
   .chart-wrap { height: auto; border: 0; }
+  .overlay { display: none !important; }
 }
+.overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 20;
+  display: grid;
+  place-items: center;
+  padding: 1.2rem;
+  background: rgba(7, 19, 31, 0.82);
+}
+.overlay[hidden] { display: none; }
+.overlay-dialog {
+  width: min(36rem, 100%);
+  max-height: min(90vh, 40rem);
+  overflow: auto;
+  padding: 1.4rem;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--navy-800);
+  box-shadow: var(--shadow);
+}
+.overlay-dialog h2 { margin-bottom: 0.8rem; }
+.overlay-dialog p { color: #d3dfe2; }
+.overlay-dialog button { margin-top: 0.4rem; }
