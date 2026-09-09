@@ -2252,7 +2252,7 @@ function analyzeWeekendReview(rawScenario,tool){
  case 'reserve-hours':{
 
  const added=Math.min(scenario.nominalLiquidityAud-scenario.reserveCashAud,Math.max(.01,scenario.reserveCashAud*.1));const candidate=runSimulation({...scenario,reserveCashAud:scenario.reserveCashAud+added});
- return report(['Hour ending','Base settled this hour AUD','With extra reserve AUD','Extra settled this hour AUD','Extra cumulative settled AUD'],result.timeline.slice(1).map((point,i)=>{const other=candidate.timeline[i+1];return[point.hour,point.settledThisHour,other.settledThisHour,other.settledThisHour-point.settledThisHour,other.settledAud-point.settledAud];}),'A single counterfactual adds '+added+' AUD starting reserve (10% or one cent, capped at nominal liquidity). All other assumptions stay fixed. Hourly differences may be negative when earlier payouts reduce later backlog; the cumulative column tracks the net effect. No reserve is actually moved.');
+ return report(['Hour ending','Base settled this hour AUD','With extra reserve AUD','Extra settled this hour AUD','Extra cumulative settled AUD'],result.timeline.slice(1).map((point,i)=>{const other=candidate.timeline[i+1];return[point.hour,point.settledThisHour,other.settledThisHour,other.settledThisHour-point.settledThisHour,other.settledAud-point.settledAud];}),'A single counterfactual adds '+added+' AUD starting reserve (10% or one cent, capped at nominal liquidity). All other assumptions stay fixed. With fixed rates and no reserve replenishment, extra reserve cannot reduce hourly settlement; the cumulative column tracks the added payout. No reserve is actually moved.');
 
  }
 // WG_REVIEW_CASES
