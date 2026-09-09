@@ -31,3 +31,18 @@ test("keyboard handler jumps to the offers list when not typing", async () => {
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.match(app, /#merchant-tab/u);
 });
+
+test("shortcut help documents the buyer list jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>b<\/kbd> Focus the buyer list/u);
+  assert.match(html, /id="buyers-list"[^>]*tabindex="-1"/u);
+});
+
+test("keyboard handler jumps to the buyer list when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "b"\)/u);
+  assert.match(app, /function focusBuyersList\(/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /#buyer-tab/u);
+});

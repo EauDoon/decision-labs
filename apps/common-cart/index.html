@@ -67,6 +67,7 @@ SOFTWARE.
         <li><kbd>n</kbd> Add a buyer</li>
         <li><kbd>m</kbd> Focus the merchant inspector region</li>
         <li><kbd>o</kbd> Focus the offers list</li>
+        <li><kbd>b</kbd> Focus the buyer list</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -202,7 +203,7 @@ SOFTWARE.
           <button id="apply-buyer-sort" type="button">Apply sort</button>
           <p>Preview changes the list on screen only. Apply rewrites saved order and is undoable. Buyer IDs stay the same.</p>
         </div>
-        <div class="table-shell print-private">
+        <div class="table-shell print-private" id="buyers-list" tabindex="-1" role="region" aria-label="Buyer constraints list">
           <table>
             <caption class="sr-only">Editable buyer constraints</caption>
             <thead>

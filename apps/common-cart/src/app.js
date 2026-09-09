@@ -553,7 +553,18 @@ function handleShortcut(event) {
   if (key === "o") {
     event.preventDefault();
     focusOffersList();
+    return;
   }
+  if (key === "b") {
+    event.preventDefault();
+    focusBuyersList();
+  }
+}
+
+function focusBuyersList() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#buyers-list")?.focus();
 }
 
 function focusOffersList() {
