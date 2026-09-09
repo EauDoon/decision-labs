@@ -41,6 +41,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="coach-overlay"/u);
   assert.match(html, /id="shortcut-overlay"/u);
   assert.match(html, /Focus the clause filter/u);
+  assert.match(html, /Focus Add group/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -493,6 +494,19 @@ test("keyboard f focuses the clause filter unless an input is active", async () 
   assert.equal(app.focused(), "");
   app.keydown("F");
   assert.equal(app.focused(), "#clause-filter");
+});
+
+test("keyboard n focuses Add group unless an input is active", async () => {
+  const app = await savedWorkbench(new Map());
+  app.keydown("n");
+  assert.equal(app.focused(), "#add-group");
+  app.clearFocus();
+  app.keydown("n", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("n", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("N");
+  assert.equal(app.focused(), "#add-group");
 });
 
 test("show workshop tour reopens the first-run coach after it was dismissed", async () => {

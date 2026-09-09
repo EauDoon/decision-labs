@@ -1488,6 +1488,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "f" || event.key === "F") {
     event.preventDefault();
     $("#clause-filter")?.focus?.();
+  } else if (event.key === "n" || event.key === "N") {
+    event.preventDefault();
+    $("#add-group")?.focus?.();
   }
 });
 

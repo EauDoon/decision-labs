@@ -274,7 +274,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <p id="budget-note" class="field-note">Optional hard budget. Leave blank for no limit. Zero permits only zero-cost changes.</p>
         </section>
         <section class="panel-section">
-          <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" data-action="add-group">Add group</button></div>
+          <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" id="add-group" data-action="add-group">Add group</button></div>
           <div id="groups-editor" class="groups-editor"></div>
           <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
           <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
@@ -434,6 +434,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>e</kbd> Export JSON</li>
           <li><kbd>s</kbd> Find agreement (jump to the live recommendation)</li>
           <li><kbd>f</kbd> Focus the clause filter</li>
+          <li><kbd>n</kbd> Focus Add group</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -3068,6 +3069,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "f" || event.key === "F") {
     event.preventDefault();
     $("#clause-filter")?.focus?.();
+  } else if (event.key === "n" || event.key === "N") {
+    event.preventDefault();
+    $("#add-group")?.focus?.();
   }
 });
 
