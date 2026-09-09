@@ -153,3 +153,7 @@ The optional package review can separate aggregate approval margin from non-appr
 ### Group floor and veto slack
 
 The optional package review can show group-specific remaining support above declared floors and veto requirements. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.
+
+### Option support and cost dominance
+
+The optional package review can find within-clause alternatives that improve every declared score without added cost or changes. It states the selected package context, unchanged assumptions and applicable bounds. It does not modify proposal rules or infer real votes from supplied scores.

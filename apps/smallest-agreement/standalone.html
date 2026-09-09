@@ -2598,6 +2598,7 @@ function parseClauseOptionsCsv(csvText, proposal) {
 const AGREEMENT_REVIEW_TOOLS=Object.freeze([
  {id:'margin',title:'Approval margin'},
  {id:'floors',title:'Group floor and veto slack'},
+ {id:'dominance',title:'Option support and cost dominance'},
 // SA_REVIEW_TOOLS
 ]);
 function analyzeAgreementReview(rawProposal,tool){
@@ -2614,6 +2615,12 @@ function analyzeAgreementReview(rawProposal,tool){
  case 'floors':{
 
  return report(['Group','Package support %','Floor %','Floor slack points','Veto requirement %','Veto slack points'],proposal.groups.map((g,i)=>{const actual=selected.byGroup[i].approval,required=g.veto?Math.max(proposal.threshold,g.minSupport??0):null;return[g.name,actual,g.minSupport??null,g.minSupport===undefined?null:actual-g.minSupport,required,required===null?null:actual-required];}),'Blank means that constraint is not declared. Veto requirements use the greater of the aggregate threshold and any group floor. These rows use the same fixed package as the review context.');
+
+ }
+ case 'dominance':{
+
+ const rows=[];for(const clause of proposal.clauses){for(const option of clause.options){const allowed=o=>!clause.lockedOptionId||clause.lockedOptionId===o.id;const dominates=allowed(option)?clause.options.filter(other=>other.id!==option.id&&allowed(other)&&other.changeCost<=option.changeCost&&Number(!other.original)<=Number(!option.original)&&proposal.groups.every(g=>other.support[g.id]>=option.support[g.id])&&(other.changeCost<option.changeCost||Number(!other.original)<Number(!option.original)||proposal.groups.some(g=>other.support[g.id]>option.support[g.id]))):[];rows.push([clause.title,option.label,option.changeCost,allowed(option)?dominates.map(o=>o.label).join('; ')||'None on these measures':'Excluded by current lock']);}}
+ return report(['Clause','Option','Change cost','Dominating allowed alternatives'],rows,'Comparison is within one clause across every declared group score, change cost and whether the option changes the original. Current locks are respected. This does not infer semantic substitutability or delete options.');
 
  }
 // SA_REVIEW_CASES
