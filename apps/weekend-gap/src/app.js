@@ -11,7 +11,14 @@ import {
   scenarioToJSON,
   compareScenarios,
   planReserve,
-  analysisToJSON
+  analysisToJSON,
+  analyzeTimeline,
+  runSensitivity,
+  libraryFromJSON,
+  workspaceToJSON,
+  workspaceFromJSON,
+  createScenarioHistory,
+  timelineToCSV
 } from "./model.js";
 
 let workspaceReady = false;
@@ -138,9 +145,13 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   saveScenario();
   render();
   renderPlanning();
+  renderDiagnostics();
+  document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
   if (message) setMessage(message);
   else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
+  if (workspaceReady) saveWorkspace();
 }
 
 function gateText(open) {
@@ -223,8 +234,11 @@ function render() {
 }
 
 function renderTable() {
-  const rowIndexes = new Set([0, SIMULATION_HOURS, selectedHour]);
-  for (let hour = 6; hour < SIMULATION_HOURS; hour += 6) rowIndexes.add(hour);
+  const mode = document.querySelector("#table-density").value;
+  const rowIndexes = new Set([selectedHour]);
+  for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    if(mode === "all" || (mode === "backlog" && simulation.timeline[hour].queuedAud > 0) || (mode === "snapshots" && hour % 6 === 0)) rowIndexes.add(hour);
+  }
   const fragment = document.createDocumentFragment();
   [...rowIndexes].sort((a, b) => a - b).forEach((hour) => {
     const point = simulation.timeline[hour];
@@ -237,7 +251,9 @@ function renderTable() {
       formatPercent(point.liquidityRatio),
       formatPercent(point.discountBps / 10000, 2),
       point.immediateAud > 0 ? "Open" : `Blocked: ${point.limitingGate}`,
-      formatAud(comparison.baseline.timeline[hour].queuedAud)
+      formatAud(comparison.baseline.timeline[hour].queuedAud),
+      formatAud(point.demandThisHour, false),
+      formatAud(point.settledThisHour, false)
     ];
     cells.forEach((value, index) => {
       const cell = document.createElement("td");
@@ -461,6 +477,7 @@ timelineRange.addEventListener("input", () => {
   selectedHour = Number(timelineRange.value);
   setPlaying(false);
   render();
+  saveWorkspace();
 });
 
 elements.play.addEventListener("click", () => setPlaying(!playing));

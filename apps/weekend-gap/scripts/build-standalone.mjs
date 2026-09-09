@@ -44,7 +44,14 @@ const appImportMarker = `import {
   scenarioToJSON,
   compareScenarios,
   planReserve,
-  analysisToJSON
+  analysisToJSON,
+  analyzeTimeline,
+  runSensitivity,
+  libraryFromJSON,
+  workspaceToJSON,
+  workspaceFromJSON,
+  createScenarioHistory,
+  timelineToCSV
 } from "./model.js";`;
 const exportedNames = Object.freeze([
   "SIMULATION_HOURS",
