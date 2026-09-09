@@ -3,7 +3,21 @@ import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 
 const root = new URL('../', import.meta.url);
-const apps = new Set(['partnership-breakpoint', 'common-cart', 'smallest-agreement', 'weekend-gap']);
+
+// Exact public surface. Add a path here only together with a launcher test.
+export const PUBLIC_PATHS = Object.freeze([
+  '/',
+  '/index.html',
+  '/apps/partnership-breakpoint/standalone.html',
+  '/apps/common-cart/standalone.html',
+  '/apps/smallest-agreement/standalone.html',
+  '/apps/weekend-gap/standalone.html',
+]);
+
+export function publicFile(pathname) {
+  if (!PUBLIC_PATHS.includes(pathname)) return null;
+  return pathname === '/' ? 'index.html' : pathname.slice(1);
+}
 
 // Serve only the launch page and generated self-contained applications.
 // Source, hidden files, local drafts and repository metadata stay outside this surface.
@@ -32,10 +46,7 @@ export function createLauncher() {
       return;
     }
     const pathname = (request.url ?? '').split('?')[0];
-    const match = /^\/apps\/([a-z-]+)\/standalone\.html$/.exec(pathname);
-    const relative = pathname === '/' || pathname === '/index.html'
-      ? 'index.html'
-      : match && apps.has(match[1]) ? `apps/${match[1]}/standalone.html` : null;
+    const relative = publicFile(pathname);
     if (!relative) {
       finish(404, 'Not found');
       return;
