@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios, compareThreeRooms, copyOfferAsNewTierSet, evaluateOffer } from "../src/model.js";
+import { clonePreset, createScenarioHistory, validateWorkspace, duplicateEntry, compareScenarios, compareThreeRooms, copyOfferAsNewTierSet, copyOfferAsPickup, evaluateOffer } from "../src/model.js";
 
 test("history detaches states, caps memory, and truncates branches", () => {
   const s = clonePreset(); const h = createScenarioHistory(s);
@@ -55,6 +55,25 @@ test("copy offer as a new tier set adds an independent cheaper band", () => {
   const copied = evaluateOffer(next, copy.id);
   assert.equal(typeof copied.fulfilledUnits, "number");
   assert.equal(original.offer.id, s.offers[0].id);
+});
+
+test("copy offer as a pickup clone zeros shipping and leaves the source offer unchanged", () => {
+  const s = clonePreset("neighbourhood");
+  const shipped = evaluateOffer(s, s.offers[0].id);
+  assert.ok(shipped.allocations.some((entry) => entry.shippingCost > 0));
+  const next = copyOfferAsPickup(s, s.offers[0].id);
+  assert.equal(next.offers.length, s.offers.length + 1);
+  const copy = next.offers.at(-1);
+  assert.match(copy.merchant, /pickup/);
+  assert.equal(copy.fulfillment, "pickup");
+  assert.equal(copy.shippingPerBuyer, 0);
+  assert.equal(s.offers[0].fulfillment, undefined);
+  assert.equal(s.offers[0].shippingPerBuyer, 2);
+  const pickup = evaluateOffer(next, copy.id);
+  assert.equal(pickup.allocations.every((entry) => entry.shippingCost === 0), true);
+  assert.equal(pickup.totalCost, pickup.fulfilledUnits * pickup.effectiveUnitPrice);
+  copy.merchant = "Mutated pickup";
+  assert.equal(s.offers[0].merchant, "Harbour Roasters");
 });
 
 test("workspace validates every room and rejects unsupported schema or oversized collections", () => {

@@ -285,6 +285,7 @@ export function createScenarioHistory(initial: unknown): ScenarioHistory;
 export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
 export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", id: string): Scenario;
 export function copyOfferAsNewTierSet(rawScenario: unknown, offerId: string): Scenario;
+export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenario;
 export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;
 export interface ThreeRoomRow {
   title: string;

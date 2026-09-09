@@ -191,6 +191,16 @@ export function copyOfferAsNewTierSet(rawScenario, offerId) {
   return validateScenario(clean);
 }
 
+export function copyOfferAsPickup(rawScenario, offerId) {
+  const clean = duplicateEntry(rawScenario, "offers", offerId);
+  const source = clean.offers.find((offer) => offer.id === offerId);
+  const copy = clean.offers.at(-1);
+  copy.merchant = `${source.merchant.slice(0, 51)} (pickup)`;
+  copy.fulfillment = "pickup";
+  copy.shippingPerBuyer = 0;
+  return validateScenario(clean);
+}
+
 function residualCoverageCounts(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   return {

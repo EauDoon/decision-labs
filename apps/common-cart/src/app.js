@@ -19,6 +19,7 @@ import {
   decodeScenario,
   duplicateEntry,
   copyOfferAsNewTierSet,
+  copyOfferAsPickup,
   encodeScenario,
   encodeRedactedScenario,
   evaluateMarket,
@@ -799,6 +800,22 @@ function addDuplicateAction(row, kind, entry) {
     } catch (error) { setStatus(messageOf(error)); }
   });
   row.lastElementChild.append(tierSet);
+  const pickup = document.createElement("button");
+  pickup.type = "button";
+  pickup.textContent = "As pickup";
+  pickup.setAttribute("aria-label", `Copy ${entry.merchant} as a pickup offer`);
+  pickup.disabled = scenario.offers.length >= 40;
+  pickup.addEventListener("click", () => {
+    try {
+      scenario = copyOfferAsPickup(scenario, entry.id);
+      inspectedOfferId = scenario.offers.at(-1).id;
+      renderEditor();
+      refresh();
+      elements.offerRows.lastElementChild.querySelector("input").focus();
+      setStatus("Copied this offer as a pickup clone. Shipping is 0. This is a planning draft, not a merchant quote.", true);
+    } catch (error) { setStatus(messageOf(error)); }
+  });
+  row.lastElementChild.append(pickup);
 }
 
 function updateHistoryButtons() {
