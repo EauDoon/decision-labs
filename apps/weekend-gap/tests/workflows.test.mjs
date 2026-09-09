@@ -351,3 +351,7 @@ test("demand timing earlier and later previews apply without randomness", async 
   await ui.nodes.get("undo-scenario").click();
   assert.equal(ui.nodes.get("demandProfile").value, "mondayRush");
 });
+
+test("invalid numeric edit clears timing review and blocks a stale export", async () => {
+ const ui=await boot();await ui.nodes.get("weekend-review-run").click();assert.equal(ui.nodes.get("weekend-review-export").disabled,false);ui.nodes.get("reserveCashAud").value="";await ui.nodes.get("scenario-form").emit("input");assert.equal(ui.nodes.get("weekend-review-export").disabled,true);await ui.nodes.get("weekend-review-run").click();assert.equal(ui.nodes.get("weekend-review-export").disabled,true);assert.match(ui.nodes.get("weekend-review-output").textContent,/Complete invalid/);
+});

@@ -1324,3 +1324,22 @@ export function analyzeWeekendReview(rawScenario,tool){
  default:throw new TypeError('Unavailable weekend review.');
  }
 }
+
+export function createWeekendReviewPacket(rawScenario, tool) {
+  const scenario = validateWeekendReviewScenario(rawScenario);
+  const packet = { format: 'weekend-review', version: 1, tool, scenario, inputJSON: JSON.stringify(scenario), review: analyzeWeekendReview(scenario, tool) };
+  if (new TextEncoder().encode(JSON.stringify(packet)).length > 1048576) throw new TypeError('Review packet exceeds 1 MiB. Choose a narrower review.');
+  return packet;
+}
+
+export function replayWeekendReviewPacket(candidate) {
+  const fields = ['format', 'version', 'tool', 'scenario', 'inputJSON', 'review'];
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== fields.length || !fields.every((field) => Object.hasOwn(candidate, field)) || candidate.format !== 'weekend-review' || candidate.version !== 1) throw new TypeError('Unsupported review packet.');
+  const current = createWeekendReviewPacket(candidate.scenario, candidate.tool);
+  if (candidate.inputJSON !== current.inputJSON) throw new TypeError('Review input snapshot changed. Run a new review.');
+  const supplied = candidate.review, expected = current.review;
+  if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied) || Object.keys(supplied).length !== Object.keys(expected).length || !Object.keys(expected).every((field) => Object.hasOwn(supplied, field))) throw new TypeError('Review result fields changed.');
+  for (const field of ['tool', 'title', 'currency', 'note']) if (supplied[field] !== expected[field]) throw new TypeError('Review result does not match the input snapshot.');
+  if (!Array.isArray(supplied.columns) || supplied.columns.length !== expected.columns.length || expected.columns.some((value, index) => !Object.hasOwn(supplied.columns, index) || supplied.columns[index] !== value) || !Array.isArray(supplied.rows) || supplied.rows.length !== expected.rows.length || expected.rows.some((row, index) => !Object.hasOwn(supplied.rows, index) || !Array.isArray(supplied.rows[index]) || supplied.rows[index].length !== row.length || row.some((value, column) => !Object.hasOwn(supplied.rows[index], column) || supplied.rows[index][column] !== value))) throw new TypeError('Review result does not match the input snapshot.');
+  return current;
+}

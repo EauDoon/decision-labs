@@ -331,7 +331,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
   font-size: 0.78rem;
 }
 
-.weekend-review { margin: 1rem auto; padding: 1rem; max-width: 1400px; border: 1px solid #888; border-radius: .5rem; background: var(--panel, #fff); }
+.weekend-review { margin: 1rem auto; padding: 1rem; max-width: 1400px; border: 1px solid #888; border-radius: .5rem; background: var(--navy-900); color: var(--ink); }
 .weekend-review summary { cursor: pointer; font-weight: 700; min-height: 44px; }
 .review-controls { display: flex; gap: .7rem; flex-wrap: wrap; margin: .8rem 0; }
 .review-controls select { min-width: 0; max-width: 100%; flex: 1 1 240px; }

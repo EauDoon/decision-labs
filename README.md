@@ -30,7 +30,7 @@ Every workbench:
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.0 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.0 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.0 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | 1.4.3 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
+| [Weekend Gap](apps/weekend-gap/) | 1.5.0 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a

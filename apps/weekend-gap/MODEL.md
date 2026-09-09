@@ -169,3 +169,7 @@ The optional timing review can compare all four Saturday and Monday holiday comb
 ### Hourly effect of extra reserve
 
 The optional timing review can locate when an additional reserve increment changes actual modeled settlements. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Review packet contract
+
+`createWeekendReviewPacket(scenario, tool)` requires a complete already-valid typed scenario. `replayWeekendReviewPacket(packet)` requires format `weekend-review`, version 1, six exact top-level fields, an exact canonical source snapshot and every recomputed output primitive. Serialized packets are bounded to 1 MiB and UI downloads use those same compact bytes. The existing scenario sanitizer remains unchanged. Review input does not silently clamp invalid evidence. FIFO attribution is an additional analysis convention, not a change to the aggregate recurrence; completed waits start at zero for same-step settlement, and unfinished amounts accrue wait through hour 72.

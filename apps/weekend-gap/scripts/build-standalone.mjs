@@ -32,6 +32,8 @@ export const standaloneCsp = [
   "manifest-src 'none'",
 ].join("; ");
 const appImportMarker = `import {
+  createWeekendReviewPacket,
+  replayWeekendReviewPacket,
   WEEKEND_REVIEW_TOOLS,
   analyzeWeekendReview,
   DEFAULT_SCENARIO,
@@ -139,7 +141,9 @@ const exportedNames = Object.freeze([
   "buildSensitivityBarsSvg",
   "compareSavedExperiments",
   "WEEKEND_REVIEW_TOOLS",
-  "analyzeWeekendReview"
+  "analyzeWeekendReview",
+  "createWeekendReviewPacket",
+  "replayWeekendReviewPacket"
 ]);
 
 function normaliseLf(text) {

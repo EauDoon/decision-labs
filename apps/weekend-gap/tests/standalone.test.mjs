@@ -19,11 +19,11 @@ test("standalone build is self-contained, LF-only, and deterministic", async () 
   assert.doesNotMatch(first, /\r/);
 });
 
-test("release 1.4.3 ships dashboard copy, file compare and compressed Friday close", async () => {
+test("release 1.5.0 retains dashboard copy, file compare and compressed Friday close", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.4.3");
+  assert.equal(pkg.version, "1.5.0");
   assert.match(readme, /New in v1\.4\.3/);
   assert.match(readme, /Compressed Friday close/);
   assert.match(html, /id="copy-dashboard-markdown"/);
