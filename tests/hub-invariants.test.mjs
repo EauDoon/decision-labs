@@ -11,7 +11,7 @@ test('root package is a catalog with no npm dependencies', () => {
   assert.equal(pkg.dependencies, undefined);
   assert.equal(pkg.devDependencies, undefined);
   assert.equal(pkg.optionalDependencies, undefined);
-  assert.match(pkg.scripts.start, /scripts\/serve\.mjs/);
+  assert.match(pkg.scripts.check, /scripts\/check-hub\.mjs/);
   assert.match(pkg.scripts.test, /tests\/hub-page\.test\.mjs/);
   assert.match(pkg.scripts.test, /tests\/launcher\.test\.mjs/);
   assert.equal(pkg.engines.node, '>=20');

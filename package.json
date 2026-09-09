@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node scripts/serve.mjs",
     "test": "node --test tests/launcher.test.mjs tests/standalone-modules.test.mjs tests/hub-page.test.mjs tests/hub-invariants.test.mjs && node scripts/run-apps.mjs test",
-    "check": "node --check scripts/serve.mjs && node --check scripts/run-apps.mjs && node scripts/run-apps.mjs check",
+    "check": "node scripts/check-hub.mjs && node scripts/run-apps.mjs check",
     "build:standalone": "node scripts/run-apps.mjs build:standalone"
   },
   "license": "MIT"
