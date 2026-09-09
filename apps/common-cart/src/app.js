@@ -93,6 +93,7 @@ let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let screenshotMode = false;
 let cartReviewPacket = null;
+let cartReviewSequence = 0;
 let buyerSortPreviewIds = null;
 let offerSortPreviewIds = null;
 let buyerVariantFilter = "all";
@@ -1840,6 +1841,7 @@ function appJsonSyntaxHint(error) {
 
 
 function clearCartReview() {
+  cartReviewSequence++;
   cartReviewPacket = null;
   const exportButton = document.querySelector('#cart-review-export');
   if (exportButton) exportButton.disabled = true;
@@ -1878,6 +1880,7 @@ function initializeCartReview() {
   select.value = 'coverage';
   select.addEventListener('change', clearCartReview);
   document.querySelector('#cart-review-run').addEventListener('click', () => {
+    clearCartReview();
     try {
       if (invalidDraft) throw new ScenarioError('Correct invalid room inputs before reviewing.');
       cartReviewPacket = createCartReviewPacket(screenshotMode ? redactBuyerLabels(scenario) : scenario, select.value);
@@ -1891,7 +1894,7 @@ initializeCartReview();
 document.querySelector('#cart-review-export').addEventListener('click', () => {
   try {
     if (!cartReviewPacket) throw new ScenarioError('Run or inspect a review first.');
-    downloadFile(JSON.stringify(cartReviewPacket, null, 2) + '\n', 'common-cart-private-review.json', 'application/json');
+    downloadFile(JSON.stringify(cartReviewPacket), 'common-cart-private-review.json', 'application/json');
     setStatus('Private review packet exported. It contains buyer constraints and labels as displayed; review before sharing.', true);
   } catch (error) { setStatus(messageOf(error)); }
 });
@@ -1899,14 +1902,18 @@ document.querySelector('#cart-review-import').addEventListener('click', () => do
 document.querySelector('#cart-review-file').addEventListener('change', async (event) => {
   const file = event.target.files[0]; event.target.value = '';
   if (!file) return;
+  clearCartReview();
+  const sequence = cartReviewSequence;
   try {
     if (file.size > 1048576) throw new ScenarioError('Review packet exceeds 1 MiB.');
-    const packet = replayCartReviewPacket(JSON.parse(await file.text()));
+    const text = await file.text();
+    if (sequence !== cartReviewSequence) return;
+    const packet = replayCartReviewPacket(JSON.parse(text));
     cartReviewPacket = screenshotMode ? createCartReviewPacket(redactBuyerLabels(packet.scenario), packet.tool) : packet;
     document.querySelector('#cart-review-tool').value = packet.tool;
     showCartReview(cartReviewPacket.review);
     document.querySelector('#cart-review-origin').textContent = 'Inspected saved room: ' + packet.scenario.title + '. Current room unchanged.';
     document.querySelector('#cart-review-export').disabled = false;
     setStatus('Saved review recomputed and matched. Current room and autosave are unchanged.', true);
-  } catch (error) { clearCartReview(); setStatus('Review could not be inspected: ' + messageOf(error)); }
+  } catch (error) { if (sequence !== cartReviewSequence) return; clearCartReview(); setStatus('Review could not be inspected: ' + messageOf(error)); }
 });
