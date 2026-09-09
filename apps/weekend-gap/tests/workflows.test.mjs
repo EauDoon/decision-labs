@@ -27,18 +27,21 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     const node = new Element(value);
     node.type = match[0].match(/\btype="([^"]*)"/)?.[1] || "";
     node.checked = /\bchecked\b/.test(match[0]);
+    node.hidden = /\shidden(?:\s|>)/.test(match[0]);
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
   const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
+    handlers: {},
     querySelector(selector) { const node = nodes.get(selector.slice(1)); assert.ok(node, `Missing markup for ${selector}`); return node; },
     getElementById(id) { return this.querySelector("#" + id); },
     querySelectorAll(selector) { assert.equal(selector, "[data-preset]"); return presets; },
     createElement() { return new Element(); },
     createDocumentFragment() { const node = new Element(); node.fragment = true; return node; },
-    addEventListener() {}
+    addEventListener(type, handler) { (this.handlers[type] ||= []).push(handler); },
+    async emit(type, event) { for (const handler of this.handlers[type] || []) await handler(event); }
   };
   nodes.get("scenario-form").elements = { namedItem: field => nodes.get(field) };
   if (!canvasAvailable) nodes.get("liquidity-chart").getContext = () => null;
@@ -51,7 +54,19 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
   Object.assign(globalThis, { document, window, localStorage, history: { replaceState(a, b, url) { location.hash = url.startsWith("#") ? url : ""; } } });
   const executable = source.replace('"./model.js"', JSON.stringify(new URL("../src/model.js", import.meta.url).href));
   await import("data:text/javascript;base64," + Buffer.from(executable + "\n// boot " + ++runId).toString("base64"));
-  return { nodes, presets, storage, async edit(id, value, type = "input") { const node = nodes.get(id); node.value = String(value); await node.emit(type); } };
+  return {
+    nodes,
+    presets,
+    storage,
+    async edit(id, value, type = "input") { const node = nodes.get(id); node.value = String(value); await node.emit(type); },
+    async keydown(key, target = { tagName: "BODY" }) {
+      await document.emit("keydown", {
+        key,
+        target: { tagName: target.tagName, isContentEditable: Boolean(target.isContentEditable), closest() { return null; } },
+        preventDefault() {}
+      });
+    }
+  };
 }
 
 test("source mode runs library, sensitivity, undo, hourly table and workspace reload workflows", async () => {
@@ -125,4 +140,25 @@ test("blocked storage and missing canvas leave the usable table and persistent w
 test("reduced motion advances a single hour instead of starting playback",async()=>{
   const ui=await boot(new Map(),{reduced:true});assert.equal(ui.nodes.get("play-button").textContent,"Step hour");
   await ui.nodes.get("play-button").click();assert.equal(ui.nodes.get("timeline-range").value,"1");assert.equal(ui.nodes.get("play-button").attributes["aria-pressed"],"false");
+});
+
+test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("coach-overlay").hidden, true);
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  await ui.edit("timeline-range", 65);
+  await ui.keydown("j");
+  assert.equal(ui.nodes.get("timeline-range").value, "1");
+  await ui.edit("timeline-range", 40);
+  await ui.keydown("J", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+  await ui.keydown("j", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+  await ui.keydown("j", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+  ui.nodes.get("payoutThroughputAudPerHour").value = "0";
+  await ui.nodes.get("scenario-form").emit("change");
+  await ui.edit("timeline-range", 12);
+  await ui.keydown("j");
+  assert.equal(ui.nodes.get("timeline-range").value, "12");
 });

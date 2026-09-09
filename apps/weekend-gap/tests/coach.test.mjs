@@ -25,12 +25,16 @@ test("first-run coach can be replayed from help and the method section", () => {
   assert.match(appSource, /#coach-replay-method/);
 });
 
-test("keyboard shortcuts skip inputs and cover help, play, undo, redo and export", () => {
+test("keyboard shortcuts skip inputs and cover help, play, first settlement, undo, redo and export", () => {
   assert.match(html, /id="shortcut-overlay"/);
   assert.match(html, /<kbd>\?<\/kbd>/);
+  assert.match(html, /<kbd>J<\/kbd>/);
+  assert.match(html, /Jump the timeline to the first settlement/);
   assert.match(appSource, /isEditableTarget/);
   assert.match(appSource, /event\.key === "\?"/);
   assert.match(appSource, /event\.key === " "/);
+  assert.match(appSource, /event\.key === "j"/);
+  assert.match(appSource, /jumpToFirstSettlement\(\)/);
   assert.match(appSource, /event\.key === "u"/);
   assert.match(appSource, /event\.key === "r"/);
   assert.match(appSource, /event\.key === "e"/);

@@ -71,7 +71,8 @@ test("jump to first settlement uses the checkpoint after the first settling inte
   const first = result.timeline.find((point) => point.settledThisHour > 0);
   assert.equal(result.summary.hoursToFirstSettlement + 1, first.hour);
   assert.match(html, /id="jump-first-settlement"/);
-  assert.match(app, /selectedHour=hours\+1/);
+  assert.match(app, /function jumpToFirstSettlement/);
+  assert.match(app, /selectedHour = hours \+ 1/);
   assert.match(app, /jumpFirst.disabled = hoursToFirstSettlement === null/);
   const closed = runSimulation({ ...DEFAULT_SCENARIO, payoutThroughputAudPerHour: 0 });
   assert.equal(closed.summary.hoursToFirstSettlement, null);

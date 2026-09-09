@@ -944,10 +944,17 @@ document.querySelector("#export-queue-svg").addEventListener("click",()=>{
 document.querySelector("#jump-peak").addEventListener("click",()=>{
   selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
 });
+function jumpToFirstSettlement() {
+  const hours = simulation.summary.hoursToFirstSettlement;
+  if (hours === null) return false;
+  selectedHour = hours + 1;
+  setPlaying(false);
+  render();
+  saveWorkspace();
+  return true;
+}
 document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
-  const hours=simulation.summary.hoursToFirstSettlement;
-  if(hours===null) return;
-  selectedHour=hours+1;setPlaying(false);render();saveWorkspace();
+  jumpToFirstSettlement();
 });
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
@@ -1036,6 +1043,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === " ") {
     event.preventDefault();
     setPlaying(!playing);
+    return;
+  }
+  if (event.key === "j" || event.key === "J") {
+    event.preventDefault();
+    jumpToFirstSettlement();
     return;
   }
   if (event.key === "u" || event.key === "U") {
