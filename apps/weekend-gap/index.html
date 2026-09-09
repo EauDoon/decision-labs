@@ -45,6 +45,15 @@ SOFTWARE.
       </div>
     </header>
 
+    <details class="weekend-review" id="weekend-review">
+      <summary>Review the timing behind the queue</summary>
+      <p>Choose a question about the current 72-hour scenario. These analytical reviews do not change assumptions or move funds.</p>
+      <label for="weekend-review-tool">Review question</label>
+      <div class="review-controls"><select id="weekend-review-tool"></select><button id="weekend-review-run" type="button">Run review</button></div>
+      <div class="review-controls"><button id="weekend-review-export" type="button" disabled>Export review packet</button><button id="weekend-review-import" type="button">Inspect review packet</button><input id="weekend-review-file" type="file" accept="application/json,.json" hidden></div>
+      <p>Packets contain scenario assumptions and the exact calculated table. They are unsigned consistency records.</p><p id="weekend-review-origin"></p>
+      <div id="weekend-review-output" aria-live="polite"></div>
+    </details>
     <main id="dashboard" class="page-shell">
       <section class="intro" aria-labelledby="intro-title">
         <p class="eyebrow">Friday afternoon to Monday afternoon</p>

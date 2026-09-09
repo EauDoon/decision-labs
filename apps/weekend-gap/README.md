@@ -210,3 +210,9 @@ Scenario, workspace and library data stay in browser storage. Nothing syncs to a
 The selected timeline hour has an accessible time label. With reduced motion enabled, playback becomes a single-hour step. Playback pauses when the tab is hidden, and the hourly table remains available without canvas.
 
 Verification uses the built-in Node test runner, including an actual source-module workflow harness with a minimal DOM adapter. It checks imports, saved-scenario and workspace reload flows, failed imports, undo/redo, sensitivity invalidation, blocked storage, incomplete numeric drafts, reduced motion and missing canvas. This complements the browser checks; it is not a substitute for every browser or assistive-technology combination.
+
+## New in v1.5.0: timing review
+
+Open **Review the timing behind the queue** to inspect daily queue AUD-hours, an explicitly assumed FIFO arrival-cohort waiting ledger, settlement checkpoints, chain closure spells, operating-window overlap, four reserve targets, joint-throughput scenarios, holiday combinations, or hourly effects of a reserve increment. One selected question appears at a time. Every table explains its timing convention and declared-input limits. No scenario assumptions or funds are changed.
+
+Export review packet stores a complete valid scenario, its exact source snapshot and recomputed table. Inspect review packet accepts at most 1 MiB and verifies every result cell while keeping the current scenario, baseline and workspace intact. Edits and newer review actions cancel old reads and clear stale output. Blank numeric drafts must be corrected before running a current-scenario review. These unsigned records establish consistency only, not real operational availability, source authenticity or funding authority. Existing scenario imports retain their documented normalization policy; review evidence requires complete valid typed inputs.

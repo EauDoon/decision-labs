@@ -30,7 +30,7 @@ Every workbench:
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.0 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.0 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.0 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | 1.4.3 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
+| [Weekend Gap](apps/weekend-gap/) | 1.5.0 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
@@ -60,6 +60,19 @@ browser tools on the case you opened, not hosted APIs. Each app also ships a `MO
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
 loopback launcher does not serve those markdown files; open the app folder or
 the workbench itself to read them.
+
+## Review and replay a case
+
+Each app now has one optional review panel. Run a question on the current valid inputs, then export a review packet when you need a reproducible record. Inspect a packet in the same app to recompute its results without replacing the current draft, baseline or saved library. Input edits and newer review actions clear older results and cancel pending reads.
+
+| Workbench | Find this panel | Useful questions |
+| --- | --- | --- |
+| Common Cart 1.4.0 | Buyer room: Review buyer coverage and offer resilience | Which buyers have alternatives? What happens if a winning buyer withdraws? |
+| Partnership Breakpoint 1.5.0 | Review constraints and negotiation room | Where do all constraints overlap? Which costs or shares can the current revenue fund? |
+| The Smallest Agreement 1.5.0 | Review the package before discussion | How much approval slack remains? What changes when a clause, lock, threshold or budget changes? |
+| Weekend Gap 1.5.0 | Review the timing behind the queue | When does backlog accumulate? What do arrival cohorts, window overlap and bounded reserve scenarios show? |
+
+Packets are limited to 1 MiB and bind canonical inputs to full-precision output. They are unsigned consistency records, not authenticated facts or external commitments. Common Cart packets can include private buyer constraints; other packets can contain participant names, scores and notes. Check them before sharing. A model update may make an older review fail replay; keep the matching standalone version when archiving a study.
 
 ## Quick start
 
@@ -199,3 +212,5 @@ repository-wide and component issues in the
 ## License
 
 MIT. See [LICENSE](LICENSE) and each app's retained `LICENSE` file.
+
+The local last-launched marker updates from both the Open workbench links and keys 1 to 4. Storage failure does not prevent opening an app.

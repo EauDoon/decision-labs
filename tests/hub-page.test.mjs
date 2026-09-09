@@ -1,3 +1,4 @@
+import vm from 'node:vm';
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
@@ -91,7 +92,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Roster export, file compare, and marketplace preset in Partnership Breakpoint 1\.4\.3/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
-  assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.4\.0/);
+  assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -293,4 +294,16 @@ test('keyboard c copies the catalog address on http through the same control', (
   assert.match(html, /inEditable\(event\.target\)/);
   assert.match(readme, /Press `c` to copy the catalog address/);
   assert.match(readme, /On a file URL that key does not claim a\s+copy succeeded/);
+});
+
+test('mouse launch records the selected workbench and storage failure does not prevent navigation', () => {
+ const handlers=new Map(), values=new Map();let blocked=false;
+ const links=['1','2','3','4','invalid'].map(key=>({getAttribute:()=>key,addEventListener:(name,handler)=>handlers.set(key,handler)}));
+ const document={getElementById:()=>null,querySelector:()=>null,querySelectorAll:selector=>selector==='.open[aria-keyshortcuts]'?links:[],addEventListener(){}};
+ const source=html.match(/<script>([\s\S]*?)<\/script>/)[1];
+ vm.runInNewContext(source,{document,location:{protocol:'file:',hash:''},localStorage:{getItem:key=>values.get(key)??null,setItem(key,value){if(blocked)throw new Error('Storage unavailable');values.set(key,value);}}});
+ for(const key of ['1','2','3','4']){handlers.get(key)({defaultPrevented:false});assert.equal(values.get('decision-labs.last-workbench'),key);}
+ handlers.get('1')({defaultPrevented:true});assert.equal(values.get('decision-labs.last-workbench'),'4');
+ handlers.get('invalid')({defaultPrevented:false});assert.equal(values.get('decision-labs.last-workbench'),'4');
+ blocked=true;assert.doesNotThrow(()=>handlers.get('1')({defaultPrevented:false}));
 });

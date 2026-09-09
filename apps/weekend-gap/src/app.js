@@ -1,4 +1,8 @@
 import {
+  createWeekendReviewPacket,
+  replayWeekendReviewPacket,
+  WEEKEND_REVIEW_TOOLS,
+  analyzeWeekendReview,
   DEFAULT_SCENARIO,
   PRESETS,
   SIMULATION_HOURS,
@@ -79,6 +83,9 @@ const elements = {
   inputMessage: document.querySelector("#input-message")
 };
 
+let weekendReviewPacket = null;
+let weekendReviewSequence = 0;
+let weekendReviewDraftInvalid = false;
 let scenario = { ...DEFAULT_SCENARIO };
 let scenarioHistory = createScenarioHistory(scenario);
 let simulation = runSimulation(scenario);
@@ -165,6 +172,8 @@ function setMessage(message = "") {
 }
 
 function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus, demandStepStatus } = {}) {
+  clearWeekendReview();
+  weekendReviewDraftInvalid = false;
   const cleaned = sanitizeScenario(nextScenario);
   if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
@@ -818,6 +827,7 @@ async function importScenario(file) {
 }
 
 function applyFormEdit(normaliseForm) {
+  clearWeekendReview();
   const raw = readForm();
   let invalid = false;
   for (const field of Object.keys(DEFAULT_SCENARIO)) {
@@ -827,6 +837,7 @@ function applyFormEdit(normaliseForm) {
     input.setAttribute("aria-invalid", String(!valid));
     if (!valid) invalid = true;
   }
+  weekendReviewDraftInvalid = invalid;
   if (invalid) { setMessage("Complete the highlighted numeric assumptions with finite numbers. The previous simulation is kept."); return; }
   userEdited = true;
   setScenario(raw, { normaliseForm });
@@ -1387,3 +1398,43 @@ document.addEventListener("keydown", (event) => {
   }
 });
 maybeShowCoach();
+
+function clearWeekendReview() {
+ weekendReviewPacket=null;weekendReviewSequence++;
+ const exportButton=document.querySelector('#weekend-review-export');if(exportButton)exportButton.disabled=true;
+ const origin=document.querySelector('#weekend-review-origin');if(origin)origin.textContent='';
+ const output=document.querySelector('#weekend-review-output');
+ if(output) output.textContent='Run a review for the current valid inputs. Results clear when the case changes.';
+}
+function showWeekendReview(review) {
+ const output=document.querySelector('#weekend-review-output');output.replaceChildren();
+ const title=document.createElement('h2');title.textContent=review.title;const note=document.createElement('p');note.textContent=review.note;output.append(title,note);
+ const scroll=document.createElement('div');scroll.className='review-scroll';scroll.tabIndex=0;
+ const table=document.createElement('table');const caption=document.createElement('caption');caption.textContent='Declared-input review. Monetary values use '+review.currency+'. Blank cells mean unavailable or unbounded as explained above.';table.append(caption);
+ const head=document.createElement('thead');const headings=document.createElement('tr');for(const label of review.columns){const th=document.createElement('th');th.scope='col';th.textContent=label;headings.append(th);}head.append(headings);table.append(head);
+ const body=document.createElement('tbody');for(const values of review.rows){const row=document.createElement('tr');for(const value of values){const cell=document.createElement('td');cell.textContent=value===null?'':typeof value==='number'?new Intl.NumberFormat('en-US',{maximumSignificantDigits:10}).format(value):value;row.append(cell);}body.append(row);}table.append(body);scroll.append(table);output.append(scroll);
+}
+function initializeWeekendReview(){
+ const select=document.querySelector('#weekend-review-tool');if(!select)return;
+ for(const tool of WEEKEND_REVIEW_TOOLS){const option=document.createElement('option');option.value=tool.id;option.textContent=tool.title;select.append(option);}
+ select.value='days';select.addEventListener('change',clearWeekendReview);
+ document.querySelector('#weekend-review-run').addEventListener('click',()=>{clearWeekendReview();try{if(weekendReviewDraftInvalid)throw new TypeError("Complete invalid scenario inputs before reviewing.");weekendReviewPacket=createWeekendReviewPacket(scenario,select.value);showWeekendReview(weekendReviewPacket.review);document.querySelector('#weekend-review-export').disabled=false;document.querySelector('#weekend-review-origin').textContent='Current case: '+(scenario.name);}catch(error){clearWeekendReview();document.querySelector('#weekend-review-output').textContent='Review unavailable. '+(error.errors?.join(' ')||error.message);}});
+}
+initializeWeekendReview();
+
+function initializeWeekendReviewPacket(){
+ const button=document.querySelector('#weekend-review-export');if(!button)return;
+ button.addEventListener('click',()=>{if(weekendReviewPacket)downloadText(JSON.stringify(weekendReviewPacket),'weekend-review.json','application/json');});
+ document.querySelector('#weekend-review-import').addEventListener('click',()=>document.querySelector('#weekend-review-file').click());
+ document.querySelector('#weekend-review-file').addEventListener('change',async event=>{
+  const file=event.target.files[0];event.target.value='';if(!file)return;clearWeekendReview();const sequence=weekendReviewSequence;
+  try{
+   if(file.size>1048576)throw new Error('Review packet exceeds 1 MiB.');
+   const text=await file.text();if(sequence!==weekendReviewSequence)return;
+   const packet=replayWeekendReviewPacket(JSON.parse(text));weekendReviewPacket=packet;
+   document.querySelector('#weekend-review-tool').value=packet.tool;showWeekendReview(packet.review);button.disabled=false;
+   document.querySelector('#weekend-review-origin').textContent='Inspected saved case: '+(packet.scenario.name)+'. Current case and autosave unchanged.';
+  }catch(error){if(sequence!==weekendReviewSequence)return;clearWeekendReview();document.querySelector('#weekend-review-output').textContent='Review rejected: '+(error.errors?.join(' ')||error.message);}
+ });
+}
+initializeWeekendReviewPacket();

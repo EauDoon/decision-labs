@@ -32,6 +32,10 @@ export const standaloneCsp = [
   "manifest-src 'none'",
 ].join("; ");
 const appImportMarker = `import {
+  createWeekendReviewPacket,
+  replayWeekendReviewPacket,
+  WEEKEND_REVIEW_TOOLS,
+  analyzeWeekendReview,
   DEFAULT_SCENARIO,
   PRESETS,
   SIMULATION_HOURS,
@@ -135,7 +139,11 @@ const exportedNames = Object.freeze([
   "buildComparisonGanttSvg",
   "buildQueueChartSvg",
   "buildSensitivityBarsSvg",
-  "compareSavedExperiments"
+  "compareSavedExperiments",
+  "WEEKEND_REVIEW_TOOLS",
+  "analyzeWeekendReview",
+  "createWeekendReviewPacket",
+  "replayWeekendReviewPacket"
 ]);
 
 function normaliseLf(text) {

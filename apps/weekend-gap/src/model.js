@@ -1246,3 +1246,100 @@ export function compareSavedExperiments(scenarios) {
   }));
 }
 
+
+export const WEEKEND_REVIEW_TOOLS=Object.freeze([
+ {id:'days',title:'Queue exposure by day'},
+ {id:'cohorts',title:'Arrival-cohort waiting ledger'},
+ {id:'deadlines',title:'Settlement checkpoints'},
+ {id:'closures',title:'Complete-chain closure spells'},
+ {id:'overlap',title:'Operating-window overlap'},
+ {id:'reserve',title:'Reserve needed by service target'},
+ {id:'throughput',title:'Joint-throughput ladder'},
+ {id:'holidays',title:'Holiday assumption comparison'},
+ {id:'reserve-hours',title:'Hourly effect of extra reserve'},
+// WG_REVIEW_TOOLS
+]);
+function validateWeekendReviewScenario(raw){
+ const fields=Object.keys(DEFAULT_SCENARIO);
+ if(!raw||typeof raw!=='object'||Array.isArray(raw)||Object.keys(raw).length!==fields.length||!fields.every(field=>Object.hasOwn(raw,field)&&typeof raw[field]===typeof DEFAULT_SCENARIO[field]))throw new TypeError('Review requires a complete scenario with the declared field types.');
+ const cleaned=sanitizeScenario(raw);if(cleaned.errors.length)throw new TypeError(cleaned.errors.join(' '));return cleaned.scenario;
+}
+export function analyzeWeekendReview(rawScenario,tool){
+ const scenario=validateWeekendReviewScenario(rawScenario);const selected=WEEKEND_REVIEW_TOOLS.find(entry=>entry.id===tool);if(!selected)throw new TypeError('Unknown weekend review.');
+ const result=runSimulation(scenario);const report=(columns,rows,note)=>({tool,title:selected.title,currency:'AUD',columns,rows,note});
+ switch(tool){
+ case 'days':{
+
+ const days=new Map();for(let hour=0;hour<72;hour++){const name=['Sunday','Monday','Tuesday','Wednesday','Thursday','Friday','Saturday'][dayAndHourAt(hour).dayIndex];if(!days.has(name))days.set(name,[name,0,0,0,0,0]);const row=days.get(name),point=result.timeline[hour+1];row[1]++;row[2]+=point.demandThisHour;row[3]+=point.settledThisHour;row[4]+=point.queuedAud;row[5]=Math.max(row[5],point.queuedAud);}
+ return report(['Day','Modeled hours','Demand arrived AUD','Settled AUD','Queue AUD-hours','Peak end-hour queue AUD'],[...days.values()],'Queue AUD-hours sums the queue after each hourly step, multiplied by one hour. Friday and Monday are partial days. It measures modeled backlog exposure, not a charge or real customer waiting time.');
+
+ }
+ case 'cohorts':{
+
+ const cohorts=[];let front=0;for(let hour=0;hour<72;hour++){const point=result.timeline[hour+1];cohorts.push({hour,arrived:point.demandThisHour,remaining:point.demandThisHour,settled:0,wait:0});let available=point.settledThisHour;while(available>0&&front<cohorts.length){const cohort=cohorts[front],amount=Math.min(available,cohort.remaining);cohort.remaining=Math.max(0,cohort.remaining-amount);available=Math.max(0,available-amount);cohort.settled+=amount;cohort.wait+=amount*(hour-cohort.hour);if(cohort.remaining===0)front++;else break;}}
+ return report(['Arrival hour','Arrived AUD','Settled by hour 72 AUD','Remaining AUD','Mean completed wait hours','Unfinished wait AUD-hours'],cohorts.map(c=>[c.hour,c.arrived,c.settled,c.remaining,c.settled>0?c.wait/c.settled:null,c.remaining*(72-c.hour)]),'Analytical FIFO attribution only: the core model has no customer priority. Same-step settlement has zero completed wait. Remaining amounts accumulate wait through hour 72 and have no assumed later payout. Means exclude unfinished amounts.');
+
+ }
+ case 'deadlines':{
+
+ return report(['Checkpoint hour','Arrived AUD','Settled AUD','Queued AUD','Settled / arrived %','Settled / total demand %'],[12,24,36,48,60,72].map(hour=>{const p=result.timeline[hour];return[hour,p.demandArrivedAud,p.settledAud,p.queuedAud,p.demandArrivedAud>0?p.settledAud/p.demandArrivedAud*100:null,scenario.redemptionDemandAud>0?p.settledAud/scenario.redemptionDemandAud*100:null];}),'Six fixed checkpoints. The total-demand denominator includes future arrivals, while arrived demand includes only arrivals by that checkpoint. Blank percentage means zero demand, not a promised service level.');
+
+ }
+ case 'closures':{
+
+ const rows=[];let start=null;for(let hour=0;hour<=72;hour++){const status=hour<72?getOperationalStatus(scenario,hour):null;const closed=status&&!(status.issuerOpen&&status.bankOpen&&status.payoutOpen);if(closed&&start===null)start=hour;if(!closed&&start!==null){const arrived=result.timeline.slice(start+1,hour+1).reduce((sum,p)=>sum+p.demandThisHour,0);rows.push([start,hour,hour-start,result.timeline[start].queuedAud,arrived,result.timeline[hour].queuedAud]);start=null;}}
+ return report(['Start hour inclusive','End hour exclusive','Consecutive closed hours','Queue at start AUD','Arrivals during closure AUD','Queue at end AUD'],rows,'A closure means at least one issuer, bank or payout window is closed. Zero reserve and zero throughput are separate constraints. Spells end at the 72-hour horizon; no reopening beyond that horizon is inferred.');
+
+ }
+ case 'overlap':{
+
+ const counts={issuer:0,bank:0,payout:0};let common=0;for(let hour=0;hour<72;hour++){const status=getOperationalStatus(scenario,hour);for(const gate of Object.keys(counts))if(status[gate+'Open'])counts[gate]++;if(status.issuerOpen&&status.bankOpen&&status.payoutOpen)common++;}
+ return report(['Gate','Individually open hours','Complete-chain open hours','Open hours without complete chain'],Object.entries(counts).map(([gate,hours])=>[gate,hours,common,hours-common]),'Hours use operating windows and holidays only. Open hours do not establish available reserve, FX depth, throughput or demand. The lost overlap counts are per gate and must not be summed as unique closure hours.');
+
+ }
+ case 'reserve':{
+
+ return report(['Target of total demand %','Target AUD','Status','Minimum starting reserve AUD','Change from current AUD','Maximum possible settlement AUD'],[25,50,75,100].map(target=>{const p=planReserve(scenario,target,72);return[target,p.targetAud,p.status,p.minimumReserveAud,p.reserveChangeAud,p.maximumSettledAud];}),'Four targets at hour 72 use the existing whole-cent reserve planner. All gates, throughput and demand timing stay fixed. Unreachable means reserve alone cannot meet that target within nominal liquidity. Synthetic calculation only; no funding action or recommendation.');
+
+ }
+ case 'throughput':{
+
+ const fields=['issuerThroughputAudPerHour','fxDepthAudPerHour','payoutThroughputAudPerHour'];const rows=[1,2,4,8].map(multiplier=>{const candidate={...scenario};for(const field of fields)candidate[field]=Math.min(1000000000,scenario[field]*multiplier);const r=runSimulation(candidate);return[multiplier,...fields.map(f=>candidate[f]),r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud];});
+ return report(['Multiplier','Issuer AUD/hour','FX AUD/hour before weekend factor','Payout AUD/hour','Settled by 72 AUD','Extra settled AUD','Final queue AUD'],rows,'All three throughput assumptions scale together up to their 1 billion AUD/hour caps. Reserve and windows remain unchanged. Repeated settlements show a plateau only at these four tested points, not a global optimum. Zero rates remain zero.');
+
+ }
+ case 'holidays':{
+
+ const rows=[];for(const saturdayHoliday of [false,true])for(const mondayHoliday of [false,true]){const r=runSimulation({...scenario,saturdayHoliday,mondayHoliday});rows.push([saturdayHoliday?'Yes':'No',mondayHoliday?'Yes':'No',r.summary.totalSettledAud,r.summary.totalSettledAud-result.summary.totalSettledAud,r.summary.finalQueuedAud]);}
+ return report(['Saturday holiday','Monday holiday','Settled by 72 AUD','Change from current AUD','Final queue AUD'],rows,'These four declared holiday combinations are synthetic, not a calendar lookup. Saturday is already closed in the current business-day model, so its flag may have no numerical effect. No actual holiday or service availability is verified.');
+
+ }
+ case 'reserve-hours':{
+
+ const added=Math.min(scenario.nominalLiquidityAud-scenario.reserveCashAud,Math.max(.01,scenario.reserveCashAud*.1));const candidate=runSimulation({...scenario,reserveCashAud:scenario.reserveCashAud+added});
+ return report(['Hour ending','Base settled this hour AUD','With extra reserve AUD','Extra settled this hour AUD','Extra cumulative settled AUD'],result.timeline.slice(1).map((point,i)=>{const other=candidate.timeline[i+1];return[point.hour,point.settledThisHour,other.settledThisHour,other.settledThisHour-point.settledThisHour,other.settledAud-point.settledAud];}),'A single counterfactual adds '+added+' AUD starting reserve (10% or one cent, capped at nominal liquidity). All other assumptions stay fixed. With fixed rates and no reserve replenishment, extra reserve cannot reduce hourly settlement; the cumulative column tracks the added payout. No reserve is actually moved.');
+
+ }
+// WG_REVIEW_CASES
+ default:throw new TypeError('Unavailable weekend review.');
+ }
+}
+
+export function createWeekendReviewPacket(rawScenario, tool) {
+  const scenario = validateWeekendReviewScenario(rawScenario);
+  const packet = { format: 'weekend-review', version: 1, tool, scenario, inputJSON: JSON.stringify(scenario), review: analyzeWeekendReview(scenario, tool) };
+  if (new TextEncoder().encode(JSON.stringify(packet)).length > 1048576) throw new TypeError('Review packet exceeds 1 MiB. Choose a narrower review.');
+  return packet;
+}
+
+export function replayWeekendReviewPacket(candidate) {
+  const fields = ['format', 'version', 'tool', 'scenario', 'inputJSON', 'review'];
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== fields.length || !fields.every((field) => Object.hasOwn(candidate, field)) || candidate.format !== 'weekend-review' || candidate.version !== 1) throw new TypeError('Unsupported review packet.');
+  const current = createWeekendReviewPacket(candidate.scenario, candidate.tool);
+  if (candidate.inputJSON !== current.inputJSON) throw new TypeError('Review input snapshot changed. Run a new review.');
+  const supplied = candidate.review, expected = current.review;
+  if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied) || Object.keys(supplied).length !== Object.keys(expected).length || !Object.keys(expected).every((field) => Object.hasOwn(supplied, field))) throw new TypeError('Review result fields changed.');
+  for (const field of ['tool', 'title', 'currency', 'note']) if (supplied[field] !== expected[field]) throw new TypeError('Review result does not match the input snapshot.');
+  if (!Array.isArray(supplied.columns) || supplied.columns.length !== expected.columns.length || expected.columns.some((value, index) => !Object.hasOwn(supplied.columns, index) || supplied.columns[index] !== value) || !Array.isArray(supplied.rows) || supplied.rows.length !== expected.rows.length || expected.rows.some((row, index) => !Object.hasOwn(supplied.rows, index) || !Array.isArray(supplied.rows[index]) || supplied.rows[index].length !== row.length || row.some((value, column) => !Object.hasOwn(supplied.rows[index], column) || supplied.rows[index][column] !== value))) throw new TypeError('Review result does not match the input snapshot.');
+  return current;
+}

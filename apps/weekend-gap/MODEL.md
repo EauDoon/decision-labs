@@ -133,3 +133,43 @@ The gate Gantt plots 72 hours of issuer, bank and payout open/closed state plus 
 ## Recovery and output boundaries
 
 Workspace v1 stores canonical current and baseline scenarios, bounded notes (4000 characters), target, deadline, selected hour, Gantt table density (`snapshots`, `all` or `open`) and selected chart (`queue` or `gantt`). Older workspace files without density restore to six-hour snapshots. Older files without selected hour restore hour zero. Older files without selected chart restore the queue chart. Imports are size-bounded and atomically decoded before replacing state; computed results are regenerated. The library contains at most 12 canonical scenarios. Scenario undo keeps at most 40 snapshots in memory. Portable reports are static escaped HTML with a restrictive content security policy and may inline the current gate Gantt, the baseline-versus-current Gantt, queue path and limiting-gate counts. Formula-safe queue and Gantt CSVs quote cells and prefix formula-like text. The hourly ledger CSV contains only fixed headers, model-generated time labels and numeric values, so scenario names cannot inject spreadsheet formulas. Analysis JSON has no timestamp.
+
+### Queue exposure by day
+
+The optional timing review can decompose end-of-hour queue exposure and demand across the four partial calendar days. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Arrival-cohort waiting ledger
+
+The optional timing review can attribute hourly settlement to earliest arrivals using an explicit FIFO assumption. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Settlement checkpoints
+
+The optional timing review can compare service progress against both arrived and full-horizon demand. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Complete-chain closure spells
+
+The optional timing review can locate continuous intervals when operating windows prevent any complete payout chain. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Operating-window overlap
+
+The optional timing review can show individually open hours that cannot form a complete chain. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Reserve needed by service target
+
+The optional timing review can compare minimum whole-cent reserves for four full-horizon settlement targets. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Joint-throughput ladder
+
+The optional timing review can test coordinated throughput increases while retaining reserve, demand and operating windows. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Holiday assumption comparison
+
+The optional timing review can compare all four Saturday and Monday holiday combinations with other inputs fixed. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Hourly effect of extra reserve
+
+The optional timing review can locate when an additional reserve increment changes actual modeled settlements. It preserves the current scenario and states timing conventions and numerical limits in each table. This is synthetic analysis, not a promise of operational service.
+
+### Review packet contract
+
+`createWeekendReviewPacket(scenario, tool)` requires a complete already-valid typed scenario. `replayWeekendReviewPacket(packet)` requires format `weekend-review`, version 1, six exact top-level fields, an exact canonical source snapshot and every recomputed output primitive. Serialized packets are bounded to 1 MiB and UI downloads use those same compact bytes. The existing scenario sanitizer remains unchanged. Review input does not silently clamp invalid evidence. FIFO attribution is an additional analysis convention, not a change to the aggregate recurrence; completed waits start at zero for same-step settlement, and unfinished amounts accrue wait through hour 72.
