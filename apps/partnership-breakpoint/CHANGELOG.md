@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.2
+
+- Added a volume-to-hold solver: binary search for the minimum monthly volume at which a named participant holds, with fee and shares fixed. Preview, then Apply. Impossible names the failing tests. This is a solvability result, not a forecast.
+- Copy negotiation brief uses the Clipboard API when it exists; otherwise a visible textarea remains for copying. There is no download fallback.
+- Stress-grid CSV uses the same formula-safe escaping as other CSVs. Export every tested case, or export the currently visible cases after collapsing all-hold rows. Participant rows stay complete.
+- Press `g` to jump to the results nav, or the first results heading, when no field is focused.
+- Print one-pager hides coach, help, and chrome, and keeps tornado, waterfall, ledger, and notes.
+- Duplicate current case saves an independent snapshot with a unique ` copy` title suffix. Later draft edits do not change the snapshot.
+- The roster highlights the first listed participant who fails the current baseline. The label is roster order, not a claim about who will act.
+- The invalid-field summary stays sticky until the count is 0 and still announces the count.
+- Added the Two-party 50/50 studio starting point, distinct from Creator take-rate and Three-party JV.
+- Collapse cases every participant holds hides those evidence rows from the inspect table only. Expand restores them. Tested-case counts are unchanged.
+
 ## 1.4.1
 
 - Kept the results jump nav sticky at the top of the results column so in-page links stay visible while scrolling. Links remain keyboard accessible and are hidden in print.
