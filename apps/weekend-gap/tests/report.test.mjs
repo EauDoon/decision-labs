@@ -14,3 +14,10 @@ test("report clearly describes an unreachable target and rejects invalid control
  assert.match(report,/Unreachable by reserve alone/);assert.match(report,/72 intervals/);
  assert.throws(()=>reportToHTML(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{targetPercent:101}),RangeError);
 });
+test("report inlines the current-scenario gate Gantt as SVG",()=>{
+ const report=reportToHTML(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{selectedHour:21});
+ assert.match(report,/Gate Gantt/);
+ assert.match(report,/<svg /);
+ assert.match(report,/>First payout /);
+ assert.match(report,/Selected Sat 12:00/);
+});

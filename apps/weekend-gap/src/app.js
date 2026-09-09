@@ -320,6 +320,10 @@ function renderGantt() {
     fragment.append(row);
   });
   document.querySelector("#gantt-table").replaceChildren(fragment);
+  const firstOpen = simulation.timeline[0].nextPayoutHour;
+  document.querySelector("#gantt-payout-note").textContent = firstOpen === null
+    ? "No first payout window was found in the modeled search period."
+    : `First payout window: ${formatTime(firstOpen)} (hour ${firstOpen}). The dashed green marker on the Gantt uses this hour.`;
 }
 
 function renderQueueSvg() {

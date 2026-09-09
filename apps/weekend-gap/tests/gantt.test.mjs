@@ -40,6 +40,9 @@ test("Gantt SVG is deterministic, light-background, and marks the selected hour"
   assert.doesNotMatch(svg, /<\/script/i);
   const moved = buildGateGanttSvg(DEFAULT_SCENARIO, 65);
   assert.notEqual(svg, moved);
+  assert.match(svg, />First payout /);
+  const closed = buildGateGanttSvg({ ...DEFAULT_SCENARIO, payoutThroughputAudPerHour: 0 }, 0);
+  assert.doesNotMatch(closed, />First payout /);
 });
 
 test("Gantt markup includes a table fallback and print styles", async () => {
