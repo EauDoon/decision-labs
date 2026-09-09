@@ -92,6 +92,7 @@ test('catalog names current workbench tools without live services', () => {
 
 test('question-mark shortcut toggles an in-page panel and skips inputs', () => {
   assert.match(html, /id="shortcuts"/);
+  assert.match(html, /aria-labelledby="shortcuts-title"/);
   assert.match(html, /event\.key === '\?'/);
   assert.match(html, /aria-controls="shortcuts"/);
   assert.match(html, /input, textarea, select, \[contenteditable="true"\]/);
