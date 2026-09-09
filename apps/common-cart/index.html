@@ -162,7 +162,9 @@ SOFTWARE.
               </div>
               <span class="legend"><i></i> Qualified units</span>
             </div>
-            <canvas id="offer-chart" height="280" aria-label="Bar chart comparing fulfilled units for merchant offers"></canvas>
+            <div class="chart-scroll" tabindex="0" role="region" aria-label="Scrollable offer chart, equivalent values follow in the ranked table">
+              <canvas id="offer-chart" height="280" aria-hidden="true"></canvas>
+            </div>
                 <p class="canvas-note">The chart and table report the same fulfilled-unit result.</p>
           </article>
           <article class="panel">

@@ -302,9 +302,11 @@ function renderBuyerRow(entry) {
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
     if (scenario.buyers.length === 1) return setStatus("A room needs at least one buyer.");
+    const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
     renderEditor();
     refresh();
+    elements.buyerRows.children[Math.min(index, scenario.buyers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
 }
@@ -327,9 +329,11 @@ function renderOfferRow(entry) {
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
     if (scenario.offers.length === 1) return setStatus("A room needs at least one offer.");
+    const index = scenario.offers.findIndex(({ id }) => id === row.dataset.id);
     scenario.offers = scenario.offers.filter(({ id }) => id !== row.dataset.id);
     renderEditor();
     refresh();
+    elements.offerRows.children[Math.min(index, scenario.offers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
 }
@@ -465,6 +469,9 @@ function renderComparison() {
 }
 
 function addDuplicateAction(row, kind, entry) {
+  row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? entry.label : entry.merchant} (${entry.id})`);
+  row.querySelector(".remove-row").disabled = scenario[kind].length === 1;
+  row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = "Copy";
@@ -670,20 +677,22 @@ function drawChart(market) {
   const bounds = canvas.getBoundingClientRect();
   if (bounds.width === 0) return;
   const ratio = Math.min(window.devicePixelRatio || 1, 2);
+  const height = Math.max(280, market.results.length * 64 + 40);
+  canvas.style.height = `${height}px`;
   canvas.width = Math.floor(bounds.width * ratio);
-  canvas.height = Math.floor(280 * ratio);
+  canvas.height = Math.floor(height * ratio);
   const context = canvas.getContext("2d");
   context.scale(ratio, ratio);
   const width = bounds.width;
-  const height = 280;
   context.clearRect(0, 0, width, height);
   context.font = "12px system-ui";
   context.textBaseline = "middle";
   const left = Math.min(150, Math.max(95, width * 0.28));
   const right = 42;
   const top = 20;
-  const rowHeight = Math.min(62, (height - 40) / Math.max(1, market.results.length));
-  const max = Math.max(1, ...market.results.map((result) => Math.max(result.fulfilledUnits, result.offer.minimumUnits)));
+  const rowHeight = 64;
+  const threshold = result => result.tierProgress.find(tier => tier.selected)?.minimumUnits ?? result.offer.minimumUnits;
+  const max = Math.max(1, ...market.results.map((result) => Math.max(result.fulfilledUnits, threshold(result))));
 
   market.results.forEach((result, index) => {
     const y = top + index * rowHeight;
@@ -692,7 +701,7 @@ function drawChart(market) {
     const candidateWidth = (result.fulfilledUnits / max) * (width - left - right);
     context.fillStyle = result.qualifies ? "#f36f3d" : "#a9a090";
     context.fillRect(left, y + 14, candidateWidth, 20);
-    const minimumX = left + (result.offer.minimumUnits / max) * (width - left - right);
+    const minimumX = left + (threshold(result) / max) * (width - left - right);
     context.strokeStyle = "#211f55";
     context.lineWidth = 2;
     context.beginPath();
@@ -703,7 +712,7 @@ function drawChart(market) {
     context.textAlign = "right";
     context.fillText(trimLabel(result.offer.merchant, 18), left - 10, y + 24);
     context.textAlign = "left";
-    context.fillText(`${result.fulfilledUnits} fulfilled / ${result.offer.minimumUnits} minimum`, left, y + 49);
+    context.fillText(`${result.fulfilledUnits} fulfilled / ${threshold(result)} minimum`, left, y + 49);
   });
 }
 

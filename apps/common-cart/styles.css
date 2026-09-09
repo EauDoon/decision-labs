@@ -178,6 +178,8 @@ td input:hover, td input:focus { border-color: var(--line-strong); background: w
 .legend { color: var(--muted); font-size: 0.75rem; }
 .legend i { display: inline-block; width: 10px; height: 10px; margin-right: 0.3rem; background: var(--orange); }
 canvas { display: block; width: 100%; height: 280px; }
+.chart-scroll { max-height: 430px; overflow-y: auto; }
+.chart-scroll:focus-visible { outline: 3px solid var(--ink); outline-offset: 3px; }
 .canvas-note { margin: 0.4rem 0 0; color: var(--muted); font-size: 0.75rem; }
 .inspector-panel { margin-top: 1rem; }
 .inspector-heading { display: flex; align-items: end; }
