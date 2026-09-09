@@ -292,9 +292,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading" tabindex="-1">What can change?</h2></div>
             <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
           </div>
-          <label class="clause-filter-label" for="clause-filter">Filter clauses by title</label>
+          <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
           <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">
-          <p id="clause-filter-note" class="field-note">Filtering only hides cards. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order.</p>
           <div id="clauses-editor" class="clauses-editor"></div>
         </section>
 
@@ -1762,10 +1762,16 @@ function renderGroups() {
   $("#weight-shares").innerHTML = `<p class="field-note">Each share is that group's weight divided by the total (${total}). Shares are mixing weights in the approval formula, not voting rights.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Share of total</th></tr></thead><tbody>${state.proposal.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${group.weight}</td><td>${Number.isFinite(group.weight) && group.weight > 0 ? `${((group.weight / total) * 100).toFixed(1)}%` : "Invalid"}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
+function clauseMatchesFilter(clause, query) {
+  if (query === "") return true;
+  if (clause.title.toLowerCase().includes(query)) return true;
+  return clause.options.some((option) => option.label.toLowerCase().includes(query));
+}
+
 function renderClauses() {
   const { groups } = state.proposal;
   const query = clauseFilter.trim().toLowerCase();
-  const visible = query === "" ? state.proposal.clauses : state.proposal.clauses.filter((clause) => clause.title.toLowerCase().includes(query));
+  const visible = state.proposal.clauses.filter((clause) => clauseMatchesFilter(clause, query));
   if (!visible.length) {
     $("#clauses-editor").innerHTML = '<p class="empty-state">No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.</p>';
     return;

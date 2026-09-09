@@ -383,10 +383,16 @@ function renderGroups() {
   $("#weight-shares").innerHTML = `<p class="field-note">Each share is that group's weight divided by the total (${total}). Shares are mixing weights in the approval formula, not voting rights.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Share of total</th></tr></thead><tbody>${state.proposal.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${group.weight}</td><td>${Number.isFinite(group.weight) && group.weight > 0 ? `${((group.weight / total) * 100).toFixed(1)}%` : "Invalid"}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
+function clauseMatchesFilter(clause, query) {
+  if (query === "") return true;
+  if (clause.title.toLowerCase().includes(query)) return true;
+  return clause.options.some((option) => option.label.toLowerCase().includes(query));
+}
+
 function renderClauses() {
   const { groups } = state.proposal;
   const query = clauseFilter.trim().toLowerCase();
-  const visible = query === "" ? state.proposal.clauses : state.proposal.clauses.filter((clause) => clause.title.toLowerCase().includes(query));
+  const visible = state.proposal.clauses.filter((clause) => clauseMatchesFilter(clause, query));
   if (!visible.length) {
     $("#clauses-editor").innerHTML = '<p class="empty-state">No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.</p>';
     return;

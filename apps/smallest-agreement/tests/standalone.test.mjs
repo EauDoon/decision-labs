@@ -55,6 +55,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="weight-shares"/u);
   assert.match(html, /Budget remaining/u);
   assert.match(html, /Group contribution/u);
+  assert.match(html, /Filter clauses by title or option label/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
@@ -507,7 +508,7 @@ test("duplicate clause copies options and locks with new identifiers and support
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
 });
 
-test("clause title filter hides cards without changing the stored draft", async () => {
+test("clause filter matches title or option labels without changing the stored draft", async () => {
   const storage = new Map();
   const app = await savedWorkbench(storage);
   const before = storage.get("smallest-agreement:proposal:v1");
@@ -517,5 +518,8 @@ test("clause title filter hides cards without changing the stored draft", async 
   app.filterClauses("Park access");
   assert.match(app.clauses(), /Park access hours/u);
   assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  app.filterClauses("clean-up bond");
+  assert.match(app.clauses(), /Weekend market use/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
   assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
 });
