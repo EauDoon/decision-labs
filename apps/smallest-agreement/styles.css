@@ -57,6 +57,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .group-floor { grid-column: 1 / -1; display: grid; grid-template-columns: minmax(0, 1fr) 6rem; gap: .5rem; align-items: center; padding-bottom: .35rem; }
 .group-veto { grid-column: 1 / -1; display: flex; align-items: center; gap: .5rem; font-size: .82rem; padding-bottom: .65rem; border-bottom: 1px solid var(--line); }
 .group-veto input { width: auto; }
+.veto-blocking { background: #faeee9; outline: 2px solid var(--brick); outline-offset: 2px; }
+.veto-blocking-note { grid-column: 1 / -1; margin: 0 0 .5rem; color: var(--brick); font-size: .78rem; line-height: 1.35; }
 .clause-lock { display: grid; gap: .4rem; margin: .75rem 0; font-size: .82rem; }
 .clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
 .constraint-card { margin-bottom: 1rem; }
@@ -148,7 +150,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay, #coach-again, #shortcut-overlay { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -163,6 +165,10 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
   #printable-ballot { break-before: page; }
   .ballot-clause { break-inside: avoid; }
   .site-footer { padding: 1rem 0; }
+  .veto-blocking { background: #faeee9 !important; outline: 2px solid #a64431; }
+  .veto-blocking-note { color: #a64431; display: block !important; }
+  #side-by-side, #printable-ballot, #constraint-checks, #coalition-table { display: block !important; }
+  .facilitator-pack-kicker { display: block !important; margin: 0 0 1rem; font-size: .9rem; }
 }
 .print-only { display: none; }
 .ballot-clause { margin: 1rem 0; }

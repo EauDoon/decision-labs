@@ -68,11 +68,11 @@ npm run check
 6. Review up to five ranked passing packages, their lowest group support, and groups losing support. If no package satisfies every requirement, inspect constraint checks and near misses. Clause contribution and group contribution explain the arithmetic; they are not bargaining power.
 7. Try a custom package and pin it beside the original and the solver recommendation. Preview locking an option, or lock a whole recommended or near-miss package in one undoable step. Reduce support by a chosen number of points to test the recommendation under a deterministic downside scenario. Leave-one-group-out omits a group's weight from the average as a sensitivity check, not a forecast.
 8. Compare the working draft with a saved snapshot. Review changed inputs before comparing output metrics, especially when groups, weights, or clauses differ.
-9. Export JSON to reopen the draft, CSV for all modeled input evidence, a support-matrix CSV of scores only, or a Markdown brief with ranked packages. Print readout and the discussion worksheet are conversation aids, not recorded votes. When served, Share link places the draft in the URL hash.
+9. Export JSON to reopen the draft, CSV for all modeled input evidence, a support-matrix CSV of scores only, a groups CSV of participant rows, a worksheet CSV of groups and options as text, or a Markdown brief with ranked packages. Copy recommended package puts the solver's selected options on the clipboard. Print facilitator pack hides the workshop tour and keeps original vs solver vs pin, notes, and veto highlights. When served, Share link places the draft in the URL hash.
 
 Each clause keeps one original option and at least two alternatives, so the workshop always compares a structured choice set.
 
-The synthetic presets are Neighbourhood Plan, Open Source Policy, Association Budget, Protected Access, and Workplace Hybrid. Protected Access demonstrates why majority-weighted approval alone can miss a group's minimum support. It starts with a budget of 3, a 60% floor for new participants, and a locked safety-training clause. The recommendation costs 3 and gives that group 70% average support. Lower the budget to 2 to see an infeasible result. Workplace Hybrid is a three-group office presence policy with on-site staff, remote staff, and managers.
+The synthetic presets are Neighbourhood Plan, Open Source Policy, Association Budget, Protected Access, Workplace Hybrid, and Club Constitution. Protected Access demonstrates why majority-weighted approval alone can miss a group's minimum support. It starts with a budget of 3, a 60% floor for new participants, and a locked safety-training clause. The recommendation costs 3 and gives that group 70% average support. Lower the budget to 2 to see an infeasible result. Workplace Hybrid is a three-group office presence policy with on-site staff, remote staff, and managers. Club Constitution is a synthetic membership-meeting workshop with members, officers (a veto group), and club staff, covering quorum, proxy votes, and guest speakers.
 
 ## Local data and sharing
 
@@ -93,6 +93,16 @@ See [MODEL.md](MODEL.md) for the formula, deterministic ordering, assumptions, a
 A score can be incomplete, a weight can be contested, and a low numerical change cost can mask a large semantic shift. A passing result cannot confer legitimacy, consent, representation, fairness, legal validity, or authority to adopt the proposal. Keep deliberation, governing rules, and accountable human judgment outside the calculation.
 
 Support floors and veto marks protect only the numerical averages you enter. They do not establish consent, a legal veto, or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority. Optional clause notes are facilitator reminders only.
+
+## v1.4.2, 09-09-2026
+
+- Added a formula-safe discussion worksheet CSV of groups, weights, options, and notes as text.
+- Added keyboard `n` to focus Add group, an undoable clear-all-locks control, and per-option lock toggles on clause cards.
+- Added veto-blocking highlights as a numerical constraint, Markdown copy of the recommended package, and participant-group CSV import with named errors.
+- Added a print facilitator pack that hides the coach and keeps original vs solver vs pin, notes, and veto highlights.
+- Added preview-then-apply renormalize so group weights sum to 1, and the Club Constitution membership-meeting preset.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ## v1.4.1, 09-09-2026
 

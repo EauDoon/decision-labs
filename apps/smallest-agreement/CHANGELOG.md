@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.4.2 - 2026-09-09
+
+A facilitator follow-up. The solver is still a decision aid, not a decision maker.
+
+### Added
+
+- Formula-safe discussion worksheet CSV with groups, weights, clause options, and facilitator notes as text. Support scores are omitted.
+- Keyboard `n` focuses Add group when focus is not in an input, select, or text area. The shortcut help documents it.
+- Clear all locks in one undoable step.
+- Lock or unlock one option from the clause card, without applying a whole package.
+- Highlight groups whose veto is not met on the inspected package. That is a numerical constraint, not a legal right or a legitimacy claim.
+- Copy the recommended package as compact Markdown.
+- Import participant groups from CSV (`name`, `weight`, optional `min_support` and `veto`, plus `clauseId:optionId` support columns). Unknown columns and invalid values fail with named errors.
+- Print facilitator pack hides the workshop tour and keeps original vs solver vs pin, notes, and veto highlights.
+- Preview then apply renormalized group weights that sum to 1. Any invalid weight is rejected.
+- Club Constitution preset: synthetic members, officers, and staff scoring quorum, proxy, and guest-speaker clauses.
+
 ## 1.4.1 - 2026-09-09
 
 A workshop follow-up. The solver is still a decision aid, not a decision maker.
