@@ -76,6 +76,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /id="printable-ballot"/u);
   assert.match(html, /Print facilitator pack/u);
+  assert.match(html, /Print redacted/u);
+  assert.match(html, /id="print-redacted-button"/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
@@ -151,6 +153,7 @@ async function savedWorkbench(storage, hash = "") {
     this.text = value;
     return Promise.resolve();
   } };
+  let printCalls = 0;
   const context = vm.createContext({ console, TextEncoder, TextDecoder, Uint8Array, atob,
     document: {
       querySelector: element,
@@ -158,7 +161,12 @@ async function savedWorkbench(storage, hash = "") {
       querySelectorAll: () => [],
       addEventListener: (name, callback) => documentEvents.set(name, callback),
     },
-    window: { devicePixelRatio: 1, addEventListener() {}, navigator: { clipboard } },
+    window: {
+      devicePixelRatio: 1,
+      addEventListener() {},
+      navigator: { clipboard },
+      print() { printCalls += 1; },
+    },
     navigator: { clipboard },
     location: { hash, protocol: "file:" },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
@@ -266,6 +274,7 @@ async function savedWorkbench(storage, hash = "") {
     focused: () => focusedSelector,
     clipboardText: () => clipboard.text,
     blockClipboard: () => { clipboard.blocked = true; },
+    printCalls: () => printCalls,
     packageTable: () => element("#package-table-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
     compareFiles: async (left, right) => {
@@ -755,11 +764,13 @@ test("printable worksheet lists every clause option without recording a vote", a
   assert.match(app.ballot(), /Park access hours/u);
   assert.match(app.ballot(), /Close at 20:00 every day \(original\)/u);
   assert.match(app.ballot(), /ballot-box/u);
+  assert.match(app.ballot(), /Participant groups: Residents, Shopkeepers, Park stewards/u);
 });
 
 test("print facilitator pack keeps pin columns, notes, and veto highlights while hiding the coach", async () => {
   const html = await standaloneBytes();
   assert.match(html, /Print facilitator pack/u);
+  assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
   assert.match(html, /#coach-again, #shortcut-overlay, \.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note/u);
@@ -771,6 +782,38 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(app.sideBySide(), /Facilitator note: Ask about lighting\./u);
   assert.match(app.ballot(), /Facilitator note: Ask about lighting\./u);
   assert.equal(app.coachHidden(), false);
+});
+
+test("print redacted replaces group display names without changing the saved draft", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for redacted print");
+  app.edit("group-floor", 40, { field: "group-floor", groupId: "residents" });
+  assert.match(app.coalition(), /Residents/u);
+  assert.match(app.sideBySide(), /Residents/u);
+  assert.match(app.constraints(), /Residents support/u);
+  assert.match(app.ballot(), /Participant groups: Residents, Shopkeepers, Park stewards/u);
+  assert.match(app.groups(), /Residents/u);
+  app.click("#print-button");
+  assert.equal(app.printCalls(), 1);
+  assert.match(app.coalition(), /Residents/u);
+  app.click("#print-redacted-button");
+  assert.equal(app.printCalls(), 2);
+  assert.match(app.coalition(), /Group 1/u);
+  assert.match(app.coalition(), /Group 2/u);
+  assert.match(app.coalition(), /Group 3/u);
+  assert.doesNotMatch(app.coalition(), /Residents/u);
+  assert.match(app.sideBySide(), /Group 1/u);
+  assert.doesNotMatch(app.sideBySide(), /Residents/u);
+  assert.match(app.constraints(), /Group 1 support/u);
+  assert.doesNotMatch(app.constraints(), /Residents/u);
+  assert.match(app.ballot(), /Participant groups: Group 1, Group 2, Group 3/u);
+  assert.doesNotMatch(app.ballot(), /Residents/u);
+  assert.match(app.groups(), /Residents/u);
+  const saved = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(saved.groups[0].name, "Residents");
+  assert.equal(saved.groups[1].name, "Shopkeepers");
+  assert.equal(saved.groups[2].name, "Park stewards");
 });
 
 test("moving a clause changes documented tie-breaker order and supports undo", async () => {
