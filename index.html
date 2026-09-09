@@ -124,6 +124,11 @@
       outline-offset: 4px;
     }
     .skip:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
+    #whats-new:focus-visible,
+    #workbenches:focus-visible {
+      outline: 3px solid var(--focus);
+      outline-offset: 6px;
+    }
     .guide { margin: 40px 0 12px; max-width: 720px; }
     .guide p { color: var(--muted); }
     .guide h3 { font-size: 18px; margin: 20px 0 6px; }
@@ -132,11 +137,13 @@
     .trust ul { margin: 12px 0 0; padding-left: 1.2rem; color: var(--muted); }
     .trust li { margin: 8px 0; }
     .whats-new {
-      margin: 8px 0 12px;
-      padding: 24px 0 8px;
-      border-bottom: 1px solid var(--line);
+      margin: 8px 0 20px;
+      padding: 24px 22px 16px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel);
     }
-    .whats-new > p { max-width: 46rem; color: var(--muted); margin: 0 0 16px; }
+    .whats-new > p { max-width: 46rem; color: var(--ink); margin: 0 0 16px; }
     .whats-new-list {
       list-style: none;
       margin: 0;
@@ -148,14 +155,14 @@
     .whats-new-list li {
       margin: 0;
       padding: 16px 0 4px;
-      border-top: 1px solid var(--line);
+      border-top: 2px solid var(--brand);
     }
     .whats-new-list h3 {
       font-size: 17px;
       margin: 0 0 6px;
-      color: var(--ink);
+      color: var(--brand-deep);
     }
-    .whats-new-list p { margin: 0; color: var(--muted); font-size: 16px; }
+    .whats-new-list p { margin: 0; color: var(--ink); font-size: 16px; }
     .shortcuts-open {
       display: inline-flex;
       align-items: center;
@@ -169,21 +176,23 @@
       font: inherit;
       font-weight: 650;
       cursor: pointer;
+      transition: background-color 0.16s ease;
     }
     .shortcuts-open:hover { background: #e4eeeb; }
     .shortcuts {
       margin: 16px 0 8px;
       padding: 20px 22px;
       max-width: 36rem;
-      border: 1px solid var(--line);
+      border: 2px solid var(--brand-deep);
       border-radius: 4px;
       background: var(--panel);
+      color: var(--ink);
     }
     .shortcuts[hidden] { display: none; }
     .shortcuts h3 { font-size: 18px; margin: 0 0 10px; }
     .shortcuts dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; }
     .shortcuts dt { margin: 0; }
-    .shortcuts dd { margin: 0; color: var(--muted); }
+    .shortcuts dd { margin: 0; color: var(--ink); }
     .shortcuts-close {
       margin-top: 16px;
       min-height: 44px;
@@ -195,6 +204,7 @@
       font: inherit;
       font-weight: 650;
       cursor: pointer;
+      transition: background-color 0.16s ease;
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     @media (max-width: 720px) {
@@ -237,7 +247,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close { transition: none; }
     }
     @media (max-width: 720px) {
       .shell { padding-inline: clamp(16px, 4vw, 28px); }
