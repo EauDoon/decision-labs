@@ -167,6 +167,13 @@ SOFTWARE.
               </select>
               <p>Total demand stays fixed. Timing changes when it joins the queue.</p>
             </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="mondayHoliday">
+                <input id="mondayHoliday" name="mondayHoliday" data-field="mondayHoliday" type="checkbox">
+                Treat Monday as a public holiday
+              </label>
+              <p>When selected, Monday is a non-business day like Sunday. Issuer, bank and payout windows stay closed, and weekend FX thinning applies. Older scenario files omit this field and keep a weekday Monday.</p>
+            </div>
           </form>
 
           <section class="library-controls" aria-labelledby="library-title">
@@ -353,7 +360,7 @@ SOFTWARE.
         <div class="method-intro">
           <p class="eyebrow">About and method</p>
           <h2 id="method-title">A constrained operating-window model</h2>
-          <p>At each hour, synthetic redemption demand enters a queue. Settlement can occur only when issuer redemption, bank settlement and Australian AUD payout windows are all open. The hourly capacity is the smallest of issuer throughput, available FX depth, payout throughput and remaining AUD reserve.</p>
+          <p>At each hour, synthetic redemption demand enters a queue. Settlement can occur only when issuer redemption, bank settlement and Australian AUD payout windows are all open. The hourly capacity is the smallest of issuer throughput, available FX depth, payout throughput and remaining AUD reserve. An optional Monday public-holiday flag keeps those windows closed on Monday, the same way Sunday is already closed.</p>
         </div>
         <div class="method-grid">
           <div><h3>What it shows</h3><p>How a closed payout chain can create queued AUD demand and lower immediately redeemable capacity even while onchain transfers continue.</p></div>

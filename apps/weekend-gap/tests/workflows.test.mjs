@@ -6,7 +6,7 @@ const source = await readFile(new URL("../src/app.js", import.meta.url), "utf8")
 let runId = 0;
 
 class Element {
-  constructor(value = "") { this.value = value; this.textContent = ""; this.children = []; this.handlers = {}; this.dataset = {}; this.disabled = false; this.attributes = {}; this.classList = { toggle() {} }; }
+  constructor(value = "") { this.value = value; this.checked = false; this.type = ""; this.textContent = ""; this.children = []; this.handlers = {}; this.dataset = {}; this.disabled = false; this.attributes = {}; this.classList = { toggle() {} }; }
   get valueAsNumber() { return this.value.trim() === "" ? NaN : Number(this.value); }
   addEventListener(type, handler) { (this.handlers[type] ||= []).push(handler); }
   async emit(type) { for (const handler of this.handlers[type] || []) await handler({ target: this }); }
@@ -23,7 +23,10 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
   const nodes = new Map();
   for (const match of html.matchAll(/<[^>]+\bid="([^"]+)"[^>]*>/g)) {
     const value = match[0].match(/\bvalue="([^"]*)"/)?.[1] || "";
-    nodes.set(match[1], new Element(value));
+    const node = new Element(value);
+    node.type = match[0].match(/\btype="([^"]*)"/)?.[1] || "";
+    node.checked = /\bchecked\b/.test(match[0]);
+    nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
   const presets = ["normal", "weekendRush", "marketStress"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });

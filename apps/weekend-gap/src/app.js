@@ -85,7 +85,10 @@ function formatPercent(value, decimals = 1) {
 function writeForm() {
   for (const [field, value] of Object.entries(scenario)) {
     const input = form.elements.namedItem(field);
-    if (input) { input.value = String(value); input.setAttribute("aria-invalid", "false"); }
+    if (!input) continue;
+    if (input.type === "checkbox") input.checked = Boolean(value);
+    else input.value = String(value);
+    input.setAttribute("aria-invalid", "false");
   }
 }
 
@@ -93,7 +96,11 @@ function readForm() {
   const raw = {};
   for (const field of Object.keys(DEFAULT_SCENARIO)) {
     const input = form.elements.namedItem(field);
-    raw[field] = input ? input.value : scenario[field];
+    if (!input) {
+      raw[field] = scenario[field];
+      continue;
+    }
+    raw[field] = input.type === "checkbox" ? input.checked : input.value;
   }
   return raw;
 }
@@ -230,7 +237,7 @@ function render() {
   applyGateState(elements.bankGate, point.bankOpen);
   applyGateState(elements.payoutGate, point.payoutOpen);
   elements.fxGate.textContent = point.weekend
-    ? `Weekend: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
+    ? `${scenario.mondayHoliday && point.timeLabel.startsWith("Mon") ? "Holiday Monday" : "Weekend"}: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
     : `${Math.round(point.fxSpreadBps)} bps weekday spread`;
   elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
 
