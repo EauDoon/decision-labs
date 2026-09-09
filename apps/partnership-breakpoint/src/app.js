@@ -304,30 +304,36 @@ function shockUnits(kind) {
 function breakpointSection(result) {
   const breakpoint = result.firstBreakpoint;
   if (!breakpoint?.participant) {
-    return `<section class="panel breakpoint-summary"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p></div></section>`;
+    return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p></div></section>`;
   }
 
   const participantName = escapeAttribute(breakpoint.participant.name);
   const label = shockLabel(breakpoint.kind);
   const shock = breakpoint.shock;
   if (breakpoint.status === 'already-failing') {
-    return `<section class="panel breakpoint-summary alarm"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p></div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p></div></section>`;
   }
   if (breakpoint.status === 'at-breakpoint') {
-    return `<section class="panel breakpoint-summary alarm"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p></div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p></div></section>`;
   }
 
   const units = shockUnits(breakpoint.kind);
   const threshold = units === 'txn'
     ? `${formatNumber(shock.breakpoint)} txn`
     : `${formatNumber(shock.breakpoint, 4)} units / txn`;
-  return `<section class="panel breakpoint-summary"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p></div></section>`;
+  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p></div></section>`;
+}
+
+function participantDetailsOpen(index) {
+  const nodes = app?.querySelectorAll?.('.participant-details');
+  if (!nodes?.length) return true;
+  return Boolean(nodes[index]?.open);
 }
 
 function inputPanel() {
   const participantForms = state.participants.map((participant, index) => `
     <section class="participant-form" aria-labelledby="participant-${index}-title">
-      <details class="participant-details">
+      <details class="participant-details"${participantDetailsOpen(index) ? ' open' : ''}>
         <summary id="participant-${index}-title">Participant ${index + 1}: ${escapeAttribute(participant.name)}</summary>
         <div class="participant-header">
           <div class="button-row participant-roster">
@@ -394,7 +400,7 @@ function inputPanel() {
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
           ${libraryPanel()}
-          <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button></div>
+          <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button><button type="button" data-action="open-help">Keyboard shortcuts</button><button type="button" data-action="show-coach">Show tour</button></div>
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
           <div class="button-row">
@@ -440,17 +446,24 @@ function resultsPanel(result) {
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
     <section class="print-only"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
+    <nav class="results-jump" aria-label="Jump in results">
+      <a href="#first-breakpoint">First breakpoint</a>
+      <a href="#charts-title">Charts</a>
+      <a href="#compound-title">Compound stress</a>
+      <a href="#participant-ledger">Participant ledger</a>
+    </nav>
     ${feeRequirementsSection()}
     ${feeHoldPreviewSection()}
     ${shareHoldPreviewSection()}
     ${comparisonSection(result)}
     ${breakpointSection(result)}
+    <h2 id="charts-title" class="visually-hidden">Charts</h2>
+    ${tornadoSection(result)}
+    ${waterfallSection(result)}
     ${stressSection()}
     ${result.volumeCappedByAddressableDemand ? '<p class="error-box">Addressable demand limits realized volume below the post-shock monthly-volume input.</p>' : ''}
     ${participantTable(result)}
-    ${waterfallSection(result)}
     ${shockSection(result)}
-    ${tornadoSection(result)}
     ${sensitivitySection(result)}
     ${methodAndLimits()}
   </section>`;
@@ -512,7 +525,7 @@ function participantTable(result) {
       <td>${escapeAttribute(participant.bindingConstraint.label)}</td>
       <td class="${participant.viable ? 'pass-text' : 'failure-text'}">${participant.viable ? 'Holds' : escapeAttribute(participant.failureReasons.join('; '))}</td>
     </tr>`).join('');
-  return `<section class="panel"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary.</p></section>`;
+  return `<section class="panel" id="participant-ledger"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary.</p></section>`;
 }
 
 function shockCard(label, shock, units) {
@@ -745,6 +758,8 @@ function attachEvents() {
       return;
     }
     if (action === 'dismiss-coach') { dismissCoach(); return; }
+    if (action === 'show-coach') { coachVisible = true; helpOpen = false; render(); return; }
+    if (action === 'open-help') { helpOpen = true; render(); return; }
     if (action === 'close-help') { helpOpen = false; render(); return; }
     if (action === 'print-report') {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
@@ -966,7 +981,7 @@ window.addEventListener('keydown', (event) => {
   }
   const tag = event.target?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || event.target?.isContentEditable) return;
-  if (event.key === '?') {
+  if (event.key === '?' || (event.key === '/' && event.shiftKey)) {
     helpOpen = !helpOpen;
     render();
     return;

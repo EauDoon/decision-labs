@@ -437,7 +437,7 @@ test('invalid fields expose accessible state and printing requires a valid case'
  assert.match(app.markup(), /id="field-deal-monthlyVolume" aria-invalid="true"/);
  assert.match(app.markup(), /Go to first invalid field/);
  assert.match(app.markup(), /[0-9]+ field[s]? need/);
- assert.match(app.markup(), /<details class="participant-details">/);
+ assert.match(app.markup(), /<details class="participant-details" open>/);
  app.click('print-report'); assert.equal(app.prints(), 1);
  app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
  assert.match(app.markup(), /Case assumptions/);
@@ -525,6 +525,21 @@ test('contribution waterfall includes an SVG and a text fallback for each partic
   assert.match(app.markup(), /aria-label="Contribution waterfall for Platform/);
   assert.match(app.markup(), /<caption>Text equivalent for Platform<\/caption>/);
   assert.match(app.markup(), /Minimum acceptable profit/);
+  const tornadoAt = app.markup().indexOf('Adverse-shock tornado');
+  const waterfallAt = app.markup().indexOf('Contribution waterfall');
+  const stressAt = app.markup().indexOf('Compound stress and negotiation');
+  assert.equal(tornadoAt > 0 && waterfallAt > tornadoAt && stressAt > waterfallAt, true);
+});
+
+test('visible tour and shortcut buttons reopen coach and help', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.doesNotMatch(app.markup(), /Three steps to a first read/);
+  app.click('show-coach');
+  assert.match(app.markup(), /Three steps to a first read/);
+  app.click('dismiss-coach');
+  app.click('open-help');
+  assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
 });
 
 test('first-run coach explains the three-step flow, dismisses to localStorage, and skips share links', async () => {
@@ -550,11 +565,11 @@ test('first-run coach explains the three-step flow, dismisses to localStorage, a
 test('keyboard shortcuts open help, undo, redo, and export without stealing from inputs', async () => {
   const app = await workbench();
   app.keydown('?');
-  assert.match(app.markup(), /Keyboard shortcuts/);
+  assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
   assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
-  assert.doesNotMatch(app.markup(), /Keyboard shortcuts/);
+  assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
   app.edit('deal.monthlyVolume', '80000');
   app.keydown('u');
   assert.equal(app.saved().deal.monthlyVolume, 100000);
