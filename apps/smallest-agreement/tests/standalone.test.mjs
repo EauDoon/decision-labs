@@ -52,6 +52,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="coach-again"/u);
   assert.match(html, /Duplicate option/u);
   assert.match(html, /Move up/u);
+  assert.match(html, /id="weight-shares"/u);
+  assert.match(html, /Budget remaining/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
@@ -106,6 +108,7 @@ async function savedWorkbench(storage, hash = "") {
       target.events.get("input")({ target });
     },
     ballot: () => element("#ballot-body").innerHTML,
+    shares: () => element("#weight-shares").innerHTML,
     coachHidden: () => element("#coach-overlay").hidden,
     clickAction: (action, dataset = {}) => {
       documentEvents.get("click")({
@@ -411,6 +414,15 @@ test("saving snapshots cannot overwrite a library changed by another tab", async
   second.click("#save-scenario");
   assert.equal(storage.get("smallest-agreement:scenarios:v1"), saved);
   assert.match(second.message(), /changed in another tab/);
+});
+
+test("weight shares and leftover budget are visible accounting, not voting rights", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "protected-access");
+  app.click("#load-preset");
+  assert.match(app.shares(), /Regular participants/u);
+  assert.match(app.shares(), /mixing weights/u);
+  assert.match(app.summary(), /Budget remaining/u);
 });
 
 test("workplace hybrid preset loads a valid three-group office policy", async () => {
