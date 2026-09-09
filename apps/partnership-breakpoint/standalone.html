@@ -222,6 +222,21 @@ canvas { width: 100%; height: auto; display: block; border: 1px solid var(--line
 .error-box { border: 1px solid var(--coral); background: var(--coral-pale); padding: .75rem 1rem; color: #75251d; }
 .error-box h2 { font-size: .85rem; margin: 0 0 .3rem; }
 .error-box ul { margin: 0; padding-left: 1.1rem; font-size: .82rem; }
+.invalid-summary {
+  position: sticky;
+  top: 0;
+  z-index: 8;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: .65rem 1rem;
+  margin: 1rem 0 0;
+  padding: .65rem 1rem;
+  border: 1px solid var(--coral);
+  background: var(--coral-pale);
+  color: #75251d;
+}
+.invalid-summary .invalid-count { margin: 0; font-weight: 700; }
 .diff-up { background: var(--cobalt-pale); color: #062e74; }
 .diff-down { background: var(--coral-pale); color: #8c291e; }
 tr.diff-changed td:last-child { font-weight: 750; }
@@ -302,7 +317,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
 @media print {
   @page { size: portrait; margin: 12mm; }
   body { background: white; color: black; font-size: 10pt; }
-  .skip-link, .site-header, .site-footer, .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview, .coach-overlay, .help-overlay, .results-jump, .status-card, .metric-strip, .print-hide, .panel:not(.print-keep) { display: none !important; }
+  .skip-link, .site-header, .site-footer, .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview, .coach-overlay, .help-overlay, .results-jump, .status-card, .metric-strip, .print-hide, .invalid-summary, .panel:not(.print-keep) { display: none !important; }
   .app-grid, .results, .disclosure-grid { display: block; }
   .panel, .status-card { box-shadow: none; border-color: #777; margin-bottom: 12pt; }
   .table-wrap { overflow: visible; }
@@ -2179,7 +2194,13 @@ function inputPanel(result) {
 function errorBox(errors) {
   const count = invalidFieldCount;
   const countText = count === 1 ? '1 field needs attention.' : `${count} fields need attention.`;
-  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><p class="invalid-count" aria-live="polite">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
+  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><p class="invalid-count">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
+}
+
+function invalidSummary() {
+  if (invalidFieldCount === 0) return '';
+  const countText = invalidFieldCount === 1 ? '1 field needs attention.' : `${invalidFieldCount} fields need attention.`;
+  return `<div class="invalid-summary" role="status"><p class="invalid-count" aria-live="polite">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button></div>`;
 }
 
 function resultsPanel(result) {
@@ -2464,7 +2485,9 @@ function render() {
   try { result = calculatePartnership(state); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
   }
-  app.innerHTML = `${coachOverlay()}${helpDialog()}<div class="app-grid">${inputPanel(result)}${resultsPanel(result)}</div>`;
+  const inputs = inputPanel(result);
+  const results = resultsPanel(result);
+  app.innerHTML = `${coachOverlay()}${helpDialog()}${invalidSummary()}<div class="app-grid">${inputs}${results}</div>`;
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());

@@ -550,14 +550,19 @@ test('print one-pager keeps tornado, waterfall, ledger, and notes and hides chro
 
 test('invalid fields expose accessible state and printing requires a valid case', async () => {
  const app = await workbench();
+ const html = await buildStandalone();
  app.click('print-report'); assert.equal(app.prints(), 1);
  app.edit('deal.monthlyVolume', '');
  assert.match(app.markup(), /id="field-deal-monthlyVolume" aria-invalid="true"/);
+ assert.match(app.markup(), /class="invalid-summary"/);
+ assert.match(app.markup(), /aria-live="polite">1 field needs attention\./);
  assert.match(app.markup(), /Go to first invalid field/);
  assert.match(app.markup(), /[0-9]+ field[s]? need/);
  assert.match(app.markup(), /<details class="participant-details" open>/);
+ assert.match(html, /\.invalid-summary \{[\s\S]*position: sticky;/);
  app.click('print-report'); assert.equal(app.prints(), 1);
  app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
+ assert.doesNotMatch(app.markup(), /class="invalid-summary"/);
  assert.match(app.markup(), /Case assumptions/);
 });
 

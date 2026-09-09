@@ -467,7 +467,13 @@ function inputPanel(result) {
 function errorBox(errors) {
   const count = invalidFieldCount;
   const countText = count === 1 ? '1 field needs attention.' : `${count} fields need attention.`;
-  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><p class="invalid-count" aria-live="polite">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
+  return `<section class="error-box" role="alert"><h2>Resolve these inputs</h2><p class="invalid-count">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button><ul>${errors.map((error) => `<li>${escapeAttribute(error)}</li>`).join('')}</ul></section>`;
+}
+
+function invalidSummary() {
+  if (invalidFieldCount === 0) return '';
+  const countText = invalidFieldCount === 1 ? '1 field needs attention.' : `${invalidFieldCount} fields need attention.`;
+  return `<div class="invalid-summary" role="status"><p class="invalid-count" aria-live="polite">${countText}</p><button type="button" data-action="focus-invalid">Go to first invalid field</button></div>`;
 }
 
 function resultsPanel(result) {
@@ -752,7 +758,9 @@ function render() {
   try { result = calculatePartnership(state); } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
   }
-  app.innerHTML = `${coachOverlay()}${helpDialog()}<div class="app-grid">${inputPanel(result)}${resultsPanel(result)}</div>`;
+  const inputs = inputPanel(result);
+  const results = resultsPanel(result);
+  app.innerHTML = `${coachOverlay()}${helpDialog()}${invalidSummary()}<div class="app-grid">${inputs}${results}</div>`;
   attachEvents();
   if (casesOpen && app.querySelector?.('.case-details')) app.querySelector('.case-details').open = true;
   if (result) drawSensitivityChart(sensitivityGrid());
