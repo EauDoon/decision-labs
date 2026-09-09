@@ -1242,9 +1242,15 @@ $("#clause-density").addEventListener("change", (event) => {
   persistClauseDensity();
   applyClauseDensity();
 });
-$("#veto-groups-only").addEventListener("change", (event) => {
-  vetoGroupsOnly = event.target.checked === true;
+function setVetoGroupsOnly(next) {
+  vetoGroupsOnly = next === true;
+  const checkbox = $("#veto-groups-only");
+  if (checkbox) checkbox.checked = vetoGroupsOnly;
   renderGroups(blockingVetoIds(currentResult()));
+}
+
+$("#veto-groups-only").addEventListener("change", (event) => {
+  setVetoGroupsOnly(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -2012,6 +2018,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "l" || event.key === "L") {
     event.preventDefault();
     jumpToLocks();
+  } else if (event.key === "v" || event.key === "V") {
+    event.preventDefault();
+    setVetoGroupsOnly(!vetoGroupsOnly);
   }
 });
 

@@ -48,6 +48,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>\/<\/kbd> Focus the clause filter/u);
   assert.match(html, /Focus Add group/u);
   assert.match(html, /Jump to the first locked clause/u);
+  assert.match(html, /<kbd>v<\/kbd> Toggle the veto-only group filter/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -848,6 +849,31 @@ test("veto-only group filter hides non-veto cards without changing the stored dr
   assert.doesNotMatch(app.groups(), /data-group-id="members"/u);
   assert.match(app.shares(), /Members/u);
   assert.match(app.vetoGroupsStatus(), /Showing 1 of 3 groups/u);
+});
+
+test("keyboard v toggles the veto-only group filter unless an input is active", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.keydown("v");
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  assert.match(app.vetoGroupsStatus(), /No veto groups match this filter/u);
+  assert.match(app.shares(), /Residents/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.clearFocus();
+  app.keydown("v", { tagName: "INPUT", isContentEditable: false });
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  app.keydown("v", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  app.keydown("v");
+  assert.match(app.groups(), /Residents/u);
+  app.field("#preset-select", "club-constitution");
+  app.click("#load-preset");
+  app.keydown("V");
+  assert.match(app.groups(), /Officers/u);
+  assert.doesNotMatch(app.groups(), /Club staff/u);
+  assert.doesNotMatch(app.groups(), /data-group-id="members"/u);
+  assert.match(app.shares(), /Members/u);
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {
