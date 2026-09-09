@@ -73,8 +73,11 @@
     }
     .actions { display: grid; gap: 10px; }
     .open, .how {
-      display: block;
-      padding: 13px 18px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 44px;
+      padding: 12px 18px;
       border-radius: 4px;
       text-decoration: none;
       font-weight: 650;
@@ -108,13 +111,46 @@
       text-decoration: none;
     }
     .skip:focus { top: 16px; }
-    @media (max-width: 640px) {
-      .workbench { grid-template-columns: 48px 1fr; gap: 12px 16px; }
-      .actions { grid-column: 1 / -1; }
-      .open, .how { text-align: left; }
-      main { padding-top: 10px; }
+    @media (max-width: 720px) {
+      main, .site-footer { padding: 20px clamp(16px, 4vw, 28px) 28px; }
+      .hero { padding: 12px 0 24px; }
+      .lede { font-size: 18px; }
+      .workbench {
+        grid-template-columns: 36px 1fr;
+        gap: 8px 14px;
+        padding: 24px 0;
+      }
+      .actions {
+        grid-column: 1 / -1;
+        gap: 12px;
+      }
+      .open, .how {
+        min-height: 48px;
+        justify-content: flex-start;
+        padding: 14px 16px;
+      }
+      .index { font-size: 24px; padding-top: 2px; }
+      .keys-note { margin-top: 16px; }
     }
-    @media print { body { background: white; } .open, .how { border: 1px solid #000; color: #000; background: none; } }
+    @media print {
+      body { background: white; color: #000; border-top-width: 2px; }
+      .skip, .keys-note, .how { display: none; }
+      main, .site-footer { max-width: none; padding: 0; }
+      .hero, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
+      .open {
+        display: inline;
+        min-height: 0;
+        padding: 0;
+        border: 0;
+        background: none;
+        color: #000;
+        font-weight: 700;
+      }
+      .open::after { content: " (" attr(href) ")"; font-weight: 400; }
+      .workbench { grid-template-columns: 32px 1fr; border-bottom: 1px solid #000; }
+      a { color: inherit; text-decoration: none; }
+      .site-footer { color: #000; margin-top: 24px; }
+    }
   </style>
 </head>
 <body>
