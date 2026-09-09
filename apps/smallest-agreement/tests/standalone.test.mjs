@@ -31,7 +31,31 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /data-field="group-floor"/u);
   assert.match(html, /data-field="clause-lock"/u);
   assert.match(html, /Constraint checks/u);
+  assert.match(html, /Clause contribution/u);
+  assert.match(html, /Near-miss explorer/u);
   assert.match(html, /aria-describedby="floor-note"/u);
+  assert.match(html, /id="veto-note"/u);
+  assert.match(html, /Import support CSV/u);
+  assert.match(html, /Try this option/u);
+  assert.match(html, /Leave one group out/u);
+  assert.match(html, /id="coach-overlay"/u);
+  assert.match(html, /id="shortcut-overlay"/u);
+  assert.match(html, /id="find-agreement"/u);
+  assert.match(html, /Side-by-side package/u);
+  assert.match(html, /workplace-hybrid/u);
+  assert.match(html, /id="clause-filter"/u);
+  assert.match(html, /id="support-drop-range"/u);
+  assert.match(html, /id="printable-ballot"/u);
+  assert.match(html, /Discussion worksheet/u);
+  assert.match(html, /Duplicate clause/u);
+  assert.match(html, /id="worksheet-button"/u);
+  assert.match(html, /id="coach-again"/u);
+  assert.match(html, /Duplicate option/u);
+  assert.match(html, /Move up/u);
+  assert.match(html, /id="weight-shares"/u);
+  assert.match(html, /Budget remaining/u);
+  assert.match(html, /Group contribution/u);
+  assert.match(html, /Filter clauses by title or option label/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
@@ -79,6 +103,23 @@ async function savedWorkbench(storage, hash = "") {
       const target = { value: String(value), valueAsNumber: value, validity: { badInput: false }, dataset: { field: "group-floor", groupId: "g", ...dataset } };
       if (field === "budget") element("#max-change-cost").events.get("input")({ target });
       else documentEvents.get("input")({ target });
+    },
+    filterClauses: (value) => {
+      const target = element("#clause-filter");
+      target.value = value;
+      target.events.get("input")({ target });
+    },
+    ballot: () => element("#ballot-body").innerHTML,
+    shares: () => element("#weight-shares").innerHTML,
+    coachHidden: () => element("#coach-overlay").hidden,
+    clickAction: (action, dataset = {}) => {
+      documentEvents.get("click")({
+        target: {
+          closest: (selector) => selector === "[data-action]"
+            ? { disabled: false, dataset: { action, ...dataset } }
+            : null,
+        },
+      });
     },
   };
 }
@@ -279,6 +320,8 @@ test("editor disables add controls at the model's validation caps", async () => 
     id: `extra-${index}`, label: `Extra ${index}`, original: false, changeCost: index + 3, support: { g: 50 },
   })));
   assert.match((await savedWorkbench(new Map([[key, JSON.stringify(optionCapped)]]))).clauses(), /data-action="add-option"[^>]*disabled/u);
+  const duplicateCapped = await savedWorkbench(new Map([[key, JSON.stringify(clauseCapped)]]));
+  assert.match(duplicateCapped.clauses(), /data-action="duplicate-clause"[^>]*disabled/u);
 });
 
 
@@ -373,4 +416,110 @@ test("saving snapshots cannot overwrite a library changed by another tab", async
   second.click("#save-scenario");
   assert.equal(storage.get("smallest-agreement:scenarios:v1"), saved);
   assert.match(second.message(), /changed in another tab/);
+});
+
+test("weight shares and leftover budget are visible accounting, not voting rights", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "protected-access");
+  app.click("#load-preset");
+  assert.match(app.shares(), /Regular participants/u);
+  assert.match(app.shares(), /mixing weights/u);
+  assert.match(app.summary(), /Budget remaining/u);
+});
+
+test("workplace hybrid preset loads a valid three-group office policy", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "workplace-hybrid");
+  app.click("#load-preset");
+  assert.match(app.title(), /Workplace Hybrid: office presence policy/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Weekly office presence/u);
+  assert.match(app.clauses(), /Core collaboration hours/u);
+  assert.match(app.clauses(), /Desk assignment/u);
+  assert.match(app.clauses(), /On-site staff|data-group-id="onsite"|onsite/u);
+});
+
+test("show workshop tour reopens the first-run coach after it was dismissed", async () => {
+  const storage = new Map([["smallest-agreement:coach:v1", "dismissed"]]);
+  const app = await savedWorkbench(storage);
+  assert.equal(app.coachHidden(), true);
+  app.click("#coach-again");
+  assert.equal(app.coachHidden(), false);
+  app.click("#coach-skip");
+  assert.equal(app.coachHidden(), true);
+  assert.equal(storage.get("smallest-agreement:coach:v1"), "dismissed");
+});
+
+test("printable worksheet lists every clause option without recording a vote", async () => {
+  const app = await savedWorkbench(new Map());
+  assert.match(app.ballot(), /Neighbourhood Plan: the shared green/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  assert.match(app.ballot(), /Close at 20:00 every day \(original\)/u);
+  assert.match(app.ballot(), /ballot-box/u);
+});
+
+test("moving a clause changes documented tie-breaker order and supports undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for clause order");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  app.clickAction("move-clause", { clauseId: "hours", direction: "down" });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses[0].id, before.clauses[1].id);
+  assert.equal(after.clauses[1].id, "hours");
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].id, "hours");
+});
+
+test("duplicate option copies an alternative's scores and cost with a new identifier", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for option copies");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const source = before.clauses[0].options[1];
+  app.clickAction("duplicate-option", { clauseId: "hours", optionId: source.id });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const copy = after.clauses[0].options.at(-1);
+  assert.equal(after.clauses[0].options.length, before.clauses[0].options.length + 1);
+  assert.equal(copy.original, false);
+  assert.equal(copy.id === source.id, false);
+  assert.equal(copy.label, `${source.label} (copy)`);
+  assert.equal(copy.changeCost, source.changeCost);
+  assert.deepEqual(copy.support, source.support);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].options.length, before.clauses[0].options.length);
+});
+
+test("duplicate clause copies options and locks with new identifiers and supports undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for duplication");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  app.clickAction("duplicate-clause", { clauseId: "hours" });
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses.length, before.clauses.length + 1);
+  assert.equal(after.clauses[1].title, "Park access hours (copy)");
+  assert.equal(after.clauses[1].id === "hours", false);
+  assert.equal(after.clauses[1].options[0].id === "hours-original", false);
+  assert.equal(after.clauses[1].options[0].label, before.clauses[0].options[0].label);
+  assert.match(app.clauses(), /Park access hours \(copy\)/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+});
+
+test("clause filter matches title or option labels without changing the stored draft", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterClauses("zzzz-no-match");
+  assert.match(app.clauses(), /No clauses match this filter/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.filterClauses("Park access");
+  assert.match(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  app.filterClauses("clean-up bond");
+  assert.match(app.clauses(), /Weekend market use/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
 });
