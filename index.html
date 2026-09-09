@@ -21,9 +21,33 @@
       background: var(--paper);
     }
     * { box-sizing: border-box; }
+    html { scroll-padding-top: 20px; }
     body { margin: 0; border-top: 7px solid var(--brand); }
-    main, .site-footer { max-width: 1100px; margin: auto; padding: 32px clamp(20px, 5vw, 64px); }
-    .hero { padding: 28px 0 36px; border-bottom: 1px solid var(--line); }
+    .shell {
+      max-width: 1100px;
+      margin-inline: auto;
+      padding-inline: clamp(20px, 5vw, 64px);
+    }
+    header.hero { padding-top: 32px; padding-bottom: 20px; }
+    .site-nav {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 4px 20px;
+      padding-bottom: 8px;
+      margin-bottom: 8px;
+      border-bottom: 1px solid var(--line);
+    }
+    .site-nav a {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      color: var(--brand-deep);
+      font-weight: 650;
+      text-decoration: none;
+    }
+    .site-nav a:hover { text-decoration: underline; }
+    main.shell { padding-bottom: 36px; }
+    .hero { border-bottom: 0; }
     .eyebrow {
       margin: 0 0 12px;
       font-size: 13px;
@@ -43,6 +67,12 @@
     .support { font-size: 17px; max-width: 40rem; margin: 0; line-height: 1.6; color: var(--muted); }
     h2 { font-size: 26px; margin: 0 0 10px; line-height: 1.25; }
     h3 { font-size: 22px; margin: 0 0 8px; line-height: 1.3; }
+    .workbench h3 {
+      font-size: 26px;
+      margin: 0 0 10px;
+      line-height: 1.25;
+    }
+    #workbenches-title { margin: 24px 0 0; }
     p { line-height: 1.6; }
     .workbench {
       display: grid;
@@ -85,9 +115,9 @@
       font-weight: 650;
       text-align: center;
     }
-    .open { border: 1px solid var(--brand); background: var(--brand); color: #fff; }
+    .open { border: 1px solid var(--brand); background: var(--brand); color: #fff; transition: background-color 0.16s ease, border-color 0.16s ease; }
     .open:hover { background: var(--brand-deep); border-color: var(--brand-deep); }
-    .how { border: 1px solid var(--brand); color: var(--brand-deep); background: var(--panel); }
+    .how { border: 1px solid var(--brand); color: var(--brand-deep); background: var(--panel); transition: background-color 0.16s ease; }
     .how:hover { background: #e4eeeb; }
     a:focus-visible, button:focus-visible {
       outline: 3px solid var(--focus);
@@ -101,7 +131,7 @@
     .trust { margin: 28px 0 8px; padding: 28px 0 8px; border-top: 1px solid var(--line); max-width: 760px; }
     .trust ul { margin: 12px 0 0; padding-left: 1.2rem; color: var(--muted); }
     .trust li { margin: 8px 0; }
-    .site-footer { padding-top: 8px; font-size: 14px; color: var(--muted); }
+    .site-footer { padding-top: 12px; padding-bottom: 36px; font-size: 14px; color: var(--muted); }
     .site-footer p { margin: 0 0 8px; max-width: 46rem; }
     .skip {
       position: absolute;
@@ -116,9 +146,13 @@
       text-decoration: none;
     }
     .skip:focus { top: 16px; }
+    @media (prefers-reduced-motion: reduce) {
+      .open, .how { transition: none; }
+    }
     @media (max-width: 720px) {
-      main, .site-footer { padding: 20px clamp(16px, 4vw, 28px) 28px; }
-      .hero { padding: 12px 0 24px; }
+      .shell { padding-inline: clamp(16px, 4vw, 28px); }
+      header.hero { padding-top: 20px; padding-bottom: 12px; }
+      main.shell { padding-bottom: 28px; }
       .lede { font-size: 18px; }
       .workbench {
         grid-template-columns: 36px 1fr;
@@ -139,8 +173,8 @@
     }
     @media print {
       body { background: white; color: #000; border-top-width: 2px; }
-      .skip, .keys-note, .how { display: none; }
-      main, .site-footer { max-width: none; padding: 0; }
+      .skip, .keys-note, .how, .site-nav { display: none; }
+      .shell { max-width: none; padding-inline: 0; }
       .hero, .workbench, .guide, .trust { break-inside: avoid; page-break-inside: avoid; }
       .open {
         display: inline;
@@ -160,19 +194,25 @@
 </head>
 <body>
   <a class="skip" href="#workbenches">Skip to workbenches</a>
-  <main>
-    <header class="hero">
-      <p class="eyebrow">Local catalog of four workbenches</p>
-      <h1>Decision Labs</h1>
-      <p class="lede">Make the assumptions visible. Change one input, see who is affected, and take the evidence into the conversation that actually decides.</p>
-      <p class="support">Each workbench is a static page that runs in your browser. There is no shared account, no hosted service, and no model that claims to decide for you.</p>
-    </header>
-    <section id="workbenches" aria-label="Choose a workbench">
+  <header class="shell hero">
+    <p class="eyebrow">Local catalog of four workbenches</p>
+    <h1>Decision Labs</h1>
+    <p class="lede">Make the assumptions visible. Change one input, see who is affected, and take the evidence into the conversation that actually decides.</p>
+    <p class="support">Each workbench is a static page that runs in your browser. There is no shared account, no hosted service, and no model that claims to decide for you.</p>
+  </header>
+  <nav class="shell site-nav" aria-label="On this page">
+    <a href="#workbenches">Workbenches</a>
+    <a href="#how-it-works">How it works</a>
+    <a href="#trust">Trust and limits</a>
+  </nav>
+  <main class="shell" id="main">
+    <section id="workbenches" tabindex="-1" aria-labelledby="workbenches-title">
+      <h2 id="workbenches-title">The workbenches</h2>
       <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input.</p>
       <article class="workbench">
         <span class="index" aria-hidden="true">1</span>
         <div>
-          <h2>Partnership Breakpoint</h2>
+          <h3>Partnership Breakpoint</h3>
           <p>Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move.</p>
           <p class="sample">You will see <strong>Balanced</strong>, the built-in synthetic starting point: a shared-revenue case with participant costs and exit floors already filled in.</p>
         </div>
@@ -184,7 +224,7 @@
       <article class="workbench">
         <span class="index" aria-hidden="true">2</span>
         <div>
-          <h2>Common Cart</h2>
+          <h3>Common Cart</h3>
           <p>Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view.</p>
           <p class="sample">You will see the built-in synthetic <strong>coffee</strong> scenario (Neighbourhood coffee run): pooled buyers and conditional merchant offers for coffee beans.</p>
         </div>
@@ -196,7 +236,7 @@
       <article class="workbench">
         <span class="index" aria-hidden="true">3</span>
         <div>
-          <h2>The Smallest Agreement</h2>
+          <h3>The Smallest Agreement</h3>
           <p>Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget.</p>
           <p class="sample">You will see <strong>Neighbourhood Plan</strong>, the built-in synthetic neighborhood-plan scenario: clause alternatives, an approval threshold, and a change-cost budget.</p>
         </div>
@@ -208,7 +248,7 @@
       <article class="workbench">
         <span class="index" aria-hidden="true">4</span>
         <div>
-          <h2>Weekend Gap</h2>
+          <h3>Weekend Gap</h3>
           <p>Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed.</p>
           <p class="sample">You will see <strong>Normal Friday</strong>, the built-in 72-hour synthetic redemption case from Friday afternoon through Monday.</p>
         </div>
@@ -240,7 +280,7 @@
       </ul>
     </section>
   </main>
-  <footer class="site-footer">
+  <footer class="shell site-footer">
     <p>This page is the catalog. It is not a combined product version. Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap each ship their own version and changelog.</p>
     <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
   </footer>
