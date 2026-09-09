@@ -25,6 +25,7 @@ import {
   previewDemandProfileStep,
   buildGateGanttSvg,
   ganttToCSV,
+  selectedGanttHourToMarkdown,
   buildGateSchedule,
   compareGateSchedules,
   buildComparisonGanttSvg,
@@ -1169,6 +1170,36 @@ document.querySelector("#export-gantt").addEventListener("click",()=>{
 document.querySelector("#export-gantt-csv").addEventListener("click",()=>{
   downloadText(ganttToCSV(scenario),"weekend-gap-gantt.csv","text/csv;charset=utf-8");
   setMessage("Gantt CSV downloaded. Open and closed hours match the 72 chart cells.");
+});
+async function copyTextWithFallback(text, fallbackId, successMessage) {
+  const fallback = document.querySelector(fallbackId);
+  try {
+    const clipboard = globalThis.navigator?.clipboard;
+    if (clipboard && typeof clipboard.writeText === "function") {
+      await clipboard.writeText(text);
+      if (fallback) {
+        fallback.hidden = true;
+        fallback.value = "";
+      }
+      setMessage(successMessage);
+      return;
+    }
+    throw new Error("Clipboard unavailable");
+  } catch {
+    if (fallback) {
+      fallback.hidden = false;
+      fallback.value = text;
+      fallback.focus();
+      if (typeof fallback.select === "function") fallback.select();
+      setMessage("Clipboard unavailable. Copy the Markdown from the text box.");
+      return;
+    }
+    setMessage("Clipboard unavailable. Markdown could not be copied.");
+  }
+}
+document.querySelector("#copy-gantt-hour").addEventListener("click", async () => {
+  const text = selectedGanttHourToMarkdown(scenario, selectedHour);
+  await copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
 });
 document.querySelector("#export-queue-svg").addEventListener("click",()=>{
   downloadText(buildQueueChartSvg(scenario,baselineScenario,selectedHour),"weekend-gap-queue.svg","image/svg+xml;charset=utf-8");

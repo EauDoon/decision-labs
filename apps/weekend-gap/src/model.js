@@ -1079,6 +1079,33 @@ export function ganttToCSV(input) {
   return csvTable([headers, ...rows]);
 }
 
+function ganttGateStateLabel(open, fx = false) {
+  if (fx) return open ? "Weekday depth" : "Weekend thinned";
+  return open ? "Open" : "Closed";
+}
+
+/** Markdown table for one Gantt hour. Synthetic calendar, not a live queue. */
+export function selectedGanttHourToMarkdown(input, selectedHour = 0) {
+  const schedule = buildGateSchedule(input);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const point = schedule.hours[hour];
+  return [
+    "# Weekend Gap selected hour",
+    "",
+    "Synthetic educational calendar. Not a live bank or payout queue.",
+    "",
+    "Hour: " + point.timeLabel + " (hour " + point.hour + ")",
+    "",
+    "| Gate | State |",
+    "| --- | --- |",
+    "| Issuer | " + ganttGateStateLabel(point.issuerOpen) + " |",
+    "| Bank | " + ganttGateStateLabel(point.bankOpen) + " |",
+    "| Payout | " + ganttGateStateLabel(point.payoutOpen) + " |",
+    "| FX | " + ganttGateStateLabel(point.fxWeekday, true) + " |",
+    ""
+  ].join("\n");
+}
+
 /** Hourly current versus baseline gate state. Observation only, not a ranking. */
 export function compareGateSchedules(baselineInput, currentInput) {
   const baseline = buildGateSchedule(baselineInput);
