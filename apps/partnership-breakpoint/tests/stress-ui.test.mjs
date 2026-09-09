@@ -53,6 +53,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
+        'notes-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1308,6 +1309,57 @@ test('negotiation brief copies Markdown or keeps a visible textarea fallback', a
   const denied = await workbench('file:', { clipboard: 'fail' });
   denied.click('copy-brief');
   assert.match(denied.markup(), /id="brief-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('copy deal notes uses Markdown and a clipboard fallback', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-deal-notes"/);
+  fallback.click('copy-deal-notes');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="notes-copy-text"/);
+  assert.match(fallback.markup(), /# Deal notes/);
+  assert.match(fallback.markup(), /No deal notes were entered\./);
+  assert.match(fallback.markup(), /not a probability or forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-notes-copy');
+  assert.doesNotMatch(fallback.markup(), /id="notes-copy-text"/);
+
+  fallback.edit('deal.notes', '  Review the capacity clause.  ', { type: 'text', optional: 'true' });
+  fallback.click('copy-deal-notes');
+  assert.match(fallback.markup(), /id="notes-copy-text"/);
+  assert.match(fallback.markup(), /Review the capacity clause\./);
+  assert.doesNotMatch(fallback.markup(), /No deal notes were entered\./);
+  fallback.click('close-notes-copy');
+
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-deal-notes');
+  assert.match(fallback.markup(), /id="notes-copy-text"/);
+  assert.match(fallback.markup(), /Review the capacity clause\./);
+  fallback.click('close-notes-copy');
+  fallback.click('undo');
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-deal-notes');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Deal notes/);
+  assert.match(withClipboard.copied()[0], /No deal notes were entered\./);
+  assert.match(withClipboard.copied()[0], /not a probability or forecast/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="notes-copy-text"/);
+  withClipboard.edit('deal.notes', 'Harbor counterparty wants a 90-day review.', { type: 'text', optional: 'true' });
+  withClipboard.click('copy-deal-notes');
+  assert.equal(withClipboard.copied().length, 2);
+  assert.match(withClipboard.copied()[1], /Harbor counterparty wants a 90-day review\./);
+  assert.doesNotMatch(withClipboard.copied()[1], /No deal notes were entered\./);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.edit('deal.notes', 'Keep the fee floor in view.', { type: 'text', optional: 'true' });
+  denied.click('copy-deal-notes');
+  assert.match(denied.markup(), /id="notes-copy-text"/);
+  assert.match(denied.markup(), /Keep the fee floor in view\./);
   assert.match(denied.notice(), /Clipboard unavailable/);
 });
 

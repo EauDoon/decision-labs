@@ -2194,6 +2194,7 @@ let briefCopyText = '';
 let csvCopyText = '';
 let breakpointCopyText = '';
 let shareHoldCopyText = '';
+let notesCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -2216,6 +2217,7 @@ function checkpoint() {
   csvCopyText = '';
   breakpointCopyText = '';
   shareHoldCopyText = '';
+  notesCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -2237,6 +2239,7 @@ function travelHistory(direction) {
   csvCopyText = '';
   breakpointCopyText = '';
   shareHoldCopyText = '';
+  notesCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -2620,6 +2623,7 @@ function inputPanel(result) {
             ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, max: 100, step: '0.1', title: 'Baseline volume reduction, 0 through 100. There is no separate churn field.' })}
             ${field({ label: 'Deal notes', path: 'deal.notes', value: state.deal.notes ?? '', optional: true, wide: true, type: 'textarea', maxLength: 500, title: 'Optional notes, 1 through 500 characters after trimming. Leave blank to omit. Shown in reports and print.' })}
           </div>
+          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button></div>
         </section>
         <section class="input-section" aria-labelledby="stress-inputs-title">
           <h2 id="stress-inputs-title">Compound stress settings</h2>
@@ -2659,7 +2663,7 @@ function inputPanel(result) {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Compare imported JSON shows honest diffs against the current draft without replacing it. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged. Export participant CSV uses those same columns and formula-safe cells.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="print-redacted">Print redacted</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="copy-visible-csv">Copy visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="print-redacted">Print redacted</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button><button type="button" data-action="copy-deal-notes">Copy deal notes</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="copy-visible-csv">Copy visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <label class="file-button">Compare imported JSON<input type="file" data-action="compare-import" accept="application/json,.json" /></label>
             <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
@@ -2686,7 +2690,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -2728,6 +2732,7 @@ function resultsPanel(result) {
     ${csvCopySection()}
     ${breakpointCopySection()}
     ${shareHoldCopySection()}
+    ${notesCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -3158,6 +3163,7 @@ function attachEvents() {
     if (action === 'close-csv-copy') { csvCopyText = ''; render(); return; }
     if (action === 'close-breakpoint-copy') { breakpointCopyText = ''; render(); return; }
     if (action === 'close-share-hold-copy') { shareHoldCopyText = ''; render(); return; }
+    if (action === 'close-notes-copy') { notesCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -3287,6 +3293,7 @@ function attachEvents() {
     if (action === 'copy-brief') copyNegotiationBrief();
     if (action === 'copy-first-breakpoint') copyFirstBreakpoint();
     if (action === 'copy-share-hold') copyShareHoldPreview();
+    if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -4007,6 +4014,55 @@ function copyShareHoldPreview() {
     }
   }
   showShareHoldCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+}
+
+function dealNotesMarkdown() {
+  const notes = typeof state.deal.notes === 'string' && state.deal.notes.trim()
+    ? state.deal.notes
+    : 'No deal notes were entered.';
+  return ['# Deal notes', '', notes, '', 'These are user-entered notes. They are not a probability or forecast.', ''].join('\n');
+}
+
+function showNotesCopyFallback(text, message) {
+  notesCopyText = text;
+  render();
+  document.querySelector('#notes-copy-text')?.focus();
+  setNotice(message);
+}
+
+function notesCopySection() {
+  if (!notesCopyText) return '';
+  return `<section class="panel" aria-labelledby="notes-copy-title"><div class="panel-heading"><h2 id="notes-copy-title">Deal notes Markdown</h2><button type="button" data-action="close-notes-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. These are user-entered notes, not a forecast.</p><label class="brief-copy-label" for="notes-copy-text">Deal notes Markdown</label><textarea id="notes-copy-text" readonly rows="10">${escapeAttribute(notesCopyText)}</textarea></div></section>`;
+}
+
+function copyDealNotes() {
+  const text = dealNotesMarkdown();
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Deal notes copied as Markdown. They are user-entered notes, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          notesCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showNotesCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      notesCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showNotesCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showNotesCopyFallback(text, fallbackNote);
 }
 
 function exportTornadoSvg() {
