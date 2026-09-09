@@ -8,6 +8,7 @@ import {
   filterOfferIdsByFulfillment,
   restoreRemovedBuyer,
   duplicateRoom,
+  winnerBudgetLeftover,
   clonePreset,
   compareScenarios,
   compareThreeRooms,
@@ -1087,7 +1088,12 @@ function renderResidualCoverage(rawScenario) {
     appendDetail(list, "Third leftover offer", "No third distinct offer on remaining whole orders");
   }
   appendDetail(list, "Still unfilled", `${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`);
-  summary.replaceChildren(list);
+  const leftover = winnerBudgetLeftover(rawScenario);
+  appendDetail(list, "Unspent item headroom after winner", formatter.format(leftover.unspentHeadroom));
+  const leftoverNote = document.createElement("p");
+  leftoverNote.className = "canvas-note";
+  leftoverNote.textContent = leftover.note;
+  summary.replaceChildren(list, leftoverNote);
 }
 
 function renderInspector(market) {

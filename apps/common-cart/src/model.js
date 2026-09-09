@@ -361,6 +361,24 @@ function withComparableCost(metrics, comparable) {
   return { ...metrics, cost: comparable ? metrics.cost : null };
 }
 
+/** Organizer-only sum of unused item-ceiling headroom for buyers included in the winner. */
+export function winnerBudgetLeftover(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  if (!market.winner) {
+    return {
+      includedBuyerCount: 0,
+      unspentHeadroom: 0,
+      note: "No winning offer, so there is no leftover headroom after a winner."
+    };
+  }
+  const unspentHeadroom = market.winner.allocations.reduce((sum, allocation) => sum + Math.max(0, allocation.headroom), 0);
+  return {
+    includedBuyerCount: market.winner.deliveredBuyers,
+    unspentHeadroom,
+    note: "Organizer-only sum of included buyers' unused item-ceiling headroom after the winning allocation. Not a rebate or merchant payout."
+  };
+}
+
 /** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
 export function createMerchantReport(rawScenario) {
   const market = evaluateMarket(rawScenario);
@@ -638,6 +656,7 @@ export function offerCsvTemplate() {
 export function createOrganizerBriefing(rawScenario) {
   const market = evaluateMarket(rawScenario);
   const residual = computeResidualCoverage(rawScenario);
+  const leftover = winnerBudgetLeftover(rawScenario);
   const winner = market.winner;
   const gap = winner ? unitsToNextTier(rawScenario, winner.offer.id) : null;
   const excludedCount = winner
@@ -689,6 +708,8 @@ export function createOrganizerBriefing(rawScenario) {
       : `- Tertiary fill: none.`,
     `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
     `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
+    `- Unspent item headroom after winner: ${leftover.unspentHeadroom}`,
+    `- ${leftover.note}`,
     ``,
     `This briefing is a planning aid. It omits private buyer labels, IDs, budgets, and allocations.`
   ];

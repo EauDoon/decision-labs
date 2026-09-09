@@ -313,6 +313,12 @@ export function compareThreeRooms(first: unknown, second: unknown, third: unknow
 export function landedTotalsComparison(leftCurrency: unknown, rightCurrency: unknown): { sameCurrency: boolean; comparable: boolean; warning: string | null };
 export function createMerchantReport(rawScenario: unknown): MerchantReport;
 export function createMerchantResidualReport(rawScenario: unknown): MerchantResidualReport;
+export interface WinnerBudgetLeftover {
+  includedBuyerCount: number;
+  unspentHeadroom: number;
+  note: string;
+}
+export function winnerBudgetLeftover(rawScenario: unknown): WinnerBudgetLeftover;
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
 export function neutralizeSpreadsheetCell(value: unknown): unknown;
 export function parseBuyerCsv(text: unknown): Buyer[];
