@@ -266,8 +266,28 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
 .chart-print-note { margin: 0.65rem 0 0; color: var(--muted); font-family: Arial, Helvetica, sans-serif; font-size: 0.75rem; }
 @media print {
   body { background: white; color: #17202a; }
-  .site-header, .section-links, .controls, .skip-link, .scenario-actions, .planning-actions, .timeline-controls { break-inside: avoid; }
-  .gantt-card, .gantt-svg, .queue-svg, .chart-card { break-inside: avoid; background: white; }
+  .print-hide,
+  .skip-link,
+  .intro,
+  .section-links,
+  .controls,
+  .method,
+  .site-footer,
+  .chart-card,
+  .table-card,
+  .planning-card:not(.gantt-card),
+  .planning-actions,
+  .timeline-controls,
+  .scenario-actions,
+  #coach-overlay,
+  #shortcut-overlay,
+  #shortcut-open,
+  #coach-dialog,
+  #shortcut-dialog {
+    display: none !important;
+  }
+  .print-keep,
+  .metrics, .outcome-card, .gantt-card, .gantt-svg, .queue-svg { break-inside: avoid; background: white; color: #17202a; }
   .gantt-svg, .queue-svg { border: 1px solid #9aa9b0; }
   .chart-wrap canvas { display: none; }
   .chart-wrap { height: auto; border: 0; }

@@ -6,7 +6,7 @@
   "engines": { "node": ">=20" },
   "scripts": {
     "start": "node scripts/serve.mjs",
-    "test": "node --test tests/launcher.test.mjs tests/standalone-modules.test.mjs tests/hub-page.test.mjs tests/hub-invariants.test.mjs && node scripts/run-apps.mjs test",
+    "test": "node --test tests/launcher.test.mjs tests/standalone-modules.test.mjs tests/hub-page.test.mjs tests/hub-invariants.test.mjs tests/hub-versions.test.mjs && node scripts/run-apps.mjs test",
     "check": "node scripts/check-hub.mjs && node scripts/run-apps.mjs check",
     "build:standalone": "node scripts/run-apps.mjs build:standalone"
   },
