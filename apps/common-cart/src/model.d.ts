@@ -13,6 +13,8 @@ export interface Buyer {
   quantity: number;
   /** Item-price ceiling from 0 to 1,000,000; does not include shipping. */
   maxUnitPrice: number;
+  /** Optional ceiling for the complete order including shipping. */
+  maxOrderTotal?: number;
   /** Inclusive latest delivery in whole days from 0 to 365. */
   latestDeliveryDays: number;
   /** 1 to 12 distinct variant names after trim. */
@@ -48,7 +50,7 @@ export interface Scenario {
   offers: Offer[];
 }
 
-export type IncompatibilityReason = "category" | "variant" | "price" | "delivery";
+export type IncompatibilityReason = "category" | "variant" | "price" | "delivery" | "budget";
 export type BuyerOutcomeStatus = "included" | "minimum" | "capacity" | "incompatible";
 
 export interface BuyerOutcome {

@@ -4,7 +4,7 @@ const MAX_UNITS = 5000;
 const MAX_TIERS = 8;
 const MAX_SHARE_LENGTH = 60_000;
 const SCENARIO_FIELDS = ["title", "currency", "buyers", "offers"];
-const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "latestDeliveryDays", "allowedVariants"];
+const BUYER_FIELDS = ["id", "label", "category", "quantity", "maxUnitPrice", "maxOrderTotal", "latestDeliveryDays", "allowedVariants"];
 const OFFER_FIELDS = ["id", "merchant", "category", "variant", "unitPrice", "minimumUnits", "deliveryDays", "capacity", "shippingPerBuyer", "tiers"];
 const TIER_FIELDS = ["minimumUnits", "unitPrice"];
 
@@ -129,6 +129,7 @@ function validateBuyer(entry, index) {
     category: requiredText(own(entry, "category"), `${prefix} category`, 60),
     quantity: integer(own(entry, "quantity"), `${prefix} quantity`, 1, MAX_UNITS),
     maxUnitPrice: finite(own(entry, "maxUnitPrice"), `${prefix} max item price`, 0, 1_000_000),
+    ...(own(entry, "maxOrderTotal") === undefined ? {} : { maxOrderTotal: finite(own(entry, "maxOrderTotal"), `${prefix} maximum order total`, 0, 5_001_000_000) }),
     latestDeliveryDays: integer(own(entry, "latestDeliveryDays"), `${prefix} delivery limit`, 0, 365),
     allowedVariants: [...new Set(allowedVariants.map((value, variantIndex) => requiredText(value, `${prefix} variant ${variantIndex + 1}`, 60)))]
   };
@@ -323,6 +324,7 @@ function incompatibilityReasons(buyer, offer) {
   if (normalizeText(buyer.category) !== normalizeText(offer.category)) reasons.push("category");
   if (!buyer.allowedVariants.some((variant) => normalizeText(variant) === normalizeText(offer.variant))) reasons.push("variant");
   if (offer.unitPrice > buyer.maxUnitPrice) reasons.push("price");
+  if (buyer.maxOrderTotal !== undefined && (offer.unitPrice * buyer.quantity + offer.shippingPerBuyer - buyer.maxOrderTotal) > Number.EPSILON * Math.max(1, offer.unitPrice * buyer.quantity + offer.shippingPerBuyer, buyer.maxOrderTotal) * 4) reasons.push("budget");
   if (offer.deliveryDays > buyer.latestDeliveryDays) reasons.push("delivery");
   return reasons;
 }
