@@ -54,6 +54,7 @@ async function savedWorkbench(storage, hash = "") {
   });
   new vm.Script(script).runInContext(context, { timeout: 5000 });
   return {
+    field: (selector, value) => { element(selector).value = value; },
     title: () => element("#proposal-title").value,
     message: () => element("#autosave-status").textContent,
     alert: () => element("#result-alert").textContent,
@@ -294,4 +295,33 @@ test("undo and redo restore edits and replacement imports; new edits clear redo"
   app.setTitle("Another round");
   assert.equal(app.disabled("#redo-button"), true);
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).title, "Another round");
+});
+
+
+test("named snapshots survive reload, load independently, and support undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("First round");
+  app.field("#scenario-name", "Working group");
+  app.click("#save-scenario");
+  app.setTitle("Second round");
+  app.field("#scenario-select", "0");
+  app.click("#load-scenario");
+  assert.equal(app.title(), "First round");
+  app.click("#undo-button");
+  assert.equal(app.title(), "Second round");
+  const next = await savedWorkbench(storage);
+  next.field("#scenario-select", "0");
+  next.click("#load-scenario");
+  assert.equal(next.title(), "First round");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:scenarios:v1"))[0].name, "Working group");
+});
+
+test("invalid scenario libraries are preserved and cannot be overwritten", async () => {
+  const key = "smallest-agreement:scenarios:v1";
+  const storage = new Map([[key, "{broken"]]);
+  const app = await savedWorkbench(storage);
+  assert.equal(app.disabled("#save-scenario"), true);
+  app.click("#save-scenario");
+  assert.equal(storage.get(key), "{broken");
 });

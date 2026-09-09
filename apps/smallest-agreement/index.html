@@ -66,6 +66,16 @@ SOFTWARE.
           <label for="proposal-title">Proposal title</label>
           <input id="proposal-title" type="text" maxlength="120" autocomplete="off">
         </section>
+        <section class="panel-section" aria-labelledby="scenarios-heading">
+          <h2 id="scenarios-heading">Saved scenarios</h2>
+          <label for="scenario-name">Snapshot name (optional)</label>
+          <input id="scenario-name" maxlength="120" placeholder="For example, round two">
+          <button class="button button-secondary" id="save-scenario" type="button">Save snapshot</button>
+          <label for="scenario-select">Scenario library</label>
+          <select id="scenario-select"></select>
+          <div class="scenario-actions"><button class="text-button" id="load-scenario" type="button">Load snapshot</button> <button class="text-button danger" id="delete-scenario" type="button">Delete snapshot</button></div>
+          <p id="scenario-count" class="field-note"></p>
+        </section>
         <section class="panel-section threshold-panel">
           <div class="label-row"><label for="threshold">Approval threshold</label><output id="threshold-output"></output></div>
           <input id="threshold" type="range" min="0" max="100" step="1">

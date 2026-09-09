@@ -11,6 +11,9 @@ import {
 } from "./model.js";
 
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
+const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
+const MAX_SCENARIOS = 20;
+let libraryBlocked = false;
 const HASH_PREFIX = "#agreement=";
 let idNumber = 100;
 let initialLoadMessage = "Loaded local draft.";
@@ -137,6 +140,7 @@ const presets = {
 };
 
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
+let scenarios = loadScenarios();
 const undoStack = [];
 const redoStack = [];
 let historySnapshot = JSON.stringify(state.proposal);
@@ -293,6 +297,7 @@ function render() {
   $("#proposal-heading").textContent = proposal.title;
   $("#autosave-status").textContent = state.saveMessage;
   updateHistoryButtons();
+  renderScenarios();
   renderGroups();
   renderClauses();
   renderResults(currentResult());
@@ -577,6 +582,77 @@ document.addEventListener("click", (event) => {
     if (clause.lockedOptionId === button.dataset.optionId) return;
     clause.options = clause.options.filter((option) => option.id !== button.dataset.optionId);
   });
+});
+
+function loadScenarios() {
+  try {
+    const raw = localStorage.getItem(LIBRARY_KEY);
+    if (raw === null) return [];
+    if (raw.length > 5_000_000) throw new Error("Library exceeds its storage bound.");
+    const rows = JSON.parse(raw);
+    if (!Array.isArray(rows) || rows.length > MAX_SCENARIOS) throw new Error("Invalid library.");
+    return rows.map((row) => {
+      if (!row || typeof row.name !== "string" || !row.name.trim() || row.name.length > 120) throw new Error("Invalid scenario name.");
+      return { name: row.name, proposal: canonicalProposal(row.proposal) };
+    });
+  } catch {
+    libraryBlocked = true;
+    return [];
+  }
+}
+
+function notifyDraft(message) {
+  state.saveMessage = message;
+  $("#autosave-status").textContent = message;
+}
+
+function renderScenarios() {
+  const select = $("#scenario-select");
+  const selected = select.value;
+  select.innerHTML = '<option value="">Choose a saved scenario</option>' + scenarios.map((row, index) => '<option value="' + index + '">' + escapeHtml(row.name) + '</option>').join("");
+  if (selected !== "" && scenarios[Number(selected)]) select.value = selected;
+  $("#scenario-count").textContent = libraryBlocked ? "Scenario storage is unavailable or invalid. Existing stored bytes are preserved. Export JSON to keep your work." : scenarios.length + " of " + MAX_SCENARIOS + " snapshots saved in this browser. Loading can be undone.";
+  $("#save-scenario").disabled = libraryBlocked || scenarios.length >= MAX_SCENARIOS;
+  $("#load-scenario").disabled = !scenarios.length;
+  $("#delete-scenario").disabled = !scenarios.length;
+}
+
+function persistScenarios(next) {
+  try {
+    localStorage.setItem(LIBRARY_KEY, JSON.stringify(next));
+    scenarios = next;
+    renderScenarios();
+    return true;
+  } catch {
+    notifyDraft("Scenario could not be saved. Export JSON to keep this draft.");
+    return false;
+  }
+}
+
+$("#save-scenario").addEventListener("click", () => {
+  if (libraryBlocked || scenarios.length >= MAX_SCENARIOS) return;
+  const cause = firstProposalError(state.proposal);
+  if (cause) return notifyDraft("Fix the draft before saving a scenario: " + cause);
+  const name = $("#scenario-name").value.trim() || state.proposal.title;
+  if (name.length > 120) return notifyDraft("Scenario names must be 120 characters or fewer.");
+  if (persistScenarios([...scenarios, { name, proposal: canonicalProposal(state.proposal) }])) {
+    $("#scenario-select").value = String(scenarios.length - 1);
+    notifyDraft("Scenario saved as an independent snapshot: " + name);
+  }
+});
+$("#load-scenario").addEventListener("click", () => {
+  const value = $("#scenario-select").value;
+  const row = value === "" ? null : scenarios[Number(value)];
+  if (!row) return notifyDraft("Choose a saved scenario first.");
+  changeAndRender(() => { state.proposal = clone(row.proposal); });
+  notifyDraft("Loaded scenario: " + row.name + ". Undo restores the previous draft.");
+});
+$("#delete-scenario").addEventListener("click", () => {
+  const value = $("#scenario-select").value;
+  const row = value === "" ? null : scenarios[Number(value)];
+  if (!row) return notifyDraft("Choose a saved scenario first.");
+  if (!window.confirm("Delete saved scenario: " + row.name + "? The current draft is retained.")) return;
+  if (persistScenarios(scenarios.filter((_, index) => index !== Number(value)))) notifyDraft("Saved scenario deleted. The current draft is retained.");
 });
 
 function restoreHistory(from, to) {
