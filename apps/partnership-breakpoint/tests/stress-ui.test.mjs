@@ -70,7 +70,8 @@ async function workbench(protocol = 'file:', options = {}) {
     sandbox.navigator = { clipboard: { writeText: () => { throw new Error('denied'); } } };
   }
   const context = vm.createContext(sandbox);
-  new vm.Script(script).runInContext(context, { timeout: 2000 });
+  // Windows Node 22 can spend more than 2s compiling the inlined standalone.
+  new vm.Script(script).runInContext(context, { timeout: 10000 });
   return {
     markup: () => app.innerHTML,
     downloads: () => downloads,
