@@ -47,11 +47,15 @@ SOFTWARE.
             <option value="protected-access">Protected Access</option>
             <option value="workplace-hybrid">Workplace Hybrid</option>
             <option value="club-constitution">Club Constitution</option>
+            <option value="library-quiet-hours">Library Quiet Hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
         <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
         <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
+        <button class="button button-secondary" type="button" id="export-workspace-button">Export workspace JSON</button>
+        <button class="button button-secondary" type="button" id="export-locks-button">Export locks JSON</button>
+        <button class="button button-secondary" type="button" id="import-locks-button">Import locks JSON</button>
         <button class="button button-secondary" type="button" id="print-button">Print facilitator pack</button>
         <button class="button button-secondary" type="button" id="worksheet-button">Export worksheet</button>
         <button class="button button-secondary" type="button" id="worksheet-csv-button">Export worksheet CSV</button>
@@ -60,8 +64,11 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="matrix-import-button">Import support CSV</button>
         <button class="button button-secondary" type="button" id="groups-export-button">Export groups CSV</button>
         <button class="button button-secondary" type="button" id="groups-import-button">Import groups CSV</button>
+        <button class="button button-secondary" type="button" id="clauses-export-button">Export clauses CSV</button>
+        <button class="button button-secondary" type="button" id="clauses-import-button">Import clauses CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
+        <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
         <button class="button button-secondary" type="button" id="redo-button" disabled>Redo</button>
@@ -70,8 +77,10 @@ SOFTWARE.
         <button class="button button-quiet" type="button" id="coach-again">Show workshop tour</button>
         <button class="button button-quiet" type="button" id="reset-button">Reset</button>
         <input id="import-file" type="file" accept="application/json,.json" hidden>
+        <input id="locks-import-file" type="file" accept="application/json,.json" hidden>
         <input id="matrix-import-file" type="file" accept="text/csv,.csv" hidden>
         <input id="groups-import-file" type="file" accept="text/csv,.csv" hidden>
+        <input id="clauses-import-file" type="file" accept="text/csv,.csv" hidden>
       </div>
     </header>
 
@@ -107,6 +116,9 @@ SOFTWARE.
         </section>
         <section class="panel-section">
           <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" id="add-group" data-action="add-group">Add group</button></div>
+          <label class="veto-groups-filter" for="veto-groups-only"><input id="veto-groups-only" type="checkbox"> Show veto groups only</label>
+          <p id="veto-groups-filter-note" class="field-note">The filter hides group cards. Every group still participates in search and export. A veto is a numerical constraint, not a legal right.</p>
+          <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <div id="groups-editor" class="groups-editor"></div>
           <p class="field-note">Weights describe the model you choose. They do not create a right to decide.</p>
           <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
@@ -133,6 +145,12 @@ SOFTWARE.
           </div>
           <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
           <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">
+          <label class="clause-density-label" for="clause-density">Clause card density
+            <select id="clause-density">
+              <option value="comfortable">Comfortable</option>
+              <option value="compact">Compact</option>
+            </select>
+          </label>
           <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <div id="clauses-editor" class="clauses-editor"></div>
@@ -208,6 +226,16 @@ SOFTWARE.
             </div>
             <div id="stress-result" role="status" aria-live="polite"></div>
           </section>
+          <section class="result-card" aria-labelledby="file-compare-heading">
+            <h3 id="file-compare-heading">Compare workshop files</h3>
+            <p>Compare two exported workshop JSON files by group and clause identifiers. Missing identifiers are listed. Support scores are not filled with zeros for groups that exist on only one side.</p>
+            <div id="file-compare-controls" class="scenario-actions">
+              <label class="select-label">First JSON<input id="compare-file-left" type="file" accept="application/json,.json"></label>
+              <label class="select-label">Second JSON<input id="compare-file-right" type="file" accept="application/json,.json"></label>
+              <button class="button button-secondary" type="button" id="compare-files-button">Compare files</button>
+            </div>
+            <div id="file-comparison"><p class="empty-state">Choose two workshop JSON files to compare groups and clauses by identifier.</p></div>
+          </section>
           <section class="result-card" aria-labelledby="comparison-heading">
             <h3 id="comparison-heading" tabindex="-1">Compare negotiation rounds</h3>
             <label for="comparison-select">Saved scenario</label><select id="comparison-select"></select>
@@ -271,7 +299,9 @@ SOFTWARE.
           <li><kbd>e</kbd> Export JSON</li>
           <li><kbd>s</kbd> Find agreement (jump to the live recommendation)</li>
           <li><kbd>f</kbd> Focus the clause filter</li>
+          <li><kbd>/</kbd> Focus the clause filter</li>
           <li><kbd>n</kbd> Focus Add group</li>
+          <li><kbd>l</kbd> Jump to the first locked clause, or the lock controls</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>

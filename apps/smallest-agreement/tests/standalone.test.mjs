@@ -38,12 +38,16 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Import support CSV/u);
   assert.match(html, /Import groups CSV/u);
   assert.match(html, /id="groups-import-file"/u);
+  assert.match(html, /Import clauses CSV/u);
+  assert.match(html, /id="clauses-import-file"/u);
   assert.match(html, /Try this option/u);
   assert.match(html, /Leave one group out/u);
   assert.match(html, /id="coach-overlay"/u);
   assert.match(html, /id="shortcut-overlay"/u);
   assert.match(html, /Focus the clause filter/u);
+  assert.match(html, /<kbd>\/<\/kbd> Focus the clause filter/u);
   assert.match(html, /Focus Add group/u);
+  assert.match(html, /Jump to the first locked clause/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -56,8 +60,12 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Lock this package/u);
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /club-constitution/u);
+  assert.match(html, /library-quiet-hours/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
+  assert.match(html, /id="veto-groups-only"/u);
+  assert.match(html, /Show veto groups only/u);
+  assert.match(html, /id="veto-groups-status"/u);
   assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /id="printable-ballot"/u);
@@ -66,10 +74,23 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
   assert.match(html, /Duplicate group/u);
+  assert.match(html, /Reset support to blank/u);
+  assert.match(html, /data-action="reset-group-support"/u);
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /id="worksheet-csv-button"/u);
-  assert.match(html, /id="copy-package-button"/u);
+  assert.match(html, /id="export-workspace-button"/u);
+  assert.match(html, /Export workspace JSON/u);
+  assert.match(html, /id="export-locks-button"/u);
+  assert.match(html, /Export locks JSON/u);
+  assert.match(html, /id="import-locks-button"/u);
+  assert.match(html, /Import locks JSON/u);
+  assert.match(html, /id="locks-import-file"/u);
+  assert.match(html, /id="clause-density"/u);
+  assert.match(html, /id="copy-veto-button"/u);
+  assert.match(html, /Copy veto blockers/u);
+  assert.match(html, /id="file-compare-heading"/u);
+  assert.match(html, /id="compare-files-button"/u);
   assert.match(html, /id="coach-again"/u);
   assert.match(html, /Duplicate option/u);
   assert.match(html, /Move up/u);
@@ -89,8 +110,28 @@ async function savedWorkbench(storage, hash = "") {
   let focusedSelector = "";
   const canvasContext = { setTransform() {}, clearRect() {}, fillRect() {}, fillText() {} };
   const element = (selector) => {
-    if (!elements.has(selector)) elements.set(selector, { value: "", textContent: "", innerHTML: "", clientWidth: 400,
-      events: new Map(), addEventListener(name, callback) { this.events.set(name, callback); }, getContext: () => canvasContext, focus() { focusedSelector = selector; } });
+    if (!elements.has(selector)) {
+      const node = {
+        value: "",
+        textContent: "",
+        innerHTML: "",
+        className: "",
+        clientWidth: 400,
+        events: new Map(),
+        addEventListener(name, callback) { this.events.set(name, callback); },
+        getContext: () => canvasContext,
+        focus() { focusedSelector = selector; },
+        classList: {
+          toggle(name, force) {
+            const names = new Set((node.className || "").split(/\s+/u).filter(Boolean));
+            if (force) names.add(name);
+            else names.delete(name);
+            node.className = [...names].join(" ");
+          },
+        },
+      };
+      elements.set(selector, node);
+    }
     return elements.get(selector);
   };
   const clipboard = { text: "", writeText(value) { this.text = value; return Promise.resolve(); } };
@@ -114,6 +155,12 @@ async function savedWorkbench(storage, hash = "") {
     alert: () => element("#result-alert").textContent,
     summary: () => element("#result-summary").innerHTML,
     clauses: () => element("#clauses-editor").innerHTML,
+    clauseDensityClass: () => element("#clauses-editor").className || "",
+    setDensity: (value) => {
+      const target = element("#clause-density");
+      target.value = value;
+      target.events.get("change")({ target: { value } });
+    },
     groups: () => element("#groups-editor").innerHTML,
     disabled: (selector) => element(selector).disabled,
     click: (selector) => element(selector).events.get("click")(),
@@ -131,6 +178,20 @@ async function savedWorkbench(storage, hash = "") {
       };
       await element("#groups-import-file").events.get("change")({ target });
     },
+    importClausesCsv: async (contents, { size } = {}) => {
+      const target = {
+        files: [{ size: size ?? contents.length, text: async () => contents }],
+        value: "clauses.csv",
+      };
+      await element("#clauses-import-file").events.get("change")({ target });
+    },
+    importLocksJson: async (contents, { size } = {}) => {
+      const target = {
+        files: [{ size: size ?? contents.length, text: async () => contents }],
+        value: "locks.json",
+      };
+      await element("#locks-import-file").events.get("change")({ target });
+    },
     setTitle: (value) => {
       const target = element("#proposal-title");
       target.value = value;
@@ -147,6 +208,12 @@ async function savedWorkbench(storage, hash = "") {
       target.events.get("input")({ target });
     },
     filterStatus: () => element("#clause-filter-status").textContent,
+    filterVetoGroups: (checked) => {
+      const target = element("#veto-groups-only");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
+    vetoGroupsStatus: () => element("#veto-groups-status").textContent,
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
     coalition: () => element("#coalition-table").innerHTML,
@@ -176,6 +243,16 @@ async function savedWorkbench(storage, hash = "") {
     },
     focused: () => focusedSelector,
     clipboardText: () => clipboard.text,
+    fileComparison: () => element("#file-comparison").innerHTML,
+    compareFiles: async (left, right) => {
+      await element("#compare-file-left").events.get("change")({
+        target: { files: [{ size: left.length, text: async () => left }], value: "left.json" },
+      });
+      await element("#compare-file-right").events.get("change")({
+        target: { files: [{ size: right.length, text: async () => right }], value: "right.json" },
+      });
+      await element("#compare-files-button").events.get("click")();
+    },
     clearFocus: () => { focusedSelector = ""; },
     keydown: (key, target = { tagName: "BODY", isContentEditable: false }) => {
       documentEvents.get("keydown")({
@@ -526,6 +603,27 @@ test("club constitution preset loads a distinct synthetic membership-meeting wor
   assert.doesNotMatch(app.clauses(), /Park access hours/u);
 });
 
+test("library quiet hours preset loads a distinct synthetic reading-room workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "library-quiet-hours");
+  app.click("#load-preset");
+  assert.match(app.title(), /Library Quiet Hours: shared reading rooms/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Evening hours/u);
+  assert.match(app.clauses(), /Children&#39;s area sound rules/u);
+  assert.match(app.clauses(), /After-hours events/u);
+  assert.match(app.groups(), /Readers/u);
+  assert.match(app.groups(), /Families/u);
+  assert.match(app.groups(), /Library staff/u);
+  assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Club Constitution/u);
+  assert.doesNotMatch(app.clauses(), /Weekly office presence/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Meeting quorum/u);
+});
+
 test("keyboard f focuses the clause filter unless an input is active", async () => {
   const app = await savedWorkbench(new Map());
   app.keydown("f");
@@ -539,6 +637,19 @@ test("keyboard f focuses the clause filter unless an input is active", async () 
   assert.equal(app.focused(), "#clause-filter");
 });
 
+test("keyboard slash focuses the clause filter unless an input is active", async () => {
+  const app = await savedWorkbench(new Map());
+  app.keydown("/");
+  assert.equal(app.focused(), "#clause-filter");
+  app.clearFocus();
+  app.keydown("/", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("/", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("/", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+});
+
 test("keyboard n focuses Add group unless an input is active", async () => {
   const app = await savedWorkbench(new Map());
   app.keydown("n");
@@ -550,6 +661,21 @@ test("keyboard n focuses Add group unless an input is active", async () => {
   assert.equal(app.focused(), "");
   app.keydown("N");
   assert.equal(app.focused(), "#add-group");
+});
+
+test("keyboard l jumps to the first locked clause unless an input is active", async () => {
+  const app = await savedWorkbench(new Map());
+  app.keydown("l");
+  assert.equal(app.focused(), "#clear-locks");
+  app.clearFocus();
+  app.keydown("l", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("l", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  app.clearFocus();
+  app.keydown("L");
+  assert.equal(app.focused(), '[data-field="clause-lock"][data-clause-id="hours"]');
 });
 
 test("show workshop tour reopens the first-run coach after it was dismissed", async () => {
@@ -697,6 +823,29 @@ test("clause filter live region announces when no clauses match", async () => {
   assert.equal(app.filterStatus(), "");
 });
 
+test("veto-only group filter hides non-veto cards without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="veto-groups-status"[^>]*role="status"/u);
+  assert.match(html, /id="veto-groups-status"[^>]*aria-live="polite"/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterVetoGroups(true);
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  assert.match(app.vetoGroupsStatus(), /No veto groups match this filter/u);
+  assert.match(app.shares(), /Residents/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.filterVetoGroups(false);
+  app.field("#preset-select", "club-constitution");
+  app.click("#load-preset");
+  app.filterVetoGroups(true);
+  assert.match(app.groups(), /Officers/u);
+  assert.doesNotMatch(app.groups(), /Club staff/u);
+  assert.doesNotMatch(app.groups(), /data-group-id="members"/u);
+  assert.match(app.shares(), /Members/u);
+  assert.match(app.vetoGroupsStatus(), /Showing 1 of 3 groups/u);
+});
+
 test("side-by-side pins original, solver, and custom package columns", async () => {
   const app = await savedWorkbench(new Map());
   assert.match(app.sideBySide(), /Current original/u);
@@ -817,6 +966,59 @@ test("copy recommended package writes Markdown to the clipboard", async () => {
   assert.match(app.message(), /Recommended package copied as Markdown/u);
 });
 
+test("copy veto blockers writes a constraint list rather than a legitimacy claim", async () => {
+  const key = "smallest-agreement:proposal:v1";
+  const draft = {
+    title: "Veto copy workshop",
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { majority: 90, minority: 10 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { majority: 88, minority: 20 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { majority: 85, minority: 30 } },
+    ] }],
+  };
+  const app = await savedWorkbench(new Map([[key, JSON.stringify(draft)]]));
+  await app.click("#copy-veto-button");
+  assert.match(app.clipboardText(), /^# Veto constraint list\n/u);
+  assert.match(app.clipboardText(), /numerical constraint list, not a legal veto or a claim of legitimacy/u);
+  assert.match(app.clipboardText(), /Minority: 10\.0% against required 80\.0%/u);
+  assert.match(app.message(), /not a legitimacy claim/u);
+});
+
+test("comparing two workshop JSON files lists missing group and clause ids honestly", async () => {
+  const app = await savedWorkbench(new Map());
+  const neighbourhood = {
+    title: "Left workshop",
+    threshold: 70,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "clause", title: "Clause", options: [
+      { id: "original", label: "Original", original: true, changeCost: 0, support: { g: 60 } },
+      { id: "alternative", label: "Alternative", original: false, changeCost: 1, support: { g: 80 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+  const other = {
+    title: "Right workshop",
+    threshold: 70,
+    groups: [{ id: "other", name: "Other group", weight: 1 }],
+    clauses: [{ id: "path", title: "Path", options: [
+      { id: "original", label: "Original", original: true, changeCost: 0, support: { other: 60 } },
+      { id: "alternative", label: "Alternative", original: false, changeCost: 1, support: { other: 80 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { other: 90 } },
+    ] }],
+  };
+  await app.compareFiles(JSON.stringify(neighbourhood), JSON.stringify(other));
+  assert.match(app.fileComparison(), /only in the first file/u);
+  assert.match(app.fileComparison(), /only in the second file/u);
+  assert.match(app.fileComparison(), /not share the same group and clause identifiers/u);
+  assert.match(app.fileComparison(), /rather than filled with zeros/u);
+  assert.match(app.message(), /Missing group and clause ids are listed/u);
+});
+
 test("groups CSV import replaces the roster with named errors and supports undo", async () => {
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -835,6 +1037,99 @@ test("groups CSV import replaces the roster with named errors and supports undo"
   assert.match(app.message(), /Imported 1 participant groups/u);
   app.click("#undo-button");
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.length, before.groups.length);
+});
+
+test("clauses CSV import replaces options with named errors and supports undo", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for clause CSV");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  await app.importClausesCsv("clause_id,option_id,clause_title,option_label,original,change_cost,hidden\nhours,hours-original,Hours,Keep,yes,0,x\n");
+  assert.match(app.message(), /Clauses CSV import failed \(unknown_column\)/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+  const rows = [
+    "hours,hours-original,Park hours,Close at 20:00,yes,0",
+    "hours,hours-seasonal,Park hours,Seasonal close,no,2",
+    "hours,hours-pilot,Park hours,Friday trial,no,3",
+  ].join("\n");
+  await app.importClausesCsv(`clause_id,option_id,clause_title,option_label,original,change_cost\n${rows}\n`);
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses.length, 1);
+  assert.equal(after.clauses[0].title, "Park hours");
+  assert.equal(after.clauses[0].options[0].label, "Close at 20:00");
+  assert.equal(after.clauses[0].options[0].support.residents, before.clauses[0].options[0].support.residents);
+  assert.match(app.message(), /Imported 1 clauses/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+});
+
+test("locks JSON import replaces every lock, fails closed on unknown ids, and can be undone", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for locks JSON");
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  app.clickAction("toggle-clause-lock", { clauseId: "market", optionId: "market-monthly" });
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(before.clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
+  await app.importLocksJson(JSON.stringify({
+    format: "smallest-agreement-locks",
+    version: 1,
+    locks: [{ clauseId: "missing", optionId: "hours-pilot" }],
+  }));
+  assert.match(app.message(), /Locks JSON import failed \(unknown_clause\)/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
+  await app.importLocksJson(JSON.stringify({
+    format: "smallest-agreement-locks",
+    version: 1,
+    locks: [{ clauseId: "path", optionId: "path-warm" }],
+  }));
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses.find((clause) => clause.id === "hours").lockedOptionId, undefined);
+  assert.equal(after.clauses.find((clause) => clause.id === "market").lockedOptionId, undefined);
+  assert.equal(after.clauses.find((clause) => clause.id === "path").lockedOptionId, "path-warm");
+  assert.match(app.message(), /Imported 1 clause lock/u);
+  app.click("#undo-button");
+  const undone = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(undone.clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
+  assert.equal(undone.clauses.find((clause) => clause.id === "market").lockedOptionId, "market-monthly");
+});
+
+test("clause density persists in workspace JSON and local workspace prefs", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for density");
+  app.setDensity("compact");
+  assert.match(app.clauseDensityClass(), /clause-density-compact/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).clauseDensity, "compact");
+  const proposal = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const workspace = JSON.stringify({
+    format: "smallest-agreement-workspace",
+    version: 1,
+    clauseDensity: "compact",
+    proposal,
+  });
+  await app.importJson(workspace);
+  assert.match(app.message(), /Imported workspace/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).clauseDensity, "compact");
+});
+
+test("resetting one group's support to blank is undoable and leaves other scores", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for blank support");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  const residents = before.clauses[0].options[0].support.residents;
+  const shopkeepers = before.clauses[0].options[0].support.shopkeepers;
+  app.clickAction("reset-group-support", { groupId: "residents" });
+  assert.match(app.message(), /Cleared Residents support scores to blank/u);
+  assert.match(app.alert(), /Fix the proposal before searching/u);
+  assert.match(app.clauses(), /data-group-id="residents"[^>]*value=""/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].options[0].support.residents, residents);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].options[0].support.shopkeepers, shopkeepers);
+  app.click("#undo-button");
+  const undone = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(undone.clauses[0].options[0].support.residents, residents);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
 });
 
 test("renormalize weights requires a preview then apply and can be undone", async () => {

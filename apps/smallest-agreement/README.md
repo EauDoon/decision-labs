@@ -72,7 +72,7 @@ npm run check
 
 Each clause keeps one original option and at least two alternatives, so the workshop always compares a structured choice set.
 
-The synthetic presets are Neighbourhood Plan, Open Source Policy, Association Budget, Protected Access, Workplace Hybrid, and Club Constitution. Protected Access demonstrates why majority-weighted approval alone can miss a group's minimum support. It starts with a budget of 3, a 60% floor for new participants, and a locked safety-training clause. The recommendation costs 3 and gives that group 70% average support. Lower the budget to 2 to see an infeasible result. Workplace Hybrid is a three-group office presence policy with on-site staff, remote staff, and managers. Club Constitution is a synthetic membership-meeting workshop with members, officers (a veto group), and club staff, covering quorum, proxy votes, and guest speakers.
+The synthetic presets are Neighbourhood Plan, Open Source Policy, Association Budget, Protected Access, Workplace Hybrid, Club Constitution, and Library Quiet Hours. Protected Access demonstrates why majority-weighted approval alone can miss a group's minimum support. It starts with a budget of 3, a 60% floor for new participants, and a locked safety-training clause. The recommendation costs 3 and gives that group 70% average support. Lower the budget to 2 to see an infeasible result. Workplace Hybrid is a three-group office presence policy with on-site staff, remote staff, and managers. Club Constitution is a synthetic membership-meeting workshop with members, officers (a veto group), and club staff, covering quorum, proxy votes, and guest speakers. Library Quiet Hours is a synthetic reading-room workshop with readers, families, and library staff (a veto group), covering evening hours, children's-area sound rules, and after-hours events.
 
 ## Local data and sharing
 
@@ -93,6 +93,14 @@ See [MODEL.md](MODEL.md) for the formula, deterministic ordering, assumptions, a
 A score can be incomplete, a weight can be contested, and a low numerical change cost can mask a large semantic shift. A passing result cannot confer legitimacy, consent, representation, fairness, legal validity, or authority to adopt the proposal. Keep deliberation, governing rules, and accountable human judgment outside the calculation.
 
 Support floors and veto marks protect only the numerical averages you enter. They do not establish consent, a legal veto, or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority. Optional clause notes are facilitator reminders only.
+
+## v1.4.3, 09-09-2026
+
+- Added formula-safe clause options CSV import, a veto-only group filter, Markdown copy of veto blockers, and workshop JSON file compare that lists missing ids instead of inventing zeros.
+- Added workspace JSON that persists compact or comfortable clause density, re-importable locks JSON, and keyboard `/` to focus the clause filter.
+- Added an undoable reset of one group's support scores to blank, keyboard `l` to jump to locks, and the Library Quiet Hours reading-room preset.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
 
 ## v1.4.2, 09-09-2026
 
