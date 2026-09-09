@@ -244,6 +244,7 @@ export interface VariantOverlapMatrix {
   cells: VariantOverlapCell[][];
 }
 export function variantOverlapMatrix(rawScenario: unknown): VariantOverlapMatrix;
+export function createVariantOverlapCsv(rawScenario: unknown): string;
 export function encodeScenario(rawScenario: unknown): string;
 export function encodeRedactedScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;
@@ -268,7 +269,8 @@ export interface ComparisonMetrics {
   unfilledBuyers: number;
   unfilledUnits: number;
 }
-export interface ScenarioComparison { baseline: ComparisonMetrics; current: ComparisonMetrics; sameCurrency: boolean; sameDemand: boolean; }
+export interface ScenarioComparison { baseline: ComparisonMetrics; current: ComparisonMetrics; sameCurrency: boolean; sameDemand: boolean; currencyWarning: string | null; }
+export interface MerchantReport {
 export interface MerchantReport {
   report: string; version: number; currency: string; limitations: string;
   requestedUnits: number; buyerCount: number;
@@ -286,6 +288,12 @@ export function validateWorkspace(candidate: unknown): ScenarioWorkspace;
 export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", id: string): Scenario;
 export function copyOfferAsNewTierSet(rawScenario: unknown, offerId: string): Scenario;
 export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenario;
+export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "all" | "shipping" | "pickup"): string[];
+export function previewBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Buyer[];
+export function applyBuyerSort(rawScenario: unknown, mode: "label" | "quantity"): Scenario;
+export function restoreRemovedBuyer(rawScenario: unknown, rawBuyer: unknown): Scenario;
+export function uniqueCopyTitle(title: unknown, existingTitles?: unknown): string;
+export function duplicateRoom(rawScenario: unknown, existingTitles?: unknown): Scenario;
 export function compareScenarios(before: unknown, after: unknown): ScenarioComparison;
 export interface ThreeRoomRow {
   title: string;
@@ -300,14 +308,24 @@ export interface ThreeRoomRow {
   unfilledBuyers: number;
   unfilledUnits: number;
 }
-export interface ThreeRoomComparison { sameCurrency: boolean; rooms: ThreeRoomRow[]; }
+export interface ThreeRoomComparison { sameCurrency: boolean; currencyWarning: string | null; rooms: ThreeRoomRow[]; }
 export function compareThreeRooms(first: unknown, second: unknown, third: unknown): ThreeRoomComparison;
+export function landedTotalsComparison(leftCurrency: unknown, rightCurrency: unknown): { sameCurrency: boolean; comparable: boolean; warning: string | null };
 export function createMerchantReport(rawScenario: unknown): MerchantReport;
 export function createMerchantResidualReport(rawScenario: unknown): MerchantResidualReport;
+export interface WinnerBudgetLeftover {
+  includedBuyerCount: number;
+  unspentHeadroom: number;
+  note: string;
+}
+export function winnerBudgetLeftover(rawScenario: unknown): WinnerBudgetLeftover;
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
 export function neutralizeSpreadsheetCell(value: unknown): unknown;
 export function parseBuyerCsv(text: unknown): Buyer[];
 export function importBuyersFromCsv(rawScenario: unknown, text: unknown): Scenario;
 export function buyerCsvTemplate(): string;
+export function parseOfferCsv(text: unknown, defaults?: { category?: string; minimumUnits?: number; deliveryDays?: number }): Offer[];
+export function importOffersFromCsv(rawScenario: unknown, text: unknown): Scenario;
+export function offerCsvTemplate(): string;
 export function redactBuyerLabels(rawScenario: unknown): Scenario;
 export function createOrganizerBriefing(rawScenario: unknown): string;

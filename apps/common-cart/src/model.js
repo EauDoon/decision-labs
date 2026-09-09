@@ -201,6 +201,82 @@ export function copyOfferAsPickup(rawScenario, offerId) {
   return validateScenario(clean);
 }
 
+export function filterOfferIdsByFulfillment(rawScenario, fulfillment) {
+  if (fulfillment !== "all" && fulfillment !== "shipping" && fulfillment !== "pickup") {
+    throw new ScenarioError("Fulfillment filter must be all, shipping, or pickup.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (fulfillment === "all") return scenario.offers.map((offer) => offer.id);
+  return scenario.offers.filter((offer) => offer.fulfillment === fulfillment).map((offer) => offer.id);
+}
+
+function sortedBuyers(buyers, mode) {
+  if (mode !== "label" && mode !== "quantity") {
+    throw new ScenarioError("Buyer sort must be label or quantity.");
+  }
+  return [...buyers].sort((left, right) => {
+    if (mode === "label") {
+      return compareText(normalizeText(left.label), normalizeText(right.label)) || compareText(left.id, right.id);
+    }
+    return right.quantity - left.quantity || compareText(left.id, right.id);
+  });
+}
+
+export function previewBuyerSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return sortedBuyers(scenario.buyers, mode).map((buyer) => ({
+    ...buyer,
+    allowedVariants: [...buyer.allowedVariants]
+  }));
+}
+
+export function applyBuyerSort(rawScenario, mode) {
+  const scenario = validateScenario(rawScenario);
+  return validateScenario({ ...scenario, buyers: sortedBuyers(scenario.buyers, mode) });
+}
+
+export function restoreRemovedBuyer(rawScenario, rawBuyer) {
+  if (rawBuyer == null || typeof rawBuyer !== "object" || Array.isArray(rawBuyer)) {
+    throw new ScenarioError("A removed buyer is required to restore.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (scenario.buyers.length >= MAX_BUYERS) {
+    throw new ScenarioError(`Buyers must contain at most ${MAX_BUYERS} entries.`);
+  }
+  const buyer = validateBuyer(rawBuyer, scenario.buyers.length);
+  if (scenario.buyers.some((entry) => entry.id === buyer.id)) {
+    throw new ScenarioError(`Buyer ${buyer.id} is already in the room.`);
+  }
+  return validateScenario({ ...scenario, buyers: [...scenario.buyers, buyer] });
+}
+
+export function uniqueCopyTitle(title, existingTitles = []) {
+  if (typeof title !== "string") throw new ScenarioError("Room name must be 1 to 80 characters.");
+  if (!Array.isArray(existingTitles)) throw new ScenarioError("Existing titles must be an array.");
+  for (const entry of existingTitles) {
+    if (typeof entry !== "string") throw new ScenarioError("Existing titles must be strings.");
+  }
+  const taken = new Set(existingTitles);
+  for (let number = 1; number <= 99; number += 1) {
+    const suffix = number === 1 ? " (copy)" : ` (copy ${number})`;
+    const maxBase = 80 - suffix.length;
+    const trimmed = title.trim();
+    const base = trimmed.length <= maxBase ? trimmed : trimmed.slice(0, maxBase).trim();
+    const candidate = `${base}${suffix}`;
+    if (candidate.length > 80) continue;
+    if (!taken.has(candidate)) return candidate;
+  }
+  throw new ScenarioError("Could not assign a unique copy title.");
+}
+
+export function duplicateRoom(rawScenario, existingTitles = []) {
+  if (!Array.isArray(existingTitles)) throw new ScenarioError("Existing titles must be an array.");
+  const scenario = validateScenario(rawScenario);
+  const copy = JSON.parse(JSON.stringify(scenario));
+  copy.title = uniqueCopyTitle(scenario.title, [...existingTitles, scenario.title]);
+  return validateScenario(copy);
+}
+
 function residualCoverageCounts(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   return {
@@ -225,9 +301,14 @@ function marketComparisonMetrics(market) {
 export function compareScenarios(before, after) {
   const baseline = evaluateMarket(before);
   const current = evaluateMarket(after);
-  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
-  return { baseline: marketComparisonMetrics(baseline), current: marketComparisonMetrics(current), sameCurrency,
-    sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
+  const currency = landedTotalsComparison(baseline.scenario.currency, current.scenario.currency);
+  return {
+    baseline: withComparableCost(marketComparisonMetrics(baseline), currency.comparable),
+    current: withComparableCost(marketComparisonMetrics(current), currency.comparable),
+    sameCurrency: currency.sameCurrency,
+    sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers),
+    currencyWarning: currency.warning
+  };
 }
 
 export function compareThreeRooms(first, second, third) {
@@ -239,19 +320,62 @@ export function compareThreeRooms(first, second, third) {
     }
   });
   const markets = rooms.map((room) => evaluateMarket(room));
-  const sameCurrency = rooms.every((room) => room.currency === rooms[0].currency);
+  const currency = landedTotalsComparison(rooms[0].currency, rooms[1].currency);
+  const thirdCurrency = landedTotalsComparison(rooms[0].currency, rooms[2].currency);
+  const comparable = currency.comparable && thirdCurrency.comparable;
+  const warning = comparable ? null : "These rooms use different currencies. Landed totals are not compared.";
   return {
-    sameCurrency,
+    sameCurrency: comparable,
+    currencyWarning: warning,
     rooms: rooms.map((room, index) => ({
       title: room.title,
       currency: room.currency,
       requested: markets[index].totalRequestedUnits,
       fulfilled: markets[index].winner?.fulfilledUnits ?? 0,
       buyers: markets[index].winner?.deliveredBuyers ?? 0,
-      cost: markets[index].winner?.totalCost ?? null,
+      cost: comparable ? (markets[index].winner?.totalCost ?? null) : null,
       winner: markets[index].winner?.offer.merchant ?? "No qualifying offer",
       ...residualCoverageCounts(room)
     }))
+  };
+}
+
+export function landedTotalsComparison(leftCurrency, rightCurrency) {
+  if (typeof leftCurrency !== "string" || typeof rightCurrency !== "string") {
+    throw new ScenarioError("Currency codes must be strings.");
+  }
+  const left = leftCurrency.trim().toUpperCase();
+  const right = rightCurrency.trim().toUpperCase();
+  if (!/^[A-Z]{3}$/.test(left) || !/^[A-Z]{3}$/.test(right)) {
+    throw new ScenarioError("Currency must be a three-letter ASCII code, such as AUD.");
+  }
+  const sameCurrency = left === right;
+  return {
+    sameCurrency,
+    comparable: sameCurrency,
+    warning: sameCurrency ? null : "These rooms use different currencies. Landed totals are not compared."
+  };
+}
+
+function withComparableCost(metrics, comparable) {
+  return { ...metrics, cost: comparable ? metrics.cost : null };
+}
+
+/** Organizer-only sum of unused item-ceiling headroom for buyers included in the winner. */
+export function winnerBudgetLeftover(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  if (!market.winner) {
+    return {
+      includedBuyerCount: 0,
+      unspentHeadroom: 0,
+      note: "No winning offer, so there is no leftover headroom after a winner."
+    };
+  }
+  const unspentHeadroom = market.winner.allocations.reduce((sum, allocation) => sum + Math.max(0, allocation.headroom), 0);
+  return {
+    includedBuyerCount: market.winner.deliveredBuyers,
+    unspentHeadroom,
+    note: "Organizer-only sum of included buyers' unused item-ceiling headroom after the winning allocation. Not a rebate or merchant payout."
   };
 }
 
@@ -378,7 +502,7 @@ function parseCsvRows(text) {
       cell += character;
     }
   }
-  if (quoted) throw new ScenarioError("Buyer CSV has an unclosed quote.");
+  if (quoted) throw new ScenarioError("CSV has an unclosed quote.");
   if (cell.length > 0 || row.length > 0) {
     row.push(cell);
     rows.push(row);
@@ -442,9 +566,97 @@ export function buyerCsvTemplate() {
   return "label,category,quantity,max unit price,latest delivery days,variants,max order total\r\n";
 }
 
+const OFFER_CSV_HEADERS = {
+  name: "merchant",
+  merchant: "merchant",
+  capacity: "capacity",
+  "unit price": "unitPrice",
+  price: "unitPrice",
+  shipping: "shippingPerBuyer",
+  "shipping per buyer": "shippingPerBuyer",
+  fulfillment: "fulfillment",
+  variants: "variant",
+  variant: "variant",
+  category: "category",
+  minimum: "minimumUnits",
+  "minimum units": "minimumUnits",
+  delivery: "deliveryDays",
+  "delivery days": "deliveryDays"
+};
+
+const REQUIRED_OFFER_CSV_FIELDS = ["merchant", "capacity", "unitPrice", "shippingPerBuyer", "fulfillment", "variant"];
+
+export function parseOfferCsv(text, defaults = {}) {
+  if (defaults && (typeof defaults !== "object" || Array.isArray(defaults))) {
+    throw new ScenarioError("Offer CSV defaults must be an object.");
+  }
+  rejectUnknownFields(defaults ?? {}, ["category", "minimumUnits", "deliveryDays"], "Offer CSV defaults");
+  if (typeof text !== "string") throw new ScenarioError("Offer CSV must be text.");
+  if (text.trim() === "") throw new ScenarioError("Offer CSV is empty.");
+  const rows = parseCsvRows(text);
+  if (rows.length < 2) throw new ScenarioError("Offer CSV needs a header row and at least one offer.");
+  const header = rows[0].map((value) => neutralizeSpreadsheetCell(value).trim().toLowerCase().replaceAll("_", " "));
+  const columns = header.map((name) => OFFER_CSV_HEADERS[name] ?? null);
+  if (columns.some((field) => field === null)) {
+    const unknown = rows[0].filter((_, index) => columns[index] === null).map((value) => value.trim() || "(empty)");
+    throw new ScenarioError(`Offer CSV has unknown column: ${unknown[0]}.`);
+  }
+  for (const required of REQUIRED_OFFER_CSV_FIELDS) {
+    if (!columns.includes(required)) {
+      throw new ScenarioError("Offer CSV must include name, capacity, unit price, shipping, fulfillment, and variants.");
+    }
+  }
+  const dataRows = rows.slice(1);
+  if (dataRows.length < 1 || dataRows.length > MAX_OFFERS) {
+    throw new ScenarioError(`Offers must contain 1 to ${MAX_OFFERS} entries.`);
+  }
+  const categoryDefault = defaults?.category ?? "Product";
+  const minimumDefault = defaults?.minimumUnits ?? 1;
+  const deliveryDefault = defaults?.deliveryDays ?? 7;
+  return dataRows.map((row, index) => {
+    const prefix = `CSV offer ${index + 1}`;
+    const record = {};
+    for (const [columnIndex, field] of columns.entries()) {
+      if (!field) continue;
+      record[field] = neutralizeSpreadsheetCell(row[columnIndex] ?? "");
+    }
+    const fulfillmentText = String(record.fulfillment ?? "").trim().toLowerCase();
+    const offer = {
+      id: `O${String(index + 1).padStart(2, "0")}`,
+      merchant: record.merchant,
+      category: String(record.category ?? "").trim() === "" ? categoryDefault : record.category,
+      variant: record.variant,
+      unitPrice: record.unitPrice,
+      minimumUnits: String(record.minimumUnits ?? "").trim() === "" ? minimumDefault : record.minimumUnits,
+      deliveryDays: String(record.deliveryDays ?? "").trim() === "" ? deliveryDefault : record.deliveryDays,
+      capacity: record.capacity,
+      shippingPerBuyer: record.shippingPerBuyer,
+      fulfillment: fulfillmentText
+    };
+    try {
+      return validateOffer(offer, index);
+    } catch (error) {
+      throw new ScenarioError(`${prefix}: ${error.message.replace(/^Offer \d+\s/u, "")}`);
+    }
+  });
+}
+
+export function importOffersFromCsv(rawScenario, text) {
+  const scenario = validateScenario(rawScenario);
+  const offers = parseOfferCsv(text, {
+    category: scenario.buyers[0]?.category ?? scenario.offers[0]?.category ?? "Product"
+  });
+  return validateScenario({ ...scenario, offers });
+}
+
+export function offerCsvTemplate() {
+  return "name,capacity,unit price,shipping,fulfillment,variants\r\n";
+}
+
 export function createOrganizerBriefing(rawScenario) {
   const market = evaluateMarket(rawScenario);
   const residual = computeResidualCoverage(rawScenario);
+  const leftover = winnerBudgetLeftover(rawScenario);
   const winner = market.winner;
   const gap = winner ? unitsToNextTier(rawScenario, winner.offer.id) : null;
   const excludedCount = winner
@@ -496,6 +708,8 @@ export function createOrganizerBriefing(rawScenario) {
       : `- Tertiary fill: none.`,
     `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
     `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
+    `- Unspent item headroom after winner: ${leftover.unspentHeadroom}`,
+    `- ${leftover.note}`,
     ``,
     `This briefing is a planning aid. It omits private buyer labels, IDs, budgets, and allocations.`
   ];
@@ -1115,6 +1329,20 @@ export function variantOverlapMatrix(rawScenario) {
     };
   }));
   return { variants, cells };
+}
+
+export function createVariantOverlapCsv(rawScenario) {
+  const matrix = variantOverlapMatrix(rawScenario);
+  const rows = [["Accepted variant", ...matrix.variants.map((entry) => entry.variant)]];
+  for (const [index, row] of matrix.cells.entries()) {
+    rows.push([matrix.variants[index].variant, ...row.map((cell) => cell.buyerCount)]);
+  }
+  rows.push([]);
+  rows.push(["Variant", "Offers", "Buyers", "Units"]);
+  for (const entry of matrix.variants) {
+    rows.push([entry.variant, entry.offerCount, entry.buyerCount, entry.units]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
 }
 
 export function encodeScenario(rawScenario) {

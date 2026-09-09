@@ -28,7 +28,7 @@ Every workbench:
 | Workbench | Version | Job to be done | Built-in synthetic example |
 | --- | --- | --- | --- |
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.4.1 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
-| [Common Cart](apps/common-cart/) | 1.3.1 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
+| [Common Cart](apps/common-cart/) | 1.3.2 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.4.2 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
 | [Weekend Gap](apps/weekend-gap/) | 1.4.2 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
@@ -42,7 +42,8 @@ and overlap counts; The Smallest Agreement package pin, locks, and notes; and
 Weekend Gap queue-clear hours and Gantt compare. Weekend Gap 1.4.2 also names
 queue CSV export, peak-queue jump, and the long-weekend Friday start. The
 Smallest Agreement 1.4.2 also names the facilitator pack, group CSV, and
-weight renormalize tools. These are
+weight renormalize tools. Common Cart 1.3.2 also names offer CSV import, buyer
+sort, and leftover headroom. These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
 loopback launcher does not serve those markdown files; open the app folder or
