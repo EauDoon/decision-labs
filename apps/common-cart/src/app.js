@@ -687,6 +687,13 @@ function handleShortcut(event) {
     document.querySelector("#add-buyer").click();
     return;
   }
+  if (key === "a") {
+    event.preventDefault();
+    const merchantTab = document.querySelector("#merchant-tab");
+    if (merchantTab) activateTab(merchantTab);
+    document.querySelector("#add-offer").click();
+    return;
+  }
   if (key === "m") {
     event.preventDefault();
     focusMerchantInspector();

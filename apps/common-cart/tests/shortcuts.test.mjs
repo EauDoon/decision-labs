@@ -77,3 +77,17 @@ test("keyboard handler jumps to leftover residual coverage when not typing", asy
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.match(app, /#buyer-tab/u);
 });
+
+test("shortcut help documents the add offer key", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>a<\/kbd> Add an offer/u);
+  assert.match(html, /id="add-offer"/u);
+});
+
+test("keyboard handler clicks add offer when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "a"\)/u);
+  assert.match(app, /#add-offer/u);
+  assert.match(app, /#merchant-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
