@@ -191,3 +191,7 @@ Remove each included buyer from the current winner in turn and rerun the existin
 ### Shipping exposure and headroom
 
 Sum actual charged shipping across allocated buyers and divide by landed total when nonzero. Least remaining ceiling is the minimum of item-ceiling total and optional order budget, minus actual landed cost. Pickup charges zero shipping.
+
+### Delivery slack by included order
+
+Delivery slack equals latestDeliveryDays minus offer.deliveryDays for each actual included order. Counts repeat a buyer across alternative offers and must not be summed as unique demand.

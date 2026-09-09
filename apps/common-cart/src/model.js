@@ -1546,6 +1546,7 @@ function jsonSyntaxHint(error) {
 
 
 export const CART_REVIEW_TOOLS = Object.freeze([
+  { id: "delivery", title: "Delivery slack by included order" },
   { id: "shipping", title: "Shipping exposure and headroom" },
   { id: "withdrawal", title: "Winner withdrawal stress" },
   { id: "frontier", title: "Same-cohort offer alternatives" },
@@ -1609,6 +1610,12 @@ export function analyzeCartReview(rawScenario, tool) {
         });
         return [result.offer.merchant, result.deliveredBuyers, shipping, result.totalCost, result.totalCost > 0 ? shipping / result.totalCost * 100 : null, result.allocations.filter((allocation) => allocation.exceedsCeilingAfterShipping).length, Math.min(...headrooms)];
       }), 'Pickup shipping is zero. Item-price ceilings and optional landed-order budgets remain different constraints; negative item-ceiling headroom is shown honestly. A zero landed total has no shipping percentage.');
+    }
+    case "delivery": {
+      return report(['Merchant', 'Private buyer', 'Units', 'Delivery days', 'Buyer deadline days', 'Remaining days'], qualified.flatMap((result) => result.allocations.map((allocation) => {
+        const buyer = scenario.buyers.find((entry) => entry.id === allocation.buyerId);
+        return [result.offer.merchant, buyer.label, buyer.quantity, result.offer.deliveryDays, buyer.latestDeliveryDays, buyer.latestDeliveryDays - result.offer.deliveryDays];
+      })), 'Slack is the declared buyer deadline minus promised delivery for included orders. Zero slack means no modeled delay tolerance; this is not a delivery reliability estimate.');
     }
     default: throw new ScenarioError('Review is unavailable.');
   }
