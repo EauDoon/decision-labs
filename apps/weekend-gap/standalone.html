@@ -415,6 +415,12 @@ select { width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #57717
             </div>
           </form>
 
+          <section class="library-controls" aria-labelledby="library-title">
+            <h3 id="library-title">Saved scenarios</h3><p>Keep up to 12 named copies in this browser. Edit the scenario name before saving a copy.</p>
+            <label for="scenario-library">Local scenario library</label><select id="scenario-library"></select>
+            <div class="scenario-actions"><button id="save-library" type="button">Save a copy</button><button id="load-library" type="button" disabled>Load selected</button><button id="delete-library" type="button" disabled>Delete selected copy</button></div>
+            <p id="library-status" role="status">No saved copies yet. Browser data can be cleared; export important scenarios.</p>
+          </section>
           <p id="input-message" class="input-message" role="status" aria-live="polite"></p>
           <div class="scenario-actions">
             <button type="button" id="export-button">Export JSON</button>
@@ -1102,11 +1108,26 @@ function runSensitivity(input, field) {
   });
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity };
+/** A small local library, decoded atomically before any UI state is replaced. */
+function libraryFromJSON(text) {
+  try {
+    if (typeof text !== "string" || text.length > 250000) throw new Error("Library exceeds 250 KB.");
+    const parsed = JSON.parse(text);
+    if (parsed?.format !== "weekend-gap-library" || parsed.version !== 1 || !Array.isArray(parsed.scenarios) || parsed.scenarios.length > 12) throw new Error("Unsupported library format or more than 12 scenarios.");
+    const errors = [];
+    const scenarios = parsed.scenarios.map(raw => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Every library entry must be a scenario object.");
+      const result = sanitizeScenario(raw); errors.push(...result.errors); return result.scenario;
+    });
+    return { scenarios, errors };
+  } catch (error) { return { scenarios: null, errors: [error.message || "Library could not be read."] }; }
+}
+
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, analyzeTimeline, runSensitivity, libraryFromJSON } = window.__WeekendGapModel;
 
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -1638,6 +1659,47 @@ document.querySelector("#sensitivity-field").addEventListener("change",()=>{
   document.querySelector("#sensitivity-rows").replaceChildren();
   document.querySelector("#sensitivity-status").textContent="Run the experiment for the selected assumption.";
 });
+
+const LIBRARY_KEY = "weekend-gap:library:v1";
+let scenarioLibrary = [];
+function persistLibrary() {
+  try {
+    localStorage.setItem(LIBRARY_KEY, JSON.stringify({ format: "weekend-gap-library", version: 1, scenarios: scenarioLibrary }));
+    document.querySelector("#library-status").textContent = "Saved on this browser. " + scenarioLibrary.length + " of 12 slots used.";
+  } catch { document.querySelector("#library-status").textContent = "Library changes are in memory only. Browser storage is unavailable; export important scenarios."; }
+}
+function renderLibrary() {
+  const select = document.querySelector("#scenario-library");
+  select.replaceChildren(...scenarioLibrary.map((item,index)=>{
+    const option=document.createElement("option");option.value=String(index);option.textContent=(index+1)+". "+item.name;return option;
+  }));
+  document.querySelector("#load-library").disabled = scenarioLibrary.length === 0;
+  document.querySelector("#delete-library").disabled = scenarioLibrary.length === 0;
+  document.querySelector("#save-library").disabled = scenarioLibrary.length >= 12;
+}
+document.querySelector("#save-library").addEventListener("click",()=>{
+  if(scenarioLibrary.length>=12) return;
+  scenarioLibrary.push({...scenario});persistLibrary();renderLibrary();
+  document.querySelector("#scenario-library").value=String(scenarioLibrary.length-1);
+});
+document.querySelector("#load-library").addEventListener("click",()=>{
+  const saved=scenarioLibrary[Number(document.querySelector("#scenario-library").value)];
+  if(saved) setScenario(saved,{message:"Saved scenario loaded. The pinned baseline was kept."});
+});
+document.querySelector("#delete-library").addEventListener("click",()=>{
+  const index=Number(document.querySelector("#scenario-library").value);
+  if(!Number.isInteger(index)||index<0||index>=scenarioLibrary.length) return;
+  scenarioLibrary.splice(index,1);persistLibrary();renderLibrary();
+});
+try {
+  const raw=localStorage.getItem(LIBRARY_KEY);
+  if(raw) {
+    const restored=libraryFromJSON(raw);
+    if(restored.scenarios) scenarioLibrary=restored.scenarios;
+    document.querySelector("#library-status").textContent=restored.errors.length ? "Saved library: "+restored.errors.join(" ") : "Restored "+scenarioLibrary.length+" saved scenarios.";
+  }
+} catch { document.querySelector("#library-status").textContent="Saved library could not be read. Existing browser data was kept."; }
+renderLibrary();
 
 </script>
   </body>

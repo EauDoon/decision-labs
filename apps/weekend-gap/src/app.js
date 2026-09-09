@@ -544,3 +544,44 @@ document.querySelector("#sensitivity-field").addEventListener("change",()=>{
   document.querySelector("#sensitivity-rows").replaceChildren();
   document.querySelector("#sensitivity-status").textContent="Run the experiment for the selected assumption.";
 });
+
+const LIBRARY_KEY = "weekend-gap:library:v1";
+let scenarioLibrary = [];
+function persistLibrary() {
+  try {
+    localStorage.setItem(LIBRARY_KEY, JSON.stringify({ format: "weekend-gap-library", version: 1, scenarios: scenarioLibrary }));
+    document.querySelector("#library-status").textContent = "Saved on this browser. " + scenarioLibrary.length + " of 12 slots used.";
+  } catch { document.querySelector("#library-status").textContent = "Library changes are in memory only. Browser storage is unavailable; export important scenarios."; }
+}
+function renderLibrary() {
+  const select = document.querySelector("#scenario-library");
+  select.replaceChildren(...scenarioLibrary.map((item,index)=>{
+    const option=document.createElement("option");option.value=String(index);option.textContent=(index+1)+". "+item.name;return option;
+  }));
+  document.querySelector("#load-library").disabled = scenarioLibrary.length === 0;
+  document.querySelector("#delete-library").disabled = scenarioLibrary.length === 0;
+  document.querySelector("#save-library").disabled = scenarioLibrary.length >= 12;
+}
+document.querySelector("#save-library").addEventListener("click",()=>{
+  if(scenarioLibrary.length>=12) return;
+  scenarioLibrary.push({...scenario});persistLibrary();renderLibrary();
+  document.querySelector("#scenario-library").value=String(scenarioLibrary.length-1);
+});
+document.querySelector("#load-library").addEventListener("click",()=>{
+  const saved=scenarioLibrary[Number(document.querySelector("#scenario-library").value)];
+  if(saved) setScenario(saved,{message:"Saved scenario loaded. The pinned baseline was kept."});
+});
+document.querySelector("#delete-library").addEventListener("click",()=>{
+  const index=Number(document.querySelector("#scenario-library").value);
+  if(!Number.isInteger(index)||index<0||index>=scenarioLibrary.length) return;
+  scenarioLibrary.splice(index,1);persistLibrary();renderLibrary();
+});
+try {
+  const raw=localStorage.getItem(LIBRARY_KEY);
+  if(raw) {
+    const restored=libraryFromJSON(raw);
+    if(restored.scenarios) scenarioLibrary=restored.scenarios;
+    document.querySelector("#library-status").textContent=restored.errors.length ? "Saved library: "+restored.errors.join(" ") : "Restored "+scenarioLibrary.length+" saved scenarios.";
+  }
+} catch { document.querySelector("#library-status").textContent="Saved library could not be read. Existing browser data was kept."; }
+renderLibrary();

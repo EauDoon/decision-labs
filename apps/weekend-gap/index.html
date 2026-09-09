@@ -166,6 +166,12 @@ SOFTWARE.
             </div>
           </form>
 
+          <section class="library-controls" aria-labelledby="library-title">
+            <h3 id="library-title">Saved scenarios</h3><p>Keep up to 12 named copies in this browser. Edit the scenario name before saving a copy.</p>
+            <label for="scenario-library">Local scenario library</label><select id="scenario-library"></select>
+            <div class="scenario-actions"><button id="save-library" type="button">Save a copy</button><button id="load-library" type="button" disabled>Load selected</button><button id="delete-library" type="button" disabled>Delete selected copy</button></div>
+            <p id="library-status" role="status">No saved copies yet. Browser data can be cleared; export important scenarios.</p>
+          </section>
           <p id="input-message" class="input-message" role="status" aria-live="polite"></p>
           <div class="scenario-actions">
             <button type="button" id="export-button">Export JSON</button>

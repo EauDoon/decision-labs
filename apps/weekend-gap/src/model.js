@@ -499,3 +499,18 @@ export function runSensitivity(input, field) {
       summary: candidate.summary, settlementDeltaAud: candidate.summary.totalSettledAud - base.summary.totalSettledAud };
   });
 }
+
+/** A small local library, decoded atomically before any UI state is replaced. */
+export function libraryFromJSON(text) {
+  try {
+    if (typeof text !== "string" || text.length > 250000) throw new Error("Library exceeds 250 KB.");
+    const parsed = JSON.parse(text);
+    if (parsed?.format !== "weekend-gap-library" || parsed.version !== 1 || !Array.isArray(parsed.scenarios) || parsed.scenarios.length > 12) throw new Error("Unsupported library format or more than 12 scenarios.");
+    const errors = [];
+    const scenarios = parsed.scenarios.map(raw => {
+      if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Every library entry must be a scenario object.");
+      const result = sanitizeScenario(raw); errors.push(...result.errors); return result.scenario;
+    });
+    return { scenarios, errors };
+  } catch (error) { return { scenarios: null, errors: [error.message || "Library could not be read."] }; }
+}
