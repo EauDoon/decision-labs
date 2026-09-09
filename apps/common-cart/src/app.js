@@ -8,6 +8,7 @@ import {
   createMerchantReport,
   createBuyerCsv,
   importBuyersFromCsv,
+  redactBuyerLabels,
   decodeScenario,
   duplicateEntry,
   encodeScenario,
@@ -55,6 +56,7 @@ let savedRooms = loadWorkspace();
 let baseline = null;
 let savedState = "pending";
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
+let screenshotMode = false;
 let saveTimer;
 renderEditor();
 refresh();
@@ -229,6 +231,25 @@ function bindStaticEvents() {
   document.querySelector("#import-buyers").addEventListener("click", () => document.querySelector("#import-buyers-file").click());
   document.querySelector("#import-buyers-file").addEventListener("change", importBuyersCsv);
   document.querySelector("#export-button").addEventListener("click", exportScenario);
+  document.querySelector("#screenshot-mode").addEventListener("click", () => {
+    screenshotMode = !screenshotMode;
+    document.querySelector("#screenshot-mode").setAttribute("aria-pressed", String(screenshotMode));
+    document.querySelector("#screenshot-mode").textContent = screenshotMode ? "Screenshot mode on" : "Screenshot mode";
+    renderEditor();
+    refresh();
+    setStatus(screenshotMode
+      ? "Screenshot mode replaces buyer labels in this view with Buyer 1, Buyer 2, and so on. The saved room is unchanged until you export redacted JSON."
+      : "Screenshot mode off. Private labels are visible in the organizer view again.", true);
+  });
+  document.querySelector("#export-redacted").addEventListener("click", () => {
+    try {
+      const clean = redactBuyerLabels(scenario);
+      downloadFile(`${JSON.stringify(clean, null, 2)}\n`, "common-cart-redacted.json", "application/json");
+      setStatus("Redacted JSON exported. Buyer labels are Buyer 1 through N. IDs and constraints are unchanged.", true);
+    } catch (error) {
+      setStatus(`Redacted export failed: ${messageOf(error)}`);
+    }
+  });
   const shareButton = document.querySelector("#share-button");
   if (window.location.protocol === "file:") {
     shareButton.textContent = "Share via export";
@@ -303,14 +324,29 @@ function renderEditor() {
   renderTierEditors();
 }
 
+function buyerDisplayLabel(buyer) {
+  if (!screenshotMode) return buyer.label;
+  const index = scenario.buyers.findIndex((entry) => entry.id === buyer.id);
+  return `Buyer ${index + 1}`;
+}
+
 function renderBuyerRow(entry) {
   const row = elements.buyerTemplate.content.firstElementChild.cloneNode(true);
   row.dataset.id = entry.id;
   addDuplicateAction(row, "buyers", entry);
   row.querySelectorAll("[data-field]").forEach((input) => {
     const field = input.dataset.field;
-    input.value = field === "allowedVariants" ? entry[field].join(", ") : entry[field] ?? "";
+    input.value = field === "allowedVariants"
+      ? entry[field].join(", ")
+      : field === "label" && screenshotMode
+        ? buyerDisplayLabel(entry)
+        : entry[field] ?? "";
+    if (field === "label" && screenshotMode) {
+      input.readOnly = true;
+      input.title = "Screenshot mode hides the private label. Turn it off to edit.";
+    }
     input.addEventListener("input", () => {
+      if (field === "label" && screenshotMode) return;
       const target = scenario.buyers.find((buyer) => buyer.id === row.dataset.id);
       if (field === "maxOrderTotal" && input.value === "") {
         delete target.maxOrderTotal;
@@ -505,13 +541,13 @@ function renderComparison() {
 }
 
 function addDuplicateAction(row, kind, entry) {
-  row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? entry.label : entry.merchant} (${entry.id})`);
+  row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? buyerDisplayLabel(entry) : entry.merchant} (${entry.id})`);
   row.querySelector(".remove-row").disabled = scenario[kind].length === 1;
   row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
   const button = document.createElement("button");
   button.type = "button";
   button.textContent = "Copy";
-  button.setAttribute("aria-label", `Duplicate ${kind === "buyers" ? entry.label : entry.merchant}`);
+  button.setAttribute("aria-label", `Duplicate ${kind === "buyers" ? buyerDisplayLabel(entry) : entry.merchant}`);
   button.disabled = scenario[kind].length >= 40;
   button.addEventListener("click", () => {
     try {
@@ -553,7 +589,7 @@ function renderSummary(market) {
 
 function renderResults(market) {
   const formatter = money(market.scenario.currency);
-  const labels = new Map(market.scenario.buyers.map(({ id, label }) => [id, label]));
+  const labels = new Map(market.scenario.buyers.map((buyer) => [buyer.id, buyerDisplayLabel(buyer)]));
   const rows = market.ranked.map((result) => {
     const row = document.createElement("tr");
     addCell(row, `${result.offer.merchant} / ${result.offer.variant}`);
@@ -652,7 +688,7 @@ function renderInspector(market) {
   const rows = result.buyerOutcomes.map((outcome) => {
     const buyer = buyers.get(outcome.buyerId);
     const row = document.createElement("tr");
-    addCell(row, buyer?.label ?? outcome.buyerId);
+    addCell(row, buyer ? buyerDisplayLabel(buyer) : outcome.buyerId);
     addCell(row, String(buyer?.quantity ?? 0));
     const presentation = outcomePresentation(outcome);
     addCell(row, presentation.status, presentation.className);
@@ -696,7 +732,7 @@ function renderNextTierGap(rawScenario, offerId, buyers, formatter) {
     names.textContent = "No currently excluded buyer can add whole units at the next cheaper price.";
     return;
   }
-  names.textContent = `Organizer view: ${gap.supplierBuyerIds.map((id) => buyers.get(id)?.label ?? id).join(", ")}. Merchant-facing views show counts only.`;
+  names.textContent = `Organizer view: ${gap.supplierBuyerIds.map((id) => buyerDisplayLabel(buyers.get(id) ?? { id, label: id })).join(", ")}. Merchant-facing views show counts only.`;
 }
 
 function outcomePresentation(outcome) {

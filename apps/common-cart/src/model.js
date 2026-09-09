@@ -311,6 +311,16 @@ export function importBuyersFromCsv(rawScenario, text) {
   return validateScenario({ ...scenario, buyers });
 }
 
+export function redactBuyerLabels(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  return {
+    title: scenario.title,
+    currency: scenario.currency,
+    buyers: scenario.buyers.map((buyer, index) => ({ ...buyer, label: `Buyer ${index + 1}` })),
+    offers: scenario.offers.map((offer) => ({ ...offer, tiers: offer.tiers ? offer.tiers.map((tier) => ({ ...tier })) : offer.tiers }))
+  };
+}
+
 export function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");
