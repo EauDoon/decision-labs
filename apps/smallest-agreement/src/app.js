@@ -11,6 +11,7 @@ import {
   parseSupportMatrixCsv,
   previewLockedOption,
   leaveOneGroupOut,
+  formatDiscussionWorksheet,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -429,6 +430,7 @@ function renderResults(result) {
   $("#export-button").disabled = result.status === "invalid";
   $("#csv-button").disabled = result.status === "invalid";
   $("#matrix-export-button").disabled = result.status === "invalid";
+  $("#worksheet-button").disabled = result.status === "invalid";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -1108,6 +1110,12 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#print-button").addEventListener("click", () => window.print());
+$("#worksheet-button").addEventListener("click", () => {
+  const worksheet = formatDiscussionWorksheet(state.proposal);
+  if (worksheet.status !== "ok") return notifyDraft("Fix the draft before exporting the discussion worksheet.");
+  downloadText("smallest-agreement-worksheet.txt", worksheet.text, "text/plain");
+  notifyDraft("Discussion worksheet downloaded. It is a conversation aid, not a recorded vote.");
+});
 window.addEventListener("beforeunload", (event) => {
   if (!hasUnsavedEdits) return;
   event.preventDefault();

@@ -25,6 +25,7 @@ const appImport = `import {
   parseSupportMatrixCsv,
   previewLockedOption,
   leaveOneGroupOut,
+  formatDiscussionWorksheet,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,

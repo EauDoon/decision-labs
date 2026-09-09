@@ -48,6 +48,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="printable-ballot"/u);
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Duplicate clause/u);
+  assert.match(html, /id="worksheet-button"/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 

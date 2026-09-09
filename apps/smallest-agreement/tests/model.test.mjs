@@ -19,6 +19,7 @@ import {
   parseSupportMatrixCsv,
   previewLockedOption,
   leaveOneGroupOut,
+  formatDiscussionWorksheet,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -971,4 +972,33 @@ test("leave-one-group-out omits a group from the weighted average without foreca
   const alone = leaveOneGroupOut(lone, [lone.clauses[0].options[0]]);
   assert.equal(alone.status, "ok");
   assert.equal(alone.rows[0].approval, null);
+});
+
+test("discussion worksheet lists every option as unmarked text and rejects invalid drafts", () => {
+  const input = proposal({
+    groups: [{ id: "g", name: "Residents", weight: 2, minSupport: 40, veto: true }],
+    clauses: [{ id: "one", title: "Hours", lockedOptionId: "one-change", options: [
+      option("one-original", true, { g: 50 }),
+      option("one-change", false, { g: 80 }, 2),
+      option("one-other", false, { g: 90 }, 3),
+    ] }],
+  });
+  input.title = "Park sheet";
+  input.maxChangeCost = 4;
+  const before = JSON.stringify(input);
+  const worksheet = formatDiscussionWorksheet(input);
+  assert.equal(worksheet.status, "ok");
+  assert.match(worksheet.text, /^Discussion worksheet\n/u);
+  assert.match(worksheet.text, /Park sheet/u);
+  assert.match(worksheet.text, /Approval threshold: 70%/u);
+  assert.match(worksheet.text, /Change-cost budget: 4/u);
+  assert.match(worksheet.text, /not a recorded vote/u);
+  assert.match(worksheet.text, /Group: Residents \(weight 2; veto, floor 40%\)/u);
+  assert.match(worksheet.text, /Hours \[locked\]/u);
+  assert.match(worksheet.text, /\[ \] one-original \(original\)/u);
+  assert.match(worksheet.text, /\[ \] one-change \(cost 2, locked\)/u);
+  assert.doesNotMatch(worksheet.text, /\[x\]/iu);
+  assert.equal(JSON.stringify(input), before);
+  const invalid = formatDiscussionWorksheet({ title: "" });
+  assert.equal(invalid.status, "invalid");
 });

@@ -885,3 +885,42 @@ export function leaveOneGroupOut(proposal, options) {
   });
   return { status: "ok", method: "omit", fullApproval, rows };
 }
+
+/**
+ * Plain-text discussion worksheet. Labels are copied as supplied text.
+ * This is a conversation aid, not a recorded vote or legal ballot.
+ */
+export function formatDiscussionWorksheet(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const lines = [
+    "Discussion worksheet",
+    "",
+    p.title,
+    `Approval threshold: ${p.threshold}%`,
+    p.maxChangeCost === undefined ? "Change-cost budget: unlimited" : `Change-cost budget: ${p.maxChangeCost}`,
+    "",
+    "Mark preferred options during conversation. This sheet is a worksheet, not a recorded vote, legal ballot, or collective decision.",
+    "",
+  ];
+  for (const group of p.groups) {
+    const marks = [];
+    if (group.veto === true) marks.push("veto");
+    if (group.minSupport !== undefined) marks.push(`floor ${group.minSupport}%`);
+    lines.push(`Group: ${group.name} (weight ${group.weight}${marks.length ? `; ${marks.join(", ")}` : ""})`);
+  }
+  lines.push("");
+  for (const clause of p.clauses) {
+    lines.push(clause.title + (clause.lockedOptionId ? " [locked]" : ""));
+    for (const option of clause.options) {
+      const tags = [];
+      if (option.original === true) tags.push("original");
+      if (option.changeCost) tags.push(`cost ${option.changeCost}`);
+      if (clause.lockedOptionId === option.id) tags.push("locked");
+      lines.push(`  [ ] ${option.label}${tags.length ? ` (${tags.join(", ")})` : ""}`);
+    }
+    lines.push("");
+  }
+  return { status: "ok", text: `${lines.join("\n").trim()}\n` };
+}

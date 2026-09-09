@@ -223,6 +223,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
         <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
         <button class="button button-secondary" type="button" id="print-button">Print readout</button>
+        <button class="button button-secondary" type="button" id="worksheet-button">Export worksheet</button>
         <button class="button button-secondary" type="button" id="csv-button">Export evidence CSV</button>
         <button class="button button-secondary" type="button" id="matrix-export-button">Export support CSV</button>
         <button class="button button-secondary" type="button" id="matrix-import-button">Import support CSV</button>
@@ -1309,6 +1310,45 @@ function leaveOneGroupOut(proposal, options) {
   return { status: "ok", method: "omit", fullApproval, rows };
 }
 
+/**
+ * Plain-text discussion worksheet. Labels are copied as supplied text.
+ * This is a conversation aid, not a recorded vote or legal ballot.
+ */
+function formatDiscussionWorksheet(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const lines = [
+    "Discussion worksheet",
+    "",
+    p.title,
+    `Approval threshold: ${p.threshold}%`,
+    p.maxChangeCost === undefined ? "Change-cost budget: unlimited" : `Change-cost budget: ${p.maxChangeCost}`,
+    "",
+    "Mark preferred options during conversation. This sheet is a worksheet, not a recorded vote, legal ballot, or collective decision.",
+    "",
+  ];
+  for (const group of p.groups) {
+    const marks = [];
+    if (group.veto === true) marks.push("veto");
+    if (group.minSupport !== undefined) marks.push(`floor ${group.minSupport}%`);
+    lines.push(`Group: ${group.name} (weight ${group.weight}${marks.length ? `; ${marks.join(", ")}` : ""})`);
+  }
+  lines.push("");
+  for (const clause of p.clauses) {
+    lines.push(clause.title + (clause.lockedOptionId ? " [locked]" : ""));
+    for (const option of clause.options) {
+      const tags = [];
+      if (option.original === true) tags.push("original");
+      if (option.changeCost) tags.push(`cost ${option.changeCost}`);
+      if (clause.lockedOptionId === option.id) tags.push("locked");
+      lines.push(`  [ ] ${option.label}${tags.length ? ` (${tags.join(", ")})` : ""}`);
+    }
+    lines.push("");
+  }
+  return { status: "ok", text: `${lines.join("\n").trim()}\n` };
+}
+
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const COACH_KEY = "smallest-agreement:coach:v1";
@@ -1718,6 +1758,7 @@ function renderResults(result) {
   $("#export-button").disabled = result.status === "invalid";
   $("#csv-button").disabled = result.status === "invalid";
   $("#matrix-export-button").disabled = result.status === "invalid";
+  $("#worksheet-button").disabled = result.status === "invalid";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -2397,6 +2438,12 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#print-button").addEventListener("click", () => window.print());
+$("#worksheet-button").addEventListener("click", () => {
+  const worksheet = formatDiscussionWorksheet(state.proposal);
+  if (worksheet.status !== "ok") return notifyDraft("Fix the draft before exporting the discussion worksheet.");
+  downloadText("smallest-agreement-worksheet.txt", worksheet.text, "text/plain");
+  notifyDraft("Discussion worksheet downloaded. It is a conversation aid, not a recorded vote.");
+});
 window.addEventListener("beforeunload", (event) => {
   if (!hasUnsavedEdits) return;
   event.preventDefault();
