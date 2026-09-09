@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, groupExclusionReasons, evaluateOffer } from "../src/model.js";
+import { clonePreset, groupExclusionReasons, evaluateOffer, createExclusionCountsMarkdown } from "../src/model.js";
 
 test("exclusion grouping counts reason codes and keeps per-buyer outcomes", () => {
   const scenario = clonePreset("neighbourhood");
@@ -30,4 +30,34 @@ test("capacity leftover and quantity vs remaining capacity are distinct groups",
   assert.deepEqual(groups.quantity_vs_capacity.buyerIds, ["B03"]);
   assert.equal(groups.capacity_leftover.count, 1);
   assert.deepEqual(groups.capacity_leftover.buyerIds, ["B02"]);
+});
+
+test("exclusion counts markdown uses counts only and omits private buyer rows", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const scenario = clonePreset("neighbourhood");
+  scenario.buyers[0].label = "SECRET_LABEL";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createExclusionCountsMarkdown(scenario, "O02");
+  const groups = groupExclusionReasons(scenario, "O02");
+  assert.match(markdown, /# Common Cart exclusion counts/);
+  assert.match(markdown, /Southbank Coffee/);
+  assert.match(markdown, /Included buyers:/);
+  assert.match(markdown, /Excluded buyers:/);
+  for (const group of groups) {
+    assert.match(markdown, new RegExp(`: ${group.count}`));
+    for (const id of group.buyerIds) assert.equal(markdown.includes(id), false);
+  }
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes('"selectedBuyerIds":'), false);
+  assert.equal(markdown.includes('"allocations":'), false);
+  assert.match(markdown, /omit private buyer labels, IDs, budgets, and allocations/);
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="copy-exclusion-counts"/u);
+  assert.match(html, /Copy exclusion counts/u);
+  assert.match(app, /createExclusionCountsMarkdown\(/u);
 });

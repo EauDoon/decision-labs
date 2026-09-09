@@ -1547,6 +1547,45 @@ export function groupExclusionReasons(rawScenario, offerId) {
   return EXCLUSION_CODES.filter((code) => groups.has(code)).map((code) => groups.get(code));
 }
 
+const EXCLUSION_COUNT_TITLES = {
+  price: "Price",
+  delivery: "Delivery",
+  variant: "Variant",
+  category: "Category",
+  budget: "Budget",
+  capacity_leftover: "Capacity leftover",
+  quantity_vs_capacity: "Quantity vs remaining capacity",
+  minimum: "Below minimum"
+};
+
+/** Merchant-safe exclusion reason counts. Counts only. Omits labels, IDs, budgets, and allocations. */
+export function createExclusionCountsMarkdown(rawScenario, offerId) {
+  const result = evaluateOffer(rawScenario, offerId);
+  const groups = groupExclusionReasons(rawScenario, offerId).map((group) => ({
+    code: group.code,
+    count: group.count
+  }));
+  const excludedCount = result.buyerOutcomes.filter((outcome) => outcome.status !== "included").length;
+  const lines = [
+    `# Common Cart exclusion counts`,
+    ``,
+    `- Merchant: ${result.offer.merchant}`,
+    `- Category: ${result.offer.category}`,
+    `- Variant: ${result.offer.variant}`,
+    `- Fulfillment: ${result.offer.fulfillment}`,
+    `- Included buyers: ${result.deliveredBuyers}`,
+    `- Excluded buyers: ${excludedCount}`,
+    ``,
+    `## Reason counts`,
+    ...(groups.length === 0
+      ? ["- No buyers are excluded from this offer."]
+      : groups.map((group) => `- ${EXCLUSION_COUNT_TITLES[group.code] ?? group.code}: ${group.count}`)),
+    ``,
+    `These counts omit private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 function compareResults(left, right) {
   if (left.qualifies !== right.qualifies) return left.qualifies ? -1 : 1;
   return right.fulfilledUnits - left.fulfilledUnits

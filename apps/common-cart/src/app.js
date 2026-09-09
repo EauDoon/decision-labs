@@ -52,6 +52,7 @@ import {
   unitsToNextTier,
   capacityBar,
   groupExclusionReasons,
+  createExclusionCountsMarkdown,
   validateWorkspace,
   validateScenario
 } from "./model.js";
@@ -291,6 +292,23 @@ function bindStaticEvents() {
       downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
       setStatus("Winner aggregates downloaded as Markdown. Counts and totals only.", true);
     } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#copy-exclusion-counts").addEventListener("click", () => {
+    try {
+      const markdown = createExclusionCountsMarkdown(scenario, inspectedOfferId);
+      if (navigator.clipboard?.writeText) {
+        navigator.clipboard.writeText(markdown).then(
+          () => setStatus("Exclusion counts copied as Markdown. Reason counts only. Labels, IDs, budgets, and allocations are omitted.", true),
+          () => {
+            downloadFile(markdown, "common-cart-exclusion-counts.md", "text/markdown;charset=utf-8");
+            setStatus("Clipboard was blocked, so exclusion counts were downloaded instead. Counts only.", true);
+          }
+        );
+        return;
+      }
+      downloadFile(markdown, "common-cart-exclusion-counts.md", "text/markdown;charset=utf-8");
+      setStatus("Exclusion counts downloaded as Markdown. Counts only.", true);
+    } catch (error) { setStatus(`Exclusion copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#pin-baseline").addEventListener("click", () => {
     try { baseline = validateScenario(scenario); renderComparison(); setStatus("Baseline pinned for this session.", true); }

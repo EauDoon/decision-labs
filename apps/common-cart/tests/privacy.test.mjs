@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, evaluateMarket, redactBuyerLabels, validateScenario, encodeScenario, encodeRedactedScenario, decodeScenario, createOfferIdentityCompareMarkdown, createVariantOverlapMarkdown } from "../src/model.js";
+import { clonePreset, evaluateMarket, redactBuyerLabels, validateScenario, encodeScenario, encodeRedactedScenario, decodeScenario, createOfferIdentityCompareMarkdown, createVariantOverlapMarkdown, createExclusionCountsMarkdown } from "../src/model.js";
 
 test("redactBuyerLabels replaces private labels without changing ids or the source room", () => {
   const source = clonePreset("neighbourhood");
@@ -81,4 +81,20 @@ test("variant overlap Markdown omits buyer labels, ids, budgets, and allocations
   assert.equal(markdown.includes("leftoverBuyerIds"), false);
   assert.equal(markdown.includes('"selectedBuyerIds":'), false);
   assert.equal(markdown.includes('"allocations":'), false);
+});
+
+test("exclusion counts markdown omits buyer labels, ids, budgets, and allocations", () => {
+  const scenario = clonePreset("neighbourhood");
+  scenario.buyers[0].label = "SECRET_LABEL";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createExclusionCountsMarkdown(scenario, scenario.offers[1].id);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes('"selectedBuyerIds":'), false);
+  assert.equal(markdown.includes('"allocations":'), false);
+  assert.match(markdown, /omit private buyer labels, IDs, budgets, and allocations/);
 });

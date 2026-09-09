@@ -210,6 +210,7 @@ export interface ExclusionGroup {
   buyerIds: string[];
 }
 export function groupExclusionReasons(rawScenario: unknown, offerId: string): ExclusionGroup[];
+export function createExclusionCountsMarkdown(rawScenario: unknown, offerId: string): string;
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
 
 export interface DeliveryBucket {
