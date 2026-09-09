@@ -199,3 +199,7 @@ Delivery slack equals latestDeliveryDays minus offer.deliveryDays for each actua
 ### Capacity increase previews
 
 On demand, rerun at most five ranked offers at up to three distinct capacity increases (10%, 25%, 50%, rounded up). Capacity is bounded at 5,000. These finite previews do not search for an optimal capacity or change merchant terms.
+
+### Minimum-order relaxation preview
+
+Reevaluate each offer with only its base minimum changed to one unit. Capacity, shipping, prices, and quantity-tier thresholds remain unchanged. The preview does not assert merchant acceptance.

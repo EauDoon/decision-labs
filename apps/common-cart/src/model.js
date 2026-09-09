@@ -1546,6 +1546,7 @@ function jsonSyntaxHint(error) {
 
 
 export const CART_REVIEW_TOOLS = Object.freeze([
+  { id: "minimum", title: "Minimum-order relaxation preview" },
   { id: "capacity", title: "Capacity increase previews" },
   { id: "delivery", title: "Delivery slack by included order" },
   { id: "shipping", title: "Shipping exposure and headroom" },
@@ -1626,6 +1627,12 @@ export function analyzeCartReview(rawScenario, tool) {
           return [original.offer.merchant, original.offer.capacity, capacity, original.fulfilledUnits, result.fulfilledUnits, result.fulfilledUnits - original.fulfilledUnits];
         });
       }), 'Preview the first five currently ranked offers at capacity increases of 10%, 25%, and 50%, rounded up and capped at 5,000. Duplicate capacities are omitted. Prices, tiers, demand, and all other terms stay fixed; no merchant capacity is verified.');
+    }
+    case "minimum": {
+      return report(['Merchant', 'Current base minimum', 'Preview base minimum', 'Current fulfilled units', 'Preview fulfilled units', 'Preview included buyers'], market.results.map((original) => {
+        const result = evaluateOffer(scenario, { ...original.offer, minimumUnits: 1 });
+        return [original.offer.merchant, original.offer.minimumUnits, 1, original.fulfilledUnits, result.fulfilledUnits, result.deliveredBuyers];
+      }), 'Counterfactual only: set the base minimum to one unit while preserving capacity, prices, tier thresholds, shipping, and buyer constraints. This does not imply that a merchant will agree.');
     }
     default: throw new ScenarioError('Review is unavailable.');
   }
