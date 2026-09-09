@@ -929,6 +929,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>u<\/kbd> Undo/);
   assert.match(app.markup(), /<kbd>g<\/kbd> Jump to the results nav/);
   assert.match(app.markup(), /<kbd>n<\/kbd> Focus Add participant/);
+  assert.match(app.markup(), /<kbd>s<\/kbd> Jump to share-to-hold/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -975,6 +976,23 @@ test('keyboard n focuses Add participant and ignores focused inputs', async () =
   assert.equal(forms(), beforeCount);
   app.keydown('n', { tagName: 'TEXTAREA' });
   assert.equal(app.focused().length, before);
+});
+
+test('keyboard s jumps to share-to-hold and ignores focused inputs', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="share-hold-jump"/);
+  app.keydown('s');
+  assert.ok(app.focused().includes('#share-hold-jump'));
+  assert.ok(app.focused().includes('scroll:#share-hold-jump'));
+  const before = app.focused().length;
+  app.keydown('s', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('s', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  app.keydown('s');
+  assert.ok(app.focused().includes('#share-hold-title'));
 });
 
 test('redacted export replaces names, clears the title, and keeps identifiers', async () => {

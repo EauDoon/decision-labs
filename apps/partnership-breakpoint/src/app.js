@@ -409,7 +409,7 @@ function inputPanel(result) {
         ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1', title: 'Leave blank for no commitment. Blank and zero are equivalent here.' })}
         ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
       </div>
-      <div class="button-row"><button type="button" data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
+      <div class="button-row"><button type="button"${index === 0 ? ' id="share-hold-jump"' : ''} data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
       </details>
     </section>`).join('');
 
@@ -1309,6 +1309,11 @@ window.addEventListener('keydown', (event) => {
       refresh('Participant added. Set shares to reconcile to 1.');
     }
   }
+  if (event.key === 's' || event.key === 'S') {
+    const target = document.querySelector('#share-hold-title') ?? document.querySelector('#share-hold-jump');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -1820,6 +1825,7 @@ function helpDialog() {
         <li><kbd>e</kbd> Export JSON of the current valid case</li>
         <li><kbd>g</kbd> Jump to the results nav or the first results heading</li>
         <li><kbd>n</kbd> Focus Add participant, or add one if that control is missing</li>
+        <li><kbd>s</kbd> Jump to share-to-hold (preview if open, otherwise the first solver)</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
