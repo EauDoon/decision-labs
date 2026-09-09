@@ -246,3 +246,13 @@ tbody tr.is-current { background: rgba(244, 185, 66, 0.1); }
 select { width: 100%; min-height: 44px; padding: .6rem; border: 1px solid #57717b; border-radius: .5rem; background: #12232d; color: #eef4f5; font: inherit; }
 
 textarea { width: 100%; padding: .7rem; resize: vertical; color: #eef4f5; background: #12232d; border: 1px solid #57717b; border-radius: .5rem; font: inherit; }
+
+input[aria-invalid="true"] { border: 2px solid #ffbc88; outline-offset: 3px; }
+textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outline: 3px solid #64d59b; outline-offset: 3px; }
+.library-controls { margin-block: 1.5rem; border-block-start: 1px solid #57717b; padding-block-start: 1rem; }
+.planning-actions select { max-width: 22rem; }
+@media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; transition: none !important; animation: none !important; } }
+@media (max-width: 600px) { .planning-actions { align-items: stretch; } .planning-actions button, .planning-actions select { width: 100%; max-width: 100%; } }
+
+.section-links { display: flex; flex-wrap: wrap; gap: .7rem 1.3rem; margin-block: 1rem; }
+.section-links a { min-height: 44px; display: inline-flex; align-items: center; }

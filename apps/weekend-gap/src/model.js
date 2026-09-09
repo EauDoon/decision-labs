@@ -482,7 +482,7 @@ export function analyzeTimeline(input) {
     blockers: [...counts].map(([label, intervals]) => ({ label, intervals })),
     firstBacklogHour: result.timeline.find(point => point.queuedAud > 0)?.hour ?? null,
     reserveExhaustionHour: result.scenario.reserveCashAud > 0 ? result.timeline.find(point => point.reserveRemainingAud === 0)?.hour ?? null : 0,
-    lastSettlementHour: result.timeline.findLast(point => point.settledThisHour > 0)?.hour ?? null,
+    lastSettlementHour: [...result.timeline].reverse().find(point => point.settledThisHour > 0)?.hour ?? null,
     peakQueueHour: result.summary.peakQueueHour };
 }
 

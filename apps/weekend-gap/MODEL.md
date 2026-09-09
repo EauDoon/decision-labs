@@ -6,7 +6,7 @@ This document describes a synthetic, deterministic model of AUD stablecoin redem
 
 ## Reserve planner and comparison
 
-The v1.2.0 planner uses the same hourly queue and settlement recurrence as the
+The planner uses the same hourly queue and settlement recurrence as the
 timeline. Its target is a percentage of total 72-hour demand, not just demand
 arrived by the deadline. Hour 1 is the checkpoint after the first hourly step;
 hour 72 is Monday 15:00.
@@ -25,7 +25,7 @@ It must not be read as a recommendation to add reserve. Demand arrival, closed
 windows, throughput, and nominal liquidity may each prevent the target.
 
 Comparison deltas are current minus baseline. Baselines are detached canonical
-scenarios in tab memory. A decrease in queue is not necessarily an improvement
+scenarios saved with the local workspace. A decrease in queue is not necessarily an improvement
 if demand or other assumptions changed. The analysis JSON report binds both
 input scenarios, changed fields, summaries, planner target and deadline, and
 hourly queue values. It has no timestamp, making identical inputs reproducible.
@@ -42,7 +42,7 @@ All money values are Australian dollars (AUD). Throughputs and FX depth are AUD 
 - Australian AUD payout or off-ramp throughput and business-day operating window.
 - Total 72-hour redemption demand.
 
-The demand schedule is intentionally flat: total demand divided by 72. This makes the user-edited demand total the only demand-volume input and avoids hidden demand shocks or randomness. Presets change only visible scenario fields.
+Demand timing is explicitly selected: flat, Friday burst, or Monday rush. Total demand is the only demand-volume input; each profile redistributes it deterministically. Presets change only visible scenario fields. Older files without a demand profile default to flat.
 
 ## Timeline and gates
 
@@ -62,7 +62,7 @@ The model still requires issuer, bank and payout gates to settle. FX weakening t
 For each hour, let `Q` be queued demand, `D` total redemption demand, `R` reserve remaining, `I` issuer hourly throughput, `F` available FX depth, and `P` payout hourly throughput.
 
 ```text
-demand_this_hour = D / 72
+demand_this_hour = D * weight_this_hour / sum_of_all_72_weights
 Q_before_settlement = Q_previous + demand_this_hour
 
 capacity = 0                                      if any gate is closed
@@ -109,3 +109,15 @@ Use the simulator to compare assumptions and reason about dependencies, not to m
 ## Demand timing
 
 Flat arrivals remain the default for existing scenario files. Friday burst gives each of the first nine hours weight 8, all other hours weight 1. Monday rush gives hours 57 to 71 weight 8. Each hourly demand is total demand times its weight divided by the sum of weights. This conserves total demand subject to floating-point rounding. The reserve planner uses exactly the same arrival schedule.
+
+## Diagnostic semantics
+
+There are 72 intervals and 73 checkpoints. A checkpoint's arrived and settled values describe the interval that just ended. Immediate capacity describes the next interval at that checkpoint. The initial checkpoint has no preceding interval. Queue exposure is the sum of all 72 end-of-interval queue balances times one hour, measured in AUD-hours. It is an exposure proxy, not a customer wait-time estimate. The longest backlog run counts consecutive intervals with a positive closing queue.
+
+Blocker counts include every closed gate and exhausted reserve observed in an interval with a closing backlog. Counts can overlap and must not be added or interpreted as causal attribution. With no closed gate, the smallest available capacity is reported. Equal capacity ties use the model's existing deterministic order. A constrained resource may have no marginal effect if another gate is closed.
+
+Sensitivity holds other assumptions fixed and scales one supported field by 50%, 75%, 100%, 125% and 150%. Effective values are sanitized and any cap is labeled. Starting from zero gives five zero cases. Increasing reserve cannot repair non-overlapping windows or throughput limits. The pinned baseline is separate from the sensitivity experiment's current-scenario reference.
+
+## Recovery and output boundaries
+
+Workspace v1 stores canonical current and baseline scenarios, bounded notes (4000 characters), target, deadline and selected hour. Imports are size-bounded and atomically decoded before replacing state; computed results are regenerated. The library contains at most 12 canonical scenarios. Scenario undo keeps at most 40 snapshots in memory. Portable reports are static escaped HTML with a restrictive content security policy. CSV contains only fixed headers, model-generated time labels and numeric values, so scenario names cannot inject spreadsheet formulas.

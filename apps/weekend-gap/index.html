@@ -53,6 +53,7 @@ SOFTWARE.
         <p class="notice"><strong>Educational simulator only.</strong> Every assumption is synthetic and editable. This is not financial advice, live market data or a statement about any issuer.</p>
       </section>
 
+      <nav class="section-links" aria-label="Simulator sections"><a href="#assumptions-title">Edit assumptions</a><a href="#comparison-title">Compare experiments</a><a href="#table-title">Inspect hourly data</a></nav>
       <section class="workspace" aria-label="Weekend liquidity scenario workspace">
         <aside class="controls card" aria-labelledby="assumptions-title">
           <div class="card-heading">
@@ -77,7 +78,7 @@ SOFTWARE.
           <form id="scenario-form" novalidate>
             <div class="input-group input-group--full">
               <label for="name">Scenario name</label>
-              <input id="name" name="name" data-field="name" maxlength="80" type="text" autocomplete="off">
+              <input id="name" name="name" aria-describedby="input-message" data-field="name" maxlength="80" type="text" autocomplete="off">
             </div>
 
             <fieldset>
@@ -174,6 +175,7 @@ SOFTWARE.
             <div class="scenario-actions"><button id="save-library" type="button">Save a copy</button><button id="load-library" type="button" disabled>Load selected</button><button id="delete-library" type="button" disabled>Delete selected copy</button></div>
             <p id="library-status" role="status">No saved copies yet. Browser data can be cleared; export important scenarios.</p>
           </section>
+          <p id="storage-status" role="status"></p>
           <p id="input-message" class="input-message" role="status" aria-live="polite"></p>
           <div class="scenario-actions">
             <button type="button" id="export-button">Export JSON</button>
@@ -232,7 +234,7 @@ SOFTWARE.
               <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
               <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
               <div><dt>Peak queue</dt><dd id="peak-queue-value">A$0</dd></div>
-              <div><dt>Hours with backlog</dt><dd id="backlog-hours-value">0 of 73</dd></div>
+              <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>

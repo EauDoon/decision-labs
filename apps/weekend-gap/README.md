@@ -63,7 +63,7 @@ npm run check
 - Canvas chart with a text-equivalent data table.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
-## New in v1.2.0
+## Scenario comparison and reserve planner
 
 Pin a baseline, then test a preset or edit an assumption. The comparison table
 shows signed changes in demand, settled amount, remaining queue, peak queue, and
@@ -76,7 +76,7 @@ arrival, operating windows, or throughput prevent them. Apply a reachable result
 to the editor, or export an analysis report containing both scenarios, changed
 assumptions, target, deadline, and hourly comparison.
 
-Baselines and planner settings stay in the tab and are not autosaved. Scenario
+Baselines and planner settings are now saved with the local workspace. Scenario
 JSON and share links still carry only the current scenario. Analysis JSON is a
 report, not an importable scenario. Reduced queues are not evidence of a better
 strategy if the scenarios use different demand.
@@ -122,3 +122,27 @@ scripts/dev-server.mjs Dependency-free local development server
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## New in v1.3.0: repeatable experiments
+
+1. Choose a preset, edit assumptions and select flat, Friday burst or Monday rush demand timing. Timing redistributes the same total demand; it does not introduce randomness.
+2. Pin a baseline and write experiment notes. Compare the current scenario with the detached baseline, then run five sensitivity cases for one assumption. Capped values are labeled. Applying a case keeps the baseline.
+3. Inspect simultaneous operating blockers, the longest backlog run and end-of-hour queue exposure. Use the full hourly table or jump to the peak queue or Monday opening checkpoint.
+4. Save named copies in the local library (12 slots). Undo and redo recover up to 39 scenario edits in the current tab. This recovery history does not include notes, baseline changes or deleted library copies.
+5. Export an editable workspace, a printable HTML report or the full hourly CSV. Open the report offline and use the browser Print command. Reports escape imported text and contain no scripts or external resources.
+
+### What each export contains
+
+| Export | Contents | Importable here |
+| --- | --- | --- |
+| Scenario JSON / share link | Current editable scenario | Scenario import / URL hash |
+| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour | Workspace import |
+| Analysis JSON | Both scenarios, results, reserve plan and hourly comparison | No, report only |
+| Hourly CSV | All 73 checkpoints, prior-interval flows and next-hour capacity | No, spreadsheet data |
+| Printable HTML | Notes, assumptions, comparison, diagnostics, reserve plan and model limits | No, report only |
+
+Scenario, workspace and library data stay in browser storage. Nothing syncs to an account or server. A scenario hash takes priority over local recovery at startup. Normal reloads restore the latest workspace, including its baseline and notes. Browser/file-origin storage availability varies, so export important work. Storage failures remain visible while the simulator stays usable. Invalid planner drafts do not replace the last valid target in recovery, and incomplete numeric assumption fields leave the previous simulation intact.
+
+The selected timeline hour has an accessible time label. With reduced motion enabled, playback becomes a single-hour step. Playback pauses when the tab is hidden, and the hourly table remains available without canvas.
+
+Verification uses the built-in Node test runner, including an actual source-module workflow harness with a minimal DOM adapter. It checks imports, saved-scenario and workspace reload flows, failed imports, undo/redo, sensitivity invalidation, blocked storage, incomplete numeric drafts, reduced motion and missing canvas. This complements the browser checks; it is not a substitute for every browser or assistive-technology combination.

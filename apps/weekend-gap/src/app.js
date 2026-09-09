@@ -23,6 +23,7 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72 };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -30,6 +31,7 @@ const form = document.querySelector("#scenario-form");
 const timelineRange = document.querySelector("#timeline-range");
 const canvas = document.querySelector("#liquidity-chart");
 const chartContext = canvas.getContext("2d");
+const reducedMotion = window.matchMedia?.("(prefers-reduced-motion: reduce)");
 const elements = {
   title: document.querySelector("#scenario-title"),
   play: document.querySelector("#play-button"),
@@ -82,7 +84,7 @@ function formatPercent(value, decimals = 1) {
 function writeForm() {
   for (const [field, value] of Object.entries(scenario)) {
     const input = form.elements.namedItem(field);
-    if (input) input.value = String(value);
+    if (input) { input.value = String(value); input.setAttribute("aria-invalid", "false"); }
   }
 }
 
@@ -98,8 +100,9 @@ function readForm() {
 function saveScenario() {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(scenario));
+    document.querySelector("#storage-status").textContent = "Current scenario saved locally.";
   } catch {
-    setMessage("Local autosave is unavailable in this browser.");
+    document.querySelector("#storage-status").textContent = "Local autosave is unavailable. Edits remain in this tab; export a scenario or workspace to keep them.";
   }
 }
 
@@ -199,7 +202,7 @@ function render() {
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
-  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS + 1}`;
+  elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS}`;
   elements.outcomeExplanation.textContent = finalQueuedAud > 0
     ? `${formatAud(finalQueuedAud)} remains queued at ${formatTime(SIMULATION_HOURS)}. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`
     : `All synthetic demand settles within the 72-hour window. The peak queue was ${formatAud(peakQueuedAud)} at ${formatTime(peakQueueHour)}.`;
@@ -228,7 +231,7 @@ function render() {
   elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
 
   for (const button of document.querySelectorAll("[data-preset]")) {
-    button.classList.toggle("is-selected", PRESETS[button.dataset.preset].name === scenario.name);
+    button.classList.toggle("is-selected", Object.keys(PRESETS[button.dataset.preset]).every(key => PRESETS[button.dataset.preset][key] === scenario[key]));
   }
   renderTable();
   drawChart();
@@ -282,6 +285,7 @@ function drawLine(context, points, getValue, color, dimensions, maximum) {
 }
 
 function drawChart() {
+  if (!chartContext) return;
   const bounds = canvas.getBoundingClientRect();
   const pixelRatio = window.devicePixelRatio || 1;
   const width = Math.max(1, Math.floor(bounds.width));
@@ -332,12 +336,17 @@ function drawChart() {
 }
 
 function setPlaying(nextPlaying) {
+  if (nextPlaying && reducedMotion?.matches) {
+    selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
+    render(); saveWorkspace(); return;
+  }
+  const wasPlaying = playing;
   playing = nextPlaying;
-  elements.play.textContent = playing ? "Pause" : "Play";
+  elements.play.textContent = reducedMotion?.matches ? "Step hour" : playing ? "Pause" : "Play";
   elements.play.setAttribute("aria-pressed", String(playing));
   if (playTimer) window.clearInterval(playTimer);
   playTimer = null;
-  if (!playing) return;
+  if (!playing) { if (wasPlaying) saveWorkspace(); return; }
   playTimer = window.setInterval(() => {
     selectedHour = selectedHour >= SIMULATION_HOURS ? 0 : selectedHour + 1;
     render();
@@ -459,20 +468,29 @@ async function importScenario(file) {
       return;
     }
     userEdited = true;
-    setScenario(imported.scenario, { message: imported.errors.length ? `Scenario imported with adjustments: ${imported.errors.join(" ")}` : "Scenario imported and autosaved." });
+    setScenario(imported.scenario, { message: imported.errors.length ? `Scenario imported with adjustments: ${imported.errors.join(" ")}` : "Scenario imported." });
   } catch {
     setMessage("Import failed. Choose a readable JSON file.");
   }
 }
 
-form.addEventListener("input", () => {
+function applyFormEdit(normaliseForm) {
+  const raw = readForm();
+  let invalid = false;
+  for (const field of Object.keys(DEFAULT_SCENARIO)) {
+    const input = form.elements.namedItem(field);
+    if (!input || typeof DEFAULT_SCENARIO[field] !== "number") continue;
+    const valid = typeof raw[field] === "string" && raw[field].trim() !== "" && Number.isFinite(Number(raw[field]));
+    input.setAttribute("aria-invalid", String(!valid));
+    if (!valid) invalid = true;
+  }
+  if (invalid) { setMessage("Complete the highlighted numeric assumptions with finite numbers. The previous simulation is kept."); return; }
   userEdited = true;
-  setScenario(readForm(), { normaliseForm: false });
-});
-
-form.addEventListener("change", () => {
-  setScenario(readForm(), { normaliseForm: true });
-});
+  setScenario(raw, { normaliseForm });
+}
+form.addEventListener("input", () => applyFormEdit(false));
+form.addEventListener("change", () => applyFormEdit(true));
+form.addEventListener("submit", event => event.preventDefault());
 
 timelineRange.addEventListener("input", () => {
   selectedHour = Number(timelineRange.value);
@@ -509,7 +527,7 @@ if (standaloneMode) {
 } else {
   shareButton.addEventListener("click", copyShareLink);
 }
-document.querySelector("#import-file").addEventListener("change", (event) => importScenario(event.target.files?.[0]));
+document.querySelector("#import-file").addEventListener("change", (event) => { const file = event.target.files?.[0]; event.target.value = ""; return importScenario(file); });
 
 if (!standaloneMode) {
   window.addEventListener("hashchange", () => {
@@ -617,10 +635,25 @@ function currentWorkspace() {
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
-  try { localStorage.setItem(WORKSPACE_KEY,currentWorkspace()); document.querySelector("#workspace-status").textContent="Workspace autosaved locally, including the baseline, notes and reserve target."; }
-  catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Check the target fields or export a valid workspace; edits remain in this tab."; }
+  try {
+    let serialized;
+    let controlsValid = true;
+    try {
+      serialized = currentWorkspace();
+      const saved = JSON.parse(serialized);
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour };
+    } catch {
+      controlsValid = false;
+      serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
+    }
+    localStorage.setItem(WORKSPACE_KEY, serialized);
+    document.querySelector("#workspace-status").textContent = controlsValid
+      ? "Workspace autosaved locally, including the baseline, notes and reserve target."
+      : "Scenario edits saved. Incomplete planner fields were excluded; the last valid target and deadline were kept for recovery.";
+  } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour };
   baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
@@ -691,3 +724,7 @@ document.querySelector("#export-report").addEventListener("click",()=>{
     document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
   } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
 });
+
+document.addEventListener("visibilitychange",()=>{ if(document.hidden) setPlaying(false); });
+reducedMotion?.addEventListener?.("change",()=>setPlaying(false));
+setPlaying(false);
