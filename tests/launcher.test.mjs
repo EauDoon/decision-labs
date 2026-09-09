@@ -1,7 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -27,6 +27,7 @@ test('launcher serves only workbenches and refuses hostile hosts and methods', a
   assert.doesNotMatch(page.body, /Index of/);
   assert.match(page.headers['content-security-policy'], /connect-src 'none'/);
   assert.match(page.headers['content-security-policy'], /script-src 'unsafe-inline'/);
+  assert.equal(page.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
   for (const app of ['partnership-breakpoint', 'common-cart', 'smallest-agreement', 'weekend-gap']) {
     assert.equal((await get(`/apps/${app}/standalone.html`)).status, 200);
   }
@@ -118,6 +119,49 @@ test('launcher public path set is exact, documented, and closed', async (t) => {
   assert.equal((await call('/', 'GET', '0.0.0.0')).status, 403);
   assert.equal((await call('/', 'GET', '[::1]')).status, 403);
   assert.equal((await call('/', 'GET', `localhost:${port}`)).status, 200);
+});
+
+test('launcher 404 body names the catalog and still returns 404', async (t) => {
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const get = (path, method = 'GET') => new Promise((resolve, reject) => {
+    const req = request({ hostname: '127.0.0.1', port, path, method, headers: { host: `127.0.0.1:${port}` } }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+
+  assert.match(notFoundPage(), /Decision Labs/);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+
+  const missing = await get('/README.md');
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /Decision Labs/);
+  assert.match(missing.body, /not in the catalog/);
+  assert.match(missing.body, /<!doctype html>/i);
+  assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+
+  const source = await get('/scripts/serve.mjs');
+  assert.equal(source.status, 404);
+  assert.match(source.body, /Decision Labs/);
+  assert.doesNotMatch(source.body, /export const PUBLIC_PATHS/);
+  assert.doesNotMatch(source.body, /createLauncher/);
+
+  const model = await get('/apps/weekend-gap/src/model.js');
+  assert.equal(model.status, 404);
+  assert.match(model.body, /Decision Labs/);
+  assert.doesNotMatch(model.body, /export function/);
+
+  const head = await get('/README.md', 'HEAD');
+  assert.equal(head.status, 404);
+  assert.equal(head.body, '');
 });
 
 test('launcher port rejects ambiguous, empty and out-of-range values', () => {
