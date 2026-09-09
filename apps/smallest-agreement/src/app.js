@@ -19,6 +19,7 @@ import {
   previewRenormalizedWeights,
   applyRenormalizedWeights,
   duplicateParticipantGroup,
+  moveClause,
   sortPackageGapRows,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
@@ -1457,14 +1458,15 @@ document.addEventListener("click", (event) => {
     ] });
   });
   if (action === "remove-clause") changeAndRender(() => { state.proposal.clauses = state.proposal.clauses.filter((clause) => clause.id !== button.dataset.clauseId); });
-  if (action === "move-clause") changeAndRender(() => {
-    const index = state.proposal.clauses.findIndex((clause) => clause.id === button.dataset.clauseId);
-    const offset = button.dataset.direction === "up" ? -1 : 1;
-    const target = index + offset;
-    if (index < 0 || target < 0 || target >= state.proposal.clauses.length) return;
-    const [row] = state.proposal.clauses.splice(index, 1);
-    state.proposal.clauses.splice(target, 0, row);
-  });
+  if (action === "move-clause") {
+    const moved = moveClause(state.proposal, button.dataset.clauseId, button.dataset.direction);
+    if (moved.status !== "ok") {
+      notifyDraft(`Could not move that clause: ${moved.errors[0]}`);
+      return;
+    }
+    changeAndRender(() => { state.proposal = moved.proposal; });
+    return;
+  }
   if (action === "duplicate-clause") changeAndRender(() => {
     if (state.proposal.clauses.length >= MAX_CLAUSES) return;
     const source = clauseById(button.dataset.clauseId);

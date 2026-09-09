@@ -1252,6 +1252,29 @@ function toggleClauseLock(proposal, clauseId, optionId) {
 }
 
 /**
+ * Move one clause up or down on a copy of the proposal.
+ * Clause order is the last documented tie breaker. Does not mutate the input.
+ */
+function moveClause(proposal, clauseId, direction) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof clauseId !== "string") return { status: "invalid", errors: ["Unknown clause."] };
+  if (direction !== "up" && direction !== "down") {
+    return { status: "invalid", errors: ["direction must be up or down."] };
+  }
+  const next = canonicalProposal(proposal);
+  const index = next.clauses.findIndex((clause) => clause.id === clauseId);
+  if (index < 0) return { status: "invalid", errors: ["Unknown clause."] };
+  const target = index + (direction === "up" ? -1 : 1);
+  if (target < 0 || target >= next.clauses.length) {
+    return { status: "invalid", errors: ["Clause cannot move further in that direction."] };
+  }
+  const [row] = next.clauses.splice(index, 1);
+  next.clauses.splice(target, 0, row);
+  return { status: "ok", proposal: next, clauseId, direction };
+}
+
+/**
  * Groups whose veto constraint is not met on the inspected package.
  * This names a numerical constraint failure. It is not a legal veto or a
  * legitimacy claim.
@@ -4110,14 +4133,15 @@ document.addEventListener("click", (event) => {
     ] });
   });
   if (action === "remove-clause") changeAndRender(() => { state.proposal.clauses = state.proposal.clauses.filter((clause) => clause.id !== button.dataset.clauseId); });
-  if (action === "move-clause") changeAndRender(() => {
-    const index = state.proposal.clauses.findIndex((clause) => clause.id === button.dataset.clauseId);
-    const offset = button.dataset.direction === "up" ? -1 : 1;
-    const target = index + offset;
-    if (index < 0 || target < 0 || target >= state.proposal.clauses.length) return;
-    const [row] = state.proposal.clauses.splice(index, 1);
-    state.proposal.clauses.splice(target, 0, row);
-  });
+  if (action === "move-clause") {
+    const moved = moveClause(state.proposal, button.dataset.clauseId, button.dataset.direction);
+    if (moved.status !== "ok") {
+      notifyDraft(`Could not move that clause: ${moved.errors[0]}`);
+      return;
+    }
+    changeAndRender(() => { state.proposal = moved.proposal; });
+    return;
+  }
   if (action === "duplicate-clause") changeAndRender(() => {
     if (state.proposal.clauses.length >= MAX_CLAUSES) return;
     const source = clauseById(button.dataset.clauseId);

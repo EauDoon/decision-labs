@@ -745,6 +745,9 @@ test("moving a clause changes documented tie-breaker order and supports undo", a
   const app = await savedWorkbench(storage);
   app.setTitle("Workshop draft for clause order");
   const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  app.clickAction("move-clause", { clauseId: "hours", direction: "up" });
+  assert.match(app.message(), /Could not move that clause/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].id, "hours");
   app.clickAction("move-clause", { clauseId: "hours", direction: "down" });
   const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
   assert.equal(after.clauses[0].id, before.clauses[1].id);

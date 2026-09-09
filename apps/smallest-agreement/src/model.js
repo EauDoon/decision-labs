@@ -731,6 +731,29 @@ export function toggleClauseLock(proposal, clauseId, optionId) {
 }
 
 /**
+ * Move one clause up or down on a copy of the proposal.
+ * Clause order is the last documented tie breaker. Does not mutate the input.
+ */
+export function moveClause(proposal, clauseId, direction) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof clauseId !== "string") return { status: "invalid", errors: ["Unknown clause."] };
+  if (direction !== "up" && direction !== "down") {
+    return { status: "invalid", errors: ["direction must be up or down."] };
+  }
+  const next = canonicalProposal(proposal);
+  const index = next.clauses.findIndex((clause) => clause.id === clauseId);
+  if (index < 0) return { status: "invalid", errors: ["Unknown clause."] };
+  const target = index + (direction === "up" ? -1 : 1);
+  if (target < 0 || target >= next.clauses.length) {
+    return { status: "invalid", errors: ["Clause cannot move further in that direction."] };
+  }
+  const [row] = next.clauses.splice(index, 1);
+  next.clauses.splice(target, 0, row);
+  return { status: "ok", proposal: next, clauseId, direction };
+}
+
+/**
  * Groups whose veto constraint is not met on the inspected package.
  * This names a numerical constraint failure. It is not a legal veto or a
  * legitimacy claim.

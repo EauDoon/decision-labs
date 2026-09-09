@@ -33,6 +33,7 @@ const appImport = `import {
   previewRenormalizedWeights,
   applyRenormalizedWeights,
   duplicateParticipantGroup,
+  moveClause,
   sortPackageGapRows,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,

@@ -42,6 +42,7 @@ import {
   previewRenormalizedWeights,
   applyRenormalizedWeights,
   duplicateParticipantGroup,
+  moveClause,
   sortPackageGapRows,
   stressPackage,
   compareScenarioInputs,
@@ -854,6 +855,39 @@ test("toggleClauseLock locks or unlocks one option on a copy and rejects unknown
   assert.equal(Object.hasOwn(unlocked.proposal.clauses[0], "lockedOptionId"), false);
   assert.equal(toggleClauseLock(input, "missing", "one-change").status, "invalid");
   assert.equal(toggleClauseLock(input, "one", "missing").status, "invalid");
+});
+
+test("moveClause reorders clauses for the documented tie breaker without mutating the draft", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-keep", true, { g: 40 }),
+        option("aaa", false, { g: 80 }, 1),
+        option("zzz", false, { g: 80 }, 1),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-keep", true, { g: 40 }),
+        option("mmm", false, { g: 80 }, 1),
+        option("nnn", false, { g: 80 }, 1),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const first = findSmallestAgreement(input);
+  assert.equal(first.status, "found");
+  assert.deepEqual(first.agreement.options.map((row) => row.id), ["aaa", "mmm"]);
+  const moved = moveClause(input, "two", "up");
+  assert.equal(moved.status, "ok");
+  assert.deepEqual(moved.proposal.clauses.map((clause) => clause.id), ["two", "one"]);
+  assert.equal(JSON.stringify(input), before);
+  const after = findSmallestAgreement(moved.proposal);
+  assert.equal(after.status, "found");
+  assert.deepEqual(after.agreement.options.map((row) => row.id), ["mmm", "aaa"]);
+  assert.equal(moveClause(input, "one", "up").status, "invalid");
+  assert.equal(moveClause(input, "two", "down").status, "invalid");
+  assert.equal(moveClause(input, "missing", "down").status, "invalid");
+  assert.equal(moveClause(input, "one", "sideways").status, "invalid");
 });
 
 test("vetoBlockingGroups names groups whose veto fails on the inspected package", () => {
