@@ -155,6 +155,17 @@ test('h focuses the catalog heading when focus is not in an input', () => {
   assert.match(html, /inEditable\(event\.target\)/);
 });
 
+test('w focuses the workbenches when focus is not in an input', () => {
+  assert.match(html, /id="workbenches" tabindex="-1"/);
+  assert.match(html, /event\.key === 'w'/);
+  assert.match(html, /getElementById\('workbenches'\)\?\.focus\(\)/);
+  assert.match(html, /<kbd>w<\/kbd><\/dt><dd>Focus the workbenches/);
+  assert.match(html, /Press <kbd>w<\/kbd> to focus the workbenches/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /input, textarea, select, \[contenteditable="true"\]/);
+  assert.match(readme, /Press `w` to focus the\s+workbenches/);
+});
+
 test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(html, /id="trust" tabindex="-1"/);
   assert.match(html, /event\.key === 't'/);

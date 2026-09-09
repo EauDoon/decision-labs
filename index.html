@@ -450,7 +450,7 @@
         <li data-app="smallest-agreement">1.4.3</li>
         <li data-app="weekend-gap">1.4.3</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>t</kbd> to focus Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>t</kbd> to focus Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -459,6 +459,7 @@
           <dt><kbd>3</kbd></dt><dd>Open The Smallest Agreement</dd>
           <dt><kbd>4</kbd></dt><dd>Open Weekend Gap</dd>
           <dt><kbd>h</kbd></dt><dd>Focus the catalog heading</dd>
+          <dt><kbd>w</kbd></dt><dd>Focus the workbenches</dd>
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
           <dt><kbd>?</kbd></dt><dd>Show or hide this list</dd>
           <dt><kbd>Esc</kbd></dt><dd>Hide this list</dd>
@@ -603,6 +604,11 @@
         if (event.key === 'h') {
           event.preventDefault();
           document.getElementById('catalog-heading')?.focus();
+          return;
+        }
+        if (event.key === 'w') {
+          event.preventDefault();
+          document.getElementById('workbenches')?.focus();
           return;
         }
         if (event.key === 't') {
