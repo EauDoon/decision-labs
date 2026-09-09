@@ -829,3 +829,32 @@ export function formatSupportMatrixCsv(proposal) {
   }
   return serializeCsv(rows);
 }
+
+/**
+ * Lock one option, re-run search on remaining unlocked clauses, and return a preview.
+ * Does not mutate the supplied proposal.
+ */
+export function previewLockedOption(proposal, clauseId, optionId, searchOptions = {}) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof clauseId !== "string" || typeof optionId !== "string") {
+    return { status: "invalid", errors: ["Clause and option identifiers are required."] };
+  }
+  const clause = proposal.clauses.find((item) => item.id === clauseId);
+  if (!clause) return { status: "invalid", errors: ["Unknown clause."] };
+  const option = clause.options.find((item) => item.id === optionId);
+  if (!option) return { status: "invalid", errors: ["Unknown option."] };
+  const next = canonicalProposal(proposal);
+  next.clauses.find((item) => item.id === clauseId).lockedOptionId = optionId;
+  const result = findSmallestAgreement(next, searchOptions);
+  if (result.status === "invalid") return result;
+  return {
+    status: "preview",
+    proposal: next,
+    result,
+    clauseId,
+    optionId,
+    clauseTitle: clause.title,
+    optionLabel: option.label,
+  };
+}

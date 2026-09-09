@@ -9,6 +9,7 @@ import {
   evaluatePackage,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
+  previewLockedOption,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -152,6 +153,7 @@ const presets = {
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
 let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
+let lockPreview = null;
 let cachedResultKey;
 let cachedResult;
 const savedResults = new WeakMap();
@@ -358,7 +360,7 @@ function renderClauses() {
             <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="${escapeHtml(clause.title)}, ${escapeHtml(option.label)} label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
             <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" max="1000000000" step="any" required value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
             ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" required value="${option.support[group.id]}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
-            <td><div class="option-tools">${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
+            <td><div class="option-tools">${option.original ? "" : `<button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`}${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
           </tr>`).join("")}</tbody>
       </table></div>
       <button class="text-button add-alternative" type="button" data-action="add-option" data-clause-id="${escapeHtml(clause.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Add alternative</button>
@@ -386,6 +388,7 @@ function renderResults(result) {
     $("#support-shifts").innerHTML = "";
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable when the full search is over the safety bound.</p>';
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable when the full search is over the safety bound.</p>';
+    $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable when the full search is over the safety bound.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
     return;
@@ -398,6 +401,7 @@ function renderResults(result) {
     $("#support-shifts").innerHTML = "";
     $("#near-misses-list").innerHTML = '<p class="empty-state">Near misses are unavailable for invalid inputs.</p>';
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable for invalid inputs.</p>';
+    $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable for invalid inputs.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
     return;
@@ -424,6 +428,7 @@ function renderResults(result) {
   renderConstraints(result);
   renderNearMissExplorer(result);
   renderClauseContribution(result);
+  renderLockPreview();
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
 }
@@ -502,7 +507,39 @@ $("#use-recommendation").addEventListener("click", () => {
 
 function renderAlternatives(result) {
   const candidates = result.alternatives ?? [];
-  $("#passing-alternatives").innerHTML = candidates.length ? '<p>' + result.passingCombinations + ' passing combinations. Showing the first ' + candidates.length + ' by lowest cost, fewest changes, higher approval, then option IDs. These are ranked choices, not a fairness ranking.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Rank and package</th><th scope="col">Cost</th><th scope="col">Approval</th><th scope="col">Lowest group support</th><th scope="col">Groups losing support</th></tr></thead><tbody>' + candidates.map((candidate, index) => '<tr><th scope="row">' + (index + 1) + '. ' + candidate.options.map((option, i) => escapeHtml(state.proposal.clauses[i].title) + ': ' + escapeHtml(option.label)).join('<br>') + '</th><td>' + candidate.changeCost.toFixed(1) + '</td><td>' + formatPercent(candidate.approval) + '</td><td>' + formatPercent(Math.min(...candidate.byGroup.map((group) => group.approval))) + '</td><td>' + (candidate.supportersLost.map((group) => escapeHtml(group.name)).join(', ') || 'None') + '</td></tr>').join('') + '</tbody></table></div>' : '<p class="empty-state">No passing packages available to compare. Review the inputs and constraints.</p>';
+  if (!candidates.length) {
+    $("#passing-alternatives").innerHTML = '<p class="empty-state">No passing packages available to compare. Review the inputs and constraints.</p>';
+    return;
+  }
+  const rows = candidates.map((candidate, index) => {
+    const packageLines = candidate.options.map((option, i) => {
+      const clause = state.proposal.clauses[i];
+      return `${escapeHtml(clause.title)}: ${escapeHtml(option.label)} <button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`;
+    }).join("<br>");
+    return `<tr><th scope="row">${index + 1}. ${packageLines}</th><td>${candidate.changeCost.toFixed(1)}</td><td>${formatPercent(candidate.approval)}</td><td>${formatPercent(Math.min(...candidate.byGroup.map((group) => group.approval)))}</td><td>${candidate.supportersLost.map((group) => escapeHtml(group.name)).join(", ") || "None"}</td></tr>`;
+  }).join("");
+  $("#passing-alternatives").innerHTML = `<p>${result.passingCombinations} passing combinations. Showing the first ${candidates.length} by lowest cost, fewest changes, higher approval, then option IDs. These are ranked choices, not a fairness ranking. Try this option locks one choice and re-solves the rest.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Rank and package</th><th scope="col">Cost</th><th scope="col">Approval</th><th scope="col">Lowest group support</th><th scope="col">Groups losing support</th></tr></thead><tbody>${rows}</tbody></table></div>`;
+}
+
+function renderLockPreview() {
+  const target = $("#lock-preview");
+  if (!lockPreview) {
+    target.innerHTML = '<p class="empty-state">Choose Try this option on an alternative to preview a lock. The draft does not change until you apply it.</p>';
+    return;
+  }
+  if (lockPreview.status !== "preview") {
+    target.innerHTML = `<p>Preview failed: ${escapeHtml(lockPreview.errors?.[0] ?? "the option could not be locked.")}</p>`;
+    return;
+  }
+  const previewResult = lockPreview.result;
+  const agreement = previewResult.agreement;
+  const packageText = agreement
+    ? agreement.options.map((option, index) => `${escapeHtml(lockPreview.proposal.clauses[index].title)}: ${escapeHtml(option.label)}`).join("; ")
+    : "No passing package was found with this lock.";
+  const statusText = previewResult.status === "found" || previewResult.status === "already_passing"
+    ? `Preview status: ${previewResult.status.replaceAll("_", " ")}. Approval ${formatPercent(agreement.approval)}. Cost ${agreement.changeCost.toFixed(1)}.`
+    : `Preview status: ${previewResult.status.replaceAll("_", " ")}.`;
+  target.innerHTML = `<p>Lock <strong>${escapeHtml(lockPreview.clauseTitle)}</strong> to <strong>${escapeHtml(lockPreview.optionLabel)}</strong> and keep every other current lock.</p><p>${statusText}</p><p>${packageText}</p><p>This is a preview of the solver under that lock. It is not a decision.</p><div class="scenario-actions"><button class="button button-brick" type="button" data-action="apply-lock-preview">Apply lock</button> <button class="button button-secondary" type="button" data-action="dismiss-lock-preview">Dismiss preview</button></div>`;
 }
 
 function renderConstraints(result) {
@@ -771,6 +808,29 @@ document.addEventListener("click", (event) => {
   const button = event.target.closest("[data-action]");
   if (!button || button.disabled) return;
   const action = button.dataset.action;
+  if (action === "try-option") {
+    lockPreview = previewLockedOption(state.proposal, button.dataset.clauseId, button.dataset.optionId, { maxCombinations: MAX_COMBINATIONS, alternativesLimit: 5 });
+    renderLockPreview();
+    $("#lock-preview-heading").focus?.();
+    return;
+  }
+  if (action === "dismiss-lock-preview") {
+    lockPreview = null;
+    renderLockPreview();
+    return;
+  }
+  if (action === "apply-lock-preview") {
+    if (!lockPreview || lockPreview.status !== "preview") return;
+    const clauseId = lockPreview.clauseId;
+    const optionId = lockPreview.optionId;
+    lockPreview = null;
+    changeAndRender(() => {
+      const clause = clauseById(clauseId);
+      if (clause) clause.lockedOptionId = optionId;
+    });
+    notifyDraft("Locked " + clauseById(clauseId).title + ". Undo restores the previous draft.");
+    return;
+  }
   if (action === "add-group") changeAndRender(() => {
     const group = { id: makeId("group"), name: "New group", weight: 1 };
     state.proposal.groups.push(group);

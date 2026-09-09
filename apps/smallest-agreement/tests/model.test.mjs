@@ -17,6 +17,7 @@ import {
   evaluatePackage,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
+  previewLockedOption,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -908,4 +909,32 @@ test("support matrix CSV round-trips scores and names formula, identity, and hea
   assert.equal(empty.errors[0].code, "empty_csv");
   const score = parseSupportMatrixCsv("clause_id,option_id,a,b\r\none,original,101,0\r\n", input);
   assert.equal(score.errors[0].code, "invalid_score");
+});
+
+test("locking an option for preview re-solves remaining clauses without mutating the draft", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { g: 40 }),
+        option("one-change", false, { g: 90 }, 2),
+        option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 40 }),
+        option("two-change", false, { g: 90 }, 1),
+        option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const preview = previewLockedOption(input, "one", "one-change");
+  assert.equal(preview.status, "preview");
+  assert.equal(preview.result.status, "found");
+  assert.equal(preview.result.agreement.options[0].id, "one-change");
+  assert.equal(preview.result.agreement.options[1].id, "two-change");
+  assert.equal(preview.proposal.clauses[0].lockedOptionId, "one-change");
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(previewLockedOption(input, "missing", "one-change").status, "invalid");
+  assert.equal(previewLockedOption(input, "one", "missing").status, "invalid");
 });

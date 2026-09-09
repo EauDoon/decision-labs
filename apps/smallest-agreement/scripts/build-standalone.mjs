@@ -23,6 +23,7 @@ const appImport = `import {
   evaluatePackage,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
+  previewLockedOption,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
