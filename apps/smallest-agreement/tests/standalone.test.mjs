@@ -94,6 +94,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="clause-density"/u);
   assert.match(html, /id="copy-veto-button"/u);
   assert.match(html, /Copy veto blockers/u);
+  assert.match(html, /id="copy-packages-table-button"/u);
+  assert.match(html, /Copy package table/u);
+  assert.match(html, /id="package-table-fallback"/u);
   assert.match(html, /id="file-compare-heading"/u);
   assert.match(html, /id="compare-files-button"/u);
   assert.match(html, /id="coach-again"/u);
@@ -142,7 +145,11 @@ async function savedWorkbench(storage, hash = "") {
     }
     return elements.get(selector);
   };
-  const clipboard = { text: "", writeText(value) { this.text = value; return Promise.resolve(); } };
+  const clipboard = { text: "", blocked: false, writeText(value) {
+    if (this.blocked) return Promise.reject(new Error("clipboard blocked"));
+    this.text = value;
+    return Promise.resolve();
+  } };
   const context = vm.createContext({ console, TextEncoder, TextDecoder, Uint8Array, atob,
     document: {
       querySelector: element,
@@ -257,6 +264,8 @@ async function savedWorkbench(storage, hash = "") {
     },
     focused: () => focusedSelector,
     clipboardText: () => clipboard.text,
+    blockClipboard: () => { clipboard.blocked = true; },
+    packageTable: () => element("#package-table-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
     compareFiles: async (left, right) => {
       await element("#compare-file-left").events.get("change")({
@@ -728,7 +737,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   const html = await standaloneBytes();
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /#coach-again, #shortcut-overlay \{ display: none !important; \}/u);
+  assert.match(html, /#coach-again, #shortcut-overlay, \.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
   const storage = new Map();
@@ -1086,6 +1095,29 @@ test("copy recommended package writes Markdown to the clipboard", async () => {
   assert.match(app.clipboardText(), /Neighbourhood Plan: the shared green/u);
   assert.match(app.clipboardText(), /not a recorded vote or a claim of legitimacy/u);
   assert.match(app.message(), /Recommended package copied as Markdown/u);
+});
+
+test("copy package table writes a Markdown comparison and keeps a textarea fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-packages-table-button"/u);
+  assert.match(html, /id="package-table-fallback"/u);
+  assert.match(html, /not a recorded vote/u);
+  const app = await savedWorkbench(new Map());
+  assert.match(app.packageTable(), /^# Original, recommended, and pinned packages\n/u);
+  assert.match(app.packageTable(), /\| Clause \| Original \| Recommended \| Pinned \|/u);
+  assert.match(app.packageTable(), /Park access hours/u);
+  await app.click("#copy-packages-table-button");
+  assert.equal(app.clipboardText(), app.packageTable());
+  assert.match(app.clipboardText(), /not a recorded vote or a claim of legitimacy/u);
+  assert.match(app.message(), /Package table copied as Markdown/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-packages-table-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#package-table-fallback");
+  assert.match(blocked.packageTable(), /\| Clause \| Original \| Recommended \| Pinned \|/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a recorded vote/u);
 });
 
 test("copy veto blockers writes a constraint list rather than a legitimacy claim", async () => {

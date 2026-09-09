@@ -95,6 +95,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .veto-blocking-note { grid-column: 1 / -1; margin: 0 0 .5rem; color: var(--brick); font-size: .78rem; line-height: 1.35; }
 .clause-lock { display: grid; gap: .4rem; margin: .75rem 0; font-size: .82rem; }
 .clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
+.package-table-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
+#package-table-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .constraint-card { margin-bottom: 1rem; }
 
 .workbench { padding: clamp(1.4rem, 4vw, 3.7rem); min-width: 0; }
@@ -190,7 +192,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -265,6 +267,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="clauses-import-button">Import clauses CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
+        <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
@@ -376,6 +379,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <h3 id="side-by-side-heading">Side-by-side package</h3>
             <p>Pin the current original selections, the solver recommendation, and your custom package in three columns. Each row is one clause. Group scores and overall approval use the same formula as the rest of the workshop. This comparison is a readout, not a vote.</p>
             <div id="side-by-side"></div>
+            <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
+            <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
+            <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
           </section>
           <section class="result-card constraint-card" aria-labelledby="constraints-heading">
             <h3 id="constraints-heading">Constraint checks</h3>
@@ -2082,6 +2088,34 @@ function formatRecommendedPackageMarkdown(proposal, result = findSmallestAgreeme
 }
 
 /**
+ * Markdown table of original, recommended, and pinned option labels.
+ * This is a decision aid, not a recorded vote or a legitimacy claim.
+ */
+function formatPinnedPackagesMarkdown(proposal, recommendedIds, customIds) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const compared = comparePinnedPackages(proposal, recommendedIds, customIds);
+  if (compared.status !== "ok") return compared;
+  const p = canonicalProposal(proposal);
+  const cell = (choice) => (choice ? briefText(choice.label) : "none");
+  const lines = [
+    "# Original, recommended, and pinned packages",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This table lists clause titles and option labels. It is a decision aid, not a recorded vote or a claim of legitimacy.",
+    "",
+    "| Clause | Original | Recommended | Pinned |",
+    "| --- | --- | --- | --- |",
+  ];
+  for (const row of compared.clauses) {
+    lines.push(`| ${briefText(row.clauseTitle)} | ${cell(row.original)} | ${cell(row.recommended)} | ${cell(row.custom)} |`);
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
+/**
  * Markdown list of veto groups whose average misses the required value.
  * This is a constraint readout, not a legal veto or a legitimacy claim.
  */
@@ -3333,6 +3367,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
@@ -3678,6 +3713,9 @@ function renderSideBySide(result) {
   const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
   const recommendedLock = recommendedIds ? `<p>${lockPackageButton(recommendedIds, "Lock recommended package")} Applying locks is one draft edit, so undo restores the previous locks. Locked search still reports a deliberation aid, not a decision.</p>` : "";
   $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(comparison.originalApproval)}. Recommended ${comparison.recommendedApproval == null ? "not found" : formatPercent(comparison.recommendedApproval)}. Custom ${formatPercent(comparison.customApproval)}. Original cost ${comparison.originalCost.toFixed(1)}. Recommended cost ${comparison.recommendedCost == null ? "not found" : comparison.recommendedCost.toFixed(1)}. Custom cost ${comparison.customCost.toFixed(1)}.</p>${recommendedLock}<div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th><th scope="col">Custom package</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th><th scope="col">Custom approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
+  const table = formatPinnedPackagesMarkdown(state.proposal, recommendedIds, customOptionIds());
+  const fallback = $("#package-table-fallback");
+  if (fallback) fallback.value = table.status === "ok" ? table.text : "";
 }
 
 function renderConstraints(result, vetoBlocks = new Set()) {
@@ -4463,6 +4501,22 @@ $("#copy-package-button").addEventListener("click", async () => {
     notifyDraft("Recommended package copied as Markdown. It is a decision aid, not a recorded vote.");
   } catch {
     notifyDraft("Could not copy to the clipboard. Export the brief instead.");
+  }
+});
+$("#copy-packages-table-button").addEventListener("click", async () => {
+  const result = currentResult();
+  if (result.status === "invalid") return notifyDraft("Fix the draft before copying the package table.");
+  const recommendedIds = result.agreement ? result.agreement.options.map((option) => option.id) : null;
+  const packaged = formatPinnedPackagesMarkdown(state.proposal, recommendedIds, customOptionIds());
+  if (packaged.status !== "ok") return notifyDraft(packaged.errors?.[0] ?? "Could not build the package table.");
+  const fallback = $("#package-table-fallback");
+  if (fallback) fallback.value = packaged.text;
+  try {
+    await navigator.clipboard.writeText(packaged.text);
+    notifyDraft("Package table copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the package table from the Markdown box. It is not a recorded vote.");
   }
 });
 $("#copy-veto-button").addEventListener("click", async () => {

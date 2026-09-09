@@ -1561,6 +1561,34 @@ export function formatRecommendedPackageMarkdown(proposal, result = findSmallest
 }
 
 /**
+ * Markdown table of original, recommended, and pinned option labels.
+ * This is a decision aid, not a recorded vote or a legitimacy claim.
+ */
+export function formatPinnedPackagesMarkdown(proposal, recommendedIds, customIds) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const compared = comparePinnedPackages(proposal, recommendedIds, customIds);
+  if (compared.status !== "ok") return compared;
+  const p = canonicalProposal(proposal);
+  const cell = (choice) => (choice ? briefText(choice.label) : "none");
+  const lines = [
+    "# Original, recommended, and pinned packages",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This table lists clause titles and option labels. It is a decision aid, not a recorded vote or a claim of legitimacy.",
+    "",
+    "| Clause | Original | Recommended | Pinned |",
+    "| --- | --- | --- | --- |",
+  ];
+  for (const row of compared.clauses) {
+    lines.push(`| ${briefText(row.clauseTitle)} | ${cell(row.original)} | ${cell(row.recommended)} | ${cell(row.custom)} |`);
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
+/**
  * Markdown list of veto groups whose average misses the required value.
  * This is a constraint readout, not a legal veto or a legitimacy claim.
  */

@@ -33,6 +33,7 @@ import {
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
+  formatPinnedPackagesMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -658,6 +659,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
@@ -1003,6 +1005,9 @@ function renderSideBySide(result) {
   const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
   const recommendedLock = recommendedIds ? `<p>${lockPackageButton(recommendedIds, "Lock recommended package")} Applying locks is one draft edit, so undo restores the previous locks. Locked search still reports a deliberation aid, not a decision.</p>` : "";
   $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(comparison.originalApproval)}. Recommended ${comparison.recommendedApproval == null ? "not found" : formatPercent(comparison.recommendedApproval)}. Custom ${formatPercent(comparison.customApproval)}. Original cost ${comparison.originalCost.toFixed(1)}. Recommended cost ${comparison.recommendedCost == null ? "not found" : comparison.recommendedCost.toFixed(1)}. Custom cost ${comparison.customCost.toFixed(1)}.</p>${recommendedLock}<div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th><th scope="col">Custom package</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th><th scope="col">Custom approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
+  const table = formatPinnedPackagesMarkdown(state.proposal, recommendedIds, customOptionIds());
+  const fallback = $("#package-table-fallback");
+  if (fallback) fallback.value = table.status === "ok" ? table.text : "";
 }
 
 function renderConstraints(result, vetoBlocks = new Set()) {
@@ -1788,6 +1793,22 @@ $("#copy-package-button").addEventListener("click", async () => {
     notifyDraft("Recommended package copied as Markdown. It is a decision aid, not a recorded vote.");
   } catch {
     notifyDraft("Could not copy to the clipboard. Export the brief instead.");
+  }
+});
+$("#copy-packages-table-button").addEventListener("click", async () => {
+  const result = currentResult();
+  if (result.status === "invalid") return notifyDraft("Fix the draft before copying the package table.");
+  const recommendedIds = result.agreement ? result.agreement.options.map((option) => option.id) : null;
+  const packaged = formatPinnedPackagesMarkdown(state.proposal, recommendedIds, customOptionIds());
+  if (packaged.status !== "ok") return notifyDraft(packaged.errors?.[0] ?? "Could not build the package table.");
+  const fallback = $("#package-table-fallback");
+  if (fallback) fallback.value = packaged.text;
+  try {
+    await navigator.clipboard.writeText(packaged.text);
+    notifyDraft("Package table copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the package table from the Markdown box. It is not a recorded vote.");
   }
 });
 $("#copy-veto-button").addEventListener("click", async () => {

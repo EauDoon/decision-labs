@@ -68,6 +68,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="clauses-import-button">Import clauses CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
+        <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
@@ -179,6 +180,9 @@ SOFTWARE.
             <h3 id="side-by-side-heading">Side-by-side package</h3>
             <p>Pin the current original selections, the solver recommendation, and your custom package in three columns. Each row is one clause. Group scores and overall approval use the same formula as the rest of the workshop. This comparison is a readout, not a vote.</p>
             <div id="side-by-side"></div>
+            <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
+            <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
+            <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
           </section>
           <section class="result-card constraint-card" aria-labelledby="constraints-heading">
             <h3 id="constraints-heading">Constraint checks</h3>

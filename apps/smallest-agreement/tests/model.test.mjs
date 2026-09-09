@@ -28,6 +28,7 @@ import {
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
+  formatPinnedPackagesMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -1457,6 +1458,30 @@ test("recommended package Markdown copies selected options without claiming legi
     ] }],
   });
   assert.equal(formatRecommendedPackageMarkdown(infeasible).status, "unavailable");
+});
+
+test("pinned package Markdown table lists original, recommended, and pinned labels without recording a vote", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("one-original", true, { g: 50 }),
+      option("one-change", false, { g: 90 }, 2),
+      option("one-other", false, { g: 60 }, 4),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const markdown = formatPinnedPackagesMarkdown(input, ["one-change"], ["one-other"]);
+  assert.equal(markdown.status, "ok");
+  assert.match(markdown.text, /^# Original, recommended, and pinned packages\n/u);
+  assert.match(markdown.text, /Proposal: Test proposal/u);
+  assert.match(markdown.text, /not a recorded vote or a claim of legitimacy/u);
+  assert.match(markdown.text, /\| Clause \| Original \| Recommended \| Pinned \|/u);
+  assert.match(markdown.text, /\| Hours \| one-original \| one-change \| one-other \|/u);
+  assert.doesNotMatch(markdown.text, /[\u2014\u2013]/u);
+  const withoutRecommended = formatPinnedPackagesMarkdown(input, null, ["one-original"]);
+  assert.match(withoutRecommended.text, /\| Hours \| one-original \| none \| one-original \|/u);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(formatPinnedPackagesMarkdown({ title: "" }, ["one-change"], ["one-other"]).status, "invalid");
+  assert.equal(formatPinnedPackagesMarkdown(input, ["missing"], ["one-other"]).status, "invalid");
 });
 
 test("veto-blocker Markdown lists unmet veto constraints without claiming legitimacy", () => {
