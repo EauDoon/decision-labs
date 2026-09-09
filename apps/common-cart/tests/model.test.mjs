@@ -199,13 +199,13 @@ test("validation rejects non-objects, empty collections, and unknown identifiers
   assert.throws(() => validateScenario([]), /must be an object/);
   const emptyBuyers = clonePreset("neighbourhood");
   emptyBuyers.buyers = [];
-  assert.throws(() => validateScenario(emptyBuyers), /Buyers must contain 1 to 40 entries/);
+  assert.equal(validateScenario(emptyBuyers).buyers.length, 0);
   const emptyOffers = clonePreset("neighbourhood");
   emptyOffers.offers = [];
   assert.throws(() => validateScenario(emptyOffers), /Offers must contain 1 to 40 entries/);
   const tooMany = clonePreset("neighbourhood");
   tooMany.buyers = Array.from({ length: 41 }, (_, index) => ({ ...tooMany.buyers[0], id: `B${index}` }));
-  assert.throws(() => validateScenario(tooMany), /Buyers must contain 1 to 40 entries/);
+  assert.throws(() => validateScenario(tooMany), /Buyers must contain at most 40 entries/);
   assert.throws(() => clonePreset("missing"), /Unknown preset/);
   assert.throws(() => evaluateOffer(clonePreset("neighbourhood"), "missing-offer"), /Offer was not found/);
   assert.throws(() => decodeScenario(null), /must be a string/);

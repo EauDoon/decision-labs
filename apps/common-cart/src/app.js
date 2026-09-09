@@ -262,7 +262,7 @@ function bindStaticEvents() {
     scenario.buyers.push({
       id: next,
       label: `Buyer ${scenario.buyers.length + 1}`,
-      category: scenario.buyers[0]?.category ?? "Product",
+      category: scenario.buyers[0]?.category ?? scenario.offers[0]?.category ?? "Product",
       quantity: 1,
       maxUnitPrice: 100,
       latestDeliveryDays: 7,
@@ -271,6 +271,18 @@ function bindStaticEvents() {
     renderEditor();
     refresh();
     elements.buyerRows.lastElementChild?.querySelector("input")?.focus();
+  });
+
+  document.querySelector("#restore-neighbourhood").addEventListener("click", () => {
+    if (!allowReplaceDraft()) return;
+    scenario = clonePreset("neighbourhood");
+    inspectedOfferId = scenario.offers[0]?.id ?? "";
+    document.querySelectorAll("[data-preset]").forEach((entry) => entry.classList.toggle("active", entry.dataset.preset === "neighbourhood"));
+    window.history.replaceState(null, "", window.location.pathname + window.location.search);
+    renderEditor();
+    refresh();
+    setStatus("Neighbourhood example restored. Undo returns to the empty buyer room.", true);
+    elements.buyerRows.querySelector("input")?.focus();
   });
 
   document.querySelector("#add-offer").addEventListener("click", () => {
@@ -481,7 +493,12 @@ function renderEditor() {
   elements.title.value = scenario.title;
   elements.currency.value = scenario.currency;
   elements.buyerRows.replaceChildren(...scenario.buyers.map(renderBuyerRow));
+  if (scenario.buyers.length === 0) {
+    setEmptyState(elements.buyerRows, 8, "No buyers are in this room.");
+  }
   elements.offerRows.replaceChildren(...scenario.offers.map(renderOfferRow));
+  const recovery = document.querySelector("#empty-buyer-recovery");
+  if (recovery) recovery.hidden = scenario.buyers.length > 0;
   const addBuyer = document.querySelector("#add-buyer");
   const addOffer = document.querySelector("#add-offer");
   addBuyer.disabled = scenario.buyers.length >= 40;
@@ -527,11 +544,14 @@ function renderBuyerRow(entry) {
     });
   });
   row.querySelector(".remove-row").addEventListener("click", () => {
-    if (scenario.buyers.length === 1) return setStatus("A room needs at least one buyer.");
     const index = scenario.buyers.findIndex(({ id }) => id === row.dataset.id);
     scenario.buyers = scenario.buyers.filter(({ id }) => id !== row.dataset.id);
     renderEditor();
     refresh();
+    if (scenario.buyers.length === 0) {
+      document.querySelector("#restore-neighbourhood")?.focus();
+      return;
+    }
     elements.buyerRows.children[Math.min(index, scenario.buyers.length - 1)]?.querySelector("input")?.focus();
   });
   return row;
@@ -766,7 +786,7 @@ function renderThreeRoomComparison(comparison) {
 
 function addDuplicateAction(row, kind, entry) {
   row.querySelector(".remove-row").setAttribute("aria-label", `Remove ${kind === "buyers" ? buyerDisplayLabel(entry) : entry.merchant} (${entry.id})`);
-  row.querySelector(".remove-row").disabled = scenario[kind].length === 1;
+  row.querySelector(".remove-row").disabled = kind === "offers" && scenario.offers.length === 1;
   row.querySelectorAll("input").forEach(input => input.setAttribute("aria-label", `${input.getAttribute("aria-label")} (${entry.id})`));
   const button = document.createElement("button");
   button.type = "button";
@@ -1098,6 +1118,13 @@ function outcomePresentation(outcome) {
 
 function renderDemand(rawScenario) {
   const groups = aggregateDemand(rawScenario);
+  if (groups.length === 0) {
+    const demandNote = document.createElement("p");
+    demandNote.className = "canvas-note";
+    demandNote.textContent = "No buyers are in this room, so there is no aggregate demand.";
+    elements.demandGroups.replaceChildren(demandNote);
+    return;
+  }
   const formatter = money(rawScenario.currency);
   const cards = groups.map((group) => {
     const card = document.createElement("article");

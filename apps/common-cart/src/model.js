@@ -522,8 +522,8 @@ export function validateScenario(candidate) {
   if (!/^[A-Za-z]{3}$/.test(currency)) throw new ScenarioError("Currency must be a three-letter ASCII code, such as AUD.");
   const buyers = own(candidate, "buyers");
   const offers = own(candidate, "offers");
-  if (!Array.isArray(buyers) || buyers.length < 1 || buyers.length > MAX_BUYERS) {
-    throw new ScenarioError(`Buyers must contain 1 to ${MAX_BUYERS} entries.`);
+  if (!Array.isArray(buyers) || buyers.length > MAX_BUYERS) {
+    throw new ScenarioError(`Buyers must contain at most ${MAX_BUYERS} entries.`);
   }
   if (!Array.isArray(offers) || offers.length < 1 || offers.length > MAX_OFFERS) {
     throw new ScenarioError(`Offers must contain 1 to ${MAX_OFFERS} entries.`);

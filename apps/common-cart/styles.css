@@ -188,6 +188,13 @@ table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
 th { padding: 0.65rem; color: #4f4c5e; background: #eee8dd; text-align: left; font-size: 0.69rem; letter-spacing: 0.06em; text-transform: uppercase; white-space: nowrap; }
 .th-note { margin-left: 0.35rem; font-weight: 600; letter-spacing: 0; text-transform: none; color: var(--muted); }
 td.empty-state { color: var(--muted); font-style: italic; }
+.empty-recovery {
+  margin: 0.85rem 0 0;
+  padding: 1rem 1.1rem;
+  border: 1px dashed var(--line-strong);
+  background: #fffefa;
+}
+.empty-recovery p { margin: 0 0 0.75rem; color: var(--muted); }
 td { padding: 0.48rem; border-top: 1px solid var(--line); vertical-align: middle; }
 td input { min-width: 86px; border-color: transparent; background: transparent; }
 td select {
