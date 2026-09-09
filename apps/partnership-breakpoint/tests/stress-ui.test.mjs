@@ -449,3 +449,20 @@ test('deal title and currency persist, display as a prefix, and reject illegal c
   assert.equal(Object.hasOwn(app.saved().deal, 'currency'), false);
   assert.match(app.markup(), /20,000\.00 units/);
 });
+
+test('duplicate and move roster controls keep unique ids and the original share sum', async () => {
+  const app = await workbench();
+  app.click('duplicate-participant', { index: '0' });
+  const duplicated = app.saved();
+  assert.equal(duplicated.participants.length, 4);
+  assert.equal(new Set(duplicated.participants.map((item) => item.id)).size, 4);
+  assert.equal(duplicated.participants[1].name, 'Platform copy');
+  assert.equal(duplicated.participants[1].revenueShare, 0);
+  assert.equal(duplicated.participants.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+  app.click('move-participant-down', { index: '0' });
+  assert.equal(app.saved().participants[0].id, 'participant-1');
+  assert.equal(app.saved().participants[1].id, 'platform');
+  app.click('move-participant-up', { index: '1' });
+  assert.deepEqual(app.saved().participants.map((item) => item.id), duplicated.participants.map((item) => item.id));
+  assert.equal(app.saved().participants.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+});

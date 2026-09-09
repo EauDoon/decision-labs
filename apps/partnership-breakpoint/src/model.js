@@ -671,6 +671,56 @@ export function makeParticipant(id) {
   };
 }
 
+/** @param {ParticipantInput[]} participants @param {string} [prefix] */
+export function nextUnusedParticipantId(participants, prefix = 'participant') {
+  const used = new Set(participants.map((item) => item.id));
+  let sequence = 1;
+  while (used.has(`${prefix}-${sequence}`)) sequence += 1;
+  return `${prefix}-${sequence}`;
+}
+
+/**
+ * Copies costs and constraints. The duplicate receives a unique id, a name suffix,
+ * and a zero revenue share so the original allocation still sums to the same total.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+export function duplicateParticipant(participants, index) {
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  if (participants.length >= MAX_PARTICIPANTS) {
+    throw new ValidationError([`Between 2 and ${MAX_PARTICIPANTS} participants are required.`]);
+  }
+  const source = participants[index];
+  let name = `${source.name} copy`;
+  if (name.length > 80) name = name.slice(0, 80);
+  if (name.trim() === '') name = 'Participant copy';
+  const copy = { ...source, id: nextUnusedParticipantId(participants), name, revenueShare: 0 };
+  const next = participants.map((item) => ({ ...item }));
+  next.splice(index + 1, 0, copy);
+  return next;
+}
+
+/**
+ * Reorders one participant. Out-of-range moves return a shallow copy unchanged.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ * @param {'up'|'down'} direction
+ */
+export function moveParticipant(participants, index, direction) {
+  const target = index + (direction === 'up' ? -1 : 1);
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length
+    || target < 0 || target >= participants.length) {
+    return Array.isArray(participants) ? participants.map((item) => ({ ...item })) : [];
+  }
+  const next = participants.map((item) => ({ ...item }));
+  const displaced = next[target];
+  next[target] = next[index];
+  next[index] = displaced;
+  return next;
+}
+
 /** Fee floors at current effective volume and fixed shares, not a demand forecast. */
 export function calculateFeeRequirements(config) {
   assertValidConfiguration(config);

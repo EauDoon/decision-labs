@@ -83,6 +83,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .participant-header { display: flex; gap: .5rem; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
 .participant-header strong { font-size: .84rem; }
 .participant-header button { font-size: .75rem; }
+.participant-roster { margin-top: 0; justify-content: flex-end; }
 
 .button-row, .preset-row { display: flex; flex-wrap: wrap; gap: .5rem; }
 .button-row { margin-top: 1rem; }
@@ -900,6 +901,56 @@ function makeParticipant(id) {
   };
 }
 
+/** @param {ParticipantInput[]} participants @param {string} [prefix] */
+function nextUnusedParticipantId(participants, prefix = 'participant') {
+  const used = new Set(participants.map((item) => item.id));
+  let sequence = 1;
+  while (used.has(`${prefix}-${sequence}`)) sequence += 1;
+  return `${prefix}-${sequence}`;
+}
+
+/**
+ * Copies costs and constraints. The duplicate receives a unique id, a name suffix,
+ * and a zero revenue share so the original allocation still sums to the same total.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+function duplicateParticipant(participants, index) {
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  if (participants.length >= MAX_PARTICIPANTS) {
+    throw new ValidationError([`Between 2 and ${MAX_PARTICIPANTS} participants are required.`]);
+  }
+  const source = participants[index];
+  let name = `${source.name} copy`;
+  if (name.length > 80) name = name.slice(0, 80);
+  if (name.trim() === '') name = 'Participant copy';
+  const copy = { ...source, id: nextUnusedParticipantId(participants), name, revenueShare: 0 };
+  const next = participants.map((item) => ({ ...item }));
+  next.splice(index + 1, 0, copy);
+  return next;
+}
+
+/**
+ * Reorders one participant. Out-of-range moves return a shallow copy unchanged.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ * @param {'up'|'down'} direction
+ */
+function moveParticipant(participants, index, direction) {
+  const target = index + (direction === 'up' ? -1 : 1);
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length
+    || target < 0 || target >= participants.length) {
+    return Array.isArray(participants) ? participants.map((item) => ({ ...item })) : [];
+  }
+  const next = participants.map((item) => ({ ...item }));
+  const displaced = next[target];
+  next[target] = next[index];
+  next[index] = displaced;
+  return next;
+}
+
 /** Fee floors at current effective volume and fixed shares, not a demand forecast. */
 function calculateFeeRequirements(config) {
   assertValidConfiguration(config);
@@ -1225,7 +1276,12 @@ function inputPanel() {
     <section class="participant-form" aria-labelledby="participant-${index}-title">
       <div class="participant-header">
         <strong id="participant-${index}-title">Participant ${index + 1}</strong>
-        <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
+        <div class="button-row participant-roster">
+          <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
+          <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
+          <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
+          <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
+        </div>
       </div>
       <div class="field-grid">
         ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text', title: 'Display name, 1 through 80 characters after trimming spaces.' })}
@@ -1541,6 +1597,28 @@ function attachEvents() {
       state.participants.push(makeParticipant(nextParticipantId()));
       activePreset = '';
       refresh('Participant added. Set shares to reconcile to 1.');
+    }
+    if (action === 'duplicate-participant') {
+      try {
+        const next = duplicateParticipant(state.participants, Number(button.dataset.index));
+        checkpoint();
+        state.participants = next;
+        activePreset = '';
+        refresh('Participant duplicated with a unique id and a zero share so the current allocation still sums to the same total.');
+      } catch (error) {
+        if (!(error instanceof ValidationError)) throw error;
+        setNotice(`Duplicate rejected: ${summarizeErrors(error.errors)}`);
+      }
+    }
+    if (action === 'move-participant-up' || action === 'move-participant-down') {
+      const direction = action === 'move-participant-up' ? 'up' : 'down';
+      const next = moveParticipant(state.participants, Number(button.dataset.index), direction);
+      const unchanged = next.every((item, index) => item.id === state.participants[index].id);
+      if (unchanged) return;
+      checkpoint();
+      state.participants = next;
+      activePreset = '';
+      refresh(direction === 'up' ? 'Participant moved up. Shares are unchanged.' : 'Participant moved down. Shares are unchanged.');
     }
     if (action === 'remove-participant' && state.participants.length > 2) {
       checkpoint();

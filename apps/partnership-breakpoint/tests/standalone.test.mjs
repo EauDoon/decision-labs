@@ -12,9 +12,11 @@ const appImport = `import {
   calculatePartnership,
   calculateFeeRequirements,
   clonePreset,
+  duplicateParticipant,
   evaluateStressGrid,
   makeParticipant,
   materializeStressCase,
+  moveParticipant,
   validateConfiguration,
 } from './model.js';
 

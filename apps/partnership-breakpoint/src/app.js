@@ -7,9 +7,11 @@ import {
   calculatePartnership,
   calculateFeeRequirements,
   clonePreset,
+  duplicateParticipant,
   evaluateStressGrid,
   makeParticipant,
   materializeStressCase,
+  moveParticipant,
   validateConfiguration,
 } from './model.js';
 
@@ -310,7 +312,12 @@ function inputPanel() {
     <section class="participant-form" aria-labelledby="participant-${index}-title">
       <div class="participant-header">
         <strong id="participant-${index}-title">Participant ${index + 1}</strong>
-        <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
+        <div class="button-row participant-roster">
+          <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
+          <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
+          <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
+          <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
+        </div>
       </div>
       <div class="field-grid">
         ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text', title: 'Display name, 1 through 80 characters after trimming spaces.' })}
@@ -626,6 +633,28 @@ function attachEvents() {
       state.participants.push(makeParticipant(nextParticipantId()));
       activePreset = '';
       refresh('Participant added. Set shares to reconcile to 1.');
+    }
+    if (action === 'duplicate-participant') {
+      try {
+        const next = duplicateParticipant(state.participants, Number(button.dataset.index));
+        checkpoint();
+        state.participants = next;
+        activePreset = '';
+        refresh('Participant duplicated with a unique id and a zero share so the current allocation still sums to the same total.');
+      } catch (error) {
+        if (!(error instanceof ValidationError)) throw error;
+        setNotice(`Duplicate rejected: ${summarizeErrors(error.errors)}`);
+      }
+    }
+    if (action === 'move-participant-up' || action === 'move-participant-down') {
+      const direction = action === 'move-participant-up' ? 'up' : 'down';
+      const next = moveParticipant(state.participants, Number(button.dataset.index), direction);
+      const unchanged = next.every((item, index) => item.id === state.participants[index].id);
+      if (unchanged) return;
+      checkpoint();
+      state.participants = next;
+      activePreset = '';
+      refresh(direction === 'up' ? 'Participant moved up. Shares are unchanged.' : 'Participant moved down. Shares are unchanged.');
     }
     if (action === 'remove-participant' && state.participants.length > 2) {
       checkpoint();

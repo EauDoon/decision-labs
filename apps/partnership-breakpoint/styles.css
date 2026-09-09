@@ -51,6 +51,7 @@ button:focus-visible, input:focus-visible, a:focus-visible { outline: 3px solid 
 .participant-header { display: flex; gap: .5rem; align-items: center; justify-content: space-between; margin-bottom: .7rem; }
 .participant-header strong { font-size: .84rem; }
 .participant-header button { font-size: .75rem; }
+.participant-roster { margin-top: 0; justify-content: flex-end; }
 
 .button-row, .preset-row { display: flex; flex-wrap: wrap; gap: .5rem; }
 .button-row { margin-top: 1rem; }
