@@ -7,6 +7,7 @@ import {
   evaluatePackage,
   stressPackage,
   compareScenarioInputs,
+  formatEvidenceCsv,
   findSmallestAgreement,
   formatPercent,
   formatDecisionBrief,
@@ -355,6 +356,7 @@ function renderResults(result) {
   const alert = $("#result-alert");
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
+  $("#csv-button").disabled = result.status === "invalid";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -778,6 +780,11 @@ $("#export-button").addEventListener("click", () => {
     return;
   }
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
+});
+$("#csv-button").addEventListener("click", () => {
+  if (!validateProposal(state.proposal).valid) return notifyDraft("Fix the draft before exporting CSV.");
+  downloadText("smallest-agreement-evidence.csv", "\uFEFF" + formatEvidenceCsv(state.proposal, currentResult()), "text/csv;charset=utf-8");
+  notifyDraft("CSV downloaded with every option, group, constraint, support score, and recommendation marker.");
 });
 $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");

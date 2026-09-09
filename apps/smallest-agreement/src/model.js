@@ -511,3 +511,19 @@ export function compareScenarioInputs(before, after) {
   return [...new Set([...previous.keys(), ...current.keys()])].filter((field) => previous.get(field) !== current.get(field))
     .map((field) => ({ field, before: previous.get(field), after: current.get(field) }));
 }
+
+
+/** Export every modeled input with spreadsheet-safe text cells and explicit recommendation status. */
+export function formatEvidenceCsv(proposal, result = findSmallestAgreement(proposal)) {
+  const p = canonicalProposal(proposal);
+  const rows = [["proposal", "threshold", "maximum_change_cost", "search_status", "clause_id", "clause", "locked_option_id", "option_id", "option", "original", "recommended", "change_cost", "group_id", "group", "weight", "minimum_support", "support"]];
+  for (const [index, clause] of p.clauses.entries()) for (const option of clause.options) for (const group of p.groups) {
+    rows.push([p.title, p.threshold, p.maxChangeCost ?? "unlimited", result.status, clause.id, clause.title, clause.lockedOptionId ?? "none", option.id, option.label, option.original ? "yes" : "no", result.agreement ? (result.agreement.options[index].id === option.id ? "yes" : "no") : "no recommendation", option.changeCost, group.id, group.name, group.weight, group.minSupport ?? "none", option.support[group.id]]);
+  }
+  const cell = (value) => {
+    let text = String(value);
+    if (typeof value === "string" && /^\s*[=+@-]/u.test(text)) text = "'" + text;
+    return '"' + text.replaceAll('"', '""') + '"';
+  };
+  return rows.map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";
+}

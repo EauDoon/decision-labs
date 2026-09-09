@@ -21,6 +21,7 @@ const appImport = `import {
   evaluatePackage,
   stressPackage,
   compareScenarioInputs,
+  formatEvidenceCsv,
   findSmallestAgreement,
   formatPercent,
   formatDecisionBrief,

@@ -14,6 +14,7 @@ import {
   evaluatePackage,
   stressPackage,
   compareScenarioInputs,
+  formatEvidenceCsv,
   findSmallestAgreement,
   formatDecisionBrief,
   validateProposal,
@@ -716,4 +717,23 @@ test("scenario comparison identifies input changes and does not invent unchanged
   assert.ok(changes.some(row => row.field === "Approval threshold" && row.before === 70 && row.after === 80));
   assert.ok(changes.some(row => row.field.includes("minimum support") && row.before === undefined));
   assert.ok(changes.some(row => row.before === 90 && row.after === 85));
+});
+
+
+test("evidence CSV includes every input and protects spreadsheet text cells", () => {
+  const input = proposal({ clauses: [{ id: "one", title: 'Clause, "quoted"', options: [
+    option("original", true, { g: 60 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 70 }, 1),
+  ] }] });
+  input.title = '=HYPERLINK("unsafe")';
+  input.groups[0].name = '  +SUM(1,2)';
+  input.groups[0].minSupport = 65;
+  input.maxChangeCost = 1;
+  const csv = formatEvidenceCsv(input);
+  assert.equal(csv.split("\r\n").length, 5);
+  assert.ok(csv.includes("\"'=HYPERLINK(\"\"unsafe\"\")\""));
+  assert.ok(csv.includes("\"'  +SUM(1,2)\""));
+  assert.ok(csv.includes('Clause, ""quoted""'));
+  assert.ok(csv.includes('"minimum_support","support"'));
+  assert.ok(csv.includes('"cheap","cheap","no","yes","1"'));
+  assert.equal(csv, formatEvidenceCsv(input));
 });

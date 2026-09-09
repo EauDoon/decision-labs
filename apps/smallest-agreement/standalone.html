@@ -164,6 +164,7 @@ canvas { display: block; width: 100%; height: auto; min-height: 190px; margin-to
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
         <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
         <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
+        <button class="button button-secondary" type="button" id="csv-button">Export evidence CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
@@ -806,6 +807,22 @@ function compareScenarioInputs(before, after) {
     .map((field) => ({ field, before: previous.get(field), after: current.get(field) }));
 }
 
+
+/** Export every modeled input with spreadsheet-safe text cells and explicit recommendation status. */
+function formatEvidenceCsv(proposal, result = findSmallestAgreement(proposal)) {
+  const p = canonicalProposal(proposal);
+  const rows = [["proposal", "threshold", "maximum_change_cost", "search_status", "clause_id", "clause", "locked_option_id", "option_id", "option", "original", "recommended", "change_cost", "group_id", "group", "weight", "minimum_support", "support"]];
+  for (const [index, clause] of p.clauses.entries()) for (const option of clause.options) for (const group of p.groups) {
+    rows.push([p.title, p.threshold, p.maxChangeCost ?? "unlimited", result.status, clause.id, clause.title, clause.lockedOptionId ?? "none", option.id, option.label, option.original ? "yes" : "no", result.agreement ? (result.agreement.options[index].id === option.id ? "yes" : "no") : "no recommendation", option.changeCost, group.id, group.name, group.weight, group.minSupport ?? "none", option.support[group.id]]);
+  }
+  const cell = (value) => {
+    let text = String(value);
+    if (typeof value === "string" && /^\s*[=+@-]/u.test(text)) text = "'" + text;
+    return '"' + text.replaceAll('"', '""') + '"';
+  };
+  return rows.map((row) => row.map(cell).join(",")).join("\r\n") + "\r\n";
+}
+
 const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const MAX_SCENARIOS = 20;
@@ -1148,6 +1165,7 @@ function renderResults(result) {
   const alert = $("#result-alert");
   const meta = $("#search-meta");
   $("#export-button").disabled = result.status === "invalid";
+  $("#csv-button").disabled = result.status === "invalid";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
   if (result.status === "too_large") {
@@ -1571,6 +1589,11 @@ $("#export-button").addEventListener("click", () => {
     return;
   }
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
+});
+$("#csv-button").addEventListener("click", () => {
+  if (!validateProposal(state.proposal).valid) return notifyDraft("Fix the draft before exporting CSV.");
+  downloadText("smallest-agreement-evidence.csv", "\uFEFF" + formatEvidenceCsv(state.proposal, currentResult()), "text/csv;charset=utf-8");
+  notifyDraft("CSV downloaded with every option, group, constraint, support score, and recommendation marker.");
 });
 $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");
