@@ -86,6 +86,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Gate Gantt in Weekend Gap/);
   assert.match(html, /CSV roster, capacity, and notes in Partnership Breakpoint 1\.4\.1/);
   assert.match(html, /Volume-to-hold, stress CSV, and studio preset in Partnership Breakpoint 1\.4\.2/);
+  assert.match(html, /Roster export, file compare, and marketplace preset in Partnership Breakpoint 1\.4\.3/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -109,6 +110,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /share-to-hold,\s+residual\s+coverage, veto groups, and the gate Gantt/);
   assert.match(readme, /CSV roster, capacity, and notes/);
   assert.match(readme, /volume-to-hold, stress-grid CSV/);
+  assert.match(readme, /roster export, imported-JSON compare/);
   assert.match(readme, /leftover\/tertiary fill/);
   assert.match(readme, /offer CSV import, buyer\s+sort/);
   assert.match(readme, /offer CSV export, variant\s+filter/);

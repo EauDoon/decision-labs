@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.4.3
+
+- Export participant CSV uses the same columns as import, with formula-safe cells. Empty optional capacity and commitment stay blank so a later import restores null. Identifiers are omitted because import regenerates them.
+- Press `n` to focus Add participant, or add one if that control is missing. Shortcuts stay ignored while a field is focused.
+- Download tornado SVG writes the displayed chart as a standalone SVG file with an XML declaration and SVG namespace.
+- Compare current case with imported JSON aligns participants by identifier. Missing identifiers are labeled rather than filled with zeros. The compare does not replace the draft.
+- A shared display name on two participants shows a warning. It does not block edits and is not a legitimacy claim.
+- Paste a TSV or CSV roster into the textarea. Tabs on the first line parse as TSV, then the same CSV validation applies. Deal terms are unchanged.
+- Press `s` to jump to share-to-hold (the preview if it is open, otherwise the first solver).
+- Print redacted uses Participant 1 through N on the print path and in the print stylesheet. The saved case is unchanged.
+- Copy visible cases CSV copies the currently displayed stress-grid rows, including after collapsing all-hold cases. It does not replace the download control. Clipboard falls back to a textarea.
+- Added the Four-party marketplace starting point, distinct from Balanced, Creator take-rate, Three-party JV, and Two-party 50/50 studio.
+
 ## 1.4.2
 
 - Added a volume-to-hold solver: binary search for the minimum monthly volume at which a named participant holds, with fee and shares fixed. Preview, then Apply. Impossible names the failing tests. This is a solvability result, not a forecast.

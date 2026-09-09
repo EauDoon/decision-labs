@@ -24,4 +24,8 @@ test('exportDownloadName includes a title slug and falls back to the current nam
   assert.equal(exportDownloadName('csv', 'Harbor JV'), 'partnership-breakpoint-harbor-jv-stress.csv');
   assert.equal(exportDownloadName('csv-visible', 'Harbor JV'), 'partnership-breakpoint-harbor-jv-stress-visible.csv');
   assert.equal(exportDownloadName('csv-visible', ''), 'partnership-breakpoint-stress-visible.csv');
+  assert.equal(exportDownloadName('participants', 'Harbor JV'), 'partnership-breakpoint-harbor-jv-participants.csv');
+  assert.equal(exportDownloadName('participants', ''), 'partnership-breakpoint-participants.csv');
+  assert.equal(exportDownloadName('tornado', 'Harbor JV'), 'partnership-breakpoint-harbor-jv-tornado.svg');
+  assert.equal(exportDownloadName('tornado', ''), 'partnership-breakpoint-tornado.svg');
 });
