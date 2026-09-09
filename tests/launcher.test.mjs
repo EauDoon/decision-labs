@@ -149,7 +149,7 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(notFoundPage(), /Weekend Gap/);
   assert.match(notFoundPage(), /href="\/"/);
   assert.match(notFoundPage(), /Current catalog:/);
-  assert.match(notFoundPage(), catalogVersionLine());
+  assert.equal(notFoundPage().includes(catalogVersionLine()), true);
   assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
 
   const missing = await get('/README.md');
@@ -160,7 +160,7 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap/);
   assert.match(missing.body, /href="\/"/);
   assert.match(missing.body, /Current catalog:/);
-  assert.match(missing.body, catalogVersionLine());
+  assert.equal(missing.body.includes(catalogVersionLine()), true);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
   assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
 
@@ -204,5 +204,5 @@ test('404 version listing does not expand PUBLIC_PATHS or change CSP', () => {
   );
   assert.equal(publicFile('/package.json'), null);
   assert.equal(publicFile('/apps/weekend-gap/MODEL.md'), null);
-  assert.match(notFoundPage(), catalogVersionLine());
+  assert.equal(notFoundPage().includes(catalogVersionLine()), true);
 });
