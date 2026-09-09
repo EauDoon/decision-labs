@@ -113,14 +113,21 @@ button.danger:hover { background: var(--coral); color: white; }
 .file-button input { position: absolute; inset: 0; opacity: 0; cursor: pointer; }
 .file-button:focus-within { outline: 3px solid var(--cobalt); outline-offset: 2px; }
 .results-jump {
+  position: sticky;
+  top: 0;
+  z-index: 6;
   display: flex;
   flex-wrap: wrap;
+  align-items: center;
   gap: .35rem .9rem;
   padding: .65rem 1rem;
   border: 1px solid var(--line);
   background: #fbfaf6;
+  box-shadow: 0 1px 0 var(--paper-deep);
 }
 .results-jump a { color: var(--cobalt); font-weight: 650; font-size: .82rem; }
+.results-jump a:focus-visible { outline: 3px solid var(--cobalt); outline-offset: 2px; }
+.results-jump:focus-within { border-color: var(--cobalt); }
 .visually-hidden {
   position: absolute;
   width: 1px;
@@ -274,7 +281,7 @@ input[aria-invalid="true"] { border: 2px solid #b42318; }
 @media print {
   @page { size: landscape; margin: 12mm; }
   body { background: white; color: black; font-size: 10pt; }
-  .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview, .coach-overlay, .help-overlay { display: none !important; }
+  .inputs, button, .site-nav, canvas, .legend, .case-details, .stress-preview, .coach-overlay, .help-overlay, .results-jump { display: none !important; }
   .app-grid, .results, .disclosure-grid { display: block; }
   .panel, .status-card { box-shadow: none; border-color: #777; margin-bottom: 12pt; }
   .table-wrap { overflow: visible; }
@@ -1696,8 +1703,10 @@ function resultsPanel(result) {
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
     <section class="print-only"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
-    <nav class="results-jump" aria-label="Jump in results">
+    <nav class="results-jump" aria-label="Jump in results" id="results-jump">
+      <span class="eyebrow">Jump in results</span>
       <a href="#first-breakpoint">First breakpoint</a>
+      <a href="#fee-guidance-title">Fee guide</a>
       <a href="#charts-title">Charts</a>
       <a href="#compound-title">Compound stress</a>
       <a href="#participant-ledger">Participant ledger</a>

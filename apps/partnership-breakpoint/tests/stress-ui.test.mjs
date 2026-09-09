@@ -105,6 +105,21 @@ test('standalone displays the complete compound grid with accessible controls an
   assert.match(app.markup(), /data-action="apply-stress-proposal" disabled/);
 });
 
+test('results jump nav is sticky, labeled, and keyboard-focusable via in-page links', async () => {
+  const app = await workbench();
+  const html = await buildStandalone();
+  assert.match(app.markup(), /<nav class="results-jump" aria-label="Jump in results" id="results-jump">/);
+  assert.match(app.markup(), /href="#first-breakpoint">First breakpoint<\/a>/);
+  assert.match(app.markup(), /href="#fee-guidance-title">Fee guide<\/a>/);
+  assert.match(app.markup(), /href="#charts-title">Charts<\/a>/);
+  assert.match(app.markup(), /href="#compound-title">Compound stress<\/a>/);
+  assert.match(app.markup(), /href="#participant-ledger">Participant ledger<\/a>/);
+  assert.match(html, /\.results-jump \{[\s\S]*position: sticky;/);
+  assert.match(html, /\.results-jump a:focus-visible/);
+  assert.match(app.markup(), /id="first-breakpoint"/);
+  assert.match(app.markup(), /id="participant-ledger"/);
+});
+
 test('first breakpoint card reports capacity-limited volume growth', async () => {
   const app = await workbench();
   const config = clonePreset('balanced');
