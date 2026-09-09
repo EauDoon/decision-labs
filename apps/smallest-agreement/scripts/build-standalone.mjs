@@ -19,6 +19,7 @@ const appImport = `import {
   MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
   clauseContributions,
+  comparePinnedPackages,
   explorePackageGaps,
   evaluatePackage,
   formatSupportMatrixCsv,

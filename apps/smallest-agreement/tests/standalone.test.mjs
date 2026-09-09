@@ -42,6 +42,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="shortcut-overlay"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
+  assert.match(html, /Custom package/u);
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="support-drop-range"/u);
@@ -71,7 +72,11 @@ async function savedWorkbench(storage, hash = "") {
     return elements.get(selector);
   };
   const context = vm.createContext({ console, TextDecoder, Uint8Array, atob,
-    document: { querySelector: element, addEventListener: (name, callback) => documentEvents.set(name, callback) },
+    document: {
+      querySelector: element,
+      querySelectorAll: () => [],
+      addEventListener: (name, callback) => documentEvents.set(name, callback),
+    },
     window: { devicePixelRatio: 1, addEventListener() {} },
     location: { hash, protocol: "file:" },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
@@ -111,6 +116,7 @@ async function savedWorkbench(storage, hash = "") {
     },
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
+    sideBySide: () => element("#side-by-side").innerHTML,
     coachHidden: () => element("#coach-overlay").hidden,
     clickAction: (action, dataset = {}) => {
       documentEvents.get("click")({
@@ -119,6 +125,11 @@ async function savedWorkbench(storage, hash = "") {
             ? { disabled: false, dataset: { action, ...dataset } }
             : null,
         },
+      });
+    },
+    changeManual: (clauseId, optionId) => {
+      documentEvents.get("change")({
+        target: { dataset: { field: "manual-option", clauseId }, value: optionId },
       });
     },
   };
@@ -522,4 +533,16 @@ test("clause filter matches title or option labels without changing the stored d
   assert.match(app.clauses(), /Weekend market use/u);
   assert.doesNotMatch(app.clauses(), /Park access hours/u);
   assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+});
+
+test("side-by-side pins original, solver, and custom package columns", async () => {
+  const app = await savedWorkbench(new Map());
+  assert.match(app.sideBySide(), /Current original/u);
+  assert.match(app.sideBySide(), /Solver recommendation/u);
+  assert.match(app.sideBySide(), /Custom package/u);
+  assert.match(app.sideBySide(), /Custom approval/u);
+  assert.match(app.sideBySide(), /Close at 20:00 every day/u);
+  app.changeManual("hours", "hours-pilot");
+  assert.match(app.sideBySide(), /Trial a 21:00 Friday close for three months/u);
+  assert.match(app.sideBySide(), /\(custom\)/u);
 });

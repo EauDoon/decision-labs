@@ -5,6 +5,7 @@ import {
   MAX_OPTIONS_PER_CLAUSE,
   canonicalProposal,
   clauseContributions,
+  comparePinnedPackages,
   explorePackageGaps,
   evaluatePackage,
   formatSupportMatrixCsv,
@@ -594,6 +595,7 @@ $("#use-recommendation").addEventListener("click", () => {
   if (!result.agreement) return;
   manualSelection = Object.fromEntries(state.proposal.clauses.map((clause, index) => [clause.id, result.agreement.options[index].id]));
   renderManualPackage(result);
+  renderSideBySide(result);
 });
 
 function renderAlternatives(result) {
@@ -663,22 +665,37 @@ function renderGroupContribution(result) {
   $("#group-contribution").innerHTML = `<p>Inspecting the ${source}. Overall approval ${formatPercent(analysis.overallApproval)}. Original ${formatPercent(analysis.originalApproval)}. Method: weight share times group average. Pulls sum to the change in overall approval.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight share</th><th scope="col">Selected support</th><th scope="col">Original support</th><th scope="col">Contribution</th><th scope="col">Pull on overall approval</th></tr></thead><tbody>${analysis.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${(row.share * 100).toFixed(1)}%</td><td>${formatPercent(row.selectedApproval)}</td><td>${formatPercent(row.originalApproval)}</td><td>${formatPercent(row.contribution)}</td><td class="${row.overallPull > 0.0001 ? "positive" : row.overallPull < -0.0001 ? "negative" : ""}">${formatMargin(row.overallPull)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
+function customOptionIds() {
+  return state.proposal.clauses.map((clause) => {
+    if (clause.options.some((option) => option.id === manualSelection[clause.id])) return manualSelection[clause.id];
+    return clause.options.find((option) => option.original)?.id;
+  });
+}
+
+function choiceCell(choice, note = "") {
+  if (!choice) return "Not set";
+  return `${escapeHtml(choice.label)}<br><small>Cost ${choice.changeCost.toFixed(1)}${note}</small>`;
+}
+
 function renderSideBySide(result) {
   const current = result.baseline;
-  const agreement = result.agreement;
   if (!current) {
     $("#side-by-side").innerHTML = '<p class="empty-state">Side-by-side comparison needs a valid original package.</p>';
     return;
   }
-  const recommended = agreement ?? null;
-  const clauseRows = state.proposal.clauses.map((clause, index) => {
-    const original = current.options[index];
-    const next = recommended?.options[index];
-    const changed = next && next.id !== original.id;
-    return `<tr><th scope="row">${escapeHtml(clause.title)}</th><td>${escapeHtml(original.label)}<br><small>Cost ${original.changeCost.toFixed(1)}</small></td><td>${next ? `${escapeHtml(next.label)}<br><small>Cost ${next.changeCost.toFixed(1)}${changed ? " (changed)" : ""}</small>` : "No recommendation"}</td></tr>`;
+  const recommendedIds = result.agreement ? result.agreement.options.map((option) => option.id) : null;
+  const comparison = comparePinnedPackages(state.proposal, recommendedIds, customOptionIds());
+  if (comparison.status !== "ok") {
+    $("#side-by-side").innerHTML = `<p class="empty-state">${escapeHtml(comparison.errors[0])}</p>`;
+    return;
+  }
+  const clauseRows = comparison.clauses.map((row) => {
+    const changed = row.recommended && row.recommended.optionId !== row.original.optionId;
+    const customNote = row.custom && row.custom.optionId !== row.original.optionId ? " (custom)" : "";
+    return `<tr><th scope="row">${escapeHtml(row.clauseTitle)}</th><td>${choiceCell(row.original)}</td><td>${row.recommended ? choiceCell(row.recommended, changed ? " (changed)" : "") : "No recommendation"}</td><td>${choiceCell(row.custom, customNote)}</td></tr>`;
   }).join("");
-  const groupRows = current.byGroup.map((group, index) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.approval)}</td><td>${recommended ? formatPercent(recommended.byGroup[index].approval) : "No recommendation"}</td></tr>`).join("");
-  $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(current.approval)}. Recommended ${recommended ? formatPercent(recommended.approval) : "not found"}. Original cost ${current.changeCost.toFixed(1)}. Recommended cost ${recommended ? recommended.changeCost.toFixed(1) : "not found"}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
+  const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
+  $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(comparison.originalApproval)}. Recommended ${comparison.recommendedApproval == null ? "not found" : formatPercent(comparison.recommendedApproval)}. Custom ${formatPercent(comparison.customApproval)}. Original cost ${comparison.originalCost.toFixed(1)}. Recommended cost ${comparison.recommendedCost == null ? "not found" : comparison.recommendedCost.toFixed(1)}. Custom cost ${comparison.customCost.toFixed(1)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th><th scope="col">Custom package</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th><th scope="col">Custom approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
 }
 
 function renderConstraints(result) {
@@ -940,7 +957,9 @@ document.addEventListener("change", (event) => {
   }
   if (target.dataset.field === "manual-option") {
     manualSelection[target.dataset.clauseId] = target.value;
-    renderManualPackage(currentResult());
+    const result = currentResult();
+    renderManualPackage(result);
+    renderSideBySide(result);
     [...document.querySelectorAll('[data-field="manual-option"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId)?.focus();
     return;
   }

@@ -587,6 +587,57 @@ export function evaluatePackage(proposal, optionIds) {
   return { status: summary.constraints.met && summary.approval + EPSILON >= proposal.threshold ? "passing" : "not_passing", summary };
 }
 
+function packageChoice(summary, index) {
+  if (!summary) return null;
+  const option = summary.options[index];
+  return { optionId: option.id, label: option.label, changeCost: option.changeCost };
+}
+
+/**
+ * Pin original, solver, and custom packages side by side for inspection.
+ * This is a readout of three supplied packages, not a vote or a new optimization.
+ */
+export function comparePinnedPackages(proposal, recommendedIds, customIds) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const originalSummary = selectionSummary(proposal, getOriginalOptions(proposal));
+  let recommendedSummary = null;
+  if (recommendedIds != null) {
+    const recommended = evaluatePackage(proposal, recommendedIds);
+    if (recommended.status === "invalid") return recommended;
+    recommendedSummary = recommended.summary;
+  }
+  let customSummary = null;
+  if (customIds != null) {
+    const custom = evaluatePackage(proposal, customIds);
+    if (custom.status === "invalid") return custom;
+    customSummary = custom.summary;
+  }
+  return {
+    status: "ok",
+    originalApproval: originalSummary.approval,
+    recommendedApproval: recommendedSummary ? recommendedSummary.approval : null,
+    customApproval: customSummary ? customSummary.approval : null,
+    originalCost: originalSummary.changeCost,
+    recommendedCost: recommendedSummary ? recommendedSummary.changeCost : null,
+    customCost: customSummary ? customSummary.changeCost : null,
+    clauses: proposal.clauses.map((clause, index) => ({
+      clauseId: clause.id,
+      clauseTitle: clause.title,
+      original: packageChoice(originalSummary, index),
+      recommended: packageChoice(recommendedSummary, index),
+      custom: packageChoice(customSummary, index),
+    })),
+    groups: proposal.groups.map((group, index) => ({
+      id: group.id,
+      name: group.name,
+      original: originalSummary.byGroup[index].approval,
+      recommended: recommendedSummary ? recommendedSummary.byGroup[index].approval : null,
+      custom: customSummary ? customSummary.byGroup[index].approval : null,
+    })),
+  };
+}
+
 
 /** A deterministic downside scenario, not a probability estimate or a new optimization. */
 export function stressPackage(proposal, optionIds, supportDrop) {

@@ -13,6 +13,7 @@ import {
   canonicalProposal,
   clauseContributions,
   clauseWeightedSupport,
+  comparePinnedPackages,
   explorePackageGaps,
   evaluatePackage,
   formatSupportMatrixCsv,
@@ -693,6 +694,37 @@ test("custom packages evaluate all constraints without changing the draft", () =
   assert.equal(JSON.stringify(input), before);
   input.maxChangeCost = 1;
   assert.equal(evaluatePackage(input, ["better"]).status, "not_passing");
+});
+
+
+test("pinned package comparison shows original, solver, and custom columns without mutating the draft", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("original", true, { g: 40 }), option("better", false, { g: 90 }, 2), option("cheap", false, { g: 75 }, 1),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const pinned = comparePinnedPackages(input, ["better"], ["cheap"]);
+  assert.equal(pinned.status, "ok");
+  assert.equal(pinned.clauses[0].original.optionId, "original");
+  assert.equal(pinned.clauses[0].recommended.optionId, "better");
+  assert.equal(pinned.clauses[0].custom.optionId, "cheap");
+  assert.equal(pinned.originalCost, 0);
+  assert.equal(pinned.recommendedCost, 2);
+  assert.equal(pinned.customCost, 1);
+  assert.equal(pinned.recommendedApproval, 90);
+  assert.equal(pinned.customApproval, 75);
+  assert.equal(pinned.groups[0].original, 40);
+  assert.equal(pinned.groups[0].recommended, 90);
+  assert.equal(pinned.groups[0].custom, 75);
+  const withoutRecommended = comparePinnedPackages(input, null, ["original"]);
+  assert.equal(withoutRecommended.status, "ok");
+  assert.equal(withoutRecommended.clauses[0].recommended, null);
+  assert.equal(withoutRecommended.recommendedApproval, null);
+  assert.equal(comparePinnedPackages(input, ["missing"], ["original"]).status, "invalid");
+  assert.equal(comparePinnedPackages(input, ["better"], ["missing"]).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
 });
 
 
