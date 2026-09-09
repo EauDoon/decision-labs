@@ -1276,6 +1276,56 @@ export function compareThreeSnapshots(currentConfig, firstConfig, secondConfig) 
 }
 
 /**
+ * Aligns the current case with an imported JSON case by participant id.
+ * Missing identifiers are labeled rather than filled with zeros.
+ * @param {PartnershipConfig} currentConfig
+ * @param {PartnershipConfig} importedConfig
+ */
+export function compareImportedCase(currentConfig, importedConfig) {
+  assertValidConfiguration(currentConfig);
+  assertValidConfiguration(importedConfig);
+  const current = calculatePartnership(currentConfig);
+  const imported = calculatePartnership(importedConfig);
+  const order = [];
+  const seen = new Set();
+  for (const list of [current.participants, imported.participants]) {
+    for (const item of list) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        order.push(item.id);
+      }
+    }
+  }
+  const currentIds = new Set(current.participants.map((item) => item.id));
+  const importedIds = new Set(imported.participants.map((item) => item.id));
+  const sameRoster = currentIds.size === importedIds.size && [...currentIds].every((id) => importedIds.has(id));
+  const pick = (result, id) => {
+    const item = result.participants.find((participant) => participant.id === id);
+    if (!item) return null;
+    return { id: item.id, name: item.name, monthlyProfit: item.monthlyProfit, viable: item.viable };
+  };
+  const rows = order.map((id) => {
+    const currentRow = pick(current, id);
+    const importedRow = pick(imported, id);
+    return {
+      id,
+      name: currentRow?.name ?? importedRow?.name ?? id,
+      current: currentRow,
+      imported: importedRow,
+      rosterMismatch: !(currentRow && importedRow),
+    };
+  });
+  return {
+    sameRoster,
+    rows,
+    currentViable: current.viable,
+    importedViable: imported.viable,
+    currentTotalProfit: current.totalProfit,
+    importedTotalProfit: imported.totalProfit,
+  };
+}
+
+/**
  * Lowercase hyphenated slug for download names. Path separators and punctuation
  * collapse. Empty or unusable titles return an empty string.
  * @param {unknown} title

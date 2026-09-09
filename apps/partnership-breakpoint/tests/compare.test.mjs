@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { clonePreset, compareThreeSnapshots, dropAndReallocate, validateConfiguration } from '../src/model.js';
+import { clonePreset, compareImportedCase, compareThreeSnapshots, dropAndReallocate, validateConfiguration } from '../src/model.js';
 
 test('compareThreeSnapshots reports profit and hold status for matching rosters', () => {
   const current = clonePreset('balanced');
@@ -46,4 +46,30 @@ test('compareThreeSnapshots flags different participant sets instead of inventin
   const liquidity = vsDropped.rows.find((row) => row.id === 'liquidity-partner');
   assert.equal(liquidity.second, null);
   assert.equal(liquidity.rosterMismatch, true);
+});
+
+test('compareImportedCase reports profit diffs and labels different identifiers', () => {
+  const current = clonePreset('balanced');
+  const imported = clonePreset('balanced');
+  imported.participants[0].fixedMonthlyCost = 1900;
+  const matched = compareImportedCase(current, imported);
+  assert.equal(matched.sameRoster, true);
+  const platform = matched.rows.find((row) => row.id === 'platform');
+  assert.equal(platform.rosterMismatch, false);
+  assert.equal(platform.imported.monthlyProfit, platform.current.monthlyProfit - 100);
+  assert.equal(matched.currentViable, true);
+  assert.equal(matched.importedViable, true);
+
+  const other = clonePreset('creatorTakeRate');
+  const mismatched = compareImportedCase(current, other);
+  assert.equal(mismatched.sameRoster, false);
+  const creator = mismatched.rows.find((row) => row.id === 'creator');
+  assert.equal(creator.rosterMismatch, true);
+  assert.equal(creator.current, null);
+  assert.equal(creator.imported.id, 'creator');
+  assert.notEqual(creator.imported.monthlyProfit, 0);
+  const distributor = mismatched.rows.find((row) => row.id === 'distributor');
+  assert.equal(distributor.imported, null);
+  assert.equal(distributor.rosterMismatch, true);
+  assert.ok(distributor.current);
 });

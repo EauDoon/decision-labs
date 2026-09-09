@@ -102,6 +102,12 @@ async function workbench(protocol = 'file:', options = {}) {
       input.files = [{ size: file.size ?? String(contents).length, contents, pending, error }];
       events.get('change')({ target: input });
     },
+    compareImport: (config, pending, error = false, file = {}) => {
+      const contents = Object.hasOwn(file, 'contents') ? file.contents : JSON.stringify(config);
+      const input = new Input({ action: 'compare-import' }, '');
+      input.files = [{ size: file.size ?? String(contents).length, contents, pending, error, name: file.name ?? 'imported.json' }];
+      events.get('change')({ target: input });
+    },
     keydown: (key, extra = {}) => {
       let prevented = false;
       windowEvents.get('keydown')?.({
@@ -477,6 +483,36 @@ test('three-snapshot compare pins two library cases and flags roster mismatches'
   assert.match(app.markup(), /roster mismatch/);
   app.click('clear-three-compare');
   assert.doesNotMatch(app.markup(), /id="three-compare-title"/);
+});
+
+test('imported JSON compare keeps the current case and labels different identifiers', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  const before = app.saved();
+  const other = clonePreset('balanced');
+  other.participants[0].fixedMonthlyCost = 1900;
+  app.compareImport(other, undefined, false, { name: 'alt.json' });
+  assert.match(app.markup(), /id="imported-compare-title"/);
+  assert.match(app.markup(), /alt.json/);
+  assert.match(app.markup(), /The current case was not replaced/);
+  assert.match(app.markup(), /class="diff-up"/);
+  assert.match(app.markup(), /100.00 units/);
+  assert.match(app.markup(), /Missing identifiers are labeled, not zero-filled/);
+  assert.deepEqual(app.saved(), before);
+  const creator = clonePreset('creatorTakeRate');
+  app.compareImport(creator, undefined, false, { name: 'creator.json' });
+  assert.match(app.markup(), /Not in this roster/);
+  assert.match(app.markup(), /roster mismatch/);
+  assert.match(app.markup(), /n\/a/);
+  assert.deepEqual(app.saved(), before);
+  const unknown = clonePreset('balanced');
+  unknown.unexpected = true;
+  app.compareImport(unknown);
+  assert.match(app.notice(), /unknown field/);
+  assert.deepEqual(app.saved(), before);
+  app.click('clear-imported-compare');
+  assert.doesNotMatch(app.markup(), /id="imported-compare-title"/);
 });
 
 test('decision report exports reproducible inputs, outcomes, and safe participant prose', async () => {

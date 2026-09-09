@@ -1623,6 +1623,56 @@ function compareThreeSnapshots(currentConfig, firstConfig, secondConfig) {
 }
 
 /**
+ * Aligns the current case with an imported JSON case by participant id.
+ * Missing identifiers are labeled rather than filled with zeros.
+ * @param {PartnershipConfig} currentConfig
+ * @param {PartnershipConfig} importedConfig
+ */
+function compareImportedCase(currentConfig, importedConfig) {
+  assertValidConfiguration(currentConfig);
+  assertValidConfiguration(importedConfig);
+  const current = calculatePartnership(currentConfig);
+  const imported = calculatePartnership(importedConfig);
+  const order = [];
+  const seen = new Set();
+  for (const list of [current.participants, imported.participants]) {
+    for (const item of list) {
+      if (!seen.has(item.id)) {
+        seen.add(item.id);
+        order.push(item.id);
+      }
+    }
+  }
+  const currentIds = new Set(current.participants.map((item) => item.id));
+  const importedIds = new Set(imported.participants.map((item) => item.id));
+  const sameRoster = currentIds.size === importedIds.size && [...currentIds].every((id) => importedIds.has(id));
+  const pick = (result, id) => {
+    const item = result.participants.find((participant) => participant.id === id);
+    if (!item) return null;
+    return { id: item.id, name: item.name, monthlyProfit: item.monthlyProfit, viable: item.viable };
+  };
+  const rows = order.map((id) => {
+    const currentRow = pick(current, id);
+    const importedRow = pick(imported, id);
+    return {
+      id,
+      name: currentRow?.name ?? importedRow?.name ?? id,
+      current: currentRow,
+      imported: importedRow,
+      rosterMismatch: !(currentRow && importedRow),
+    };
+  });
+  return {
+    sameRoster,
+    rows,
+    currentViable: current.viable,
+    importedViable: imported.viable,
+    currentTotalProfit: current.totalProfit,
+    importedTotalProfit: imported.totalProfit,
+  };
+}
+
+/**
  * Lowercase hyphenated slug for download names. Path separators and punctuation
  * collapse. Empty or unusable titles return an empty string.
  * @param {unknown} title
@@ -1887,6 +1937,7 @@ let removedCase = null;
 let comparisonId = '';
 let pinFirstId = '';
 let pinSecondId = '';
+let importedCompare = null;
 let stressPreviewId = '';
 let shareHoldPreview = null;
 let feeHoldPreview = null;
@@ -2295,10 +2346,11 @@ function inputPanel(result) {
           ${libraryPanel()}
           <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button><button type="button" data-action="open-help">Keyboard shortcuts</button><button type="button" data-action="show-coach">Show tour</button></div>
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
-          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged. Export participant CSV uses those same columns and formula-safe cells.</p>
+          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Compare imported JSON shows honest diffs against the current draft without replacing it. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged. Export participant CSV uses those same columns and formula-safe cells.</p>
           <div class="button-row">
             <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
+            <label class="file-button">Compare imported JSON<input type="file" data-action="compare-import" accept="application/json,.json" /></label>
             <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
             <button type="button" data-action="reset">Reset</button>
           </div>
@@ -2323,7 +2375,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -2352,6 +2404,7 @@ function resultsPanel(result) {
       <a href="#first-breakpoint">First breakpoint</a>
       <a href="#fee-guidance-title">Fee guide</a>
       <a href="#three-compare-title">Three-snapshot compare</a>
+      ${importedCompare ? '<a href="#imported-compare-title">Imported JSON compare</a>' : ''}
       <a href="#charts-title">Charts</a>
       <a href="#compound-title">Compound stress</a>
       <a href="#participant-ledger">Participant ledger</a>
@@ -2363,6 +2416,7 @@ function resultsPanel(result) {
     ${briefCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
+    ${importedCompareSection()}
     ${breakpointSection(result)}
     <h2 id="charts-title" class="visually-hidden">Charts</h2>
     ${tornadoSection(result)}
@@ -2704,6 +2758,7 @@ function attachEvents() {
       return;
     }
     if (input.dataset.action === 'import' && input.files?.[0]) importFile(input.files[0]);
+    if (input.dataset.action === 'compare-import' && input.files?.[0]) importCompareFile(input.files[0]);
     if (input.dataset.action === 'import-participants-csv' && input.files?.[0]) importParticipantCsv(input.files[0]);
   });
   app.addEventListener('click', (event) => {
@@ -2785,6 +2840,7 @@ function attachEvents() {
       return;
     }
     if (action === 'clear-three-compare') { pinFirstId = ''; pinSecondId = ''; render(); return; }
+    if (action === 'clear-imported-compare') { importedCompare = null; render(); return; }
     if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
     if (['save-case', 'load-case', 'remove-case', 'restore-case', 'duplicate-case'].includes(action)) { handleLibraryAction(action, button.dataset.caseId); return; }
     if (action === 'undo' || action === 'redo') { travelHistory(action); return; }
@@ -2940,6 +2996,48 @@ function importFile(file) {
     if (sequence !== importSequence) return;
     const detail = compactErrorMessage(reader.error);
     setNotice(detail ? `Import rejected: file could not be read (${detail}).` : 'Import rejected: file could not be read.');
+  };
+  reader.readAsText(file);
+}
+
+function importCompareFile(file) {
+  const sequence = ++importSequence;
+  if (file.size === 0) {
+    setNotice('Compare rejected: the file is empty.');
+    return;
+  }
+  if (file.size > 250_000) {
+    setNotice('Compare rejected: files must be 250 KB or smaller.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    if (sequence !== importSequence) return;
+    const text = String(reader.result ?? '').trim();
+    if (!text) {
+      setNotice('Compare rejected: the file is empty.');
+      return;
+    }
+    try {
+      const candidate = JSON.parse(text);
+      const validation = validateConfiguration(candidate);
+      if (!validation.valid) throw new ValidationError(validation.errors);
+      importedCompare = { config: withStress(candidate), name: typeof file.name === 'string' && file.name.trim() ? file.name.trim().slice(0, 80) : 'Imported JSON' };
+      render();
+      document.querySelector('#imported-compare-title')?.focus();
+      setNotice('Imported JSON compared with the current draft. The current case is unchanged. Different identifiers are labeled, not filled with zeros.');
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        setNotice(`Compare rejected: ${summarizeErrors(error.errors)}`);
+        return;
+      }
+      setNotice(`Compare rejected: ${describeJsonFailure('the file', error)}`);
+    }
+  };
+  reader.onerror = () => {
+    if (sequence !== importSequence) return;
+    const detail = compactErrorMessage(reader.error);
+    setNotice(detail ? `Compare rejected: file could not be read (${detail}).` : 'Compare rejected: file could not be read.');
   };
   reader.readAsText(file);
 }
@@ -3137,6 +3235,23 @@ function threeCompareSection(current) {
     : 'Participant sets differ. Rows that are missing from a case are labeled Not in this roster rather than filled with a zero.';
   const rows = compared.rows.map((row) => `<tr class="${row.rosterMismatch ? 'diff-changed' : ''}"><th scope="row">${escapeAttribute(row.name)}${row.rosterMismatch ? ' <span class="optional">roster mismatch</span>' : ''}</th>${snapshotCell(row.first)}${snapshotCell(row.second)}${snapshotCell(row.current)}</tr>`).join('');
   return `<section class="panel" aria-labelledby="three-compare-title"><div class="panel-heading"><h2 id="three-compare-title" tabindex="-1">Three-snapshot compare</h2><button type="button" data-action="clear-three-compare">Clear pins</button></div><div class="panel-body"><p>First pin: <strong>${escapeAttribute(firstItem.name)}</strong> (${compared.firstViable ? 'holds' : 'exits'}, ${formatMoney(compared.firstTotalProfit)} total profit). Second pin: <strong>${escapeAttribute(secondItem.name)}</strong> (${compared.secondViable ? 'holds' : 'exits'}, ${formatMoney(compared.secondTotalProfit)}). Current draft (${compared.currentViable ? 'holds' : 'exits'}, ${formatMoney(compared.currentTotalProfit)}).</p><p>${rosterNote} This is a difference table, not a ranking of which case is better.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Three-snapshot comparison"><table><caption>Profit and hold or fail for two pinned snapshots plus the current draft. Participants matched by identifier.</caption><thead><tr><th scope="col">Participant</th><th scope="col">${escapeAttribute(firstItem.name)} profit</th><th scope="col">${escapeAttribute(firstItem.name)} exit</th><th scope="col">${escapeAttribute(secondItem.name)} profit</th><th scope="col">${escapeAttribute(secondItem.name)} exit</th><th scope="col">Current profit</th><th scope="col">Current exit</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
+}
+
+function importedCompareSection() {
+  if (!importedCompare) return '';
+  if (!validateConfiguration(state).valid) {
+    return `<section class="panel" aria-labelledby="imported-compare-title"><div class="panel-heading"><h2 id="imported-compare-title" tabindex="-1">Compare with imported JSON</h2><button type="button" data-action="clear-imported-compare">Close comparison</button></div><div class="panel-body"><p>Resolve invalid inputs on the current draft to compare it with <strong>${escapeAttribute(importedCompare.name)}</strong>. The current case is unchanged.</p></div></section>`;
+  }
+  const compared = compareImportedCase(state, importedCompare.config);
+  const rosterNote = compared.sameRoster
+    ? 'Both cases share the same participant identifiers.'
+    : 'Participant sets differ. Missing identifiers are labeled Not in this roster rather than filled with a zero.';
+  const rows = compared.rows.map((row) => {
+    const delta = row.current && row.imported ? row.current.monthlyProfit - row.imported.monthlyProfit : null;
+    const deltaClass = delta == null || Math.abs(delta) <= 1e-9 ? '' : delta > 0 ? 'diff-up' : 'diff-down';
+    return `<tr class="${row.rosterMismatch ? 'diff-changed' : ''}"><th scope="row">${escapeAttribute(row.name)}${row.rosterMismatch ? ' <span class="optional">roster mismatch</span>' : ''}</th>${snapshotCell(row.imported)}${snapshotCell(row.current)}<td class="${deltaClass}">${row.current && row.imported ? formatMoney(delta) : 'n/a'}</td></tr>`;
+  }).join('');
+  return `<section class="panel" aria-labelledby="imported-compare-title"><div class="panel-heading"><h2 id="imported-compare-title" tabindex="-1">Compare with imported JSON</h2><button type="button" data-action="clear-imported-compare">Close comparison</button></div><div class="panel-body"><p>Imported file: <strong>${escapeAttribute(importedCompare.name)}</strong> (${compared.importedViable ? 'holds' : 'exits'}, ${formatMoney(compared.importedTotalProfit)} total profit). Current draft (${compared.currentViable ? 'holds' : 'exits'}, ${formatMoney(compared.currentTotalProfit)}).</p><p>${rosterNote} This is a difference table, not a ranking of which case is better. The current case was not replaced.</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Imported JSON comparison"><table><caption>Current minus imported JSON. Participants matched by identifier. Missing identifiers are labeled, not zero-filled.</caption><thead><tr><th scope="col">Participant</th><th scope="col">Imported profit</th><th scope="col">Imported exit</th><th scope="col">Current profit</th><th scope="col">Current exit</th><th scope="col">Profit change</th></tr></thead><tbody>${rows}</tbody></table></div></section>`;
 }
 
 function reportText(value) {

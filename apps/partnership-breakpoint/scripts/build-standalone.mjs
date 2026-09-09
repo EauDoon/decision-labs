@@ -11,6 +11,7 @@ const appImport = `import {
   calculatePartnership,
   calculateFeeRequirements,
   clonePreset,
+  compareImportedCase,
   compareThreeSnapshots,
   duplicateParticipant,
   dropAndReallocate,
