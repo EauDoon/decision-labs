@@ -244,6 +244,22 @@ test("keyboard p jumps to peak queue and is a no-op when demand never queues", a
   assert.equal(ui.nodes.get("jump-peak").disabled, true);
 });
 
+test("keyboard s jumps to the scenario inputs and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("coach-overlay").hidden, true);
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  await ui.keydown("s");
+  assert.equal(ui.nodes.get("assumptions-title").focused, true);
+  assert.equal(ui.nodes.get("assumptions-title").attributes.tabindex, "-1");
+  ui.nodes.get("assumptions-title").focused = false;
+  await ui.keydown("S", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("assumptions-title").focused, false);
+  await ui.keydown("s", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("assumptions-title").focused, false);
+  await ui.keydown("s", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("assumptions-title").focused, false);
+});
+
 test("keyboard d jumps to the outcome summary and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);

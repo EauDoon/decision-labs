@@ -1314,6 +1314,14 @@ function jumpToFirstClosedBank() {
   setMessage(`Jumped to the first closed bank hour at ${formatTime(hour)} (hour ${hour}).`);
   return true;
 }
+function jumpToScenarioInputs() {
+  const heading = document.querySelector("#assumptions-title");
+  if (!heading) return false;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  return true;
+}
 function jumpToDashboard() {
   const heading = document.querySelector("#outcome-title");
   if (!heading) return false;
@@ -1474,6 +1482,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "f" || event.key === "F") {
     event.preventDefault();
     jumpToFirstClosedBank();
+    return;
+  }
+  if (event.key === "s" || event.key === "S") {
+    event.preventDefault();
+    jumpToScenarioInputs();
     return;
   }
   if (event.key === "d" || event.key === "D") {
