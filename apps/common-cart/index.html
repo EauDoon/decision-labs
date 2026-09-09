@@ -235,6 +235,22 @@ SOFTWARE.
           <button id="restore-neighbourhood" type="button">Restore neighbourhood example</button>
         </div>
         <p id="variants-help" class="canvas-note print-chrome">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
+        <article class="panel print-chrome" aria-labelledby="buyer-variant-counts-title">
+          <div class="panel-heading">
+            <div>
+              <p class="section-number">Accepted variants</p>
+              <h3 id="buyer-variant-counts-title">Buyers grouped by variant</h3>
+            </div>
+          </div>
+          <p class="canvas-note">Organizer counts of who accepts each variant. Labels, IDs, budgets, and allocations stay out. Merchant views still show counts only.</p>
+          <div class="table-shell compact">
+            <table>
+              <caption class="sr-only">Buyer counts by accepted variant</caption>
+              <thead><tr><th scope="col">Variant</th><th scope="col">Buyers</th><th scope="col">Units</th></tr></thead>
+              <tbody id="buyer-variant-counts"></tbody>
+            </table>
+          </div>
+        </article>
 
         <div class="result-grid">
           <article class="panel chart-panel print-chrome">

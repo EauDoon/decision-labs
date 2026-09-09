@@ -10,6 +10,7 @@ import {
   filterOfferIdsByFulfillment,
   acceptedVariantFilterOptions,
   filterBuyerIdsByAcceptedVariant,
+  organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
   duplicateRoom,
@@ -1001,6 +1002,7 @@ function refresh() {
     renderInspector(market);
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
+    renderOrganizerBuyerVariantCounts(market.scenario);
     renderDeliveryHeatmap(market.scenario);
     renderVariantOverlap(market.scenario);
     drawChart(market);
@@ -1043,6 +1045,8 @@ function refresh() {
     document.querySelector("#variant-overlap-head")?.replaceChildren();
     const overlapRows = document.querySelector("#variant-overlap-rows");
     if (overlapRows) setEmptyState(overlapRows, 2, "Variant overlap will appear once every field is valid.");
+    const variantCounts = document.querySelector("#buyer-variant-counts");
+    if (variantCounts) setEmptyState(variantCounts, 3, "Buyer variant counts will appear once every field is valid.");
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -1487,6 +1491,23 @@ function renderDemand(rawScenario) {
     return card;
   });
   elements.demandGroups.replaceChildren(...cards);
+}
+
+function renderOrganizerBuyerVariantCounts(rawScenario) {
+  const body = document.querySelector("#buyer-variant-counts");
+  if (!body) return;
+  const groups = organizerBuyerVariantCounts(rawScenario);
+  if (groups.length === 0) {
+    setEmptyState(body, 3, "No buyers are in this room, so there are no accepted-variant counts.");
+    return;
+  }
+  body.replaceChildren(...groups.map((group) => {
+    const row = document.createElement("tr");
+    addCell(row, group.variant);
+    addCell(row, String(group.buyerCount));
+    addCell(row, String(group.units));
+    return row;
+  }));
 }
 
 function renderDeliveryHeatmap(rawScenario) {

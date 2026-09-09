@@ -237,6 +237,22 @@ export function filterBuyerIdsByAcceptedVariant(rawScenario, variant) {
     .map((buyer) => buyer.id);
 }
 
+/** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
+export function organizerBuyerVariantCounts(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const groups = new Map();
+  for (const buyer of scenario.buyers) {
+    for (const variant of buyer.allowedVariants) {
+      const key = normalizeText(variant);
+      const current = groups.get(key) ?? { variant, buyerCount: 0, units: 0 };
+      current.buyerCount += 1;
+      current.units += buyer.quantity;
+      groups.set(key, current);
+    }
+  }
+  return [...groups.values()].sort((left, right) => compareText(normalizeText(left.variant), normalizeText(right.variant)) || compareText(left.variant, right.variant));
+}
+
 function sortedOffers(offers, mode) {
   if (mode !== "unitPrice" && mode !== "capacity") {
     throw new ScenarioError("Offer sort must be unit price or capacity.");

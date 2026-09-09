@@ -580,6 +580,22 @@ footer {
           <button id="restore-neighbourhood" type="button">Restore neighbourhood example</button>
         </div>
         <p id="variants-help" class="canvas-note print-chrome">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
+        <article class="panel print-chrome" aria-labelledby="buyer-variant-counts-title">
+          <div class="panel-heading">
+            <div>
+              <p class="section-number">Accepted variants</p>
+              <h3 id="buyer-variant-counts-title">Buyers grouped by variant</h3>
+            </div>
+          </div>
+          <p class="canvas-note">Organizer counts of who accepts each variant. Labels, IDs, budgets, and allocations stay out. Merchant views still show counts only.</p>
+          <div class="table-shell compact">
+            <table>
+              <caption class="sr-only">Buyer counts by accepted variant</caption>
+              <thead><tr><th scope="col">Variant</th><th scope="col">Buyers</th><th scope="col">Units</th></tr></thead>
+              <tbody id="buyer-variant-counts"></tbody>
+            </table>
+          </div>
+        </article>
 
         <div class="result-grid">
           <article class="panel chart-panel print-chrome">
@@ -1081,6 +1097,22 @@ function filterBuyerIdsByAcceptedVariant(rawScenario, variant) {
   return scenario.buyers
     .filter((buyer) => buyer.allowedVariants.some((entry) => normalizeText(entry) === key))
     .map((buyer) => buyer.id);
+}
+
+/** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
+function organizerBuyerVariantCounts(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const groups = new Map();
+  for (const buyer of scenario.buyers) {
+    for (const variant of buyer.allowedVariants) {
+      const key = normalizeText(variant);
+      const current = groups.get(key) ?? { variant, buyerCount: 0, units: 0 };
+      current.buyerCount += 1;
+      current.units += buyer.quantity;
+      groups.set(key, current);
+    }
+  }
+  return [...groups.values()].sort((left, right) => compareText(normalizeText(left.variant), normalizeText(right.variant)) || compareText(left.variant, right.variant));
 }
 
 function sortedOffers(offers, mode) {
@@ -3321,6 +3353,7 @@ function refresh() {
     renderInspector(market);
     renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
+    renderOrganizerBuyerVariantCounts(market.scenario);
     renderDeliveryHeatmap(market.scenario);
     renderVariantOverlap(market.scenario);
     drawChart(market);
@@ -3363,6 +3396,8 @@ function refresh() {
     document.querySelector("#variant-overlap-head")?.replaceChildren();
     const overlapRows = document.querySelector("#variant-overlap-rows");
     if (overlapRows) setEmptyState(overlapRows, 2, "Variant overlap will appear once every field is valid.");
+    const variantCounts = document.querySelector("#buyer-variant-counts");
+    if (variantCounts) setEmptyState(variantCounts, 3, "Buyer variant counts will appear once every field is valid.");
     elements.inspectorSummary.textContent = "Correct the named input error to inspect allocations.";
     elements.chart.getContext("2d").clearRect(0, 0, elements.chart.width, elements.chart.height);
     setStatus(messageOf(error));
@@ -3807,6 +3842,23 @@ function renderDemand(rawScenario) {
     return card;
   });
   elements.demandGroups.replaceChildren(...cards);
+}
+
+function renderOrganizerBuyerVariantCounts(rawScenario) {
+  const body = document.querySelector("#buyer-variant-counts");
+  if (!body) return;
+  const groups = organizerBuyerVariantCounts(rawScenario);
+  if (groups.length === 0) {
+    setEmptyState(body, 3, "No buyers are in this room, so there are no accepted-variant counts.");
+    return;
+  }
+  body.replaceChildren(...groups.map((group) => {
+    const row = document.createElement("tr");
+    addCell(row, group.variant);
+    addCell(row, String(group.buyerCount));
+    addCell(row, String(group.units));
+    return row;
+  }));
 }
 
 function renderDeliveryHeatmap(rawScenario) {
