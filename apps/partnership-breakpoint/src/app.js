@@ -62,6 +62,7 @@ let feeHoldPreview = null;
 let volumeHoldPreview = null;
 let briefCopyText = '';
 let csvCopyText = '';
+let breakpointCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -81,6 +82,7 @@ function checkpoint() {
   volumeHoldPreview = null;
   briefCopyText = '';
   csvCopyText = '';
+  breakpointCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -99,6 +101,7 @@ function travelHistory(direction) {
   volumeHoldPreview = null;
   briefCopyText = '';
   csvCopyText = '';
+  breakpointCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -378,27 +381,31 @@ function shockUnits(kind) {
   return kind === 'volume' || kind === 'volumeIncrease' ? 'txn' : 'units / txn';
 }
 
+function copyFirstBreakpointButton() {
+  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button></div>`;
+}
+
 function breakpointSection(result) {
   const breakpoint = result.firstBreakpoint;
   if (!breakpoint?.participant) {
-    return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p></div></section>`;
+    return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
 
   const participantName = escapeAttribute(breakpoint.participant.name);
   const label = shockLabel(breakpoint.kind);
   const shock = breakpoint.shock;
   if (breakpoint.status === 'already-failing') {
-    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p></div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
   if (breakpoint.status === 'at-breakpoint') {
-    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p></div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
 
   const units = shockUnits(breakpoint.kind);
   const threshold = units === 'txn'
     ? `${formatNumber(shock.breakpoint)} txn`
     : `${formatNumber(shock.breakpoint, 4)} units / txn`;
-  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p></div></section>`;
+  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
 }
 
 function participantDetailsOpen(index) {
@@ -556,6 +563,7 @@ function resultsPanel(result) {
     ${volumeHoldPreviewSection()}
     ${briefCopySection()}
     ${csvCopySection()}
+    ${breakpointCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -985,6 +993,7 @@ function attachEvents() {
     if (action === 'close-volume-hold') { volumeHoldPreview = null; render(); return; }
     if (action === 'close-brief-copy') { briefCopyText = ''; render(); return; }
     if (action === 'close-csv-copy') { csvCopyText = ''; render(); return; }
+    if (action === 'close-breakpoint-copy') { breakpointCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1084,6 +1093,7 @@ function attachEvents() {
     if (action === 'export-redacted') exportRedactedFile();
     if (action === 'export-report') exportReport();
     if (action === 'copy-brief') copyNegotiationBrief();
+    if (action === 'copy-first-breakpoint') copyFirstBreakpoint();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -1661,6 +1671,71 @@ function copyNegotiationBrief() {
     }
   }
   showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+}
+
+function firstBreakpointMarkdown(result) {
+  const breakpoint = result.firstBreakpoint;
+  const lines = ['# First breakpoint', ''];
+  if (!breakpoint?.participant) {
+    lines.push('No bounded adverse shock is available in the current inputs.');
+  } else {
+    const units = shockUnits(breakpoint.kind);
+    const magnitude = breakpoint.status === 'already-failing' || breakpoint.status === 'at-breakpoint' || !breakpoint.shock
+      ? compactShock(breakpoint.shock ?? { status: breakpoint.status, change: null, changePct: null }, units)
+      : compactShock(breakpoint.shock, units);
+    lines.push('Participant: ' + reportText(breakpoint.participant.name));
+    lines.push('Shock axis: ' + shockLabel(breakpoint.kind));
+    lines.push('Magnitude: ' + magnitude);
+  }
+  lines.push('');
+  lines.push('This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showBreakpointCopyFallback(text, message) {
+  breakpointCopyText = text;
+  render();
+  document.querySelector('#breakpoint-copy-text')?.focus();
+  setNotice(message);
+}
+
+function breakpointCopySection() {
+  if (!breakpointCopyText) return '';
+  return `<section class="panel" aria-labelledby="breakpoint-copy-title"><div class="panel-heading"><h2 id="breakpoint-copy-title">First breakpoint Markdown</h2><button type="button" data-action="close-breakpoint-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is the displayed ranking, not a forecast.</p><label class="brief-copy-label" for="breakpoint-copy-text">First breakpoint Markdown</label><textarea id="breakpoint-copy-text" readonly rows="10">${escapeAttribute(breakpointCopyText)}</textarea></div></section>`;
+}
+
+function copyFirstBreakpoint() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the first breakpoint. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = firstBreakpointMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          breakpointCopyText = '';
+          render();
+          setNotice('First breakpoint copied as Markdown. It is a comparison aid, not a forecast.');
+        }).catch(() => {
+          showBreakpointCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+        });
+        return;
+      }
+      breakpointCopyText = '';
+      render();
+      setNotice('First breakpoint copied as Markdown. It is a comparison aid, not a forecast.');
+      return;
+    } catch {
+      showBreakpointCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+      return;
+    }
+  }
+  showBreakpointCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
 }
 
 function exportTornadoSvg() {

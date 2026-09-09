@@ -52,7 +52,7 @@ async function workbench(protocol = 'file:', options = {}) {
       const focusIds = new Set([
         'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
-        'comparison-title', 'three-compare-title',
+        'comparison-title', 'three-compare-title', 'breakpoint-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1148,6 +1148,50 @@ test('redacted export replaces names, clears the title, and keeps identifiers', 
   app.edit('deal.monthlyVolume', '');
   app.click('export-redacted');
   assert.equal(app.downloads().length, 1);
+});
+
+test('copy first breakpoint uses displayed labels and a clipboard fallback', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-first-breakpoint"/);
+  fallback.click('copy-first-breakpoint');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="breakpoint-copy-text"/);
+  assert.match(fallback.markup(), /Participant: Liquidity Partner/);
+  assert.match(fallback.markup(), /Shock axis: fee decrease/);
+  assert.match(fallback.markup(), /Magnitude: 0\.0080 units \/ txn, 4\.0%/);
+  assert.match(fallback.markup(), /not a probability forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-breakpoint-copy');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-first-breakpoint');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the first breakpoint/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-first-breakpoint');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /Participant: Liquidity Partner/);
+  assert.match(withClipboard.copied()[0], /Shock axis: fee decrease/);
+  assert.match(withClipboard.copied()[0], /Magnitude: 0\.0080 units \/ txn, 4\.0%/);
+  assert.match(withClipboard.copied()[0], /not a probability forecast/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="breakpoint-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-first-breakpoint');
+  assert.match(denied.markup(), /id="breakpoint-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const failing = clonePreset('balanced');
+  failing.participants[2].minimumAcceptableProfit = 10000;
+  const already = await workbench();
+  already.import(failing);
+  already.click('copy-first-breakpoint');
+  assert.match(already.markup(), /Participant: Liquidity Partner/);
+  assert.match(already.markup(), /Magnitude: Already failing/);
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
