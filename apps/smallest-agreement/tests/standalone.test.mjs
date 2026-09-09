@@ -43,6 +43,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /workplace-hybrid/u);
+  assert.match(html, /id="clause-filter"/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
@@ -90,6 +91,11 @@ async function savedWorkbench(storage, hash = "") {
       const target = { value: String(value), valueAsNumber: value, validity: { badInput: false }, dataset: { field: "group-floor", groupId: "g", ...dataset } };
       if (field === "budget") element("#max-change-cost").events.get("input")({ target });
       else documentEvents.get("input")({ target });
+    },
+    filterClauses: (value) => {
+      const target = element("#clause-filter");
+      target.value = value;
+      target.events.get("input")({ target });
     },
   };
 }
@@ -397,4 +403,17 @@ test("workplace hybrid preset loads a valid three-group office policy", async ()
   assert.match(app.clauses(), /Core collaboration hours/u);
   assert.match(app.clauses(), /Desk assignment/u);
   assert.match(app.clauses(), /On-site staff|data-group-id="onsite"|onsite/u);
+});
+
+test("clause title filter hides cards without changing the stored draft", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterClauses("zzzz-no-match");
+  assert.match(app.clauses(), /No clauses match this filter/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.filterClauses("Park access");
+  assert.match(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
 });

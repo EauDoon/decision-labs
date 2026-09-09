@@ -96,7 +96,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .proposal-line { display: flex; align-items: end; gap: .8rem 1.5rem; flex-wrap: wrap; padding-bottom: 1.3rem; border-bottom: 2px solid var(--ink); }
 .proposal-line h2 { margin: 0; font-size: clamp(1.6rem, 3vw, 2.5rem); font-weight: 500; letter-spacing: -.025em; }
 .autosave-status { margin: 0 0 .15rem auto; color: var(--ink-soft); font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .72rem; }
-.clause-heading { margin: 2.2rem 0 1rem; }
+.clause-filter-label { display: block; margin: 0 0 .35rem; font-size: .88rem; font-weight: 700; }
+#clause-filter { max-width: 28rem; margin-bottom: .35rem; }
 .clauses-editor { display: grid; gap: 1rem; min-width: 0; }
 .clause-card { position: relative; min-width: 0; padding: 1.15rem; border: 1px solid var(--line); background: var(--card); box-shadow: var(--shadow); }
 .clause-card::before { content: ""; position: absolute; top: -.25rem; left: 1.5rem; width: 4rem; border-top: 2px solid var(--pencil); transform: rotate(-1deg); }
@@ -174,7 +175,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .manual-options, .autosave-status, button, #comparison-select { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, .manual-options, .autosave-status, button, #comparison-select, .coach-overlay { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -277,6 +278,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading" tabindex="-1">What can change?</h2></div>
             <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
           </div>
+          <label class="clause-filter-label" for="clause-filter">Filter clauses by title</label>
+          <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">
+          <p id="clause-filter-note" class="field-note">Filtering only hides cards. Every clause still participates in search and export.</p>
           <div id="clauses-editor" class="clauses-editor"></div>
         </section>
 
@@ -1452,6 +1456,7 @@ const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage
 let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
 let lockPreview = null;
+let clauseFilter = "";
 let cachedResultKey;
 let cachedResult;
 const savedResults = new WeakMap();
@@ -1621,6 +1626,7 @@ function render() {
   updateHistoryButtons();
   renderScenarios();
   renderGroups();
+  $("#clause-filter").value = clauseFilter;
   renderClauses();
   renderResults(currentResult());
 }
@@ -1638,7 +1644,13 @@ function renderGroups() {
 
 function renderClauses() {
   const { groups } = state.proposal;
-  $("#clauses-editor").innerHTML = state.proposal.clauses.map((clause, clauseIndex) => `
+  const query = clauseFilter.trim().toLowerCase();
+  const visible = query === "" ? state.proposal.clauses : state.proposal.clauses.filter((clause) => clause.title.toLowerCase().includes(query));
+  if (!visible.length) {
+    $("#clauses-editor").innerHTML = '<p class="empty-state">No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.</p>';
+    return;
+  }
+  $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
         <label><span class="visually-hidden">Clause title</span><input class="clause-title-input" data-field="clause-title" data-clause-id="${escapeHtml(clause.id)}" value="${escapeHtml(clause.title)}" maxlength="120" aria-label="Clause ${clauseIndex + 1} title"></label>
@@ -2081,6 +2093,11 @@ document.addEventListener("input", (event) => {
   $("#proposal-heading").textContent = state.proposal.title;
   $("#autosave-status").textContent = state.saveMessage;
   renderResults(currentResult());
+});
+
+$("#clause-filter").addEventListener("input", (event) => {
+  clauseFilter = event.target.value;
+  renderClauses();
 });
 
 $("#proposal-title").addEventListener("input", (event) => {

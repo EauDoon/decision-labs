@@ -188,6 +188,7 @@ const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage
 let scenarios = loadScenarios();
 let manualSelection = Object.create(null);
 let lockPreview = null;
+let clauseFilter = "";
 let cachedResultKey;
 let cachedResult;
 const savedResults = new WeakMap();
@@ -357,6 +358,7 @@ function render() {
   updateHistoryButtons();
   renderScenarios();
   renderGroups();
+  $("#clause-filter").value = clauseFilter;
   renderClauses();
   renderResults(currentResult());
 }
@@ -374,7 +376,13 @@ function renderGroups() {
 
 function renderClauses() {
   const { groups } = state.proposal;
-  $("#clauses-editor").innerHTML = state.proposal.clauses.map((clause, clauseIndex) => `
+  const query = clauseFilter.trim().toLowerCase();
+  const visible = query === "" ? state.proposal.clauses : state.proposal.clauses.filter((clause) => clause.title.toLowerCase().includes(query));
+  if (!visible.length) {
+    $("#clauses-editor").innerHTML = '<p class="empty-state">No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.</p>';
+    return;
+  }
+  $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
         <label><span class="visually-hidden">Clause title</span><input class="clause-title-input" data-field="clause-title" data-clause-id="${escapeHtml(clause.id)}" value="${escapeHtml(clause.title)}" maxlength="120" aria-label="Clause ${clauseIndex + 1} title"></label>
@@ -817,6 +825,11 @@ document.addEventListener("input", (event) => {
   $("#proposal-heading").textContent = state.proposal.title;
   $("#autosave-status").textContent = state.saveMessage;
   renderResults(currentResult());
+});
+
+$("#clause-filter").addEventListener("input", (event) => {
+  clauseFilter = event.target.value;
+  renderClauses();
 });
 
 $("#proposal-title").addEventListener("input", (event) => {
