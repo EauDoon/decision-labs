@@ -26,6 +26,7 @@ const appImport = `import {
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
+  groupContributions,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,

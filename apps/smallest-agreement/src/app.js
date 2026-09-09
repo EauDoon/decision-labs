@@ -12,6 +12,7 @@ import {
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
+  groupContributions,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -451,6 +452,7 @@ function renderResults(result) {
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable when the full search is over the safety bound.</p>';
     $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable when the full search is over the safety bound.</p>';
     $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out is unavailable when the full search is over the safety bound.</p>';
+    $("#group-contribution").innerHTML = '<p class="empty-state">Group contribution is unavailable when the full search is over the safety bound.</p>';
     $("#side-by-side").innerHTML = '<p class="empty-state">Side-by-side comparison is unavailable when the full search is over the safety bound.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
@@ -466,6 +468,7 @@ function renderResults(result) {
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable for invalid inputs.</p>';
     $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable for invalid inputs.</p>';
     $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out is unavailable for invalid inputs.</p>';
+    $("#group-contribution").innerHTML = '<p class="empty-state">Group contribution is unavailable for invalid inputs.</p>';
     $("#side-by-side").innerHTML = '<p class="empty-state">Side-by-side comparison is unavailable for invalid inputs.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
@@ -497,6 +500,7 @@ function renderResults(result) {
   renderClauseContribution(result);
   renderLockPreview();
   renderLeaveOneOut(result);
+  renderGroupContribution(result);
   renderSideBySide(result);
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
@@ -636,6 +640,21 @@ function renderLeaveOneOut(result) {
   }
   const source = result.agreement ? "recommended package" : "original package";
   $("#leave-one-out").innerHTML = `<p>Inspecting the ${source}. Full weighted approval ${formatPercent(table.fullApproval)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Omitted group</th><th scope="col">Weight</th><th scope="col">Approval without the group</th><th scope="col">Change from full approval</th></tr></thead><tbody>${table.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.weight}</td><td>${row.approval == null ? "Not defined with one group" : formatPercent(row.approval)}</td><td class="${row.delta > 0.0001 ? "positive" : row.delta < -0.0001 ? "negative" : ""}">${row.delta == null ? "Not defined" : formatMargin(row.delta)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+function renderGroupContribution(result) {
+  const packageOptions = result.agreement?.options ?? result.baseline?.options;
+  if (!packageOptions) {
+    $("#group-contribution").innerHTML = '<p class="empty-state">Group contribution needs a valid package to inspect.</p>';
+    return;
+  }
+  const analysis = groupContributions(state.proposal, packageOptions);
+  if (analysis.status !== "ok") {
+    $("#group-contribution").innerHTML = `<p class="empty-state">${escapeHtml(analysis.errors[0])}</p>`;
+    return;
+  }
+  const source = result.agreement ? "recommended package" : "original package";
+  $("#group-contribution").innerHTML = `<p>Inspecting the ${source}. Overall approval ${formatPercent(analysis.overallApproval)}. Original ${formatPercent(analysis.originalApproval)}. Method: weight share times group average. Pulls sum to the change in overall approval.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight share</th><th scope="col">Selected support</th><th scope="col">Original support</th><th scope="col">Contribution</th><th scope="col">Pull on overall approval</th></tr></thead><tbody>${analysis.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${(row.share * 100).toFixed(1)}%</td><td>${formatPercent(row.selectedApproval)}</td><td>${formatPercent(row.originalApproval)}</td><td>${formatPercent(row.contribution)}</td><td class="${row.overallPull > 0.0001 ? "positive" : row.overallPull < -0.0001 ? "negative" : ""}">${formatMargin(row.overallPull)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function renderSideBySide(result) {

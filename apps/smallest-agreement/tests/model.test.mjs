@@ -20,6 +20,7 @@ import {
   previewLockedOption,
   leaveOneGroupOut,
   formatDiscussionWorksheet,
+  groupContributions,
   stressPackage,
   compareScenarioInputs,
   formatEvidenceCsv,
@@ -972,6 +973,34 @@ test("leave-one-group-out omits a group from the weighted average without foreca
   const alone = leaveOneGroupOut(lone, [lone.clauses[0].options[0]]);
   assert.equal(alone.status, "ok");
   assert.equal(alone.rows[0].approval, null);
+});
+
+test("group contributions weight each group's average by its share of total weight", () => {
+  const input = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 3 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 100, b: 0 }),
+      option("alternative", false, { a: 0, b: 100 }, 1),
+      option("other", false, { a: 50, b: 50 }, 2),
+    ] }],
+  });
+  const originals = [input.clauses[0].options[0]];
+  const selected = [input.clauses[0].options[1]];
+  const before = JSON.stringify(input);
+  const original = groupContributions(input, originals);
+  assert.equal(original.status, "ok");
+  assert.equal(original.method, "weight_share");
+  assert.equal(original.overallApproval, 25);
+  assert.equal(original.rows[0].share, 0.25);
+  assert.equal(original.rows[0].contribution, 25);
+  assert.equal(original.rows[1].contribution, 0);
+  const changed = groupContributions(input, selected);
+  assert.equal(changed.overallApproval, 75);
+  assert.equal(changed.rows[0].overallPull, -25);
+  assert.equal(changed.rows[1].overallPull, 75);
+  assert.equal(changed.rows[0].overallPull + changed.rows[1].overallPull, 50);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(groupContributions(input, []).status, "invalid");
 });
 
 test("discussion worksheet lists every option as unmarked text and rejects invalid drafts", () => {

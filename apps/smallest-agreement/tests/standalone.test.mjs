@@ -54,6 +54,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Move up/u);
   assert.match(html, /id="weight-shares"/u);
   assert.match(html, /Budget remaining/u);
+  assert.match(html, /Group contribution/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 

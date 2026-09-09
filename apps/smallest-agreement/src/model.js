@@ -887,6 +887,51 @@ export function leaveOneGroupOut(proposal, options) {
 }
 
 /**
+ * Each group's pull on overall approval is its weight share times its average support.
+ * This is an accounting of supplied scores, not bargaining power or a forecast.
+ */
+export function groupContributions(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const originals = getOriginalOptions(proposal);
+  const totalWeight = proposal.groups.reduce((sum, group) => sum + group.weight, 0);
+  const selectedByGroup = approvalByGroup(proposal.groups, selected);
+  const originalByGroup = approvalByGroup(proposal.groups, originals);
+  const rows = proposal.groups.map((group, index) => {
+    const share = group.weight / totalWeight;
+    const selectedApproval = selectedByGroup[index].approval;
+    const originalApproval = originalByGroup[index].approval;
+    const contribution = share * selectedApproval;
+    const originalContribution = share * originalApproval;
+    return {
+      id: group.id,
+      name: group.name,
+      weight: group.weight,
+      share,
+      selectedApproval,
+      originalApproval,
+      contribution,
+      originalContribution,
+      overallPull: contribution - originalContribution,
+    };
+  });
+  return {
+    status: "ok",
+    method: "weight_share",
+    overallApproval: approvalForOptions(proposal.groups, selected),
+    originalApproval: approvalForOptions(proposal.groups, originals),
+    rows,
+  };
+}
+
+/**
  * Plain-text discussion worksheet. Labels are copied as supplied text.
  * This is a conversation aid, not a recorded vote or legal ballot.
  */

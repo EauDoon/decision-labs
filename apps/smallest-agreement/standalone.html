@@ -344,6 +344,11 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <p>Each row omits that group's weight from the weighted average. Remaining weights are used as written, which renormalizes them. This is a sensitivity readout of the supplied scores, not a forecast of what people would do without that group.</p>
             <div id="leave-one-out"></div>
           </section>
+          <section class="result-card" aria-labelledby="group-contribution-heading">
+            <h3 id="group-contribution-heading">Group contribution</h3>
+            <p>Each group's pull on overall approval is its weight share times its average support. That is an accounting of the supplied scores, not bargaining power or a forecast of what a group could extract.</p>
+            <div id="group-contribution"></div>
+          </section>
           <section class="result-card" aria-labelledby="manual-heading">
             <h3 id="manual-heading" tabindex="-1">Try your own package</h3>
             <p>Choose one option per clause to inspect tradeoffs. This comparison does not change the draft, locks, or recommendation. Choices reset when you reload.</p>
@@ -1313,6 +1318,51 @@ function leaveOneGroupOut(proposal, options) {
 }
 
 /**
+ * Each group's pull on overall approval is its weight share times its average support.
+ * This is an accounting of supplied scores, not bargaining power or a forecast.
+ */
+function groupContributions(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const originals = getOriginalOptions(proposal);
+  const totalWeight = proposal.groups.reduce((sum, group) => sum + group.weight, 0);
+  const selectedByGroup = approvalByGroup(proposal.groups, selected);
+  const originalByGroup = approvalByGroup(proposal.groups, originals);
+  const rows = proposal.groups.map((group, index) => {
+    const share = group.weight / totalWeight;
+    const selectedApproval = selectedByGroup[index].approval;
+    const originalApproval = originalByGroup[index].approval;
+    const contribution = share * selectedApproval;
+    const originalContribution = share * originalApproval;
+    return {
+      id: group.id,
+      name: group.name,
+      weight: group.weight,
+      share,
+      selectedApproval,
+      originalApproval,
+      contribution,
+      originalContribution,
+      overallPull: contribution - originalContribution,
+    };
+  });
+  return {
+    status: "ok",
+    method: "weight_share",
+    overallApproval: approvalForOptions(proposal.groups, selected),
+    originalApproval: approvalForOptions(proposal.groups, originals),
+    rows,
+  };
+}
+
+/**
  * Plain-text discussion worksheet. Labels are copied as supplied text.
  * This is a conversation aid, not a recorded vote or legal ballot.
  */
@@ -1781,6 +1831,7 @@ function renderResults(result) {
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable when the full search is over the safety bound.</p>';
     $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable when the full search is over the safety bound.</p>';
     $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out is unavailable when the full search is over the safety bound.</p>';
+    $("#group-contribution").innerHTML = '<p class="empty-state">Group contribution is unavailable when the full search is over the safety bound.</p>';
     $("#side-by-side").innerHTML = '<p class="empty-state">Side-by-side comparison is unavailable when the full search is over the safety bound.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
@@ -1796,6 +1847,7 @@ function renderResults(result) {
     $("#clause-contribution").innerHTML = '<p class="empty-state">Clause contribution is unavailable for invalid inputs.</p>';
     $("#lock-preview").innerHTML = '<p class="empty-state">Option previews are unavailable for invalid inputs.</p>';
     $("#leave-one-out").innerHTML = '<p class="empty-state">Leave-one-group-out is unavailable for invalid inputs.</p>';
+    $("#group-contribution").innerHTML = '<p class="empty-state">Group contribution is unavailable for invalid inputs.</p>';
     $("#side-by-side").innerHTML = '<p class="empty-state">Side-by-side comparison is unavailable for invalid inputs.</p>';
     drawCoalition(null, null);
     $("#coalition-table").innerHTML = '<p class="empty-state">No coalition values were evaluated.</p>';
@@ -1827,6 +1879,7 @@ function renderResults(result) {
   renderClauseContribution(result);
   renderLockPreview();
   renderLeaveOneOut(result);
+  renderGroupContribution(result);
   renderSideBySide(result);
   drawCoalition(current, agreement);
   renderCoalitionTable(current, agreement);
@@ -1966,6 +2019,21 @@ function renderLeaveOneOut(result) {
   }
   const source = result.agreement ? "recommended package" : "original package";
   $("#leave-one-out").innerHTML = `<p>Inspecting the ${source}. Full weighted approval ${formatPercent(table.fullApproval)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Omitted group</th><th scope="col">Weight</th><th scope="col">Approval without the group</th><th scope="col">Change from full approval</th></tr></thead><tbody>${table.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.weight}</td><td>${row.approval == null ? "Not defined with one group" : formatPercent(row.approval)}</td><td class="${row.delta > 0.0001 ? "positive" : row.delta < -0.0001 ? "negative" : ""}">${row.delta == null ? "Not defined" : formatMargin(row.delta)}</td></tr>`).join("")}</tbody></table></div>`;
+}
+
+function renderGroupContribution(result) {
+  const packageOptions = result.agreement?.options ?? result.baseline?.options;
+  if (!packageOptions) {
+    $("#group-contribution").innerHTML = '<p class="empty-state">Group contribution needs a valid package to inspect.</p>';
+    return;
+  }
+  const analysis = groupContributions(state.proposal, packageOptions);
+  if (analysis.status !== "ok") {
+    $("#group-contribution").innerHTML = `<p class="empty-state">${escapeHtml(analysis.errors[0])}</p>`;
+    return;
+  }
+  const source = result.agreement ? "recommended package" : "original package";
+  $("#group-contribution").innerHTML = `<p>Inspecting the ${source}. Overall approval ${formatPercent(analysis.overallApproval)}. Original ${formatPercent(analysis.originalApproval)}. Method: weight share times group average. Pulls sum to the change in overall approval.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight share</th><th scope="col">Selected support</th><th scope="col">Original support</th><th scope="col">Contribution</th><th scope="col">Pull on overall approval</th></tr></thead><tbody>${analysis.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${(row.share * 100).toFixed(1)}%</td><td>${formatPercent(row.selectedApproval)}</td><td>${formatPercent(row.originalApproval)}</td><td>${formatPercent(row.contribution)}</td><td class="${row.overallPull > 0.0001 ? "positive" : row.overallPull < -0.0001 ? "negative" : ""}">${formatMargin(row.overallPull)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function renderSideBySide(result) {
