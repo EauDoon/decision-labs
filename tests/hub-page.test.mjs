@@ -125,6 +125,18 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /dashboard Markdown copy, two-file compare/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
+  assert.match(readme, /Catalog keys `w`, `k`, `n`, and `c`/);
+  assert.match(readme, /Press `w` to focus the\s+workbenches/);
+  assert.match(readme, /Press `k` to focus How it works/);
+  assert.match(readme, /Press `n` to focus What's\s+new/);
+  assert.match(readme, /Press `c` to copy the catalog address/);
+  assert.match(readme, /Copy versions copies the four/);
+  assert.match(readme, /not a live product version/);
+  assert.match(html, /Copy versions/);
+  assert.match(html, /not a live product version/);
+  assert.match(html, /not a cloud recency/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
 });
 
 test('question-mark shortcut toggles an in-page panel and skips inputs', () => {

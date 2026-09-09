@@ -35,7 +35,11 @@ Every workbench:
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
 What's new section. Skip links jump to What's new, workbenches, How it works,
-keyboard shortcuts, and Trust and limits. What's new names current in-workbench tools (share-to-hold,
+keyboard shortcuts, and Trust and limits. Catalog keys `w`, `k`, `n`, and `c`
+focus the workbenches, How it works, What's new, or copy the catalog address on
+http. Copy versions copies the four names and versions printed on this page as
+Markdown. That list is not a live product version and it does not call a
+registry. What's new names current in-workbench tools (share-to-hold,
 residual coverage, veto groups, and the gate Gantt) without implying live
 services. It also names the local 1.4.1 and 1.3.1 extras now on main: Partnership
 Breakpoint CSV roster, capacity, and notes; Common Cart leftover/tertiary fill
@@ -86,6 +90,10 @@ page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
 Smallest Agreement, and Weekend Gap. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
+Copy versions copies the four workbench names and versions already printed on
+this catalog page as Markdown. It uses the browser clipboard when that API is
+available, and shows a visible text box if it is not. This is the catalog list,
+not a live product version.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
