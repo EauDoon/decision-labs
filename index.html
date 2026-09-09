@@ -94,6 +94,7 @@
     .skip:focus-visible { outline: 3px solid var(--focus); outline-offset: 3px; }
     .guide { margin: 40px 0 12px; max-width: 720px; }
     .guide p { color: var(--muted); }
+    .guide h3 { font-size: 18px; margin: 20px 0 6px; }
     .trust { margin: 28px 0 8px; padding: 28px 0 8px; border-top: 1px solid var(--line); max-width: 760px; }
     .trust ul { margin: 12px 0 0; padding-left: 1.2rem; color: var(--muted); }
     .trust li { margin: 8px 0; }
@@ -211,7 +212,13 @@
     </section>
     <section class="guide" id="how-it-works" aria-labelledby="how-title">
       <h2 id="how-title">How it works</h2>
-      <p>Open a workbench from this catalog. Each link loads a self-contained file. The four tools do not share data with each other.</p>
+      <p>This page is a catalog. Each Open workbench link loads one generated file from this repository. You can also open that file from disk. Node.js is only required if you want the loopback launcher or to run tests.</p>
+      <h3>Standalone files</h3>
+      <p>Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</p>
+      <h3>JSON export</h3>
+      <p>Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</p>
+      <h3>Independent workbenches</h3>
+      <p>The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository.</p>
     </section>
     <section class="trust" id="trust" aria-labelledby="trust-title">
       <h2 id="trust-title">Trust and limits</h2>
