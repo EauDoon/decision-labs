@@ -157,7 +157,7 @@ v1.3.0 repeatable-experiment workflows remain: demand timing, pinned baselines, 
 | Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour | Workspace import |
 | Analysis JSON | Both scenarios, results, reserve plan and hourly comparison | No, report only |
 | Hourly CSV | All 73 checkpoints, prior-interval flows and next-hour capacity | No, spreadsheet data |
-| Printable HTML | Notes, assumptions, comparison including hours to first settlement, diagnostics, inline gate Gantt, reserve plan and model limits | No, report only |
+| Printable HTML | Notes, assumptions, comparison including hours to first settlement, diagnostics, inline gate Gantt, queue path, limiting-gate counts, reserve plan and model limits | No, report only |
 
 Scenario, workspace and library data stay in browser storage. Nothing syncs to an account or server. A scenario hash takes priority over local recovery at startup. Normal reloads restore the latest workspace, including its baseline and notes. Browser/file-origin storage availability varies, so export important work. Storage failures remain visible while the simulator stays usable. Invalid planner drafts do not replace the last valid target in recovery, and incomplete numeric assumption fields leave the previous simulation intact.
 
