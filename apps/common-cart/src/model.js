@@ -1107,6 +1107,10 @@ export function encodeScenario(rawScenario) {
   return encoded;
 }
 
+export function encodeRedactedScenario(rawScenario) {
+  return encodeScenario(redactBuyerLabels(rawScenario));
+}
+
 export function decodeScenario(value) {
   if (typeof value !== "string") throw new ScenarioError("Shared scenario must be a string.");
   if (value.length === 0 || value.length > MAX_SHARE_LENGTH) throw new ScenarioError("Shared scenario is empty or too large.");

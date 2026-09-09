@@ -19,6 +19,7 @@ import {
   duplicateEntry,
   copyOfferAsNewTierSet,
   encodeScenario,
+  encodeRedactedScenario,
   evaluateMarket,
   unitsToNextTier,
   capacityBar,
@@ -314,11 +315,17 @@ function bindStaticEvents() {
     }
   });
   const shareButton = document.querySelector("#share-button");
+  const shareRedactedButton = document.querySelector("#share-redacted-button");
   if (window.location.protocol === "file:") {
     shareButton.textContent = "Share via export";
     shareButton.addEventListener("click", () => setStatus("Use Export JSON to share a standalone scenario."));
+    if (shareRedactedButton) {
+      shareRedactedButton.textContent = "Share redacted via export";
+      shareRedactedButton.addEventListener("click", () => setStatus("Use Export redacted JSON to share a standalone scenario with Buyer 1 through N labels."));
+    }
   } else {
-    shareButton.addEventListener("click", shareScenario);
+    shareButton.addEventListener("click", () => shareScenario(false));
+    shareRedactedButton?.addEventListener("click", () => shareScenario(true));
   }
   document.querySelector("#reset-button").addEventListener("click", () => {
     if (!allowReplaceDraft()) return;
@@ -1287,14 +1294,16 @@ function downloadFile(content, filename, type) {
   setTimeout(() => URL.revokeObjectURL(link.href), 1000);
 }
 
-async function shareScenario() {
+async function shareScenario(redacted = false) {
   try {
-    const encoded = encodeScenario(scenario);
+    const encoded = redacted ? encodeRedactedScenario(scenario) : encodeScenario(scenario);
     const url = new URL(window.location.href);
     url.hash = `scenario=${encoded}`;
     window.history.replaceState(null, "", url);
     await navigator.clipboard.writeText(url.href);
-    setStatus("Share link copied. It contains this scenario's data.", true);
+    setStatus(redacted
+      ? "Redacted share link copied. Buyer labels are Buyer 1 through N. IDs and constraints are unchanged."
+      : "Share link copied. It contains this scenario's data.", true);
   } catch (error) {
     setStatus(error?.name === "NotAllowedError" ? "The share link is in the address bar, but clipboard access was denied." : `Share failed: ${messageOf(error)}`);
   }
