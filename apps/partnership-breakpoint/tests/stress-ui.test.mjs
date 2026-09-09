@@ -562,3 +562,19 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   app.keydown('u', { tagName: 'INPUT' });
   assert.equal(app.saved().deal.monthlyVolume, 70000);
 });
+
+test('redacted export replaces names, clears the title, and keeps identifiers', async () => {
+  const app = await workbench();
+  app.edit('deal.title', 'Secret Alliance', { type: 'text' });
+  app.click('export-redacted');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-redacted.json');
+  const parsed = JSON.parse(await file.blob.text());
+  assert.equal(Object.hasOwn(parsed.deal, 'title'), false);
+  assert.deepEqual(parsed.participants.map((item) => item.name), ['Participant 1', 'Participant 2', 'Participant 3']);
+  assert.deepEqual(parsed.participants.map((item) => item.id), ['platform', 'distributor', 'liquidity-partner']);
+  assert.match(app.markup(), /Export redacted JSON \(names replaced, title cleared\)/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-redacted');
+  assert.equal(app.downloads().length, 1);
+});

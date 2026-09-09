@@ -900,3 +900,22 @@ export function solveMinimumShareToHold(config, participantId) {
     reason: 'Minimum revenue share at which this participant holds. Remaining participants keep their relative shares of the leftover.',
   };
 }
+
+/**
+ * Portable case JSON with participant display names replaced and the deal title cleared.
+ * Identifiers, shares, costs, and stress settings are unchanged.
+ * @param {PartnershipConfig} config
+ */
+export function redactConfiguration(config) {
+  assertValidConfiguration(config);
+  const copy = {
+    deal: { ...config.deal },
+    participants: config.participants.map((item) => ({ ...item })),
+    ...(Object.hasOwn(config, 'stress') ? { stress: { ...config.stress } } : {}),
+  };
+  delete copy.deal.title;
+  copy.participants.forEach((item, index) => {
+    item.name = `Participant ${index + 1}`;
+  });
+  return copy;
+}

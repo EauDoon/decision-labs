@@ -13,6 +13,7 @@ import {
   makeParticipant,
   materializeStressCase,
   moveParticipant,
+  redactConfiguration,
   solveMinimumShareToHold,
   validateConfiguration,
 } from './model.js';
@@ -392,7 +393,7 @@ function inputPanel() {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="export-csv">Export stress CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="export-csv">Export stress CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <button type="button" data-action="reset">Reset</button>
           </div>
@@ -799,6 +800,7 @@ function attachEvents() {
     }
     if (action === 'equal-shares' || action === 'normalize-shares') reconcileShares(action);
     if (action === 'export') exportFile();
+    if (action === 'export-redacted') exportRedactedFile();
     if (action === 'export-report') exportReport();
     if (action === 'export-csv') exportStressCsv();
     if (action === 'apply-stress-proposal') {
@@ -836,6 +838,17 @@ function exportFile() {
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   setNotice('JSON exported.');
+}
+
+function exportRedactedFile() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice(`Resolve invalid inputs before exporting. ${summarizeErrors(validation.errors)}`);
+    return;
+  }
+  const redacted = redactConfiguration(state);
+  downloadText(`${JSON.stringify(redacted, null, 2)}\n`, 'application/json', 'partnership-breakpoint-redacted.json');
+  setNotice('Redacted JSON exported. Participant names are Participant 1 through N and the deal title is cleared. Identifiers and economics are unchanged.');
 }
 
 function importFile(file) {
