@@ -96,7 +96,7 @@ SOFTWARE.
   </header>
 
   <main id="workspace">
-    <section class="hero" aria-labelledby="page-title">
+    <section class="hero print-keep" aria-labelledby="page-title">
       <div>
         <p class="kicker">Demand is more useful when buyers can combine it.</p>
         <h1 id="page-title">Find the offer a group can actually unlock.</h1>
@@ -127,7 +127,7 @@ SOFTWARE.
 
     <div class="status-line" id="status" role="status" aria-live="polite"></div>
     <p id="save-state" class="canvas-note" role="status" aria-live="polite"></p>
-    <section class="snapshot-bar" aria-label="Saved room workspace">
+    <section class="snapshot-bar print-chrome" aria-label="Saved room workspace">
       <label>Saved rooms <select id="saved-rooms" aria-describedby="snapshot-help"></select></label>
       <button id="save-room" type="button">Save named snapshot</button>
       <button id="load-room" type="button">Load snapshot</button>
@@ -135,7 +135,7 @@ SOFTWARE.
       <p id="snapshot-help">Up to 12 local snapshots, named by the room title. Export JSON for a portable backup. Browser data can be cleared.</p>
     </section>
 
-    <section class="scoreboard" aria-label="Market summary">
+    <section class="scoreboard print-keep" aria-label="Market summary">
       <article class="metric feature">
         <span class="metric-label">Best available offer</span>
         <strong id="metric-winner">Not unlocked</strong>
@@ -159,14 +159,14 @@ SOFTWARE.
     </section>
 
     <section class="workbench">
-      <div class="tabs" role="tablist" aria-label="Common Cart views">
+      <div class="tabs print-chrome" role="tablist" aria-label="Common Cart views">
         <button id="buyer-tab" role="tab" aria-selected="true" aria-controls="buyer-panel" tabindex="0">Buyer room</button>
         <button id="merchant-tab" role="tab" aria-selected="false" aria-controls="merchant-panel" tabindex="-1">Merchant table</button>
         <button id="method-tab" role="tab" aria-selected="false" aria-controls="method-panel" tabindex="-1">Method and limits</button>
       </div>
 
       <div id="buyer-panel" role="tabpanel" aria-labelledby="buyer-tab">
-        <section class="panel" aria-labelledby="comparison-heading">
+        <section class="panel print-chrome" aria-labelledby="comparison-heading">
           <h2 id="comparison-heading">Compare a decision</h2>
           <button id="pin-baseline" type="button">Pin current as baseline</button>
           <button id="clear-baseline" type="button" disabled>Clear baseline</button>
@@ -176,20 +176,20 @@ SOFTWARE.
           <div id="three-room-summary" class="table-shell"></div>
           <div id="comparison-summary" class="table-shell"></div>
         </section>
-        <div class="section-heading">
+        <div class="section-heading print-chrome">
           <div>
             <p class="section-number">01 / buyers</p>
             <h2>Describe acceptable purchases</h2>
             <p>Labels stay inside this browser. Merchant-facing views use grouped ranges only. Empty or invalid fields are named in the status line until they are corrected.</p>
           </div>
-          <div class="button-row">
+          <div class="button-row print-chrome">
             <button id="add-buyer" class="primary" type="button">Add buyer</button>
             <button id="import-buyers" type="button">Import buyer CSV</button>
             <button id="buyer-csv-template" type="button">Download CSV template</button>
             <input id="import-buyers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
         </div>
-        <div class="snapshot-bar" aria-label="Buyer list order">
+        <div class="snapshot-bar print-chrome" aria-label="Buyer list order">
           <label>Sort buyers
             <select id="buyer-sort-mode">
               <option value="label">Label A-Z</option>
@@ -199,7 +199,8 @@ SOFTWARE.
           <button id="preview-buyer-sort" type="button">Preview sort</button>
           <button id="apply-buyer-sort" type="button">Apply sort</button>
           <p>Preview changes the list on screen only. Apply rewrites saved order and is undoable. Buyer IDs stay the same.</p>
-        <div class="table-shell">
+        </div>
+        <div class="table-shell print-private">
           <table>
             <caption class="sr-only">Editable buyer constraints</caption>
             <thead>
@@ -217,14 +218,14 @@ SOFTWARE.
             <tbody id="buyer-rows"></tbody>
           </table>
         </div>
-        <div id="empty-buyer-recovery" class="empty-recovery" hidden>
+        <div id="empty-buyer-recovery" class="empty-recovery print-chrome" hidden>
           <p>This room has no buyers. There is no demand to match, so every offer stays locked. Add a buyer, import a CSV, or restore the neighbourhood example. Restore is undoable.</p>
           <button id="restore-neighbourhood" type="button">Restore neighbourhood example</button>
         </div>
-        <p id="variants-help" class="canvas-note">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
+        <p id="variants-help" class="canvas-note print-chrome">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
 
         <div class="result-grid">
-          <article class="panel chart-panel">
+          <article class="panel chart-panel print-chrome">
             <div class="panel-heading">
               <div>
                 <p class="section-number">Offer comparison</p>
@@ -237,7 +238,7 @@ SOFTWARE.
             </div>
                 <p class="canvas-note">The chart and table report the same fulfilled-unit result.</p>
           </article>
-          <article class="panel">
+          <article class="panel print-private">
             <div class="panel-heading">
               <div>
                 <p class="section-number">Ranked result</p>
@@ -261,27 +262,27 @@ SOFTWARE.
               <h3 id="inspector-title">Why each order is included or excluded</h3>
               <p id="inspector-summary" class="inspector-summary"></p>
             </div>
-            <label class="inspector-picker">Inspect offer
+            <label class="inspector-picker print-chrome">Inspect offer
               <select id="offer-inspector"></select>
             </label>
           </div>
-          <div class="table-shell compact">
+          <div class="table-shell compact print-private">
             <table>
               <caption class="sr-only">Buyer outcomes for the inspected offer</caption>
               <thead><tr><th scope="col">Private label</th><th scope="col">Quantity</th><th scope="col">Outcome</th><th scope="col">Explanation</th><th scope="col">Items</th><th scope="col">Shipping</th><th scope="col">Total</th><th scope="col">Landed / unit</th><th scope="col">Against item ceiling</th></tr></thead>
               <tbody id="inspector-rows"></tbody>
             </table>
           </div>
-          <h4>Why excluded, grouped</h4>
-          <div class="table-shell compact">
+          <h4 class="print-chrome">Why excluded, grouped</h4>
+          <div class="table-shell compact print-private">
             <table>
               <caption class="sr-only">Exclusion counts by reason for the inspected offer</caption>
               <thead><tr><th scope="col">Reason</th><th scope="col">Buyers</th><th scope="col">What this means</th></tr></thead>
               <tbody id="exclusion-groups"></tbody>
             </table>
           </div>
-          <p class="canvas-note">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
-          <article class="panel residual-panel" aria-labelledby="residual-title">
+          <p class="canvas-note print-chrome">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
+          <article class="panel residual-panel print-keep" aria-labelledby="residual-title">
             <div class="panel-heading">
               <div>
                 <p class="section-number">Unfilled after winner</p>
@@ -291,10 +292,11 @@ SOFTWARE.
             <p id="residual-note" class="canvas-note"></p>
             <div id="residual-summary" class="residual-summary"></div>
           </article>
-          <button id="buyer-report" type="button">Export private buyer report (CSV)</button>
-          <button id="organizer-briefing" type="button">Export organizer briefing</button>
-          <p class="canvas-note">Exports the inspected offer, including buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
-          <p class="canvas-note">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
+          <button id="buyer-report" class="print-chrome" type="button">Export private buyer report (CSV)</button>
+          <button id="organizer-briefing" class="print-chrome" type="button">Export organizer briefing</button>
+          <p class="canvas-note print-chrome">Exports the inspected offer, including buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
+          <p class="canvas-note print-chrome">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
+          <div class="print-chrome">
           <h4>Capacity leftover</h4>
           <p id="capacity-bar-text" class="canvas-note"></p>
           <svg id="capacity-bar" class="capacity-bar" viewBox="0 0 400 48" role="img" aria-labelledby="capacity-bar-text"></svg>
@@ -309,16 +311,17 @@ SOFTWARE.
               <tbody id="tier-progress-rows"></tbody>
             </table>
           </div>
+          </div>
         </article>
       </div>
 
       <div id="merchant-panel" role="tabpanel" aria-labelledby="merchant-tab" tabindex="-1" hidden>
-        <div class="snapshot-bar">
+        <div class="snapshot-bar print-chrome">
           <button id="merchant-report" type="button">Export aggregate merchant report</button>
           <button id="merchant-residual-report" type="button">Export residual coverage (aggregate)</button>
           <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information.</p>
         </div>
-        <div class="section-heading">
+        <div class="section-heading print-chrome">
           <div>
             <p class="section-number">02 / merchants</p>
             <h2>Test conditional offers</h2>
@@ -331,7 +334,7 @@ SOFTWARE.
             <input id="import-offers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
           </div>
         </div>
-        <div class="snapshot-bar" aria-label="Offer fulfillment filter">
+        <div class="snapshot-bar print-chrome" aria-label="Offer fulfillment filter">
           <label>Fulfillment
             <select id="offer-fulfillment-filter">
               <option value="all">All</option>
@@ -340,7 +343,10 @@ SOFTWARE.
             </select>
           </label>
           <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged.</p>
-        <div class="table-shell" id="offers-list" tabindex="-1" role="region" aria-label="Merchant offers list">
+        </div>
+        <div class="table-shell print-chrome" id="offers-list" tabindex="-1" role="region" aria-label="Merchant offers list">
+          <table>
+            <caption class="sr-only">Editable merchant offers</caption>
             <thead>
               <tr>
                 <th scope="col">Merchant</th><th scope="col">Category</th><th scope="col">Variant</th><th scope="col">Unit price</th><th scope="col">Minimum</th><th scope="col">Delivery</th><th scope="col">Capacity</th><th scope="col">Ship / buyer</th><th scope="col">Fulfillment</th><th scope="col"><span class="sr-only">Remove</span></th>
@@ -350,12 +356,12 @@ SOFTWARE.
           </table>
         </div>
 
-        <section class="tier-section" aria-labelledby="tier-title">
+        <section class="tier-section print-chrome" aria-labelledby="tier-title">
           <h3 id="tier-title">Quantity price tiers</h3>
           <p>Optional, up to eight tiers per offer. Each minimum must increase and fit capacity. Each price must decrease. A qualifying tier prices all included units at that price. The original price remains the base band.</p>
           <div id="tier-editors" class="tier-editors"></div>
         </section>
-        <div class="table-shell">
+        <div class="table-shell print-keep">
           <table>
             <caption>Aggregate offer outcomes, no buyer labels, IDs, or individual allocations. Next-tier gap uses unit counts only.</caption>
             <thead><tr><th scope="col">Merchant</th><th scope="col">Status</th><th scope="col">Units</th><th scope="col">Buyers</th><th scope="col">Item price</th><th scope="col">Landed total</th><th scope="col">Next-tier gap</th></tr></thead>
@@ -369,8 +375,8 @@ SOFTWARE.
             <div id="demand-groups" class="demand-groups"></div>
             <h4>Delivery deadline heatmap</h4>
             <p id="delivery-heatmap-text" class="canvas-note"></p>
-            <svg id="delivery-heatmap" class="capacity-bar" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
-            <button id="heatmap-csv" type="button">Export heatmap CSV</button>
+            <svg id="delivery-heatmap" class="capacity-bar print-keep" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
+            <button id="heatmap-csv" class="print-chrome" type="button">Export heatmap CSV</button>
             <h4>Offered variant overlap</h4>
             <p id="variant-overlap-note" class="canvas-note"></p>
             <div class="table-shell compact">
@@ -380,7 +386,7 @@ SOFTWARE.
                 <tbody id="variant-overlap-rows"></tbody>
               </table>
             </div>
-            <button id="overlap-csv" type="button">Copy overlap CSV</button>
+            <button id="overlap-csv" class="print-chrome" type="button">Copy overlap CSV</button>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>
@@ -395,7 +401,7 @@ SOFTWARE.
         </div>
       </div>
 
-      <div id="method-panel" role="tabpanel" aria-labelledby="method-tab" hidden>
+      <div id="method-panel" class="print-chrome" role="tabpanel" aria-labelledby="method-tab" hidden>
         <div class="method-grid">
           <article>
             <p class="section-number">03 / method</p>
@@ -426,7 +432,7 @@ SOFTWARE.
     </section>
   </main>
 
-  <footer>
+  <footer class="print-chrome">
     <p>Open-source educational simulator. Synthetic examples only. Press ? for keyboard shortcuts. Use the browser print dialog for a paper copy of the open tabs.</p>
     <p><a href="./MODEL.md">Model notes</a> <span aria-hidden="true">·</span> <a href="./SECURITY.md">Security</a></p>
   </footer>

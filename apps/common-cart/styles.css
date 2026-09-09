@@ -326,11 +326,19 @@ footer {
 
 @media print {
   .skip-link, .header-actions, .preset-bar .button-row, #coach-dialog, #shortcut-help,
-  #add-buyer, #import-buyers, #add-offer, .icon-button, .tabs button[aria-selected="false"] {
+  #show-coach, .print-chrome, .print-private, #status, #save-state,
+  .inspector-heading, #method-panel {
     display: none !important;
   }
+  .print-keep, .scoreboard, .residual-panel, #page-title, .brand-name, #delivery-heatmap {
+    display: block !important;
+  }
   body { background: white; color: black; }
-  .masthead, .scoreboard, .local-note, .privacy-panel { color: black; background: white; border: 1px solid #333; box-shadow: none; }
+  .masthead, .scoreboard, .privacy-panel { color: black; background: white; border: 1px solid #333; box-shadow: none; }
   a { text-decoration: none; color: black; }
-  [role="tabpanel"][hidden] { display: block !important; break-before: page; }
+  [role="tabpanel"][hidden] { display: block !important; }
+  [role="tabpanel"] { break-before: auto; }
+  #merchant-result-rows, #variant-overlap-rows, #demand-groups, #residual-summary {
+    break-inside: avoid;
+  }
 }
