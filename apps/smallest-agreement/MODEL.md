@@ -32,6 +32,7 @@ These bounds apply to validation, import, autosave, and share-link decoding. Out
 | `groups[].weight` | Finite number greater than 0 and at most 1,000,000. `NaN` and infinities are invalid. |
 | `clauses` | 1 to 20 |
 | `clauses[].title` | Non-empty string, at most 120 characters |
+| `clauses[].note` | Optional string of 1 to 240 characters. Facilitator text only; omitted from search math. |
 | `clauses[].options` | 3 to 24, including exactly one original |
 | `options[].label` | Non-empty string, at most 240 characters |
 | `options[].changeCost` | Finite number from 0 through 1,000,000,000. `NaN` and infinities are invalid. |
@@ -62,6 +63,7 @@ An agreement passes when overall approval is at least the threshold and every co
 | `groups[].veto` | Boolean `true` | That group's average must be at least the overall threshold. If the group also has `minSupport`, the required value is `max(threshold, minSupport)`. |
 | `maxChangeCost` | Finite number from 0 to 20,000,000,000 | Sum of selected alternatives' change costs cannot exceed this budget. |
 | `clauses[].lockedOptionId` | An option ID belonging to that clause | The search must select this option. Other choices stay in the draft but are excluded from search. |
+| `clauses[].note` | String of 1 to 240 characters | Facilitator reminder shown on the worksheet. The solver ignores it. |
 
 Omit an optional field to disable it. `null`, numeric strings, unknown option references, and out-of-range values are invalid. `groups[].veto` must be a boolean if present; `false` and omitted are equivalent and are dropped from canonical JSON. In the GUI, a blank budget or floor omits the field; zero remains a real constraint. Locks may select originals or alternatives. A locked alternative still contributes its full cost and counts as a changed clause. Removing a locked option requires unlocking it first.
 
@@ -127,6 +129,6 @@ Use the result to focus a human conversation. Establish process rules, evidence 
 - `explorePackageGaps(proposal, result)` names cheaper near misses, closest misses, and later passing packages, with approval-point and cost gaps versus the recommendation.
 - `previewLockedOption(proposal, clauseId, optionId)` copies the proposal, locks that option, and re-runs search. It does not mutate the input.
 - `parseSupportMatrixCsv(csvText, proposal)` replaces group scores from a CSV whose header is `clause_id,option_id` then every group id. It does not change labels, costs, locks, or constraints. Named errors include `empty_csv`, `missing_header`, `missing_clause_id_column`, `missing_option_id_column`, `unknown_group_column`, `missing_group_column`, `unknown_clause`, `unknown_option`, `formula_cell`, `invalid_score`, `duplicate_row`, `truncated_row`, and `invalid_proposal`. Leading apostrophes are stripped before formula detection. `formatSupportMatrixCsv` writes the same matrix.
-- `formatDiscussionWorksheet(proposal)` returns unmarked option boxes as plain text. It is a conversation aid, not a recorded vote or legal ballot.
+- `formatDiscussionWorksheet(proposal)` returns unmarked option boxes as plain text. Optional clause notes appear as facilitator text. It is a conversation aid, not a recorded vote or legal ballot.
 
 Snapshot libraries hold at most 20 canonical proposals and reject stored payloads over 5,000,000 characters. Single-draft JSON import remains bounded at 250 KB. Undo keeps at most 50 prior draft states in memory; undo history, custom choices, and downside settings are not part of the proposal schema.

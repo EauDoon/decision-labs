@@ -1156,3 +1156,31 @@ test("discussion worksheet lists every option as unmarked text and rejects inval
   const invalid = formatDiscussionWorksheet({ title: "" });
   assert.equal(invalid.status, "invalid");
 });
+
+test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {
+  const input = proposal({ clauses: [{ id: "one", title: "Hours", options: [
+    option("original", true, { g: 50 }), option("alternative", false, { g: 80 }, 1), option("other", false, { g: 70 }, 2),
+  ] }] });
+  assert.equal(Object.hasOwn(canonicalProposal(input).clauses[0], "note"), false);
+  input.clauses[0].note = "Ask who closes the park.";
+  const before = JSON.stringify(input);
+  const clean = canonicalProposal(input);
+  assert.equal(clean.clauses[0].note, "Ask who closes the park.");
+  const withNote = findSmallestAgreement(input);
+  const withoutNote = findSmallestAgreement(canonicalProposal({ ...input, clauses: input.clauses.map((clause) => { const { note, ...rest } = clause; return rest; }) }));
+  assert.equal(withNote.status, withoutNote.status);
+  assert.deepEqual(withNote.agreement.options.map((option) => option.id), withoutNote.agreement.options.map((option) => option.id));
+  const worksheet = formatDiscussionWorksheet(input);
+  assert.match(worksheet.text, /Facilitator note: Ask who closes the park\./u);
+  const stripped = canonicalProposal({ ...input, clauses: input.clauses.map((clause) => { const { note, ...rest } = clause; return rest; }) });
+  const changes = compareScenarioInputs(stripped, input);
+  assert.ok(changes.some((row) => row.field.includes("facilitator note") && row.after === "Ask who closes the park."));
+  for (const value of ["", 1, null, {}, "x".repeat(241)]) {
+    const bad = proposal({ clauses: [{ id: "one", title: "Hours", options: [
+      option("original", true, { g: 50 }), option("alternative", false, { g: 80 }, 1), option("other", false, { g: 70 }, 2),
+    ] }] });
+    bad.clauses[0].note = value;
+    assert.equal(validateProposal(bad).valid, false, `note ${String(value).slice(0, 20)}`);
+  }
+  assert.equal(JSON.stringify(input), before);
+});

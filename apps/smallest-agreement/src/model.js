@@ -117,6 +117,9 @@ export function validateProposal(proposal) {
       if (isPlainObject(clause) && Object.hasOwn(clause, "lockedOptionId") && (typeof clause.lockedOptionId !== "string" || !clause.options.some((option) => option?.id === clause.lockedOptionId))) {
         errors.push(`clauses[${clauseIndex}].lockedOptionId must identify an option in that clause, or be omitted.`);
       }
+      if (isPlainObject(clause) && Object.hasOwn(clause, "note") && (typeof clause.note !== "string" || clause.note.length < 1 || clause.note.length > 240)) {
+        errors.push(`clauses[${clauseIndex}].note must be a string of 1 to 240 characters, or omitted.`);
+      }
     });
   }
   return { valid: errors.length === 0, errors };
@@ -142,6 +145,7 @@ export function canonicalProposal(proposal) {
       id: clause.id,
       title: clause.title,
       ...(Object.hasOwn(clause, "lockedOptionId") ? { lockedOptionId: clause.lockedOptionId } : {}),
+      ...(Object.hasOwn(clause, "note") ? { note: clause.note } : {}),
       options: clause.options.map((option) => ({
         id: option.id,
         label: option.label,
@@ -757,6 +761,7 @@ export function compareScenarioInputs(before, after) {
       const prefix = "Clause " + clause.id + ": ";
       fields.set(prefix + "title", clause.title);
       fields.set(prefix + "locked option", clause.lockedOptionId);
+      fields.set(prefix + "facilitator note", clause.note);
       for (const option of clause.options) {
         const optionPrefix = prefix + option.id + ": ";
         fields.set(optionPrefix + "label", option.label);
@@ -1096,6 +1101,7 @@ export function formatDiscussionWorksheet(proposal) {
   lines.push("");
   for (const clause of p.clauses) {
     lines.push(clause.title + (clause.lockedOptionId ? " [locked]" : ""));
+    if (clause.note) lines.push(`Facilitator note: ${clause.note.replace(/[\r\n]+/gu, " ")}`);
     for (const option of clause.options) {
       const tags = [];
       if (option.original === true) tags.push("original");

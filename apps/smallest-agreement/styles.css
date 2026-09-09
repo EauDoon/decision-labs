@@ -58,6 +58,7 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .group-veto { grid-column: 1 / -1; display: flex; align-items: center; gap: .5rem; font-size: .82rem; padding-bottom: .65rem; border-bottom: 1px solid var(--line); }
 .group-veto input { width: auto; }
 .clause-lock { display: grid; gap: .4rem; margin: .75rem 0; font-size: .82rem; }
+.clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
 .constraint-card { margin-bottom: 1rem; }
 
 .workbench { padding: clamp(1.4rem, 4vw, 3.7rem); min-width: 0; }

@@ -425,6 +425,9 @@ function renderClauses() {
           ${clause.options.map((option) => `<option value="${escapeHtml(option.id)}" ${clause.lockedOptionId === option.id ? "selected" : ""}>${escapeHtml(option.label)}</option>`).join("")}
         </select>
       </label>
+      <label class="clause-note">Facilitator note (optional)
+        <input data-field="clause-note" data-clause-id="${escapeHtml(clause.id)}" type="text" maxlength="240" value="${escapeHtml(clause.note ?? "")}" placeholder="Not used by the solver" aria-label="${escapeHtml(clause.title)} facilitator note">
+      </label>
       <div class="options-table-wrap"><table class="options-table">
         <thead><tr><th scope="col">Option</th><th scope="col">Change cost</th>${groups.map((group) => `<th scope="col">${escapeHtml(group.name)}<br>support</th>`).join("")}<th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
         <tbody>${clause.options.map((option) => `
@@ -441,7 +444,7 @@ function renderClauses() {
 
 function renderBallot() {
   const proposal = state.proposal;
-  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p>${proposal.clauses.map((clause) => `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3><ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`).join("")}`;
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p>${proposal.clauses.map((clause) => `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`).join("")}`;
 }
 
 function renderResults(result) {
@@ -920,6 +923,11 @@ document.addEventListener("input", (event) => {
   if (field === "group-name") groupById(target.dataset.groupId).name = target.value;
   if (field === "group-weight") groupById(target.dataset.groupId).weight = target.valueAsNumber;
   if (field === "clause-title") clauseById(target.dataset.clauseId).title = target.value;
+  if (field === "clause-note") {
+    const clause = clauseById(target.dataset.clauseId);
+    if (target.value === "") delete clause.note;
+    else clause.note = target.value;
+  }
   if (field === "option-label") optionById(clauseById(target.dataset.clauseId), target.dataset.optionId).label = target.value;
   if (field === "option-label") {
     const select = [...document.querySelectorAll('[data-field="clause-lock"]')].find((element) => element.dataset.clauseId === target.dataset.clauseId);
@@ -932,6 +940,7 @@ document.addEventListener("input", (event) => {
   save();
   $("#proposal-heading").textContent = state.proposal.title;
   $("#autosave-status").textContent = state.saveMessage;
+  renderBallot();
   renderResults(currentResult());
 });
 
@@ -1082,6 +1091,7 @@ document.addEventListener("click", (event) => {
     const copy = {
       id: makeId("clause"),
       title: source.title.length + 7 > 120 ? `${source.title.slice(0, 113)} (copy)` : `${source.title} (copy)`,
+      ...(source.note ? { note: source.note } : {}),
       options: source.options.map((option) => ({
         id: makeId(option.original ? "original" : "alternative"),
         label: option.label,

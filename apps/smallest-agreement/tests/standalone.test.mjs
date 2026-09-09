@@ -52,6 +52,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /id="printable-ballot"/u);
   assert.match(html, /Discussion worksheet/u);
+  assert.match(html, /Facilitator note \(optional\)/u);
   assert.match(html, /Duplicate group/u);
   assert.match(html, /Duplicate clause/u);
   assert.match(html, /id="worksheet-button"/u);
@@ -475,6 +476,19 @@ test("show workshop tour reopens the first-run coach after it was dismissed", as
   app.click("#coach-skip");
   assert.equal(app.coachHidden(), true);
   assert.equal(storage.get("smallest-agreement:coach:v1"), "dismissed");
+});
+
+test("clause notes persist on the worksheet and can be undone without changing search inputs otherwise", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for clause notes");
+  app.edit("clause-note", "Ask about lighting.", { field: "clause-note", clauseId: "path" });
+  const saved = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(saved.clauses.find((clause) => clause.id === "path").note, "Ask about lighting.");
+  assert.match(app.clauses(), /Facilitator note/u);
+  assert.match(app.ballot(), /Facilitator note: Ask about lighting\./u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.find((clause) => clause.id === "path").note, undefined);
 });
 
 test("printable worksheet lists every clause option without recording a vote", async () => {
