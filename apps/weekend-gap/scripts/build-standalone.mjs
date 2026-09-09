@@ -51,6 +51,7 @@ const appImportMarker = `import {
   compareDemandProfiles,
   buildGateGanttSvg,
   buildGateSchedule,
+  buildQueueChartSvg,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -105,7 +106,8 @@ const exportedNames = Object.freeze([
   "DEMAND_PROFILES",
   "compareDemandProfiles",
   "buildGateSchedule",
-  "buildGateGanttSvg"
+  "buildGateGanttSvg",
+  "buildQueueChartSvg"
 ]);
 
 function normaliseLf(text) {

@@ -18,6 +18,7 @@ import {
   compareDemandProfiles,
   buildGateGanttSvg,
   buildGateSchedule,
+  buildQueueChartSvg,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -255,6 +256,7 @@ function render() {
   renderTable();
   drawChart();
   renderGantt();
+  renderQueueSvg();
 }
 
 function renderTable() {
@@ -314,6 +316,10 @@ function renderGantt() {
     fragment.append(row);
   });
   document.querySelector("#gantt-table").replaceChildren(fragment);
+}
+
+function renderQueueSvg() {
+  document.querySelector("#queue-svg").innerHTML = buildQueueChartSvg(scenario, baselineScenario, selectedHour);
 }
 
 function drawLine(context, points, getValue, color, dimensions, maximum) {

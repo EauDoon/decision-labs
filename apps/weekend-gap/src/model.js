@@ -779,3 +779,38 @@ export function buildGateGanttSvg(input, selectedHour = 0) {
     "</svg>";
 }
 
+/** Printable SVG of queued AUD versus hour, with optional baseline and playhead. */
+export function buildQueueChartSvg(currentInput, baselineInput = currentInput, selectedHour = 0) {
+  const comparison = compareScenarios(baselineInput, currentInput);
+  const current = comparison.candidate.timeline;
+  const baseline = comparison.baseline.timeline;
+  const width = 720;
+  const height = 220;
+  const left = 56;
+  const top = 18;
+  const plotWidth = width - 72;
+  const plotHeight = height - 50;
+  const maximum = Math.max(1, ...current.map((point) => point.queuedAud), ...baseline.map((point) => point.queuedAud));
+  const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const xAt = (hour) => left + (hour / SIMULATION_HOURS) * plotWidth;
+  const yAt = (value) => top + plotHeight - (value / maximum) * plotHeight;
+  const pathFor = (points) => points.map((point, index) => `${index ? "L" : "M"}${xAt(point.hour).toFixed(2)} ${yAt(point.queuedAud).toFixed(2)}`).join(" ");
+  const ticks = [0, 9, 33, 57, 72].map((hour) => {
+    const x = xAt(hour);
+    return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
+  }).join("");
+  const yLabels = [0, 0.5, 1].map((share) => {
+    const value = maximum * share;
+    const y = yAt(value);
+    return `<text x="8" y="${(y + 4).toFixed(1)}" font-size="10" fill="#3e5360">${svgEscape((value / 1000000).toFixed(value >= 10000000 ? 0 : 1) + "m")}</text>`;
+  }).join("");
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="Printable queued AUD versus hour. The vertical line is the selected hour. A data table follows.">` +
+    `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
+    yLabels +
+    `<path d="${pathFor(baseline)}" fill="none" stroke="#7f93b8" stroke-width="2" stroke-dasharray="6 4" />` +
+    `<path d="${pathFor(current)}" fill="none" stroke="#b57914" stroke-width="2.5" />` +
+    `<line x1="${xAt(markerHour).toFixed(2)}" y1="${top}" x2="${xAt(markerHour).toFixed(2)}" y2="${top + plotHeight}" stroke="#17324a" stroke-width="1.5" />` +
+    ticks +
+    "</svg>";
+}
+
