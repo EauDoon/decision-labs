@@ -64,6 +64,8 @@ effectiveVolume >= minimumCommitment
 effectiveVolume <= capacity, when capacity is supplied
 ```
 
+Capacity use is effective volume divided by capacity. When capacity is omitted the ledger reports Unbounded. When capacity is zero and volume is positive the ratio is undefined and the ledger reports that volume exceeds zero capacity. This ratio is a utilization display, not a probability.
+
 The partnership is viable only when every participant holds.
 
 The named weakest participant has the smallest transaction-volume distance to either its economic exit threshold or its capacity ceiling. Its binding limit identifies the nearest boundary as minimum acceptable profit, minimum commitment, or capacity. This is a local headroom comparison, not a probability of exit. First breakpoint uses a different measure, relative shock size, so the two rankings can name different participants.

@@ -170,6 +170,35 @@ test('capacity makes the partnership non-viable even when profit passes', () => 
   assert.match(result.participants[1].failureReasons.join(' '), /exceeds capacity/);
 });
 
+test('capacity utilization is volume over capacity, unbounded, or exceeds zero capacity', () => {
+  const balanced = calculatePartnership(clonePreset('balanced'));
+  assert.equal(balanced.effectiveVolume, 100000);
+  assert.equal(balanced.participants[0].capacityUtilization, 100000 / 130000);
+  assert.ok(balanced.participants[0].capacityUtilization < 1);
+
+  const jv = calculatePartnership(clonePreset('threePartyJv'));
+  const capital = jv.participants.find((item) => item.id === 'capital');
+  assert.equal(capital.capacity, null);
+  assert.equal(capital.capacityUtilization, null);
+
+  const over = clonePreset('balanced');
+  over.participants[0].capacity = 50000;
+  const overResult = calculatePartnership(over);
+  assert.equal(overResult.participants[0].capacityUtilization, 2);
+
+  const zero = clonePreset('balanced');
+  zero.participants[0].capacity = 0;
+  const zeroResult = calculatePartnership(zero);
+  assert.equal(zeroResult.participants[0].capacityUtilization, Number.POSITIVE_INFINITY);
+
+  const idle = clonePreset('balanced');
+  idle.deal.monthlyVolume = 0;
+  idle.deal.addressableVolume = 0;
+  idle.participants.forEach((item) => { item.capacity = 0; item.minimumCommitment = 0; });
+  const idleResult = calculatePartnership(idle);
+  assert.equal(idleResult.participants[0].capacityUtilization, 0);
+});
+
 test('volume, fee, and cost shocks report economically meaningful thresholds', () => {
   const config = clonePreset('balanced');
   const participant = config.participants[0];

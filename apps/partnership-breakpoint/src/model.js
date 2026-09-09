@@ -380,6 +380,11 @@ export function evaluateParticipant(participant, deal, volume = effectiveVolume(
   const profitPass = monthlyProfit >= participant.minimumAcceptableProfit - EPSILON;
   const commitmentPass = volume >= commitment - EPSILON;
   const capacityPass = capacity === null || volume <= capacity + EPSILON;
+  const capacityUtilization = capacity === null
+    ? null
+    : capacity <= EPSILON
+      ? (volume <= EPSILON ? 0 : Number.POSITIVE_INFINITY)
+      : volume / capacity;
   const exitThreshold = exitVolume(participant, deal.feePerTransaction);
   const headroomToExit = exitThreshold === null ? null : volume - exitThreshold;
   const capacityHeadroom = capacity === null || capacity > deal.addressableVolume ? Infinity : capacity - volume;
@@ -407,6 +412,7 @@ export function evaluateParticipant(participant, deal, volume = effectiveVolume(
     exitVolume: exitThreshold,
     headroomToExit,
     capacityHeadroom,
+    capacityUtilization,
     fragilityHeadroom,
     bindingConstraint,
     profitPass,

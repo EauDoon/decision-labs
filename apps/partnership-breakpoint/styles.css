@@ -136,7 +136,8 @@ th, td { padding: .58rem .65rem; text-align: right; vertical-align: top; border-
 th:first-child, td:first-child { text-align: left; }
 thead th { background: var(--paper-deep); color: var(--muted); font-size: .7rem; letter-spacing: .05em; text-transform: uppercase; }
 tbody tr:last-child td { border-bottom: 0; }
-.failure-text { color: #b42318; white-space: normal; min-width: 13rem; }
+.capacity-use { display: inline-flex; align-items: center; gap: .4rem; white-space: normal; min-width: 9rem; }
+.capacity-meter { flex: 0 0 auto; border: 1px solid var(--line); background: white; }
 .pass-text { color: #0a4f66; }
 .output-note { color: var(--muted); font-size: .78rem; margin: .5rem 1rem 0; }
 

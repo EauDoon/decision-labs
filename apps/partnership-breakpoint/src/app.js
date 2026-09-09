@@ -512,6 +512,20 @@ function stressSection() {
     <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
 }
 
+function capacityUtilizationCell(participant) {
+  if (participant.capacity == null || participant.capacityUtilization == null) {
+    return '<td>Unbounded</td>';
+  }
+  if (!Number.isFinite(participant.capacityUtilization)) {
+    return '<td class="failure-text">Exceeds zero capacity</td>';
+  }
+  const pct = participant.capacityUtilization * 100;
+  const capped = Math.max(0, Math.min(100, pct));
+  const over = pct > 100 + 1e-9;
+  const label = `${formatPct(pct)} of capacity`;
+  return `<td><span class="capacity-use"><svg class="capacity-meter" role="img" aria-label="${escapeAttribute(label)}" viewBox="0 0 100 8" width="72" height="8"><rect x="0" y="0" width="100" height="8" fill="#eae7de"></rect><rect x="0" y="0" width="${capped}" height="8" fill="${over ? '#d94f3d' : '#1558d6'}"></rect></svg><span>${escapeAttribute(label)}</span></span></td>`;
+}
+
 function participantTable(result) {
   const rows = result.participants.map((participant) => `
     <tr>
@@ -526,10 +540,11 @@ function participantTable(result) {
       <td>${formatVolume(participant.exitVolume)}</td>
       <td>${participant.headroomToExit === null ? 'Impossible' : formatVolume(participant.headroomToExit)}</td>
       <td>${participant.capacity === null ? 'Unbounded' : formatVolume(participant.capacity)}</td>
+      ${capacityUtilizationCell(participant)}
       <td>${escapeAttribute(participant.bindingConstraint.label)}</td>
       <td class="${participant.viable ? 'pass-text' : 'failure-text'}">${participant.viable ? 'Holds' : escapeAttribute(participant.failureReasons.join('; '))}</td>
     </tr>`).join('');
-  return `<section class="panel" id="participant-ledger"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary.</p></section>`;
+  return `<section class="panel" id="participant-ledger"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Capacity use</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary. Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied.</p></section>`;
 }
 
 function shockCard(label, shock, units) {

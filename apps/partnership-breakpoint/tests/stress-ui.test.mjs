@@ -531,6 +531,21 @@ test('share-to-hold previews a split and requires an explicit apply', async () =
   assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
 });
 
+test('participant ledger shows capacity utilization as a meter plus text, or unbounded', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /<th>Capacity use<\/th>/);
+  assert.match(app.markup(), /class="capacity-meter"/);
+  assert.match(app.markup(), /aria-label="76.9% of capacity"/);
+  assert.match(app.markup(), /76\.9% of capacity/);
+  const jv = clonePreset('threePartyJv');
+  app.import(jv);
+  assert.match(app.markup(), />Unbounded</);
+  const over = clonePreset('balanced');
+  over.participants[0].capacity = 0;
+  app.import(over);
+  assert.match(app.markup(), /Exceeds zero capacity/);
+});
+
 test('tornado chart includes an SVG and a text-equivalent table', async () => {
   const app = await workbench();
   assert.match(app.markup(), /Adverse-shock tornado/);
