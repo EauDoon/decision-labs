@@ -62,3 +62,18 @@ test("keyboard handler jumps to the winner summary when not typing", async () =>
   assert.match(app, /#inspector-summary/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
+
+test("shortcut help documents the leftover residual coverage jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>l<\/kbd> Focus leftover residual coverage/u);
+  assert.match(html, /id="residual-title"[^>]*tabindex="-1"/u);
+});
+
+test("keyboard handler jumps to leftover residual coverage when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "l"\)/u);
+  assert.match(app, /function focusResidualCoverage\(/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /#buyer-tab/u);
+});

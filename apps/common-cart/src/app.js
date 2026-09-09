@@ -669,6 +669,11 @@ function handleShortcut(event) {
   if (key === "w") {
     event.preventDefault();
     focusWinnerSummary();
+    return;
+  }
+  if (key === "l") {
+    event.preventDefault();
+    focusResidualCoverage();
   }
 }
 
@@ -687,6 +692,12 @@ function focusWinnerSummary() {
     return;
   }
   document.querySelector("#inspector-summary")?.focus();
+}
+
+function focusResidualCoverage() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#residual-title")?.focus();
 }
 
 function focusOffersList() {
