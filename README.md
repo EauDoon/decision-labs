@@ -79,8 +79,9 @@ Decision Labs page that points back to the catalog rather than a blank
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
 an input. Press `h` to focus the catalog heading. Press `n` to focus What's
 new. Press `w` to focus the workbenches. Press `k` to focus How it works.
-Press `t` to focus Trust and limits. Press `?` on the catalog for the in-page
-shortcut list. The branded 404
+Press `t` to focus Trust and limits. Press `c` to copy the catalog address
+when this page is served over http. On a file URL that key does not claim a
+copy succeeded. Press `?` on the catalog for the in-page shortcut list. The branded 404
 page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
 Smallest Agreement, and Weekend Gap. When the catalog is served over http,

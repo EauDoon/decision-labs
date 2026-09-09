@@ -450,7 +450,7 @@
         <li data-app="smallest-agreement">1.4.3</li>
         <li data-app="weekend-gap">1.4.3</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>c</kbd> to copy the catalog address on http. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -463,6 +463,7 @@
           <dt><kbd>w</kbd></dt><dd>Focus the workbenches</dd>
           <dt><kbd>k</kbd></dt><dd>Focus How it works</dd>
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
+          <dt><kbd>c</kbd></dt><dd>Copy catalog address when this page is served over http</dd>
           <dt><kbd>?</kbd></dt><dd>Show or hide this list</dd>
           <dt><kbd>Esc</kbd></dt><dd>Hide this list</dd>
         </dl>
@@ -568,10 +569,15 @@
       const urlTools = document.getElementById('catalog-url-tools');
       const copyBtn = document.getElementById('copy-catalog-url');
       const copyStatus = document.getElementById('copy-catalog-status');
-      if (urlTools && /^https?:$/.test(location.protocol)) {
+      const catalogIsHttp = () => /^https?:$/.test(location.protocol);
+      if (urlTools && catalogIsHttp()) {
         urlTools.hidden = false;
       }
       copyBtn?.addEventListener('click', async () => {
+        if (!catalogIsHttp()) {
+          if (copyStatus) copyStatus.textContent = '';
+          return;
+        }
         const url = location.href;
         try {
           if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
@@ -626,6 +632,11 @@
         if (event.key === 't') {
           event.preventDefault();
           document.getElementById('trust')?.focus();
+          return;
+        }
+        if (event.key === 'c') {
+          event.preventDefault();
+          if (catalogIsHttp()) copyBtn?.click();
           return;
         }
         if (event.key === 'Escape' && shortcuts && !shortcuts.hidden) {

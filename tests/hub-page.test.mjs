@@ -217,3 +217,17 @@ test('copy catalog address control exists and stays hidden off http', () => {
   assert.match(html, /@media print[\s\S]*\.catalog-url-tools \{ display: none !important; \}/);
   assert.match(html, /The control stays hidden if you open the page from a file/);
 });
+
+test('keyboard c copies the catalog address on http through the same control', () => {
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /if \(catalogIsHttp\(\)\) copyBtn\?\.click\(\)/);
+  assert.match(html, /const catalogIsHttp = \(\) => \/\^https\?:\$\/\.test\(location\.protocol\)/);
+  assert.match(html, /if \(!catalogIsHttp\(\)\) \{/);
+  assert.match(html, /copyStatus\.textContent = ''/);
+  assert.doesNotMatch(html, /Copied the catalog address[\s\S]*file:/);
+  assert.match(html, /<kbd>c<\/kbd><\/dt><dd>Copy catalog address when this page is served over http/);
+  assert.match(html, /Press <kbd>c<\/kbd> to copy the catalog address on http/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `c` to copy the catalog address/);
+  assert.match(readme, /On a file URL that key does not claim a\s+copy succeeded/);
+});
