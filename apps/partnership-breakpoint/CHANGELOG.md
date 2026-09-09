@@ -1,5 +1,12 @@
 # Changelog
 
+## 1.5.0
+
+- Optional constraint review covers effective-volume intervals, independent slack, fixed and variable cost allowances, funding shares, fee and volume scenarios, operational conflicts, and zero-volume obligations.
+- Export and inspect bounded input-bound review packets with recomputation, exact result checks, stale-read cancellation, and no replacement of the working case.
+- Retains all 1.4.3 roster, comparison, export, print, keyboard and preset features.
+
+
 ## 1.4.3
 
 - Export participant CSV uses the same columns as import, with formula-safe cells. Empty optional capacity and commitment stay blank so a later import restores null. Identifiers are omitted because import regenerates them.

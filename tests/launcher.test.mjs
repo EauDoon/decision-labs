@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
+import { readFileSync } from 'node:fs';
 import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
@@ -25,7 +26,8 @@ test('launcher serves only workbenches and refuses hostile hosts and methods', a
   assert.match(page.body, /Share-to-hold/);
   assert.match(page.body, /CSV roster, capacity, and notes/);
   assert.match(page.body, /Queue-clear hours and Gantt compare/);
-  assert.match(page.body, /data-app="partnership-breakpoint">1\.4\.3</);
+  const partnershipVersion = JSON.parse(readFileSync(new URL('../apps/partnership-breakpoint/package.json', import.meta.url), 'utf8')).version;
+  assert.ok(page.body.includes('data-app="partnership-breakpoint">' + partnershipVersion + '<'));
   assert.match(page.body, /Trust and limits/);
   assert.match(page.body, /The workbenches/);
   assert.match(page.body, /Open workbench/);

@@ -36,6 +36,16 @@ SOFTWARE.
       <div class="wordmark">PARTNERSHIP / BREAKPOINT</div>
       <p>Find the first participant that exits, and the smallest economic change that gets you there.</p>
     </header>
+    <details class="partnership-review" id="partnership-review">
+      <summary>Review constraints and negotiation room</summary>
+      <p>Choose one question about the current case. These declared-input calculations do not change your proposal.</p>
+      <label for="partnership-review-tool">Review question</label>
+      <div class="review-controls"><select id="partnership-review-tool"></select><button id="partnership-review-run" type="button">Run review</button></div>
+      <div class="review-controls"><button id="partnership-review-export" type="button" disabled>Export review packet</button><button id="partnership-review-import" type="button">Inspect review packet</button><input id="partnership-review-file" type="file" accept="application/json,.json" hidden></div>
+      <p>Packets include participant inputs and notes. Review before sharing. They are unsigned consistency records.</p>
+      <p id="partnership-review-origin"></p>
+      <div id="partnership-review-output" aria-live="polite"></div>
+    </details>
     <main id="workbench" tabindex="-1"></main>
     <footer class="site-footer">
       <span>Static, local, and deterministic.</span>

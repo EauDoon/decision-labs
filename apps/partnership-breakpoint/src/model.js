@@ -1647,3 +1647,110 @@ export function stressGridCsv(config, options) {
   }
   return `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\r\n')}\r\n`;
 }
+
+export const PARTNERSHIP_REVIEW_TOOLS = Object.freeze([
+  {id:'interval',title:'Feasible effective volume interval'},
+  {id:'slack',title:'Constraint slack ledger'},
+  {id:'fixed',title:'Fixed-cost allowance'},
+  {id:'variable',title:'Variable-cost allowance'},
+  {id:'shares',title:'Revenue-share funding needs'},
+  {id:'fees',title:'Common fee scenarios'},
+  {id:'operations',title:'Commitment and capacity conflicts'},
+  {id:'volumes',title:'Effective-volume scenarios'},
+  {id:'zero',title:'Zero-volume obligations'},
+// PB_REVIEW_TOOLS
+]);
+
+/** Bounded declared-input reviews. Rows contain display primitives only. */
+export function analyzePartnershipReview(rawConfig, tool) {
+ const config=assertValidConfiguration(rawConfig);
+ const selected=PARTNERSHIP_REVIEW_TOOLS.find(entry=>entry.id===tool);
+ if(!selected) throw new ValidationError(['Unknown partnership review.']);
+ const result=calculatePartnership(config);
+ const report=(columns,rows,note)=>({tool,title:selected.title,currency:config.deal.currency??'units',columns,rows:rows.map(row=>row.map(value=>typeof value==='number'&&!Number.isFinite(value)?null:value)),note:note+' A blank numeric result can also mean it exceeds finite arithmetic bounds.'});
+ switch(tool){
+ case 'interval': {
+
+      let lower=0,upper=config.deal.addressableVolume; const impossible=[];
+      for(const p of config.participants){
+        const contribution=p.revenueShare*config.deal.feePerTransaction-p.variableCostPerTransaction;
+        const obligation=p.fixedMonthlyCost+p.riskCost+p.minimumAcceptableProfit;
+        lower=Math.max(lower,p.minimumCommitment??0); upper=Math.min(upper,p.capacity??upper);
+        if(contribution>0) lower=Math.max(lower,obligation/contribution);
+        else if(obligation>0) impossible.push(p.name+' cannot fund its profit floor');
+        else if(contribution<0) upper=0;
+      }
+      const feasible=!impossible.length&&lower<=upper;
+      return report(['Required effective volume','Maximum effective volume','Interval','Reason'],[[lower,upper,feasible?'Feasible':'Empty',impossible.join('; ')||(lower>upper?'Lower bound exceeds upper bound':'All declared constraints overlap')]],'Continuous effective transactions, with fee, shares and costs fixed. Bounds use exact inequalities; the existing evaluator has a tiny numerical tolerance. This is not planned pre-shock volume or evidence that demand will occur.');
+
+ }
+ case 'slack': {
+
+ return report(['Participant','Profit above floor','Volume above commitment','Capacity remaining','Current tests'],result.participants.map(p=>[p.name,p.monthlyProfit-p.minimumAcceptableProfit,p.volume-(p.minimumCommitment??0),p.capacity==null?null:p.capacity-p.volume,p.viable?'Hold':p.failureReasons.join('; ')]),'Signed slack uses current effective volume. Negative values are breaches; a blank capacity is unbounded. Monetary and transaction slacks are distinct units and cannot be added.');
+
+ }
+ case 'fixed': {
+
+ return report(['Participant','Current fixed cost','Maximum fixed cost','Change allowance','Interpretation'],result.participants.map(p=>{const maximum=p.volume*p.contributionPerTransaction-p.riskCost-p.minimumAcceptableProfit;return[p.name,p.fixedMonthlyCost,maximum<0?null:Math.min(MAX_NUMERIC_INPUT,maximum),p.monthlyProfit-p.minimumAcceptableProfit,maximum<0?'Even zero fixed cost misses the profit floor':maximum>MAX_NUMERIC_INPUT?'Ceiling capped at model input limit':'Profit-only ceiling'];}),'Each row changes only that participant fixed cost. Capacity and commitment remain separate tests; a positive allowance does not establish partnership viability.');
+
+ }
+ case 'variable': {
+
+ return report(['Participant','Current variable cost','Maximum variable cost / transaction','Change allowance / transaction','Interpretation'],result.participants.map(p=>{const maximum=p.volume>0?p.revenueShare*config.deal.feePerTransaction-(p.fixedMonthlyCost+p.riskCost+p.minimumAcceptableProfit)/p.volume:null;return[p.name,p.variableCostPerTransaction,maximum===null||maximum<0?null:Math.min(MAX_NUMERIC_INPUT,maximum),p.volume>0?(p.monthlyProfit-p.minimumAcceptableProfit)/p.volume:null,maximum===null?'No transactions; variable cost has no effect':maximum<0?'Zero variable cost is insufficient':'Profit-only ceiling'];}),'Current effective volume, fee, shares and monthly costs stay fixed. Blank means no nonnegative ceiling can be calculated. This does not model demand response or negotiated cost changes.');
+
+ }
+ case 'shares': {
+
+ const gross=result.effectiveVolume*config.deal.feePerTransaction;
+ const rows=result.participants.map(p=>{const needs=p.variableCost+p.fixedCost+p.riskCost+p.minimumAcceptableProfit;const share=gross>0?needs/gross:needs===0?0:null;return[p.name,p.revenueShare,share,share===null?null:p.revenueShare-share];});
+ const total=rows.every(r=>r[2]!==null)?rows.reduce((sum,r)=>sum+r[2],0):null;
+ rows.push(['Total funding need',config.participants.reduce((sum,p)=>sum+p.revenueShare,0),total,total===null?null:1-total]);
+ return report(['Participant','Current share','Minimum funding share','Share above requirement'],rows,'Shares are fractions of the same revenue pool, not independent offers. A total requirement above 1 cannot be funded at these terms. Blank means positive obligations with no gross revenue. Operational constraints are not repaired by a split.');
+
+ }
+ case 'fees': {
+
+ const rows=[.75,1,1.25,1.5].map(factor=>{const fee=Math.min(MAX_NUMERIC_INPUT,config.deal.feePerTransaction*factor);const evaluated=calculatePartnership({...config,deal:{...config.deal,feePerTransaction:fee}});return[factor,fee,evaluated.participants.filter(p=>p.viable).length,evaluated.totalProfit,Math.min(...evaluated.participants.map(p=>p.monthlyProfit-p.minimumAcceptableProfit)),evaluated.viable?'All hold':'At least one exits'];});
+ return report(['Fee multiplier','Tested fee','Participants holding','Total monthly profit','Lowest profit slack','Outcome'],rows,'Four illustrative fee levels, capped at the model input limit. Only the common fee changes. Volume, shares, costs and operational limits stay fixed; these points are not an optimum or forecast.');
+
+ }
+ case 'operations': {
+
+ const required=Math.max(...config.participants.map(p=>p.minimumCommitment??0));const ceiling=Math.min(config.deal.addressableVolume,...config.participants.map(p=>p.capacity??config.deal.addressableVolume));
+ return report(['Participant','Commitment','Capacity','Demand ceiling','Gap from shared requirement'],config.participants.map(p=>[p.name,p.minimumCommitment??0,p.capacity??null,config.deal.addressableVolume,Math.min(p.capacity??config.deal.addressableVolume,config.deal.addressableVolume)-required]).concat([['Shared operational interval',required,ceiling,config.deal.addressableVolume,ceiling-required]]),'Every participant handles the same effective volume. A negative shared gap means no volume satisfies all commitments, capacities and stated demand. A nonnegative gap does not establish profitability.');
+
+ }
+ case 'volumes': {
+
+ const rows=[];for(const share of [0,.25,.5,.75,1]){const volume=config.deal.addressableVolume*share;const evaluated=calculatePartnership({...config,deal:{...config.deal,monthlyVolume:volume,volumeShockPct:0}});for(const p of evaluated.participants)rows.push([share,volume,p.name,p.monthlyProfit,p.viable?'Hold':p.failureReasons.join('; ')]);}
+ return report(['Fraction of demand ceiling','Effective volume','Participant','Monthly profit','Current tests'],rows,'Five effective-volume points from zero through declared addressable demand. The counterfactual resets the volume shock to zero so it is not counted twice. Capacity violations remain visible; inputs are not changed.');
+
+ }
+ case 'zero': {
+
+ return report(['Participant','Monthly cash cost at zero','Profit at zero','Unfunded profit requirement','Minimum committed transactions','Zero-volume tests'],config.participants.map(p=>{const tested=evaluateParticipant(p,config.deal,0);return[p.name,p.fixedMonthlyCost+p.riskCost,tested.monthlyProfit,p.fixedMonthlyCost+p.riskCost+p.minimumAcceptableProfit,p.minimumCommitment??0,tested.viable?'Hold':tested.failureReasons.join('; ')];}),'At zero transactions, modeled variable cost and fee revenue are zero. Fixed and risk costs remain. Unfunded profit requirement includes the declared profit floor, so it is not the same as a cash bill. No exit or legal obligation is inferred.');
+
+ }
+// PB_REVIEW_CASES
+ default: throw new ValidationError(['Unavailable partnership review.']);
+ }
+}
+
+export function createPartnershipReviewPacket(rawConfig, tool) {
+  const scenario = JSON.parse(JSON.stringify(assertValidConfiguration(rawConfig)));
+  const packet = { format: 'partnership-review', version: 1, tool, scenario, inputJSON: JSON.stringify(scenario), review: analyzePartnershipReview(scenario, tool) };
+  if (new TextEncoder().encode(JSON.stringify(packet)).length > 1048576) throw new Error('Review packet exceeds 1 MiB. Choose a narrower review.');
+  return packet;
+}
+
+export function replayPartnershipReviewPacket(candidate) {
+  const fields = ['format', 'version', 'tool', 'scenario', 'inputJSON', 'review'];
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== fields.length || !fields.every((field) => Object.hasOwn(candidate, field)) || candidate.format !== 'partnership-review' || candidate.version !== 1) throw new Error('Unsupported review packet.');
+  const current = createPartnershipReviewPacket(candidate.scenario, candidate.tool);
+  if (candidate.inputJSON !== current.inputJSON) throw new Error('Review input snapshot changed. Run a new review.');
+  const supplied = candidate.review, expected = current.review;
+  if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied) || Object.keys(supplied).length !== Object.keys(expected).length || !Object.keys(expected).every((field) => Object.hasOwn(supplied, field))) throw new Error('Review result fields changed.');
+  for (const field of ['tool', 'title', 'currency', 'note']) if (supplied[field] !== expected[field]) throw new Error('Review result does not match the input snapshot.');
+  if (!Array.isArray(supplied.columns) || supplied.columns.length !== expected.columns.length || expected.columns.some((value, index) => !Object.hasOwn(supplied.columns, index) || supplied.columns[index] !== value) || !Array.isArray(supplied.rows) || supplied.rows.length !== expected.rows.length || expected.rows.some((row, index) => !Object.hasOwn(supplied.rows, index) || !Array.isArray(supplied.rows[index]) || supplied.rows[index].length !== row.length || row.some((value, column) => !Object.hasOwn(supplied.rows[index], column) || supplied.rows[index][column] !== value))) throw new Error('Review result does not match the input snapshot.');
+  return current;
+}

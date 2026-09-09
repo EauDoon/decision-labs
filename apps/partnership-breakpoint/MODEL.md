@@ -203,3 +203,43 @@ The tornado chart plots each participant's smallest bounded adverse percentage s
 Hiding a participant row in the stress ledger is a display filter. Case counts, hold counts, worst profit gaps, operational failures, and any tested proposal still include that participant. Showing the row again does not recalculate the grid.
 
 Collapsing cases every participant holds hides those case-evidence rows from the inspect table only. Expand restores them. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking.
+
+### Feasible effective volume interval
+
+The optional review can intersect participant profit, commitment, capacity and demand limits. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Constraint slack ledger
+
+The optional review can separate profit, commitment and capacity gaps at the actual effective volume. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Fixed-cost allowance
+
+The optional review can show the maximum monthly fixed cost each current split can fund. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Variable-cost allowance
+
+The optional review can translate profit slack into a per-transaction cost ceiling. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Revenue-share funding needs
+
+The optional review can compare individual funding needs against the single shared revenue pool. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Common fee scenarios
+
+The optional review can test shared fee changes against every participant without applying a proposal. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Commitment and capacity conflicts
+
+The optional review can identify incompatible operational promises independently of economics. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Effective-volume scenarios
+
+The optional review can expose how specific demand levels change participant failures. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Zero-volume obligations
+
+The optional review can make fixed monthly exposure and unfulfilled commitments explicit at zero activity. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Review packets
+
+`createPartnershipReviewPacket(config, tool)` exports the validated case, exact input JSON, and a tabular review. `replayPartnershipReviewPacket(packet)` recomputes that review, requires the exact source snapshot and every output primitive to match, and returns fresh data. The packet has six strict top-level fields, format `partnership-review`, version 1, and a 1 MiB serialized limit. It is unsigned. Finite input values can produce out-of-range ratios; those output cells are null and described as unavailable.
