@@ -814,3 +814,35 @@ export function buildQueueChartSvg(currentInput, baselineInput = currentInput, s
     "</svg>";
 }
 
+/** Horizontal bars for one-factor sensitivity cases. Table remains the text equivalent. */
+export function buildSensitivityBarsSvg(rows, metric = "totalSettledAud") {
+  if (metric !== "totalSettledAud" && metric !== "peakQueuedAud") {
+    throw new RangeError("Choose settled total or peak queue.");
+  }
+  if (!Array.isArray(rows) || rows.length === 0) return "";
+  const width = 720;
+  const rowHeight = 28;
+  const left = 70;
+  const top = 24;
+  const plotWidth = width - left - 140;
+  const height = top + rows.length * rowHeight + 16;
+  const values = rows.map((row) => row.summary[metric]);
+  const maximum = Math.max(1, ...values);
+  const bars = rows.map((row, index) => {
+    const value = row.summary[metric];
+    const y = top + index * rowHeight;
+    const barWidth = (value / maximum) * plotWidth;
+    const label = `${Math.round(row.multiplier * 100)}%`;
+    const amount = value.toLocaleString("en-AU", { style: "currency", currency: "AUD", maximumFractionDigits: 0 });
+    return `<text x="8" y="${y + 16}" font-size="12" fill="#17324a">${label}</text>` +
+      `<rect x="${left}" y="${y + 6}" width="${Math.max(0.5, barWidth).toFixed(2)}" height="16" fill="${metric === "peakQueuedAud" ? "#c9a227" : "#2f9e6b"}" />` +
+      `<text x="${(left + Math.max(8, barWidth) + 8).toFixed(1)}" y="${y + 18}" font-size="11" fill="#3e5360">${svgEscape(amount)}</text>`;
+  }).join("");
+  const title = metric === "peakQueuedAud" ? "Peak queue" : "Settled total";
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="100%" role="img" aria-label="${title} for five sensitivity cases. A table follows.">` +
+    `<rect width="${width}" height="${height}" fill="#f7fafb"/>` +
+    `<text x="8" y="16" font-size="12" fill="#17324a">${title}</text>` +
+    bars +
+    "</svg>";
+}
+

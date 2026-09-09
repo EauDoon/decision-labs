@@ -19,6 +19,7 @@ import {
   buildGateGanttSvg,
   buildGateSchedule,
   buildQueueChartSvg,
+  buildSensitivityBarsSvg,
   runSensitivity,
   libraryFromJSON,
   workspaceToJSON,
@@ -73,6 +74,7 @@ let baselineScenario = { ...scenario };
 let comparison = compareScenarios(baselineScenario, scenario);
 let reservePlan = null;
 let windowShiftPreview = null;
+let lastSensitivityRows = [];
 let selectedHour = 0;
 let playing = false;
 let playTimer = null;
@@ -167,6 +169,8 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   renderDiagnostics();
   renderDemandProfiles();
   document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-tornado").innerHTML = "";
+  lastSensitivityRows = [];
   document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
   clearWindowShiftPreview("Assumptions changed. Preview the window shift again before applying.");
   if (message) setMessage(message);
@@ -714,13 +718,21 @@ function renderDemandProfiles() {
 renderDiagnostics();
 renderDemandProfiles();
 
+function renderSensitivityTornado() {
+  const metric = document.querySelector("#sensitivity-metric").value;
+  document.querySelector("#sensitivity-tornado").innerHTML = lastSensitivityRows.length
+    ? buildSensitivityBarsSvg(lastSensitivityRows, metric)
+    : "";
+}
+
 document.querySelector("#run-sensitivity").addEventListener("click", () => {
   const field = document.querySelector("#sensitivity-field").value;
-  const rows = runSensitivity(scenario, field);
-  document.querySelector("#sensitivity-rows").replaceChildren(...rows.map(result => {
+  lastSensitivityRows = runSensitivity(scenario, field);
+  document.querySelector("#sensitivity-rows").replaceChildren(...lastSensitivityRows.map(result => {
     const row = document.createElement("tr");
     for (const value of [result.multiplier * 100 + "%", planningAud(result.effectiveValue) + (result.adjusted ? " (capped)" : ""),
-      planningAud(result.summary.totalSettledAud), planningAud(result.summary.finalQueuedAud), signedAud(result.settlementDeltaAud)]) {
+      planningAud(result.summary.totalSettledAud), planningAud(result.summary.peakQueuedAud),
+      planningAud(result.summary.finalQueuedAud), signedAud(result.settlementDeltaAud)]) {
       const cell=document.createElement("td");cell.textContent=value;row.append(cell);
     }
     const cell=document.createElement("td"), button=document.createElement("button");
@@ -728,12 +740,16 @@ document.querySelector("#run-sensitivity").addEventListener("click", () => {
     button.addEventListener("click",()=>setScenario(result.scenario,{message:"Sensitivity case applied. The pinned baseline was kept."}));
     cell.append(button);row.append(cell);return row;
   }));
-  document.querySelector("#sensitivity-status").textContent = "Five cases around the current scenario. All other assumptions held fixed. Changes are relative to the current scenario, not the pinned baseline.";
+  renderSensitivityTornado();
+  document.querySelector("#sensitivity-status").textContent = "Five cases around the current scenario. All other assumptions held fixed. Bars and table use the same cases. Changes are relative to the current scenario, not the pinned baseline.";
 });
 document.querySelector("#sensitivity-field").addEventListener("change",()=>{
+  lastSensitivityRows = [];
   document.querySelector("#sensitivity-rows").replaceChildren();
+  document.querySelector("#sensitivity-tornado").innerHTML = "";
   document.querySelector("#sensitivity-status").textContent="Run the experiment for the selected assumption.";
 });
+document.querySelector("#sensitivity-metric").addEventListener("change", renderSensitivityTornado);
 
 const LIBRARY_KEY = "weekend-gap:library:v1";
 let scenarioLibrary = [];
