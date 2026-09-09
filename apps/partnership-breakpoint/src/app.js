@@ -11,6 +11,7 @@ import {
   duplicateParticipant,
   dropAndReallocate,
   evaluateStressGrid,
+  exportDownloadName,
   makeParticipant,
   materializeStressCase,
   moveParticipant,
@@ -926,6 +927,10 @@ function attachEvents() {
   });
 }
 
+function caseExportTitle() {
+  return typeof state.deal.title === 'string' ? state.deal.title : '';
+}
+
 function exportFile() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -936,7 +941,7 @@ function exportFile() {
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = 'partnership-breakpoint.json';
+  link.download = exportDownloadName('json', caseExportTitle());
   link.click();
   setTimeout(() => URL.revokeObjectURL(url), 1000);
   setNotice('JSON exported.');
@@ -949,7 +954,7 @@ function exportRedactedFile() {
     return;
   }
   const redacted = redactConfiguration(state);
-  downloadText(`${JSON.stringify(redacted, null, 2)}\n`, 'application/json', 'partnership-breakpoint-redacted.json');
+  downloadText(`${JSON.stringify(redacted, null, 2)}\n`, 'application/json', exportDownloadName('redacted', caseExportTitle()));
   setNotice('Redacted JSON exported. Participant names are Participant 1 through N and the deal title is cleared. Identifiers and economics are unchanged.');
 }
 
@@ -1208,7 +1213,7 @@ function downloadText(contents, type, filename) {
 function exportReport() {
   const validation = validateConfiguration(state);
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting a report. ' + summarizeErrors(validation.errors)); return; }
-  downloadText(decisionReport(state, caseName.trim() || 'Current case'), 'text/markdown;charset=utf-8', 'partnership-breakpoint-report.md');
+  downloadText(decisionReport(state, caseName.trim() || 'Current case'), 'text/markdown;charset=utf-8', exportDownloadName('report', caseExportTitle()));
   setNotice('Decision report exported with assumptions and reproducible case JSON.');
 }
 
@@ -1257,12 +1262,12 @@ function copyNegotiationBrief() {
     Promise.resolve(clipboard.writeText(text)).then(() => {
       setNotice('Negotiation brief copied as Markdown.');
     }).catch(() => {
-      downloadText(text, 'text/markdown;charset=utf-8', 'partnership-breakpoint-brief.md');
+      downloadText(text, 'text/markdown;charset=utf-8', exportDownloadName('brief', caseExportTitle()));
       setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
     });
     return;
   }
-  downloadText(text, 'text/markdown;charset=utf-8', 'partnership-breakpoint-brief.md');
+  downloadText(text, 'text/markdown;charset=utf-8', exportDownloadName('brief', caseExportTitle()));
   setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
 }
 
@@ -1284,7 +1289,7 @@ function stressCsv(config) {
 function exportStressCsv() {
   const validation = validateConfiguration(state);
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting CSV. ' + summarizeErrors(validation.errors)); return; }
-  downloadText(stressCsv(state), 'text/csv;charset=utf-8', 'partnership-breakpoint-stress.csv');
+  downloadText(stressCsv(state), 'text/csv;charset=utf-8', exportDownloadName('csv', caseExportTitle()));
   setNotice('Stress CSV exported. Each row is one participant in one selected case; case counts are not probabilities.');
 }
 

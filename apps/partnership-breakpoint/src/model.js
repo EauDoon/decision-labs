@@ -1238,6 +1238,36 @@ export function compareThreeSnapshots(currentConfig, firstConfig, secondConfig) 
 }
 
 /**
+ * Lowercase hyphenated slug for download names. Path separators and punctuation
+ * collapse. Empty or unusable titles return an empty string.
+ * @param {unknown} title
+ * @returns {string}
+ */
+export function sanitizeExportSlug(title) {
+  if (typeof title !== 'string') return '';
+  const slug = title.trim().toLowerCase()
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-+|-+$/g, '')
+    .slice(0, 40)
+    .replace(/-+$/g, '');
+  return slug;
+}
+
+/**
+ * @param {'json'|'redacted'|'report'|'brief'|'csv'} kind
+ * @param {unknown} title
+ */
+export function exportDownloadName(kind, title) {
+  const slug = sanitizeExportSlug(title);
+  if (kind === 'json') return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
+  if (kind === 'redacted') return slug ? `partnership-breakpoint-${slug}-redacted.json` : 'partnership-breakpoint-redacted.json';
+  if (kind === 'report') return slug ? `partnership-breakpoint-${slug}-report.md` : 'partnership-breakpoint-report.md';
+  if (kind === 'brief') return slug ? `partnership-breakpoint-${slug}-brief.md` : 'partnership-breakpoint-brief.md';
+  if (kind === 'csv') return slug ? `partnership-breakpoint-${slug}-stress.csv` : 'partnership-breakpoint-stress.csv';
+  return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
+}
+
+/**
  * Minimum fee per transaction at which every participant holds, with volume
  * and shares held fixed. Capacity and commitment failures cannot be repaired.
  * @param {PartnershipConfig} config

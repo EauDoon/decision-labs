@@ -164,6 +164,10 @@ A leading apostrophe is stripped when the remaining cell looks like a spreadshee
 
 Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validation errors name the row (`Row 3 revenue share`) or the column. A rejected CSV leaves the current roster unchanged.
 
+## Export filenames
+
+`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`). Path separators cannot appear in the slug.
+
 ## Three-snapshot compare
 
 `compareThreeSnapshots(current, first, second)` evaluates each valid case and aligns participants by identifier. Each row reports monthly profit and hold or fail for the first snapshot, the second snapshot, and the current draft. If an identifier is missing from a case, that cell is empty rather than filled with zero. `sameRoster` is true only when all three cases have the same identifier set. This is a difference table, not a ranking.

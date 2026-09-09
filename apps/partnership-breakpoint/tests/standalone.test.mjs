@@ -16,6 +16,7 @@ const appImport = `import {
   duplicateParticipant,
   dropAndReallocate,
   evaluateStressGrid,
+  exportDownloadName,
   makeParticipant,
   materializeStressCase,
   moveParticipant,

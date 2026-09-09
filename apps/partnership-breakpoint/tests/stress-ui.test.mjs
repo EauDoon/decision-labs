@@ -690,7 +690,7 @@ test('redacted export replaces names, clears the title, and keeps identifiers', 
   app.edit('deal.title', 'Secret Alliance', { type: 'text' });
   app.click('export-redacted');
   const file = app.downloads()[0];
-  assert.equal(file.filename, 'partnership-breakpoint-redacted.json');
+  assert.equal(file.filename, 'partnership-breakpoint-secret-alliance-redacted.json');
   const parsed = JSON.parse(await file.blob.text());
   assert.equal(Object.hasOwn(parsed.deal, 'title'), false);
   assert.deepEqual(parsed.participants.map((item) => item.name), ['Participant 1', 'Participant 2', 'Participant 3']);
@@ -731,6 +731,24 @@ test('fee-to-hold previews the floor and requires an explicit apply', async () =
   assert.equal(app.saved().participants[0].revenueShare, 0.4);
   app.click('undo');
   assert.equal(app.saved().deal.feePerTransaction, original);
+});
+
+test('export filenames include a sanitized deal title and fall back without one', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export');
+  assert.equal(app.downloads()[0].filename, 'partnership-breakpoint.json');
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.click('export');
+  assert.equal(app.downloads()[1].filename, 'partnership-breakpoint-harbor-jv.json');
+  app.click('export-redacted');
+  assert.equal(app.downloads()[2].filename, 'partnership-breakpoint-harbor-jv-redacted.json');
+  app.click('export-report');
+  assert.equal(app.downloads()[3].filename, 'partnership-breakpoint-harbor-jv-report.md');
+  app.click('export-csv');
+  assert.equal(app.downloads()[4].filename, 'partnership-breakpoint-harbor-jv-stress.csv');
+  app.click('copy-brief');
+  assert.equal(app.downloads()[5].filename, 'partnership-breakpoint-harbor-jv-brief.md');
 });
 
 test('participant CSV replaces the roster only after validation and leaves the deal unchanged', async () => {
