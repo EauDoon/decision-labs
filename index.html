@@ -310,6 +310,7 @@
   <nav class="skips" aria-label="Skip">
     <a class="skip" href="#whats-new">Skip to what's new</a>
     <a class="skip" href="#workbenches">Skip to workbenches</a>
+    <a class="skip" href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts</a>
   </nav>
   <header class="shell hero">
     <p class="eyebrow">Local catalog of four workbenches</p>
@@ -371,7 +372,7 @@
         <li data-app="weekend-gap">1.4.1</li>
       </ul>
       <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
-      <aside id="shortcuts" class="shortcuts" hidden aria-labelledby="shortcuts-title">
+      <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
           <dt><kbd>1</kbd></dt><dd>Open Partnership Breakpoint</dd>
@@ -477,16 +478,19 @@
         if (version) node.textContent = version;
       });
       const inEditable = (node) => !!(node && (node.closest?.('input, textarea, select, [contenteditable="true"]') || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName || '')));
-      const setOpen = (open) => {
+      const setOpen = (open, options = {}) => {
         if (!shortcuts) return;
         shortcuts.hidden = !open;
         openBtn?.setAttribute('aria-expanded', open ? 'true' : 'false');
-        if (open) (closeBtn || shortcuts).focus();
+        if (open && options.focus !== false) (closeBtn || shortcuts).focus();
       };
       openBtn?.addEventListener('click', () => setOpen(shortcuts.hidden));
       closeBtn?.addEventListener('click', () => {
         setOpen(false);
         openBtn?.focus();
+      });
+      document.getElementById('skip-shortcuts')?.addEventListener('click', () => {
+        setOpen(true, { focus: false });
       });
       document.addEventListener('keydown', (event) => {
         if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
