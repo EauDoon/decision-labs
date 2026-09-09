@@ -28,6 +28,7 @@ import {
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
+  compareWorkshopFiles,
   groupContributions,
   stressPackage,
   compareScenarioInputs,
@@ -655,6 +656,98 @@ function renderScenarioComparison(result) {
     metric('Changed clauses', (_, evaluated) => evaluated.agreement ? evaluated.agreement.changedClauseCount : 'No recommendation') +
     '</tbody></table></div><details><summary>' + changes.length + ' changed input fields</summary>' + (changes.length ? '<ul>' + changes.slice(0, 100).map((change) => '<li><strong>' + escapeHtml(change.field) + '</strong>: ' + value(change.before) + ' → ' + value(change.after) + '</li>').join('') + '</ul>' + (changes.length > 100 ? '<p>Showing the first 100 changes. Export each scenario as JSON for the complete inputs.</p>' : '') : '<p>The saved and working assumptions match.</p>') + '</details>';
 }
+let compareLeftText = "";
+let compareRightText = "";
+
+function listItems(items) {
+  return items.length ? `<ul>${items.join("")}</ul>` : "<p>None.</p>";
+}
+
+function renderFileComparison(result) {
+  const target = $("#file-comparison");
+  if (!target) return;
+  if (!result) {
+    target.innerHTML = '<p class="empty-state">Choose two workshop JSON files to compare groups and clauses by identifier.</p>';
+    return;
+  }
+  if (result.status !== "ok") {
+    const first = result.errors[0];
+    target.innerHTML = `<p>Compare failed (${escapeHtml(first.code)}): ${escapeHtml(first.message)}</p>`;
+    return;
+  }
+  const groupItems = [
+    ...result.groups.onlyLeft.map((row) => `<li>Group ${escapeHtml(row.id)} (${escapeHtml(row.name)}) is only in the first file.</li>`),
+    ...result.groups.onlyRight.map((row) => `<li>Group ${escapeHtml(row.id)} (${escapeHtml(row.name)}) is only in the second file.</li>`),
+    ...result.groups.fieldChanges.map((row) => `<li>Group ${escapeHtml(row.id)} ${escapeHtml(row.field)}: ${escapeHtml(row.left)} vs ${escapeHtml(row.right)}.</li>`),
+  ];
+  const clauseItems = [
+    ...result.clauses.onlyLeft.map((row) => `<li>Clause ${escapeHtml(row.id)} (${escapeHtml(row.title)}) is only in the first file.</li>`),
+    ...result.clauses.onlyRight.map((row) => `<li>Clause ${escapeHtml(row.id)} (${escapeHtml(row.title)}) is only in the second file.</li>`),
+    ...result.clauses.fieldChanges.map((row) => {
+      const option = row.optionId ? ` option ${escapeHtml(row.optionId)}` : "";
+      const group = row.groupId ? ` group ${escapeHtml(row.groupId)}` : "";
+      const left = row.left === undefined ? "absent" : String(row.left);
+      const right = row.right === undefined ? "absent" : String(row.right);
+      return `<li>Clause ${escapeHtml(row.id)}${option}${group} ${escapeHtml(row.field)}: ${escapeHtml(left)} vs ${escapeHtml(right)}.</li>`;
+    }),
+  ];
+  const aligned = result.aligned
+    ? "Both files declare the same group and clause identifiers, so field differences can be read directly."
+    : "The files do not share the same group and clause identifiers. Missing ids are listed rather than filled with zeros.";
+  const order = result.clauseOrderChanged ? " Clause order differs, which can change the model's tie breaker." : "";
+  target.innerHTML = `<p>Comparing <strong>${escapeHtml(result.leftTitle)}</strong> with <strong>${escapeHtml(result.rightTitle)}</strong>. ${aligned}${order}</p><h4>Groups</h4>${listItems(groupItems)}<h4>Clauses</h4>${listItems(clauseItems)}`;
+}
+
+async function readCompareFile(file, label) {
+  if (!file) return { text: "", error: `Choose the ${label} workshop JSON file.` };
+  if (file.size > 250_000) return { text: "", error: `${label} file must be 250 KB or smaller.` };
+  try {
+    return { text: await file.text() };
+  } catch {
+    return { text: "", error: `The ${label} file could not be read.` };
+  }
+}
+
+$("#compare-files-button").addEventListener("click", async () => {
+  const leftFile = $("#compare-file-left")?.files?.[0];
+  const rightFile = $("#compare-file-right")?.files?.[0];
+  const left = compareLeftText || (await readCompareFile(leftFile, "first"));
+  const right = compareRightText || (await readCompareFile(rightFile, "second"));
+  if (left.error) return notifyDraft(left.error);
+  if (right.error) return notifyDraft(right.error);
+  const compared = compareWorkshopFiles(left.text ?? left, right.text ?? right);
+  renderFileComparison(compared);
+  if (compared.status !== "ok") notifyDraft(`Compare failed (${compared.errors[0].code}): ${compared.errors[0].message}`);
+  else notifyDraft("Compared the two workshop JSON files. Missing group and clause ids are listed rather than filled with zeros.");
+});
+$("#compare-file-left").addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) {
+    compareLeftText = "";
+    return;
+  }
+  const read = await readCompareFile(file, "first");
+  if (read.error) {
+    compareLeftText = "";
+    return notifyDraft(read.error);
+  }
+  compareLeftText = read.text;
+});
+$("#compare-file-right").addEventListener("change", async (event) => {
+  const file = event.target.files?.[0];
+  event.target.value = "";
+  if (!file) {
+    compareRightText = "";
+    return;
+  }
+  const read = await readCompareFile(file, "second");
+  if (read.error) {
+    compareRightText = "";
+    return notifyDraft(read.error);
+  }
+  compareRightText = read.text;
+});
 $("#comparison-select").addEventListener("change", () => renderScenarioComparison(currentResult()));
 
 function renderStressTest(result) {

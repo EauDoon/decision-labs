@@ -215,6 +215,16 @@ SOFTWARE.
             </div>
             <div id="stress-result" role="status" aria-live="polite"></div>
           </section>
+          <section class="result-card" aria-labelledby="file-compare-heading">
+            <h3 id="file-compare-heading">Compare workshop files</h3>
+            <p>Compare two exported workshop JSON files by group and clause identifiers. Missing identifiers are listed. Support scores are not filled with zeros for groups that exist on only one side.</p>
+            <div id="file-compare-controls" class="scenario-actions">
+              <label class="select-label">First JSON<input id="compare-file-left" type="file" accept="application/json,.json"></label>
+              <label class="select-label">Second JSON<input id="compare-file-right" type="file" accept="application/json,.json"></label>
+              <button class="button button-secondary" type="button" id="compare-files-button">Compare files</button>
+            </div>
+            <div id="file-comparison"><p class="empty-state">Choose two workshop JSON files to compare groups and clauses by identifier.</p></div>
+          </section>
           <section class="result-card" aria-labelledby="comparison-heading">
             <h3 id="comparison-heading" tabindex="-1">Compare negotiation rounds</h3>
             <label for="comparison-select">Saved scenario</label><select id="comparison-select"></select>

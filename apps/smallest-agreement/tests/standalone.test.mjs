@@ -78,6 +78,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="copy-package-button"/u);
   assert.match(html, /id="copy-veto-button"/u);
   assert.match(html, /Copy veto blockers/u);
+  assert.match(html, /id="file-compare-heading"/u);
+  assert.match(html, /id="compare-files-button"/u);
   assert.match(html, /id="coach-again"/u);
   assert.match(html, /Duplicate option/u);
   assert.match(html, /Move up/u);
@@ -197,6 +199,16 @@ async function savedWorkbench(storage, hash = "") {
     },
     focused: () => focusedSelector,
     clipboardText: () => clipboard.text,
+    fileComparison: () => element("#file-comparison").innerHTML,
+    compareFiles: async (left, right) => {
+      await element("#compare-file-left").events.get("change")({
+        target: { files: [{ size: left.length, text: async () => left }], value: "left.json" },
+      });
+      await element("#compare-file-right").events.get("change")({
+        target: { files: [{ size: right.length, text: async () => right }], value: "right.json" },
+      });
+      await element("#compare-files-button").events.get("click")();
+    },
     clearFocus: () => { focusedSelector = ""; },
     keydown: (key, target = { tagName: "BODY", isContentEditable: false }) => {
       documentEvents.get("keydown")({
@@ -897,6 +909,36 @@ test("copy veto blockers writes a constraint list rather than a legitimacy claim
   assert.match(app.clipboardText(), /numerical constraint list, not a legal veto or a claim of legitimacy/u);
   assert.match(app.clipboardText(), /Minority: 10\.0% against required 80\.0%/u);
   assert.match(app.message(), /not a legitimacy claim/u);
+});
+
+test("comparing two workshop JSON files lists missing group and clause ids honestly", async () => {
+  const app = await savedWorkbench(new Map());
+  const neighbourhood = {
+    title: "Left workshop",
+    threshold: 70,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "clause", title: "Clause", options: [
+      { id: "original", label: "Original", original: true, changeCost: 0, support: { g: 60 } },
+      { id: "alternative", label: "Alternative", original: false, changeCost: 1, support: { g: 80 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+  const other = {
+    title: "Right workshop",
+    threshold: 70,
+    groups: [{ id: "other", name: "Other group", weight: 1 }],
+    clauses: [{ id: "path", title: "Path", options: [
+      { id: "original", label: "Original", original: true, changeCost: 0, support: { other: 60 } },
+      { id: "alternative", label: "Alternative", original: false, changeCost: 1, support: { other: 80 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { other: 90 } },
+    ] }],
+  };
+  await app.compareFiles(JSON.stringify(neighbourhood), JSON.stringify(other));
+  assert.match(app.fileComparison(), /only in the first file/u);
+  assert.match(app.fileComparison(), /only in the second file/u);
+  assert.match(app.fileComparison(), /not share the same group and clause identifiers/u);
+  assert.match(app.fileComparison(), /rather than filled with zeros/u);
+  assert.match(app.message(), /Missing group and clause ids are listed/u);
 });
 
 test("groups CSV import replaces the roster with named errors and supports undo", async () => {

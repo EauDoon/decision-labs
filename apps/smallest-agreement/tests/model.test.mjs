@@ -28,6 +28,7 @@ import {
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
+  compareWorkshopFiles,
   groupContributions,
   lockPackage,
   clearAllLocks,
@@ -1453,6 +1454,43 @@ test("veto-blocker Markdown lists unmet veto constraints without claiming legiti
   assert.match(met.text, /Every marked veto group meets its required average/u);
   assert.equal(formatVetoBlockersMarkdown({ title: "" }).status, "invalid");
   assert.equal(formatVetoBlockersMarkdown(input, null).status, "unavailable");
+});
+
+test("workshop file compare lists identifier mismatches instead of inventing zeros", () => {
+  const left = proposal({
+    groups: [{ id: "a", name: "A", weight: 1 }, { id: "b", name: "B", weight: 2 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { a: 40, b: 50 }),
+      option("alternative", false, { a: 70, b: 80 }, 1),
+      option("other", false, { a: 10, b: 20 }, 2),
+    ] }],
+  });
+  const right = proposal({
+    groups: [{ id: "a", name: "A", weight: 3 }, { id: "c", name: "C", weight: 1 }],
+    clauses: [{ id: "two", title: "Two", options: [
+      option("original", true, { a: 40, c: 50 }),
+      option("alternative", false, { a: 70, c: 80 }, 1),
+      option("other", false, { a: 10, c: 20 }, 2),
+    ] }],
+  });
+  const beforeLeft = JSON.stringify(left);
+  const beforeRight = JSON.stringify(right);
+  const compared = compareWorkshopFiles(JSON.stringify(left), JSON.stringify(right));
+  assert.equal(compared.status, "ok");
+  assert.equal(compared.aligned, false);
+  assert.deepEqual(compared.groups.onlyLeft.map((row) => row.id), ["b"]);
+  assert.deepEqual(compared.groups.onlyRight.map((row) => row.id), ["c"]);
+  assert.equal(compared.groups.fieldChanges.some((row) => row.id === "a" && row.field === "weight" && row.left === 1 && row.right === 3), true);
+  assert.deepEqual(compared.clauses.onlyLeft.map((row) => row.id), ["one"]);
+  assert.deepEqual(compared.clauses.onlyRight.map((row) => row.id), ["two"]);
+  assert.equal(compared.clauses.fieldChanges.some((row) => row.field === "option.support" && row.groupId === "c"), false);
+  assert.equal(JSON.stringify(left), beforeLeft);
+  assert.equal(JSON.stringify(right), beforeRight);
+  const same = compareWorkshopFiles(JSON.stringify(left), JSON.stringify(left));
+  assert.equal(same.aligned, true);
+  assert.equal(same.groups.fieldChanges.length, 0);
+  assert.equal(compareWorkshopFiles("{", "{}").errors[0].code, "invalid_json");
+  assert.equal(compareWorkshopFiles("{}", "{}").errors[0].code, "invalid_proposal");
 });
 
 test("optional clause notes round-trip, appear on the worksheet, and do not change search", () => {

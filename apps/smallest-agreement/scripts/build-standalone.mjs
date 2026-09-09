@@ -42,6 +42,7 @@ const appImport = `import {
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
+  compareWorkshopFiles,
   groupContributions,
   stressPackage,
   compareScenarioInputs,

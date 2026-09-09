@@ -1573,6 +1573,118 @@ export function formatVetoBlockersMarkdown(proposal, options) {
   return { status: "ok", text: `${lines.join("\n")}\n`, groups: blocking.groups };
 }
 
+function namedFileError(code, message, extra = {}) {
+  return { code, message, ...extra };
+}
+
+function parseJsonObject(text, side) {
+  try {
+    const raw = JSON.parse(String(text ?? "").replace(/^\uFEFF/u, ""));
+    if (!isPlainObject(raw)) return { status: "invalid", errors: [namedFileError("invalid_json", `The ${side} file must be a JSON object.`, { side })] };
+    return { status: "ok", value: raw };
+  } catch {
+    return { status: "invalid", errors: [namedFileError("invalid_json", `The ${side} file is not valid JSON.`, { side })] };
+  }
+}
+
+/** Accept a canonical proposal or a version-1 workspace wrapper. */
+export function proposalFromWorkshopDocument(raw) {
+  if (!isPlainObject(raw)) return { status: "invalid", errors: [namedFileError("invalid_json", "Workshop JSON must be an object.")] };
+  let proposal = raw;
+  if (Object.hasOwn(raw, "format")) {
+    if (raw.format !== "smallest-agreement-workspace") {
+      return { status: "invalid", errors: [namedFileError("invalid_format", "Unsupported workshop file format.")] };
+    }
+    if (raw.version !== 1 || !isPlainObject(raw.proposal)) {
+      return { status: "invalid", errors: [namedFileError("invalid_format", "Workspace JSON must be version 1 with a proposal object.")] };
+    }
+    proposal = raw.proposal;
+  }
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  return { status: "ok", proposal: canonicalProposal(proposal) };
+}
+
+/**
+ * Compare two workshop JSON files by group and clause identifiers.
+ * Missing identifiers are listed. Support scores are not invented as zeros
+ * for groups or options that exist on only one side.
+ */
+export function compareWorkshopFiles(leftText, rightText) {
+  const leftJson = parseJsonObject(leftText, "first");
+  if (leftJson.status !== "ok") return leftJson;
+  const rightJson = parseJsonObject(rightText, "second");
+  if (rightJson.status !== "ok") return rightJson;
+  const left = proposalFromWorkshopDocument(leftJson.value);
+  if (left.status !== "ok") {
+    return { status: "invalid", errors: left.errors.map((error) => ({ ...error, side: "left" })) };
+  }
+  const right = proposalFromWorkshopDocument(rightJson.value);
+  if (right.status !== "ok") {
+    return { status: "invalid", errors: right.errors.map((error) => ({ ...error, side: "right" })) };
+  }
+  const leftGroups = new Map(left.proposal.groups.map((group) => [group.id, group]));
+  const rightGroups = new Map(right.proposal.groups.map((group) => [group.id, group]));
+  const onlyLeftGroups = [...leftGroups.keys()].filter((id) => !rightGroups.has(id)).map((id) => ({ id, name: leftGroups.get(id).name }));
+  const onlyRightGroups = [...rightGroups.keys()].filter((id) => !leftGroups.has(id)).map((id) => ({ id, name: rightGroups.get(id).name }));
+  const sharedGroupIds = [...leftGroups.keys()].filter((id) => rightGroups.has(id));
+  const groupChanges = [];
+  for (const id of sharedGroupIds) {
+    const a = leftGroups.get(id);
+    const b = rightGroups.get(id);
+    if (a.name !== b.name) groupChanges.push({ id, field: "name", left: a.name, right: b.name });
+    if (a.weight !== b.weight) groupChanges.push({ id, field: "weight", left: a.weight, right: b.weight });
+    if (a.minSupport !== b.minSupport) groupChanges.push({ id, field: "minSupport", left: a.minSupport, right: b.minSupport });
+    if ((a.veto === true) !== (b.veto === true)) groupChanges.push({ id, field: "veto", left: a.veto === true, right: b.veto === true });
+  }
+  const leftClauses = new Map(left.proposal.clauses.map((clause) => [clause.id, clause]));
+  const rightClauses = new Map(right.proposal.clauses.map((clause) => [clause.id, clause]));
+  const onlyLeftClauses = [...leftClauses.keys()].filter((id) => !rightClauses.has(id)).map((id) => ({ id, title: leftClauses.get(id).title }));
+  const onlyRightClauses = [...rightClauses.keys()].filter((id) => !leftClauses.has(id)).map((id) => ({ id, title: rightClauses.get(id).title }));
+  const sharedClauseIds = [...leftClauses.keys()].filter((id) => rightClauses.has(id));
+  const clauseChanges = [];
+  for (const id of sharedClauseIds) {
+    const a = leftClauses.get(id);
+    const b = rightClauses.get(id);
+    if (a.title !== b.title) clauseChanges.push({ id, field: "title", left: a.title, right: b.title });
+    if (a.note !== b.note) clauseChanges.push({ id, field: "note", left: a.note, right: b.note });
+    if (a.lockedOptionId !== b.lockedOptionId) clauseChanges.push({ id, field: "lockedOptionId", left: a.lockedOptionId, right: b.lockedOptionId });
+    const leftOptions = new Map(a.options.map((option) => [option.id, option]));
+    const rightOptions = new Map(b.options.map((option) => [option.id, option]));
+    for (const optionId of leftOptions.keys()) {
+      if (!rightOptions.has(optionId)) clauseChanges.push({ id, field: "option", optionId, left: optionId, right: undefined });
+    }
+    for (const optionId of rightOptions.keys()) {
+      if (!leftOptions.has(optionId)) clauseChanges.push({ id, field: "option", optionId, left: undefined, right: optionId });
+    }
+    for (const optionId of leftOptions.keys()) {
+      if (!rightOptions.has(optionId)) continue;
+      const leftOption = leftOptions.get(optionId);
+      const rightOption = rightOptions.get(optionId);
+      if (leftOption.label !== rightOption.label) clauseChanges.push({ id, field: "option.label", optionId, left: leftOption.label, right: rightOption.label });
+      if (leftOption.original !== rightOption.original) clauseChanges.push({ id, field: "option.original", optionId, left: leftOption.original, right: rightOption.original });
+      if (leftOption.changeCost !== rightOption.changeCost) clauseChanges.push({ id, field: "option.changeCost", optionId, left: leftOption.changeCost, right: rightOption.changeCost });
+      for (const groupId of sharedGroupIds) {
+        const leftScore = leftOption.support[groupId];
+        const rightScore = rightOption.support[groupId];
+        if (leftScore !== rightScore) clauseChanges.push({ id, field: "option.support", optionId, groupId, left: leftScore, right: rightScore });
+      }
+    }
+  }
+  const leftOrder = left.proposal.clauses.map((clause) => clause.id).join(",");
+  const rightOrder = right.proposal.clauses.map((clause) => clause.id).join(",");
+  const aligned = onlyLeftGroups.length === 0 && onlyRightGroups.length === 0 && onlyLeftClauses.length === 0 && onlyRightClauses.length === 0;
+  return {
+    status: "ok",
+    leftTitle: left.proposal.title,
+    rightTitle: right.proposal.title,
+    aligned,
+    groups: { onlyLeft: onlyLeftGroups, onlyRight: onlyRightGroups, shared: sharedGroupIds, fieldChanges: groupChanges },
+    clauses: { onlyLeft: onlyLeftClauses, onlyRight: onlyRightClauses, shared: sharedClauseIds, fieldChanges: clauseChanges },
+    clauseOrderChanged: leftOrder !== rightOrder,
+  };
+}
+
 function parseCsvCost(raw, path) {
   const neutralized = neutralizeCsvCell(raw).trim();
   if (FORMULA_CELL.test(neutralized)) {
