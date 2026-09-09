@@ -153,7 +153,7 @@ function setMessage(message = "") {
   elements.inputMessage.textContent = message;
 }
 
-function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true } = {}) {
+function setScenario(nextScenario, { normaliseForm = true, message = "", preserveShareHash = false, recordHistory = true, windowShiftStatus } = {}) {
   const cleaned = sanitizeScenario(nextScenario);
   if (recordHistory) scenarioHistory.record(cleaned.scenario);
   scenario = cleaned.scenario;
@@ -174,7 +174,7 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   document.querySelector("#sensitivity-tornado").innerHTML = "";
   lastSensitivityRows = [];
   document.querySelector("#sensitivity-status").textContent = "Assumptions changed. Run the experiment to refresh results.";
-  clearWindowShiftPreview("Assumptions changed. Preview the window shift again before applying.");
+  clearWindowShiftPreview(windowShiftStatus || "Assumptions changed. Preview the window shift again before applying.");
   if (message) setMessage(message);
   else if (cleaned.errors.length) setMessage(cleaned.errors.join(" "));
   else setMessage("");
@@ -595,8 +595,12 @@ document.querySelector("#preview-window-shift").addEventListener("click", () => 
 });
 document.querySelector("#apply-window-shift").addEventListener("click", () => {
   if (!windowShiftPreview) return;
+  const gate = windowShiftPreview.gate;
   const next = windowShiftPreview.applied;
-  setScenario(next, { message: `Applied ${windowShiftPreview.gate} window ${next[`${windowShiftPreview.gate}OpenStartHour`]}:00 to ${next[`${windowShiftPreview.gate}OpenEndHour`]}:00. Other assumptions and the pinned baseline were kept.` });
+  const start = next[`${gate}OpenStartHour`];
+  const end = next[`${gate}OpenEndHour`];
+  const notice = `Applied ${gate} window ${start}:00 to ${end}:00. Other assumptions and the pinned baseline were kept. Undo scenario edit reverts this window shift.`;
+  setScenario(next, { message: notice, windowShiftStatus: notice });
 });
 for (const id of ["window-shift-gate", "window-shift-start", "window-shift-end"]) {
   document.getElementById(id).addEventListener("input", () => {

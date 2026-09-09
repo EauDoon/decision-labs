@@ -163,6 +163,20 @@ test("holiday Saturday checkbox labels Saturday like Sunday and restores from wo
   await reloaded.edit("timeline-range", 21);
   assert.match(reloaded.nodes.get("fx-gate").textContent, /Holiday Saturday/);
 });
+test("applying a window shift notices that undo reverts it", async () => {
+  const ui = await boot();
+  assert.equal(ui.nodes.get("issuerOpenStartHour").value, "8");
+  await ui.nodes.get("preview-window-shift").click();
+  assert.equal(ui.nodes.get("apply-window-shift").disabled, false);
+  await ui.nodes.get("apply-window-shift").click();
+  assert.match(ui.nodes.get("input-message").textContent, /Undo scenario edit reverts this window shift/);
+  assert.match(ui.nodes.get("window-shift-status").textContent, /Undo scenario edit reverts this window shift/);
+  assert.equal(ui.nodes.get("issuerOpenStartHour").value, "7");
+  assert.equal(ui.nodes.get("issuerOpenEndHour").value, "18");
+  await ui.nodes.get("undo-scenario").click();
+  assert.equal(ui.nodes.get("issuerOpenStartHour").value, "8");
+  assert.equal(ui.nodes.get("issuerOpenEndHour").value, "17");
+});
 test("reduced motion advances a single hour instead of starting playback",async()=>{
   const ui=await boot(new Map(),{reduced:true});assert.equal(ui.nodes.get("play-button").textContent,"Step hour");
   await ui.nodes.get("play-button").click();assert.equal(ui.nodes.get("timeline-range").value,"1");assert.equal(ui.nodes.get("play-button").attributes["aria-pressed"],"false");
