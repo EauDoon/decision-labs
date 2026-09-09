@@ -393,8 +393,11 @@ SOFTWARE.
             <div class="chart-wrap">
               <canvas id="liquidity-chart" role="img" aria-label="Line chart comparing queued AUD demand and immediate redeemable AUD over 72 hours. A printable SVG and a data table follow.">Your browser does not support canvas. Use the simulation data table below.</canvas>
             </div>
+            <div class="planning-actions">
+              <button id="export-queue-svg" type="button">Download queue SVG</button>
+            </div>
             <div id="queue-svg" class="queue-svg"></div>
-            <p class="chart-print-note">The SVG below is the printable queue path. The canvas keeps a live playhead while you scrub.</p>
+            <p class="chart-print-note">The SVG is a printable queue path. Download saves the same light-background drawing as a file. The canvas keeps a live playhead while you scrub.</p>
             <div class="chart-legend" aria-label="Chart legend">
               <span><i class="legend-mark legend-mark--queue" aria-hidden="true"></i>Queued AUD demand</span>
               <span><i class="legend-mark legend-mark--immediate" aria-hidden="true"></i>Immediate AUD capacity</span>

@@ -937,6 +937,10 @@ document.querySelector("#export-gantt").addEventListener("click",()=>{
   downloadText(buildGateGanttSvg(scenario,selectedHour),"weekend-gap-gantt.svg","image/svg+xml;charset=utf-8");
   setMessage("Gantt SVG downloaded. It is a synthetic operating calendar, not a live market chart.");
 });
+document.querySelector("#export-queue-svg").addEventListener("click",()=>{
+  downloadText(buildQueueChartSvg(scenario,baselineScenario,selectedHour),"weekend-gap-queue.svg","image/svg+xml;charset=utf-8");
+  setMessage("Queue SVG downloaded. It is a synthetic path, not a live market chart.");
+});
 document.querySelector("#jump-peak").addEventListener("click",()=>{
   selectedHour=simulation.summary.peakQueueHour;setPlaying(false);render();saveWorkspace();
 });
