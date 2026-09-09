@@ -937,6 +937,232 @@ export function redactConfiguration(config) {
   return copy;
 }
 
+const CSV_COLUMNS = Object.freeze({
+  name: Object.freeze(['name', 'participant', 'participant name']),
+  revenueShare: Object.freeze(['revenue share', 'share', 'revenueshare', 'revenue_share']),
+  variableCostPerTransaction: Object.freeze(['variable cost', 'variable cost per transaction', 'variablecost', 'variable_cost']),
+  fixedMonthlyCost: Object.freeze(['fixed cost', 'fixed monthly cost', 'fixedcost', 'fixed_cost']),
+  minimumAcceptableProfit: Object.freeze(['min profit', 'minimum profit', 'minimum acceptable profit', 'min_profit']),
+  capacity: Object.freeze(['capacity', 'capacity / month', 'capacity/month']),
+  minimumCommitment: Object.freeze(['commitment', 'minimum commitment', 'min commitment']),
+  riskCost: Object.freeze(['risk', 'risk cost', 'risk cost / month', 'riskcost']),
+});
+const CSV_REQUIRED_FIELDS = Object.freeze([
+  'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'riskCost',
+]);
+
+/**
+ * Treats a leading apostrophe as spreadsheet quoting, not as part of the value,
+ * when the remaining text looks like a formula prefix.
+ * @param {unknown} value
+ * @returns {string}
+ */
+export function neutralizeCsvCell(value) {
+  const text = String(value ?? '');
+  if (/^'[\s\u0000-\u001F]*[=+\-@]/.test(text)) return text.slice(1);
+  return text;
+}
+
+/**
+ * RFC 4180-style records. Does not execute formulas. Empty rows are dropped.
+ * @param {unknown} text
+ * @returns {string[][]}
+ */
+export function parseCsv(text) {
+  if (typeof text !== 'string') {
+    throw new ValidationError(['CSV must be text.']);
+  }
+  const source = text.replace(/^\uFEFF/, '');
+  if (source.trim() === '') {
+    throw new ValidationError(['CSV is empty.']);
+  }
+  const rows = [];
+  let row = [];
+  let cell = '';
+  let inQuotes = false;
+  for (let i = 0; i < source.length; i += 1) {
+    const ch = source[i];
+    if (inQuotes) {
+      if (ch === '"') {
+        if (source[i + 1] === '"') {
+          cell += '"';
+          i += 1;
+        } else {
+          inQuotes = false;
+        }
+      } else {
+        cell += ch;
+      }
+    } else if (ch === '"') {
+      inQuotes = true;
+    } else if (ch === ',') {
+      row.push(cell);
+      cell = '';
+    } else if (ch === '\n') {
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+    } else if (ch === '\r') {
+      if (source[i + 1] === '\n') continue;
+      row.push(cell);
+      rows.push(row);
+      row = [];
+      cell = '';
+    } else {
+      cell += ch;
+    }
+  }
+  if (inQuotes) {
+    throw new ValidationError(['CSV has an unterminated quoted field.']);
+  }
+  row.push(cell);
+  if (row.some((item) => item !== '')) rows.push(row);
+  return rows.filter((item) => item.some((value) => String(value).trim() !== ''));
+}
+
+function normalizeCsvHeader(value) {
+  return neutralizeCsvCell(value).trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function mapCsvHeaders(headerRow, errors) {
+  const indexByField = {};
+  headerRow.forEach((raw, index) => {
+    const header = normalizeCsvHeader(raw);
+    if (header === '') {
+      errors.push(`CSV header ${index + 1} is empty.`);
+      return;
+    }
+    let matched = null;
+    for (const [field, aliases] of Object.entries(CSV_COLUMNS)) {
+      if (aliases.includes(header)) {
+        matched = field;
+        break;
+      }
+    }
+    if (!matched) {
+      errors.push(`CSV contains an unknown column: ${header}.`);
+      return;
+    }
+    if (Object.hasOwn(indexByField, matched)) {
+      errors.push(`CSV column ${CSV_COLUMNS[matched][0]} is duplicated.`);
+      return;
+    }
+    indexByField[matched] = index;
+  });
+  CSV_REQUIRED_FIELDS.forEach((field) => {
+    if (!Object.hasOwn(indexByField, field)) {
+      errors.push(`CSV is missing required column: ${CSV_COLUMNS[field][0]}.`);
+    }
+  });
+  return indexByField;
+}
+
+function csvNumber(raw, label, errors, { optional = false, max = MAX_NUMERIC_INPUT } = {}) {
+  const text = neutralizeCsvCell(raw).trim();
+  if (optional && text === '') return null;
+  if (!/^[+-]?(?:\d+\.?\d*|\.\d+)$/.test(text)) {
+    errors.push(`${label} must be a finite decimal number.`);
+    return null;
+  }
+  const value = Number(text);
+  if (!Number.isFinite(value) || value < 0 || value > max) {
+    errors.push(`${label} must be a finite number from zero through ${max}.`);
+    return null;
+  }
+  return value;
+}
+
+function csvName(raw, label, errors) {
+  const text = neutralizeCsvCell(raw).trim();
+  if (text === '' || text.length > 80) {
+    errors.push(`${label} must be a non-empty string no longer than 80 characters.`);
+    return '';
+  }
+  return text;
+}
+
+function idFromParticipantName(name, used) {
+  let base = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, '');
+  if (!base) base = 'participant';
+  if (base.length > 64) base = base.slice(0, 64).replace(/-+$/g, '') || 'participant';
+  let id = base;
+  let sequence = 2;
+  while (used.has(id)) {
+    const suffix = `-${sequence}`;
+    id = `${base.slice(0, Math.max(1, 64 - suffix.length))}${suffix}`;
+    sequence += 1;
+  }
+  used.add(id);
+  return id;
+}
+
+/**
+ * Builds a replacement roster from CSV. Deal terms are not read. Capacity and
+ * commitment columns may be omitted; empty cells become null. Shares must still
+ * sum to 1. Formula prefixes are treated as text.
+ * @param {unknown} text
+ * @returns {ParticipantInput[]}
+ */
+export function participantsFromCsv(text) {
+  if (typeof text !== 'string') {
+    throw new ValidationError(['CSV must be text.']);
+  }
+  if (text.length > 250_000) {
+    throw new ValidationError(['CSV must be 250 KB or smaller.']);
+  }
+  const rows = parseCsv(text);
+  if (rows.length < 3) {
+    throw new ValidationError(['CSV must include a header row and at least 2 participant rows.']);
+  }
+  if (rows.length - 1 > MAX_PARTICIPANTS) {
+    throw new ValidationError([`Between 2 and ${MAX_PARTICIPANTS} participants are required.`]);
+  }
+  const errors = [];
+  const headerMap = mapCsvHeaders(rows[0], errors);
+  if (errors.length) throw new ValidationError(errors);
+
+  const usedIds = new Set();
+  const participants = [];
+  for (let index = 1; index < rows.length; index += 1) {
+    const row = rows[index];
+    const rowLabel = `Row ${index + 1}`;
+    const cell = (field) => (headerMap[field] == null ? '' : (row[headerMap[field]] ?? ''));
+    const name = csvName(cell('name'), `${rowLabel} name`, errors);
+    const revenueShare = csvNumber(cell('revenueShare'), `${rowLabel} revenue share`, errors, { max: 1 });
+    const variableCostPerTransaction = csvNumber(cell('variableCostPerTransaction'), `${rowLabel} variable cost`, errors);
+    const fixedMonthlyCost = csvNumber(cell('fixedMonthlyCost'), `${rowLabel} fixed cost`, errors);
+    const minimumAcceptableProfit = csvNumber(cell('minimumAcceptableProfit'), `${rowLabel} min profit`, errors);
+    const riskCost = csvNumber(cell('riskCost'), `${rowLabel} risk`, errors);
+    const capacity = Object.hasOwn(headerMap, 'capacity')
+      ? csvNumber(cell('capacity'), `${rowLabel} capacity`, errors, { optional: true })
+      : null;
+    const minimumCommitment = Object.hasOwn(headerMap, 'minimumCommitment')
+      ? csvNumber(cell('minimumCommitment'), `${rowLabel} commitment`, errors, { optional: true })
+      : null;
+    if (!name) continue;
+    participants.push({
+      id: idFromParticipantName(name, usedIds),
+      name,
+      revenueShare: revenueShare ?? Number.NaN,
+      variableCostPerTransaction: variableCostPerTransaction ?? Number.NaN,
+      fixedMonthlyCost: fixedMonthlyCost ?? Number.NaN,
+      minimumAcceptableProfit: minimumAcceptableProfit ?? Number.NaN,
+      capacity,
+      minimumCommitment,
+      riskCost: riskCost ?? Number.NaN,
+    });
+  }
+  if (errors.length) throw new ValidationError(errors);
+  const probe = {
+    deal: { monthlyVolume: 0, feePerTransaction: 0, addressableVolume: 0 },
+    participants,
+  };
+  const validation = validateConfiguration(probe);
+  if (!validation.valid) throw new ValidationError(validation.errors);
+  return participants;
+}
+
 /**
  * Minimum fee per transaction at which every participant holds, with volume
  * and shares held fixed. Capacity and commitment failures cannot be repaired.

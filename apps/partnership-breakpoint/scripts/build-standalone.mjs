@@ -17,6 +17,7 @@ const appImport = `import {
   makeParticipant,
   materializeStressCase,
   moveParticipant,
+  participantsFromCsv,
   redactConfiguration,
   solveFeeForAllHold,
   solveMinimumShareToHold,

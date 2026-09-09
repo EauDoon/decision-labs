@@ -13,6 +13,7 @@ import {
   makeParticipant,
   materializeStressCase,
   moveParticipant,
+  participantsFromCsv,
   redactConfiguration,
   solveFeeForAllHold,
   solveMinimumShareToHold,
@@ -402,10 +403,11 @@ function inputPanel() {
           ${libraryPanel()}
           <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button><button type="button" data-action="open-help">Keyboard shortcuts</button><button type="button" data-action="show-coach">Show tour</button></div>
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
-          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
+          <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged.</p>
           <div class="button-row">
             <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button><button type="button" data-action="export-csv">Export stress CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
+            <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
             <button type="button" data-action="reset">Reset</button>
           </div>
           <p id="notice" class="notice" aria-live="polite">${standaloneFileMode ? 'Standalone file mode: export JSON to transfer a case. File URLs are not portable.' : ''}</p>
@@ -747,6 +749,7 @@ function attachEvents() {
       return;
     }
     if (input.dataset.action === 'import' && input.files?.[0]) importFile(input.files[0]);
+    if (input.dataset.action === 'import-participants-csv' && input.files?.[0]) importParticipantCsv(input.files[0]);
   });
   app.addEventListener('click', (event) => {
     const button = event.target.closest('button[data-action]');
@@ -924,6 +927,42 @@ function importFile(file) {
     if (sequence !== importSequence) return;
     const detail = compactErrorMessage(reader.error);
     setNotice(detail ? `Import rejected: file could not be read (${detail}).` : 'Import rejected: file could not be read.');
+  };
+  reader.readAsText(file);
+}
+
+function importParticipantCsv(file) {
+  const sequence = ++importSequence;
+  if (file.size === 0) {
+    setNotice('Participant CSV rejected: the file is empty.');
+    return;
+  }
+  if (file.size > 250_000) {
+    setNotice('Participant CSV rejected: files must be 250 KB or smaller.');
+    return;
+  }
+  const reader = new FileReader();
+  reader.onload = () => {
+    if (sequence !== importSequence) return;
+    const text = String(reader.result ?? '');
+    try {
+      const participants = participantsFromCsv(text);
+      checkpoint();
+      state.participants = participants;
+      activePreset = '';
+      refresh('Participant roster replaced from CSV. Deal terms are unchanged.');
+    } catch (error) {
+      if (error instanceof ValidationError) {
+        setNotice(`Participant CSV rejected: ${summarizeErrors(error.errors)}`);
+        return;
+      }
+      setNotice(`Participant CSV rejected: ${describeJsonFailure('the file', error)}`);
+    }
+  };
+  reader.onerror = () => {
+    if (sequence !== importSequence) return;
+    const detail = compactErrorMessage(reader.error);
+    setNotice(detail ? `Participant CSV rejected: file could not be read (${detail}).` : 'Participant CSV rejected: file could not be read.');
   };
   reader.readAsText(file);
 }

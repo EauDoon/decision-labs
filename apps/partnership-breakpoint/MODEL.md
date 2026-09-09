@@ -151,6 +151,16 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 `redactConfiguration` copies a valid case, deletes `deal.title` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption.
 
+## Participant CSV import
+
+`participantsFromCsv` reads a roster from CSV text and returns participant objects. It does not read deal terms, stress settings, titles, or currency. The workbench replaces the current participants only after the whole file validates.
+
+Required columns, matched case-insensitively after trimming and collapsing spaces: `name`, `revenue share`, `variable cost`, `fixed cost`, `min profit`, and `risk`. Optional columns: `capacity` and `commitment`. Accepted aliases include `share`, `variable cost per transaction`, `fixed monthly cost`, `minimum acceptable profit`, `risk cost`, `minimum commitment`, and underscored forms. Unknown columns, duplicate columns, and missing required columns are named and rejected.
+
+A leading apostrophe is stripped when the remaining cell looks like a spreadsheet formula (`=`, `+`, `-`, or `@`, including after ASCII controls). The remaining text is data. It is not executed. Numbers must be finite decimals; they are not coerced from hex, empty strings, or prose. Empty optional capacity or commitment cells become `null`. Names are trimmed to at most 80 characters. Identifiers are generated from names, kept unique, and limited to 64 characters.
+
+Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validation errors name the row (`Row 3 revenue share`) or the column. A rejected CSV leaves the current roster unchanged.
+
 ## Charts
 
 The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.

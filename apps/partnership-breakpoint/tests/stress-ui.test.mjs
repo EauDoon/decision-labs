@@ -60,6 +60,12 @@ async function workbench(protocol = 'file:', options = {}) {
       input.files = [{ size: file.size ?? String(contents).length, contents, pending, error }];
       events.get('change')({ target: input });
     },
+    importParticipantsCsv: (csv, pending, error = false, file = {}) => {
+      const contents = Object.hasOwn(file, 'contents') ? file.contents : csv;
+      const input = new Input({ action: 'import-participants-csv' }, '');
+      input.files = [{ size: file.size ?? String(contents).length, contents, pending, error }];
+      events.get('change')({ target: input });
+    },
     keydown: (key, extra = {}) => {
       windowEvents.get('keydown')?.({
         key,
@@ -644,3 +650,32 @@ test('fee-to-hold previews the floor and requires an explicit apply', async () =
   app.click('undo');
   assert.equal(app.saved().deal.feePerTransaction, original);
 });
+
+test('participant CSV replaces the roster only after validation and leaves the deal unchanged', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.match(app.markup(), /data-action="import-participants-csv"/);
+  const before = app.saved();
+  app.importParticipantsCsv('name,share\nA,0.5\nB,0.5\n');
+  assert.match(app.notice(), /missing required column: variable cost/);
+  assert.deepEqual(app.saved().participants, before.participants);
+  assert.equal(app.saved().deal.monthlyVolume, before.deal.monthlyVolume);
+
+  const csv = [
+    'name,revenue share,variable cost,fixed cost,min profit,capacity,commitment,risk',
+    'Alpha,0.55,0.01,100,50,90000,,10',
+    'Beta,0.45,0.02,80,40,,1000,5',
+  ].join('\n');
+  app.importParticipantsCsv(csv);
+  const after = app.saved();
+  assert.deepEqual(after.participants.map((item) => item.name), ['Alpha', 'Beta']);
+  assert.equal(after.participants[0].revenueShare, 0.55);
+  assert.equal(after.participants[1].minimumCommitment, 1000);
+  assert.equal(after.deal.monthlyVolume, before.deal.monthlyVolume);
+  assert.equal(after.deal.feePerTransaction, before.deal.feePerTransaction);
+  assert.match(app.notice(), /Deal terms are unchanged/);
+  app.click('undo');
+  assert.deepEqual(app.saved().participants.map((item) => item.id), before.participants.map((item) => item.id));
+});
+
