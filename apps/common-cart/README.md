@@ -213,3 +213,7 @@ Open **Review buyer coverage and offer resilience** inside Buyer room. Select a 
 ### Sole-offer dependency
 
 Count buyers whose current whole-order allocation is available from only one qualified offer, and sum their units. This measures current option dependency, not post-withdrawal rematching.
+
+### Unserved buyer reasons
+
+For buyers served by no qualified offer, count current exclusion reasons across offers. These are evaluated-band diagnostics, not promises that one relaxed constraint will solve the order.
