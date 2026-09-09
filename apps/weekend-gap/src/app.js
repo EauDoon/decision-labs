@@ -18,7 +18,8 @@ import {
   workspaceToJSON,
   workspaceFromJSON,
   createScenarioHistory,
-  timelineToCSV
+  timelineToCSV,
+  reportToHTML
 } from "./model.js";
 
 let workspaceReady = false;
@@ -681,4 +682,12 @@ document.querySelector("#jump-monday").addEventListener("click",()=>{
 document.querySelector("#export-timeline").addEventListener("click",()=>{
   downloadText(timelineToCSV(scenario,baselineScenario),"weekend-gap-timeline.csv","text/csv;charset=utf-8");
   setMessage("Exported all 73 checkpoints. Flow columns describe the preceding interval; capacity describes the next hour.");
+});
+
+document.querySelector("#export-report").addEventListener("click",()=>{
+  try {
+    const saved=JSON.parse(currentWorkspace());
+    downloadText(reportToHTML(saved.current,saved.baseline,saved),"weekend-gap-report.html","text/html;charset=utf-8");
+    document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
+  } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
 });

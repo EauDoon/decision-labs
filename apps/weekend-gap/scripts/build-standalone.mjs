@@ -51,7 +51,8 @@ const appImportMarker = `import {
   workspaceToJSON,
   workspaceFromJSON,
   createScenarioHistory,
-  timelineToCSV
+  timelineToCSV,
+  reportToHTML
 } from "./model.js";`;
 const exportedNames = Object.freeze([
   "SIMULATION_HOURS",
@@ -88,7 +89,8 @@ const exportedNames = Object.freeze([
   "workspaceToJSON",
   "workspaceFromJSON",
   "createScenarioHistory",
-  "timelineToCSV"
+  "timelineToCSV",
+  "reportToHTML"
 ]);
 
 function normaliseLf(text) {
