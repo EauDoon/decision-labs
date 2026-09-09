@@ -113,6 +113,14 @@ export function createScenarioHistory(initial) {
   };
 }
 
+export function validateWorkspace(candidate) {
+  if (!candidate || candidate.version !== 1 || !Array.isArray(candidate.rooms) || candidate.rooms.length > 12) {
+    throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
+  }
+  rejectUnknownFields(candidate, ["version", "rooms"], "Workspace");
+  return { version: 1, rooms: candidate.rooms.map(validateScenario) };
+}
+
 export function validateScenario(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate)) {
     throw new ScenarioError("Scenario must be an object.");

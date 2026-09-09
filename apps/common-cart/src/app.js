@@ -6,10 +6,12 @@ import {
   decodeScenario,
   encodeScenario,
   evaluateMarket,
+  validateWorkspace,
   validateScenario
 } from "./model.js";
 
 const STORAGE_KEY = "common-cart.scenario.v1";
+const WORKSPACE_KEY = "common-cart.workspace.v1";
 const elements = {
   title: document.querySelector("#scenario-title"),
   currency: document.querySelector("#currency"),
@@ -40,11 +42,45 @@ const elements = {
 let scenario = loadInitialScenario();
 const history = createScenarioHistory(scenario);
 let invalidDraft = false;
+let savedRooms = loadWorkspace();
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
 refresh();
 bindStaticEvents();
+renderWorkspace();
+
+function loadWorkspace() {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_KEY);
+    if (!raw) return [];
+    return validateWorkspace(JSON.parse(raw)).rooms;
+  } catch (error) {
+    queueMicrotask(() => setStatus(`Saved rooms could not be opened: ${messageOf(error)} Export your current room before closing.`));
+    return [];
+  }
+}
+
+function renderWorkspace() {
+  const picker = document.querySelector("#saved-rooms");
+  picker.replaceChildren(...savedRooms.map((room, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${room.title}`;
+    return option;
+  }));
+  picker.disabled = savedRooms.length === 0;
+  document.querySelector("#load-room").disabled = savedRooms.length === 0;
+  document.querySelector("#delete-room").disabled = savedRooms.length === 0;
+  document.querySelector("#save-room").disabled = savedRooms.length >= 12;
+}
+
+function storeWorkspace(rooms) {
+  const clean = validateWorkspace({ version: 1, rooms });
+  localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
+  savedRooms = clean.rooms;
+  renderWorkspace();
+}
 
 function loadInitialScenario() {
   const hashValue = window.location.hash.startsWith("#scenario=") ? window.location.hash.slice(10) : "";
@@ -76,6 +112,26 @@ function loadInitialScenario() {
 }
 
 function bindStaticEvents() {
+  document.querySelector("#save-room").addEventListener("click", () => {
+    try {
+      storeWorkspace([...savedRooms, validateScenario(scenario)]);
+      document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
+      setStatus("Named snapshot saved locally. Later edits do not alter it.", true);
+    } catch (error) { setStatus(`Could not save snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#load-room").addEventListener("click", () => {
+    const room = savedRooms[Number(document.querySelector("#saved-rooms").value)];
+    if (!room) return;
+    scenario = validateScenario(room);
+    renderEditor(); refresh();
+    setStatus("Saved snapshot loaded. Undo returns to the previous valid room.", true);
+  });
+  document.querySelector("#delete-room").addEventListener("click", () => {
+    const index = Number(document.querySelector("#saved-rooms").value);
+    if (!savedRooms[index] || !window.confirm(`Delete saved snapshot "${savedRooms[index].title}"? The open room stays available.`)) return;
+    try { storeWorkspace(savedRooms.filter((_, i) => i !== index)); setStatus("Saved snapshot deleted.", true); }
+    catch (error) { setStatus(`Could not delete snapshot: ${messageOf(error)}`); }
+  });
   document.querySelector("#undo-button").addEventListener("click", () => restoreHistory(false));
   document.querySelector("#redo-button").addEventListener("click", () => restoreHistory(true));
   elements.title.addEventListener("input", (event) => updateRoot("title", event.target.value));

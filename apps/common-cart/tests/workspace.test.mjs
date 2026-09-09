@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, createScenarioHistory } from "../src/model.js";
+import { clonePreset, createScenarioHistory, validateWorkspace } from "../src/model.js";
 
 test("history detaches states, caps memory, and truncates branches", () => {
   const s = clonePreset(); const h = createScenarioHistory(s);
@@ -14,4 +14,14 @@ test("history detaches states, caps memory, and truncates branches", () => {
   let count = 0; while (h.canUndo) { h.undo(); count++; }
   assert.equal(count, 49);
   assert.throws(() => h.record({}));
+});
+
+test("workspace validates every room and rejects unsupported schema or oversized collections", () => {
+  const s = clonePreset();
+  const workspace = validateWorkspace({ version: 1, rooms: [s] });
+  s.title = "Changed";
+  assert.notEqual(workspace.rooms[0].title, s.title);
+  for (const invalid of [{ version: 2, rooms: [] }, { version: 1, rooms: [{}] }, { version: 1, rooms: Array(13).fill(s) }, { version: 1, rooms: [], extra: true }]) {
+    assert.throws(() => validateWorkspace(invalid));
+  }
 });

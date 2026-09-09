@@ -295,7 +295,11 @@ footer {
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
-}</style>
+}
+ .snapshot-bar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin-block: 1rem; padding: 1rem; border: 1px solid #b9b0a0; border-radius: 12px; }
+ .snapshot-bar label { display: grid; gap: .35rem; min-width: 180px; max-width: 100%; }
+ .snapshot-bar select { max-width: 100%; }
+ .snapshot-bar p { flex-basis: 100%; margin: 0; font-size: .85rem; }</style>
 </head>
 <body>
   <a class="skip-link" href="#workspace">Skip to workspace</a>
@@ -346,6 +350,13 @@ footer {
     </section>
 
     <div class="status-line" id="status" role="status" aria-live="polite"></div>
+    <section class="snapshot-bar" aria-label="Saved room workspace">
+      <label>Saved rooms <select id="saved-rooms" aria-describedby="snapshot-help"></select></label>
+      <button id="save-room" type="button">Save named snapshot</button>
+      <button id="load-room" type="button">Load snapshot</button>
+      <button id="delete-room" type="button">Delete snapshot</button>
+      <p id="snapshot-help">Up to 12 local snapshots, named by the room title. Export JSON for a portable backup. Browser data can be cleared.</p>
+    </section>
 
     <section class="scoreboard" aria-label="Market summary">
       <article class="metric feature">
@@ -694,6 +705,14 @@ function createScenarioHistory(initial) {
     undo() { if (cursor > 0) cursor--; return this.current(); },
     redo() { if (cursor < entries.length - 1) cursor++; return this.current(); }
   };
+}
+
+function validateWorkspace(candidate) {
+  if (!candidate || candidate.version !== 1 || !Array.isArray(candidate.rooms) || candidate.rooms.length > 12) {
+    throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
+  }
+  rejectUnknownFields(candidate, ["version", "rooms"], "Workspace");
+  return { version: 1, rooms: candidate.rooms.map(validateScenario) };
 }
 
 function validateScenario(candidate) {
@@ -1067,6 +1086,7 @@ function jsonSyntaxHint(error) {
 }
 
 const STORAGE_KEY = "common-cart.scenario.v1";
+const WORKSPACE_KEY = "common-cart.workspace.v1";
 const elements = {
   title: document.querySelector("#scenario-title"),
   currency: document.querySelector("#currency"),
@@ -1097,11 +1117,45 @@ const elements = {
 let scenario = loadInitialScenario();
 const history = createScenarioHistory(scenario);
 let invalidDraft = false;
+let savedRooms = loadWorkspace();
 let inspectedOfferId = scenario.offers[0]?.id ?? "";
 let saveTimer;
 renderEditor();
 refresh();
 bindStaticEvents();
+renderWorkspace();
+
+function loadWorkspace() {
+  try {
+    const raw = localStorage.getItem(WORKSPACE_KEY);
+    if (!raw) return [];
+    return validateWorkspace(JSON.parse(raw)).rooms;
+  } catch (error) {
+    queueMicrotask(() => setStatus(`Saved rooms could not be opened: ${messageOf(error)} Export your current room before closing.`));
+    return [];
+  }
+}
+
+function renderWorkspace() {
+  const picker = document.querySelector("#saved-rooms");
+  picker.replaceChildren(...savedRooms.map((room, index) => {
+    const option = document.createElement("option");
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${room.title}`;
+    return option;
+  }));
+  picker.disabled = savedRooms.length === 0;
+  document.querySelector("#load-room").disabled = savedRooms.length === 0;
+  document.querySelector("#delete-room").disabled = savedRooms.length === 0;
+  document.querySelector("#save-room").disabled = savedRooms.length >= 12;
+}
+
+function storeWorkspace(rooms) {
+  const clean = validateWorkspace({ version: 1, rooms });
+  localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
+  savedRooms = clean.rooms;
+  renderWorkspace();
+}
 
 function loadInitialScenario() {
   const hashValue = window.location.hash.startsWith("#scenario=") ? window.location.hash.slice(10) : "";
@@ -1133,6 +1187,26 @@ function loadInitialScenario() {
 }
 
 function bindStaticEvents() {
+  document.querySelector("#save-room").addEventListener("click", () => {
+    try {
+      storeWorkspace([...savedRooms, validateScenario(scenario)]);
+      document.querySelector("#saved-rooms").value = String(savedRooms.length - 1);
+      setStatus("Named snapshot saved locally. Later edits do not alter it.", true);
+    } catch (error) { setStatus(`Could not save snapshot: ${messageOf(error)}`); }
+  });
+  document.querySelector("#load-room").addEventListener("click", () => {
+    const room = savedRooms[Number(document.querySelector("#saved-rooms").value)];
+    if (!room) return;
+    scenario = validateScenario(room);
+    renderEditor(); refresh();
+    setStatus("Saved snapshot loaded. Undo returns to the previous valid room.", true);
+  });
+  document.querySelector("#delete-room").addEventListener("click", () => {
+    const index = Number(document.querySelector("#saved-rooms").value);
+    if (!savedRooms[index] || !window.confirm(`Delete saved snapshot "${savedRooms[index].title}"? The open room stays available.`)) return;
+    try { storeWorkspace(savedRooms.filter((_, i) => i !== index)); setStatus("Saved snapshot deleted.", true); }
+    catch (error) { setStatus(`Could not delete snapshot: ${messageOf(error)}`); }
+  });
   document.querySelector("#undo-button").addEventListener("click", () => restoreHistory(false));
   document.querySelector("#redo-button").addEventListener("click", () => restoreHistory(true));
   elements.title.addEventListener("input", (event) => updateRoot("title", event.target.value));

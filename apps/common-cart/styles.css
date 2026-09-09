@@ -263,3 +263,7 @@ footer {
   html { scroll-behavior: auto; }
   *, *::before, *::after { animation-duration: 0.01ms !important; transition-duration: 0.01ms !important; }
 }
+ .snapshot-bar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin-block: 1rem; padding: 1rem; border: 1px solid #b9b0a0; border-radius: 12px; }
+ .snapshot-bar label { display: grid; gap: .35rem; min-width: 180px; max-width: 100%; }
+ .snapshot-bar select { max-width: 100%; }
+ .snapshot-bar p { flex-basis: 100%; margin: 0; font-size: .85rem; }
