@@ -191,18 +191,32 @@ export function copyOfferAsNewTierSet(rawScenario, offerId) {
   return validateScenario(clean);
 }
 
-export function compareScenarios(before, after) {
-  const baseline = evaluateMarket(before);
-  const current = evaluateMarket(after);
-  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
-  const metrics = (market) => ({
+function residualCoverageCounts(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  return {
+    leftoverBuyers: coverage.leftoverBuyerCount,
+    leftoverUnits: coverage.leftoverUnits,
+    unfilledBuyers: coverage.unfilledBuyerCount,
+    unfilledUnits: coverage.unfilledUnits
+  };
+}
+
+function marketComparisonMetrics(market) {
+  return {
     requested: market.totalRequestedUnits,
     fulfilled: market.winner?.fulfilledUnits ?? 0,
     buyers: market.winner?.deliveredBuyers ?? 0,
     cost: market.winner?.totalCost ?? null,
-    winner: market.winner?.offer.merchant ?? "No qualifying offer"
-  });
-  return { baseline: metrics(baseline), current: metrics(current), sameCurrency,
+    winner: market.winner?.offer.merchant ?? "No qualifying offer",
+    ...residualCoverageCounts(market.scenario)
+  };
+}
+
+export function compareScenarios(before, after) {
+  const baseline = evaluateMarket(before);
+  const current = evaluateMarket(after);
+  const sameCurrency = baseline.scenario.currency === current.scenario.currency;
+  return { baseline: marketComparisonMetrics(baseline), current: marketComparisonMetrics(current), sameCurrency,
     sameDemand: JSON.stringify(baseline.scenario.buyers) === JSON.stringify(current.scenario.buyers) };
 }
 
@@ -225,7 +239,8 @@ export function compareThreeRooms(first, second, third) {
       fulfilled: markets[index].winner?.fulfilledUnits ?? 0,
       buyers: markets[index].winner?.deliveredBuyers ?? 0,
       cost: markets[index].winner?.totalCost ?? null,
-      winner: markets[index].winner?.offer.merchant ?? "No qualifying offer"
+      winner: markets[index].winner?.offer.merchant ?? "No qualifying offer",
+      ...residualCoverageCounts(room)
     }))
   };
 }
@@ -264,6 +279,7 @@ export function createMerchantResidualReport(rawScenario) {
     limitations: coverage.note,
     primary: publicOffer(coverage.primary),
     secondary: publicOffer(coverage.secondary),
+    tertiary: publicOffer(coverage.tertiary),
     leftoverBuyerCount: coverage.leftoverBuyerCount,
     leftoverUnits: coverage.leftoverUnits,
     unfilledBuyerCount: coverage.unfilledBuyerCount,
@@ -465,6 +481,9 @@ export function createOrganizerBriefing(rawScenario) {
     residual.secondary
       ? `- Leftover fill: ${residual.secondary.merchant} / ${residual.secondary.variant}, ${residual.secondary.fulfilledUnits} units, ${residual.secondary.deliveredBuyers} buyers.`
       : `- Leftover fill: none.`,
+    residual.tertiary
+      ? `- Tertiary fill: ${residual.tertiary.merchant} / ${residual.tertiary.variant}, ${residual.tertiary.fulfilledUnits} units, ${residual.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
     `- Leftover after winner: ${residual.leftoverBuyerCount} buyers, ${residual.leftoverUnits} units.`,
     `- Still unfilled: ${residual.unfilledBuyerCount} buyers, ${residual.unfilledUnits} units.`,
     ``,
@@ -796,19 +815,35 @@ function coverageOfferSummary(result) {
   };
 }
 
+function residualMatch(title, currency, leftoverBuyers, leftoverOffers) {
+  if (leftoverBuyers.length === 0 || leftoverOffers.length === 0) {
+    return { summary: null, remaining: leftoverBuyers };
+  }
+  const residual = evaluateMarket({ title, currency, buyers: leftoverBuyers, offers: leftoverOffers });
+  if (!residual.winner) return { summary: null, remaining: leftoverBuyers };
+  const summary = coverageOfferSummary(residual.winner);
+  summary.selectedBuyerIds = residual.winner.selectedBuyerIds;
+  const taken = new Set(residual.winner.selectedBuyerIds);
+  return {
+    summary,
+    remaining: leftoverBuyers.filter((buyer) => !taken.has(buyer.id))
+  };
+}
+
 /**
  * After the winning offer is chosen, leftover whole-buyer demand may be filled
- * by the next-best other offer using the same exact allocator. A buyer's quantity
- * is never split across offers.
+ * by the next-best other offer, then a third distinct offer, using the same exact
+ * allocator. A buyer's quantity is never split across offers.
  */
 export function computeResidualCoverage(rawScenario) {
   const market = evaluateMarket(rawScenario);
+  const base = { planningAid: true, note: RESIDUAL_PLANNING_NOTE };
   if (!market.winner) {
     return {
-      planningAid: true,
-      note: RESIDUAL_PLANNING_NOTE,
+      ...base,
       primary: null,
       secondary: null,
+      tertiary: null,
       leftoverBuyerCount: market.buyerCount,
       leftoverUnits: market.totalRequestedUnits,
       leftoverBuyerIds: market.scenario.buyers.map(({ id }) => id),
@@ -820,38 +855,21 @@ export function computeResidualCoverage(rawScenario) {
   const leftoverBuyers = market.scenario.buyers.filter((buyer) => !taken.has(buyer.id));
   const leftoverUnits = leftoverBuyers.reduce((sum, buyer) => sum + buyer.quantity, 0);
   const leftoverBuyerIds = leftoverBuyers.map(({ id }) => id);
-  const otherOffers = market.scenario.offers.filter((offer) => offer.id !== market.winner.offer.id);
+  const leftoverOffers = market.scenario.offers.filter((offer) => offer.id !== market.winner.offer.id);
   const primary = coverageOfferSummary(market.winner);
-  if (leftoverBuyers.length === 0 || otherOffers.length === 0) {
-    return {
-      planningAid: true,
-      note: RESIDUAL_PLANNING_NOTE,
-      primary,
-      secondary: null,
-      leftoverBuyerCount: leftoverBuyers.length,
-      leftoverUnits,
-      leftoverBuyerIds,
-      unfilledBuyerCount: leftoverBuyers.length,
-      unfilledUnits: leftoverUnits
-    };
-  }
-  const residual = evaluateMarket({
-    title: market.scenario.title,
-    currency: market.scenario.currency,
-    buyers: leftoverBuyers,
-    offers: otherOffers
-  });
-  const secondary = residual.winner ? coverageOfferSummary(residual.winner) : null;
-  if (secondary) {
-    secondary.selectedBuyerIds = residual.winner.selectedBuyerIds;
-  }
-  const secondaryTaken = new Set(residual.winner?.selectedBuyerIds ?? []);
-  const unfilledBuyers = leftoverBuyers.filter((buyer) => !secondaryTaken.has(buyer.id));
+  const secondaryMatch = residualMatch(market.scenario.title, market.scenario.currency, leftoverBuyers, leftoverOffers);
+  const usedOfferIds = new Set([market.winner.offer.id]);
+  if (secondaryMatch.summary) usedOfferIds.add(secondaryMatch.summary.offerId);
+  const tertiaryOffers = market.scenario.offers.filter((offer) => !usedOfferIds.has(offer.id));
+  const tertiaryMatch = secondaryMatch.summary
+    ? residualMatch(market.scenario.title, market.scenario.currency, secondaryMatch.remaining, tertiaryOffers)
+    : { summary: null, remaining: leftoverBuyers };
+  const unfilledBuyers = tertiaryMatch.remaining;
   return {
-    planningAid: true,
-    note: RESIDUAL_PLANNING_NOTE,
+    ...base,
     primary,
-    secondary,
+    secondary: secondaryMatch.summary,
+    tertiary: tertiaryMatch.summary,
     leftoverBuyerCount: leftoverBuyers.length,
     leftoverUnits,
     leftoverBuyerIds,

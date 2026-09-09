@@ -664,7 +664,11 @@ function renderComparison() {
     ["Winner", before.winner, after.winner],
     ["Requested units", before.requested, after.requested],
     ["Fulfilled units", before.fulfilled, after.fulfilled],
-    ["Included buyers", before.buyers, after.buyers]
+    ["Included buyers", before.buyers, after.buyers],
+    ["Leftover buyers after winner", before.leftoverBuyers, after.leftoverBuyers],
+    ["Leftover units after winner", before.leftoverUnits, after.leftoverUnits],
+    ["Unfilled buyers after residual", before.unfilledBuyers, after.unfilledBuyers],
+    ["Unfilled units after residual", before.unfilledUnits, after.unfilledUnits]
   ];
   if (comparison.sameCurrency) rows.push(["Landed total", before.cost === null ? "No allocation" : money(scenario.currency).format(before.cost), after.cost === null ? "No allocation" : money(scenario.currency).format(after.cost)]);
   const table = document.createElement("table");
@@ -704,7 +708,11 @@ function renderThreeRoomComparison(comparison) {
     ["Winner", ...comparison.rooms.map((room) => room.winner)],
     ["Requested units", ...comparison.rooms.map((room) => room.requested)],
     ["Fulfilled units", ...comparison.rooms.map((room) => room.fulfilled)],
-    ["Included buyers", ...comparison.rooms.map((room) => room.buyers)]
+    ["Included buyers", ...comparison.rooms.map((room) => room.buyers)],
+    ["Leftover buyers after winner", ...comparison.rooms.map((room) => room.leftoverBuyers)],
+    ["Leftover units after winner", ...comparison.rooms.map((room) => room.leftoverUnits)],
+    ["Unfilled buyers after residual", ...comparison.rooms.map((room) => room.unfilledBuyers)],
+    ["Unfilled units after residual", ...comparison.rooms.map((room) => room.unfilledUnits)]
   ];
   if (comparison.sameCurrency) {
     rows.push(["Landed total", ...comparison.rooms.map((room) => room.cost === null ? "No allocation" : money(room.currency).format(room.cost))]);
@@ -840,6 +848,13 @@ function renderResidualCoverage(rawScenario) {
     appendDetail(list, "Leftover buyers that fit", coverage.secondary.deliveredBuyers);
   } else {
     appendDetail(list, "Next-best leftover offer", "No other qualifying offer on leftover whole orders");
+  }
+  if (coverage.tertiary) {
+    appendDetail(list, "Third leftover offer", `${coverage.tertiary.merchant} / ${coverage.tertiary.variant}`);
+    appendDetail(list, "Tertiary units that fit", coverage.tertiary.fulfilledUnits);
+    appendDetail(list, "Tertiary buyers that fit", coverage.tertiary.deliveredBuyers);
+  } else {
+    appendDetail(list, "Third leftover offer", "No third distinct offer on remaining whole orders");
   }
   appendDetail(list, "Still unfilled", `${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`);
   summary.replaceChildren(list);

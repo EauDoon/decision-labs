@@ -160,6 +160,7 @@ export interface ResidualCoverage {
   note: string;
   primary: CoverageOfferSummary | null;
   secondary: CoverageOfferSummary | null;
+  tertiary: CoverageOfferSummary | null;
   leftoverBuyerCount: number;
   leftoverUnits: number;
   leftoverBuyerIds: string[];
@@ -236,7 +237,17 @@ export interface ScenarioHistory {
   redo(): Scenario;
 }
 export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; }
-export interface ComparisonMetrics { requested: number; fulfilled: number; buyers: number; cost: number | null; winner: string; }
+export interface ComparisonMetrics {
+  requested: number;
+  fulfilled: number;
+  buyers: number;
+  cost: number | null;
+  winner: string;
+  leftoverBuyers: number;
+  leftoverUnits: number;
+  unfilledBuyers: number;
+  unfilledUnits: number;
+}
 export interface ScenarioComparison { baseline: ComparisonMetrics; current: ComparisonMetrics; sameCurrency: boolean; sameDemand: boolean; }
 export interface MerchantReport {
   report: string; version: number; currency: string; limitations: string;
@@ -247,6 +258,7 @@ export interface MerchantResidualReport {
   report: string; version: number; currency: string; limitations: string;
   primary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
   secondary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
+  tertiary: { merchant: string; category: string; variant: string; fulfilledUnits: number; deliveredBuyers: number; totalCost: number } | null;
   leftoverBuyerCount: number; leftoverUnits: number; unfilledBuyerCount: number; unfilledUnits: number;
 }
 export function createScenarioHistory(initial: unknown): ScenarioHistory;
@@ -262,6 +274,10 @@ export interface ThreeRoomRow {
   buyers: number;
   cost: number | null;
   winner: string;
+  leftoverBuyers: number;
+  leftoverUnits: number;
+  unfilledBuyers: number;
+  unfilledUnits: number;
 }
 export interface ThreeRoomComparison { sameCurrency: boolean; rooms: ThreeRoomRow[]; }
 export function compareThreeRooms(first: unknown, second: unknown, third: unknown): ThreeRoomComparison;

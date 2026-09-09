@@ -67,6 +67,20 @@ test("workspace validates every room and rejects unsupported schema or oversized
   }
 });
 
+test("scenario comparison includes residual leftover and unfilled counts", () => {
+  const before = clonePreset("neighbourhood");
+  const after = clonePreset("neighbourhood");
+  after.buyers[3].quantity += 1;
+  const comparison = compareScenarios(before, after);
+  assert.equal(typeof comparison.baseline.leftoverBuyers, "number");
+  assert.equal(typeof comparison.baseline.leftoverUnits, "number");
+  assert.equal(typeof comparison.baseline.unfilledBuyers, "number");
+  assert.equal(typeof comparison.baseline.unfilledUnits, "number");
+  assert.equal(typeof comparison.current.leftoverBuyers, "number");
+  assert.equal(typeof comparison.current.unfilledUnits, "number");
+  assert.equal(comparison.sameDemand, false);
+});
+
 test("three-room comparison reports winners without mixing currencies", () => {
   const a = clonePreset("neighbourhood");
   const b = clonePreset("studio");
@@ -77,5 +91,7 @@ test("three-room comparison reports winners without mixing currencies", () => {
   assert.equal(comparison.sameCurrency, false);
   assert.equal(comparison.rooms[0].winner, compareScenarios(a, a).baseline.winner);
   assert.ok(comparison.rooms.every((room) => typeof room.fulfilled === "number"));
+  assert.ok(comparison.rooms.every((room) => typeof room.leftoverBuyers === "number"));
+  assert.ok(comparison.rooms.every((room) => typeof room.unfilledUnits === "number"));
   assert.throws(() => compareThreeRooms(a, b, {}), /Room 3 is invalid/);
 });
