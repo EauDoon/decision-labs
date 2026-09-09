@@ -22,6 +22,7 @@ const appImport = `import {
   materializeStressCase,
   moveParticipant,
   participantsFromCsv,
+  participantsFromRosterText,
   participantsToCsv,
   redactConfiguration,
   solveFeeForAllHold,

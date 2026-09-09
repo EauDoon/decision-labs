@@ -1007,13 +1007,18 @@ export function neutralizeCsvCell(value) {
 }
 
 /**
- * RFC 4180-style records. Does not execute formulas. Empty rows are dropped.
+ * RFC 4180-style records with a single-character delimiter. Does not execute formulas.
+ * Empty rows are dropped.
  * @param {unknown} text
+ * @param {string} [delimiter]
  * @returns {string[][]}
  */
-export function parseCsv(text) {
+export function parseDelimited(text, delimiter = ',') {
   if (typeof text !== 'string') {
     throw new ValidationError(['CSV must be text.']);
+  }
+  if (typeof delimiter !== 'string' || delimiter.length !== 1) {
+    throw new ValidationError(['CSV delimiter must be a single character.']);
   }
   const source = text.replace(/^\uFEFF/, '');
   if (source.trim() === '') {
@@ -1038,7 +1043,7 @@ export function parseCsv(text) {
       }
     } else if (ch === '"') {
       inQuotes = true;
-    } else if (ch === ',') {
+    } else if (ch === delimiter) {
       row.push(cell);
       cell = '';
     } else if (ch === '\n') {
@@ -1062,6 +1067,28 @@ export function parseCsv(text) {
   row.push(cell);
   if (row.some((item) => item !== '')) rows.push(row);
   return rows.filter((item) => item.some((value) => String(value).trim() !== ''));
+}
+
+/**
+ * RFC 4180-style records. Does not execute formulas. Empty rows are dropped.
+ * @param {unknown} text
+ * @returns {string[][]}
+ */
+export function parseCsv(text) {
+  return parseDelimited(text, ',');
+}
+
+/**
+ * Uses a tab delimiter when the first line contains a tab; otherwise comma.
+ * @param {unknown} text
+ * @returns {','|'\t'}
+ */
+export function detectRosterDelimiter(text) {
+  if (typeof text !== 'string') return ',';
+  const source = text.replace(/^\uFEFF/, '');
+  const end = source.search(/\r\n|\n|\r/);
+  const first = end === -1 ? source : source.slice(0, end);
+  return first.includes('\t') ? '\t' : ',';
 }
 
 function normalizeCsvHeader(value) {
@@ -1204,6 +1231,26 @@ export function participantsFromCsv(text) {
   const validation = validateConfiguration(probe);
   if (!validation.valid) throw new ValidationError(validation.errors);
   return participants;
+}
+
+/**
+ * Builds a replacement roster from pasted CSV or TSV. Tab-separated first lines
+ * are converted to CSV, then {@link participantsFromCsv} validates the roster.
+ * @param {unknown} text
+ * @returns {ParticipantInput[]}
+ */
+export function participantsFromRosterText(text) {
+  if (typeof text !== 'string') {
+    throw new ValidationError(['CSV must be text.']);
+  }
+  if (text.length > 250_000) {
+    throw new ValidationError(['CSV must be 250 KB or smaller.']);
+  }
+  const delimiter = detectRosterDelimiter(text);
+  if (delimiter === ',') return participantsFromCsv(text);
+  const rows = parseDelimited(text, '\t');
+  const csv = `${rows.map((row) => row.map(escapeCsvCell).join(',')).join('\n')}\n`;
+  return participantsFromCsv(csv);
 }
 
 const PARTICIPANT_CSV_HEADER = Object.freeze([

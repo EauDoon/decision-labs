@@ -18,6 +18,7 @@ import {
   materializeStressCase,
   moveParticipant,
   participantsFromCsv,
+  participantsFromRosterText,
   participantsToCsv,
   redactConfiguration,
   solveFeeForAllHold,
@@ -54,6 +55,7 @@ let shareHoldPreview = null;
 let feeHoldPreview = null;
 let volumeHoldPreview = null;
 let briefCopyText = '';
+let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
 let helpOpen = false;
@@ -452,6 +454,10 @@ function inputPanel(result) {
           <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div><p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
           ${participantForms}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
+          <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
+          <textarea id="roster-paste" data-action="roster-paste" rows="6">${escapeAttribute(rosterPasteText)}</textarea>
+          <div class="button-row"><button type="button" data-action="import-roster-paste">Import pasted roster</button></div>
+          <p class="notice">Pasted CSV or TSV uses the same columns and validation as file import. Deal terms stay unchanged.</p>
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
@@ -847,6 +853,7 @@ function attachEvents() {
       || (typeof HTMLTextAreaElement === 'function' && input instanceof HTMLTextAreaElement);
     if (!isField) return;
     if (input.dataset.action === 'case-name') { caseName = input.value; return; }
+    if (input.dataset.action === 'roster-paste') { rosterPasteText = input.value; return; }
     if (input.dataset.path) {
       checkpoint();
       if (input.dataset.type === 'text') {
@@ -1017,6 +1024,7 @@ function attachEvents() {
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
     if (action === 'export-participants-csv') exportParticipantsCsv();
+    if (action === 'import-roster-paste') importPastedRoster();
     if (action === 'export-tornado-svg') exportTornadoSvg();
     if (action === 'apply-stress-proposal') {
       try {
@@ -1188,6 +1196,23 @@ function importParticipantCsv(file) {
     setNotice(detail ? `Participant CSV rejected: file could not be read (${detail}).` : 'Participant CSV rejected: file could not be read.');
   };
   reader.readAsText(file);
+}
+
+function importPastedRoster() {
+  try {
+    const participants = participantsFromRosterText(rosterPasteText);
+    checkpoint();
+    state.participants = participants;
+    activePreset = '';
+    rosterPasteText = '';
+    refresh('Participant roster replaced from pasted CSV or TSV. Deal terms are unchanged.');
+  } catch (error) {
+    if (error instanceof ValidationError) {
+      setNotice(`Pasted roster rejected: ${summarizeErrors(error.errors)}`);
+      return;
+    }
+    setNotice(`Pasted roster rejected: ${describeJsonFailure('the pasted text', error)}`);
+  }
 }
 
 function nextParticipantId() {

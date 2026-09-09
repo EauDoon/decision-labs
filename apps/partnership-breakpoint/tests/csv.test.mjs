@@ -7,6 +7,7 @@ import {
   neutralizeCsvCell,
   parseCsv,
   participantsFromCsv,
+  participantsFromRosterText,
   participantsToCsv,
   stressGridCsv,
   validateConfiguration,
@@ -171,6 +172,28 @@ test('participantsToCsv uses import columns, formula-safe cells, and empty optio
   assert.equal(roundTrip[1].capacity, null);
   assert.equal(roundTrip[1].minimumCommitment, 2000);
   assert.equal(validateConfiguration({ ...config, participants: roundTrip }).valid, true);
+});
+
+test('participantsFromRosterText reads TSV with the same validation as CSV', () => {
+  const tsv = [
+    'name\trevenue share\tvariable cost\tfixed cost\tmin profit\tcapacity\tcommitment\trisk',
+    'Alpha\t0.55\t0.01\t100\t50\t90000\t\t10',
+    'Beta\t0.45\t0.02\t80\t40\t\t1000\t5',
+  ].join('\n');
+  const participants = participantsFromRosterText(tsv);
+  assert.equal(participants.length, 2);
+  assert.equal(participants[0].name, 'Alpha');
+  assert.equal(participants[0].revenueShare, 0.55);
+  assert.equal(participants[1].minimumCommitment, 1000);
+  assert.equal(participants[1].capacity, null);
+
+  const csv = participantsToCsv({ deal: { monthlyVolume: 0, feePerTransaction: 0, addressableVolume: 0 }, participants });
+  assert.deepEqual(participantsFromRosterText(csv).map((item) => item.name), ['Alpha', 'Beta']);
+
+  assert.throws(() => participantsFromRosterText('name\tshare\nA\t0.5\nB\t0.5\n'), (error) => {
+    assert.match(error.errors.join(' '), /missing required column: variable cost/);
+    return error instanceof ValidationError;
+  });
 });
 
 test('participantsFromCsv requires two to 24 rows and unique generated ids', () => {

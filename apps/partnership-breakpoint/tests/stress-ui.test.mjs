@@ -108,6 +108,7 @@ async function workbench(protocol = 'file:', options = {}) {
       input.files = [{ size: file.size ?? String(contents).length, contents, pending, error, name: file.name ?? 'imported.json' }];
       events.get('change')({ target: input });
     },
+    pasteRoster: (value) => events.get('change')({ target: new Input({ action: 'roster-paste' }, value) }),
     keydown: (key, extra = {}) => {
       let prevented = false;
       windowEvents.get('keydown')?.({
@@ -1084,6 +1085,29 @@ test('participant CSV replaces the roster only after validation and leaves the d
   assert.match(app.notice(), /Deal terms are unchanged/);
   app.click('undo');
   assert.deepEqual(app.saved().participants.map((item) => item.id), before.participants.map((item) => item.id));
+});
+
+test('pasted TSV roster reuses CSV validation and leaves the deal unchanged', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  const before = app.saved();
+  assert.match(app.markup(), /id="roster-paste"/);
+  const tsv = [
+    'name\trevenue share\tvariable cost\tfixed cost\tmin profit\tcapacity\tcommitment\trisk',
+    'Alpha\t0.55\t0.01\t100\t50\t90000\t\t10',
+    'Beta\t0.45\t0.02\t80\t40\t\t1000\t5',
+  ].join('\n');
+  app.pasteRoster(tsv);
+  app.click('import-roster-paste');
+  const after = app.saved();
+  assert.deepEqual(after.participants.map((item) => item.name), ['Alpha', 'Beta']);
+  assert.equal(after.deal.monthlyVolume, before.deal.monthlyVolume);
+  assert.match(app.notice(), /pasted CSV or TSV/);
+  app.pasteRoster('name\tshare\nA\t0.5\nB\t0.5\n');
+  app.click('import-roster-paste');
+  assert.match(app.notice(), /Pasted roster rejected/);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Alpha', 'Beta']);
 });
 
 test('participant CSV export uses import columns and formula-safe names', async () => {

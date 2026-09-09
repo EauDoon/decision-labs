@@ -170,6 +170,8 @@ A leading apostrophe is stripped when the remaining cell looks like a spreadshee
 
 Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validation errors name the row (`Row 3 revenue share`) or the column. A rejected CSV leaves the current roster unchanged.
 
+`participantsFromRosterText` accepts pasted CSV or TSV. If the first line contains a tab, rows are parsed as TSV and converted to CSV, then validated by `participantsFromCsv`. Otherwise the text is CSV. Deal terms are not read.
+
 `participantsToCsv` writes those same columns in header order, using formula-safe cells. Empty optional capacity and commitment values become blank cells so a later import restores `null`. Identifiers are omitted because import regenerates them from names. Deal terms are not written.
 
 ## Export filenames
