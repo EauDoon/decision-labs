@@ -247,6 +247,13 @@ SOFTWARE.
           <button id="restore-neighbourhood" type="button">Restore neighbourhood example</button>
         </div>
         <p id="variants-help" class="canvas-note print-chrome">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
+        <div class="snapshot-bar print-chrome" aria-label="Paste buyers from a spreadsheet">
+          <label>Paste buyer CSV or TSV
+            <textarea id="paste-buyers" rows="6" spellcheck="false" aria-describedby="paste-buyers-help" placeholder="label, category, quantity, max unit price, latest delivery days, variants"></textarea>
+          </label>
+          <button id="paste-buyers-apply" type="button">Replace buyers from paste</button>
+          <p id="paste-buyers-help">Same columns and validation as buyer CSV import. A tab in the first line is read as TSV. Valid paste replaces buyers, keeps offers, and is undoable.</p>
+        </div>
         <article class="panel print-chrome" aria-labelledby="buyer-variant-counts-title">
           <div class="panel-heading">
             <div>

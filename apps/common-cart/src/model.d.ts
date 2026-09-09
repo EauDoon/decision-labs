@@ -333,7 +333,9 @@ export function winnerBudgetLeftover(rawScenario: unknown): WinnerBudgetLeftover
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
 export function neutralizeSpreadsheetCell(value: unknown): unknown;
 export function parseBuyerCsv(text: unknown): Buyer[];
+export function parseBuyerTable(text: unknown): Buyer[];
 export function importBuyersFromCsv(rawScenario: unknown, text: unknown): Scenario;
+export function importBuyersFromTable(rawScenario: unknown, text: unknown): Scenario;
 export function buyerCsvTemplate(): string;
 /** Organizer-only. Same columns as import. Formula-safe. Includes private labels and optional budgets. */
 export function createOrganizerBuyerCsv(rawScenario: unknown): string;

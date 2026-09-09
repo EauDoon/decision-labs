@@ -30,6 +30,7 @@ import {
   createDeliveryHeatmapCsv,
   createVariantOverlapCsv,
   importBuyersFromCsv,
+  importBuyersFromTable,
   importOffersFromCsv,
   buyerCsvTemplate,
   createOrganizerBuyerCsv,
@@ -437,6 +438,7 @@ function bindStaticEvents() {
     }
   });
   document.querySelector("#import-buyers-file").addEventListener("change", importBuyersCsv);
+  document.querySelector("#paste-buyers-apply").addEventListener("click", pasteBuyersTable);
   document.querySelector("#preview-buyer-sort").addEventListener("click", () => {
     try {
       const mode = document.querySelector("#buyer-sort-mode").value;
@@ -1785,6 +1787,22 @@ async function importBuyersCsv(event) {
     setStatus(`Imported ${imported.buyers.length} buyers from CSV. Offers were left unchanged.`, true);
   } catch (error) {
     setStatus(`Buyer CSV import failed: ${messageOf(error)}`);
+  }
+}
+
+function pasteBuyersTable() {
+  const field = document.querySelector("#paste-buyers");
+  const text = field?.value ?? "";
+  try {
+    const imported = importBuyersFromTable(scenario, text);
+    if (!allowReplaceDraft()) return;
+    scenario = imported;
+    buyerSortPreviewIds = null;
+    renderEditor();
+    refresh();
+    setStatus(`Replaced buyers from paste (${imported.buyers.length}). Offers were left unchanged. Undo restores the previous buyers.`, true);
+  } catch (error) {
+    setStatus(`Buyer paste failed: ${messageOf(error)}`);
   }
 }
 

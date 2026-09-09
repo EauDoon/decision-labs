@@ -26,9 +26,9 @@ body {
   line-height: 1.5;
 }
 
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible,
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible,
 #offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
@@ -323,6 +323,7 @@ footer {
  .snapshot-bar label { display: grid; gap: .35rem; min-width: 180px; max-width: 100%; }
  .snapshot-bar select { max-width: 100%; }
  .snapshot-bar p { flex-basis: 100%; margin: 0; font-size: .85rem; }
+ .snapshot-bar textarea { width: min(100%, 48rem); min-height: 7rem; padding: 0.55rem 0.65rem; border: 1px solid #b9b0a0; border-radius: 8px; resize: vertical; }
 
 @media print {
   .skip-link, .header-actions, .preset-bar .button-row, #coach-dialog, #shortcut-help,

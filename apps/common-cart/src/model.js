@@ -556,7 +556,10 @@ export function neutralizeSpreadsheetCell(value) {
   return value;
 }
 
-function parseCsvRows(text) {
+function parseDelimitedRows(text, delimiter) {
+  if (typeof delimiter !== "string" || delimiter.length !== 1) {
+    throw new ScenarioError("Table delimiter must be a single character.");
+  }
   const rows = [];
   let row = [];
   let cell = "";
@@ -577,7 +580,7 @@ function parseCsvRows(text) {
       }
     } else if (character === '"') {
       quoted = true;
-    } else if (character === ",") {
+    } else if (character === delimiter) {
       row.push(cell);
       cell = "";
     } else if (character === "\n") {
@@ -597,10 +600,18 @@ function parseCsvRows(text) {
   return rows.filter((entry) => entry.some((value) => value.trim() !== ""));
 }
 
-export function parseBuyerCsv(text) {
-  if (typeof text !== "string") throw new ScenarioError("Buyer CSV must be text.");
-  if (text.trim() === "") throw new ScenarioError("Buyer CSV is empty.");
-  const rows = parseCsvRows(text);
+function parseCsvRows(text) {
+  return parseDelimitedRows(text, ",");
+}
+
+function buyerTableDelimiter(text) {
+  const source = text.replace(/^\uFEFF/u, "");
+  const end = source.search(/[\r\n]/u);
+  const firstLine = end === -1 ? source : source.slice(0, end);
+  return firstLine.includes("\t") ? "\t" : ",";
+}
+
+function buyersFromCsvRows(rows) {
   if (rows.length < 2) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
   const header = rows[0].map((value) => neutralizeSpreadsheetCell(value).trim().toLowerCase().replaceAll("_", " "));
   const columns = header.map((name) => BUYER_CSV_HEADERS[name] ?? null);
@@ -642,9 +653,29 @@ export function parseBuyerCsv(text) {
   });
 }
 
+export function parseBuyerCsv(text) {
+  if (typeof text !== "string") throw new ScenarioError("Buyer CSV must be text.");
+  if (text.trim() === "") throw new ScenarioError("Buyer CSV is empty.");
+  return buyersFromCsvRows(parseCsvRows(text));
+}
+
+export function parseBuyerTable(text) {
+  if (typeof text !== "string") throw new ScenarioError("Buyer CSV must be text.");
+  if (text.trim() === "") throw new ScenarioError("Buyer CSV is empty.");
+  const delimiter = buyerTableDelimiter(text);
+  return buyersFromCsvRows(parseDelimitedRows(text, delimiter));
+}
+
 export function importBuyersFromCsv(rawScenario, text) {
   const scenario = validateScenario(rawScenario);
   const buyers = parseBuyerCsv(text);
+  if (buyers.length < 1) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
+  return validateScenario({ ...scenario, buyers });
+}
+
+export function importBuyersFromTable(rawScenario, text) {
+  const scenario = validateScenario(rawScenario);
+  const buyers = parseBuyerTable(text);
   if (buyers.length < 1) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
   return validateScenario({ ...scenario, buyers });
 }
