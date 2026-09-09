@@ -1291,6 +1291,53 @@ test("clause density persists in workspace JSON and local workspace prefs", asyn
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).clauseDensity, "compact");
 });
 
+test("workspace JSON persists veto-only and locked-clause filters that the solver ignores", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for display filters");
+  app.filterVetoGroups(true);
+  app.filterLockedClauses(true);
+  const prefs = JSON.parse(storage.get("smallest-agreement:workspace:v1"));
+  assert.equal(prefs.vetoGroupsOnly, true);
+  assert.equal(prefs.lockedClausesOnly, true);
+  const proposal = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(Object.hasOwn(proposal, "vetoGroupsOnly"), false);
+  assert.equal(Object.hasOwn(proposal, "lockedClausesOnly"), false);
+  assert.equal(proposal.clauses.length, 3);
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  assert.match(app.clauses(), /No locked clauses match this filter/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  app.filterVetoGroups(false);
+  app.filterLockedClauses(false);
+  await app.importJson(JSON.stringify({
+    format: "smallest-agreement-workspace",
+    version: 1,
+    vetoGroupsOnly: true,
+    lockedClausesOnly: true,
+    proposal,
+  }));
+  assert.match(app.message(), /Imported workspace/u);
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  assert.match(app.clauses(), /No locked clauses match this filter/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).vetoGroupsOnly, true);
+  await app.importJson(JSON.stringify({
+    format: "smallest-agreement-workspace",
+    version: 1,
+    proposal,
+  }));
+  assert.match(app.groups(), /Residents/u);
+  assert.match(app.clauses(), /Park access hours/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).vetoGroupsOnly, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).lockedClausesOnly, false);
+  await app.importJson(JSON.stringify({
+    format: "smallest-agreement-workspace",
+    version: 1,
+    vetoGroupsOnly: "yes",
+    proposal,
+  }));
+  assert.match(app.message(), /Import failed \(invalid_filter\)/u);
+});
+
 test("resetting one group's support to blank is undoable and leaves other scores", async () => {
   const storage = new Map();
   const app = await savedWorkbench(storage);

@@ -338,21 +338,22 @@ function firstProposalError(proposal) {
   return validateProposal(proposal).errors[0];
 }
 
-function loadClauseDensity() {
+function loadWorkspacePrefs() {
   try {
     const raw = localStorage.getItem(WORKSPACE_KEY);
-    if (!raw) return "comfortable";
+    if (!raw) return;
     const parsed = JSON.parse(raw);
-    if (parsed?.clauseDensity === "compact" || parsed?.clauseDensity === "comfortable") return parsed.clauseDensity;
+    if (parsed?.clauseDensity === "compact" || parsed?.clauseDensity === "comfortable") clauseDensity = parsed.clauseDensity;
+    vetoGroupsOnly = parsed?.vetoGroupsOnly === true;
+    lockedClausesOnly = parsed?.lockedClausesOnly === true;
   } catch {
-    return "comfortable";
+    /* storage may be unavailable or invalid */
   }
-  return "comfortable";
 }
 
-function persistClauseDensity() {
+function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -1285,18 +1286,20 @@ $("#clause-filter").addEventListener("input", (event) => {
 });
 $("#locked-clauses-only").addEventListener("change", (event) => {
   lockedClausesOnly = event.target.checked === true;
+  persistWorkspacePrefs();
   renderClauses();
   applyClauseDensity();
 });
 $("#clause-density").addEventListener("change", (event) => {
   clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
-  persistClauseDensity();
+  persistWorkspacePrefs();
   applyClauseDensity();
 });
 function setVetoGroupsOnly(next) {
   vetoGroupsOnly = next === true;
   const checkbox = $("#veto-groups-only");
   if (checkbox) checkbox.checked = vetoGroupsOnly;
+  persistWorkspacePrefs();
   renderGroups(blockingVetoIds(currentResult()));
 }
 
@@ -1664,10 +1667,10 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
-  notifyDraft("Workspace JSON downloaded with the current draft and clause card density.");
+  notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
 });
 $("#export-locks-button").addEventListener("click", () => {
   const exported = formatLocksJson(state.proposal);
@@ -1879,9 +1882,14 @@ $("#import-file").addEventListener("change", async (event) => {
   const workspace = parseWorkspaceJson(text);
   if (workspace.status === "ok") {
     state.proposal = workspace.proposal;
-    if (workspace.clauseDensity) {
+    if (workspace.kind === "workspace") {
+      if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") clauseDensity = workspace.clauseDensity;
+      vetoGroupsOnly = workspace.vetoGroupsOnly === true;
+      lockedClausesOnly = workspace.lockedClausesOnly === true;
+      persistWorkspacePrefs();
+    } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
-      persistClauseDensity();
+      persistWorkspacePrefs();
     }
     save();
     state.saveMessage = workspace.kind === "workspace"
@@ -1890,7 +1898,7 @@ $("#import-file").addEventListener("change", async (event) => {
     render();
     return;
   }
-  if (workspace.errors?.[0]?.code === "invalid_density" || workspace.errors?.[0]?.code === "invalid_format") {
+  if (workspace.errors?.[0]?.code === "invalid_density" || workspace.errors?.[0]?.code === "invalid_format" || workspace.errors?.[0]?.code === "invalid_filter") {
     state.saveMessage = `Import failed (${workspace.errors[0].code}): ${workspace.errors[0].message}`;
     $("#autosave-status").textContent = state.saveMessage;
     return;
@@ -2127,7 +2135,8 @@ document.addEventListener("keydown", (event) => {
   }
 });
 
-clauseDensity = loadClauseDensity();
+clauseDensity = "comfortable";
+loadWorkspacePrefs();
 render();
 startCoachIfNeeded();
 

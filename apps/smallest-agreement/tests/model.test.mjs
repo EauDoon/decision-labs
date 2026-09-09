@@ -1583,6 +1583,41 @@ test("workspace JSON persists compact or comfortable clause density and keeps ol
   assert.equal(JSON.stringify(input), before);
 });
 
+test("workspace JSON persists display filters that the solver ignores, and older files show all", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "One", lockedOptionId: "alternative", options: [
+      option("original", true, { g: 50 }),
+      option("alternative", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const baseline = findSmallestAgreement(input);
+  const exported = formatWorkspaceJson(input, { clauseDensity: "comfortable", vetoGroupsOnly: true, lockedClausesOnly: true });
+  assert.equal(exported.status, "ok");
+  assert.equal(exported.vetoGroupsOnly, true);
+  assert.equal(exported.lockedClausesOnly, true);
+  const parsed = parseWorkspaceJson(exported.json);
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.kind, "workspace");
+  assert.equal(parsed.vetoGroupsOnly, true);
+  assert.equal(parsed.lockedClausesOnly, true);
+  assert.deepEqual(parsed.proposal, canonicalProposal(input));
+  assert.equal(Object.hasOwn(parsed.proposal, "vetoGroupsOnly"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "lockedClausesOnly"), false);
+  assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
+  const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
+  assert.equal(omitted.vetoGroupsOnly, false);
+  assert.equal(omitted.lockedClausesOnly, false);
+  const bare = parseWorkspaceJson(JSON.stringify(input));
+  assert.equal(bare.vetoGroupsOnly, null);
+  assert.equal(bare.lockedClausesOnly, null);
+  assert.equal(formatWorkspaceJson(input, { vetoGroupsOnly: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, vetoGroupsOnly: "yes", proposal: input })).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, lockedClausesOnly: 1, proposal: input })).errors[0].code, "invalid_filter");
+  assert.equal(JSON.stringify(input), before);
+});
+
 test("locks JSON round-trips current locks and fails closed on unknown ids", () => {
   const input = proposal({
     clauses: [

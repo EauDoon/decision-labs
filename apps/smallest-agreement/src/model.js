@@ -1737,8 +1737,9 @@ export function compareWorkshopFiles(leftText, rightText) {
 }
 
 /**
- * Workspace JSON carries the canonical proposal plus clause card density.
- * Older proposal-only files remain valid and do not change density.
+ * Workspace JSON carries the canonical proposal plus display prefs.
+ * Older proposal-only files remain valid and do not change prefs.
+ * Filter flags are display-only. The solver ignores them.
  */
 export function formatWorkspaceJson(proposal, prefs = {}) {
   const validation = validateProposal(proposal);
@@ -1747,13 +1748,25 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (clauseDensity !== "compact" && clauseDensity !== "comfortable") {
     return { status: "invalid", errors: [namedFileError("invalid_density", "clauseDensity must be compact or comfortable.")] };
   }
+  const vetoGroupsOnly = Object.hasOwn(prefs, "vetoGroupsOnly") ? prefs.vetoGroupsOnly : false;
+  const lockedClausesOnly = Object.hasOwn(prefs, "lockedClausesOnly") ? prefs.lockedClausesOnly : false;
+  if (vetoGroupsOnly !== true && vetoGroupsOnly !== false) {
+    return { status: "invalid", errors: [namedFileError("invalid_filter", "vetoGroupsOnly must be a boolean.")] };
+  }
+  if (lockedClausesOnly !== true && lockedClausesOnly !== false) {
+    return { status: "invalid", errors: [namedFileError("invalid_filter", "lockedClausesOnly must be a boolean.")] };
+  }
   return {
     status: "ok",
     clauseDensity,
+    vetoGroupsOnly,
+    lockedClausesOnly,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
       clauseDensity,
+      vetoGroupsOnly,
+      lockedClausesOnly,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -1766,7 +1779,7 @@ export function parseWorkspaceJson(text) {
   if (!Object.hasOwn(raw, "format")) {
     const proposal = proposalFromWorkshopDocument(raw);
     if (proposal.status !== "ok") return proposal;
-    return { status: "ok", kind: "proposal", proposal: proposal.proposal, clauseDensity: null };
+    return { status: "ok", kind: "proposal", proposal: proposal.proposal, clauseDensity: null, vetoGroupsOnly: null, lockedClausesOnly: null };
   }
   const proposal = proposalFromWorkshopDocument(raw);
   if (proposal.status !== "ok") return proposal;
@@ -1777,7 +1790,21 @@ export function parseWorkspaceJson(text) {
     }
     clauseDensity = raw.clauseDensity;
   }
-  return { status: "ok", kind: "workspace", proposal: proposal.proposal, clauseDensity };
+  let vetoGroupsOnly = false;
+  if (Object.hasOwn(raw, "vetoGroupsOnly")) {
+    if (raw.vetoGroupsOnly !== true && raw.vetoGroupsOnly !== false) {
+      return { status: "invalid", errors: [namedFileError("invalid_filter", "vetoGroupsOnly must be a boolean.")] };
+    }
+    vetoGroupsOnly = raw.vetoGroupsOnly;
+  }
+  let lockedClausesOnly = false;
+  if (Object.hasOwn(raw, "lockedClausesOnly")) {
+    if (raw.lockedClausesOnly !== true && raw.lockedClausesOnly !== false) {
+      return { status: "invalid", errors: [namedFileError("invalid_filter", "lockedClausesOnly must be a boolean.")] };
+    }
+    lockedClausesOnly = raw.lockedClausesOnly;
+  }
+  return { status: "ok", kind: "workspace", proposal: proposal.proposal, clauseDensity, vetoGroupsOnly, lockedClausesOnly };
 }
 
 /**
