@@ -1596,7 +1596,7 @@ function inputPanel() {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="export-csv">Export stress CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button><button type="button" data-action="export-csv">Export stress CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <button type="button" data-action="reset">Reset</button>
           </div>
@@ -2013,6 +2013,7 @@ function attachEvents() {
     if (action === 'export') exportFile();
     if (action === 'export-redacted') exportRedactedFile();
     if (action === 'export-report') exportReport();
+    if (action === 'copy-brief') copyNegotiationBrief();
     if (action === 'export-csv') exportStressCsv();
     if (action === 'apply-stress-proposal') {
       try {
@@ -2252,6 +2253,59 @@ function exportReport() {
   if (!validation.valid) { setNotice('Resolve invalid inputs before exporting a report. ' + summarizeErrors(validation.errors)); return; }
   downloadText(decisionReport(state, caseName.trim() || 'Current case'), 'text/markdown;charset=utf-8', 'partnership-breakpoint-report.md');
   setNotice('Decision report exported with assumptions and reproducible case JSON.');
+}
+
+function negotiationBrief(config, title = 'Current case') {
+  const result = calculatePartnership(config);
+  const stress = evaluateStressGrid(config);
+  const breakpoint = result.firstBreakpoint;
+  const unit = config.deal.currency && /^[A-Z]{3}$/.test(config.deal.currency) ? config.deal.currency : 'units';
+  const breakpointLine = !breakpoint?.participant
+    ? 'No bounded adverse shock is available under the current inputs.'
+    : breakpoint.status === 'already-failing'
+      ? reportText(breakpoint.participant.name) + ' is already failing an exit criterion.'
+      : 'Protect ' + reportText(breakpoint.participant.name) + ' first. Direction: ' + shockLabel(breakpoint.kind) + '. Status: ' + breakpoint.status + '.';
+  return [
+    '# Partnership Breakpoint negotiation brief', '',
+    'Case: ' + reportText(title), '',
+    'Deterministic monthly contribution snapshot. Money uses ' + unit + '. This is not a forecast or a recommendation.', '',
+    '## Outcome',
+    result.viable ? 'Every participant holds at current inputs.' : 'At least one participant exits at current inputs.',
+    'Effective volume: ' + result.effectiveVolume + ' transactions per month.',
+    'Total participant profit: ' + result.totalProfit + ' ' + unit + '.', '',
+    '## Weakest participant (volume headroom)',
+    reportText(result.weakestParticipant.name) + ' is nearest its ' + result.weakestParticipant.bindingConstraint.label + ' limit. Exit test: ' + reportText(result.weakestParticipant.viable ? 'holds' : result.weakestParticipant.failureReasons.join('; ')) + '.', '',
+    '## First breakpoint (relative adverse movement)',
+    breakpointLine, '',
+    '## Participant profit',
+    ...result.participants.map((item) => '- ' + reportText(item.name) + ': ' + item.monthlyProfit + ' ' + unit + ' (' + (item.viable ? 'holds' : 'exits') + ')'), '',
+    '## Compound cases',
+    stress.passCount + ' of ' + stress.caseCount + ' selected cases hold. Counts are not probabilities. Negotiation status: ' + stress.negotiation.status + '.', '',
+    '## Limits',
+    'Assumptions are user-entered. Results do not prove demand, legal enforceability, credit, taxes, cash-flow timing, or participant behavior.', '',
+  ].join('\n');
+}
+
+function copyNegotiationBrief() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying a brief. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const title = (state.deal.title && state.deal.title.trim()) || caseName.trim() || 'Current case';
+  const text = negotiationBrief(state, title);
+  const clipboard = globalThis.navigator?.clipboard;
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    Promise.resolve(clipboard.writeText(text)).then(() => {
+      setNotice('Negotiation brief copied as Markdown.');
+    }).catch(() => {
+      downloadText(text, 'text/markdown;charset=utf-8', 'partnership-breakpoint-brief.md');
+      setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
+    });
+    return;
+  }
+  downloadText(text, 'text/markdown;charset=utf-8', 'partnership-breakpoint-brief.md');
+  setNotice('Clipboard unavailable. Negotiation brief downloaded instead.');
 }
 
 function csvCell(value) {

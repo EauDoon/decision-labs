@@ -582,3 +582,19 @@ test('redacted export replaces names, clears the title, and keeps identifiers', 
   app.click('export-redacted');
   assert.equal(app.downloads().length, 1);
 });
+
+test('negotiation brief downloads Markdown focused on weakest participant and first breakpoint', async () => {
+  const app = await workbench();
+  app.click('copy-brief');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-brief.md');
+  const text = await file.blob.text();
+  assert.match(text, /negotiation brief/);
+  assert.match(text, /Weakest participant/);
+  assert.match(text, /First breakpoint/);
+  assert.match(text, /Counts are not probabilities/);
+  assert.match(app.notice(), /downloaded instead/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('copy-brief');
+  assert.equal(app.downloads().length, 1);
+});
