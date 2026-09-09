@@ -25,7 +25,7 @@ test('launcher serves only workbenches and refuses hostile hosts and methods', a
   assert.match(page.body, /Share-to-hold/);
   assert.match(page.body, /CSV roster, capacity, and notes/);
   assert.match(page.body, /Queue-clear hours and Gantt compare/);
-  assert.match(page.body, /data-app="partnership-breakpoint">1\.4\.2</);
+  assert.match(page.body, /data-app="partnership-breakpoint">1\.4\.3</);
   assert.match(page.body, /Trust and limits/);
   assert.match(page.body, /The workbenches/);
   assert.match(page.body, /Open workbench/);
