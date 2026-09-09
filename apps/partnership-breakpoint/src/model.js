@@ -1507,7 +1507,7 @@ export function analyzePartnershipReview(rawConfig, tool) {
  const selected=PARTNERSHIP_REVIEW_TOOLS.find(entry=>entry.id===tool);
  if(!selected) throw new ValidationError(['Unknown partnership review.']);
  const result=calculatePartnership(config);
- const report=(columns,rows,note)=>({tool,title:selected.title,currency:config.deal.currency??'units',columns,rows,note});
+ const report=(columns,rows,note)=>({tool,title:selected.title,currency:config.deal.currency??'units',columns,rows:rows.map(row=>row.map(value=>typeof value==='number'&&!Number.isFinite(value)?null:value)),note:note+' A blank numeric result can also mean it exceeds finite arithmetic bounds.'});
  switch(tool){
  case 'interval': {
 
@@ -1574,4 +1574,23 @@ export function analyzePartnershipReview(rawConfig, tool) {
 // PB_REVIEW_CASES
  default: throw new ValidationError(['Unavailable partnership review.']);
  }
+}
+
+export function createPartnershipReviewPacket(rawConfig, tool) {
+  const scenario = JSON.parse(JSON.stringify(assertValidConfiguration(rawConfig)));
+  const packet = { format: 'partnership-review', version: 1, tool, scenario, inputJSON: JSON.stringify(scenario), review: analyzePartnershipReview(scenario, tool) };
+  if (new TextEncoder().encode(JSON.stringify(packet)).length > 1048576) throw new Error('Review packet exceeds 1 MiB. Choose a narrower review.');
+  return packet;
+}
+
+export function replayPartnershipReviewPacket(candidate) {
+  const fields = ['format', 'version', 'tool', 'scenario', 'inputJSON', 'review'];
+  if (!candidate || typeof candidate !== 'object' || Array.isArray(candidate) || Object.keys(candidate).length !== fields.length || !fields.every((field) => Object.hasOwn(candidate, field)) || candidate.format !== 'partnership-review' || candidate.version !== 1) throw new Error('Unsupported review packet.');
+  const current = createPartnershipReviewPacket(candidate.scenario, candidate.tool);
+  if (candidate.inputJSON !== current.inputJSON) throw new Error('Review input snapshot changed. Run a new review.');
+  const supplied = candidate.review, expected = current.review;
+  if (!supplied || typeof supplied !== 'object' || Array.isArray(supplied) || Object.keys(supplied).length !== Object.keys(expected).length || !Object.keys(expected).every((field) => Object.hasOwn(supplied, field))) throw new Error('Review result fields changed.');
+  for (const field of ['tool', 'title', 'currency', 'note']) if (supplied[field] !== expected[field]) throw new Error('Review result does not match the input snapshot.');
+  if (!Array.isArray(supplied.columns) || supplied.columns.length !== expected.columns.length || expected.columns.some((value, index) => !Object.hasOwn(supplied.columns, index) || supplied.columns[index] !== value) || !Array.isArray(supplied.rows) || supplied.rows.length !== expected.rows.length || expected.rows.some((row, index) => !Object.hasOwn(supplied.rows, index) || !Array.isArray(supplied.rows[index]) || supplied.rows[index].length !== row.length || row.some((value, column) => !Object.hasOwn(supplied.rows[index], column) || supplied.rows[index][column] !== value))) throw new Error('Review result does not match the input snapshot.');
+  return current;
 }

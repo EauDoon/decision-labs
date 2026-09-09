@@ -1,4 +1,6 @@
 import {
+  createPartnershipReviewPacket,
+  replayPartnershipReviewPacket,
   PARTNERSHIP_REVIEW_TOOLS,
   analyzePartnershipReview,
   PRESETS,
@@ -39,6 +41,8 @@ let importSequence = 0;
 let activePreset = 'balanced';
 let pendingNotice = '';
 let persistenceWarning = '';
+let partnershipReviewPacket = null;
+let partnershipReviewSequence = 0;
 let state = withStress(loadInitialState());
 let eventsBound = false;
 let caseName = '';
@@ -1674,6 +1678,9 @@ function helpDialog() {
 }
 
 function clearPartnershipReview() {
+ partnershipReviewPacket=null;partnershipReviewSequence++;
+ const exportButton=document.querySelector('#partnership-review-export');if(exportButton)exportButton.disabled=true;
+ const origin=document.querySelector('#partnership-review-origin');if(origin)origin.textContent='';
  const output=document.querySelector('#partnership-review-output');
  if(output) output.textContent='Run a review for the current valid inputs. Results clear when the case changes.';
 }
@@ -1689,6 +1696,23 @@ function initializePartnershipReview(){
  const select=document.querySelector('#partnership-review-tool');if(!select)return;
  for(const tool of PARTNERSHIP_REVIEW_TOOLS){const option=document.createElement('option');option.value=tool.id;option.textContent=tool.title;select.append(option);}
  select.value='interval';select.addEventListener('change',clearPartnershipReview);
- document.querySelector('#partnership-review-run').addEventListener('click',()=>{try{showPartnershipReview(analyzePartnershipReview(state,select.value));}catch(error){clearPartnershipReview();document.querySelector('#partnership-review-output').textContent='Review unavailable. '+(error.errors?.join(' ')||error.message);}});
+ document.querySelector('#partnership-review-run').addEventListener('click',()=>{clearPartnershipReview();try{partnershipReviewPacket=createPartnershipReviewPacket(state,select.value);showPartnershipReview(partnershipReviewPacket.review);document.querySelector('#partnership-review-export').disabled=false;document.querySelector('#partnership-review-origin').textContent='Current case: '+(state.deal.title||'Untitled');}catch(error){clearPartnershipReview();document.querySelector('#partnership-review-output').textContent='Review unavailable. '+(error.errors?.join(' ')||error.message);}});
 }
 initializePartnershipReview();
+
+function initializePartnershipReviewPacket(){
+ const button=document.querySelector('#partnership-review-export');if(!button)return;
+ button.addEventListener('click',()=>{if(partnershipReviewPacket)downloadText(JSON.stringify(partnershipReviewPacket),'application/json','partnership-review.json');});
+ document.querySelector('#partnership-review-import').addEventListener('click',()=>document.querySelector('#partnership-review-file').click());
+ document.querySelector('#partnership-review-file').addEventListener('change',async event=>{
+  const file=event.target.files[0];event.target.value='';if(!file)return;clearPartnershipReview();const sequence=partnershipReviewSequence;
+  try{
+   if(file.size>1048576)throw new Error('Review packet exceeds 1 MiB.');
+   const text=await file.text();if(sequence!==partnershipReviewSequence)return;
+   const packet=replayPartnershipReviewPacket(JSON.parse(text));partnershipReviewPacket=packet;
+   document.querySelector('#partnership-review-tool').value=packet.tool;showPartnershipReview(packet.review);button.disabled=false;
+   document.querySelector('#partnership-review-origin').textContent='Inspected saved case: '+(packet.scenario.deal.title||'Untitled')+'. Current case and autosave unchanged.';
+  }catch(error){if(sequence!==partnershipReviewSequence)return;clearPartnershipReview();document.querySelector('#partnership-review-output').textContent='Review rejected: '+(error.errors?.join(' ')||error.message);}
+ });
+}
+initializePartnershipReviewPacket();

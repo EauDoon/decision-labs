@@ -4,6 +4,8 @@ import { isStandaloneCurrent, renderStandalone } from '../scripts/build-standalo
 
 const html = '<html><head><title>Partnership Breakpoint</title><link rel="stylesheet" href="styles.css" /></head><body><a href="MODEL.md">Read the full model</a><script type="module" src="src/app.js"></script></body></html>';
 const appImport = `import {
+  createPartnershipReviewPacket,
+  replayPartnershipReviewPacket,
   PARTNERSHIP_REVIEW_TOOLS,
   analyzePartnershipReview,
   PRESETS,

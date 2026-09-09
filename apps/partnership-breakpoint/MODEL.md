@@ -229,3 +229,7 @@ The optional review can expose how specific demand levels change participant fai
 ### Zero-volume obligations
 
 The optional review can make fixed monthly exposure and unfulfilled commitments explicit at zero activity. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
+
+### Review packets
+
+`createPartnershipReviewPacket(config, tool)` exports the validated case, exact input JSON, and a tabular review. `replayPartnershipReviewPacket(packet)` recomputes that review, requires the exact source snapshot and every output primitive to match, and returns fresh data. The packet has six strict top-level fields, format `partnership-review`, version 1, and a 1 MiB serialized limit. It is unsigned. Finite input values can produce out-of-range ratios; those output cells are null and described as unavailable.

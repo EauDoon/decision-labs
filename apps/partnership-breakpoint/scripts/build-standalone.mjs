@@ -3,6 +3,8 @@ import { fileURLToPath } from 'node:url';
 
 const outputPath = fileURLToPath(new URL('../standalone.html', import.meta.url));
 const appImport = `import {
+  createPartnershipReviewPacket,
+  replayPartnershipReviewPacket,
   PARTNERSHIP_REVIEW_TOOLS,
   analyzePartnershipReview,
   PRESETS,
