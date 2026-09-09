@@ -156,6 +156,47 @@
       color: var(--ink);
     }
     .whats-new-list p { margin: 0; color: var(--muted); font-size: 16px; }
+    .shortcuts-open {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      margin-left: 8px;
+      padding: 8px 12px;
+      border: 1px solid var(--brand);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--brand-deep);
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .shortcuts-open:hover { background: #e4eeeb; }
+    .shortcuts {
+      margin: 16px 0 8px;
+      padding: 20px 22px;
+      max-width: 36rem;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: var(--panel);
+    }
+    .shortcuts[hidden] { display: none; }
+    .shortcuts h3 { font-size: 18px; margin: 0 0 10px; }
+    .shortcuts dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 8px 16px; }
+    .shortcuts dt { margin: 0; }
+    .shortcuts dd { margin: 0; color: var(--muted); }
+    .shortcuts-close {
+      margin-top: 16px;
+      min-height: 44px;
+      padding: 8px 14px;
+      border: 1px solid var(--brand);
+      border-radius: 4px;
+      background: var(--panel);
+      color: var(--brand-deep);
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .shortcuts-close:hover { background: #e4eeeb; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -283,7 +324,20 @@
     </section>
     <section id="workbenches" tabindex="-1" aria-labelledby="workbenches-title">
       <h2 id="workbenches-title">The workbenches</h2>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input.</p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <aside id="shortcuts" class="shortcuts" hidden>
+        <h3 id="shortcuts-title">Keyboard shortcuts</h3>
+        <dl>
+          <dt><kbd>1</kbd></dt><dd>Open Partnership Breakpoint</dd>
+          <dt><kbd>2</kbd></dt><dd>Open Common Cart</dd>
+          <dt><kbd>3</kbd></dt><dd>Open The Smallest Agreement</dd>
+          <dt><kbd>4</kbd></dt><dd>Open Weekend Gap</dd>
+          <dt><kbd>?</kbd></dt><dd>Show or hide this list</dd>
+          <dt><kbd>Esc</kbd></dt><dd>Hide this list</dd>
+        </dl>
+        <p>Shortcuts are ignored while focus is in an input, textarea, or select.</p>
+        <button type="button" class="shortcuts-close" id="shortcuts-close">Close shortcuts</button>
+      </aside>
       <article class="workbench">
         <span class="index" aria-hidden="true">1</span>
         <div>
@@ -360,18 +414,46 @@
     <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
   </footer>
   <script>
-    document.addEventListener('keydown', (event) => {
-      if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey || event.shiftKey) return;
-      const keys = { 1: 0, 2: 1, 3: 2, 4: 3 };
-      const index = keys[event.key];
-      if (index == null) return;
-      const node = event.target;
-      if (node && (node.closest?.('input, textarea, select, [contenteditable="true"]') || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName || ''))) return;
-      const link = document.querySelectorAll('#workbenches a.open')[index];
-      if (!link) return;
-      event.preventDefault();
-      window.location.assign(link.href);
-    });
+    (function () {
+      const shortcuts = document.getElementById('shortcuts');
+      const openBtn = document.getElementById('shortcuts-open');
+      const closeBtn = document.getElementById('shortcuts-close');
+      const inEditable = (node) => !!(node && (node.closest?.('input, textarea, select, [contenteditable="true"]') || /^(INPUT|TEXTAREA|SELECT)$/.test(node.tagName || '')));
+      const setOpen = (open) => {
+        if (!shortcuts) return;
+        shortcuts.hidden = !open;
+        openBtn?.setAttribute('aria-expanded', open ? 'true' : 'false');
+        if (open) (closeBtn || shortcuts).focus();
+      };
+      openBtn?.addEventListener('click', () => setOpen(shortcuts.hidden));
+      closeBtn?.addEventListener('click', () => {
+        setOpen(false);
+        openBtn?.focus();
+      });
+      document.addEventListener('keydown', (event) => {
+        if (event.defaultPrevented || event.altKey || event.ctrlKey || event.metaKey) return;
+        if (inEditable(event.target)) return;
+        if (event.key === '?') {
+          event.preventDefault();
+          setOpen(shortcuts.hidden);
+          return;
+        }
+        if (event.key === 'Escape' && shortcuts && !shortcuts.hidden) {
+          event.preventDefault();
+          setOpen(false);
+          openBtn?.focus();
+          return;
+        }
+        if (event.shiftKey) return;
+        const keys = { 1: 0, 2: 1, 3: 2, 4: 3 };
+        const index = keys[event.key];
+        if (index == null) return;
+        const link = document.querySelectorAll('#workbenches a.open')[index];
+        if (!link) return;
+        event.preventDefault();
+        window.location.assign(link.href);
+      });
+    })();
   </script>
 </body>
 </html>
