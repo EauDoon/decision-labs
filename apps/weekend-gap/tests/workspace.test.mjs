@@ -20,6 +20,17 @@ test("workspace Gantt density defaults to snapshots and older files remain valid
  assert.deepEqual(legacy.errors,[]);
  assert.equal(workspaceFromJSON(JSON.stringify({...raw,ganttDensity:"open"})).workspace.ganttDensity,"open");
 });
+test("older workspace files omit selectedHour and restore hour zero",()=>{
+ const text=workspaceToJSON(PRESETS.weekendRush,DEFAULT_SCENARIO,{selectedHour:21,notes:"legacy hour"});
+ const raw=JSON.parse(text);
+ assert.equal(raw.selectedHour,21);
+ delete raw.selectedHour;
+ const legacy=workspaceFromJSON(JSON.stringify(raw));
+ assert.ok(legacy.workspace);
+ assert.equal(legacy.workspace.selectedHour,0);
+ assert.deepEqual(legacy.errors,[]);
+ assert.equal(workspaceFromJSON(JSON.stringify({...raw,selectedHour:65})).workspace.selectedHour,65);
+});
 test("invalid workspace controls and format cannot replace an active workspace",()=>{
  const valid=JSON.parse(workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO));
  for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);

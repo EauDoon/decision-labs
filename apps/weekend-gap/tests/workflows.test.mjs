@@ -102,6 +102,17 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   assert.equal(reloaded.nodes.get("scenario-library").children.length, 1);
 });
 
+test("workspace restore without selectedHour keeps hour zero", async () => {
+  const ui = await boot();
+  await ui.edit("timeline-range", 21);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.selectedHour;
+  const reloaded = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(reloaded.nodes.get("timeline-range").value, "0");
+  await reloaded.edit("timeline-range", 9);
+  assert.equal(JSON.parse(reloaded.storage.get("weekend-gap:workspace:v1")).selectedHour, 9);
+});
+
 test("workspace import replaces both scenarios and survives reload; invalid import preserves state", async () => {
   const ui = await boot();
   await ui.edit("workspace-notes", "portable");

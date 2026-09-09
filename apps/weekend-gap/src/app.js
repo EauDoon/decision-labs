@@ -34,7 +34,7 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots" };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0 };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -945,7 +945,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -957,8 +957,8 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots" };
-  baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour;setPlaying(false);
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0 };
+  baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
   document.querySelector("#workspace-notes").value=saved.notes;

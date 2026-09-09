@@ -594,7 +594,14 @@ export function workspaceFromJSON(text) {
     if (raw?.format !== "weekend-gap-workspace" || raw.version !== 1) throw new Error("Unsupported workspace format.");
     for (const field of ["current", "baseline"]) if (!raw[field] || typeof raw[field] !== "object" || Array.isArray(raw[field])) throw new Error("Workspace requires current and baseline scenario objects.");
     const current = sanitizeScenario(raw.current), baseline = sanitizeScenario(raw.baseline);
-    const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, raw));
+    const options = {
+      targetPercent: raw.targetPercent,
+      deadlineHour: raw.deadlineHour,
+      selectedHour: raw.selectedHour === undefined ? 0 : raw.selectedHour,
+      notes: raw.notes,
+      ganttDensity: raw.ganttDensity === undefined ? "snapshots" : raw.ganttDensity
+    };
+    const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
   } catch (error) { return { workspace: null, errors: [error.message || "Workspace could not be read."] }; }
 }
