@@ -42,6 +42,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="shortcut-overlay"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
+  assert.match(html, /workplace-hybrid/u);
   assert.match(html, /Copyright \(c\) 2026 EauDoon/u);
 });
 
@@ -383,4 +384,17 @@ test("saving snapshots cannot overwrite a library changed by another tab", async
   second.click("#save-scenario");
   assert.equal(storage.get("smallest-agreement:scenarios:v1"), saved);
   assert.match(second.message(), /changed in another tab/);
+});
+
+test("workplace hybrid preset loads a valid three-group office policy", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "workplace-hybrid");
+  app.click("#load-preset");
+  assert.match(app.title(), /Workplace Hybrid: office presence policy/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Weekly office presence/u);
+  assert.match(app.clauses(), /Core collaboration hours/u);
+  assert.match(app.clauses(), /Desk assignment/u);
+  assert.match(app.clauses(), /On-site staff|data-group-id="onsite"|onsite/u);
 });

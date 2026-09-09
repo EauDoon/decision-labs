@@ -150,6 +150,38 @@ const presets = {
       },
     ],
   },
+  "workplace-hybrid": {
+    title: "Workplace Hybrid: office presence policy",
+    threshold: 70,
+    groups: [
+      { id: "onsite", name: "On-site staff", weight: 3 },
+      { id: "remote", name: "Remote staff", weight: 3 },
+      { id: "managers", name: "Managers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "presence", title: "Weekly office presence", options: [
+          { id: "presence-original", original: true, label: "Require three office days each week", changeCost: 0, support: { onsite: 82, remote: 38, managers: 88 } },
+          { id: "presence-overlap", original: false, label: "Require two overlapping team days", changeCost: 2, support: { onsite: 78, remote: 74, managers: 80 } },
+          { id: "presence-choice", original: false, label: "Let teams choose presence within a published window", changeCost: 3, support: { onsite: 70, remote: 88, managers: 62 } },
+        ],
+      },
+      {
+        id: "hours", title: "Core collaboration hours", options: [
+          { id: "hours-original", original: true, label: "Keep 10:00 to 16:00 overlap every weekday", changeCost: 0, support: { onsite: 76, remote: 44, managers: 84 } },
+          { id: "hours-four", original: false, label: "Use a four-hour overlap window", changeCost: 1, support: { onsite: 72, remote: 80, managers: 74 } },
+          { id: "hours-async", original: false, label: "Drop fixed hours and rely on written updates", changeCost: 4, support: { onsite: 48, remote: 90, managers: 40 } },
+        ],
+      },
+      {
+        id: "desks", title: "Desk assignment", options: [
+          { id: "desks-original", original: true, label: "Keep assigned desks for every role", changeCost: 0, support: { onsite: 80, remote: 42, managers: 70 } },
+          { id: "desks-bookable", original: false, label: "Move to bookable desks with neighbourhood zones", changeCost: 2, support: { onsite: 64, remote: 82, managers: 68 } },
+          { id: "desks-hybrid", original: false, label: "Keep assigned desks for on-site roles and bookable desks for others", changeCost: 3, support: { onsite: 74, remote: 76, managers: 72 } },
+        ],
+      },
+    ],
+  },
 };
 
 const state = { proposal: loadInitialProposal(), saveMessage: initialLoadMessage };
