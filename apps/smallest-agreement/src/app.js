@@ -397,10 +397,14 @@ function renderClauses() {
   const { groups } = state.proposal;
   const query = clauseFilter.trim().toLowerCase();
   const visible = state.proposal.clauses.filter((clause) => clauseMatchesFilter(clause, query));
+  const status = $("#clause-filter-status");
   if (!visible.length) {
-    $("#clauses-editor").innerHTML = '<p class="empty-state">No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.</p>';
+    const message = "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
+    if (status) status.textContent = message;
+    $("#clauses-editor").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
+  if (status) status.textContent = query === "" ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
   $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">

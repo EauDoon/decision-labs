@@ -47,6 +47,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Lock this package/u);
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /id="clause-filter"/u);
+  assert.match(html, /id="clause-filter-status"/u);
+  assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /id="printable-ballot"/u);
   assert.match(html, /Discussion worksheet/u);
@@ -116,6 +118,7 @@ async function savedWorkbench(storage, hash = "") {
       target.value = value;
       target.events.get("input")({ target });
     },
+    filterStatus: () => element("#clause-filter-status").textContent,
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
     sideBySide: () => element("#side-by-side").innerHTML,
@@ -533,14 +536,28 @@ test("clause filter matches title or option labels without changing the stored d
   const before = storage.get("smallest-agreement:proposal:v1");
   app.filterClauses("zzzz-no-match");
   assert.match(app.clauses(), /No clauses match this filter/u);
+  assert.match(app.filterStatus(), /No clauses match this filter/u);
   assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
   app.filterClauses("Park access");
   assert.match(app.clauses(), /Park access hours/u);
   assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.match(app.filterStatus(), /Showing 1 of 3 clauses/u);
   app.filterClauses("clean-up bond");
   assert.match(app.clauses(), /Weekend market use/u);
   assert.doesNotMatch(app.clauses(), /Park access hours/u);
   assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+});
+
+test("clause filter live region announces when no clauses match", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="clause-filter-status"[^>]*role="status"/u);
+  assert.match(html, /id="clause-filter-status"[^>]*aria-live="polite"/u);
+  const app = await savedWorkbench(new Map());
+  assert.equal(app.filterStatus(), "");
+  app.filterClauses("no-such-clause-zzzz");
+  assert.match(app.filterStatus(), /No clauses match this filter/u);
+  app.filterClauses("");
+  assert.equal(app.filterStatus(), "");
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {
