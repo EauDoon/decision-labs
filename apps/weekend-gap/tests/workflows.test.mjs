@@ -277,3 +277,19 @@ test("keyboard j jumps to first settlement and ignores the key while typing", as
   await ui.keydown("j");
   assert.equal(ui.nodes.get("timeline-range").value, "12");
 });
+
+test("comparing two scenario JSON files shows queue diffs and honest null settlement hours", async () => {
+  const { scenarioToJSON, DEFAULT_SCENARIO, PRESETS } = await import(new URL("../src/model.js", import.meta.url));
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.nodes.get("compare-scenario-files").click();
+  assert.match(ui.nodes.get("file-compare-status").textContent, /Choose two scenario JSON files/);
+  const open = scenarioToJSON(DEFAULT_SCENARIO);
+  const closed = scenarioToJSON({ ...DEFAULT_SCENARIO, payoutThroughputAudPerHour: 0, name: "Closed payout" });
+  ui.nodes.get("compare-file-a").files = [{ size: open.length, text: async () => open }];
+  ui.nodes.get("compare-file-b").files = [{ size: closed.length, text: async () => closed }];
+  await ui.nodes.get("compare-scenario-files").click();
+  assert.equal(ui.nodes.get("file-compare-rows").children.length, 5);
+  assert.match(ui.nodes.get("file-compare-status").textContent, /Closed payout/);
+  const hourRow = ui.nodes.get("file-compare-rows").children[3];
+  assert.match(hourRow.children[3].textContent, /Not comparable/);
+});

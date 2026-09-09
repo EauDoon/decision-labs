@@ -526,6 +526,32 @@ export function scenarioFromJSON(text) {
   }
 }
 
+/** Queue and settlement diffs for two scenario JSON files. Mixed null hours stay null. */
+export function compareScenarioFiles(leftText, rightText) {
+  const left = scenarioFromJSON(leftText);
+  const right = scenarioFromJSON(rightText);
+  const errors = [...left.errors, ...right.errors];
+  if (!left.scenario || !right.scenario) {
+    return Object.freeze({
+      comparison: null,
+      deltas: null,
+      errors: Object.freeze(errors.length ? errors : ["Compare failed. Choose two valid Weekend Gap scenario JSON files."])
+    });
+  }
+  const comparison = compareScenarios(left.scenario, right.scenario);
+  return Object.freeze({
+    comparison,
+    deltas: Object.freeze({
+      peakQueuedAud: comparison.deltas.peakQueuedAud,
+      finalQueuedAud: comparison.deltas.finalQueuedAud,
+      totalSettledAud: comparison.deltas.totalSettledAud,
+      hoursToFirstSettlement: comparison.deltas.hoursToFirstSettlement,
+      hoursToClearQueue: comparison.deltas.hoursToClearQueue
+    }),
+    errors: Object.freeze(errors)
+  });
+}
+
 /** End-of-interval exposure and simultaneous blockers, never causal attribution. */
 export function analyzeTimeline(input) {
   const result = runSimulation(input);

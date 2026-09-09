@@ -299,6 +299,21 @@ SOFTWARE.
                 <tbody id="comparison-rows"></tbody>
               </table>
             </div>
+            <h3 id="file-compare-title">Compare two scenario files</h3>
+            <p>File B minus file A. Mixed hours-to-first-settlement or hours-to-clear values stay blank rather than treated as zero. Analysis reports are not scenario files.</p>
+            <label for="compare-file-a">Scenario file A</label>
+            <input id="compare-file-a" type="file" accept="application/json,.json">
+            <label for="compare-file-b">Scenario file B</label>
+            <input id="compare-file-b" type="file" accept="application/json,.json">
+            <div class="planning-actions"><button id="compare-scenario-files" type="button">Compare scenario files</button></div>
+            <p id="file-compare-status" role="status">Choose two scenario JSON files. This compares synthetic runs, not real issuers.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario file comparison">
+              <table>
+                <caption>Queue and settlement differences. Mixed settlement or queue-clear hours are not subtracted.</caption>
+                <thead><tr><th scope="col">Metric</th><th scope="col">File A</th><th scope="col">File B</th><th scope="col">Change</th></tr></thead>
+                <tbody id="file-compare-rows"></tbody>
+              </table>
+            </div>
           </article>
 
           <article class="planning-card card" aria-labelledby="sensitivity-title">

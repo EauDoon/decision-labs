@@ -34,7 +34,8 @@ import {
   queueToCSV,
   reportToHTML,
   reportToMarkdown,
-  dashboardToMarkdown
+  dashboardToMarkdown,
+  compareScenarioFiles
 } from "./model.js";
 
 let workspaceReady = false;
@@ -604,6 +605,57 @@ document.querySelector("#analysis-export").addEventListener("click", () => {
   const link = document.createElement("a"); link.href = url; link.download = "weekend-gap-analysis.json";
   document.body.append(link); link.click(); link.remove(); URL.revokeObjectURL(url);
   setMessage("Analysis exported with both scenarios, changed assumptions, hourly queue comparison, and reserve plan.");
+});
+
+function hourDeltaLabel(delta) {
+  return delta === null ? "Not comparable" : `${delta >= 0 ? "+" : ""}${delta}`;
+}
+
+document.querySelector("#compare-scenario-files").addEventListener("click", async () => {
+  const fileA = document.querySelector("#compare-file-a").files?.[0];
+  const fileB = document.querySelector("#compare-file-b").files?.[0];
+  const status = document.querySelector("#file-compare-status");
+  const body = document.querySelector("#file-compare-rows");
+  if (!fileA || !fileB) {
+    status.textContent = "Choose two scenario JSON files before comparing.";
+    return;
+  }
+  if (fileA.size > 250000 || fileB.size > 250000) {
+    status.textContent = "Compare failed. Each scenario file must be 250 KB or smaller.";
+    body.replaceChildren();
+    return;
+  }
+  try {
+    const result = compareScenarioFiles(await fileA.text(), await fileB.text());
+    if (!result.comparison) {
+      status.textContent = "Compare failed: " + result.errors.join(" ");
+      body.replaceChildren();
+      return;
+    }
+    const left = result.comparison.baseline.summary;
+    const right = result.comparison.candidate.summary;
+    body.replaceChildren(...[
+      ["Peak queue", planningAud(left.peakQueuedAud), planningAud(right.peakQueuedAud), signedAud(result.deltas.peakQueuedAud)],
+      ["Remaining queue", planningAud(left.finalQueuedAud), planningAud(right.finalQueuedAud), signedAud(result.deltas.finalQueuedAud)],
+      ["Settled total", planningAud(left.totalSettledAud), planningAud(right.totalSettledAud), signedAud(result.deltas.totalSettledAud)],
+      ["Hours to first settlement", formatHoursToFirstSettlement(left.hoursToFirstSettlement), formatHoursToFirstSettlement(right.hoursToFirstSettlement), hourDeltaLabel(result.deltas.hoursToFirstSettlement)],
+      ["Hours to clear queue", formatHoursToClearQueue(left.hoursToClearQueue, left.peakQueuedAud), formatHoursToClearQueue(right.hoursToClearQueue, right.peakQueuedAud), hourDeltaLabel(result.deltas.hoursToClearQueue)]
+    ].map((cells) => {
+      const row = document.createElement("tr");
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      }
+      return row;
+    }));
+    const leftName = result.comparison.baseline.scenario.name;
+    const rightName = result.comparison.candidate.scenario.name;
+    status.textContent = `Compared ${leftName} (file A) with ${rightName} (file B). Mixed settlement or queue-clear hours stay not comparable. This is not a ranking of issuers.`;
+  } catch {
+    status.textContent = "Compare failed. Choose two readable scenario JSON files.";
+    body.replaceChildren();
+  }
 });
 
 function clearWindowShiftPreview(status = "Choose a gate and whole-hour offsets, then preview. Nothing is applied until you confirm.") {
