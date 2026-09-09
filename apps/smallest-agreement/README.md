@@ -64,8 +64,11 @@ npm run check
 2. Set the approval threshold and participant group weights.
 3. Give every option a support score from 0 to 100 for each group. Set each alternative's explicit change cost. Original options always have cost 0.
 4. Optionally set a minimum average support for any group, a maximum total change cost, and an option lock on a clause. Blank budget and floor inputs mean no limit. Zero is an active limit. Unlock an option before removing it.
-5. Review the current approval, recommendation, constraint checks, group shifts, coalition table, and near misses. If no combination satisfies every requirement, the app reports infeasibility and shows budget and floor rejection counts.
-6. Export a Markdown brief for a meeting-ready handoff, or export JSON for a complete portable record. Both carry the constraints. When running through the local server, Share link can place the draft in the URL hash.
+5. Save a named snapshot before changing assumptions. The local library holds up to 20 independent snapshots. Loading, importing, resetting, and editing can be undone through up to 50 in-tab changes; a new edit clears redo.
+6. Review up to five ranked passing packages, their lowest group support, and groups losing support. If no package satisfies every requirement, inspect constraint checks and near misses.
+7. Try a custom package, start it from the recommendation, and inspect every violated constraint. Reduce support by a chosen number of points to test the recommendation under a deterministic downside scenario.
+8. Compare the working draft with a saved snapshot. Review changed inputs before comparing output metrics, especially when groups, weights, or clauses differ.
+9. Export JSON to reopen the draft, CSV for all modeled input evidence, or a Markdown brief with ranked packages. Print readout creates a browser-printable discussion report. When served, Share link places the draft in the URL hash.
 
 Each clause keeps one original option and at least two alternatives, so the workshop always compares a structured choice set.
 
@@ -79,7 +82,7 @@ When the app is served locally, Share link serializes the complete proposal in t
 
 ## Search boundary
 
-The app exhaustively checks up to 50,000 lock-permitted combinations. Locks reduce the choice set; budgets and support floors do not bypass this limit. It does not sample, guess, or use hidden randomness. If the number of combinations is higher, it returns an explicit `too_large` result and does not recommend an agreement. Reduce alternatives or clauses, or lock choices, before relying on the result. If the original proposal already meets every requirement, one baseline check proves that no change is needed.
+The app exhaustively checks up to 50,000 lock-permitted combinations. Locks reduce the choice set; budgets and support floors do not bypass this limit. It does not sample, guess, or use hidden randomness. If the number of combinations is higher, it returns an explicit `too_large` result and does not recommend an agreement. Reduce alternatives or clauses, or lock choices, before relying on the result. The GUI enumerates the bounded space to show passing alternatives even when the original already passes. Direct model callers retain the one-check baseline shortcut unless they request alternatives.
 
 Near misses meet every configured constraint but miss the overall approval threshold. An over-budget or below-floor result is never offered as a near miss. Rejection counts can overlap when a combination fails both the budget and a floor.
 
@@ -90,6 +93,22 @@ See [MODEL.md](MODEL.md) for the formula, deterministic ordering, assumptions, a
 A score can be incomplete, a weight can be contested, and a low numerical change cost can mask a large semantic shift. A passing result cannot confer legitimacy, consent, representation, fairness, legal validity, or authority to adopt the proposal. Keep deliberation, governing rules, and accountable human judgment outside the calculation.
 
 Support floors protect only the numerical average you enter. They do not establish consent or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority.
+
+## v1.3.0, 09-09-2026
+
+- Added undo/redo, 20 named local snapshots, saved-round comparison, and a guard against overwriting a scenario library changed by another tab.
+- Added up to five deterministic passing packages, custom package evaluation, and a user-controlled downside support test.
+- Added complete spreadsheet-safe CSV evidence, ranked packages in Markdown briefs, and a printable readout.
+- Added precise decimal threshold input, faithful invalid numeric handling, focus recovery for editor actions, keyboard section navigation, and cached evaluations for unchanged inputs.
+- Invalid edits preserve the last valid autosave. Unsaved edits trigger the browser's leave-page protection when supported. Undo history is temporary; snapshots persist until deleted or browser data is cleared.
+
+### Storage and handoff details
+
+The scenario library is separate from the active draft. A snapshot copies the entire validated proposal, and later edits do not modify it. Invalid or oversized saved libraries are preserved and disabled rather than overwritten. Storage capacity and availability vary by browser, including in local-file mode. Keep JSON backups of important work. If another tab changes the library, export the active draft and reload before saving snapshots; this is conflict detection, not collaborative editing.
+
+Custom package choices and the downside support-drop setting are temporary and are not included in proposal JSON, CSV, or the Markdown brief. The print readout includes their visible analysis. The downside test subtracts the selected number of percentage points from every score, clamps at zero, and checks the same recommendation without rerunning optimization. It is not a probability estimate.
+
+CSV includes every clause option and group score, weights, floors, locks, budget, threshold, original markers, and recommendation markers. Text that could be interpreted as a spreadsheet formula receives a leading apostrophe. This CSV is for inspection, not JSON import. JSON retains the original text and compatible v1 proposal schema.
 
 ## v1.2.0, 27-08-2026
 

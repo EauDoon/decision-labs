@@ -361,3 +361,16 @@ test("exact thresholds preserve decimals and reject missing values without corru
   app.click("#undo-button");
   assert.doesNotMatch(app.alert(), /Fix the proposal/);
 });
+
+
+test("saving snapshots cannot overwrite a library changed by another tab", async () => {
+  const storage = new Map();
+  const first = await savedWorkbench(storage);
+  const second = await savedWorkbench(storage);
+  first.field("#scenario-name", "First tab snapshot");
+  first.click("#save-scenario");
+  const saved = storage.get("smallest-agreement:scenarios:v1");
+  second.click("#save-scenario");
+  assert.equal(storage.get("smallest-agreement:scenarios:v1"), saved);
+  assert.match(second.message(), /changed in another tab/);
+});

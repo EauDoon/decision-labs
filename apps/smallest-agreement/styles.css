@@ -126,3 +126,22 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--pencil); outli
 summary { cursor: pointer; padding: .75rem 0; font-weight: 700; }
 input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+
+.workshop-guide { max-width: 1400px; margin: 1rem auto; padding: 0 clamp(1rem, 4vw, 3rem); color: var(--ink-soft); }
+.workshop-guide li { margin: .5rem 0; line-height: 1.5; }
+@media print {
+  body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .manual-options, .autosave-status, button, #comparison-select { display: none !important; }
+  .site-header { padding: 0 0 1rem; }
+  .workspace, .results-grid, .method-grid { display: block; max-width: none; }
+  .workbench { padding: 0; }
+  .result-card, .metric { box-shadow: none; border-color: #bbb; }
+  .result-card { margin: 1rem 0; }
+  .options-table-wrap { overflow: visible; }
+  table { font-size: 9pt !important; }
+  tr { break-inside: avoid; }
+  thead { display: table-header-group; }
+  h2, h3 { break-after: avoid; }
+  .site-footer { padding: 1rem 0; }
+}

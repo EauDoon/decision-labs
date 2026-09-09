@@ -273,7 +273,7 @@ export function findSmallestAgreement(proposal, options = {}) {
   if (!Number.isSafeInteger(nearMissLimit) || nearMissLimit < 0 || nearMissLimit > MAX_NEAR_MISSES) {
     return { status: "invalid", errors: [`nearMissLimit must be an integer from 0 through ${MAX_NEAR_MISSES}.`] };
   }
-  const alternativesLimit = options.alternativesLimit ?? 0;
+  const alternativesLimit = Object.hasOwn(options, "alternativesLimit") ? options.alternativesLimit : 0;
   if (!Number.isSafeInteger(alternativesLimit) || alternativesLimit < 0 || alternativesLimit > 5) {
     return { status: "invalid", errors: ["alternativesLimit must be an integer from 0 through 5."] };
   }
@@ -404,7 +404,7 @@ export function formatDecisionBrief(proposal, result) {
   else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "Every configured constraint is met.", "");
   else lines.push("No permitted combination meets both the threshold and every configured constraint.", "");
   lines.push(`Search combinations checked: ${Number(result.checkedCombinations).toLocaleString("en-US")}`, `Lock-permitted search space: ${Number(result.possibleCombinations).toLocaleString("en-US")}`);
-  if (result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
+  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
   lines.push(`Current approval: ${formatPercent(current.approval)}`, `Original proposal meets constraints: ${current.constraints.met ? "yes" : "no"}`);
 
   if (agreement) {
@@ -434,6 +434,14 @@ export function formatDecisionBrief(proposal, result) {
   if (agreement && protectedGroups.length) {
     lines.push("## Protected-group checks", "");
     for (const floor of agreement.constraints.floors) lines.push(`- ${briefText(floor.name)}: ${formatPercent(floor.actual)} against minimum ${floor.minimum}%, ${floor.met ? "met" : "not met"}.`);
+    lines.push("");
+  }
+
+  if (result.alternatives?.length) {
+    lines.push("## Passing packages", "", "Ranked by cost, changed clauses, approval, then option IDs. This ordering does not establish fairness.", "");
+    for (const [index, candidate] of result.alternatives.entries()) {
+      lines.push((index + 1) + ". Cost " + candidate.changeCost.toFixed(1) + ", approval " + formatPercent(candidate.approval) + ": " + candidate.options.map((option, i) => briefText(proposal.clauses[i].title) + ": " + briefText(option.label)).join("; "));
+    }
     lines.push("");
   }
 

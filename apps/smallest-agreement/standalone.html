@@ -158,6 +158,25 @@ a:focus-visible, summary:focus-visible { outline: 3px solid var(--pencil); outli
 summary { cursor: pointer; padding: .75rem 0; font-weight: 700; }
 input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick); }
 @media (prefers-reduced-motion: reduce) { * { scroll-behavior: auto !important; } }
+
+
+.workshop-guide { max-width: 1400px; margin: 1rem auto; padding: 0 clamp(1rem, 4vw, 3rem); color: var(--ink-soft); }
+.workshop-guide li { margin: .5rem 0; line-height: 1.5; }
+@media print {
+  body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .manual-options, .autosave-status, button, #comparison-select { display: none !important; }
+  .site-header { padding: 0 0 1rem; }
+  .workspace, .results-grid, .method-grid { display: block; max-width: none; }
+  .workbench { padding: 0; }
+  .result-card, .metric { box-shadow: none; border-color: #bbb; }
+  .result-card { margin: 1rem 0; }
+  .options-table-wrap { overflow: visible; }
+  table { font-size: 9pt !important; }
+  tr { break-inside: avoid; }
+  thead { display: table-header-group; }
+  h2, h3 { break-after: avoid; }
+  .site-footer { padding: 1rem 0; }
+}
 </style>
   </head>
   <body>
@@ -180,6 +199,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
         <button class="button button-secondary" type="button" id="import-button">Import JSON</button>
         <button class="button button-secondary" type="button" id="export-button">Export JSON</button>
+        <button class="button button-secondary" type="button" id="print-button">Print readout</button>
         <button class="button button-secondary" type="button" id="csv-button">Export evidence CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -191,6 +211,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
     </header>
 
     <nav class="workshop-nav" aria-label="Workshop sections"><a href="#workspace">Setup</a><a href="#clauses-heading">Clauses</a><a href="#results-heading">Recommendation</a><a href="#manual-heading">Custom package</a><a href="#comparison-heading">Compare rounds</a></nav>
+    <details class="workshop-guide"><summary>Run a useful negotiation round</summary><ol><li>Agree who is represented and how weights, scores, and costs were obtained. Presets contain synthetic assumptions.</li><li>Set an exact threshold, group floors, a cost budget, and any non-negotiable clause choices.</li><li>Save a named snapshot before changing assumptions. Undo restores up to 50 edits within this tab.</li><li>Compare passing packages and inspect who loses support. Try a custom package and test downside support.</li><li>Compare the working draft against an earlier snapshot. Take the changed assumptions back to participants.</li><li>Export JSON for reopening, CSV for all input evidence, and a brief or printed readout for discussion. Human participants decide next steps.</li></ol><p>Custom choices and support-drop settings are temporary analysis controls. JSON, CSV, and the Markdown brief describe the working proposal and optimized recommendation. Print includes the visible custom comparison and downside result.</p></details>
     <main id="workspace" class="workspace">
       <aside class="control-panel" aria-label="Proposal controls">
         <div class="margin-note"><span>01</span> Shape the room before you ask it to decide.</div>
@@ -304,7 +325,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
             <p class="eyebrow">Limits</p>
             <h2>Keep human judgment in the room</h2>
             <p>Scores, weights, and costs are supplied by people. The workshop makes no semantic judgment about text, fairness, representation, or scope.</p>
-            <p>Small textual edits can have large semantic effects. A passing result is a deliberation prompt, not democratic legitimacy, consent, or authority to adopt a policy.</p>
+            <p>Small textual edits can have large semantic effects. A passing result is a deliberation prompt, not democratic legitimacy, consent, or authority to adopt a policy. This workshop does not provide legal advice.</p>
           </article>
         </section>
       </section>
@@ -586,7 +607,7 @@ function findSmallestAgreement(proposal, options = {}) {
   if (!Number.isSafeInteger(nearMissLimit) || nearMissLimit < 0 || nearMissLimit > MAX_NEAR_MISSES) {
     return { status: "invalid", errors: [`nearMissLimit must be an integer from 0 through ${MAX_NEAR_MISSES}.`] };
   }
-  const alternativesLimit = options.alternativesLimit ?? 0;
+  const alternativesLimit = Object.hasOwn(options, "alternativesLimit") ? options.alternativesLimit : 0;
   if (!Number.isSafeInteger(alternativesLimit) || alternativesLimit < 0 || alternativesLimit > 5) {
     return { status: "invalid", errors: ["alternativesLimit must be an integer from 0 through 5."] };
   }
@@ -717,7 +738,7 @@ function formatDecisionBrief(proposal, result) {
   else if (result.status === "found") lines.push("A lowest-cost passing combination was found.", "Every configured constraint is met.", "");
   else lines.push("No permitted combination meets both the threshold and every configured constraint.", "");
   lines.push(`Search combinations checked: ${Number(result.checkedCombinations).toLocaleString("en-US")}`, `Lock-permitted search space: ${Number(result.possibleCombinations).toLocaleString("en-US")}`);
-  if (result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
+  if (result.checkedCombinations !== 1 || result.status !== "already_passing") lines.push(`Constraint-compliant combinations: ${result.eligibleCombinations}`, `Rejected by budget: ${result.rejected.budget}; by group floors: ${result.rejected.floors}. Rejection counts may overlap.`);
   lines.push(`Current approval: ${formatPercent(current.approval)}`, `Original proposal meets constraints: ${current.constraints.met ? "yes" : "no"}`);
 
   if (agreement) {
@@ -747,6 +768,14 @@ function formatDecisionBrief(proposal, result) {
   if (agreement && protectedGroups.length) {
     lines.push("## Protected-group checks", "");
     for (const floor of agreement.constraints.floors) lines.push(`- ${briefText(floor.name)}: ${formatPercent(floor.actual)} against minimum ${floor.minimum}%, ${floor.met ? "met" : "not met"}.`);
+    lines.push("");
+  }
+
+  if (result.alternatives?.length) {
+    lines.push("## Passing packages", "", "Ranked by cost, changed clauses, approval, then option IDs. This ordering does not establish fairness.", "");
+    for (const [index, candidate] of result.alternatives.entries()) {
+      lines.push((index + 1) + ". Cost " + candidate.changeCost.toFixed(1) + ", approval " + formatPercent(candidate.approval) + ": " + candidate.options.map((option, i) => briefText(proposal.clauses[i].title) + ": " + briefText(option.label)).join("; "));
+    }
     lines.push("");
   }
 
@@ -845,6 +874,8 @@ const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const MAX_SCENARIOS = 20;
 let libraryBlocked = false;
+let libraryRaw = null;
+let hasUnsavedEdits = false;
 const HASH_PREFIX = "#agreement=";
 let idNumber = 100;
 let initialLoadMessage = "Loaded local draft.";
@@ -1084,6 +1115,7 @@ function updateHistoryButtons() {
 }
 
 function save(recordHistory = true) {
+  hasUnsavedEdits = true;
   const snapshot = JSON.stringify(state.proposal);
   if (recordHistory && snapshot !== historySnapshot) {
     undoStack.push(historySnapshot);
@@ -1101,6 +1133,7 @@ function save(recordHistory = true) {
   if (location.hash.startsWith(HASH_PREFIX)) history.replaceState(null, "", `${location.pathname}${location.search}`);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(canonicalProposal(state.proposal)));
+    hasUnsavedEdits = false;
     state.saveMessage = "Saved in this browser.";
   } catch {
     state.saveMessage = "Browser storage is unavailable. Export to keep this draft.";
@@ -1537,6 +1570,7 @@ document.addEventListener("click", (event) => {
 function loadScenarios() {
   try {
     const raw = localStorage.getItem(LIBRARY_KEY);
+    libraryRaw = raw;
     if (raw === null) return [];
     if (raw.length > 5_000_000) throw new Error("Library exceeds its storage bound.");
     const rows = JSON.parse(raw);
@@ -1573,7 +1607,13 @@ function renderScenarios() {
 
 function persistScenarios(next) {
   try {
-    localStorage.setItem(LIBRARY_KEY, JSON.stringify(next));
+    if (localStorage.getItem(LIBRARY_KEY) !== libraryRaw) {
+      notifyDraft("The scenario library changed in another tab. Export this draft, then reload before saving a snapshot.");
+      return false;
+    }
+    const serialized = JSON.stringify(next);
+    localStorage.setItem(LIBRARY_KEY, serialized);
+    libraryRaw = serialized;
     scenarios = next;
     renderScenarios();
     return true;
@@ -1639,6 +1679,13 @@ $("#export-button").addEventListener("click", () => {
   }
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
+$("#print-button").addEventListener("click", () => window.print());
+window.addEventListener("beforeunload", (event) => {
+  if (!hasUnsavedEdits) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
 $("#csv-button").addEventListener("click", () => {
   if (!validateProposal(state.proposal).valid) return notifyDraft("Fix the draft before exporting CSV.");
   downloadText("smallest-agreement-evidence.csv", "\uFEFF" + formatEvidenceCsv(state.proposal, currentResult()), "text/csv;charset=utf-8");

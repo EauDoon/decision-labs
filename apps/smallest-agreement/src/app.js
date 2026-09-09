@@ -18,6 +18,8 @@ const STORAGE_KEY = "smallest-agreement:proposal:v1";
 const LIBRARY_KEY = "smallest-agreement:scenarios:v1";
 const MAX_SCENARIOS = 20;
 let libraryBlocked = false;
+let libraryRaw = null;
+let hasUnsavedEdits = false;
 const HASH_PREFIX = "#agreement=";
 let idNumber = 100;
 let initialLoadMessage = "Loaded local draft.";
@@ -257,6 +259,7 @@ function updateHistoryButtons() {
 }
 
 function save(recordHistory = true) {
+  hasUnsavedEdits = true;
   const snapshot = JSON.stringify(state.proposal);
   if (recordHistory && snapshot !== historySnapshot) {
     undoStack.push(historySnapshot);
@@ -274,6 +277,7 @@ function save(recordHistory = true) {
   if (location.hash.startsWith(HASH_PREFIX)) history.replaceState(null, "", `${location.pathname}${location.search}`);
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(canonicalProposal(state.proposal)));
+    hasUnsavedEdits = false;
     state.saveMessage = "Saved in this browser.";
   } catch {
     state.saveMessage = "Browser storage is unavailable. Export to keep this draft.";
@@ -710,6 +714,7 @@ document.addEventListener("click", (event) => {
 function loadScenarios() {
   try {
     const raw = localStorage.getItem(LIBRARY_KEY);
+    libraryRaw = raw;
     if (raw === null) return [];
     if (raw.length > 5_000_000) throw new Error("Library exceeds its storage bound.");
     const rows = JSON.parse(raw);
@@ -746,7 +751,13 @@ function renderScenarios() {
 
 function persistScenarios(next) {
   try {
-    localStorage.setItem(LIBRARY_KEY, JSON.stringify(next));
+    if (localStorage.getItem(LIBRARY_KEY) !== libraryRaw) {
+      notifyDraft("The scenario library changed in another tab. Export this draft, then reload before saving a snapshot.");
+      return false;
+    }
+    const serialized = JSON.stringify(next);
+    localStorage.setItem(LIBRARY_KEY, serialized);
+    libraryRaw = serialized;
     scenarios = next;
     renderScenarios();
     return true;
@@ -812,6 +823,13 @@ $("#export-button").addEventListener("click", () => {
   }
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
+$("#print-button").addEventListener("click", () => window.print());
+window.addEventListener("beforeunload", (event) => {
+  if (!hasUnsavedEdits) return;
+  event.preventDefault();
+  event.returnValue = "";
+});
+
 $("#csv-button").addEventListener("click", () => {
   if (!validateProposal(state.proposal).valid) return notifyDraft("Fix the draft before exporting CSV.");
   downloadText("smallest-agreement-evidence.csv", "\uFEFF" + formatEvidenceCsv(state.proposal, currentResult()), "text/csv;charset=utf-8");
