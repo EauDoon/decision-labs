@@ -3,6 +3,7 @@ import {
   aggregateDemand,
   clonePreset,
   compareScenarios,
+  computeResidualCoverage,
   createScenarioHistory,
   createMerchantReport,
   createBuyerCsv,
@@ -434,6 +435,7 @@ function refresh() {
     renderSummary(market);
     renderResults(market);
     renderInspector(market);
+    renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
@@ -451,6 +453,16 @@ function refresh() {
     setEmptyState(elements.inspectorRows, 9, "Buyer outcomes will appear once every field is valid.");
     setEmptyState(elements.tierRows, 6, "Price-band feasibility will appear once every field is valid.");
     setEmptyState(elements.merchantResults, 6, "Aggregate offer outcomes will appear once every field is valid.");
+    const residualSummary = document.querySelector("#residual-summary");
+    if (residualSummary) {
+      residualSummary.replaceChildren();
+      const residualEmpty = document.createElement("p");
+      residualEmpty.className = "canvas-note";
+      residualEmpty.textContent = "Residual coverage will appear once every field is valid.";
+      residualSummary.append(residualEmpty);
+    }
+    const residualNote = document.querySelector("#residual-note");
+    if (residualNote) residualNote.textContent = "";
     elements.demandGroups.replaceChildren();
     const demandNote = document.createElement("p");
     demandNote.className = "canvas-note";
@@ -563,6 +575,37 @@ function renderResults(market) {
     addCell(row, formatter.format(result.totalCost));
     return row;
   }));
+}
+
+function renderResidualCoverage(rawScenario) {
+  const summary = document.querySelector("#residual-summary");
+  const note = document.querySelector("#residual-note");
+  if (!summary || !note) return;
+  const coverage = computeResidualCoverage(rawScenario);
+  note.textContent = coverage.note;
+  const formatter = money(rawScenario.currency);
+  const list = document.createElement("dl");
+  if (!coverage.primary) {
+    appendDetail(list, "Winning offer", "None unlocked");
+    appendDetail(list, "Unfilled buyers", coverage.unfilledBuyerCount);
+    appendDetail(list, "Unfilled units", coverage.unfilledUnits);
+    summary.replaceChildren(list);
+    return;
+  }
+  appendDetail(list, "Winning offer", `${coverage.primary.merchant} / ${coverage.primary.variant}`);
+  appendDetail(list, "Winner units", coverage.primary.fulfilledUnits);
+  appendDetail(list, "Winner included buyers", coverage.primary.deliveredBuyers);
+  appendDetail(list, "Winner landed total", formatter.format(coverage.primary.totalCost));
+  appendDetail(list, "Leftover after winner", `${coverage.leftoverBuyerCount} buyers, ${coverage.leftoverUnits} units`);
+  if (coverage.secondary) {
+    appendDetail(list, "Next-best leftover offer", `${coverage.secondary.merchant} / ${coverage.secondary.variant}`);
+    appendDetail(list, "Leftover units that fit", coverage.secondary.fulfilledUnits);
+    appendDetail(list, "Leftover buyers that fit", coverage.secondary.deliveredBuyers);
+  } else {
+    appendDetail(list, "Next-best leftover offer", "No other qualifying offer on leftover whole orders");
+  }
+  appendDetail(list, "Still unfilled", `${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`);
+  summary.replaceChildren(list);
 }
 
 function renderInspector(market) {

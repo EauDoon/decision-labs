@@ -141,6 +141,31 @@ export function clonePreset(name?: keyof typeof presets): Scenario;
 export function validateScenario(candidate: unknown): Scenario;
 export function evaluateOffer(rawScenario: unknown, rawOffer: string | Offer): OfferEvaluation;
 export function evaluateMarket(rawScenario: unknown): MarketEvaluation;
+
+export interface CoverageOfferSummary {
+  offerId: string;
+  merchant: string;
+  category: string;
+  variant: string;
+  fulfilledUnits: number;
+  deliveredBuyers: number;
+  totalCost: number;
+  selectedBuyerIds?: string[];
+}
+
+export interface ResidualCoverage {
+  planningAid: true;
+  note: string;
+  primary: CoverageOfferSummary | null;
+  secondary: CoverageOfferSummary | null;
+  leftoverBuyerCount: number;
+  leftoverUnits: number;
+  leftoverBuyerIds: string[];
+  unfilledBuyerCount: number;
+  unfilledUnits: number;
+}
+
+export function computeResidualCoverage(rawScenario: unknown): ResidualCoverage;
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
 export function encodeScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;

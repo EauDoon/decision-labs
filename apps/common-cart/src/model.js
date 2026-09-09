@@ -473,6 +473,84 @@ export function evaluateMarket(rawScenario) {
   };
 }
 
+const RESIDUAL_PLANNING_NOTE = "Planning aid only. Residual fill is not a dual checkout, split invoice, or second purchase. Each offer is still a separate whole-order match on leftover buyers.";
+
+function coverageOfferSummary(result) {
+  return {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    category: result.offer.category,
+    variant: result.offer.variant,
+    fulfilledUnits: result.fulfilledUnits,
+    deliveredBuyers: result.deliveredBuyers,
+    totalCost: result.totalCost
+  };
+}
+
+/**
+ * After the winning offer is chosen, leftover whole-buyer demand may be filled
+ * by the next-best other offer using the same exact allocator. A buyer's quantity
+ * is never split across offers.
+ */
+export function computeResidualCoverage(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  if (!market.winner) {
+    return {
+      planningAid: true,
+      note: RESIDUAL_PLANNING_NOTE,
+      primary: null,
+      secondary: null,
+      leftoverBuyerCount: market.buyerCount,
+      leftoverUnits: market.totalRequestedUnits,
+      leftoverBuyerIds: market.scenario.buyers.map(({ id }) => id),
+      unfilledBuyerCount: market.buyerCount,
+      unfilledUnits: market.totalRequestedUnits
+    };
+  }
+  const taken = new Set(market.winner.selectedBuyerIds);
+  const leftoverBuyers = market.scenario.buyers.filter((buyer) => !taken.has(buyer.id));
+  const leftoverUnits = leftoverBuyers.reduce((sum, buyer) => sum + buyer.quantity, 0);
+  const leftoverBuyerIds = leftoverBuyers.map(({ id }) => id);
+  const otherOffers = market.scenario.offers.filter((offer) => offer.id !== market.winner.offer.id);
+  const primary = coverageOfferSummary(market.winner);
+  if (leftoverBuyers.length === 0 || otherOffers.length === 0) {
+    return {
+      planningAid: true,
+      note: RESIDUAL_PLANNING_NOTE,
+      primary,
+      secondary: null,
+      leftoverBuyerCount: leftoverBuyers.length,
+      leftoverUnits,
+      leftoverBuyerIds,
+      unfilledBuyerCount: leftoverBuyers.length,
+      unfilledUnits: leftoverUnits
+    };
+  }
+  const residual = evaluateMarket({
+    title: market.scenario.title,
+    currency: market.scenario.currency,
+    buyers: leftoverBuyers,
+    offers: otherOffers
+  });
+  const secondary = residual.winner ? coverageOfferSummary(residual.winner) : null;
+  if (secondary) {
+    secondary.selectedBuyerIds = residual.winner.selectedBuyerIds;
+  }
+  const secondaryTaken = new Set(residual.winner?.selectedBuyerIds ?? []);
+  const unfilledBuyers = leftoverBuyers.filter((buyer) => !secondaryTaken.has(buyer.id));
+  return {
+    planningAid: true,
+    note: RESIDUAL_PLANNING_NOTE,
+    primary,
+    secondary,
+    leftoverBuyerCount: leftoverBuyers.length,
+    leftoverUnits,
+    leftoverBuyerIds,
+    unfilledBuyerCount: unfilledBuyers.length,
+    unfilledUnits: unfilledBuyers.reduce((sum, buyer) => sum + buyer.quantity, 0)
+  };
+}
+
 function compareResults(left, right) {
   if (left.qualifies !== right.qualifies) return left.qualifies ? -1 : 1;
   return right.fulfilledUnits - left.fulfilledUnits

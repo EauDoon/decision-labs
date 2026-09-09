@@ -187,6 +187,10 @@ canvas { display: block; width: 100%; height: 280px; }
 .inspector-summary { margin: 0; color: var(--muted); }
 .inspector-picker { min-width: min(100%, 270px); color: var(--muted); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .inspector-picker select { width: 100%; margin-top: 0.35rem; color: var(--text); letter-spacing: 0; text-transform: none; }
+.residual-panel { margin-top: 1rem; }
+.residual-summary dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin: 0.75rem 0 0; }
+.residual-summary dt { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.residual-summary dd { margin: 0.15rem 0 0; font-weight: 800; }
 .tier-section { margin: 1.5rem 0; }
 .tier-editors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 1rem; }
 .tier-editor { min-width: 0; border: 1px solid var(--line); padding: 1rem; }

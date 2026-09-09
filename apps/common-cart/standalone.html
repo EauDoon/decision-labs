@@ -220,6 +220,10 @@ canvas { display: block; width: 100%; height: 280px; }
 .inspector-summary { margin: 0; color: var(--muted); }
 .inspector-picker { min-width: min(100%, 270px); color: var(--muted); font-size: 0.75rem; font-weight: 800; letter-spacing: 0.04em; text-transform: uppercase; }
 .inspector-picker select { width: 100%; margin-top: 0.35rem; color: var(--text); letter-spacing: 0; text-transform: none; }
+.residual-panel { margin-top: 1rem; }
+.residual-summary dl { display: grid; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); gap: 0.75rem; margin: 0.75rem 0 0; }
+.residual-summary dt { color: var(--muted); font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; }
+.residual-summary dd { margin: 0.15rem 0 0; font-weight: 800; }
 .tier-section { margin: 1.5rem 0; }
 .tier-editors { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 320px), 1fr)); gap: 1rem; }
 .tier-editor { min-width: 0; border: 1px solid var(--line); padding: 1rem; }
@@ -476,6 +480,16 @@ footer {
             </table>
           </div>
           <p class="canvas-note">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
+          <article class="panel residual-panel" aria-labelledby="residual-title">
+            <div class="panel-heading">
+              <div>
+                <p class="section-number">Unfilled after winner</p>
+                <h3 id="residual-title">Residual coverage on leftover demand</h3>
+              </div>
+            </div>
+            <p id="residual-note" class="canvas-note"></p>
+            <div id="residual-summary" class="residual-summary"></div>
+          </article>
           <button id="buyer-report" type="button">Export private buyer report (CSV)</button>
           <p class="canvas-note">Exports the inspected offer, including buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
           <p class="canvas-note">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
@@ -1084,6 +1098,84 @@ function evaluateMarket(rawScenario) {
   };
 }
 
+const RESIDUAL_PLANNING_NOTE = "Planning aid only. Residual fill is not a dual checkout, split invoice, or second purchase. Each offer is still a separate whole-order match on leftover buyers.";
+
+function coverageOfferSummary(result) {
+  return {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    category: result.offer.category,
+    variant: result.offer.variant,
+    fulfilledUnits: result.fulfilledUnits,
+    deliveredBuyers: result.deliveredBuyers,
+    totalCost: result.totalCost
+  };
+}
+
+/**
+ * After the winning offer is chosen, leftover whole-buyer demand may be filled
+ * by the next-best other offer using the same exact allocator. A buyer's quantity
+ * is never split across offers.
+ */
+function computeResidualCoverage(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  if (!market.winner) {
+    return {
+      planningAid: true,
+      note: RESIDUAL_PLANNING_NOTE,
+      primary: null,
+      secondary: null,
+      leftoverBuyerCount: market.buyerCount,
+      leftoverUnits: market.totalRequestedUnits,
+      leftoverBuyerIds: market.scenario.buyers.map(({ id }) => id),
+      unfilledBuyerCount: market.buyerCount,
+      unfilledUnits: market.totalRequestedUnits
+    };
+  }
+  const taken = new Set(market.winner.selectedBuyerIds);
+  const leftoverBuyers = market.scenario.buyers.filter((buyer) => !taken.has(buyer.id));
+  const leftoverUnits = leftoverBuyers.reduce((sum, buyer) => sum + buyer.quantity, 0);
+  const leftoverBuyerIds = leftoverBuyers.map(({ id }) => id);
+  const otherOffers = market.scenario.offers.filter((offer) => offer.id !== market.winner.offer.id);
+  const primary = coverageOfferSummary(market.winner);
+  if (leftoverBuyers.length === 0 || otherOffers.length === 0) {
+    return {
+      planningAid: true,
+      note: RESIDUAL_PLANNING_NOTE,
+      primary,
+      secondary: null,
+      leftoverBuyerCount: leftoverBuyers.length,
+      leftoverUnits,
+      leftoverBuyerIds,
+      unfilledBuyerCount: leftoverBuyers.length,
+      unfilledUnits: leftoverUnits
+    };
+  }
+  const residual = evaluateMarket({
+    title: market.scenario.title,
+    currency: market.scenario.currency,
+    buyers: leftoverBuyers,
+    offers: otherOffers
+  });
+  const secondary = residual.winner ? coverageOfferSummary(residual.winner) : null;
+  if (secondary) {
+    secondary.selectedBuyerIds = residual.winner.selectedBuyerIds;
+  }
+  const secondaryTaken = new Set(residual.winner?.selectedBuyerIds ?? []);
+  const unfilledBuyers = leftoverBuyers.filter((buyer) => !secondaryTaken.has(buyer.id));
+  return {
+    planningAid: true,
+    note: RESIDUAL_PLANNING_NOTE,
+    primary,
+    secondary,
+    leftoverBuyerCount: leftoverBuyers.length,
+    leftoverUnits,
+    leftoverBuyerIds,
+    unfilledBuyerCount: unfilledBuyers.length,
+    unfilledUnits: unfilledBuyers.reduce((sum, buyer) => sum + buyer.quantity, 0)
+  };
+}
+
 function compareResults(left, right) {
   if (left.qualifies !== right.qualifies) return left.qualifies ? -1 : 1;
   return right.fulfilledUnits - left.fulfilledUnits
@@ -1590,6 +1682,7 @@ function refresh() {
     renderSummary(market);
     renderResults(market);
     renderInspector(market);
+    renderResidualCoverage(market.scenario);
     renderDemand(market.scenario);
     drawChart(market);
     scheduleSave(market.scenario);
@@ -1607,6 +1700,16 @@ function refresh() {
     setEmptyState(elements.inspectorRows, 9, "Buyer outcomes will appear once every field is valid.");
     setEmptyState(elements.tierRows, 6, "Price-band feasibility will appear once every field is valid.");
     setEmptyState(elements.merchantResults, 6, "Aggregate offer outcomes will appear once every field is valid.");
+    const residualSummary = document.querySelector("#residual-summary");
+    if (residualSummary) {
+      residualSummary.replaceChildren();
+      const residualEmpty = document.createElement("p");
+      residualEmpty.className = "canvas-note";
+      residualEmpty.textContent = "Residual coverage will appear once every field is valid.";
+      residualSummary.append(residualEmpty);
+    }
+    const residualNote = document.querySelector("#residual-note");
+    if (residualNote) residualNote.textContent = "";
     elements.demandGroups.replaceChildren();
     const demandNote = document.createElement("p");
     demandNote.className = "canvas-note";
@@ -1719,6 +1822,37 @@ function renderResults(market) {
     addCell(row, formatter.format(result.totalCost));
     return row;
   }));
+}
+
+function renderResidualCoverage(rawScenario) {
+  const summary = document.querySelector("#residual-summary");
+  const note = document.querySelector("#residual-note");
+  if (!summary || !note) return;
+  const coverage = computeResidualCoverage(rawScenario);
+  note.textContent = coverage.note;
+  const formatter = money(rawScenario.currency);
+  const list = document.createElement("dl");
+  if (!coverage.primary) {
+    appendDetail(list, "Winning offer", "None unlocked");
+    appendDetail(list, "Unfilled buyers", coverage.unfilledBuyerCount);
+    appendDetail(list, "Unfilled units", coverage.unfilledUnits);
+    summary.replaceChildren(list);
+    return;
+  }
+  appendDetail(list, "Winning offer", `${coverage.primary.merchant} / ${coverage.primary.variant}`);
+  appendDetail(list, "Winner units", coverage.primary.fulfilledUnits);
+  appendDetail(list, "Winner included buyers", coverage.primary.deliveredBuyers);
+  appendDetail(list, "Winner landed total", formatter.format(coverage.primary.totalCost));
+  appendDetail(list, "Leftover after winner", `${coverage.leftoverBuyerCount} buyers, ${coverage.leftoverUnits} units`);
+  if (coverage.secondary) {
+    appendDetail(list, "Next-best leftover offer", `${coverage.secondary.merchant} / ${coverage.secondary.variant}`);
+    appendDetail(list, "Leftover units that fit", coverage.secondary.fulfilledUnits);
+    appendDetail(list, "Leftover buyers that fit", coverage.secondary.deliveredBuyers);
+  } else {
+    appendDetail(list, "Next-best leftover offer", "No other qualifying offer on leftover whole orders");
+  }
+  appendDetail(list, "Still unfilled", `${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`);
+  summary.replaceChildren(list);
 }
 
 function renderInspector(market) {
