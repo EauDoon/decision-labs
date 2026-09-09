@@ -478,3 +478,23 @@ test('removing a participant reallocates their share and blocks dropping the las
   app.click('remove-participant', { index: '0' });
   assert.equal(app.saved().participants.length, 2);
 });
+
+test('share-to-hold previews a split and requires an explicit apply', async () => {
+  const app = await workbench();
+  app.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  assert.match(app.markup(), /Share-to-hold preview/);
+  assert.match(app.markup(), /Apply minimum hold share/);
+  const before = JSON.parse(JSON.stringify(app.markup().includes('data-path="deal.monthlyVolume"') ? { ok: true } : { ok: false }));
+  assert.equal(before.ok, true);
+  const originalShares = [0.4, 0.35, 0.25];
+  app.click('close-share-hold');
+  assert.doesNotMatch(app.markup(), /Share-to-hold preview/);
+  app.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  app.click('apply-share-hold');
+  const applied = app.saved();
+  assert.ok(Math.abs(applied.participants.find((item) => item.id === 'liquidity-partner').revenueShare - 0.24) < 1e-8);
+  assert.equal(applied.participants.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+  assert.notDeepEqual(applied.participants.map((item) => item.revenueShare), originalShares);
+  app.click('undo');
+  assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
+});

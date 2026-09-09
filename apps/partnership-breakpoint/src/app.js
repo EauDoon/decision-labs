@@ -13,6 +13,7 @@ import {
   makeParticipant,
   materializeStressCase,
   moveParticipant,
+  solveMinimumShareToHold,
   validateConfiguration,
 } from './model.js';
 
@@ -33,12 +34,14 @@ let caseLibrary = loadCaseLibrary();
 let removedCase = null;
 let comparisonId = '';
 let stressPreviewId = '';
+let shareHoldPreview = null;
 let invalidFieldCount = 0;
 const undoHistory = [];
 const redoHistory = [];
 
 function checkpoint() {
   stressPreviewId = '';
+  shareHoldPreview = null;
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -52,6 +55,7 @@ function travelHistory(direction) {
   destination.push(clone(state));
   state = source.pop();
   stressPreviewId = '';
+  shareHoldPreview = null;
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -330,6 +334,8 @@ function inputPanel() {
         ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1', title: 'Leave blank for no commitment. Blank and zero are equivalent here.' })}
         ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
       </div>
+      <div class="button-row"><button type="button" data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button></div>
+      </div>
     </section>`).join('');
 
   return `
@@ -420,6 +426,7 @@ function resultsPanel(result) {
     </section>
     <section class="print-only"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
     ${feeRequirementsSection()}
+    ${shareHoldPreviewSection()}
     ${comparisonSection(result)}
     ${breakpointSection(result)}
     ${stressSection()}
@@ -614,6 +621,9 @@ function attachEvents() {
     }
     if (action === 'inspect-stress') { stressPreviewId = button.dataset.scenarioId; render(); document.querySelector('#stress-preview-title')?.focus(); return; }
     if (action === 'close-stress-preview') { stressPreviewId = ''; render(); return; }
+    if (action === 'solve-share-hold') { previewShareHold(button.dataset.participantId); return; }
+    if (action === 'apply-share-hold') { applyShareHold(); return; }
+    if (action === 'close-share-hold') { shareHoldPreview = null; render(); return; }
     if (action === 'apply-stress-case') { applyInspectedStressCase(); return; }
     if (action === 'compare-case') { comparisonId = button.dataset.caseId; render(); document.querySelector('#comparison-title')?.focus(); return; }
     if (action === 'clear-comparison') { comparisonId = ''; render(); return; }
@@ -945,4 +955,48 @@ function applyInspectedStressCase() {
     if (!(error instanceof ValidationError)) throw error;
     setNotice('Stress case could not be applied: ' + summarizeErrors(error.errors));
   }
+}
+
+function previewShareHold(participantId) {
+  if (!validateConfiguration(state).valid) {
+    setNotice('Resolve invalid inputs before solving a hold share.');
+    return;
+  }
+  try {
+    shareHoldPreview = solveMinimumShareToHold(state, participantId);
+    render();
+    document.querySelector('#share-hold-title')?.focus();
+  } catch (error) {
+    if (!(error instanceof ValidationError)) throw error;
+    setNotice(`Share-to-hold solver rejected: ${summarizeErrors(error.errors)}`);
+  }
+}
+
+function applyShareHold() {
+  if (!shareHoldPreview || shareHoldPreview.status !== 'possible' || !shareHoldPreview.proposal) {
+    setNotice('No share-to-hold proposal is available to apply.');
+    return;
+  }
+  const proposal = shareHoldPreview.proposal;
+  const share = shareHoldPreview.share;
+  checkpoint();
+  state.participants = proposal.map((item) => ({ ...item }));
+  shareHoldPreview = null;
+  activePreset = '';
+  refresh(`Applied minimum hold share of ${formatPct(share * 100)}. Remaining participants kept their relative leftover. Undo restores the previous allocation.`);
+}
+
+function shareHoldPreviewSection() {
+  if (!shareHoldPreview) return '';
+  const solved = shareHoldPreview;
+  const target = state.participants.find((item) => item.id === solved.participantId);
+  const name = escapeAttribute(target?.name ?? solved.participantId);
+  if (solved.status === 'impossible') {
+    return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p>${escapeAttribute(solved.reason)}</p><p class="output-note">This is a deterministic solvability result, not a probability that the participant will stay.</p></div></section>`;
+  }
+  const rows = solved.proposal.map((item, index) => {
+    const current = state.participants.find((participant) => participant.id === item.id);
+    return `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${current ? formatPct(current.revenueShare * 100) : 'n/a'}</td><td>${formatPct(item.revenueShare * 100)}</td></tr>`;
+  }).join('');
+  return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p><strong>${name}</strong> holds at a minimum revenue share of <strong>${formatPct(solved.share * 100)}</strong>. Remaining participants keep their relative shares of the leftover. Apply is required; the current case is unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Proposed hold shares"><table><caption>Current shares versus proposed hold split</caption><thead><tr><th scope="col">Participant</th><th scope="col">Current share</th><th scope="col">Proposed share</th></tr></thead><tbody>${rows}</tbody></table></div><div class="panel-body"><div class="button-row"><button type="button" class="primary" data-action="apply-share-hold">Apply minimum hold share</button><button type="button" data-action="close-share-hold">Keep current shares</button></div></div></section>`;
 }

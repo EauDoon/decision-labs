@@ -797,3 +797,106 @@ export function materializeStressCase(config, scenarioId) {
   assertValidConfiguration(candidate);
   return candidate;
 }
+
+/**
+ * Rebuilds the split so `targetId` receives `targetShare` and everyone else
+ * keeps their relative claim on the leftover. The last remaining participant
+ * absorbs floating-point remainder so the shares sum to 1.
+ * @param {ParticipantInput[]} participants
+ * @param {string} targetId
+ * @param {number} targetShare
+ */
+export function proposalWithTargetShare(participants, targetId, targetShare) {
+  const targetIndex = participants.findIndex((item) => item.id === targetId);
+  if (targetIndex < 0) throw new ValidationError(['Choose a current participant.']);
+  if (!isFiniteNumber(targetShare) || targetShare < 0 || targetShare > 1) {
+    throw new ValidationError(['Target share must be a finite number from zero through 1.']);
+  }
+  const leftover = 1 - targetShare;
+  const others = participants.map((_, index) => index).filter((index) => index !== targetIndex);
+  const othersTotal = others.reduce((sum, index) => sum + participants[index].revenueShare, 0);
+  const next = participants.map((item) => ({ ...item }));
+  next[targetIndex].revenueShare = targetShare;
+  if (!others.length) return next;
+  if (othersTotal > 0) {
+    let assigned = 0;
+    others.forEach((index, order) => {
+      if (order === others.length - 1) next[index].revenueShare = leftover - assigned;
+      else {
+        const share = leftover * (participants[index].revenueShare / othersTotal);
+        next[index].revenueShare = share;
+        assigned += share;
+      }
+    });
+  } else {
+    let assigned = 0;
+    others.forEach((index, order) => {
+      if (order === others.length - 1) next[index].revenueShare = leftover - assigned;
+      else {
+        const share = leftover / others.length;
+        next[index].revenueShare = share;
+        assigned += share;
+      }
+    });
+  }
+  const total = next.reduce((sum, item) => sum + item.revenueShare, 0);
+  next[others[others.length - 1]].revenueShare += 1 - total;
+  return next;
+}
+
+function targetHoldsAtShare(config, participantId, share) {
+  const participants = proposalWithTargetShare(config.participants, participantId, share);
+  const participant = participants.find((item) => item.id === participantId);
+  return evaluateParticipant(participant, config.deal).viable;
+}
+
+/**
+ * Binary-searches the minimum revenue share in [0, 1] at which `participantId`
+ * holds, while remaining participants keep their relative shares of the leftover.
+ * Does not assign probabilities. Capacity and commitment failures that persist
+ * at a 100% share are reported as impossible.
+ * @param {PartnershipConfig} config
+ * @param {string} participantId
+ */
+export function solveMinimumShareToHold(config, participantId) {
+  assertValidConfiguration(config);
+  if (!config.participants.some((item) => item.id === participantId)) {
+    throw new ValidationError(['Choose a current participant.']);
+  }
+  if (targetHoldsAtShare(config, participantId, 0)) {
+    return {
+      status: 'possible',
+      share: 0,
+      participantId,
+      proposal: proposalWithTargetShare(config.participants, participantId, 0),
+      reason: 'This participant holds even with a zero revenue share under the current volume, fee, costs, capacity, and commitment.',
+    };
+  }
+  if (!targetHoldsAtShare(config, participantId, 1)) {
+    const participant = config.participants.find((item) => item.id === participantId);
+    const atFull = evaluateParticipant({ ...participant, revenueShare: 1 }, config.deal);
+    const detail = atFull.failureReasons.length ? atFull.failureReasons.join('; ') : 'fee revenue cannot fund the profit floor';
+    return {
+      status: 'impossible',
+      share: null,
+      participantId,
+      proposal: null,
+      reason: `Even a 100% revenue share cannot make this participant hold (${detail}). Revenue share cannot repair capacity or commitment failures.`,
+    };
+  }
+  let low = 0;
+  let high = 1;
+  for (let step = 0; step < 60; step += 1) {
+    const mid = (low + high) / 2;
+    if (targetHoldsAtShare(config, participantId, mid)) high = mid;
+    else low = mid;
+  }
+  const share = targetHoldsAtShare(config, participantId, high) ? high : 1;
+  return {
+    status: 'possible',
+    share,
+    participantId,
+    proposal: proposalWithTargetShare(config.participants, participantId, share),
+    reason: 'Minimum revenue share at which this participant holds. Remaining participants keep their relative shares of the leftover.',
+  };
+}
