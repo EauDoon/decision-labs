@@ -1383,6 +1383,151 @@ test('copy versions copies catalog names as Markdown with a visible fallback', (
   assert.doesNotMatch(html, /hosted API/i);
 });
 
+test('copy version line copies footer text as one Markdown line with a visible fallback', () => {
+  assert.match(html, /id="copy-version-line"/);
+  assert.match(html, />Copy version line</);
+  assert.match(html, /aria-keyshortcuts=","/);
+  assert.match(html, /id="copy-version-line-fallback"/);
+  assert.match(html, /class="copy-version-line-fallback"/);
+  assert.match(html, /textarea id="copy-version-line-fallback"/);
+  assert.match(html, /versionLineMarkdown/);
+  assert.match(html, /querySelector\('\.version-line'\)\?\.textContent/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /versionLineFallback\.hidden = false/);
+  assert.match(html, /versionLineFallback\.select\(\)/);
+  assert.match(html, /Not a live product version/);
+  assert.match(html, /This is the catalog version line, not a live product version/);
+  assert.match(html, /@media print[\s\S]*\.copy-version-line-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-version-line-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('keyboard comma copies the footer version line through the same control', () => {
+  assert.match(html, /event\.key === ','/);
+  assert.match(html, /versionLineBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts=","/);
+  assert.match(html, /<kbd>,<\/kbd><\/dt><dd>Copy the footer version line as one Markdown line from this catalog page, not a live product version/);
+  assert.match(html, /Press <kbd>,<\/kbd> to copy the footer version line/);
+  const clicks = { versionLine: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-version-line') return { click() { clicks.versionLine += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire(',', input);
+  fire(',', textarea);
+  assert.equal(clicks.versionLine, 0);
+  fire(',', body);
+  assert.equal(clicks.versionLine, 1);
+});
+
+test('copy version line markdown is the footer text, or empty if missing', async () => {
+  let copied = '';
+  let clickLine = null;
+  const versionLine = { textContent: 'Partnership Breakpoint 1.5.5, Common Cart 1.4.5, The Smallest Agreement 1.5.5, Weekend Gap 1.5.5. Each workbench versions itself.' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-version-line') return { addEventListener(name, handler) { if (name === 'click') clickLine = handler; } };
+      if (id === 'copy-version-line-status') return { textContent: '' };
+      if (id === 'copy-version-line-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '.version-line' ? versionLine : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLine();
+  assert.equal(copied, versionLine.textContent);
+  assert.doesNotMatch(copied, /\n/);
+  versionLine.textContent = '   ';
+  copied = 'stale';
+  await clickLine();
+  assert.equal(copied, '');
+});
+
+test('copy version line shows a visible textarea when clipboard is unavailable', async () => {
+  let clickLine = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-version-line') return { addEventListener(name, handler) { if (name === 'click') clickLine = handler; } };
+      if (id === 'copy-version-line-status') return status;
+      if (id === 'copy-version-line-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '.version-line' ? { textContent: 'Partnership Breakpoint 1.5.5, Common Cart 1.4.5.' } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickLine();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, 'Partnership Breakpoint 1.5.5, Common Cart 1.4.5.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product version/);
+});
+
+test('print CSS hides copy version line tools like other copy tools', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-version-line-tools, \.copy-version-line-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-versions-tools, \.copy-versions-fallback/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
 test('shortcuts panel lists b e g q r z with honest limits', () => {
   assert.match(html, /<kbd>b<\/kbd><\/dt><dd>Focus the last workbench card. This key moves focus; it does not open the workbench./);
   assert.match(html, /<kbd>e<\/kbd><\/dt><dd>Copy the catalog heading and lede as Markdown from this catalog page, not a live product feed/);
