@@ -56,12 +56,12 @@ npm run check
 
 - A deterministic 72-hour Friday-to-Monday simulation.
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
-- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), and Compressed Friday close (synthetic) presets.
+- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), and Payday Friday burst (synthetic) presets.
 - Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, hours to first settlement, and hours to clear the queue.
-- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains). Copy dashboard numbers as Markdown.
-- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, peak queue, first settlement, undo, redo and export.
+- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains). Copy dashboard numbers as Markdown or export a one-row dashboard CSV.
+- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, peak queue, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
 - Canvas chart with a printable SVG queue path that can be downloaded as a file, a formula-safe hourly queue CSV, and a text-equivalent data table.
-- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
+- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, copy of the selected hour, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
 ## Scenario comparison and reserve planner
@@ -123,6 +123,21 @@ scripts/dev-server.mjs Dependency-free local development server
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## New in v1.5.1: Gantt hour copy, payday burst and dashboard CSV
+
+1. Copy the selected Gantt hour as Markdown: issuer, bank, payout and FX open or closed state, with a synthetic-not-live notice. Clipboard write has a textarea fallback.
+2. Press `F` to jump the timeline to the first hour where the bank gate is closed. If the bank never closes, the first closed issuer, bank or payout hour is used. The key is ignored while typing, and a notice is shown when no closed hour exists.
+3. Filter the Gantt table and chart to hours that are closed on at least one gate. This is a local drawing. The model still contains 72 hours.
+4. Compare three scenario JSON files labeled baseline, current and imported. Hours stay null when a run never queues or never settles. The open scenario is not replaced. Two-file compare, library copies and experiment compare stay separate.
+5. Use the Payday Friday burst (synthetic) preset. It keeps the same 72-hour calendar as Normal Friday and uses a larger Friday redemption burst. It is distinct from Thin FX, Tight Windows, Long-weekend Friday start, and Compressed Friday close.
+6. Press `S` to jump to the scenario inputs heading when not typing in an input, textarea or select.
+7. Export a one-row dashboard CSV: hours to clear (empty if never), peak hour label, and hours to first settlement (empty if never). Cells are formula-safe and have no timestamps. Analysis JSON still has no clocks.
+8. Workspace JSON stores the closed-hours-only Gantt filter. Older files that omit the field restore all hours.
+9. Print redacted replaces custom institution names in dashboard and Gantt headings with generic Issuer, Bank, Payout and FX. Already-generic names are kept. The saved scenario is unchanged.
+10. Copy hourly limiting-gate counts as Markdown. These are observation counts, not a causal ranking.
+
+v1.5.0 timing review packets remain later on this page. v1.4.3 dashboard copy, file compare and the compressed Friday close remain below.
 
 ## New in v1.4.3: dashboard copy, file compare and a compressed Friday close
 
@@ -190,17 +205,18 @@ v1.3.0 repeatable-experiment workflows remain: demand timing, pinned baselines, 
 2. Pin a baseline and write experiment notes. Compare the current scenario with the detached baseline, then run five sensitivity cases for one assumption. Capped values are labeled. Applying a case keeps the baseline.
 3. Inspect simultaneous operating blockers, the longest backlog run and end-of-hour queue exposure. Use the full hourly table or jump to the peak queue or Monday opening checkpoint.
 4. Save named copies in the local library (12 slots). Undo and redo recover up to 39 scenario edits in the current tab. This recovery history does not include notes, baseline changes or deleted library copies.
-5. Export an editable workspace, a printable HTML report, a Markdown report, the hourly queue CSV, the Gantt CSV or the full hourly CSV. Open the HTML report offline and use the browser Print command. Reports escape imported text and contain no scripts or external resources.
+5. Export an editable workspace, a printable HTML report, a Markdown report, the hourly queue CSV, the Gantt CSV, the dashboard CSV or the full hourly CSV. Open the HTML report offline and use the browser Print command. Reports escape imported text and contain no scripts or external resources.
 
 ### What each export contains
 
 | Export | Contents | Importable here |
 | --- | --- | --- |
 | Scenario JSON / share link | Current editable scenario | Scenario import / URL hash |
-| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour, Gantt density, selected chart | Workspace import |
+| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour, Gantt density, selected chart, closed-hours Gantt filter | Workspace import |
 | Analysis JSON | Both scenarios, results, reserve plan and hourly comparison | No, report only |
 | Hourly CSV | All 73 checkpoints, prior-interval flows and next-hour capacity | No, spreadsheet data |
 | Queue CSV | Hour label and queue size at every checkpoint, formula-safe cells | No, spreadsheet data |
+| Dashboard CSV | One formula-safe row: hours to clear, peak hour label, hours to first settlement | No, spreadsheet data |
 | Gantt CSV | Open or closed issuer, bank, payout and FX state for the 72 chart hours | No, spreadsheet data |
 | Markdown report | Hours to clear the queue and peak queue hour for current and baseline | No, copyable brief |
 | Printable HTML | Notes, assumptions, comparison including hours to first settlement and hours to clear the queue, diagnostics, inline gate Gantt, baseline versus current Gantt, queue path, limiting-gate counts, reserve plan and model limits | No, report only |
