@@ -1431,6 +1431,10 @@ function refresh() {
     if (leftoverHeadroom) leftoverHeadroom.textContent = "Unspent item headroom after winner will appear once every field is valid.";
     const leftoverOverlap = document.querySelector("#leftover-print-overlap-rows");
     if (leftoverOverlap) leftoverOverlap.replaceChildren();
+    const leftoverPrintUncovered = document.querySelector("#leftover-print-uncovered");
+    if (leftoverPrintUncovered) leftoverPrintUncovered.textContent = "Uncovered leftover: 0 buyers, 0 units";
+    const leftoverPrintWinner = document.querySelector("#leftover-print-winner");
+    if (leftoverPrintWinner) leftoverPrintWinner.textContent = "Winner merchant: None unlocked";
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -1741,6 +1745,11 @@ function renderLeftoverCoverageTable(rawScenario) {
     winner.textContent = coverage.primary
       ? `Winner merchant: ${coverage.primary.merchant}`
       : "Winner merchant: None unlocked";
+  }
+  const uncoveredPrint = document.querySelector("#leftover-print-uncovered");
+  if (uncoveredPrint) {
+    const coverage = computeResidualCoverage(rawScenario);
+    uncoveredPrint.textContent = `Uncovered leftover: ${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`;
   }
   renderLeftoverPrintOverlap(rawScenario);
   renderOrganizerLeftoverRows(rawScenario);
