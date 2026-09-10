@@ -2004,6 +2004,31 @@ export function formatApprovalThresholdMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the recommended package option count for clipboard handoff.
+ * Count only. It is a decision aid, not a recorded vote.
+ * Distinct from recommended-package copy and remaining change-budget copy.
+ */
+export function formatRecommendedPackageOptionCountMarkdown(proposal, result = findSmallestAgreement(proposal)) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || result.status === "invalid") {
+    return { status: "invalid", errors: result?.errors ?? ["No result was available."] };
+  }
+  const disclaimer = "This is a decision aid, not a recorded vote.";
+  if (result.status === "too_large") {
+    return { status: "unavailable", text: `The search is over the safety bound, so the recommended package option count cannot be copied. ${disclaimer}\n` };
+  }
+  if (!result.agreement || !Array.isArray(result.agreement.options)) {
+    return { status: "unavailable", text: `No recommended package is available, so the option count cannot be copied. ${disclaimer}\n` };
+  }
+  return {
+    status: "ok",
+    count: result.agreement.options.length,
+    text: `Recommended package option count: ${result.agreement.options.length}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Compact formula-safe CSV of recommended versus original option labels and cost delta.
  * Unavailable when there is no recommended package.
  */

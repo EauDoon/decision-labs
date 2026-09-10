@@ -32,6 +32,7 @@ import {
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
   formatApprovalThresholdMarkdown,
+  formatRecommendedPackageOptionCountMarkdown,
   formatRecommendedChangeCostCsv,
   parseClauseOptionsCsv,
   formatClauseOptionsCsv,
@@ -1655,6 +1656,76 @@ test("approval threshold Markdown is one line and is not a legal quorum", () => 
   });
   assert.match(neighbourhood.text, /^Approval threshold: 68\.0%\. This is a number you entered, not a legal quorum\.\n$/u);
   assert.equal(formatApprovalThresholdMarkdown({ title: "" }).status, "invalid");
+});
+
+test("recommended package option count Markdown is one line, count only, and is not a recorded vote", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 90 }), option("two-change", false, { g: 40 }, 1), option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const result = findSmallestAgreement(input);
+  const copied = formatRecommendedPackageOptionCountMarkdown(input, result);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.count, 2);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Recommended package option count: 2. This is a decision aid, not a recorded vote.\n");
+  assert.doesNotMatch(copied.text, /one-change|two-original/u);
+  assert.doesNotMatch(copied.text, /^# Recommended package/u);
+  assert.doesNotMatch(copied.text, /leftover change-budget/u);
+  assert.doesNotMatch(copied.text, /Approval threshold:/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const neighbourhood = formatRecommendedPackageOptionCountMarkdown({
+    title: "Neighbourhood Plan: the shared green",
+    threshold: 68,
+    groups: [
+      { id: "residents", name: "Residents", weight: 3 },
+      { id: "shopkeepers", name: "Shopkeepers", weight: 2 },
+      { id: "stewards", name: "Park stewards", weight: 2 },
+    ],
+    clauses: [
+      { id: "hours", title: "Park access hours", options: [
+        { id: "hours-original", original: true, label: "Close at 20:00 every day", changeCost: 0, support: { residents: 78, shopkeepers: 55, stewards: 88 } },
+        { id: "hours-seasonal", original: false, label: "Use seasonal closing times", changeCost: 2, support: { residents: 86, shopkeepers: 74, stewards: 73 } },
+        { id: "hours-pilot", original: false, label: "Trial a 21:00 Friday close for three months", changeCost: 3, support: { residents: 84, shopkeepers: 83, stewards: 60 } },
+      ] },
+      { id: "market", title: "Weekend market use", options: [
+        { id: "market-original", original: true, label: "No regular market use", changeCost: 0, support: { residents: 60, shopkeepers: 52, stewards: 91 } },
+        { id: "market-monthly", original: false, label: "Permit one monthly market with clean-up bond", changeCost: 2, support: { residents: 74, shopkeepers: 89, stewards: 72 } },
+        { id: "market-seasonal", original: false, label: "Permit a summer market series", changeCost: 5, support: { residents: 68, shopkeepers: 93, stewards: 48 } },
+      ] },
+      { id: "path", title: "Path lighting", options: [
+        { id: "path-original", original: true, label: "Replace failed lamps as needed", changeCost: 0, support: { residents: 58, shopkeepers: 63, stewards: 80 } },
+        { id: "path-warm", original: false, label: "Install warm low-level path lighting", changeCost: 3, support: { residents: 85, shopkeepers: 76, stewards: 67 } },
+        { id: "path-motion", original: false, label: "Install motion-activated lighting", changeCost: 4, support: { residents: 78, shopkeepers: 71, stewards: 75 } },
+      ] },
+    ],
+  });
+  assert.equal(neighbourhood.status, "ok");
+  assert.equal(neighbourhood.count, 3);
+  assert.equal(neighbourhood.text, "Recommended package option count: 3. This is a decision aid, not a recorded vote.\n");
+  const missing = proposal({
+    threshold: 95,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 10 }), option("alt", false, { g: 20 }, 1), option("other", false, { g: 30 }, 2),
+    ] }],
+  });
+  missing.maxChangeCost = 0;
+  const none = formatRecommendedPackageOptionCountMarkdown(missing);
+  assert.equal(none.status, "unavailable");
+  assert.match(none.text, /No recommended package is available/u);
+  assert.match(none.text, /not a recorded vote/u);
+  assert.doesNotMatch(none.text, /one-change|Keep original/u);
+  assert.equal(formatRecommendedPackageOptionCountMarkdown({ title: "" }).status, "invalid");
 });
 
 test("pinned package Markdown table lists original, recommended, and pinned labels without recording a vote", () => {
