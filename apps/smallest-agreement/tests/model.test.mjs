@@ -1908,7 +1908,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true, hideGroupsMeetingThreshold: true, hideGroupsBelowThreshold: true, hideVetoGroups: true, hideNonVetoGroups: true, hideFirstVetoGroup: true, hideLastVetoGroup: true, hideFirstNonVetoGroup: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true, hideGroupsMeetingThreshold: true, hideGroupsBelowThreshold: true, hideVetoGroups: true, hideNonVetoGroups: true, hideFirstVetoGroup: true, hideLastVetoGroup: true, hideFirstNonVetoGroup: true, hideLastNonVetoGroup: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
@@ -1925,6 +1925,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(exported.hideFirstVetoGroup, true);
   assert.equal(exported.hideLastVetoGroup, true);
   assert.equal(exported.hideFirstNonVetoGroup, true);
+  assert.equal(exported.hideLastNonVetoGroup, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
@@ -1942,6 +1943,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parsed.hideFirstVetoGroup, true);
   assert.equal(parsed.hideLastVetoGroup, true);
   assert.equal(parsed.hideFirstNonVetoGroup, true);
+  assert.equal(parsed.hideLastNonVetoGroup, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
@@ -1957,6 +1959,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(Object.hasOwn(parsed.proposal, "hideFirstVetoGroup"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideLastVetoGroup"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideFirstNonVetoGroup"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideLastNonVetoGroup"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
@@ -1974,6 +1977,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(omitted.hideFirstVetoGroup, false);
   assert.equal(omitted.hideLastVetoGroup, false);
   assert.equal(omitted.hideFirstNonVetoGroup, false);
+  assert.equal(omitted.hideLastNonVetoGroup, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
@@ -1990,6 +1994,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(bare.hideFirstVetoGroup, null);
   assert.equal(bare.hideLastVetoGroup, null);
   assert.equal(bare.hideFirstNonVetoGroup, null);
+  assert.equal(bare.hideLastNonVetoGroup, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
@@ -2014,6 +2019,8 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideLastVetoGroup: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { hideFirstNonVetoGroup: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideFirstNonVetoGroup: 1, proposal: input })).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideLastNonVetoGroup: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideLastNonVetoGroup: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
