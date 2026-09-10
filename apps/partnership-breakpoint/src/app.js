@@ -1853,6 +1853,7 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === ',') copyFirstBreakpointLabel();
 });
 
 window.addEventListener('resize', () => {
@@ -3269,6 +3270,7 @@ function helpDialog() {
         <li><kbd>x</kbd> Jump to the first roster row over listed capacity, or the Participants heading if none</li>
         <li><kbd>y</kbd> Copy deal notes as one-line Markdown</li>
         <li><kbd>z</kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing</li>
+        <li><kbd>,</kbd> Copy the first-breakpoint participant label as Markdown</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

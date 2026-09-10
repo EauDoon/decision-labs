@@ -1272,6 +1272,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>x<\/kbd> Jump to the first roster row over listed capacity, or the Participants heading if none/);
   assert.match(app.markup(), /<kbd>y<\/kbd> Copy deal notes as one-line Markdown/);
   assert.match(app.markup(), /<kbd>z<\/kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing/);
+  assert.match(app.markup(), /<kbd>,<\/kbd> Copy the first-breakpoint participant label as Markdown/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1721,6 +1722,47 @@ test('keyboard y copies deal notes as one-line Markdown and ignores focused inpu
   denied.keydown('y');
   assert.match(denied.markup(), /id="notes-copy-text"/);
   assert.match(denied.markup(), /Deal notes: Keep the fee floor in view\./);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('keyboard comma copies the first-breakpoint participant label through the same control', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  fallback.keydown(',');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.match(fallback.markup(), /First-breakpoint participant: Liquidity Partner\. Synthetic ranking, not a forecast\./);
+  assert.match(fallback.markup(), /id="breakpoint-label-copy-title">First-breakpoint participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="utilization-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="allocation-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-breakpoint-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown(',', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown(',', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown(',');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the first-breakpoint participant label/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown(',');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'First-breakpoint participant: Liquidity Partner. Synthetic ranking, not a forecast.');
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown(',', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.keydown(',');
+  assert.match(denied.markup(), /id="breakpoint-label-copy-text"/);
   assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
