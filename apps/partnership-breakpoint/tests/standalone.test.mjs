@@ -86,6 +86,7 @@ test('standalone retains 1.5.10 review tools and 1.5.11 copy controls', async ()
   assert.match(html, /School concert split/);
   assert.match(html, /Sports carnival split/);
   assert.match(html, /Netball carnival/);
+  assert.match(html, /Swimming carnival split/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);

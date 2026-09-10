@@ -232,6 +232,15 @@ export const PRESETS = Object.freeze({
       { id: 'first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 0.55, fixedMonthlyCost: 900, minimumAcceptableProfit: 350, capacity: 2800, minimumCommitment: 0, riskCost: 160 },
     ],
   },
+  swimmingCarnivalSplit: {
+    name: 'Swimming carnival split',
+    deal: { monthlyVolume: 2300, feePerTransaction: 15, addressableVolume: 3400, volumeShockPct: 0 },
+    participants: [
+      { id: 'swimming-committee', name: 'Carnival committee', revenueShare: 0.4, variableCostPerTransaction: 1.05, fixedMonthlyCost: 2700, minimumAcceptableProfit: 1000, capacity: 3100, minimumCommitment: 0, riskCost: 380 },
+      { id: 'pool-operations', name: 'Pool operations', revenueShare: 0.36, variableCostPerTransaction: 2.7, fixedMonthlyCost: 2100, minimumAcceptableProfit: 850, capacity: 4000, minimumCommitment: 300, riskCost: 450 },
+      { id: 'swim-canteen', name: 'Canteen', revenueShare: 0.24, variableCostPerTransaction: 1.8, fixedMonthlyCost: 1200, minimumAcceptableProfit: 500, capacity: 2600, minimumCommitment: 0, riskCost: 190 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
