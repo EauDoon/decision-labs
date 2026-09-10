@@ -85,6 +85,8 @@ SOFTWARE.
         <li><kbd>i</kbd> Copy leftover unspent item headroom (organizer private)</li>
         <li><kbd>q</kbd> Focus requested units</li>
         <li><kbd>x</kbd> Focus Export private buyer report (organizer private)</li>
+        <li><kbd>y</kbd> Copy leftover fill (organizer private)</li>
+        <li><kbd>z</kbd> Focus leftover fill, or leftover heading if none</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -135,6 +137,7 @@ SOFTWARE.
           <button class="preset" data-preset="schoolFete" type="button">School fete</button>
           <button class="preset" data-preset="officeFruit" type="button">Office fruit</button>
           <button class="preset" data-preset="libraryPaper" type="button">Library paper</button>
+          <button class="preset" data-preset="sportsKit" type="button">Sports kit</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -375,10 +378,13 @@ SOFTWARE.
             <p class="canvas-note print-chrome">Organizer-private one-line Markdown of leftover unspent item headroom. Currency and counts only. Not a rebate. This is not a merchant export.</p>
             <p id="leftover-print-winner" class="canvas-note leftover-print-winner print-leftover-keep">Winner merchant: None unlocked</p>
             <p id="leftover-print-uncovered" class="canvas-note leftover-print-uncovered print-leftover-keep">Uncovered leftover: 0 buyers, 0 units</p>
+            <p id="leftover-print-requested" class="canvas-note leftover-print-requested print-leftover-keep">Requested units: 0</p>
             <button id="copy-winning-merchant" class="print-chrome" type="button">Copy winning merchant label</button>
             <p class="canvas-note print-chrome">Copies the winning merchant name only. Honest empty when none unlocked. Buyer identities stay out.</p>
             <button id="copy-winning-fulfillment" class="print-chrome" type="button">Copy winning fulfillment mode</button>
             <p class="canvas-note print-chrome">Copies pickup or shipping only. Honest empty when none unlocked. Buyer identities stay out.</p>
+            <button id="copy-winning-remaining-capacity" class="print-chrome" type="button">Copy remaining capacity</button>
+            <p class="canvas-note print-chrome">Copies remaining capacity on the unlocked winner as a merchant-safe one-liner. Honest empty when none unlocked. Buyer identities stay out.</p>
             <div id="leftover-print-overlap" class="table-shell compact print-leftover-keep">
               <table>
                 <caption>Merchant-safe variant overlap counts. Buyer counts only. Labels, IDs, budgets, and allocations are omitted.</caption>
@@ -403,6 +409,11 @@ SOFTWARE.
               Hide the tertiary leftover coverage row
             </label>
             <p id="hide-tertiary-leftover-note" class="canvas-note print-chrome">Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide-tertiary leftover choice is kept in this browser's workspace file. Older workspace files without it still show every leftover row.</p>
+            <label class="checkbox-field print-chrome">
+              <input id="hide-leftover-fill-row" type="checkbox">
+              Hide the leftover fill coverage row
+            </label>
+            <p id="hide-leftover-fill-note" class="canvas-note print-chrome">Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide leftover fill choice is kept in this browser's workspace file. Older workspace files without it still show every leftover row.</p>
             <div id="leftover-buyer-list" class="table-shell compact print-private">
               <table>
                 <caption>Organizer leftover buyers after the winner. Private labels. This list is organizer-private and is not a merchant export.</caption>
@@ -411,8 +422,10 @@ SOFTWARE.
               </table>
             </div>
             <button id="copy-leftover-coverage" class="print-chrome" type="button">Copy leftover coverage (organizer private)</button>
+            <button id="copy-leftover-fill" class="print-chrome" type="button">Copy leftover fill (organizer private)</button>
             <button id="copy-uncovered-leftover" class="print-chrome" type="button">Copy uncovered leftover counts (organizer private)</button>
             <p class="canvas-note print-chrome">Organizer-private Markdown of leftover buyer counts and units. Clipboard copies when allowed; otherwise a textarea is shown. This is not a merchant export.</p>
+            <p class="canvas-note print-chrome">Leftover fill copy is the secondary leftover merchant label and leftover buyer and unit counts. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover copy is counts and units only. Buyer identities stay out. This is not a merchant export.</p>
           </article>
           <button id="buyer-report" class="print-chrome" type="button">Export private buyer report (CSV)</button>
