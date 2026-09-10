@@ -134,7 +134,9 @@ page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
 Smallest Agreement, and Weekend Gap. Copy versions on that 404 page copies
 the printed catalog version line as Markdown. It does not fetch a package
-file or add another public path. When the catalog is served over http,
+file or add another public path. Copy Trust and limits on that 404 page copies
+the printed Trust and limits heading and list as Markdown. It does not fetch a
+policy file or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
 this catalog page as Markdown. It uses the browser clipboard when that API is
