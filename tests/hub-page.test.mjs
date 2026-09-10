@@ -1086,3 +1086,45 @@ test('copy Trust markdown is the printed heading and list items', async () => {
   assert.doesNotMatch(copied, /live policy feed/);
 });
 
+test('copy Trust shows a visible textarea when clipboard is unavailable', async () => {
+  let clickTrust = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const heading = { textContent: 'Trust and limits' };
+  const items = [{ textContent: 'Local-first. Pages run in your browser.' }];
+  const section = {
+    querySelector(selector) {
+      return selector === 'h2' ? heading : null;
+    },
+    querySelectorAll(selector) {
+      return selector === 'ul li' ? items : [];
+    },
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-trust') return { addEventListener(name, handler) { if (name === 'click') clickTrust = handler; } };
+      if (id === 'copy-trust-status') return status;
+      if (id === 'copy-trust-fallback') return fallback;
+      if (id === 'trust') return section;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickTrust();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '## Trust and limits\n- Local-first. Pages run in your browser.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live policy feed/);
+});
+
