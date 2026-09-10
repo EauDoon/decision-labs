@@ -259,6 +259,71 @@ test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(readme, /Skip links jump to What's new, workbenches, How it works,\s+keyboard shortcuts, and Trust and limits/);
 });
 
+test('a focuses the first workbench article when focus is not in an input', () => {
+  assert.match(html, /event\.key === 'a'/);
+  assert.match(html, /getElementById\('workbench-1'\)\?\.focus\(\)/);
+  assert.match(html, /id="workbench-1" tabindex="-1"/);
+  assert.match(html, /<kbd>a<\/kbd><\/dt><dd>Focus the first workbench article/);
+  assert.match(html, /Press <kbd>a<\/kbd> to focus the first workbench article/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /event\.key === 's'/);
+  assert.match(html, /querySelector\('#workbenches a\.open'\)\?\.focus\(\)/);
+  assert.match(readme, /Press `a` to focus the first workbench article without opening/);
+  assert.match(readme, /distinct from `s`/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const article = { focus() { focused.push('workbench-1'); } };
+  const firstOpen = { focus() { focused.push('open'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'workbench-1') return article;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches a.open' ? firstOpen : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('a', input);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('a', body);
+  assert.deepEqual(focused, ['workbench-1']);
+  assert.deepEqual(assigned, []);
+  fire('s', body);
+  assert.deepEqual(focused, ['workbench-1', 'open']);
+  assert.deepEqual(assigned, []);
+});
+
 test('p prints this catalog page when focus is not in an input', () => {
   assert.match(html, /event\.key === 'p'/);
   assert.match(html, /printBtn\?\.click\(\)/);
