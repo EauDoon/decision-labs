@@ -26,6 +26,7 @@ test("gate schedule covers 73 checkpoints and matches operational status", () =>
     assert.equal(point.issuerOpen, status.issuerOpen);
     assert.equal(point.bankOpen, status.bankOpen);
     assert.equal(point.payoutOpen, status.payoutOpen);
+    assert.equal(point.fxWeekday, status.fxWeekday);
     assert.equal(point.fxWeekday, !status.weekend);
   }
 });

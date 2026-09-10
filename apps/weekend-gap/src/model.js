@@ -33,7 +33,8 @@ export const DEFAULT_SCENARIO = Object.freeze({
   payoutOpenEndHour: 17,
   redemptionDemandAud: 1200000,
   mondayHoliday: false,
-  saturdayHoliday: false
+  saturdayHoliday: false,
+  fridayFxLateClose: false
 });
 
 export const PRESETS = Object.freeze({
@@ -143,6 +144,11 @@ export const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Early Monday bank open (synthetic)",
     bankOpenStartHour: 7
+  }),
+  fridayLateFxClose: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Friday late FX close (synthetic)",
+    fridayFxLateClose: true
   })
 });
 
@@ -168,7 +174,8 @@ const FIELD_RULES = Object.freeze({
   payoutOpenEndHour: { min: 1, max: 24, integer: true },
   redemptionDemandAud: { min: 0, max: 5000000000 },
   mondayHoliday: { type: "boolean" },
-  saturdayHoliday: { type: "boolean" }
+  saturdayHoliday: { type: "boolean" },
+  fridayFxLateClose: { type: "boolean" }
 });
 
 export function finiteNumber(value, fallback) {
@@ -298,18 +305,27 @@ export function isOperational(hourOffset, startHour, endHour, mondayHoliday = fa
   return isBusinessDay(hourOffset, mondayHoliday, saturdayHoliday) && isWithinHours(hourOffset, startHour, endHour);
 }
 
+/** Saturday 00:00 is the hour after Friday when Friday FX close is delayed by one hour. */
+function isFridayLateFxHour(hourOffset, scenario) {
+  if (scenario.fridayFxLateClose !== true) return false;
+  const { dayIndex, localHour } = dayAndHourAt(hourOffset);
+  return dayIndex === 6 && localHour === 0;
+}
+
 export function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
+  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario);
   const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
   const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
   const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
-  const fxMultiplier = weekend ? scenario.weekendFxMultiplier : 1;
+  const fxMultiplier = fxWeekday ? 1 : scenario.weekendFxMultiplier;
   return {
     issuerOpen,
     bankOpen,
     payoutOpen,
     weekend,
+    fxWeekday,
     fxDepthAudPerHour: scenario.fxDepthAudPerHour / fxMultiplier,
     fxSpreadBps: scenario.fxSpreadBps * fxMultiplier
   };
@@ -751,7 +767,8 @@ const WORKSPACE_KEYS = Object.freeze([
   "ganttEveryGateClosed",
   "hideWeekdayGanttHours",
   "hideWeekendGanttHours",
-  "hideOpenGanttHours"
+  "hideOpenGanttHours",
+  "hideClosedGanttHours"
 ]);
 
 function assertWorkspaceKeys(raw) {
@@ -766,7 +783,7 @@ function assertWorkspaceKeys(raw) {
 
 /** Portable editing state; computed results are always regenerated on restore. */
 export function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false, hideWeekendGanttHours = false, hideOpenGanttHours = false } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false, hideWeekendGanttHours = false, hideOpenGanttHours = false, hideClosedGanttHours = false } = options;
   const ganttHourIndex = options.ganttHourIndex === undefined ? selectedHour : options.ganttHourIndex;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
   if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > 72) throw new RangeError("Workspace Gantt hour index is invalid.");
@@ -781,8 +798,9 @@ export function workspaceToJSON(current, baseline, options = {}) {
   if (hideWeekdayGanttHours !== true && hideWeekdayGanttHours !== false) throw new RangeError("Workspace Gantt weekday-hour filter is invalid.");
   if (hideWeekendGanttHours !== true && hideWeekendGanttHours !== false) throw new RangeError("Workspace Gantt weekend-hour filter is invalid.");
   if (hideOpenGanttHours !== true && hideOpenGanttHours !== false) throw new RangeError("Workspace Gantt open-hour filter is invalid.");
+  if (hideClosedGanttHours !== true && hideClosedGanttHours !== false) throw new RangeError("Workspace Gantt closed-hour filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours, hideWeekendGanttHours, hideOpenGanttHours }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours, hideWeekendGanttHours, hideOpenGanttHours, hideClosedGanttHours }, null, 2);
 }
 export function workspaceFromJSON(text) {
   try {
@@ -812,7 +830,8 @@ export function workspaceFromJSON(text) {
       ganttEveryGateClosed: raw.ganttEveryGateClosed === undefined ? false : raw.ganttEveryGateClosed,
       hideWeekdayGanttHours: raw.hideWeekdayGanttHours === undefined ? false : raw.hideWeekdayGanttHours,
       hideWeekendGanttHours: raw.hideWeekendGanttHours === undefined ? false : raw.hideWeekendGanttHours,
-      hideOpenGanttHours: raw.hideOpenGanttHours === undefined ? false : raw.hideOpenGanttHours
+      hideOpenGanttHours: raw.hideOpenGanttHours === undefined ? false : raw.hideOpenGanttHours,
+      hideClosedGanttHours: raw.hideClosedGanttHours === undefined ? false : raw.hideClosedGanttHours
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -1240,7 +1259,7 @@ export function buildGateSchedule(input) {
       issuerOpen: status.issuerOpen,
       bankOpen: status.bankOpen,
       payoutOpen: status.payoutOpen,
-      fxWeekday: !status.weekend
+      fxWeekday: status.fxWeekday
     }));
   }
   return Object.freeze({ scenario: Object.freeze({ ...scenario }), hours: Object.freeze(hours) });
@@ -1299,6 +1318,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const hideWeekdayHours = options.hideWeekdayHours === true;
   const hideWeekendHours = options.hideWeekendHours === true;
   const hideOpenHours = options.hideOpenHours === true;
+  const hideClosedHours = options.hideClosedHours === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -1323,6 +1343,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
       if (hideWeekdayHours && !ganttHourIsWeekend(schedule.hours[hour])) continue;
       if (hideWeekendHours && ganttHourIsWeekend(schedule.hours[hour])) continue;
       if (hideOpenHours && ganttHourOpenOnEveryGate(schedule.hours[hour])) continue;
+      if (hideClosedHours && ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[2](hour);
