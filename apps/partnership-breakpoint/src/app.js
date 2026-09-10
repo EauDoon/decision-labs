@@ -74,6 +74,7 @@ let tornadoCopyText = '';
 let operatingCopyText = '';
 let splitCopyText = '';
 let allocationCopyText = '';
+let titleCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -109,6 +110,7 @@ function checkpoint() {
   operatingCopyText = '';
   splitCopyText = '';
   allocationCopyText = '';
+  titleCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -139,6 +141,7 @@ function travelHistory(direction) {
   operatingCopyText = '';
   splitCopyText = '';
   allocationCopyText = '';
+  titleCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -579,7 +582,7 @@ function inputPanel(result) {
             ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, max: 100, step: '0.1', title: 'Baseline volume reduction, 0 through 100. There is no separate churn field.' })}
             ${field({ label: 'Deal notes', path: 'deal.notes', value: state.deal.notes ?? '', optional: true, wide: true, type: 'textarea', maxLength: 500, title: 'Optional notes, 1 through 500 characters after trimming. Leave blank to omit. Shown in reports and print.' })}
           </div>
-          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button></div>
+          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button><button type="button" data-action="copy-deal-title">Copy deal title and currency</button></div>
         </section>
         <section class="input-section" aria-labelledby="stress-inputs-title">
           <h2 id="stress-inputs-title">Compound stress settings</h2>
@@ -650,7 +653,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -706,6 +709,7 @@ function resultsPanel(result) {
     ${splitCopySection()}
     ${allocationCopySection()}
     ${breakpointSnapshotCopySection()}
+    ${titleCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -1189,6 +1193,7 @@ function attachEvents() {
     if (action === 'close-operating-copy') { operatingCopyText = ''; render(); return; }
     if (action === 'close-split-copy') { splitCopyText = ''; render(); return; }
     if (action === 'close-allocation-copy') { allocationCopyText = ''; render(); return; }
+    if (action === 'close-title-copy') { titleCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1395,6 +1400,7 @@ function attachEvents() {
     if (action === 'copy-operating-region') copyOperatingRegion();
     if (action === 'copy-tested-split') copyTestedSplit();
     if (action === 'copy-allocation-balance') copyAllocationBalance();
+    if (action === 'copy-deal-title') copyDealTitleCurrency();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -2752,6 +2758,57 @@ function copyAllocationBalance() {
     }
   }
   showAllocationCopyFallback(text, fallbackNote);
+}
+
+function dealTitleCurrencyMarkdown() {
+  const title = typeof state.deal.title === 'string' && state.deal.title.trim()
+    ? reportText(state.deal.title.trim())
+    : '';
+  const currency = currencyPrefix();
+  if (!title && !currency) return 'Deal title and currency: none entered.';
+  return 'Deal title: ' + (title || 'none') + '. Currency: ' + (currency || 'none') + '.';
+}
+
+function showTitleCopyFallback(text, message) {
+  titleCopyText = text;
+  render();
+  document.querySelector('#title-copy-text')?.focus();
+  setNotice(message);
+}
+
+function titleCopySection() {
+  if (!titleCopyText) return '';
+  return `<section class="panel" aria-labelledby="title-copy-title"><div class="panel-heading"><h2 id="title-copy-title">Deal title and currency Markdown</h2><button type="button" data-action="close-title-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is user-entered display text, not a forecast.</p><label class="brief-copy-label" for="title-copy-text">Deal title and currency Markdown</label><textarea id="title-copy-text" readonly rows="4">${escapeAttribute(titleCopyText)}</textarea></div></section>`;
+}
+
+function copyDealTitleCurrency() {
+  const text = dealTitleCurrencyMarkdown();
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Deal title and currency copied as Markdown. Display text, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          titleCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showTitleCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      titleCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showTitleCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showTitleCopyFallback(text, fallbackNote);
 }
 
 function exportTornadoSvg() {

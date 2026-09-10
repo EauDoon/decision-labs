@@ -61,6 +61,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'least-headroom-participant', 'participant-inputs-title',
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
         'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
+        'title-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -2055,6 +2056,58 @@ test('negotiation brief copies Markdown or keeps a visible textarea fallback', a
   const denied = await workbench('file:', { clipboard: 'fail' });
   denied.click('copy-brief');
   assert.match(denied.markup(), /id="brief-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('copy deal title and currency is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-deal-title"/);
+  fallback.click('copy-deal-title');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="title-copy-text"/);
+  assert.match(fallback.markup(), /Deal title and currency: none entered\./);
+  assert.match(fallback.markup(), /not a forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-title-copy');
+  assert.doesNotMatch(fallback.markup(), /id="title-copy-text"/);
+
+  fallback.edit('deal.title', '  Harbor JV  ', { type: 'text' });
+  fallback.click('copy-deal-title');
+  assert.match(fallback.markup(), /Deal title: Harbor JV\. Currency: none\./);
+  assert.doesNotMatch(fallback.markup(), /Deal title and currency: none entered\./);
+  fallback.click('close-title-copy');
+  fallback.edit('deal.currency', 'USD', { type: 'text' });
+  fallback.click('copy-deal-title');
+  assert.match(fallback.markup(), /Deal title: Harbor JV\. Currency: USD\./);
+  fallback.click('close-title-copy');
+  fallback.edit('deal.title', '', { type: 'text', optional: 'true' });
+  fallback.click('copy-deal-title');
+  assert.match(fallback.markup(), /Deal title: none\. Currency: USD\./);
+  fallback.click('close-title-copy');
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-deal-title');
+  assert.match(fallback.markup(), /id="title-copy-text"/);
+  assert.match(fallback.markup(), /Deal title: none\. Currency: USD\./);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-deal-title');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'Deal title and currency: none entered.');
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="title-copy-text"/);
+  withClipboard.edit('deal.title', 'Harbor JV', { type: 'text' });
+  withClipboard.edit('deal.currency', 'USD', { type: 'text' });
+  withClipboard.click('copy-deal-title');
+  assert.equal(withClipboard.copied()[1], 'Deal title: Harbor JV. Currency: USD.');
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.edit('deal.title', 'North Hall', { type: 'text' });
+  denied.click('copy-deal-title');
+  assert.match(denied.markup(), /id="title-copy-text"/);
+  assert.match(denied.markup(), /Deal title: North Hall\. Currency: none\./);
   assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
