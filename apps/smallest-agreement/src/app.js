@@ -590,6 +590,39 @@ const presets = {
       },
     ],
   },
+  "sports-day-hours": {
+    title: "Sports day hours: race start, PA volume, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "race", title: "Race start", options: [
+          { id: "race-original", original: true, label: "Start the first race at 09:00 with no posted marshalling", changeCost: 0, support: { students: 34, neighbours: 88, pandc: 76 } },
+          { id: "race-late", original: false, label: "Start the first race at 10:00 with a posted marshall rota", changeCost: 2, support: { students: 88, neighbours: 62, pandc: 72 } },
+          { id: "race-warmup", original: false, label: "Hold the first race at 11:00 after a quiet warmup", changeCost: 3, support: { students: 82, neighbours: 68, pandc: 70 } },
+        ],
+      },
+      {
+        id: "sports-pa", title: "PA volume", options: [
+          { id: "sports-pa-original", original: true, label: "No posted field PA volume cap", changeCost: 0, support: { students: 86, neighbours: 22, pandc: 44 } },
+          { id: "sports-pa-cap", original: false, label: "Cap the field PA and face speakers toward the oval", changeCost: 2, support: { students: 70, neighbours: 84, pandc: 80 } },
+          { id: "sports-pa-cut", original: false, label: "Cut the field PA after the last race and use a handheld megaphone", changeCost: 4, support: { students: 52, neighbours: 90, pandc: 68 } },
+        ],
+      },
+      {
+        id: "sports-lockup", title: "Field lock-up", options: [
+          { id: "sports-lockup-original", original: true, label: "Leave the field gate on a shared padlock after sports day", changeCost: 0, support: { students: 38, neighbours: 54, pandc: 58 } },
+          { id: "sports-lockup-steward", original: false, label: "Require a P&C steward to lock the field gate before 16:00", changeCost: 2, support: { students: 84, neighbours: 76, pandc: 86 } },
+          { id: "sports-lockup-timer", original: false, label: "Add a timed lock on the field gate after the last race", changeCost: 3, support: { students: 74, neighbours: 72, pandc: 78 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;

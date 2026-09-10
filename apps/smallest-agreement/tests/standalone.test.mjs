@@ -1123,6 +1123,9 @@ test("rooftop BBQ hours preset loads a distinct synthetic rooftop workshop", asy
   assert.doesNotMatch(app.clauses(), /Bass/u);
   assert.doesNotMatch(app.groups(), /Students/u);
   assert.doesNotMatch(app.groups(), /P&C/u);
+  assert.doesNotMatch(app.title(), /Sports day hours/u);
+  assert.doesNotMatch(app.clauses(), /Race start/u);
+  assert.doesNotMatch(app.clauses(), /Field lock-up/u);
 });
 
 test("school disco hours preset loads a distinct synthetic disco workshop", async () => {
@@ -1169,6 +1172,9 @@ test("school disco hours preset loads a distinct synthetic disco workshop", asyn
   assert.doesNotMatch(app.groups(), /Building managers/u);
   assert.doesNotMatch(app.groups(), /Hirers/u);
   assert.doesNotMatch(app.groups(), /Hall committee/u);
+  assert.doesNotMatch(app.title(), /Sports day hours/u);
+  assert.doesNotMatch(app.clauses(), /Race start/u);
+  assert.doesNotMatch(app.clauses(), /Field lock-up/u);
 });
 
 test("sports day hours preset loads a distinct synthetic sports-day workshop", async () => {
