@@ -1649,6 +1649,16 @@ function copyWeekendFxHourCountsMarkdown() {
   const text = weekendFxHourCountsToMarkdown(scenario);
   return copyTextWithFallback(text, "#weekend-fx-counts-copy-fallback", "Weekend FX hour counts copied as Markdown. These are counts of modeled hours, not a bank calendar.");
 }
+function jumpToFirstClosedFxCopy() {
+  const control = document.querySelector("#copy-first-closed-fx");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  if (jumpToGanttFxRow()) return true;
+  return jumpToDashboard();
+}
 function copyFirstClosedFxHourMarkdown() {
   const text = firstClosedFxHourToMarkdown(scenario);
   return copyTextWithFallback(text, "#first-closed-fx-copy-fallback", "First closed FX hour copied as one-line Markdown. These are counts of modeled hours, not a bank calendar.");
@@ -1856,6 +1866,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "l" || event.key === "L" || event.key === ",") {
     event.preventDefault();
     copyHoursToFirstSettlementMarkdown();
+    return;
+  }
+  if (event.key === ".") {
+    event.preventDefault();
+    jumpToFirstClosedFxCopy();
     return;
   }
   if (event.key === "n" || event.key === "N") {
