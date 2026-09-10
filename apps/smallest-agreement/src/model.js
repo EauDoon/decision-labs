@@ -2149,6 +2149,25 @@ export function formatFirstVetoGroupLabelMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown count of groups marked as a veto group.
+ * Honest when the count is zero. Distinct from threshold-group count copy and first veto group copy.
+ * A veto is a number you entered, not a legal right.
+ */
+export function formatVetoGroupCountMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const disclaimer = "A veto is a number you entered, not a legal right.";
+  const count = p.groups.filter((group) => group.veto === true).length;
+  return {
+    status: "ok",
+    empty: count === 0,
+    count,
+    text: `Veto groups: ${count}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
