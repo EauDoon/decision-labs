@@ -20,6 +20,25 @@ test("print leftover one-pager keeps leftover table and winner merchant label on
   assert.doesNotMatch(leftoverPrint, /leftoverBuyerIds/u);
 });
 
+test("print leftover one-pager includes merchant-safe variant overlap counts", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="leftover-print-overlap"/u);
+  assert.match(html, /id="leftover-print-overlap-rows"/u);
+  assert.match(html, /Merchant-safe variant overlap counts/u);
+  assert.match(css, /body\.print-leftover #leftover-print-overlap/u);
+  const leftover = html.slice(html.indexOf('id="leftover-print-overlap"'), html.indexOf('id="leftover-coverage"'));
+  assert.match(leftover, /print-leftover-keep/u);
+  assert.match(leftover, /Labels, IDs, budgets, and allocations are omitted/u);
+  assert.equal(leftover.includes("maxUnitPrice"), false);
+  assert.equal(leftover.includes("selectedBuyerIds"), false);
+  assert.match(app, /function renderLeftoverPrintOverlap\(/u);
+  assert.match(app, /variantOverlapMatrix\(/u);
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.equal(merchantPanel.includes("leftover-print-overlap"), false);
+});
+
 test("print one-pager hides coach, help, and private buyer rows", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

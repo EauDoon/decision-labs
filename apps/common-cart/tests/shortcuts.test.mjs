@@ -150,3 +150,84 @@ test("keyboard handler clicks add offer when not typing", async () => {
   assert.match(app, /#merchant-tab/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
+
+test("shortcut help documents leftover residual coverage copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>c<\/kbd> Copy leftover residual coverage \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-coverage"/u);
+});
+
+test("keyboard handler copies leftover residual coverage when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "c"\)/u);
+  assert.match(app, /function copyLeftoverCoverage\(/u);
+  assert.match(app, /createLeftoverCoverageMarkdown\(scenario\)/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+});
+
+test("shortcut help documents the tertiary leftover fill jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>t<\/kbd> Focus tertiary leftover fill/u);
+  assert.match(html, /id="tertiary-fill"|id="leftover-coverage-rows"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to tertiary leftover fill when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "t"\)/u);
+  assert.match(app, /function focusTertiaryLeftoverFill\(/u);
+  assert.match(app, /#tertiary-fill/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("shortcut help documents the offer fulfillment filter jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>f<\/kbd> Focus the offer fulfillment filter/u);
+  assert.match(html, /id="offer-fulfillment-filter"/u);
+});
+
+test("keyboard handler focuses the offer fulfillment filter when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "f"\)/u);
+  assert.match(app, /function focusOfferFulfillmentFilter\(/u);
+  assert.match(app, /#offer-fulfillment-filter/u);
+  assert.match(app, /#merchant-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "g"\)/u);
+});
+
+test("shortcut help documents leftover item headroom jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>h<\/kbd> Focus leftover item headroom after the winner/u);
+  assert.match(html, /id="leftover-headroom"[^>]*tabindex="-1"/u);
+});
+
+test("keyboard handler jumps to leftover item headroom when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "h"\)/u);
+  assert.match(app, /function focusLeftoverHeadroom\(/u);
+  assert.match(app, /#leftover-headroom/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("shortcut help documents the organizer review panel jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>k<\/kbd> Focus the organizer review panel/u);
+  assert.match(html, /id="cart-review"/u);
+  assert.match(html, /<summary>Review buyer coverage and offer resilience<\/summary>/u);
+});
+
+test("keyboard handler opens and focuses the review panel when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "k"\)/u);
+  assert.match(app, /function focusCartReview\(/u);
+  assert.match(app, /#cart-review/u);
+  assert.match(app, /panel\.open = true/u);
+  assert.match(app, /querySelector\("summary"\)\?\.focus\(\)/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});

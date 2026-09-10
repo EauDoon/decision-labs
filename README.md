@@ -27,21 +27,27 @@ Every workbench:
 
 | Workbench | Version | Job to be done | Built-in synthetic example |
 | --- | --- | --- | --- |
-| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.3 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
-| [Common Cart](apps/common-cart/) | 1.4.2 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
+| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.4 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
+| [Common Cart](apps/common-cart/) | 1.4.3 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.3 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | 1.5.3 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
+| [Weekend Gap](apps/weekend-gap/) | 1.5.4 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
 What's new section. Skip links jump to What's new, workbenches, How it works,
-keyboard shortcuts, and Trust and limits. Catalog keys `w`, `k`, `n`, and `c`
+keyboard shortcuts, Trust and limits, and catalog versions. Catalog keys `w`, `k`, `n`, and `c`
 focus the workbenches, How it works, What's new, or copy the catalog address on
 http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
-workbench link without opening it. Keys `v` and `j` copy the printed version list and one-sentence jobs.
+workbench link without opening it. Key `a` focuses the first workbench article
+without opening it. Key `f` focuses the footer version line. That key does not
+open a workbench. Key `p` prints this catalog page. It is not a live product
+sheet. Keys `v` and `j` copy the printed version list and one-sentence jobs.
 Key `i` copies Trust and limits from this page as Markdown. That list is not a
-live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
-browser. Key `x` clears that last-launched marker in this browser. That recency
+live policy feed. Key `u` copies How it works from this page as Markdown. That
+list is not a live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
+browser. Key `x` clears that last-launched marker in this browser. Key `y`
+copies the last-launched workbench name and one-sentence job from this-browser
+storage, or an empty line if none is stored. That recency
 is this-browser storage, not a cloud recency. Key `o` assigns a location like keys 1 to 4. It does not claim a
 copy succeeded on a file URL. Copy versions copies the four names and versions printed on this page as
 Markdown. That list is not a live product version and it does not call a
@@ -69,17 +75,21 @@ The Smallest Agreement 1.5.3 also names the Shared bike shed start,
 recommended-package Markdown copy, and leftover-budget clause filter.
 Common Cart 1.4.1 also names organizer buyer
 CSV, leftover jump, and the community garden start. Common Cart 1.4.2 also names
-organizer leftover copy, school fete catering, and overlap Markdown. Partnership Breakpoint 1.5.1
+organizer leftover copy, school fete catering, and overlap Markdown. Common Cart 1.4.3 also names
+uncovered leftover counts, the Office fruit box start, and leftover review jumps. Partnership Breakpoint 1.5.1
 also names waterfall SVG download, compare and print keys, and the Licensor
 and distributor start. Partnership Breakpoint 1.5.2 also names waterfall
 Markdown copy, the Talent, agent, and platform start, and the all-hold ledger
 filter. Partnership Breakpoint 1.5.3 also names tornado Markdown copy, the
 Three-party joint venture start, and the all-hold ledger persist / unbounded
-tornado filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
+tornado filter. Partnership Breakpoint 1.5.4 also names allocation-balance
+Markdown copy, the Podcast host and network start, and the zero-share roster
+filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
 Payday Friday burst, and one-row dashboard CSV. Weekend Gap 1.5.2 also names
 peak-queue hour copy, Public-holiday Monday, and the single-gate Gantt filter.
 Weekend Gap 1.5.3 also names hours-to-clear Markdown copy, Saturday market
-burst, and selected Gantt hour persist.
+burst, and selected Gantt hour persist. Weekend Gap 1.5.4 also names remaining
+reserve copy, Sunday stall close, and the weekend-hours Gantt filter.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
@@ -123,7 +133,11 @@ an input. Press `h` to focus the catalog heading. Press `m` to focus the
 main catalog content. Press `n` to focus What's
 new. Press `w` to focus the workbenches. Press `k` to focus How it works.
 Press `t` to focus Trust and limits. Press `s` to focus the first Open
-workbench link. Press `c` to copy the catalog address
+workbench link. Press `a` to focus the first workbench article without opening
+it. That key is distinct from `s`, which focuses the first Open workbench link.
+Press `f` to focus the footer version line. That key does
+not open a workbench. Press `p` to print this catalog. That key prints this
+page in the browser. It is not a live product sheet. Press `c` to copy the catalog address
 when this page is served over http. On a file URL that key does not claim a
 copy succeeded. Press `v` to copy catalog versions from this page. That key
 uses the same Copy versions control, including the visible text box when the
@@ -143,6 +157,8 @@ Smallest Agreement, and Weekend Gap. Copy versions on that 404 page copies
 the printed catalog version line as Markdown. It does not fetch a package
 file or add another public path. Copy Trust and limits on that 404 page copies
 the printed Trust and limits heading and list as Markdown. It does not fetch a
+policy file or add another public path. Copy How it works on that 404 page copies
+the printed How it works heading and list as Markdown. It does not fetch a
 policy file or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
@@ -157,6 +173,14 @@ already printed on this catalog page as Markdown. It uses the browser
 clipboard when that API is available, and shows a visible text box if it is
 not. That list is not a live policy feed.
 Press `i` to copy Trust and limits through that same control.
+Press `u` to copy How it works through that same control.
+Press `y` to copy the last-launched workbench name and one-sentence job from
+this-browser storage. If none is stored, that key copies an empty line. This is
+not a cloud recency.
+Copy How it works copies the How it works heading and list items already
+printed on this catalog page as Markdown. It uses the browser clipboard when
+that API is available, and shows a visible text box if it is not. That list
+is not a live policy feed.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.

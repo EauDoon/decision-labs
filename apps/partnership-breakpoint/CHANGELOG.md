@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.4
+
+- Keeps the 1.5.0 constraint review and 1.5.1/1.5.2/1.5.3 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, waterfall SVG, copy waterfall, persisted hide holders, Talent/agent/platform, ledger all-hold filter, Three-party joint venture, and keys `f` `w` `l` `b` `c` `p` `t` `d` `k`.
+- Press `h` to jump to the least-headroom participant card, or the Participants heading if none, when no field is focused. Shortcuts stay ignored while a field is focused.
+- Press `a` to jump to Add participant when no field is focused.
+- Press `m` to jump to deal notes when no field is focused.
+- Press `v` to jump to the viability card when no field is focused.
+- Copy allocation balance names missing or excess revenue share, or an honest empty line when shares are missing. Clipboard falls back to a textarea. It is not a negotiated allocation.
+- Added the Podcast host and network starting point, a two-party host plus network with different cost bases, distinct from Balanced, Thin Margin, Growth at a Cost, Creator take-rate, Three-party JV, Two-party 50/50 studio, Four-party marketplace, Licensor and distributor, Talent, agent, and platform, and Three-party joint venture. It is a synthetic starting point, not a live roster.
+- Hide participants with zero revenue share now travels on saved case JSON as optional `hideZeroShareParticipants`. Older files omit it and default to showing those roster rows. Unknown sibling fields are still rejected. Display only; the solver is unchanged. `hideHoldingParticipants` and `hideAllHoldLedger` stay available.
+- Print one-pager includes an allocation-balance line when the case is valid. The saved case is unchanged.
+- Copy first-breakpoint snapshot copies a one-line Markdown ranking with a synthetic-not-forecast notice. Clipboard falls back to a textarea. It is distinct from tornado, waterfall, operating-region, and allocation-balance copy.
+
 ## 1.5.3
 
 - Keeps the 1.5.0 constraint review and 1.5.1/1.5.2 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, waterfall SVG, copy waterfall, persisted hide holders, Talent/agent/platform, ledger all-hold filter, and keys `f` `w` `l` `b` `c` `p`.

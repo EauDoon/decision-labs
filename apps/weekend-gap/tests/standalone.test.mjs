@@ -19,11 +19,35 @@ test("standalone build is self-contained, LF-only, and deterministic", async () 
   assert.doesNotMatch(first, /\r/);
 });
 
-test("release 1.5.3 ships hours-to-clear copy, Saturday market and hour persist", async () => {
+test("release 1.5.4 ships Sunday stall close, reserve copy and weekend Gantt filter", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
+  const html = await buildStandalone();
+  assert.equal(pkg.version, "1.5.4");
+  assert.match(readme, /New in v1\.5\.4/);
+  assert.match(changelog, /1\.5\.4/);
+  assert.match(html, /event\.key === "k"/);
+  assert.match(html, /id="hours-to-clear-line"/);
+  assert.match(html, /event\.key === "n"/);
+  assert.match(html, /id="gantt-first-payout-marker"/);
+  assert.match(html, /event\.key === "a"/);
+  assert.match(html, /id="analysis-export-controls"/);
+  assert.match(html, /event\.key === "w"/);
+  assert.match(html, /id="gantt-fx-row"/);
+  assert.match(html, /id="copy-remaining-reserve"/);
+  assert.match(html, /data-preset="sundayStallClose"/);
+  assert.match(html, /hideWeekdayGanttHours/);
+  assert.match(html, /id="gantt-hide-weekdays"/);
+  assert.match(html, /id="selected-gantt-hour-line"/);
+  assert.match(html, /id="copy-weekend-fx-counts"/);
+});
+
+test("release 1.5.4 retains 1.5.3 hours-to-clear copy, Saturday market and hour persist", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.3");
+  assert.equal(pkg.version, "1.5.4");
   assert.match(readme, /New in v1\.5\.3/);
   assert.match(readme, /Saturday market burst/);
   assert.match(html, /id="copy-hours-to-clear"/);
@@ -39,11 +63,11 @@ test("release 1.5.3 ships hours-to-clear copy, Saturday market and hour persist"
   assert.match(html, /ganttEveryGateClosed/);
 });
 
-test("release 1.5.3 retains 1.5.2 peak-hour copy, holiday Monday and gate filter", async () => {
+test("release 1.5.4 retains 1.5.2 peak-hour copy, holiday Monday and gate filter", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.3");
+  assert.equal(pkg.version, "1.5.4");
   assert.match(readme, /New in v1\.5\.2/);
   assert.match(readme, /Public-holiday Monday/);
   assert.match(html, /id="copy-peak-hour"/);
@@ -58,11 +82,11 @@ test("release 1.5.3 retains 1.5.2 peak-hour copy, holiday Monday and gate filter
   assert.match(html, /queueBacklogOnly/);
 });
 
-test("release 1.5.3 retains 1.5.1 Gantt hour copy, payday burst, dashboard CSV and timing review", async () => {
+test("release 1.5.4 retains 1.5.1 Gantt hour copy, payday burst, dashboard CSV and timing review", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.3");
+  assert.equal(pkg.version, "1.5.4");
   assert.match(readme, /New in v1\.5\.1/);
   assert.match(readme, /New in v1\.5\.0/);
   assert.match(readme, /Payday Friday burst/);

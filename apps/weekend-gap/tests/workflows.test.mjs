@@ -32,7 +32,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -478,6 +478,49 @@ test("keyboard t jumps to the timing review and ignores the key while typing", a
   assert.equal(ui.nodes.get("weekend-review-title").focused, false);
 });
 
+test("keyboard a jumps to analysis and export controls and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("a");
+  assert.equal(ui.nodes.get("analysis-export-controls").focused, true);
+  assert.equal(ui.nodes.get("analysis-export-controls").attributes.tabindex, "-1");
+  ui.nodes.get("analysis-export-controls").focused = false;
+  await ui.keydown("A", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("analysis-export-controls").focused, false);
+  await ui.keydown("a", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("analysis-export-controls").focused, false);
+  await ui.keydown("a", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("analysis-export-controls").focused, false);
+});
+
+test("keyboard n jumps to the first-payout marker and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("n");
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").focused, true);
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").attributes.tabindex, "-1");
+  assert.equal(ui.nodes.get("selected-chart").value, "gantt");
+  ui.nodes.get("gantt-first-payout-marker").focused = false;
+  await ui.keydown("N", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").focused, false);
+  await ui.keydown("n", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").focused, false);
+  await ui.keydown("n", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").focused, false);
+});
+
+test("keyboard k jumps to the hours-to-clear line and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("k");
+  assert.equal(ui.nodes.get("hours-to-clear-line").focused, true);
+  assert.equal(ui.nodes.get("hours-to-clear-line").attributes.tabindex, "-1");
+  ui.nodes.get("hours-to-clear-line").focused = false;
+  await ui.keydown("K", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("hours-to-clear-line").focused, false);
+  await ui.keydown("k", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("hours-to-clear-line").focused, false);
+  await ui.keydown("k", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("hours-to-clear-line").focused, false);
+});
+
 test("keyboard h jumps to the selected Gantt hour table and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("h");
@@ -491,6 +534,26 @@ test("keyboard h jumps to the selected Gantt hour table and ignores the key whil
   assert.equal(ui.nodes.get("gantt-hour-row").focused, false);
   await ui.keydown("h", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("gantt-hour-row").focused, false);
+});
+
+test("keyboard w jumps to the FX Gantt row and to the Gantt heading when filtered away", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("w");
+  assert.equal(ui.nodes.get("gantt-fx-row").focused, true);
+  assert.equal(ui.nodes.get("gantt-fx-row").attributes.tabindex, "-1");
+  ui.nodes.get("gantt-fx-row").focused = false;
+  await ui.edit("gantt-gate-filter", "bank", "change");
+  await ui.keydown("w");
+  assert.equal(ui.nodes.get("gantt-title").focused, true);
+  ui.nodes.get("gantt-title").focused = false;
+  ui.nodes.get("gantt-fx-row").focused = false;
+  await ui.keydown("W", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-fx-row").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("w", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-fx-row").focused, false);
+  await ui.keydown("w", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-fx-row").focused, false);
 });
 
 test("keyboard b jumps to the Bank Gantt row and to the Gantt heading when filtered away", async () => {
