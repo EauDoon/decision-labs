@@ -1941,7 +1941,7 @@ function renderLeftoverCoverageTable(rawScenario) {
   if (leftoverFillPrint) {
     const coverage = computeResidualCoverage(rawScenario);
     leftoverFillPrint.textContent = coverage.secondary
-      ? `Leftover fill merchant: ${coverage.secondary.merchant}`
+      ? `Leftover fill merchant: ${coverage.secondary.merchant}, ${coverage.secondary.fulfilledUnits} units`
       : "Leftover fill merchant: None";
   }
   const uncoveredPrint = document.querySelector("#leftover-print-uncovered");
