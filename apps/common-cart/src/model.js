@@ -302,7 +302,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideFullyFilledBuyers", "hideBuyersWithLeftover"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -359,6 +359,14 @@ export function validateWorkspace(candidate) {
     }
     hideZeroRemaining = hideZeroRemainingCapacityOffers;
   }
+  const hideOffersWithRemainingCapacity = own(candidate, "hideOffersWithRemainingCapacity");
+  let hideRemainingCapacity = false;
+  if (hideOffersWithRemainingCapacity !== undefined) {
+    if (hideOffersWithRemainingCapacity !== true && hideOffersWithRemainingCapacity !== false) {
+      throw new ScenarioError("Hide offers with remaining capacity must be true or false.");
+    }
+    hideRemainingCapacity = hideOffersWithRemainingCapacity;
+  }
   const hideFullyFilledBuyers = own(candidate, "hideFullyFilledBuyers");
   let hideFullyFilled = false;
   if (hideFullyFilledBuyers !== undefined) {
@@ -375,7 +383,7 @@ export function validateWorkspace(candidate) {
     }
     hideLeftoverBuyers = hideBuyersWithLeftover;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers };
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
