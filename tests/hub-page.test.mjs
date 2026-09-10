@@ -1269,6 +1269,21 @@ test('copy versions copies catalog names as Markdown with a visible fallback', (
   assert.doesNotMatch(html, /hosted API/i);
 });
 
+test('shortcuts panel lists b e g q r z with honest limits', () => {
+  assert.match(html, /<kbd>b<\/kbd><\/dt><dd>Focus the last workbench card. This key moves focus; it does not open the workbench./);
+  assert.match(html, /<kbd>e<\/kbd><\/dt><dd>Copy the catalog heading and lede as Markdown from this catalog page, not a live product feed/);
+  assert.match(html, /<kbd>g<\/kbd><\/dt><dd>Focus the first What's new heading. This key does not open a workbench./);
+  assert.match(html, /<kbd>q<\/kbd><\/dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed. This key uses the same Copy jobs control as <kbd>j<\/kbd>. It does not fork that Markdown./);
+  assert.match(html, /<kbd>r<\/kbd><\/dt><dd>Focus the first review path on the first workbench card. This key moves focus; it does not open the workbench./);
+  assert.match(html, /<kbd>z<\/kbd><\/dt><dd>Copy the six skip-link targets as a Markdown list of skip-link text and hash hrefs from the skip links on this page. This is in-page navigation copy, not a sitemap API./);
+  assert.match(html, /Shortcuts are ignored while focus is in an input, textarea, or select/);
+  assert.match(html, /not a live product feed/);
+  assert.match(html, /not a sitemap API/);
+  assert.match(html, /id="copy-lede"/);
+  assert.match(html, /id="copy-skips"/);
+  assert.match(html, /id="copy-jobs"/);
+});
+
 test('shortcuts panel lists v l o j with honest limits', () => {
   assert.match(html, /<kbd>v<\/kbd><\/dt><dd>Copy workbench names and versions as Markdown from this catalog page, not a live product version/);
   assert.match(html, /<kbd>j<\/kbd><\/dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed/);
