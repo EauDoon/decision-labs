@@ -38,6 +38,7 @@ import {
   formatPinnedPackagesMarkdown,
   formatCurrentLocksMarkdown,
   formatCurrentLockCountMarkdown,
+  formatFirstLockedClauseOptionLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -588,6 +589,11 @@ function renderCopyFallbacks(result) {
     const counted = formatCurrentLockCountMarkdown(state.proposal);
     lockCountBox.value = counted.status === "ok" ? counted.text : "";
   }
+  const firstLockedBox = $("#first-locked-option-fallback");
+  if (firstLockedBox) {
+    const listed = formatFirstLockedClauseOptionLabelMarkdown(state.proposal);
+    firstLockedBox.value = listed.status === "ok" ? listed.text : "";
+  }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
@@ -1076,6 +1082,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
   $("#copy-lock-count-button").disabled = result.status === "invalid";
+  $("#copy-first-locked-option-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -2438,6 +2445,22 @@ async function copyLockCount() {
   }
 }
 $("#copy-lock-count-button").addEventListener("click", copyLockCount);
+async function copyFirstLockedOption() {
+  const listed = formatFirstLockedClauseOptionLabelMarkdown(state.proposal);
+  if (listed.status !== "ok") return notifyDraft("Fix the draft before copying the first locked option label.");
+  const fallback = $("#first-locked-option-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft(listed.empty
+      ? "No clause is locked. Copied an honest empty first-locked-option line. Locks are draft choices, not a legal hold."
+      : "First locked option label copied as Markdown. Locks are draft choices, not a legal hold.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the first locked option label from the Markdown box. Locks are draft choices, not a legal hold.");
+  }
+}
+$("#copy-first-locked-option-button").addEventListener("click", copyFirstLockedOption);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");

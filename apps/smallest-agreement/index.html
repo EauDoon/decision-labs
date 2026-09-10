@@ -84,6 +84,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-lock-count-button">Copy lock count</button>
+        <button class="button button-secondary" type="button" id="copy-first-locked-option-button">Copy first locked option</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -249,6 +250,9 @@ SOFTWARE.
             <label class="lock-count-fallback-label" for="lock-count-fallback">Current lock count Markdown</label>
             <textarea id="lock-count-fallback" readonly rows="3" spellcheck="false" aria-describedby="lock-count-fallback-note"></textarea>
             <p id="lock-count-fallback-note" class="field-note">One line of the current clause lock count. Locks are draft choices, not a legal hold. If the clipboard is blocked, copy from this box.</p>
+            <label class="first-locked-option-fallback-label" for="first-locked-option-fallback">First locked option Markdown</label>
+            <textarea id="first-locked-option-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-locked-option-fallback-note"></textarea>
+            <p id="first-locked-option-fallback-note" class="field-note">One line of the first locked clause option label, or an honest empty line when none. Distinct from lock-count copy and current-locks copy. Locks are draft choices, not a legal hold. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
