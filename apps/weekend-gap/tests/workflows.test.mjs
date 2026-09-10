@@ -51,7 +51,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     getItem(key) { if (blockedStorage) throw new Error("blocked"); return storage.get(key) ?? null; },
     setItem(key, value) { if (blockedStorage) throw new Error("blocked"); storage.set(key, value); }
   };
-  const window = { location, devicePixelRatio: 1, addEventListener() {}, setInterval() { return 1; }, clearInterval() {}, setTimeout() {}, matchMedia() { return { matches: reduced, addEventListener() {} }; } };
+  const window = { location, devicePixelRatio: 1, addEventListener() {}, setInterval() { return 1; }, clearInterval() {}, setTimeout() {}, print() {}, matchMedia() { return { matches: reduced, addEventListener() {} }; } };
   Object.assign(globalThis, { document, window, localStorage, history: { replaceState(a, b, url) { location.hash = url.startsWith("#") ? url : ""; } } });
   const executable = source.replace('"./model.js"', JSON.stringify(new URL("../src/model.js", import.meta.url).href));
   await import("data:text/javascript;base64," + Buffer.from(executable + "\n// boot " + ++runId).toString("base64"));
@@ -697,6 +697,21 @@ test("keyboard left bracket jumps to the hours-to-clear copy control and ignores
   assert.equal(ui.nodes.get("copy-hours-to-clear").focused, false);
   await ui.keydown("[", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("copy-hours-to-clear").focused, false);
+});
+
+test("keyboard right bracket jumps to Print and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("]");
+  assert.equal(ui.nodes.get("print").focused, true);
+  ui.nodes.get("print").focused = false;
+  ui.nodes.get("print-heading").focused = false;
+  await ui.keydown("]", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("print").focused, false);
+  assert.equal(ui.nodes.get("print-heading").focused, false);
+  await ui.keydown("]", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("print").focused, false);
+  await ui.keydown("]", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("print").focused, false);
 });
 
 test("keyboard period jumps to the first-closed-FX copy control and ignores the key while typing", async () => {

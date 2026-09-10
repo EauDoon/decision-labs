@@ -1547,6 +1547,22 @@ function jumpToHoursToClearCopy() {
   }
   return jumpToDashboard();
 }
+function jumpToPrint() {
+  const control = document.querySelector("#print");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  const heading = document.querySelector("#print-heading");
+  if (heading) {
+    heading.setAttribute("tabindex", "-1");
+    heading.focus();
+    heading.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return false;
+}
 function jumpToHoursToClear() {
   const line = document.querySelector("#hours-to-clear-line");
   if (!line) return false;
@@ -1714,6 +1730,10 @@ document.querySelector("#export-report").addEventListener("click",()=>{
     downloadText(reportToHTML(saved.current,saved.baseline,saved),"weekend-gap-report.html","text/html;charset=utf-8");
     document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
   } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
+});
+document.querySelector("#print").addEventListener("click", () => {
+  window.print();
+  document.querySelector("#workspace-status").textContent = "Print keeps dashboard numbers, hours to clear the queue when a queue exists, with an honest empty when none, and the Gantt. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
 });
 document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.add("print-redacted");
@@ -1914,6 +1934,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "[") {
     event.preventDefault();
     jumpToHoursToClearCopy();
+    return;
+  }
+  if (event.key === "]") {
+    event.preventDefault();
+    jumpToPrint();
     return;
   }
   if (event.key === ".") {
