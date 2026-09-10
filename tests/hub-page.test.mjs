@@ -462,6 +462,117 @@ test('d focuses the How it works heading when no list item exists', () => {
   assert.deepEqual(assigned, []);
 });
 
+test('slash focuses the first Trust list item when focus is not in an input', () => {
+  assert.match(html, /event\.key === '\/'/);
+  assert.match(html, /querySelector\('#trust li'\)/);
+  assert.match(html, /getElementById\('trust-title'\)/);
+  assert.match(html, /id="trust-title" tabindex="-1"/);
+  assert.match(html, /<li tabindex="-1"><strong>Local-first/);
+  assert.match(html, /#trust li:focus-visible/);
+  assert.match(html, /<kbd>\/<\/kbd><\/dt><dd>Focus the first Trust and limits list item/);
+  assert.match(html, /Press <kbd>\/<\/kbd> to focus the first Trust and limits list item/);
+  assert.match(html, /This key moves focus; it does not open a workbench/);
+  assert.match(html, /Shift\+\/ stays <kbd>\?<\/kbd>/);
+  assert.match(html, /event\.key === '\?'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const firstTrust = { focus() { focused.push('li'); } };
+  const title = { focus() { focused.push('title'); } };
+  const section = { focus() { focused.push('trust'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'trust-title') return title;
+      if (id === 'trust') return section;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#trust li' ? firstTrust : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, extra = {}) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+      ...extra,
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('/', input);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('/', body);
+  assert.deepEqual(focused, ['li']);
+  assert.deepEqual(assigned, []);
+  fire('?', body, { shiftKey: true });
+  assert.deepEqual(assigned, []);
+});
+
+test('slash focuses the Trust heading when no list item exists', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const title = { focus() { focused.push('title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'trust-title') return title;
+      if (id === 'trust') return { focus() { focused.push('trust'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector() { return null; },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '/',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['title']);
+  assert.deepEqual(assigned, []);
+});
+
 test('n focuses What\'s new when focus is not in an input', () => {
   assert.match(html, /id="whats-new" tabindex="-1"/);
   assert.match(html, /event\.key === 'n'/);
