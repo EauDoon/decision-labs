@@ -438,7 +438,12 @@ SOFTWARE.
               <option value="pickup">Pickup</option>
             </select>
           </label>
-          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last choice is kept in this browser's workspace file. Older workspace files without it still open.</p>
+          <label class="checkbox-field">
+            <input id="hide-unwinnable-offers" type="checkbox">
+            Hide offers that cannot currently win
+          </label>
+          <button id="restore-unwinnable-offers" type="button">Restore unwinnable offers</button>
+          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last fulfillment choice is kept in this browser's workspace file. Older workspace files without it still open. Hide-unwinnable is display only. Merchant views still show counts only.</p>
         </div>
         <div class="snapshot-bar print-chrome" aria-label="Offer list order">
           <label>Sort offers

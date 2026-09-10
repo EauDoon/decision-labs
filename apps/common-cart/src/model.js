@@ -260,6 +260,18 @@ export function filterOfferIdsByFulfillment(rawScenario, fulfillment) {
   return scenario.offers.filter((offer) => offer.fulfillment === fulfillment).map((offer) => offer.id);
 }
 
+/** Display-only. Matching is unchanged. When hideUnwinnable is false, every offer id is returned. Locked and zero-unlock offers are omitted when true. */
+export function filterOfferIdsHidingUnwinnable(rawScenario, hideUnwinnable) {
+  if (hideUnwinnable !== true && hideUnwinnable !== false) {
+    throw new ScenarioError("Hide unwinnable offers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideUnwinnable) return scenario.offers.map((offer) => offer.id);
+  const market = evaluateMarket(scenario);
+  const unlocked = new Set(market.results.filter((result) => result.qualifies).map((result) => result.offer.id));
+  return scenario.offers.filter((offer) => unlocked.has(offer.id)).map((offer) => offer.id);
+}
+
 export function acceptedVariantFilterOptions(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const seen = new Map();

@@ -12,6 +12,7 @@ import {
   previewOfferSort,
   applyOfferSort,
   filterOfferIdsByFulfillment,
+  filterOfferIdsHidingUnwinnable,
   acceptedVariantFilterOptions,
   filterBuyerIdsByAcceptedVariant,
   filterBuyerIdsHidingExcluded,
@@ -108,6 +109,7 @@ let buyerSortPreviewIds = null;
 let offerSortPreviewIds = null;
 let buyerVariantFilter = "all";
 let hideExcludedBuyers = false;
+let hideUnwinnableOffers = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -576,6 +578,28 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#hide-unwinnable-offers").addEventListener("change", (event) => {
+    hideUnwinnableOffers = event.target.checked;
+    try {
+      applyOfferFulfillmentFilter();
+      setStatus(hideUnwinnableOffers
+        ? "Hiding offers that cannot currently win. Display only. Saved offers and matching stay unchanged. Merchant views still show counts only."
+        : "Showing locked and zero-unlock offers again. Saved offers and matching stay unchanged.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#restore-unwinnable-offers").addEventListener("click", () => {
+    hideUnwinnableOffers = false;
+    const hideControl = document.querySelector("#hide-unwinnable-offers");
+    if (hideControl) hideControl.checked = false;
+    try {
+      applyOfferFulfillmentFilter();
+      setStatus("Restored unwinnable offers on screen. Saved offers and matching stay unchanged. Merchant views still show counts only.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#buyer-variant-filter").addEventListener("change", (event) => {
     buyerVariantFilter = event.target.value;
     try {
@@ -964,6 +988,14 @@ function applyOfferFulfillmentFilter() {
   } catch {
     visibleIds = new Set(scenario.offers.map((offer) => offer.id));
   }
+  if (hideUnwinnableOffers) {
+    try {
+      const unlocked = new Set(filterOfferIdsHidingUnwinnable(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => unlocked.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
   elements.offerRows.querySelectorAll("tr[data-id]").forEach((row) => {
     row.hidden = !visibleIds.has(row.dataset.id);
   });
@@ -971,12 +1003,22 @@ function applyOfferFulfillmentFilter() {
   scenario.offers.forEach((offer, index) => {
     if (editors[index]) editors[index].hidden = !visibleIds.has(offer.id);
   });
+  elements.merchantResults?.querySelectorAll("tr[data-id]").forEach((row) => {
+    row.hidden = !visibleIds.has(row.dataset.id);
+  });
+  elements.resultRows?.querySelectorAll("tr[data-id]").forEach((row) => {
+    row.hidden = !visibleIds.has(row.dataset.id);
+  });
+  const hideControl = document.querySelector("#hide-unwinnable-offers");
+  if (hideControl) hideControl.checked = hideUnwinnableOffers;
+  const restore = document.querySelector("#restore-unwinnable-offers");
+  if (restore) restore.disabled = !hideUnwinnableOffers;
   const note = document.querySelector("#offer-filter-note");
   if (!note) return;
   const hiddenCount = scenario.offers.length - visibleIds.size;
   note.textContent = hiddenCount === 0
-    ? "The filter hides rows on screen. Saved offers and matching stay unchanged."
-    : `Showing ${visibleIds.size} of ${scenario.offers.length} offers. Hidden rows stay in the room and still match.`;
+    ? "The filter hides rows on screen. Saved offers and matching stay unchanged. Merchant views still show counts only."
+    : `Showing ${visibleIds.size} of ${scenario.offers.length} offers. Hidden rows stay in the room and still match. Merchant views still show counts only.`;
 }
 
 function populateBuyerVariantFilter() {
@@ -1415,6 +1457,7 @@ function renderResults(market) {
   const labels = new Map(market.scenario.buyers.map((buyer) => [buyer.id, buyerDisplayLabel(buyer)]));
   const rows = market.ranked.map((result) => {
     const row = document.createElement("tr");
+    row.dataset.id = result.offer.id;
     addCell(row, `${result.offer.merchant} / ${result.offer.variant}`);
     addCell(row, result.qualifies ? "Unlocked" : result.offer.tiers?.length ? "No feasible tier" : `${result.unitsShort} short`, result.qualifies ? "status-pass" : "status-short");
     addCell(row, String(result.fulfilledUnits));
@@ -1430,6 +1473,7 @@ function renderResults(market) {
   elements.resultRows.replaceChildren(...rows);
   elements.merchantResults.replaceChildren(...market.ranked.map((result) => {
     const row = document.createElement("tr");
+    row.dataset.id = result.offer.id;
     const gap = unitsToNextTier(market.scenario, result.offer.id);
     addCell(row, result.offer.merchant);
     addCell(row, result.qualifies ? "Unlocked" : "Locked");
@@ -1440,6 +1484,7 @@ function renderResults(market) {
     addCell(row, gap.unitsNeeded === null ? gap.reason : `${gap.unitsNeeded} units (${gap.supplierBuyerCount} excluded buyers, ${gap.supplierUnits} units they hold)`);
     return row;
   }));
+  applyOfferFulfillmentFilter();
 }
 
 function renderResidualCoverage(rawScenario) {

@@ -293,6 +293,8 @@ export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", 
 export function copyOfferAsNewTierSet(rawScenario: unknown, offerId: string): Scenario;
 export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenario;
 export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "all" | "shipping" | "pickup"): string[];
+/** Display-only. Matching is unchanged. When hideUnwinnable is false, every offer id is returned. */
+export function filterOfferIdsHidingUnwinnable(rawScenario: unknown, hideUnwinnable: boolean): string[];
 export function acceptedVariantFilterOptions(rawScenario: unknown): string[];
 export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: string): string[];
 export function filterBuyerIdsHidingExcluded(rawScenario: unknown, offerId: string, hideExcluded: boolean): string[];
