@@ -236,7 +236,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .print-catalog {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -250,8 +250,8 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover, .print-catalog:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible, .print-catalog:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
@@ -261,7 +261,7 @@
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools { margin: 12px 0 0; }
+    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools, .print-catalog-tools { margin: 12px 0 0; }
     .copy-versions-fallback, .copy-jobs-fallback, .copy-trust-fallback {
       display: block;
       width: 100%;
@@ -317,7 +317,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .print-catalog { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -345,6 +345,7 @@
     @media print {
       body { background: white; color: #000; border-top-width: 2px; }
       .skip, .skips, .keys-note, .how, .site-nav, .shortcuts, .shortcuts-open { display: none !important; }
+      .print-catalog, .print-catalog-tools { display: none !important; }
       .catalog-url-tools, .copy-versions-tools, .copy-versions-fallback, .copy-jobs-tools, .copy-jobs-fallback, .copy-trust-tools, .copy-trust-fallback { display: none !important; }
       .whats-new, .workbench .version, .version-line, .trust { display: block !important; }
       #how-it-works, .guide { display: block !important; }
@@ -523,7 +524,7 @@
         <li data-app="smallest-agreement">1.5.3</li>
         <li data-app="weekend-gap">1.5.3</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>i</kbd> to copy Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>i</kbd> to copy Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -539,6 +540,7 @@
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
           <dt><kbd>s</kbd></dt><dd>Focus the first Open workbench link. This key moves focus; it does not open the workbench.</dd>
           <dt><kbd>f</kbd></dt><dd>Focus the footer version line. This key does not open a workbench.</dd>
+          <dt><kbd>p</kbd></dt><dd>Print this catalog page. This prints the page in the browser, not a live product sheet.</dd>
           <dt><kbd>c</kbd></dt><dd>Copy catalog address when this page is served over http</dd>
           <dt><kbd>v</kbd></dt><dd>Copy workbench names and versions as Markdown from this catalog page, not a live product version</dd>
           <dt><kbd>j</kbd></dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed</dd>
@@ -622,6 +624,8 @@
       <p>Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</p>
       <h3>Loopback catalog address</h3>
       <p>When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</p>
+      <h3>Catalog print</h3>
+      <p>Print this catalog prints the page in the browser. It is not a live product sheet.</p>
       <h3>Catalog versions</h3>
       <p>Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</p>
       <h3>Catalog jobs</h3>
@@ -652,6 +656,9 @@
   </main>
   <footer class="shell site-footer">
     <p id="version-line" tabindex="-1" class="version-line">Partnership Breakpoint 1.5.3, Common Cart 1.4.2, The Smallest Agreement 1.5.3, Weekend Gap 1.5.3. Each workbench versions itself.</p>
+    <p class="print-catalog-tools" id="print-catalog-tools">
+      <button type="button" class="print-catalog" id="print-catalog" aria-keyshortcuts="p">Print this catalog</button>
+    </p>
     <p class="copy-versions-tools" id="copy-versions-tools">
       <button type="button" class="copy-versions" id="copy-versions" aria-keyshortcuts="v">Copy versions</button>
       <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
@@ -718,6 +725,10 @@
         } catch {
           if (copyStatus) copyStatus.textContent = 'Could not copy. Select the address bar instead.';
         }
+      });
+      const printBtn = document.getElementById('print-catalog');
+      printBtn?.addEventListener('click', () => {
+        window.print();
       });
       const versionsBtn = document.getElementById('copy-versions');
       const versionsStatus = document.getElementById('copy-versions-status');
@@ -863,6 +874,11 @@
         if (event.key === 'f') {
           event.preventDefault();
           document.querySelector('.version-line')?.focus();
+          return;
+        }
+        if (event.key === 'p') {
+          event.preventDefault();
+          printBtn?.click();
           return;
         }
         if (event.key === 'c') {

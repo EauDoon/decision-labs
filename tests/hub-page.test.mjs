@@ -259,6 +259,75 @@ test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(readme, /Skip links jump to What's new, workbenches, How it works,\s+keyboard shortcuts, and Trust and limits/);
 });
 
+test('p prints this catalog page when focus is not in an input', () => {
+  assert.match(html, /event\.key === 'p'/);
+  assert.match(html, /printBtn\?\.click\(\)/);
+  assert.match(html, /window\.print\(\)/);
+  assert.match(html, /id="print-catalog"/);
+  assert.match(html, /aria-keyshortcuts="p"/);
+  assert.match(html, />Print this catalog</);
+  assert.match(html, /<kbd>p<\/kbd><\/dt><dd>Print this catalog page. This prints the page in the browser, not a live product sheet./);
+  assert.match(html, /Press <kbd>p<\/kbd> to print this catalog/);
+  assert.match(html, /not a live product sheet/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `p` to print this catalog/);
+  assert.match(readme, /not a live product sheet/);
+  const prints = [];
+  const clicks = { print: 0 };
+  let keydown = null;
+  const win = { print() { prints.push('print'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'print-catalog') {
+        return {
+          click() {
+            clicks.print += 1;
+            win.print();
+          },
+          addEventListener() {},
+        };
+      }
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: win,
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('p', input);
+  assert.deepEqual(prints, []);
+  assert.equal(clicks.print, 0);
+  fire('p', body);
+  assert.deepEqual(prints, ['print']);
+  assert.equal(clicks.print, 1);
+});
+
 test('f focuses the footer version line when focus is not in an input', () => {
   assert.match(html, /event\.key === 'f'/);
   assert.match(html, /querySelector\('\.version-line'\)\?\.focus\(\)/);
