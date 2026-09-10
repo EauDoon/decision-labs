@@ -138,6 +138,11 @@ export const PRESETS = Object.freeze({
     weekendFxMultiplier: 5.4,
     reserveCashAud: 5550000,
     redemptionDemandAud: 3050000
+  }),
+  earlyMondayBankOpen: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Early Monday bank open (synthetic)",
+    bankOpenStartHour: 7
   })
 });
 
