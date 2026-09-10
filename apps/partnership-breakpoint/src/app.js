@@ -67,6 +67,7 @@ let breakpointCopyText = '';
 let shareHoldCopyText = '';
 let notesCopyText = '';
 let waterfallCopyText = '';
+let viabilityCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -91,6 +92,7 @@ function checkpoint() {
   shareHoldCopyText = '';
   notesCopyText = '';
   waterfallCopyText = '';
+  viabilityCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -114,6 +116,7 @@ function travelHistory(direction) {
   shareHoldCopyText = '';
   notesCopyText = '';
   waterfallCopyText = '';
+  viabilityCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -564,7 +567,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -576,8 +579,8 @@ function resultsPanel(result) {
     ? `${result.weakestParticipant.name} has the least volume headroom to its ${result.weakestParticipant.bindingConstraint.label} limit.`
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
   return `<section class="results" id="results-start">
-    <section class="status-card ${statusClass}" aria-live="polite">
-      <div><span class="eyebrow">Partnership viability</span><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p></div>
+    <section class="status-card ${statusClass}" aria-labelledby="viability-heading" aria-live="polite">
+      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button></div></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
     </section>
     <section class="metric-strip" aria-label="Deal summary">
@@ -608,6 +611,7 @@ function resultsPanel(result) {
     ${shareHoldCopySection()}
     ${notesCopySection()}
     ${waterfallCopySection()}
+    ${viabilityCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -1040,6 +1044,7 @@ function attachEvents() {
     if (action === 'close-share-hold-copy') { shareHoldCopyText = ''; render(); return; }
     if (action === 'close-notes-copy') { notesCopyText = ''; render(); return; }
     if (action === 'close-waterfall-copy') { waterfallCopyText = ''; render(); return; }
+    if (action === 'close-viability-copy') { viabilityCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1171,6 +1176,7 @@ function attachEvents() {
     if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-waterfall') copyContributionWaterfall();
+    if (action === 'copy-viability') copyViabilityCard();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -2011,6 +2017,71 @@ function copyContributionWaterfall() {
     }
   }
   showWaterfallCopyFallback(text, fallbackNote);
+}
+
+function viabilityCardMarkdown(result) {
+  const weakest = result.weakestParticipant;
+  const headroom = weakest.headroomToExit === null ? 'Impossible' : formatVolume(weakest.headroomToExit);
+  const lines = [
+    '# Viability and binding limit',
+    '',
+    'Participant: ' + reportText(weakest.name),
+    'Headroom: ' + headroom,
+    'Binding limit: ' + reportText(weakest.bindingConstraint.label),
+    'Partnership: ' + (result.viable ? 'VIABLE' : 'NOT VIABLE'),
+    'Effective volume: ' + formatVolume(result.effectiveVolume),
+    '',
+    'This names the participant with the least volume headroom. Counts are counts. It is not a probability.',
+    '',
+  ];
+  return lines.join('\n');
+}
+
+function showViabilityCopyFallback(text, message) {
+  viabilityCopyText = text;
+  render();
+  document.querySelector('#viability-copy-text')?.focus();
+  setNotice(message);
+}
+
+function viabilityCopySection() {
+  if (!viabilityCopyText) return '';
+  return `<section class="panel" aria-labelledby="viability-copy-title"><div class="panel-heading"><h2 id="viability-copy-title">Viability card Markdown</h2><button type="button" data-action="close-viability-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. Counts are counts. This is not a probability.</p><label class="brief-copy-label" for="viability-copy-text">Viability card Markdown</label><textarea id="viability-copy-text" readonly rows="12">${escapeAttribute(viabilityCopyText)}</textarea></div></section>`;
+}
+
+function copyViabilityCard() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the viability card. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = viabilityCardMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Viability card copied as Markdown. Counts are counts. It is not a probability.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          viabilityCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showViabilityCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      viabilityCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showViabilityCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showViabilityCopyFallback(text, fallbackNote);
 }
 
 function exportTornadoSvg() {

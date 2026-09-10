@@ -54,6 +54,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
         'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
+        'viability-copy-text', 'viability-heading',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1275,6 +1276,44 @@ test('keyboard w jumps to the Contribution waterfall heading unless a field is f
   app.keydown('w');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="waterfall-title"/);
+});
+
+test('copy viability card uses participant, headroom, and binding limit Markdown', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-viability"/);
+  fallback.click('copy-viability');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="viability-copy-text"/);
+  assert.match(fallback.markup(), /Participant: Liquidity Partner/);
+  assert.match(fallback.markup(), /Headroom: 10,000 txn/);
+  assert.match(fallback.markup(), /Binding limit: minimum acceptable profit/);
+  assert.match(fallback.markup(), /Counts are counts/);
+  assert.match(fallback.markup(), /not a probability/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-viability-copy');
+  assert.doesNotMatch(fallback.markup(), /id="viability-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-viability');
+  assert.doesNotMatch(fallback.markup(), /id="viability-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the viability card/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-viability');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Viability and binding limit/);
+  assert.match(withClipboard.copied()[0], /Participant: Liquidity Partner/);
+  assert.match(withClipboard.copied()[0], /Headroom: 10,000 txn/);
+  assert.match(withClipboard.copied()[0], /Binding limit: minimum acceptable profit/);
+  assert.match(withClipboard.copied()[0], /Counts are counts/);
+  assert.match(withClipboard.copied()[0], /not a probability/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.doesNotMatch(withClipboard.markup(), /id="viability-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-viability');
+  assert.match(denied.markup(), /id="viability-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('copy contribution waterfall uses Markdown and a clipboard fallback', async () => {
