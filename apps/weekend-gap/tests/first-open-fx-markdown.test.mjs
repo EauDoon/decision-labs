@@ -5,6 +5,7 @@ import {
   DEFAULT_SCENARIO,
   firstClosedFxHourToMarkdown,
   firstClosedPayoutHourToMarkdown,
+  firstOpenBankHourToMarkdown,
   firstOpenFxGanttHour,
   firstOpenFxHourToMarkdown,
   firstOpenPayoutHourToMarkdown,
@@ -25,6 +26,7 @@ test("first open FX hour Markdown is one synthetic line with an honest empty", (
   assert.notEqual(text, firstOpenPayoutHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(text, firstClosedFxHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(text, firstClosedPayoutHourToMarkdown(DEFAULT_SCENARIO));
+  assert.notEqual(text, firstOpenBankHourToMarkdown(DEFAULT_SCENARIO));
   const laterPayout = {
     ...DEFAULT_SCENARIO,
     payoutOpenStartHour: 16
