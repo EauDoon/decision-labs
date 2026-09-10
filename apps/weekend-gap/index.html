@@ -106,6 +106,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="sundayEarlyPayoutOpen">Sunday early payout open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="sundayLateIssuerClose">Sunday late issuer close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="sundayEarlyIssuerOpen">Sunday early issuer open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="saturdayEarlyIssuerOpen">Saturday early issuer open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -310,6 +311,13 @@ SOFTWARE.
                 Keep Sunday issuer open 08:00 to 10:00
               </label>
               <p>When selected, Sunday 08:00 to 10:00 treats the issuer gate as open even though Sunday is not a business day. Bank, payout and FX stay on their Sunday morning rules those hours. Older scenario files omit this field and keep Sunday morning issuer closed. This is a synthetic calendar, not a bank feed.</p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="saturdayEarlyIssuerOpen">
+                <input id="saturdayEarlyIssuerOpen" name="saturdayEarlyIssuerOpen" data-field="saturdayEarlyIssuerOpen" type="checkbox">
+                Keep Saturday issuer open 08:00 to 10:00
+              </label>
+              <p>When selected, Saturday 08:00 to 10:00 treats the issuer gate as open even though Saturday is not a business day. Bank, payout and FX stay on their Saturday morning rules those hours. Older scenario files omit this field and keep Saturday morning issuer closed. This is a synthetic calendar, not a bank feed.</p>
             </div>
           </form>
 
@@ -736,6 +744,10 @@ SOFTWARE.
                 <input id="gantt-hide-weekend-issuer-open" type="checkbox" aria-keyshortcuts="7">
                 Hide weekend hours where the issuer gate is open
               </label>
+              <label class="checkbox-label" for="gantt-hide-weekend-issuer-closed">
+                <input id="gantt-hide-weekend-issuer-closed" type="checkbox" aria-keyshortcuts="0">
+                Hide weekend hours where the issuer gate is closed
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
@@ -752,6 +764,7 @@ SOFTWARE.
               <button id="copy-first-open-bank" type="button" aria-keyshortcuts="*">Copy first open bank hour</button>
               <button id="copy-first-open-issuer" type="button" aria-keyshortcuts="$">Copy first open issuer hour</button>
               <button id="copy-last-open-issuer" type="button" aria-keyshortcuts="5">Copy last open issuer hour</button>
+              <button id="copy-last-closed-issuer" type="button" aria-keyshortcuts="8">Copy last closed issuer hour</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
@@ -781,6 +794,8 @@ SOFTWARE.
             <textarea id="first-open-issuer-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="last-open-issuer-copy-fallback">Last open issuer hour Markdown fallback</label>
             <textarea id="last-open-issuer-copy-fallback" rows="2" hidden readonly></textarea>
+            <label class="sr-only" for="last-closed-issuer-copy-fallback">Last closed issuer hour Markdown fallback</label>
+            <textarea id="last-closed-issuer-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -880,12 +895,14 @@ SOFTWARE.
           <li><kbd>*</kbd> Copy first open bank hour as Markdown</li>
           <li><kbd>$</kbd> Copy first open issuer hour as Markdown</li>
           <li><kbd>5</kbd> Copy last open issuer hour as Markdown</li>
+          <li><kbd>8</kbd> Copy last closed issuer hour as Markdown</li>
           <li><kbd>+</kbd> Jump to the first-closed-FX-hour copy control</li>
           <li><kbd>!</kbd> Jump to the first-open-payout-hour copy control</li>
           <li><kbd>)</kbd> Jump to the first-open-FX-hour copy control</li>
           <li><kbd>&amp;</kbd> Jump to the first-open-bank-hour copy control</li>
           <li><kbd>^</kbd> Jump to the first-open-issuer-hour copy control</li>
           <li><kbd>6</kbd> Jump to the last-open-issuer-hour copy control</li>
+          <li><kbd>9</kbd> Jump to the last-closed-issuer-hour copy control</li>
           <li><kbd>_</kbd> Jump to the first-closed-payout-hour copy control</li>
           <li><kbd>&lt;</kbd> Jump to the first-closed-bank-hour copy control</li>
           <li><kbd>-</kbd> Jump to the first-closed-issuer-hour copy control</li>
@@ -898,6 +915,7 @@ SOFTWARE.
           <li><kbd>%</kbd> Jump to the hide-FX-open Gantt filter</li>
           <li><kbd>`</kbd> Jump to the hide-issuer-open Gantt filter</li>
           <li><kbd>7</kbd> Jump to the hide-weekend-issuer-open Gantt filter</li>
+          <li><kbd>0</kbd> Jump to the hide-weekend-issuer-closed Gantt filter</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>
