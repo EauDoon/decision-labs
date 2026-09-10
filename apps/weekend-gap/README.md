@@ -56,12 +56,12 @@ npm run check
 
 - A deterministic 72-hour Friday-to-Monday simulation.
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
-- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), Payday Friday burst (synthetic), Public-holiday Monday (synthetic), Saturday market burst (synthetic), Sunday stall close (synthetic), and Thin Saturday FX (synthetic) presets.
+- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), Payday Friday burst (synthetic), Public-holiday Monday (synthetic), Saturday market burst (synthetic), Sunday stall close (synthetic), Thin Saturday FX (synthetic), and Early Monday bank open (synthetic) presets.
 - Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, hours to first settlement, and hours to clear the queue.
 - An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains). Copy dashboard numbers as Markdown, copy hours to clear as one line, copy hours to first settlement as one line, or export a one-row dashboard CSV.
-- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, selected Gantt hour, hours to clear, hours to first settlement copy, first-payout marker, Payout Gantt row, analysis export, Bank Gantt row, Issuer Gantt row, FX Gantt row, compare Gantt, peak queue, selected Gantt hour copy, selected versus peak-queue hour copy, closed-hours copy, timing review, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
+- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, selected Gantt hour, hours to clear, hours to first settlement line, hours to first settlement copy, first-payout marker, Payout Gantt row, analysis export, Bank Gantt row, Issuer Gantt row, FX Gantt row, compare Gantt, peak queue, selected Gantt hour copy, remaining-reserve copy, selected versus peak-queue hour copy, closed-hours copy, timing review, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
 - Canvas chart with a printable SVG queue path that can be downloaded as a file, a formula-safe hourly queue CSV, and a text-equivalent data table.
-- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, an every-gate-closed display filter, a Saturday-and-Sunday-hours display filter, a hide-open-hours display filter, a single-gate display filter, copy of the selected hour, copy of remaining reserve at that hour, copy of the peak-queue hour, copy of selected versus peak-queue hour, copy of closed hours, copy of FX hours, copy of weekend FX hour counts, copy of the next-payout hour label, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
+- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, an every-gate-closed display filter, a Saturday-and-Sunday-hours display filter, a hide-weekend-hours display filter, a hide-open-hours display filter, a single-gate display filter, copy of the selected hour, copy of remaining reserve at that hour, copy of the peak-queue hour, copy of selected versus peak-queue hour, copy of closed hours, copy of FX hours, copy of weekend FX hour counts, copy of the first closed FX hour label, copy of the next-payout hour label, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
 ## Scenario comparison and reserve planner
@@ -124,6 +124,19 @@ CHANGELOG.md        Version history
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## New in v1.5.6: early Monday bank, settlement jump and weekend Gantt hide
+
+1. Press `Y` to jump to the hours-to-first-settlement dashboard line. If that line is missing, the dashboard heading is used. Distinct from timeline jump `J` and hours-to-clear `K`. The key is ignored while typing.
+2. Press `Z` to copy remaining reserve at the selected hour through the existing remaining-reserve copy control, using the same Markdown. The key is ignored while typing.
+3. Use the Early Monday bank open (synthetic) preset. It keeps the same 72-hour calendar as Normal Friday and opens the Monday bank window one hour earlier. It is distinct from Payday Friday burst, Public-holiday Monday, Saturday market burst, Sunday stall close, Thin Saturday FX, Thin FX, Tight Windows, Long-weekend Friday start, and Compressed Friday close. It is not a live queue.
+4. Hide Saturday and Sunday Gantt hours. Display only. The model still contains 72 hours. Workspace JSON stores the optional boolean `hideWeekendGanttHours`. Older files restore all hours. Unknown keys are rejected. Inverse of the Saturday-and-Sunday filter. Hide-open, every-gate-closed, weekday, and single-gate filters still compose.
+5. Print and print redacted include the hours-to-first-settlement line. The saved scenario is unchanged.
+6. Copy the first closed FX hour label as one-line Markdown, with an honest empty when none exists. Clipboard write has a textarea fallback. These are counts of modeled hours, not a bank calendar.
+7. Analysis JSON still has no timestamps. Hatched Gantt cells remain a local drawing.
+8. Timing review packets from 1.5.0 stay in place.
+
+v1.5.5 thin Saturday FX, settlement copy and issuer jump remain below.
 
 ## New in v1.5.5: thin Saturday FX, settlement copy and issuer jump
 
@@ -273,7 +286,7 @@ v1.3.0 repeatable-experiment workflows remain: demand timing, pinned baselines, 
 | Export | Contents | Importable here |
 | --- | --- | --- |
 | Scenario JSON / share link | Current editable scenario | Scenario import / URL hash |
-| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour, Gantt density, selected chart, closed-hours Gantt filter, weekend-hours Gantt filter | Workspace import |
+| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour, Gantt density, selected chart, closed-hours Gantt filter, weekend-hours Gantt filter, hide-weekend Gantt filter | Workspace import |
 | Analysis JSON | Both scenarios, results, reserve plan and hourly comparison | No, report only |
 | Hourly CSV | All 73 checkpoints, prior-interval flows and next-hour capacity | No, spreadsheet data |
 | Queue CSV | Hour label and queue size at every checkpoint, formula-safe cells | No, spreadsheet data |
