@@ -2222,6 +2222,34 @@ export function formatLastVetoGroupLabelMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the last group that is not marked as a veto group.
+ * Honest when none. Distinct from last veto group copy and first non-veto group copy.
+ * A veto is a number you entered, not a legal right.
+ * Do not treat the label as a legal identity.
+ */
+export function formatLastNonVetoGroupLabelMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const disclaimer = "A veto is a number you entered, not a legal right. The label is not a legal identity.";
+  const nonVetoGroups = p.groups.filter((group) => group.veto !== true);
+  const last = nonVetoGroups[nonVetoGroups.length - 1];
+  if (!last) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No non-veto group is marked, so there is no last non-veto group label to copy. ${disclaimer}\n`,
+    };
+  }
+  return {
+    status: "ok",
+    empty: false,
+    label: last.name,
+    text: `Last non-veto group: ${briefText(last.name)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
