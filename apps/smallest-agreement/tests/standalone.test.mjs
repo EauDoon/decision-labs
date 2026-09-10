@@ -195,6 +195,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="copy-first-below-floor-group-button"/u);
   assert.match(html, /Copy first below-floor group/u);
   assert.match(html, /id="first-below-floor-group-fallback"/u);
+  assert.match(html, /id="copy-threshold-group-count-button"/u);
+  assert.match(html, /Copy threshold-group count/u);
+  assert.match(html, /id="threshold-group-count-fallback"/u);
   assert.match(html, /id="copy-change-cost-button"/u);
   assert.match(html, /Copy change-cost table/u);
   assert.match(html, /id="change-cost-csv-fallback"/u);
@@ -449,6 +452,7 @@ async function savedWorkbench(storage, hash = "") {
     firstLockedOption: () => element("#first-locked-option-fallback").value,
     belowFloorCount: () => element("#below-floor-count-fallback").value,
     firstBelowFloorGroup: () => element("#first-below-floor-group-fallback").value,
+    thresholdGroupCount: () => element("#threshold-group-count-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
     compareFiles: async (left, right) => {
@@ -3675,6 +3679,63 @@ test("copy first below-floor group writes one-line Markdown with a clipboard fal
   assert.doesNotMatch(labelled.clipboardText(), /Current lock count/u);
   assert.doesNotMatch(labelled.clipboardText(), /Later floor/u);
   assert.match(labelled.message(), /not a legal identity/u);
+});
+
+test("copy threshold-group count writes one-line Markdown with a clipboard fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-threshold-group-count-button"/u);
+  assert.match(html, /Copy threshold-group count/u);
+  assert.match(html, /id="threshold-group-count-fallback"/u);
+  assert.match(html, /not a legal quorum/u);
+  const passing = {
+    title: "Threshold-group count workshop",
+    threshold: 70,
+    groups: [
+      { id: "cleared", name: "Cleared", weight: 1 },
+      { id: "short", name: "Short", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { cleared: 90, short: 20 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { cleared: 80, short: 30 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { cleared: 70, short: 40 } },
+    ] }],
+  };
+  const app = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(passing)]]));
+  assert.equal(app.thresholdGroupCount(), "Groups meeting the approval threshold: 1. A threshold is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(app.thresholdGroupCount(), /Groups below their support floor/u);
+  assert.doesNotMatch(app.thresholdGroupCount(), /First below-floor group/u);
+  await app.click("#copy-threshold-group-count-button");
+  assert.equal(app.clipboardText(), app.thresholdGroupCount());
+  assert.match(app.message(), /not a legal quorum/u);
+  const blocked = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(passing)]]));
+  blocked.blockClipboard();
+  await blocked.click("#copy-threshold-group-count-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#threshold-group-count-fallback");
+  assert.match(blocked.thresholdGroupCount(), /Groups meeting the approval threshold: 1/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a legal quorum/u);
+  const zeroDraft = {
+    title: "Zero threshold-group count workshop",
+    threshold: 95,
+    groups: [
+      { id: "cleared", name: "Cleared", weight: 1 },
+      { id: "short", name: "Short", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { cleared: 40, short: 20 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { cleared: 30, short: 30 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { cleared: 20, short: 40 } },
+    ] }],
+  };
+  const zero = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(zeroDraft)]]));
+  assert.equal(zero.thresholdGroupCount(), "Groups meeting the approval threshold: 0. A threshold is a number you entered, not a legal quorum.\n");
+  await zero.click("#copy-threshold-group-count-button");
+  assert.equal(zero.clipboardText(), "Groups meeting the approval threshold: 0. A threshold is a number you entered, not a legal quorum.\n");
+  assert.match(zero.message(), /honest zero/u);
+  assert.match(zero.message(), /not a legal quorum/u);
+  assert.doesNotMatch(zero.clipboardText(), /Groups below their support floor/u);
+  assert.doesNotMatch(zero.clipboardText(), /First below-floor group/u);
 });
 
 test("copy current locks writes Markdown with a textarea fallback and is not a legal hold", async () => {

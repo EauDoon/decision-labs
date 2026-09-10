@@ -35,6 +35,7 @@ import {
   formatFirstLockedClauseOptionLabelMarkdown,
   formatGroupsBelowSupportFloorCountMarkdown,
   formatFirstBelowSupportFloorGroupLabelMarkdown,
+  formatGroupsMeetingApprovalThresholdCountMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -2469,6 +2470,48 @@ test("first below-floor group label Markdown escapes the group name and is not a
   assert.doesNotMatch(copied.text, /legal identity of/u);
   assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
   assert.equal(JSON.stringify(input), before);
+});
+
+test("groups-meeting-threshold count Markdown is one line, honest at zero, and not a legal quorum", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "cleared", name: "Cleared", weight: 1 },
+      { id: "short", name: "Short", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", original: true, label: "Keep", changeCost: 0, support: { cleared: 90, short: 20 } },
+      { id: "mid", original: false, label: "Mid", changeCost: 1, support: { cleared: 80, short: 30 } },
+      { id: "high", original: false, label: "High", changeCost: 2, support: { cleared: 40, short: 80 } },
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const copied = formatGroupsMeetingApprovalThresholdCountMarkdown(input, originals);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.count, 1);
+  assert.equal(copied.empty, false);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Groups meeting the approval threshold: 1. A threshold is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(copied.text, /Groups below their support floor/u);
+  assert.doesNotMatch(copied.text, /First below-floor group/u);
+  assert.doesNotMatch(copied.text, /Current lock count/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const high = input.clauses[0].options[2];
+  const zero = formatGroupsMeetingApprovalThresholdCountMarkdown(input, [high]);
+  assert.equal(zero.status, "ok");
+  assert.equal(zero.count, 0);
+  assert.equal(zero.empty, true);
+  assert.equal(zero.text, "Groups meeting the approval threshold: 0. A threshold is a number you entered, not a legal quorum.\n");
+  const missing = formatGroupsMeetingApprovalThresholdCountMarkdown(input, null);
+  assert.equal(missing.status, "unavailable");
+  assert.equal(missing.empty, true);
+  assert.match(missing.text, /No inspected package is available/u);
+  assert.match(missing.text, /not a legal quorum/u);
+  assert.equal(missing.text.trim().includes("\n"), false);
+  assert.equal(formatGroupsMeetingApprovalThresholdCountMarkdown({ title: "" }).status, "invalid");
 });
 
 test("formatRecommendedChangeCostCsv writes formula-safe original vs recommended costs", () => {
