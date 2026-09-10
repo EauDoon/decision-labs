@@ -873,6 +873,159 @@ test('load focuses skip-link hash targets', () => {
   assert.match(html, /id="version-line" tabindex="-1"/);
 });
 
+test('copy catalog intro copies heading and lede as Markdown with a visible fallback', () => {
+  assert.match(html, /id="copy-lede"/);
+  assert.match(html, />Copy catalog intro</);
+  assert.match(html, /aria-keyshortcuts="e"/);
+  assert.match(html, /id="copy-lede-fallback"/);
+  assert.match(html, /class="copy-lede-fallback"/);
+  assert.match(html, /textarea id="copy-lede-fallback"/);
+  assert.match(html, /ledeMarkdown/);
+  assert.match(html, /querySelector\('h1'\)/);
+  assert.match(html, /querySelector\('p\.lede'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /ledeFallback\.hidden = false/);
+  assert.match(html, /ledeFallback\.select\(\)/);
+  assert.match(html, /Not a live product feed/);
+  assert.match(html, /It is not a live product feed/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy catalog intro copies the catalog heading/);
+  assert.match(readme, /not a live product feed/);
+});
+
+test('keyboard e copies catalog heading and lede through the same control', () => {
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /ledeBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="e"/);
+  assert.match(html, /<kbd>e<\/kbd><\/dt><dd>Copy the catalog heading and lede as Markdown from this catalog page, not a live product feed/);
+  assert.match(html, /Press <kbd>e<\/kbd> to copy the catalog heading and lede/);
+  assert.match(html, /If those nodes are missing, this copies an empty string/);
+  assert.match(readme, /Press `e` to copy the catalog heading and lede/);
+  assert.match(readme, /copies an empty string/);
+  const clicks = { lede: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return { click() { clicks.lede += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('e', input);
+  fire('e', textarea);
+  assert.equal(clicks.lede, 0);
+  fire('e', body);
+  assert.equal(clicks.lede, 1);
+});
+
+test('copy catalog intro markdown is heading plus lede, or empty if nodes are missing', async () => {
+  let copied = '';
+  let clickLede = null;
+  const heading = { textContent: 'Decision Labs' };
+  const lede = { textContent: 'Make the assumptions visible.' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return { addEventListener(name, handler) { if (name === 'click') clickLede = handler; } };
+      if (id === 'copy-lede-status') return { textContent: '' };
+      if (id === 'copy-lede-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === 'h1') return heading;
+      if (selector === 'p.lede') return lede;
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLede();
+  assert.equal(copied, '# Decision Labs\n\nMake the assumptions visible.');
+  heading.textContent = '';
+  lede.textContent = '';
+  copied = 'stale';
+  await clickLede();
+  assert.equal(copied, '');
+});
+
+test('copy catalog intro shows a visible textarea when clipboard is unavailable', async () => {
+  let clickLede = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return { addEventListener(name, handler) { if (name === 'click') clickLede = handler; } };
+      if (id === 'copy-lede-status') return status;
+      if (id === 'copy-lede-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === 'h1') return { textContent: 'Decision Labs' };
+      if (selector === 'p.lede') return { textContent: 'Make the assumptions visible.' };
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickLede();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '# Decision Labs\n\nMake the assumptions visible.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+});
+
+test('print CSS hides copy lede tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-lede-tools, \.copy-lede-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
 test('copy jobs copies catalog names and jobs as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-jobs"/);
   assert.match(html, />Copy jobs</);

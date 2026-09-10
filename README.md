@@ -45,7 +45,9 @@ open a workbench. Key `g` focuses the first What's new heading, or the What's
 new heading if none. That key does not open a workbench. Key `r` focuses the
 first review path on the first workbench card. That key moves focus; it does
 not open the workbench. Key `p` prints this catalog page. It is not a live product
-sheet. Keys `v` and `j` copy the printed version list and one-sentence jobs.
+sheet. Key `e` copies the catalog heading and lede from this page as Markdown.
+That copy is catalog copy, not a live product feed. If those nodes are
+missing, it copies an empty string. Keys `v` and `j` copy the printed version list and one-sentence jobs.
 Key `i` copies Trust and limits from this page as Markdown. That list is not a
 live policy feed. Key `u` copies How it works from this page as Markdown. That
 list is not a live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
@@ -151,7 +153,11 @@ Press `f` to focus the footer version line. That key does
 not open a workbench. Press `p` to print this catalog. That key prints this
 page in the browser. It is not a live product sheet. Press `c` to copy the catalog address
 when this page is served over http. On a file URL that key does not claim a
-copy succeeded. Press `v` to copy catalog versions from this page. That key
+copy succeeded. Press `e` to copy the catalog heading and lede from this page.
+That key uses the same Copy catalog intro control, including the visible text
+box when the clipboard API is unavailable. If those nodes are missing, it
+copies an empty string. This is catalog copy, not a live product feed.
+Press `v` to copy catalog versions from this page. That key
 uses the same Copy versions control, including the visible text box when the
 clipboard API is unavailable. Press `l` to focus the workbench card that is
 Last launched in this browser, or the workbenches heading if none is stored.
@@ -176,7 +182,11 @@ a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
 this catalog page as Markdown. It uses the browser clipboard when that API is
 available, and shows a visible text box if it is not. This is the catalog list,
-not a live product version. Copy jobs copies the four workbench names and
+not a live product version. Copy catalog intro copies the catalog heading and
+lede paragraph already printed on this page as Markdown, with the same
+clipboard and visible text box fallback. If those nodes are missing, it
+copies an empty string. That copy is catalog copy, not a live product feed.
+Copy jobs copies the four workbench names and
 one-sentence jobs from the catalog cards as Markdown, with the same clipboard
 and visible text box fallback. That list is not a live product feed.
 Press `j` to copy catalog jobs through that same control.
