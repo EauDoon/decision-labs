@@ -659,6 +659,39 @@ const presets = {
       },
     ],
   },
+  "swimming-club-hours": {
+    title: "Swimming club hours: pool open, lane lights, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "pool-open", title: "Pool open", options: [
+          { id: "pool-open-original", original: true, label: "Keep weekday pool open from 15:30 with no posted lane rota", changeCost: 0, support: { students: 32, neighbours: 86, pandc: 74 } },
+          { id: "pool-open-late", original: false, label: "Open weekday swim at 16:30 with a posted lane rota", changeCost: 2, support: { students: 86, neighbours: 60, pandc: 70 } },
+          { id: "pool-open-weekend", original: false, label: "Hold Sunday morning swim at 08:30 with a booking card", changeCost: 3, support: { students: 80, neighbours: 66, pandc: 68 } },
+        ],
+      },
+      {
+        id: "lane-lights", title: "Lane lights", options: [
+          { id: "lane-lights-original", original: true, label: "No posted lane lighting cut-off", changeCost: 0, support: { students: 84, neighbours: 24, pandc: 42 } },
+          { id: "lane-lights-cap", original: false, label: "Cut lane lights at 19:30 and face lamps onto the water", changeCost: 2, support: { students: 68, neighbours: 82, pandc: 78 } },
+          { id: "lane-lights-cut", original: false, label: "Use low lane lamps after 18:30 and retire the flood array", changeCost: 4, support: { students: 50, neighbours: 88, pandc: 66 } },
+        ],
+      },
+      {
+        id: "pool-lockup", title: "Pool lock-up", options: [
+          { id: "pool-lockup-original", original: true, label: "Leave the pool gate on a shared padlock after club hours", changeCost: 0, support: { students: 36, neighbours: 52, pandc: 56 } },
+          { id: "pool-lockup-steward", original: false, label: "Require a P&C steward to lock the pool gate before 19:45", changeCost: 2, support: { students: 82, neighbours: 74, pandc: 84 } },
+          { id: "pool-lockup-timer", original: false, label: "Add a timed lock on the pool gate after the last session", changeCost: 3, support: { students: 72, neighbours: 70, pandc: 76 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
