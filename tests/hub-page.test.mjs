@@ -635,7 +635,76 @@ test('mouse launch records the selected workbench and storage failure does not p
  blocked=true;assert.doesNotThrow(()=>handlers.get('1')({defaultPrevented:false}));
 });
 
-test('hash shortcuts still focuses the shortcuts panel', () => {
+test('keyboard x stays silent when last-launched storage throws', () => {
+  assert.match(html, /localStorage\.removeItem\(LAST_WORKBENCH_KEY\)/);
+  assert.match(html, /A write failure stays silent/);
+  const notes = [{ hidden: false }, { hidden: false }];
+  let keydown = null;
+  const document = {
+    getElementById: () => null,
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '.last-launched' ? notes : [];
+    },
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: {
+      getItem() { throw new Error('Storage unreadable'); },
+      setItem() { throw new Error('Storage unreadable'); },
+      removeItem() { throw new Error('Storage unreadable'); },
+    },
+  });
+  assert.doesNotThrow(() => {
+    keydown({
+      key: 'x',
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  });
+  assert.equal(notes[0].hidden, true);
+  assert.equal(notes[1].hidden, true);
+});
+
+test('hash trust still focuses Trust and limits after copy trust tools', () => {
+  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'\]/);
+  assert.match(html, /id="trust" tabindex="-1"/);
+  assert.match(html, /getElementById\('trust'\)\?\.focus\(\)/);
+  assert.match(html, /event\.key === 't'/);
+  assert.match(html, /id="copy-trust"/);
+  const focused = [];
+  const trust = { id: 'trust', tabindex: '-1', focus() { focused.push('trust'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'trust') return trust;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '#trust' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  assert.deepEqual(focused, ['trust']);
+});
   assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'\]/);
   assert.match(html, /if \(id === 'shortcuts'\) setOpen\(true, \{ focus: false \}\)/);
   const focused = [];
@@ -721,6 +790,88 @@ test('keyboard v and j are ignored in inputs using the same inEditable helper as
   fire('j', body);
   assert.equal(clicks.versions, 1);
   assert.equal(clicks.jobs, 1);
+});
+
+test('keyboard m x i s are ignored in inputs using the same inEditable helper as c', () => {
+  assert.match(html, /const inEditable = \(node\) =>/);
+  assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /event\.key === 'm'/);
+  assert.match(html, /event\.key === 'x'/);
+  assert.match(html, /event\.key === 'i'/);
+  assert.match(html, /event\.key === 's'/);
+  const clicks = { trust: 0 };
+  const focused = [];
+  const notes = [{ hidden: false }];
+  let removed = 0;
+  let keydown = null;
+  const main = { focus() { focused.push('main'); } };
+  const firstOpen = { focus() { focused.push('open'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'main') return main;
+      if (id === 'copy-trust') return { click() { clicks.trust += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches a.open' ? firstOpen : null;
+    },
+    querySelectorAll(selector) {
+      return selector === '.last-launched' ? notes : [];
+    },
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: {
+      getItem: () => null,
+      setItem() {},
+      removeItem() { removed += 1; },
+    },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  for (const target of [input, textarea, select]) {
+    fire('m', target);
+    fire('x', target);
+    fire('i', target);
+    fire('s', target);
+    fire('c', target);
+  }
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.trust, 0);
+  assert.equal(removed, 0);
+  assert.equal(notes[0].hidden, false);
+  fire('m', body);
+  fire('s', body);
+  fire('i', body);
+  fire('x', body);
+  assert.deepEqual(focused, ['main', 'open']);
+  assert.equal(clicks.trust, 1);
+  assert.equal(removed, 1);
+  assert.equal(notes[0].hidden, true);
 });
 
 test('keyboard l and o use stored last-launched recency in this browser', () => {
