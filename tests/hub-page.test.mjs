@@ -6795,3 +6795,96 @@ test('close-paren at and hash stay distinct from tilde open-paren e z g n', () =
   assert.deepEqual(focused, ['copy-lede', 'copy-skips', 'copy-first-whats-new', 'first-news-h3', 'whats-new']);
   assert.deepEqual(assigned, []);
 });
+
+test('copy first workbench heading control is distinct from Copy first job and Copy first What\'s new heading', () => {
+  assert.match(html, /id="copy-first-workbench"/);
+  assert.match(html, />Copy first workbench heading</);
+  assert.match(html, /id="copy-first-workbench-fallback"/);
+  assert.match(html, /class="copy-first-workbench-fallback"/);
+  assert.match(html, /textarea id="copy-first-workbench-fallback"/);
+  assert.match(html, /id="copy-first-job"/);
+  assert.match(html, />Copy first job</);
+  assert.match(html, /id="copy-first-whats-new"/);
+  assert.match(html, />Copy first What's new heading</);
+  assert.match(html, /querySelector\('#workbenches article\.workbench h3'\)/);
+  assert.notEqual(html.match(/id="copy-first-workbench"/)?.[0], html.match(/id="copy-first-job"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-first-workbench"/)?.[0], html.match(/id="copy-first-whats-new"/)?.[0]);
+  assert.match(html, /@media print[\s\S]*\.copy-first-workbench-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-workbench-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('copy first workbench heading markdown is the first #workbenches article.workbench h3, or empty if missing', async () => {
+  assert.match(html, /firstWorkbenchMarkdown/);
+  assert.match(html, /querySelector\('#workbenches article\.workbench h3'\)/);
+  assert.match(html, /firstWorkbenchFallback\.hidden = false/);
+  assert.match(html, /firstWorkbenchFallback\.select\(\)/);
+  assert.match(html, /This is the first workbench heading, not a live product feed/);
+  assert.match(html, /Copied an empty string/);
+  let copied = '';
+  let clickFirst = null;
+  let firstHeading = { textContent: 'Partnership Breakpoint' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-workbench') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-workbench-status') return { textContent: '' };
+      if (id === 'copy-first-workbench-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches article.workbench h3' ? firstHeading : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickFirst();
+  assert.equal(copied, '- Partnership Breakpoint');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Common Cart/);
+  assert.doesNotMatch(copied, /live product feed/);
+  firstHeading = null;
+  copied = 'stale';
+  await clickFirst();
+  assert.equal(copied, '');
+});
+
+test('copy first workbench heading shows a visible textarea when clipboard is unavailable', async () => {
+  let clickFirst = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-workbench') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-workbench-status') return status;
+      if (id === 'copy-first-workbench-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches article.workbench h3' ? { textContent: 'Partnership Breakpoint' } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickFirst();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Partnership Breakpoint');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+});
+
