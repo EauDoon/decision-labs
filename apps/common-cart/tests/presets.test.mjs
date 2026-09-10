@@ -105,7 +105,7 @@ test("office fruit box is distinct synthetic weekly fruit for an office", () => 
 });
 
 test("new presets survive validation and keep a deterministic winner", () => {
-  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit"]) {
+  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit", "libraryPaper"]) {
     const first = evaluateMarket(clonePreset(name));
     const second = evaluateMarket(validateScenario(clonePreset(name)));
     assert.equal(first.winner.offer.id, second.winner.offer.id);
@@ -132,4 +132,47 @@ test("the example bar includes the office fruit box preset", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /data-preset="officeFruit"/u);
   assert.match(html, /Office fruit/u);
+});
+
+test("library photocopy paper is distinct synthetic mixed-ream paper for a library", () => {
+  const paper = evaluateMarket(clonePreset("libraryPaper"));
+  const coffee = evaluateMarket(clonePreset("neighbourhood"));
+  const studio = evaluateMarket(clonePreset("studio"));
+  const pantry = evaluateMarket(clonePreset("pantry"));
+  const office = evaluateMarket(clonePreset("officePantry"));
+  const hardware = evaluateMarket(clonePreset("hardware"));
+  const garden = evaluateMarket(clonePreset("garden"));
+  const fete = evaluateMarket(clonePreset("schoolFete"));
+  const fruit = evaluateMarket(clonePreset("officeFruit"));
+  const ladder = evaluateMarket(clonePreset("tiers"));
+  assert.ok(paper.winner);
+  assert.equal(paper.scenario.title, "Library photocopy paper");
+  assert.equal(paper.scenario.buyers[0].category, "Photocopy paper ream");
+  assert.notEqual(paper.scenario.buyers[0].category, coffee.scenario.buyers[0].category);
+  assert.notEqual(paper.scenario.buyers[0].category, studio.scenario.buyers[0].category);
+  assert.notEqual(paper.scenario.buyers[0].category, pantry.scenario.buyers[0].category);
+  assert.notEqual(paper.scenario.buyers[0].category, office.scenario.buyers[0].category);
+  assert.notEqual(paper.scenario.buyers[0].category, hardware.scenario.buyers[0].category);
+  assert.notEqual(paper.scenario.buyers[0].category, garden.scenario.buyers[0].category);
+  assert.notEqual(paper.scenario.buyers[0].category, fete.scenario.buyers[0].category);
+  assert.notEqual(paper.scenario.buyers[0].category, fruit.scenario.buyers[0].category);
+  assert.notEqual(paper.scenario.title, ladder.scenario.title);
+  assert.ok(paper.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("A4 80gsm")));
+  assert.ok(paper.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("A3 80gsm")));
+  assert.ok(paper.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Recycled A4")));
+  assert.ok(paper.results.some((result) => result.offer.merchant === "Desk Delivery Paper" && result.offer.fulfillment === "shipping"));
+  assert.ok(paper.results.some((result) => result.offer.merchant === "Lobby Paper Pickup" && result.offer.fulfillment === "pickup"));
+  const quantities = paper.scenario.buyers.map((buyer) => buyer.quantity);
+  assert.equal(new Set(quantities).size > 1, true);
+  const first = evaluateMarket(clonePreset("libraryPaper"));
+  const second = evaluateMarket(validateScenario(clonePreset("libraryPaper")));
+  assert.equal(first.winner.offer.id, second.winner.offer.id);
+  assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
+});
+
+test("the example bar includes the library photocopy paper preset", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /data-preset="libraryPaper"/u);
+  assert.match(html, /Library paper/u);
 });
