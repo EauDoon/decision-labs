@@ -133,6 +133,20 @@ test("requested units copy jump stays on the organizer requested-units control",
   assert.match(app, /#buyer-tab/u);
 });
 
+test("leftover fill unit-count copy stays on the organizer leftover fill units control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-units"/u);
+  assert.match(buyerPanel, /Copy leftover fill units \(organizer private\)/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-units"), false);
+  assert.equal(merchantPanel.includes("copyLeftoverFillUnitCount"), false);
+  assert.match(app, /function copyLeftoverFillUnitCount\(/u);
+  assert.match(app, /#copy-leftover-fill-units/u);
+  assert.doesNotMatch(app, /if \(key === "[^"]+"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount/u);
+});
+
 test("leftover print jump stays on the leftover print control", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");

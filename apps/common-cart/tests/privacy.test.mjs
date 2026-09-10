@@ -225,6 +225,42 @@ test("leftover fill unit-count Markdown omits buyer identities", () => {
   assert.equal(leftoverFillUnits.includes("Harbour Roasters"), false);
 });
 
+test("merchant surfaces omit leftover fill unit-count copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-units"/u);
+  assert.match(buyerPanel, /Leftover fill unit-count copy is count only/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-units"), false);
+  assert.equal(merchantPanel.includes("Copy leftover fill units"), false);
+  assert.equal(merchantPanel.includes("Leftover fill unit-count copy"), false);
+  assert.equal(merchantPanel.includes("createLeftoverFillUnitCountMarkdown"), false);
+  const leftoverFillUnits = createLeftoverFillUnitCountMarkdown(secretNeighbourhood());
+  assert.match(leftoverFillUnits, /organizer private/);
+  assert.match(leftoverFillUnits, /Not a merchant export/);
+  assertOmitsPrivateBuyers(leftoverFillUnits, ["SECRET_TITLE"]);
+  const left = secretNeighbourhood();
+  const merchantSurfaces = [
+    JSON.stringify(createMerchantReport(left)),
+    JSON.stringify(createMerchantResidualReport(left)),
+    createWinnerAggregatesMarkdown(left),
+    createDeliveryHeatmapCsv(left),
+    createOfferCsv(left),
+    createVariantOverlapCsv(left),
+    createVariantOverlapMarkdown(left),
+    createExclusionCountsMarkdown(left, left.offers[1].id),
+    createWinningMerchantLabelMarkdown(left),
+    createWinningFulfillmentMarkdown(left),
+    createWinningRemainingCapacityMarkdown(left)
+  ];
+  for (const text of merchantSurfaces) {
+    assert.equal(String(text).includes("leftover fill units (organizer private)"), false);
+    assert.equal(String(text).includes("copy-leftover-fill-units"), false);
+    assert.equal(String(text).includes("Not a merchant export"), false);
+    assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
+  }
+});
+
 test("leftover print one-pager uses merchant labels and omits private buyer rows", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
