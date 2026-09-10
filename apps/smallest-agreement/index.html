@@ -52,6 +52,7 @@ SOFTWARE.
             <option value="market-stall-hours">Market stall hours</option>
             <option value="shared-bike-shed">Shared bike shed</option>
             <option value="street-stall-lighting">Street stall lighting</option>
+            <option value="hall-hire-hours">Hall hire hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -73,8 +74,10 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="clauses-import-button">Import clauses CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
+        <button class="button button-secondary" type="button" id="copy-original-versus-recommended-button">Copy original versus recommended</button>
         <button class="button button-secondary" type="button" id="copy-group-support-button">Copy group support</button>
         <button class="button button-secondary" type="button" id="copy-remaining-budget-button">Copy remaining budget</button>
+        <button class="button button-secondary" type="button" id="copy-approval-threshold-button">Copy approval threshold</button>
         <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
@@ -141,6 +144,8 @@ SOFTWARE.
           <p id="below-floor-groups-filter-note" class="field-note">Shows groups whose average on the inspected package is below their support floor, or the approval threshold when no floor is set. Hidden groups still count in the model. Solver counts stay the same.</p>
           <label class="hide-groups-at-floor-filter" for="hide-groups-at-floor"><input id="hide-groups-at-floor" type="checkbox"> Hide groups currently meeting their support floor</label>
           <p id="hide-groups-at-floor-filter-note" class="field-note">Hides groups whose average on the inspected package meets a declared support floor. Groups without a floor stay visible. Hidden groups still count in the model. The solver is unchanged.</p>
+          <label class="hide-groups-without-floors-filter" for="hide-groups-without-floors"><input id="hide-groups-without-floors" type="checkbox"> Hide groups that have no support floor</label>
+          <p id="hide-groups-without-floors-filter-note" class="field-note">Hides groups that have no declared support floor. Groups with a floor stay visible. Hidden groups still count in the model. The solver is unchanged.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
           <textarea id="groups-paste" rows="8" spellcheck="false" aria-describedby="groups-paste-note"></textarea>
@@ -200,7 +205,7 @@ SOFTWARE.
             <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading" tabindex="-1">The smallest agreement</h2></div>
             <p id="search-meta" class="search-meta"></p>
           </div>
-          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, and remaining change-budget on the worksheet. This leftover is a draft accounting line, not a legal appropriation. This is a decision aid, not a recorded vote.</p>
+          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, and the numeric approval threshold on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote.</p>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
           <section class="result-card" aria-labelledby="side-by-side-heading">
@@ -210,12 +215,18 @@ SOFTWARE.
             <label class="package-markdown-fallback-label" for="package-markdown-fallback">Recommended package Markdown</label>
             <textarea id="package-markdown-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-markdown-fallback-note"></textarea>
             <p id="package-markdown-fallback-note" class="field-note">Each clause title is followed by the recommended option label. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
+            <label class="original-versus-recommended-fallback-label" for="original-versus-recommended-fallback">Original versus recommended Markdown</label>
+            <textarea id="original-versus-recommended-fallback" readonly rows="8" spellcheck="false" aria-describedby="original-versus-recommended-fallback-note"></textarea>
+            <p id="original-versus-recommended-fallback-note" class="field-note">Each clause lists original and recommended option labels and costs only. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
             <label class="group-support-fallback-label" for="group-support-fallback">Group support Markdown</label>
             <textarea id="group-support-fallback" readonly rows="8" spellcheck="false" aria-describedby="group-support-fallback-note"></textarea>
             <p id="group-support-fallback-note" class="field-note">The table lists group name, mixing weight, and average support on the inspected package. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="remaining-budget-fallback-label" for="remaining-budget-fallback">Remaining change-budget Markdown</label>
             <textarea id="remaining-budget-fallback" readonly rows="3" spellcheck="false" aria-describedby="remaining-budget-fallback-note"></textarea>
             <p id="remaining-budget-fallback-note" class="field-note">One line of leftover change-budget. It is a draft accounting line, not a legal appropriation. If the clipboard is blocked, copy from this box.</p>
+            <label class="approval-threshold-fallback-label" for="approval-threshold-fallback">Approval threshold Markdown</label>
+            <textarea id="approval-threshold-fallback" readonly rows="3" spellcheck="false" aria-describedby="approval-threshold-fallback-note"></textarea>
+            <p id="approval-threshold-fallback-note" class="field-note">One line of the approval threshold you entered. It is a number you entered, not a legal quorum. If the clipboard is blocked, copy from this box.</p>
             <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
             <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
             <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
@@ -319,8 +330,8 @@ SOFTWARE.
         <section class="method-grid" aria-label="Method and limits">
           <article>
             <p class="eyebrow">Method</p>
-            <h2>Count what changes</h2>
-            <p>For each combination of one option per clause, the workshop computes a weighted average of the group support scores. It selects a passing combination by lowest change cost, then fewest changed clauses, then higher approval, then option ID order.</p>
+            <h2 id="method-heading" tabindex="-1">How it works</h2>
+            <p>Count what changes. For each combination of one option per clause, the workshop computes a weighted average of the group support scores. It selects a passing combination by lowest change cost, then fewest changed clauses, then higher approval, then option ID order.</p>
             <p>Only combinations meeting every support floor, cost budget, veto, and clause lock can pass. Near misses meet those constraints but miss the overall threshold.</p>
             <p>The search is exhaustive only up to 50,000 lock-permitted combinations. Above that, it stops and tells you to reduce the choice set. The workshop also enumerates passing alternatives for comparison, even when the original already passes.</p>
           </article>
@@ -373,6 +384,10 @@ SOFTWARE.
           <li><kbd>o</kbd> Jump to the first recommended-package option card, or the clauses heading</li>
           <li><kbd>j</kbd> Copy remaining change-budget as one-line Markdown</li>
           <li><kbd>x</kbd> Focus the JSON export control</li>
+          <li><kbd>h</kbd> Jump to the workshop method / How it works heading</li>
+          <li><kbd>i</kbd> Copy original versus recommended labels and costs as compact Markdown</li>
+          <li><kbd>q</kbd> Jump to the first clause that differs from the recommendation, or the clauses heading</li>
+          <li><kbd>y</kbd> Jump to the first veto group card, or the groups heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
