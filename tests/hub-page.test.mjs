@@ -96,6 +96,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /First-workbench copy, first-card jump, and first-trust jump/);
   assert.match(html, /Last-workbench copy, last-card jump, and last-trust jump/);
   assert.match(html, /Last-review copy, last-review jump, and last-path jump/);
+  assert.match(html, /First-open copy, first-open jump, and first-open-link jump/);
   assert.match(html, /First-review copy, first-review jump, and first-path jump/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
@@ -286,6 +287,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /first-workbench copy, first-card jump, and first-trust jump/);
   assert.match(readme, /last-workbench copy, last-card jump, and last-trust jump/);
   assert.match(readme, /last-review copy, last-review jump, and last-path jump/);
+  assert.match(readme, /first-open copy, first-open jump, and first-open-link jump/);
   assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
@@ -305,6 +307,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy first workbench heading on\s+that 404 page copies/);
   assert.match(readme, /Copy last workbench heading on\s+that 404 page copies/);
   assert.match(readme, /Copy last review path on\s+that 404 page copies/);
+  assert.match(readme, /Copy first Open href on\s+that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -5503,7 +5506,8 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
 test('What\'s new and README name first-workbench copy, first-card jump, and first-trust jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-review copy, first-review jump, and first-path jump');
+  assert.equal(headings[0], 'First-open copy, first-open jump, and first-open-link jump');
+  assert.equal(headings.includes('First-review copy, first-review jump, and first-path jump'), true);
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
   assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
   assert.equal(headings.includes('First-workbench copy, first-card jump, and first-trust jump'), true);
@@ -5555,7 +5559,8 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
 test('What\'s new and README name last-workbench copy, last-card jump, and last-trust jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-review copy, first-review jump, and first-path jump');
+  assert.equal(headings[0], 'First-open copy, first-open jump, and first-open-link jump');
+  assert.equal(headings.includes('First-review copy, first-review jump, and first-path jump'), true);
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
   assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
   assert.equal(headings.includes('First-workbench copy, first-card jump, and first-trust jump'), true);
@@ -7931,10 +7936,46 @@ test('dollar caret and backtick stay distinct from asterisk ampersand percent an
   assert.deepEqual(assigned, []);
 });
 
+test('What\'s new and README name first-open copy, first-open jump, and first-open-link jump without changing workbench versions', () => {
+  const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
+  const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
+  assert.equal(headings[0], 'First-open copy, first-open jump, and first-open-link jump');
+  assert.equal(headings.includes('First-review copy, first-review jump, and first-path jump'), true);
+  assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
+  assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
+  assert.equal(headings[headings.length - 1], 'Sunday early issuer open, last-open-issuer copy, and weekend-issuer-open hide in Weekend Gap 1.5.17');
+  assert.equal(headings.includes("First What's new copy, intro jump, and skip-link jump"), true);
+  assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
+  assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
+  assert.equal(headings.includes('Saturday late payout, open-FX copy, and FX-open hide in Weekend Gap 1.5.14'), true);
+  assert.equal(headings.includes('Sunday early payout, open-bank copy, and bank-open hide in Weekend Gap 1.5.15'), true);
+  assert.equal(headings.includes('Sunday late issuer close, issuer-open copy, and issuer-open hide in Weekend Gap 1.5.16'), true);
+  assert.equal(headings.includes('Sunday early issuer open, last-open-issuer copy, and weekend-issuer-open hide in Weekend Gap 1.5.17'), true);
+  assert.match(html, /Copy first Open href through 0 as Markdown/);
+  assert.match(html, /jump to that control with keyboard backslash/);
+  assert.match(html, /jump to the first Open workbench link with keyboard s/);
+  assert.match(html, /The branded 404 page can copy the first Open workbench href without adding a public path/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /These are in-page catalog tools/);
+  assert.match(readme, /first-open copy, first-open jump, and first-open-link jump/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy first Open href on\s+that 404 page copies/);
+  assert.match(readme, /Copy first Open href copies the first Open workbench href/);
+  assert.match(readme, /Press `0` to copy the first Open workbench href/);
+  assert.match(readme, /Press `\\` to focus the Copy first Open href control/);
+  assert.match(readme, /Press `s` to focus the first Open\s+workbench link/);
+  assert.match(readme, /Key `0` copies the first Open workbench href/);
+  assert.match(readme, /Key `\\` focuses the Copy first Open href control/);
+  assert.match(readme, /Key `s` focuses the first Open\s+workbench link/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+});
+
 test('What\'s new and README name first-review copy, first-review jump, and first-path jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-review copy, first-review jump, and first-path jump');
+  assert.equal(headings[0], 'First-open copy, first-open jump, and first-open-link jump');
+  assert.equal(headings.includes('First-review copy, first-review jump, and first-path jump'), true);
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
   assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
   assert.equal(headings[headings.length - 1], 'Sunday early issuer open, last-open-issuer copy, and weekend-issuer-open hide in Weekend Gap 1.5.17');
@@ -7968,7 +8009,8 @@ test('What\'s new and README name first-review copy, first-review jump, and firs
 test('What\'s new and README name last-review copy, last-review jump, and last-path jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-review copy, first-review jump, and first-path jump');
+  assert.equal(headings[0], 'First-open copy, first-open jump, and first-open-link jump');
+  assert.equal(headings.includes('First-review copy, first-review jump, and first-path jump'), true);
   assert.equal(headings.includes('Last-review copy, last-review jump, and last-path jump'), true);
   assert.equal(headings.includes('Last-workbench copy, last-card jump, and last-trust jump'), true);
   assert.equal(headings[headings.length - 1], 'Sunday early issuer open, last-open-issuer copy, and weekend-issuer-open hide in Weekend Gap 1.5.17');
@@ -9000,6 +9042,456 @@ test('7, 8, and 9 stay distinct from open-brace, 5, 6, r, and the 1-4 opener map
   fire('8', true);
   fire('9', true);
   assert.equal(clicks.firstReview, 2);
+  assert.deepEqual(assigned, ['apps/partnership-breakpoint/standalone.html']);
+});
+
+test('copy first Open href control is distinct from Copy first review path and Copy last review path', () => {
+  assert.match(html, /id="copy-first-open"/);
+  assert.match(html, />Copy first Open href</);
+  assert.match(html, /aria-keyshortcuts="0"/);
+  assert.match(html, /id="copy-first-open-fallback"/);
+  assert.match(html, /class="copy-first-open-fallback"/);
+  assert.match(html, /textarea id="copy-first-open-fallback"/);
+  assert.match(html, /id="copy-first-review"/);
+  assert.match(html, />Copy first review path</);
+  assert.match(html, /id="copy-last-review"/);
+  assert.match(html, />Copy last review path</);
+  assert.match(html, /querySelector\('#workbenches a\.open'\)/);
+  assert.match(html, /getAttribute\?\.\('href'\)/);
+  assert.notEqual(html.match(/id="copy-first-open"/)?.[0], html.match(/id="copy-first-review"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-first-open"/)?.[0], html.match(/id="copy-last-review"/)?.[0]);
+  assert.equal(html.indexOf('id="copy-first-open"') < html.indexOf('id="copy-first-review"'), true);
+  assert.match(html, /@media print[\s\S]*\.copy-first-open-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-open-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('copy first Open href markdown is the first #workbenches a.open href, or empty if missing', async () => {
+  assert.match(html, /firstOpenMarkdown/);
+  assert.match(html, /querySelector\('#workbenches a\.open'\)/);
+  assert.match(html, /firstOpenFallback\.hidden = false/);
+  assert.match(html, /firstOpenFallback\.select\(\)/);
+  assert.match(html, /This is the first Open workbench href, not a live product feed/);
+  assert.match(html, /Copied an empty string/);
+  let copied = '';
+  let clickFirst = null;
+  let firstOpen = {
+    getAttribute(name) { return name === 'href' ? 'apps/partnership-breakpoint/standalone.html' : null; },
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-open') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-open-status') return { textContent: '' };
+      if (id === 'copy-first-open-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches a.open' ? firstOpen : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickFirst();
+  assert.equal(copied, '- apps/partnership-breakpoint/standalone.html');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Review constraints and negotiation room/);
+  assert.doesNotMatch(copied, /live product feed/);
+  firstOpen = null;
+  copied = 'stale';
+  await clickFirst();
+  assert.equal(copied, '');
+});
+
+test('copy first Open href shows a visible textarea when clipboard is unavailable', async () => {
+  let clickFirst = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-open') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-open-status') return status;
+      if (id === 'copy-first-open-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches a.open'
+        ? { getAttribute(name) { return name === 'href' ? 'apps/partnership-breakpoint/standalone.html' : null; } }
+        : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickFirst();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- apps/partnership-breakpoint/standalone.html');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+});
+
+test('keyboard 0 copies the first Open workbench href through its own control', () => {
+  assert.match(html, /event\.key === '0'/);
+  assert.match(html, /firstOpenBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="0"/);
+  assert.match(html, /<kbd>0<\/kbd><\/dt><dd>Copy the first Open workbench href as one Markdown line from this catalog page, not a live product feed/);
+  assert.match(html, /Press <kbd>0<\/kbd> to copy the first Open workbench href/);
+  assert.match(html, /If that href is missing, this copies an empty string/);
+  assert.match(html, /This is distinct from <kbd>\\<\/kbd>, which focuses Copy first Open href/);
+  assert.match(html, /from <kbd>s<\/kbd>, which focuses the first Open workbench link/);
+  assert.match(html, /<strong>First Open href\.<\/strong>/);
+  assert.match(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.match(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
+  const clicks = { firstOpen: 0, firstReview: 0, lastReview: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-open') return { click() { clicks.firstOpen += 1; }, addEventListener() {}, focus() { focused.push('copy-first-open'); } };
+      if (id === 'copy-first-review') return { click() { clicks.firstReview += 1; }, addEventListener() {}, focus() { focused.push('copy-first-review'); } };
+      if (id === 'copy-last-review') return { click() { clicks.lastReview += 1; }, addEventListener() {}, focus() { focused.push('copy-last-review'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('0', input, true);
+  fire('0', textarea, true);
+  fire('0', select, true);
+  assert.equal(clicks.firstOpen, 0);
+  assert.equal(clicks.firstReview, 0);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('0', body, true);
+  assert.equal(clicks.firstOpen, 1);
+  assert.equal(clicks.firstReview, 0);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('7', body, true);
+  assert.equal(clicks.firstReview, 1);
+  assert.equal(clicks.firstOpen, 1);
+  assert.deepEqual(assigned, []);
+});
+
+test('keyboard backslash focuses Copy first Open href when focus is not in an input', () => {
+  assert.match(html, /event\.key === '\\\\'/);
+  assert.match(html, /getElementById\('copy-first-open'\) \|\| document\.getElementById\('catalog-heading'\) \|\| document\.getElementById\('workbenches-title'\) \|\| document\.getElementById\('workbenches'\)/);
+  assert.match(html, /id="copy-first-open"/);
+  assert.match(html, /id="catalog-heading"/);
+  assert.match(html, /id="workbenches-title"/);
+  assert.match(html, /<kbd>\\<\/kbd><\/dt><dd>Focus the Copy first Open href control, or the catalog heading or workbenches heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Press <kbd>\\<\/kbd> to focus Copy first Open href/);
+  assert.match(html, /This is distinct from <kbd>0<\/kbd>, which copies the first Open workbench href/);
+  assert.match(html, /from <kbd>s<\/kbd>, which focuses the first Open workbench link/);
+  assert.match(html, /from <kbd>\]<\/kbd>, which focuses the last Open workbench link/);
+  assert.match(html, /<strong>First-open jump\.<\/strong>/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
+  const focused = [];
+  const clicks = { firstOpen: 0, firstReview: 0 };
+  const assigned = [];
+  let keydown = null;
+  const copyFirstOpen = { focus() { focused.push('copy-first-open'); }, click() { clicks.firstOpen += 1; }, addEventListener() {} };
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-open') return copyFirstOpen;
+      if (id === 'copy-first-review') return { click() { clicks.firstReview += 1; }, addEventListener() {}, focus() { focused.push('copy-first-review'); } };
+      if (id === 'catalog-heading') return heading;
+      if (id === 'workbenches-title') return { focus() { focused.push('workbenches-title'); } };
+      if (id === 'workbenches') return { focus() { focused.push('workbenches'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('\\', input, false);
+  fire('\\', textarea, false);
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.firstOpen, 0);
+  assert.deepEqual(assigned, []);
+  fire('\\', body, false);
+  assert.deepEqual(focused, ['copy-first-open']);
+  assert.equal(clicks.firstOpen, 0);
+  assert.equal(clicks.firstReview, 0);
+  assert.deepEqual(assigned, []);
+  fire('0', body, true);
+  assert.equal(clicks.firstOpen, 1);
+  assert.deepEqual(focused, ['copy-first-open']);
+  assert.deepEqual(assigned, []);
+  fire('8', body, true);
+  assert.deepEqual(focused, ['copy-first-open', 'copy-first-review']);
+  assert.equal(clicks.firstReview, 0);
+  assert.deepEqual(assigned, []);
+});
+
+test('keyboard backslash focuses the catalog heading when Copy first Open href is missing', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-open') return null;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'workbenches-title') return { focus() { focused.push('workbenches-title'); } };
+      if (id === 'workbenches') return { focus() { focused.push('workbenches'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '\\',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['catalog-heading']);
+  assert.deepEqual(assigned, []);
+});
+
+test('keyboard backslash focuses the workbenches heading when Copy first Open href and catalog heading are missing', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('workbenches-title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-open') return null;
+      if (id === 'catalog-heading') return null;
+      if (id === 'workbenches-title') return heading;
+      if (id === 'workbenches') return { focus() { focused.push('workbenches'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '\\',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['workbenches-title']);
+  assert.deepEqual(assigned, []);
+});
+
+test('0, backslash, and s stay distinct from last-review, first-review, last-open, and the 1-4 opener map', () => {
+  assert.match(html, /event\.key === '0'/);
+  assert.match(html, /event\.key === '\\\\'/);
+  assert.match(html, /event\.key === 's'/);
+  assert.match(html, /event\.key === '\]'/);
+  assert.match(html, /event\.key === '\{'/);
+  assert.match(html, /event\.key === '5'/);
+  assert.match(html, /event\.key === '6'/);
+  assert.match(html, /event\.key === '7'/);
+  assert.match(html, /event\.key === '8'/);
+  assert.match(html, /event\.key === '9'/);
+  assert.match(html, /firstOpenBtn\?\.click\(\)/);
+  assert.match(html, /firstReviewBtn\?\.click\(\)/);
+  assert.match(html, /lastReviewBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-first-open'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /querySelector\('#workbenches a\.open'\)\?\.focus\(\)/);
+  assert.match(html, /<strong>First-open-link jump\.<\/strong>/);
+  assert.match(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.match(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
+  assert.match(readme, /Press `0` to copy the first Open workbench href/);
+  assert.match(readme, /Press `\\` to focus the Copy first Open href control/);
+  assert.match(readme, /Press `s` to focus the first Open\s+workbench link/);
+  const clicks = { firstOpen: 0, firstReview: 0, lastReview: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const firstOpenLink = { focus() { focused.push('first-open-link'); }, href: 'apps/partnership-breakpoint/standalone.html' };
+  const lastOpen = { focus() { focused.push('last-open'); }, href: 'apps/weekend-gap/standalone.html' };
+  const opens = [firstOpenLink, lastOpen];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-open') return { click() { clicks.firstOpen += 1; }, addEventListener() {}, focus() { focused.push('copy-first-open'); } };
+      if (id === 'copy-first-review') return { click() { clicks.firstReview += 1; }, addEventListener() {}, focus() { focused.push('copy-first-review'); } };
+      if (id === 'copy-last-review') return { click() { clicks.lastReview += 1; }, addEventListener() {}, focus() { focused.push('copy-last-review'); } };
+      if (id === 'workbenches-title') return { focus() { focused.push('workbenches-title'); } };
+      if (id === 'workbenches') return { focus() { focused.push('workbenches'); } };
+      if (id === 'catalog-heading') return { focus() { focused.push('catalog-heading'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === '#workbenches a.open') return firstOpenLink;
+      if (selector === '#workbenches article.workbench:first-of-type .review-path') return { focus() { focused.push('first-of-type-review-path'); } };
+      if (selector === '#workbench-1 .review-path') return { focus() { focused.push('workbench-1-review-path'); } };
+      if (selector === '#workbenches article.workbench:last-of-type .review-path') return { focus() { focused.push('last-review-path'); } };
+      if (selector === '#workbench-4 .review-path') return { focus() { focused.push('last-review-path'); } };
+      return null;
+    },
+    querySelectorAll(selector) {
+      return selector === '#workbenches a.open' ? opens : [];
+    },
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, shiftKey = false) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  fire('0', true);
+  fire('\\', false);
+  fire('s');
+  fire(']');
+  fire('{', true);
+  fire('5', true);
+  fire('6', true);
+  fire('7', true);
+  fire('8', true);
+  fire('9', true);
+  assert.equal(clicks.firstOpen, 1);
+  assert.equal(clicks.firstReview, 1);
+  assert.equal(clicks.lastReview, 1);
+  assert.deepEqual(focused, ['copy-first-open', 'first-open-link', 'last-open', 'copy-last-review', 'last-review-path', 'copy-first-review', 'first-of-type-review-path']);
+  assert.deepEqual(assigned, []);
+  fire('1');
+  assert.deepEqual(assigned, ['apps/partnership-breakpoint/standalone.html']);
+  fire('0', true);
+  fire('\\', false);
+  fire('s');
+  assert.equal(clicks.firstOpen, 2);
   assert.deepEqual(assigned, ['apps/partnership-breakpoint/standalone.html']);
 });
 
