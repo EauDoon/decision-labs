@@ -450,7 +450,7 @@ function shockUnits(kind) {
 }
 
 function copyFirstBreakpointButton() {
-  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button><button type="button" data-action="copy-first-breakpoint-label">Copy first-breakpoint participant label</button></div>`;
+  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button><button type="button" id="copy-first-breakpoint-label" data-action="copy-first-breakpoint-label">Copy first-breakpoint participant label</button></div>`;
 }
 
 function breakpointSection(result) {
@@ -1854,6 +1854,11 @@ window.addEventListener('keydown', (event) => {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === ',') copyFirstBreakpointLabel();
+  if (event.key === '.') {
+    const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -3271,6 +3276,7 @@ function helpDialog() {
         <li><kbd>y</kbd> Copy deal notes as one-line Markdown</li>
         <li><kbd>z</kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing</li>
         <li><kbd>,</kbd> Copy the first-breakpoint participant label as Markdown</li>
+        <li><kbd>.</kbd> Jump to Copy first-breakpoint participant label, or the First breakpoint heading if missing</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

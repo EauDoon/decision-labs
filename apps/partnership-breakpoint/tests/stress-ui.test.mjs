@@ -62,7 +62,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
         'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
         'title-copy-text', 'over-capacity-participant', 'copy-deal-title',
-        'breakpoint-label-copy-text',
+        'breakpoint-label-copy-text', 'copy-first-breakpoint-label',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1273,6 +1273,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>y<\/kbd> Copy deal notes as one-line Markdown/);
   assert.match(app.markup(), /<kbd>z<\/kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing/);
   assert.match(app.markup(), /<kbd>,<\/kbd> Copy the first-breakpoint participant label as Markdown/);
+  assert.match(app.markup(), /<kbd>\.<\/kbd> Jump to Copy first-breakpoint participant label, or the First breakpoint heading if missing/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1764,6 +1765,26 @@ test('keyboard comma copies the first-breakpoint participant label through the s
   denied.keydown(',');
   assert.match(denied.markup(), /id="breakpoint-label-copy-text"/);
   assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('keyboard period jumps to Copy first-breakpoint participant label unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-first-breakpoint-label"/);
+  assert.match(app.markup(), /id="first-breakpoint-title" tabindex="-1"/);
+  app.keydown('.');
+  assert.ok(app.focused().includes('#copy-first-breakpoint-label'));
+  assert.ok(app.focused().includes('scroll:#copy-first-breakpoint-label'));
+  const before = app.focused().length;
+  app.keydown('.', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('.', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('.');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="copy-first-breakpoint-label"/);
+  assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
 });
 
 test('keyboard z jumps to Copy deal title and currency unless a field is focused', async () => {
