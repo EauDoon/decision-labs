@@ -1300,6 +1300,20 @@ test("copy first open bank hour uses one-line Markdown distinct from first-open-
   assert.notEqual(ui.nodes.get("first-open-bank-copy-fallback").value, ui.nodes.get("first-closed-bank-copy-fallback").value);
 });
 
+test("copy first open issuer hour uses one-line Markdown distinct from first-open-bank and first-closed issuer", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.nodes.get("copy-first-open-issuer").click();
+  assert.equal(ui.nodes.get("first-open-issuer-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-open-issuer-copy-fallback").value, /First open issuer hour:/);
+  assert.match(ui.nodes.get("first-open-issuer-copy-fallback").value, /Counts of modeled hours, not a bank calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-open-issuer-copy-fallback").value, /First open bank hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-open-issuer-copy-fallback").value, /First closed issuer hour:/);
+  await ui.nodes.get("copy-first-open-bank").click();
+  assert.notEqual(ui.nodes.get("first-open-issuer-copy-fallback").value, ui.nodes.get("first-open-bank-copy-fallback").value);
+  await ui.nodes.get("copy-first-closed-issuer").click();
+  assert.notEqual(ui.nodes.get("first-open-issuer-copy-fallback").value, ui.nodes.get("first-closed-issuer-copy-fallback").value);
+});
+
 test("copy first closed payout hour uses one-line Markdown distinct from FX, bank and issuer", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.nodes.get("copy-first-closed-payout").click();
