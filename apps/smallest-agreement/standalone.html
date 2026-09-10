@@ -95,6 +95,10 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .veto-blocking-note { grid-column: 1 / -1; margin: 0 0 .5rem; color: var(--brick); font-size: .78rem; line-height: 1.35; }
 .clause-lock { display: grid; gap: .4rem; margin: .75rem 0; font-size: .82rem; }
 .clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
+.package-table-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
+#package-table-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
+.clause-paste-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
+#clause-paste { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .constraint-card { margin-bottom: 1rem; }
 
 .workbench { padding: clamp(1.4rem, 4vw, 3.7rem); min-width: 0; }
@@ -104,6 +108,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .clause-heading { margin: 2.2rem 0 1rem; }
 .clause-filter-label { display: block; margin: 0 0 .35rem; font-size: .88rem; font-weight: 700; }
 #clause-filter { max-width: 28rem; margin-bottom: .35rem; }
+.locked-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
+.locked-clauses-filter input { width: auto; }
 .clause-density-label { display: grid; gap: .35rem; max-width: 16rem; margin: 0 0 .75rem; font-size: .88rem; font-weight: 700; }
 #clauses-editor.clause-density-compact { gap: .45rem; }
 #clauses-editor.clause-density-compact .clause-card { padding: .55rem .7rem; }
@@ -188,7 +194,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -243,6 +249,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="workplace-hybrid">Workplace Hybrid</option>
             <option value="club-constitution">Club Constitution</option>
             <option value="library-quiet-hours">Library Quiet Hours</option>
+            <option value="sports-fixture-night">Sports Fixture Night</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -252,6 +259,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="export-locks-button">Export locks JSON</button>
         <button class="button button-secondary" type="button" id="import-locks-button">Import locks JSON</button>
         <button class="button button-secondary" type="button" id="print-button">Print facilitator pack</button>
+        <button class="button button-secondary" type="button" id="print-redacted-button">Print redacted</button>
         <button class="button button-secondary" type="button" id="worksheet-button">Export worksheet</button>
         <button class="button button-secondary" type="button" id="worksheet-csv-button">Export worksheet CSV</button>
         <button class="button button-secondary" type="button" id="csv-button">Export evidence CSV</button>
@@ -263,6 +271,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="clauses-import-button">Import clauses CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
+        <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
         <button class="button button-secondary" type="button" id="undo-button" disabled>Undo</button>
@@ -319,7 +328,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <p id="budget-note" class="field-note">Optional hard budget. Leave blank for no limit. Zero permits only zero-cost changes.</p>
         </section>
         <section class="panel-section">
-          <div class="section-heading"><h2>Participant groups</h2><button class="text-button" type="button" id="add-group" data-action="add-group">Add group</button></div>
+          <div class="section-heading"><h2 id="groups-heading" tabindex="-1">Participant groups</h2><button class="text-button" type="button" id="add-group" data-action="add-group">Add group</button></div>
           <label class="veto-groups-filter" for="veto-groups-only"><input id="veto-groups-only" type="checkbox"> Show veto groups only</label>
           <p id="veto-groups-filter-note" class="field-note">The filter hides group cards. Every group still participates in search and export. A veto is a numerical constraint, not a legal right.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
@@ -349,14 +358,20 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           </div>
           <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
           <input id="clause-filter" type="search" maxlength="120" placeholder="Type to filter visible cards" aria-describedby="clause-filter-note">
+          <label class="locked-clauses-filter" for="locked-clauses-only"><input id="locked-clauses-only" type="checkbox"> Show locked clauses only</label>
+          <p id="locked-clauses-filter-note" class="field-note">The filter hides unlocked clause cards. Every clause still participates in search and export. A lock is a draft choice, not a recorded vote.</p>
           <label class="clause-density-label" for="clause-density">Clause card density
             <select id="clause-density">
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
           </label>
-          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, or that have no lock when Show locked clauses only is on. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
+          <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
+          <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
+          <p id="clause-paste-note" class="field-note">Use the same columns as clause CSV import. A first line with tabs is treated as TSV. Import is undoable. Matching ids keep support scores; new options start at 50. The solver still ignores notes.</p>
+          <button class="text-button" type="button" id="clause-paste-button">Import pasted clauses</button>
           <div id="clauses-editor" class="clauses-editor"></div>
         </section>
 
@@ -372,10 +387,13 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <h3 id="side-by-side-heading">Side-by-side package</h3>
             <p>Pin the current original selections, the solver recommendation, and your custom package in three columns. Each row is one clause. Group scores and overall approval use the same formula as the rest of the workshop. This comparison is a readout, not a vote.</p>
             <div id="side-by-side"></div>
+            <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
+            <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
+            <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
           </section>
           <section class="result-card constraint-card" aria-labelledby="constraints-heading">
             <h3 id="constraints-heading">Constraint checks</h3>
-            <div id="constraint-checks"></div>
+            <div id="constraint-checks" tabindex="-1"></div>
           </section>
           <div class="results-grid">
             <section class="result-card coalition-card" aria-labelledby="coalition-heading">
@@ -506,6 +524,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>/</kbd> Focus the clause filter</li>
           <li><kbd>n</kbd> Focus Add group</li>
           <li><kbd>l</kbd> Jump to the first locked clause, or the lock controls</li>
+          <li><kbd>v</kbd> Toggle the veto-only group filter</li>
+          <li><kbd>b</kbd> Jump to the first veto-blocker highlight, or the veto list</li>
+          <li><kbd>g</kbd> Focus the participant groups heading or the first group card</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -1242,6 +1263,29 @@ function toggleClauseLock(proposal, clauseId, optionId) {
   }
   clause.lockedOptionId = optionId;
   return { status: "ok", proposal: next, locked: true, clauseId, optionId };
+}
+
+/**
+ * Move one clause up or down on a copy of the proposal.
+ * Clause order is the last documented tie breaker. Does not mutate the input.
+ */
+function moveClause(proposal, clauseId, direction) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof clauseId !== "string") return { status: "invalid", errors: ["Unknown clause."] };
+  if (direction !== "up" && direction !== "down") {
+    return { status: "invalid", errors: ["direction must be up or down."] };
+  }
+  const next = canonicalProposal(proposal);
+  const index = next.clauses.findIndex((clause) => clause.id === clauseId);
+  if (index < 0) return { status: "invalid", errors: ["Unknown clause."] };
+  const target = index + (direction === "up" ? -1 : 1);
+  if (target < 0 || target >= next.clauses.length) {
+    return { status: "invalid", errors: ["Clause cannot move further in that direction."] };
+  }
+  const [row] = next.clauses.splice(index, 1);
+  next.clauses.splice(target, 0, row);
+  return { status: "ok", proposal: next, clauseId, direction };
 }
 
 /**
@@ -2052,6 +2096,34 @@ function formatRecommendedPackageMarkdown(proposal, result = findSmallestAgreeme
 }
 
 /**
+ * Markdown table of original, recommended, and pinned option labels.
+ * This is a decision aid, not a recorded vote or a legitimacy claim.
+ */
+function formatPinnedPackagesMarkdown(proposal, recommendedIds, customIds) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const compared = comparePinnedPackages(proposal, recommendedIds, customIds);
+  if (compared.status !== "ok") return compared;
+  const p = canonicalProposal(proposal);
+  const cell = (choice) => (choice ? briefText(choice.label) : "none");
+  const lines = [
+    "# Original, recommended, and pinned packages",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This table lists clause titles and option labels. It is a decision aid, not a recorded vote or a claim of legitimacy.",
+    "",
+    "| Clause | Original | Recommended | Pinned |",
+    "| --- | --- | --- | --- |",
+  ];
+  for (const row of compared.clauses) {
+    lines.push(`| ${briefText(row.clauseTitle)} | ${cell(row.original)} | ${cell(row.recommended)} | ${cell(row.custom)} |`);
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
+/**
  * Markdown list of veto groups whose average misses the required value.
  * This is a constraint readout, not a legal veto or a legitimacy claim.
  */
@@ -2200,8 +2272,9 @@ function compareWorkshopFiles(leftText, rightText) {
 }
 
 /**
- * Workspace JSON carries the canonical proposal plus clause card density.
- * Older proposal-only files remain valid and do not change density.
+ * Workspace JSON carries the canonical proposal plus display prefs.
+ * Older proposal-only files remain valid and do not change prefs.
+ * Filter flags are display-only. The solver ignores them.
  */
 function formatWorkspaceJson(proposal, prefs = {}) {
   const validation = validateProposal(proposal);
@@ -2210,13 +2283,25 @@ function formatWorkspaceJson(proposal, prefs = {}) {
   if (clauseDensity !== "compact" && clauseDensity !== "comfortable") {
     return { status: "invalid", errors: [namedFileError("invalid_density", "clauseDensity must be compact or comfortable.")] };
   }
+  const vetoGroupsOnly = Object.hasOwn(prefs, "vetoGroupsOnly") ? prefs.vetoGroupsOnly : false;
+  const lockedClausesOnly = Object.hasOwn(prefs, "lockedClausesOnly") ? prefs.lockedClausesOnly : false;
+  if (vetoGroupsOnly !== true && vetoGroupsOnly !== false) {
+    return { status: "invalid", errors: [namedFileError("invalid_filter", "vetoGroupsOnly must be a boolean.")] };
+  }
+  if (lockedClausesOnly !== true && lockedClausesOnly !== false) {
+    return { status: "invalid", errors: [namedFileError("invalid_filter", "lockedClausesOnly must be a boolean.")] };
+  }
   return {
     status: "ok",
     clauseDensity,
+    vetoGroupsOnly,
+    lockedClausesOnly,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
       clauseDensity,
+      vetoGroupsOnly,
+      lockedClausesOnly,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2229,7 +2314,7 @@ function parseWorkspaceJson(text) {
   if (!Object.hasOwn(raw, "format")) {
     const proposal = proposalFromWorkshopDocument(raw);
     if (proposal.status !== "ok") return proposal;
-    return { status: "ok", kind: "proposal", proposal: proposal.proposal, clauseDensity: null };
+    return { status: "ok", kind: "proposal", proposal: proposal.proposal, clauseDensity: null, vetoGroupsOnly: null, lockedClausesOnly: null };
   }
   const proposal = proposalFromWorkshopDocument(raw);
   if (proposal.status !== "ok") return proposal;
@@ -2240,7 +2325,21 @@ function parseWorkspaceJson(text) {
     }
     clauseDensity = raw.clauseDensity;
   }
-  return { status: "ok", kind: "workspace", proposal: proposal.proposal, clauseDensity };
+  let vetoGroupsOnly = false;
+  if (Object.hasOwn(raw, "vetoGroupsOnly")) {
+    if (raw.vetoGroupsOnly !== true && raw.vetoGroupsOnly !== false) {
+      return { status: "invalid", errors: [namedFileError("invalid_filter", "vetoGroupsOnly must be a boolean.")] };
+    }
+    vetoGroupsOnly = raw.vetoGroupsOnly;
+  }
+  let lockedClausesOnly = false;
+  if (Object.hasOwn(raw, "lockedClausesOnly")) {
+    if (raw.lockedClausesOnly !== true && raw.lockedClausesOnly !== false) {
+      return { status: "invalid", errors: [namedFileError("invalid_filter", "lockedClausesOnly must be a boolean.")] };
+    }
+    lockedClausesOnly = raw.lockedClausesOnly;
+  }
+  return { status: "ok", kind: "workspace", proposal: proposal.proposal, clauseDensity, vetoGroupsOnly, lockedClausesOnly };
 }
 
 /**
@@ -2403,12 +2502,27 @@ function formatClauseOptionsCsv(proposal) {
  * original, and change_cost. Optional note and locked columns are accepted.
  * Unknown columns are rejected. Groups stay. Matching clause and option ids keep
  * their support scores; new options receive 50 for every group.
- * Does not mutate the supplied proposal.
+ * A first line that contains tabs is treated as TSV and converted to CSV before
+ * the same validation. Does not mutate the supplied proposal.
  */
+function clauseTableTextToCsv(text) {
+  const source = String(text ?? "").replace(/^\uFEFF/u, "");
+  const newline = source.search(/\r\n|\n|\r/u);
+  const firstLine = newline === -1 ? source : source.slice(0, newline);
+  if (!firstLine.includes("\t")) return source;
+  const rows = [];
+  for (const line of source.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n").split("\n")) {
+    if (line === "") continue;
+    rows.push(line.split("\t"));
+  }
+  if (rows.length === 0) return source;
+  return serializeCsv(rows);
+}
+
 function parseClauseOptionsCsv(csvText, proposal) {
   const validation = validateProposal(proposal);
   if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
-  const parsed = parseCsvRecords(csvText);
+  const parsed = parseCsvRecords(clauseTableTextToCsv(csvText));
   if (parsed.status !== "ok") return parsed;
   const [header, ...body] = parsed.records;
   if (!header || header.length < 6) {
@@ -2921,6 +3035,38 @@ const presets = {
       },
     ],
   },
+  "sports-fixture-night": {
+    title: "Sports Fixture Night: match end-time, floodlights, and parking",
+    threshold: 70,
+    groups: [
+      { id: "members", name: "Members", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "rangers", name: "Council rangers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "endtime", title: "Match end-time", options: [
+          { id: "endtime-original", original: true, label: "Kick off at 19:30 and finish by 21:15", changeCost: 0, support: { members: 82, neighbours: 38, rangers: 64 } },
+          { id: "endtime-early", original: false, label: "Kick off at 18:30 and finish by 20:15", changeCost: 2, support: { members: 58, neighbours: 84, rangers: 78 } },
+          { id: "endtime-weekend", original: false, label: "Move the fixture to Saturday afternoon", changeCost: 4, support: { members: 46, neighbours: 90, rangers: 72 } },
+        ],
+      },
+      {
+        id: "floodlights", title: "Floodlights", options: [
+          { id: "floodlights-original", original: true, label: "Keep floodlights on until 22:00", changeCost: 0, support: { members: 88, neighbours: 28, rangers: 52 } },
+          { id: "floodlights-curfew", original: false, label: "Switch floodlights off at 21:00", changeCost: 2, support: { members: 70, neighbours: 76, rangers: 80 } },
+          { id: "floodlights-baffles", original: false, label: "Keep 22:00 with baffled lamps and a cut-off", changeCost: 3, support: { members: 80, neighbours: 68, rangers: 74 } },
+        ],
+      },
+      {
+        id: "parking", title: "Match-night parking", options: [
+          { id: "parking-original", original: true, label: "Allow unmanaged street parking", changeCost: 0, support: { members: 74, neighbours: 32, rangers: 40 } },
+          { id: "parking-stewards", original: false, label: "Steward the club car park until 21:30", changeCost: 2, support: { members: 84, neighbours: 72, rangers: 82 } },
+          { id: "parking-shuttle", original: false, label: "Use off-site overflow and a shuttle", changeCost: 4, support: { members: 62, neighbours: 86, rangers: 70 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -2932,6 +3078,8 @@ let lockPreview = null;
 let clauseFilter = "";
 let clauseDensity = "comfortable";
 let vetoGroupsOnly = false;
+let lockedClausesOnly = false;
+let printRedacted = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
 let weightPreviewKey = "";
@@ -2945,25 +3093,40 @@ const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
+function groupDisplayName(group) {
+  if (!printRedacted) return group.name;
+  const index = state.proposal.groups.findIndex((row) => row.id === group.id);
+  return `Group ${index >= 0 ? index + 1 : state.proposal.groups.length + 1}`;
+}
+
+function renderPrintKicker() {
+  const kicker = $(".facilitator-pack-kicker");
+  if (!kicker) return;
+  kicker.textContent = printRedacted
+    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. The saved draft is unchanged. The workshop tour is hidden. This is a decision aid, not a recorded vote."
+    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes and veto highlights. This is a decision aid, not a recorded vote.";
+}
+
 function firstProposalError(proposal) {
   return validateProposal(proposal).errors[0];
 }
 
-function loadClauseDensity() {
+function loadWorkspacePrefs() {
   try {
     const raw = localStorage.getItem(WORKSPACE_KEY);
-    if (!raw) return "comfortable";
+    if (!raw) return;
     const parsed = JSON.parse(raw);
-    if (parsed?.clauseDensity === "compact" || parsed?.clauseDensity === "comfortable") return parsed.clauseDensity;
+    if (parsed?.clauseDensity === "compact" || parsed?.clauseDensity === "comfortable") clauseDensity = parsed.clauseDensity;
+    vetoGroupsOnly = parsed?.vetoGroupsOnly === true;
+    lockedClausesOnly = parsed?.lockedClausesOnly === true;
   } catch {
-    return "comfortable";
+    /* storage may be unavailable or invalid */
   }
-  return "comfortable";
 }
 
-function persistClauseDensity() {
+function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -3145,6 +3308,7 @@ function render() {
   applyClauseDensity();
   renderBallot(vetoBlocks);
   renderResults(result, vetoBlocks);
+  renderPrintKicker();
 }
 
 function inspectedPackage(result) {
@@ -3175,7 +3339,7 @@ function renderGroups(vetoBlocks = new Set()) {
   } else {
     if (status) status.textContent = vetoGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
     $("#groups-editor").innerHTML = visible.map((group) => `
-    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}">
+    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}"${vetoBlocks.has(group.id) ? ` data-veto-block="${escapeHtml(group.id)}" tabindex="-1"` : ""}>
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
       <button class="text-button" type="button" data-action="duplicate-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length >= MAX_GROUPS ? "disabled" : ""}>Duplicate group</button>
@@ -3225,15 +3389,22 @@ function clauseMatchesFilter(clause, query) {
 function renderClauses() {
   const { groups } = state.proposal;
   const query = clauseFilter.trim().toLowerCase();
-  const visible = state.proposal.clauses.filter((clause) => clauseMatchesFilter(clause, query));
+  const checkbox = $("#locked-clauses-only");
+  if (checkbox) checkbox.checked = lockedClausesOnly;
+  const visible = state.proposal.clauses.filter((clause) => {
+    if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
+    return clauseMatchesFilter(clause, query);
+  });
   const status = $("#clause-filter-status");
   if (!visible.length) {
-    const message = "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
+    const message = lockedClausesOnly && query === ""
+      ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
+      : "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
     if (status) status.textContent = message;
     $("#clauses-editor").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
-  if (status) status.textContent = query === "" ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
+  if (status) status.textContent = query === "" && !lockedClausesOnly ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
   $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
@@ -3273,9 +3444,10 @@ function renderBallot(vetoBlocks = blockingVetoIds(currentResult())) {
   const proposal = state.proposal;
   const blocking = proposal.groups.filter((group) => vetoBlocks.has(group.id));
   const vetoNote = blocking.length
-    ? `<p class="veto-blocking-note">Veto not met on the inspected package for: ${blocking.map((group) => escapeHtml(group.name)).join(", ")}. This is a numerical constraint, not a legal right.</p>`
+    ? `<p class="veto-blocking-note">Veto not met on the inspected package for: ${blocking.map((group) => escapeHtml(groupDisplayName(group))).join(", ")}. This is a numerical constraint, not a legal right.</p>`
     : "";
-  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p>${vetoNote}${proposal.clauses.map((clause) => `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`).join("")}`;
+  const groupList = proposal.groups.map((group) => escapeHtml(groupDisplayName(group))).join(", ");
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${vetoNote}${proposal.clauses.map((clause) => `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`).join("")}`;
 }
 
 function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
@@ -3295,6 +3467,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
@@ -3499,7 +3672,7 @@ function renderStressTest(result) {
   const original = stressed.original;
   $("#stress-result").innerHTML = `<div class="result-summary"><div class="metric"><span class="metric-label">Entered approval</span><strong>${formatPercent(original.approval)}</strong></div><div class="metric"><span class="metric-label">Downside approval</span><strong>${formatPercent(summary.approval)}</strong></div><div class="metric"><span class="metric-label">Downside margin</span><strong class="${summary.approval + 1e-9 >= state.proposal.threshold ? "positive" : "negative"}">${formatMargin(summary.approval - state.proposal.threshold)}</strong></div><div class="metric cost"><span class="metric-label">Drop applied</span><strong>${drop} points</strong></div></div><p><strong>${stressed.status === "passing" ? "The same recommendation still passes this downside scenario." : "The recommendation fails this downside scenario."}</strong> Every score was reduced by ${drop} points and stopped at zero. This is not a probability of consent.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Entered support</th><th scope="col">Downside support</th><th scope="col">Floor</th></tr></thead><tbody>${summary.byGroup.map((group, index) => {
     const floor = summary.constraints.floors.find((row) => row.id === group.id);
-    return `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(original.byGroup[index].approval)}</td><td>${formatPercent(group.approval)}</td><td>${floor ? `${floor.minimum}%: ${floor.met ? "met" : "not met"}` : "None"}</td></tr>`;
+    return `<tr><th scope="row">${escapeHtml(groupDisplayName(group))}</th><td>${formatPercent(original.byGroup[index].approval)}</td><td>${formatPercent(group.approval)}</td><td>${floor ? `${floor.minimum}%: ${floor.met ? "met" : "not met"}` : "None"}</td></tr>`;
   }).join("")}</tbody></table></div>`;
 }
 $("#support-drop").addEventListener("input", () => renderStressTest(currentResult()));
@@ -3525,10 +3698,10 @@ function renderManualPackage(result) {
   const failures = [];
   if (summary.approval + 1e-9 < state.proposal.threshold) failures.push('Below the overall threshold');
   if (summary.constraints.budget && !summary.constraints.budget.met) failures.push('Over the cost budget');
-  for (const floor of summary.constraints.floors) if (!floor.met) failures.push(escapeHtml(floor.name) + ' below its support floor');
-  for (const veto of summary.constraints.vetoes ?? []) if (!veto.met) failures.push(escapeHtml(veto.name) + ' below its veto threshold');
+  for (const floor of summary.constraints.floors) if (!floor.met) failures.push(escapeHtml(groupDisplayName(floor)) + ' below its support floor');
+  for (const veto of summary.constraints.vetoes ?? []) if (!veto.met) failures.push(escapeHtml(groupDisplayName(veto)) + ' below its veto threshold');
   for (const lock of summary.constraints.locks) if (!lock.met) failures.push(escapeHtml(lock.clauseTitle) + ' does not use its locked option');
-  $("#manual-result").innerHTML = '<p><strong>' + (evaluated.status === 'passing' ? 'Passes all configured requirements.' : 'Does not pass: ' + failures.join('; ') + '.') + '</strong></p><p>Approval ' + formatPercent(summary.approval) + '. Change cost ' + summary.changeCost.toFixed(1) + '. ' + summary.changedClauseCount + ' changed clauses.' + (result.agreement ? ' Cost difference from the recommendation: ' + (summary.changeCost - result.agreement.changeCost).toFixed(1) + '.' : '') + '</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Custom support</th><th scope="col">Change from original</th></tr></thead><tbody>' + summary.groupDeltas.map((group) => '<tr><th scope="row">' + escapeHtml(group.name) + '</th><td>' + formatPercent(group.after) + '</td><td>' + formatMargin(group.delta) + '</td></tr>').join('') + '</tbody></table></div>';
+  $("#manual-result").innerHTML = '<p><strong>' + (evaluated.status === 'passing' ? 'Passes all configured requirements.' : 'Does not pass: ' + failures.join('; ') + '.') + '</strong></p><p>Approval ' + formatPercent(summary.approval) + '. Change cost ' + summary.changeCost.toFixed(1) + '. ' + summary.changedClauseCount + ' changed clauses.' + (result.agreement ? ' Cost difference from the recommendation: ' + (summary.changeCost - result.agreement.changeCost).toFixed(1) + '.' : '') + '</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Custom support</th><th scope="col">Change from original</th></tr></thead><tbody>' + summary.groupDeltas.map((group) => '<tr><th scope="row">' + escapeHtml(groupDisplayName(group)) + '</th><td>' + formatPercent(group.after) + '</td><td>' + formatMargin(group.delta) + '</td></tr>').join('') + '</tbody></table></div>';
 }
 
 $("#use-recommendation").addEventListener("click", () => {
@@ -3550,7 +3723,7 @@ function renderAlternatives(result) {
       const clause = state.proposal.clauses[i];
       return `${escapeHtml(clause.title)}: ${escapeHtml(option.label)} <button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`;
     }).join("<br>");
-    return `<tr><th scope="row">${index + 1}. ${packageLines}</th><td>${candidate.changeCost.toFixed(1)}</td><td>${formatPercent(candidate.approval)}</td><td>${formatPercent(Math.min(...candidate.byGroup.map((group) => group.approval)))}</td><td>${candidate.supportersLost.map((group) => escapeHtml(group.name)).join(", ") || "None"}</td></tr>`;
+    return `<tr><th scope="row">${index + 1}. ${packageLines}</th><td>${candidate.changeCost.toFixed(1)}</td><td>${formatPercent(candidate.approval)}</td><td>${formatPercent(Math.min(...candidate.byGroup.map((group) => group.approval)))}</td><td>${candidate.supportersLost.map((group) => escapeHtml(groupDisplayName(group))).join(", ") || "None"}</td></tr>`;
   }).join("");
   $("#passing-alternatives").innerHTML = `<p>${result.passingCombinations} passing combinations. Showing the first ${candidates.length} by lowest cost, fewest changes, higher approval, then option IDs. These are ranked choices, not a fairness ranking. Try this option locks one choice and re-solves the rest.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Rank and package</th><th scope="col">Cost</th><th scope="col">Approval</th><th scope="col">Lowest group support</th><th scope="col">Groups losing support</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -3588,7 +3761,7 @@ function renderLeaveOneOut(result) {
     return;
   }
   const source = result.agreement ? "recommended package" : "original package";
-  $("#leave-one-out").innerHTML = `<p>Inspecting the ${source}. Full weighted approval ${formatPercent(table.fullApproval)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Omitted group</th><th scope="col">Weight</th><th scope="col">Approval without the group</th><th scope="col">Change from full approval</th></tr></thead><tbody>${table.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.weight}</td><td>${row.approval == null ? "Not defined with one group" : formatPercent(row.approval)}</td><td class="${row.delta > 0.0001 ? "positive" : row.delta < -0.0001 ? "negative" : ""}">${row.delta == null ? "Not defined" : formatMargin(row.delta)}</td></tr>`).join("")}</tbody></table></div>`;
+  $("#leave-one-out").innerHTML = `<p>Inspecting the ${source}. Full weighted approval ${formatPercent(table.fullApproval)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Omitted group</th><th scope="col">Weight</th><th scope="col">Approval without the group</th><th scope="col">Change from full approval</th></tr></thead><tbody>${table.rows.map((row) => `<tr><th scope="row">${escapeHtml(groupDisplayName(row))}</th><td>${row.weight}</td><td>${row.approval == null ? "Not defined with one group" : formatPercent(row.approval)}</td><td class="${row.delta > 0.0001 ? "positive" : row.delta < -0.0001 ? "negative" : ""}">${row.delta == null ? "Not defined" : formatMargin(row.delta)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function renderGroupContribution(result) {
@@ -3603,7 +3776,7 @@ function renderGroupContribution(result) {
     return;
   }
   const source = result.agreement ? "recommended package" : "original package";
-  $("#group-contribution").innerHTML = `<p>Inspecting the ${source}. Overall approval ${formatPercent(analysis.overallApproval)}. Original ${formatPercent(analysis.originalApproval)}. Method: weight share times group average. Pulls sum to the change in overall approval.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight share</th><th scope="col">Selected support</th><th scope="col">Original support</th><th scope="col">Contribution</th><th scope="col">Pull on overall approval</th></tr></thead><tbody>${analysis.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${(row.share * 100).toFixed(1)}%</td><td>${formatPercent(row.selectedApproval)}</td><td>${formatPercent(row.originalApproval)}</td><td>${formatPercent(row.contribution)}</td><td class="${row.overallPull > 0.0001 ? "positive" : row.overallPull < -0.0001 ? "negative" : ""}">${formatMargin(row.overallPull)}</td></tr>`).join("")}</tbody></table></div>`;
+  $("#group-contribution").innerHTML = `<p>Inspecting the ${source}. Overall approval ${formatPercent(analysis.overallApproval)}. Original ${formatPercent(analysis.originalApproval)}. Method: weight share times group average. Pulls sum to the change in overall approval.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight share</th><th scope="col">Selected support</th><th scope="col">Original support</th><th scope="col">Contribution</th><th scope="col">Pull on overall approval</th></tr></thead><tbody>${analysis.rows.map((row) => `<tr><th scope="row">${escapeHtml(groupDisplayName(row))}</th><td>${(row.share * 100).toFixed(1)}%</td><td>${formatPercent(row.selectedApproval)}</td><td>${formatPercent(row.originalApproval)}</td><td>${formatPercent(row.contribution)}</td><td class="${row.overallPull > 0.0001 ? "positive" : row.overallPull < -0.0001 ? "negative" : ""}">${formatMargin(row.overallPull)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function customOptionIds() {
@@ -3637,9 +3810,12 @@ function renderSideBySide(result) {
     const title = `${escapeHtml(row.clauseTitle)}${note ? `<br><small>Facilitator note: ${escapeHtml(note)}</small>` : ""}`;
     return `<tr><th scope="row">${title}</th><td>${choiceCell(row.original)}</td><td>${row.recommended ? choiceCell(row.recommended, changed ? " (changed)" : "") : "No recommendation"}</td><td>${choiceCell(row.custom, customNote)}</td></tr>`;
   }).join("");
-  const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
+  const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(groupDisplayName(group))}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
   const recommendedLock = recommendedIds ? `<p>${lockPackageButton(recommendedIds, "Lock recommended package")} Applying locks is one draft edit, so undo restores the previous locks. Locked search still reports a deliberation aid, not a decision.</p>` : "";
   $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(comparison.originalApproval)}. Recommended ${comparison.recommendedApproval == null ? "not found" : formatPercent(comparison.recommendedApproval)}. Custom ${formatPercent(comparison.customApproval)}. Original cost ${comparison.originalCost.toFixed(1)}. Recommended cost ${comparison.recommendedCost == null ? "not found" : comparison.recommendedCost.toFixed(1)}. Custom cost ${comparison.customCost.toFixed(1)}.</p>${recommendedLock}<div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th><th scope="col">Custom package</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th><th scope="col">Custom approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
+  const table = formatPinnedPackagesMarkdown(state.proposal, recommendedIds, customOptionIds());
+  const fallback = $("#package-table-fallback");
+  if (fallback) fallback.value = table.status === "ok" ? table.text : "";
 }
 
 function renderConstraints(result, vetoBlocks = new Set()) {
@@ -3647,8 +3823,8 @@ function renderConstraints(result, vetoBlocks = new Set()) {
   const rows = [];
   const mark = (met) => met ? "Met" : "Not met";
   if (checks.budget) rows.push(`<tr><th scope="row">Total change cost</th><td>At most ${checks.budget.maximum}</td><td>${checks.budget.actual}</td><td>${mark(checks.budget.met)}</td></tr>`);
-  for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(floor.name)} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
-  for (const veto of checks.vetoes ?? []) rows.push(`<tr class="${vetoBlocks.has(veto.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(veto.name)} veto</th><td>At least ${veto.required}%</td><td>${formatPercent(veto.actual)}</td><td>${mark(veto.met)}</td></tr>`);
+  for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(groupDisplayName(floor))} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
+  for (const veto of checks.vetoes ?? []) rows.push(`<tr class="${vetoBlocks.has(veto.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(groupDisplayName(veto))} veto</th><td>At least ${veto.required}%</td><td>${formatPercent(veto.actual)}</td><td>${mark(veto.met)}</td></tr>`);
   for (const lock of checks.locks) rows.push(`<tr><th scope="row">${escapeHtml(lock.clauseTitle)}</th><td>${escapeHtml(lock.label)}</td><td>Locked option</td><td>${mark(lock.met)}</td></tr>`);
   const inspected = result.agreement ? "Recommended combination" : "Original proposal, no recommendation found";
   const counts = result.checkedCombinations === 1 && result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget, ${result.rejected.floors.toLocaleString()} below a group floor, and ${result.rejected.vetoes.toLocaleString()} below a veto. These counts can overlap. Locks exclude other options before enumeration.`;
@@ -3672,7 +3848,7 @@ function renderChanges(agreement, current) {
   }
   changes.innerHTML = agreement.changes.length ? agreement.changes.map((change) => `<div class="change-item"><strong>${escapeHtml(change.clauseTitle)}</strong><span>${escapeHtml(change.from)} to ${escapeHtml(change.to)}. Cost ${change.changeCost.toFixed(1)}.</span></div>`).join("") : '<p class="empty-state">Keep every original option.</p>';
   const deltas = agreement.groupDeltas.filter((group) => Math.abs(group.delta) > 0.0001);
-  shifts.innerHTML = deltas.length ? deltas.map((group) => `<div class="shift-item"><strong>${escapeHtml(group.name)}</strong> <span class="${group.delta > 0 ? "positive" : "negative"}">${group.delta > 0 ? "+" : ""}${group.delta.toFixed(1)} points</span><br><span>${formatPercent(group.before)} to ${formatPercent(group.after)}</span></div>`).join("") : '<p class="empty-state">No group support changes.</p>';
+  shifts.innerHTML = deltas.length ? deltas.map((group) => `<div class="shift-item"><strong>${escapeHtml(groupDisplayName(group))}</strong> <span class="${group.delta > 0 ? "positive" : "negative"}">${group.delta > 0 ? "+" : ""}${group.delta.toFixed(1)} points</span><br><span>${formatPercent(group.before)} to ${formatPercent(group.after)}</span></div>`).join("") : '<p class="empty-state">No group support changes.</p>';
 }
 
 function lockPackageButton(optionIds, label) {
@@ -3789,7 +3965,7 @@ function drawCoalition(current, agreement) {
   rows.forEach((group, index) => {
     const y = 12 + index * rowHeight;
     context.fillStyle = "#19352d";
-    context.fillText(group.name.slice(0, 18), 8, y + 10);
+    context.fillText(groupDisplayName(group).slice(0, 18), 8, y + 10);
     context.fillStyle = "#e8dfd0";
     context.fillRect(barStart, y, barWidth, 8);
     context.fillStyle = "#3778a6";
@@ -3809,7 +3985,7 @@ function drawCoalition(current, agreement) {
 
 function renderCoalitionTable(current, agreement, vetoBlocks = new Set()) {
   if (!current) return;
-  $("#coalition-table").innerHTML = `<table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Current</th><th scope="col">Recommended</th></tr></thead><tbody>${current.byGroup.map((group, index) => `<tr class="${vetoBlocks.has(group.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(group.name)}</th><td>${group.weight}</td><td>${formatPercent(group.approval)}</td><td>${agreement ? formatPercent(agreement.byGroup[index].approval) : "Not found"}</td></tr>`).join("")}</tbody></table>`;
+  $("#coalition-table").innerHTML = `<table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Current</th><th scope="col">Recommended</th></tr></thead><tbody>${current.byGroup.map((group, index) => `<tr class="${vetoBlocks.has(group.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(groupDisplayName(group))}</th><td>${group.weight}</td><td>${formatPercent(group.approval)}</td><td>${agreement ? formatPercent(agreement.byGroup[index].approval) : "Not found"}</td></tr>`).join("")}</tbody></table>`;
 }
 
 function groupById(id) { return state.proposal.groups.find((group) => group.id === id); }
@@ -3883,14 +4059,27 @@ $("#clause-filter").addEventListener("input", (event) => {
   renderClauses();
   applyClauseDensity();
 });
-$("#clause-density").addEventListener("change", (event) => {
-  clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
-  persistClauseDensity();
+$("#locked-clauses-only").addEventListener("change", (event) => {
+  lockedClausesOnly = event.target.checked === true;
+  persistWorkspacePrefs();
+  renderClauses();
   applyClauseDensity();
 });
-$("#veto-groups-only").addEventListener("change", (event) => {
-  vetoGroupsOnly = event.target.checked === true;
+$("#clause-density").addEventListener("change", (event) => {
+  clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
+  persistWorkspacePrefs();
+  applyClauseDensity();
+});
+function setVetoGroupsOnly(next) {
+  vetoGroupsOnly = next === true;
+  const checkbox = $("#veto-groups-only");
+  if (checkbox) checkbox.checked = vetoGroupsOnly;
+  persistWorkspacePrefs();
   renderGroups(blockingVetoIds(currentResult()));
+}
+
+$("#veto-groups-only").addEventListener("change", (event) => {
+  setVetoGroupsOnly(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -4084,14 +4273,15 @@ document.addEventListener("click", (event) => {
     ] });
   });
   if (action === "remove-clause") changeAndRender(() => { state.proposal.clauses = state.proposal.clauses.filter((clause) => clause.id !== button.dataset.clauseId); });
-  if (action === "move-clause") changeAndRender(() => {
-    const index = state.proposal.clauses.findIndex((clause) => clause.id === button.dataset.clauseId);
-    const offset = button.dataset.direction === "up" ? -1 : 1;
-    const target = index + offset;
-    if (index < 0 || target < 0 || target >= state.proposal.clauses.length) return;
-    const [row] = state.proposal.clauses.splice(index, 1);
-    state.proposal.clauses.splice(target, 0, row);
-  });
+  if (action === "move-clause") {
+    const moved = moveClause(state.proposal, button.dataset.clauseId, button.dataset.direction);
+    if (moved.status !== "ok") {
+      notifyDraft(`Could not move that clause: ${moved.errors[0]}`);
+      return;
+    }
+    changeAndRender(() => { state.proposal = moved.proposal; });
+    return;
+  }
   if (action === "duplicate-clause") changeAndRender(() => {
     if (state.proposal.clauses.length >= MAX_CLAUSES) return;
     const source = clauseById(button.dataset.clauseId);
@@ -4252,10 +4442,10 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
-  notifyDraft("Workspace JSON downloaded with the current draft and clause card density.");
+  notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
 });
 $("#export-locks-button").addEventListener("click", () => {
   const exported = formatLocksJson(state.proposal);
@@ -4288,7 +4478,18 @@ $("#locks-import-file").addEventListener("change", async (event) => {
   changeAndRender(() => { state.proposal = parsed.proposal; });
   notifyDraft(`Imported ${parsed.applied} clause lock${parsed.applied === 1 ? "" : "s"}. Every previous lock was replaced. Undo restores the previous draft.`);
 });
-$("#print-button").addEventListener("click", () => window.print());
+function printFacilitatorPack(redacted) {
+  printRedacted = redacted === true;
+  render();
+  window.print();
+}
+$("#print-button").addEventListener("click", () => printFacilitatorPack(false));
+$("#print-redacted-button").addEventListener("click", () => printFacilitatorPack(true));
+window.addEventListener("afterprint", () => {
+  if (!printRedacted) return;
+  printRedacted = false;
+  render();
+});
 $("#worksheet-button").addEventListener("click", () => {
   const worksheet = formatDiscussionWorksheet(state.proposal);
   if (worksheet.status !== "ok") return notifyDraft("Fix the draft before exporting the discussion worksheet.");
@@ -4399,6 +4600,16 @@ $("#clauses-import-file").addEventListener("change", async (event) => {
   changeAndRender(() => { state.proposal = parsed.proposal; });
   notifyDraft(`Imported ${parsed.importedClauses} clauses (${parsed.importedOptions} options) from CSV. Undo restores the previous draft.`);
 });
+$("#clause-paste-button").addEventListener("click", () => {
+  const pasted = $("#clause-paste")?.value ?? "";
+  const parsed = parseClauseOptionsCsv(pasted, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Pasted clauses failed (${first.code}): ${first.message}`);
+  }
+  changeAndRender(() => { state.proposal = parsed.proposal; });
+  notifyDraft(`Imported ${parsed.importedClauses} clauses (${parsed.importedOptions} options) from the pasted table. Undo restores the previous draft.`);
+});
 $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");
   state.saveMessage = "Decision brief downloaded.";
@@ -4413,6 +4624,22 @@ $("#copy-package-button").addEventListener("click", async () => {
     notifyDraft("Recommended package copied as Markdown. It is a decision aid, not a recorded vote.");
   } catch {
     notifyDraft("Could not copy to the clipboard. Export the brief instead.");
+  }
+});
+$("#copy-packages-table-button").addEventListener("click", async () => {
+  const result = currentResult();
+  if (result.status === "invalid") return notifyDraft("Fix the draft before copying the package table.");
+  const recommendedIds = result.agreement ? result.agreement.options.map((option) => option.id) : null;
+  const packaged = formatPinnedPackagesMarkdown(state.proposal, recommendedIds, customOptionIds());
+  if (packaged.status !== "ok") return notifyDraft(packaged.errors?.[0] ?? "Could not build the package table.");
+  const fallback = $("#package-table-fallback");
+  if (fallback) fallback.value = packaged.text;
+  try {
+    await navigator.clipboard.writeText(packaged.text);
+    notifyDraft("Package table copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the package table from the Markdown box. It is not a recorded vote.");
   }
 });
 $("#copy-veto-button").addEventListener("click", async () => {
@@ -4451,9 +4678,14 @@ $("#import-file").addEventListener("change", async (event) => {
   const workspace = parseWorkspaceJson(text);
   if (workspace.status === "ok") {
     state.proposal = workspace.proposal;
-    if (workspace.clauseDensity) {
+    if (workspace.kind === "workspace") {
+      if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") clauseDensity = workspace.clauseDensity;
+      vetoGroupsOnly = workspace.vetoGroupsOnly === true;
+      lockedClausesOnly = workspace.lockedClausesOnly === true;
+      persistWorkspacePrefs();
+    } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
-      persistClauseDensity();
+      persistWorkspacePrefs();
     }
     save();
     state.saveMessage = workspace.kind === "workspace"
@@ -4462,7 +4694,7 @@ $("#import-file").addEventListener("change", async (event) => {
     render();
     return;
   }
-  if (workspace.errors?.[0]?.code === "invalid_density" || workspace.errors?.[0]?.code === "invalid_format") {
+  if (workspace.errors?.[0]?.code === "invalid_density" || workspace.errors?.[0]?.code === "invalid_format" || workspace.errors?.[0]?.code === "invalid_filter") {
     state.saveMessage = `Import failed (${workspace.errors[0].code}): ${workspace.errors[0].message}`;
     $("#autosave-status").textContent = state.saveMessage;
     return;
@@ -4610,6 +4842,35 @@ function jumpToLocks() {
   }
   $("#clear-locks")?.focus?.();
 }
+function jumpToGroups() {
+  const visible = vetoGroupsOnly
+    ? state.proposal.groups.filter((group) => group.veto === true)
+    : state.proposal.groups;
+  if (visible.length) {
+    const first = visible[0];
+    const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
+    if (target?.focus) {
+      target.focus();
+      return;
+    }
+  }
+  $("#groups-heading")?.focus?.();
+}
+
+function jumpToVetoBlockers() {
+  const blocking = blockingVetoIds(currentResult());
+  const first = state.proposal.groups.find((group) => blocking.has(group.id));
+  if (first) {
+    const target = $(`[data-veto-block="${first.id}"]`);
+    if (target?.focus) {
+      target.focus();
+      return;
+    }
+  }
+  $("#constraint-checks")?.focus?.();
+  notifyDraft("No veto-blocker highlight is on screen. Review the veto list in Constraint checks. A veto is a numerical constraint, not a legal right.");
+}
+
 function findAgreement() {
   $("#results-heading")?.focus?.();
   notifyDraft("Search already runs as you edit. Review the recommendation below.");
@@ -4658,10 +4919,20 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "l" || event.key === "L") {
     event.preventDefault();
     jumpToLocks();
+  } else if (event.key === "v" || event.key === "V") {
+    event.preventDefault();
+    setVetoGroupsOnly(!vetoGroupsOnly);
+  } else if (event.key === "b" || event.key === "B") {
+    event.preventDefault();
+    jumpToVetoBlockers();
+  } else if (event.key === "g" || event.key === "G") {
+    event.preventDefault();
+    jumpToGroups();
   }
 });
 
-clauseDensity = loadClauseDensity();
+clauseDensity = "comfortable";
+loadWorkspacePrefs();
 render();
 startCoachIfNeeded();
 
