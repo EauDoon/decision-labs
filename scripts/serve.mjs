@@ -143,8 +143,9 @@ export function notFoundPage() {
     .copy-last-whats-new-tools { margin: 16px 0 0; }
     .copy-first-whats-new-tools { margin: 16px 0 0; }
     .copy-first-workbench-tools { margin: 16px 0 0; }
+    .copy-last-workbench-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench, .copy-last-workbench {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -157,8 +158,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status, .copy-last-workbench-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback, .copy-last-workbench-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -168,7 +169,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -236,6 +237,11 @@ export function notFoundPage() {
       <span class="copy-first-workbench-status" id="copy-first-workbench-status" role="status"></span>
     </p>
     <textarea id="copy-first-workbench-fallback" class="copy-first-workbench-fallback" hidden readonly rows="2" aria-label="First workbench heading as Markdown"></textarea>
+    <p class="copy-last-workbench-tools">
+      <button type="button" class="copy-last-workbench" id="copy-last-workbench">Copy last workbench heading</button>
+      <span class="copy-last-workbench-status" id="copy-last-workbench-status" role="status"></span>
+    </p>
+    <textarea id="copy-last-workbench-fallback" class="copy-last-workbench-fallback" hidden readonly rows="2" aria-label="Last workbench heading as Markdown"></textarea>
     <section class="guide" id="how-it-works">
       <h2 id="how-title">How it works</h2>
       <ul>
@@ -503,6 +509,42 @@ export function notFoundPage() {
             firstWorkbenchStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. First workbench heading was missing. This is catalog copy, not a live product feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first workbench heading, not a live product feed.';
+          }
+        }
+      });
+      const lastWorkbenchBtn = document.getElementById('copy-last-workbench');
+      const lastWorkbenchStatus = document.getElementById('copy-last-workbench-status');
+      const lastWorkbenchFallback = document.getElementById('copy-last-workbench-fallback');
+      const lastWorkbenchMarkdown = () => {
+        const headings = document.querySelectorAll('#workbenches article.workbench h3');
+        const heading = headings[headings.length - 1];
+        const text = heading?.textContent.trim() ?? '';
+        if (!text) return '';
+        return '- ' + text;
+      };
+      lastWorkbenchBtn?.addEventListener('click', async () => {
+        const markdown = lastWorkbenchMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastWorkbenchFallback) lastWorkbenchFallback.hidden = true;
+          if (lastWorkbenchStatus) {
+            lastWorkbenchStatus.textContent = empty
+              ? 'Last workbench heading was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the last workbench heading from this page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (lastWorkbenchFallback) {
+            lastWorkbenchFallback.hidden = false;
+            lastWorkbenchFallback.value = markdown;
+            lastWorkbenchFallback.focus();
+            lastWorkbenchFallback.select();
+          }
+          if (lastWorkbenchStatus) {
+            lastWorkbenchStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last workbench heading was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last workbench heading, not a live product feed.';
           }
         }
       });
