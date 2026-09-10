@@ -144,7 +144,7 @@ test("leftover fill unit-count copy stays on the organizer leftover fill units c
   assert.equal(merchantPanel.includes("copyLeftoverFillUnitCount"), false);
   assert.match(app, /function copyLeftoverFillUnitCount\(/u);
   assert.match(app, /#copy-leftover-fill-units/u);
-  assert.doesNotMatch(app, /if \(key === "[^"]+"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount/u);
+  assert.match(app, /if \(key === "'"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount\(\);/u);
 });
 
 test("leftover print jump stays on the leftover print control", async () => {

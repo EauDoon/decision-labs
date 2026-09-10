@@ -379,7 +379,7 @@ test("the buyer room copies leftover fill unit-count with a textarea fallback", 
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /Count only\. This is not a merchant export/u);
-  assert.doesNotMatch(app, /if \(key === "[^"]+"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount/u);
+  assert.match(app, /if \(key === "'"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount\(\);/u);
   assert.match(app, /if \(key === "y" \|\| key === ";"\)/u);
 });
 

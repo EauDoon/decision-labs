@@ -984,6 +984,11 @@ function handleShortcut(event) {
     focusLeftoverPrintControl();
     return;
   }
+  if (key === "'") {
+    event.preventDefault();
+    copyLeftoverFillUnitCount();
+    return;
+  }
 }
 
 function focusBuyersList() {
