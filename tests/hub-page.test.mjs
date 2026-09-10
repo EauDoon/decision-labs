@@ -4861,3 +4861,142 @@ test('underscore focuses the How it works heading when Copy first How it works i
   assert.deepEqual(focused, ['how-title']);
   assert.deepEqual(assigned, []);
 });
+
+test('keyboard less-than greater-than underscore are ignored in inputs using the same inEditable helper as c', () => {
+  assert.match(html, /const inEditable = \(node\) =>/);
+  assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /event\.key === '<'/);
+  assert.match(html, /event\.key === '>'/);
+  assert.match(html, /event\.key === '_'/);
+  const clicks = { lastHow: 0, firstHow: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-how') return { click() { clicks.lastHow += 1; }, addEventListener() {}, focus() { focused.push('copy-last-how'); } };
+      if (id === 'copy-first-how') return { click() { clicks.firstHow += 1; }, addEventListener() {}, focus() { focused.push('copy-first-how'); } };
+      if (id === 'how-title') return { focus() { focused.push('how-title'); } };
+      if (id === 'how-it-works') return { focus() { focused.push('how-it-works'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  for (const target of [input, textarea, select]) {
+    fire('<', target);
+    fire('>', target);
+    fire('_', target);
+    fire('c', target);
+  }
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.lastHow, 0);
+  assert.equal(clicks.firstHow, 0);
+  assert.deepEqual(assigned, []);
+  fire('<', body);
+  fire('>', body);
+  fire('_', body);
+  assert.deepEqual(focused, ['copy-last-how', 'copy-first-how']);
+  assert.equal(clicks.lastHow, 1);
+  assert.equal(clicks.firstHow, 0);
+  assert.deepEqual(assigned, []);
+});
+
+test('less-than greater-than underscore do not steal How copy, How jump, or first How copy', () => {
+  assert.match(html, /event\.key === '<'/);
+  assert.match(html, /event\.key === '>'/);
+  assert.match(html, /event\.key === '_'/);
+  assert.match(html, /event\.key === 'u'/);
+  assert.match(html, /event\.key === 'd'/);
+  assert.match(html, /event\.key === 'k'/);
+  assert.match(html, /event\.key === '-'/);
+  assert.match(html, /event\.key === '='/);
+  assert.match(html, /lastHowBtn\?\.click\(\)/);
+  assert.match(html, /firstHowBtn\?\.click\(\)/);
+  assert.match(html, /howBtn\?\.click\(\)/);
+  const clicks = { lastHow: 0, firstHow: 0, how: 0 };
+  const focused = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-how') return { click() { clicks.lastHow += 1; }, addEventListener() {}, focus() { focused.push('copy-last-how'); } };
+      if (id === 'copy-first-how') return { click() { clicks.firstHow += 1; }, addEventListener() {}, focus() { focused.push('copy-first-how'); } };
+      if (id === 'copy-how') return { click() { clicks.how += 1; }, addEventListener() {}, focus() { focused.push('copy-how'); } };
+      if (id === 'how-title') return { focus() { focused.push('how-title'); } };
+      if (id === 'how-it-works') return { focus() { focused.push('how-it-works'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#how-it-works li' ? { focus() { focused.push('how-li'); } } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  fire('u');
+  fire('d');
+  fire('k');
+  fire('-');
+  fire('=');
+  fire('<');
+  fire('>');
+  fire('_');
+  assert.equal(clicks.how, 1);
+  assert.equal(clicks.firstHow, 1);
+  assert.equal(clicks.lastHow, 1);
+  assert.deepEqual(focused, ['how-li', 'how-it-works', 'copy-how', 'copy-last-how', 'copy-first-how']);
+});
