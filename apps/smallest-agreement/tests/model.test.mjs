@@ -28,6 +28,7 @@ import {
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
+  formatPinnedPackagesMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -42,6 +43,7 @@ import {
   previewRenormalizedWeights,
   applyRenormalizedWeights,
   duplicateParticipantGroup,
+  moveClause,
   sortPackageGapRows,
   stressPackage,
   compareScenarioInputs,
@@ -856,6 +858,39 @@ test("toggleClauseLock locks or unlocks one option on a copy and rejects unknown
   assert.equal(toggleClauseLock(input, "one", "missing").status, "invalid");
 });
 
+test("moveClause reorders clauses for the documented tie breaker without mutating the draft", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-keep", true, { g: 40 }),
+        option("aaa", false, { g: 80 }, 1),
+        option("zzz", false, { g: 80 }, 1),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-keep", true, { g: 40 }),
+        option("mmm", false, { g: 80 }, 1),
+        option("nnn", false, { g: 80 }, 1),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const first = findSmallestAgreement(input);
+  assert.equal(first.status, "found");
+  assert.deepEqual(first.agreement.options.map((row) => row.id), ["aaa", "mmm"]);
+  const moved = moveClause(input, "two", "up");
+  assert.equal(moved.status, "ok");
+  assert.deepEqual(moved.proposal.clauses.map((clause) => clause.id), ["two", "one"]);
+  assert.equal(JSON.stringify(input), before);
+  const after = findSmallestAgreement(moved.proposal);
+  assert.equal(after.status, "found");
+  assert.deepEqual(after.agreement.options.map((row) => row.id), ["mmm", "aaa"]);
+  assert.equal(moveClause(input, "one", "up").status, "invalid");
+  assert.equal(moveClause(input, "two", "down").status, "invalid");
+  assert.equal(moveClause(input, "missing", "down").status, "invalid");
+  assert.equal(moveClause(input, "one", "sideways").status, "invalid");
+});
+
 test("vetoBlockingGroups names groups whose veto fails on the inspected package", () => {
   const input = proposal({
     threshold: 80,
@@ -1252,6 +1287,14 @@ test("clause options CSV replaces clauses with named errors and keeps matching s
   assert.equal(few.errors[0].code, "too_few_options");
   assert.equal(parseClauseOptionsCsv("   ", input).errors[0].code, "empty_csv");
   assert.equal(formatClauseOptionsCsv({ title: "" }).status, "invalid");
+
+  const tsv = parseClauseOptionsCsv("clause_id\toption_id\tclause_title\toption_label\toriginal\tchange_cost\none\toriginal\tHours\tKeep close\tyes\t0\none\talternative\tHours\tSeasonal\tno\t2\none\tother\tHours\tPilot\tno\t3\n", input);
+  assert.equal(tsv.status, "ok");
+  assert.equal(tsv.proposal.clauses[0].title, "Hours");
+  assert.equal(tsv.proposal.clauses[0].options[1].label, "Seasonal");
+  assert.equal(tsv.proposal.clauses[0].options[0].support.b, 50);
+  const tsvUnknown = parseClauseOptionsCsv("clause_id\toption_id\tclause_title\toption_label\toriginal\tchange_cost\thidden\none\toriginal\tOne\toriginal\tyes\t0\tx\n", input);
+  assert.equal(tsvUnknown.errors[0].code, "unknown_column");
 });
 
 test("locking an option for preview re-solves remaining clauses without mutating the draft", () => {
@@ -1425,6 +1468,30 @@ test("recommended package Markdown copies selected options without claiming legi
   assert.equal(formatRecommendedPackageMarkdown(infeasible).status, "unavailable");
 });
 
+test("pinned package Markdown table lists original, recommended, and pinned labels without recording a vote", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("one-original", true, { g: 50 }),
+      option("one-change", false, { g: 90 }, 2),
+      option("one-other", false, { g: 60 }, 4),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const markdown = formatPinnedPackagesMarkdown(input, ["one-change"], ["one-other"]);
+  assert.equal(markdown.status, "ok");
+  assert.match(markdown.text, /^# Original, recommended, and pinned packages\n/u);
+  assert.match(markdown.text, /Proposal: Test proposal/u);
+  assert.match(markdown.text, /not a recorded vote or a claim of legitimacy/u);
+  assert.match(markdown.text, /\| Clause \| Original \| Recommended \| Pinned \|/u);
+  assert.match(markdown.text, /\| Hours \| one-original \| one-change \| one-other \|/u);
+  assert.doesNotMatch(markdown.text, /[\u2014\u2013]/u);
+  const withoutRecommended = formatPinnedPackagesMarkdown(input, null, ["one-original"]);
+  assert.match(withoutRecommended.text, /\| Hours \| one-original \| none \| one-original \|/u);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(formatPinnedPackagesMarkdown({ title: "" }, ["one-change"], ["one-other"]).status, "invalid");
+  assert.equal(formatPinnedPackagesMarkdown(input, ["missing"], ["one-other"]).status, "invalid");
+});
+
 test("veto-blocker Markdown lists unmet veto constraints without claiming legitimacy", () => {
   const input = proposal({
     threshold: 80,
@@ -1521,6 +1588,41 @@ test("workspace JSON persists compact or comfortable clause density and keeps ol
   assert.equal(bare.clauseDensity, null);
   assert.equal(formatWorkspaceJson(input, { clauseDensity: "huge" }).errors[0].code, "invalid_density");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, clauseDensity: "huge", proposal: input })).errors[0].code, "invalid_density");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("workspace JSON persists display filters that the solver ignores, and older files show all", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "One", lockedOptionId: "alternative", options: [
+      option("original", true, { g: 50 }),
+      option("alternative", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const baseline = findSmallestAgreement(input);
+  const exported = formatWorkspaceJson(input, { clauseDensity: "comfortable", vetoGroupsOnly: true, lockedClausesOnly: true });
+  assert.equal(exported.status, "ok");
+  assert.equal(exported.vetoGroupsOnly, true);
+  assert.equal(exported.lockedClausesOnly, true);
+  const parsed = parseWorkspaceJson(exported.json);
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.kind, "workspace");
+  assert.equal(parsed.vetoGroupsOnly, true);
+  assert.equal(parsed.lockedClausesOnly, true);
+  assert.deepEqual(parsed.proposal, canonicalProposal(input));
+  assert.equal(Object.hasOwn(parsed.proposal, "vetoGroupsOnly"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "lockedClausesOnly"), false);
+  assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
+  const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
+  assert.equal(omitted.vetoGroupsOnly, false);
+  assert.equal(omitted.lockedClausesOnly, false);
+  const bare = parseWorkspaceJson(JSON.stringify(input));
+  assert.equal(bare.vetoGroupsOnly, null);
+  assert.equal(bare.lockedClausesOnly, null);
+  assert.equal(formatWorkspaceJson(input, { vetoGroupsOnly: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, vetoGroupsOnly: "yes", proposal: input })).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, lockedClausesOnly: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
