@@ -19,12 +19,37 @@ test("standalone build is self-contained, LF-only, and deterministic", async () 
   assert.doesNotMatch(first, /\r/);
 });
 
-test("release 1.5.9 ships Saturday early FX, bank-closed Gantt hide and first-closed-bank print", async () => {
+test("release 1.5.10 ships Sunday late bank, issuer-closed Gantt hide and first-closed-issuer print", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.9");
+  assert.equal(pkg.version, "1.5.10");
+  assert.match(readme, /New in v1\.5\.10/);
+  assert.match(changelog, /1\.5\.10/);
+  assert.match(html, /event\.key === ":"/);
+  assert.match(html, /id="copy-first-closed-issuer"/);
+  assert.ok(html.includes('event.key === "-"'));
+  assert.match(html, /event\.key === "="/);
+  assert.match(html, /id="gantt-hide-bank-closed"/);
+  assert.match(html, /data-preset="sundayLateBankClose"/);
+  assert.match(html, /hideIssuerClosedGanttHours/);
+  assert.match(html, /id="gantt-hide-issuer-closed"/);
+  assert.match(html, /id="first-closed-issuer-hour-line"/);
+  assert.match(html, /id="copy-first-closed-payout"/);
+  assert.match(html, /firstClosedPayoutHourToMarkdown/);
+  assert.match(html, /the first closed issuer hour when one exists, with an honest empty when none/);
+  assert.match(html, /id="weekend-review"/);
+  assert.match(html, /createWeekendReviewPacket/);
+  assert.match(html, /WEEKEND_REVIEW_TOOLS/);
+});
+
+test("release 1.5.10 retains 1.5.9 Saturday early FX, bank-closed Gantt hide and first-closed-bank print", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
+  const html = await buildStandalone();
+  assert.equal(pkg.version, "1.5.10");
   assert.match(readme, /New in v1\.5\.9/);
   assert.match(changelog, /1\.5\.9/);
   assert.match(html, /event\.key === "'"/);
@@ -44,12 +69,12 @@ test("release 1.5.9 ships Saturday early FX, bank-closed Gantt hide and first-cl
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
 });
 
-test("release 1.5.9 retains 1.5.8 Monday late issuer, hours-to-clear semicolon copy and zero-queue Gantt hide", async () => {
+test("release 1.5.10 retains 1.5.8 Monday late issuer, hours-to-clear semicolon copy and zero-queue Gantt hide", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.9");
+  assert.equal(pkg.version, "1.5.10");
   assert.match(readme, /New in v1\.5\.8/);
   assert.match(changelog, /1\.5\.8/);
   assert.match(html, /event\.key === ";"/);
@@ -66,12 +91,12 @@ test("release 1.5.9 retains 1.5.8 Monday late issuer, hours-to-clear semicolon c
   assert.match(html, /hours to clear the queue when a queue exists, with an honest empty when none/);
 });
 
-test("release 1.5.9 retains 1.5.7 Friday late FX close, settlement comma copy and closed Gantt hide", async () => {
+test("release 1.5.10 retains 1.5.7 Friday late FX close, settlement comma copy and closed Gantt hide", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.9");
+  assert.equal(pkg.version, "1.5.10");
   assert.match(readme, /New in v1\.5\.7/);
   assert.match(changelog, /1\.5\.7/);
   assert.match(html, /event\.key === ","/);
@@ -88,12 +113,12 @@ test("release 1.5.9 retains 1.5.7 Friday late FX close, settlement comma copy an
   assert.match(html, /The first closed FX hour label stays on the printed brief/);
 });
 
-test("release 1.5.9 retains 1.5.6 early Monday bank, settlement jump and weekend Gantt hide", async () => {
+test("release 1.5.10 retains 1.5.6 early Monday bank, settlement jump and weekend Gantt hide", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.9");
+  assert.equal(pkg.version, "1.5.10");
   assert.match(readme, /New in v1\.5\.6/);
   assert.match(changelog, /1\.5\.6/);
   assert.match(html, /event\.key === "y"/);
@@ -108,12 +133,12 @@ test("release 1.5.9 retains 1.5.6 early Monday bank, settlement jump and weekend
   assert.match(html, /Hours to first settlement stay on the printed brief/);
 });
 
-test("release 1.5.9 retains 1.5.5 thin Saturday FX, settlement copy and issuer jump", async () => {
+test("release 1.5.10 retains 1.5.5 thin Saturday FX, settlement copy and issuer jump", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.9");
+  assert.equal(pkg.version, "1.5.10");
   assert.match(readme, /New in v1\.5\.5/);
   assert.match(changelog, /1\.5\.5/);
   assert.match(html, /event\.key === "i"/);
@@ -134,12 +159,12 @@ test("release 1.5.9 retains 1.5.5 thin Saturday FX, settlement copy and issuer j
   assert.match(html, /ganttHourOpenOnEveryGate/);
 });
 
-test("release 1.5.9 retains 1.5.4 Sunday stall close, reserve copy and weekend Gantt filter", async () => {
+test("release 1.5.10 retains 1.5.4 Sunday stall close, reserve copy and weekend Gantt filter", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const changelog = await readFile(new URL("../CHANGELOG.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.9");
+  assert.equal(pkg.version, "1.5.10");
   assert.match(readme, /New in v1\.5\.4/);
   assert.match(changelog, /1\.5\.4/);
   assert.match(html, /event\.key === "k"/);
@@ -158,11 +183,11 @@ test("release 1.5.9 retains 1.5.4 Sunday stall close, reserve copy and weekend G
   assert.match(html, /id="copy-weekend-fx-counts"/);
 });
 
-test("release 1.5.9 retains 1.5.3 hours-to-clear copy, Saturday market and hour persist", async () => {
+test("release 1.5.10 retains 1.5.3 hours-to-clear copy, Saturday market and hour persist", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.9");
+  assert.equal(pkg.version, "1.5.10");
   assert.match(readme, /New in v1\.5\.3/);
   assert.match(readme, /Saturday market burst/);
   assert.match(html, /id="copy-hours-to-clear"/);
@@ -178,11 +203,11 @@ test("release 1.5.9 retains 1.5.3 hours-to-clear copy, Saturday market and hour 
   assert.match(html, /ganttEveryGateClosed/);
 });
 
-test("release 1.5.9 retains 1.5.2 peak-hour copy, holiday Monday and gate filter", async () => {
+test("release 1.5.10 retains 1.5.2 peak-hour copy, holiday Monday and gate filter", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.9");
+  assert.equal(pkg.version, "1.5.10");
   assert.match(readme, /New in v1\.5\.2/);
   assert.match(readme, /Public-holiday Monday/);
   assert.match(html, /id="copy-peak-hour"/);
@@ -197,11 +222,11 @@ test("release 1.5.9 retains 1.5.2 peak-hour copy, holiday Monday and gate filter
   assert.match(html, /queueBacklogOnly/);
 });
 
-test("release 1.5.9 retains 1.5.1 Gantt hour copy, payday burst, dashboard CSV and timing review", async () => {
+test("release 1.5.10 retains 1.5.1 Gantt hour copy, payday burst, dashboard CSV and timing review", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.9");
+  assert.equal(pkg.version, "1.5.10");
   assert.match(readme, /New in v1\.5\.1/);
   assert.match(readme, /New in v1\.5\.0/);
   assert.match(readme, /Payday Friday burst/);
