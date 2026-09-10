@@ -532,6 +532,7 @@ let clauseDensity = "comfortable";
 let vetoGroupsOnly = false;
 let lockedClausesOnly = false;
 let hideUnlockedClauses = false;
+let hideLockedClauses = false;
 let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
 let hideGroupsAtFloor = false;
@@ -627,6 +628,7 @@ function loadWorkspacePrefs() {
     vetoGroupsOnly = parsed?.vetoGroupsOnly === true;
     lockedClausesOnly = parsed?.lockedClausesOnly === true;
     hideUnlockedClauses = parsed?.hideUnlockedClauses === true;
+    hideLockedClauses = parsed?.hideLockedClauses === true;
     changedClausesOnly = parsed?.changedClausesOnly === true;
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
     overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
@@ -640,7 +642,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -938,6 +940,8 @@ function renderClauses() {
   if (checkbox) checkbox.checked = lockedClausesOnly;
   const hideUnlockedCheckbox = $("#hide-unlocked-clauses");
   if (hideUnlockedCheckbox) hideUnlockedCheckbox.checked = hideUnlockedClauses;
+  const hideLockedCheckbox = $("#hide-locked-clauses");
+  if (hideLockedCheckbox) hideLockedCheckbox.checked = hideLockedClauses;
   const changedCheckbox = $("#changed-clauses-only");
   if (changedCheckbox) changedCheckbox.checked = changedClausesOnly;
   const overBudgetCheckbox = $("#over-budget-clauses-only");
@@ -954,13 +958,14 @@ function renderClauses() {
   const visible = state.proposal.clauses.filter((clause) => {
     if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
     if (hideUnlockedClauses && clause.lockedOptionId === undefined) return false;
+    if (hideLockedClauses && clause.lockedOptionId !== undefined) return false;
     if (changedClausesOnly && !changedIds.has(clause.id)) return false;
     if (overBudgetClausesOnly && !overBudgetIds.has(clause.id)) return false;
     if (noCheaperRemainingClausesOnly && !noCheaperIds.has(clause.id)) return false;
     return clauseMatchesFilter(clause, query);
   });
   const status = $("#clause-filter-status");
-  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !hideUnlockedClauses && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
+  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !hideUnlockedClauses && !hideLockedClauses && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
   if (!visible.length) {
     const message = noCheaperRemainingClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly
       ? "No clauses lack a remaining cheaper option than the recommendation. Hidden cards still count in the model."
@@ -970,6 +975,8 @@ function renderClauses() {
       ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
       : hideUnlockedClauses && query === ""
         ? "No clauses remain after hiding unlocked clauses. Hidden cards still count in the model."
+      : hideLockedClauses && query === ""
+        ? "No clauses remain after hiding locked clauses. Hidden cards still count in the model."
       : lockedClausesOnly && query === ""
         ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
         : "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
@@ -1684,6 +1691,17 @@ function setHideUnlockedClauses(next) {
 $("#hide-unlocked-clauses").addEventListener("change", (event) => {
   setHideUnlockedClauses(event.target.checked === true);
 });
+function setHideLockedClauses(next) {
+  hideLockedClauses = next === true;
+  const checkbox = $("#hide-locked-clauses");
+  if (checkbox) checkbox.checked = hideLockedClauses;
+  persistWorkspacePrefs();
+  renderClauses();
+  applyClauseDensity();
+}
+$("#hide-locked-clauses").addEventListener("change", (event) => {
+  setHideLockedClauses(event.target.checked === true);
+});
 $("#changed-clauses-only").addEventListener("change", (event) => {
   changedClausesOnly = event.target.checked === true;
   persistWorkspacePrefs();
@@ -2108,7 +2126,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -2473,6 +2491,7 @@ $("#import-file").addEventListener("change", async (event) => {
       vetoGroupsOnly = workspace.vetoGroupsOnly === true;
       lockedClausesOnly = workspace.lockedClausesOnly === true;
       hideUnlockedClauses = workspace.hideUnlockedClauses === true;
+      hideLockedClauses = workspace.hideLockedClauses === true;
       changedClausesOnly = workspace.changedClausesOnly === true;
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
@@ -2625,11 +2644,21 @@ function jumpToLocks() {
     return;
   }
   const query = clauseFilter.trim().toLowerCase();
+  let needsRender = false;
   if (!clauseMatchesFilter(firstLocked, query)) {
     clauseFilter = "";
     const filter = $("#clause-filter");
     if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (hideLockedClauses) {
+    hideLockedClauses = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) {
     renderClauses();
+    applyClauseDensity();
   }
   const selector = `[data-field="clause-lock"][data-clause-id="${firstLocked.id}"]`;
   const target = $(selector);
@@ -2658,6 +2687,11 @@ function jumpToLockedClauseCard() {
     clauseFilter = "";
     const filter = $("#clause-filter");
     if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (hideLockedClauses) {
+    hideLockedClauses = false;
+    persistWorkspacePrefs();
     needsRender = true;
   }
   if (changedClausesOnly && !changedIds.has(firstLocked.id)) {
@@ -2922,6 +2956,11 @@ function jumpToChangedClause() {
     persistWorkspacePrefs();
     needsRender = true;
   }
+  if (hideLockedClauses && first.lockedOptionId !== undefined) {
+    hideLockedClauses = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
   if (overBudgetClausesOnly && !overBudgetIds.has(first.id)) {
     overBudgetClausesOnly = false;
     persistWorkspacePrefs();
@@ -3005,6 +3044,11 @@ function jumpToRecommendedOption() {
   }
   if (clause && hideUnlockedClauses && clause.lockedOptionId === undefined) {
     hideUnlockedClauses = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (clause && hideLockedClauses && clause.lockedOptionId !== undefined) {
+    hideLockedClauses = false;
     persistWorkspacePrefs();
     needsRender = true;
   }
