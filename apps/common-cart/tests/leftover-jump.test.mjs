@@ -238,8 +238,8 @@ test("leftover fill remaining capacity copy stays on the organizer leftover cont
   assert.match(app, /function copyLeftoverFillMerchantLabel\(/u);
   assert.match(app, /function copyLeftoverFillUnitCount\(/u);
   assert.match(app, /function copyWinningRemainingCapacity\(/u);
-  assert.match(app, /if \(key === "}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillRemainingCapacity\(\);/u);
-  assert.match(html, /aria-keyshortcuts="}"/u);
+  assert.match(app, /if \(key === "\}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillRemainingCapacity\(\);/u);
+  assert.match(html, /aria-keyshortcuts="\}"/u);
 });
 
 test("leftover fill fulfillment copy stays on the organizer leftover control", async () => {

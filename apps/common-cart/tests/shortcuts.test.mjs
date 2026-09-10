@@ -639,22 +639,22 @@ test("keyboard handler jumps to hide offers with remaining capacity when not typ
 
 test("shortcut help documents leftover fill remaining capacity copy", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(html, /<kbd>}<\/kbd> Copy leftover fill remaining capacity \(organizer private\)/u);
+  assert.match(html, /<kbd>\}<\/kbd> Copy leftover fill remaining capacity \(organizer private\)/u);
   assert.match(html, /id="copy-leftover-fill-remaining"/u);
-  assert.match(html, /id="copy-leftover-fill-remaining"[^>]*aria-keyshortcuts="}"/u);
+  assert.match(html, /id="copy-leftover-fill-remaining"[^>]*aria-keyshortcuts="\}"/u);
 });
 
 test("keyboard handler copies leftover fill remaining capacity with brace when not typing", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
-  assert.match(app, /if \(key === "}"\)/u);
+  assert.match(app, /if \(key === "\}"\)/u);
   assert.match(app, /function copyLeftoverFillRemainingCapacity\(/u);
   assert.match(app, /createLeftoverFillRemainingCapacityMarkdown\(scenario\)/u);
   assert.match(app, /#copy-leftover-fill-remaining/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.match(app, /organizer-private Markdown/u);
-  assert.doesNotMatch(app, /if \(key === "}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMerchantLabel/u);
-  assert.doesNotMatch(app, /if \(key === "}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount/u);
+  assert.doesNotMatch(app, /if \(key === "\}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMerchantLabel/u);
+  assert.doesNotMatch(app, /if \(key === "\}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount/u);
   assert.match(app, /if \(key === '"'\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMerchantLabel\(\);/u);
   assert.match(app, /if \(key === "'"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount\(\);/u);
 });
@@ -662,13 +662,13 @@ test("keyboard handler copies leftover fill remaining capacity with brace when n
 test("brace leftover fill remaining copy uses the existing leftover-fill remaining control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
-  assert.match(app, /if \(key === "}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillRemainingCapacity\(\);/u);
+  assert.match(app, /if \(key === "\}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillRemainingCapacity\(\);/u);
   assert.match(app, /function copyLeftoverFillRemainingCapacity\(/u);
   assert.match(app, /createLeftoverFillRemainingCapacityMarkdown\(scenario\)/u);
   assert.match(html, /id="copy-leftover-fill-remaining"/u);
-  assert.match(html, /aria-keyshortcuts="}"/u);
+  assert.match(html, /aria-keyshortcuts="\}"/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
-  assert.doesNotMatch(app, /if \(key === "}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+  assert.doesNotMatch(app, /if \(key === "\}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
   assert.match(app, /if \(key === "y" \|\| key === ";"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
 });
 
@@ -689,7 +689,7 @@ test("keyboard handler jumps to leftover fill remaining copy when not typing", a
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.doesNotMatch(app, /if \(key === "\+"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillRemainingCapacity/u);
   assert.doesNotMatch(app, /if \(key === "\+"\) \{\s*event\.preventDefault\(\);\s*focusHideBuyersWithLeftover/u);
-  assert.match(app, /if \(key === "}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillRemainingCapacity\(\);/u);
+  assert.match(app, /if \(key === "\}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillRemainingCapacity\(\);/u);
   assert.match(app, /if \(key === "="\) \{\s*event\.preventDefault\(\);\s*focusHideBuyersWithLeftover\(\);/u);
 });
 
