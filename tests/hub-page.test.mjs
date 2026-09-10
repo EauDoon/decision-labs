@@ -1766,6 +1766,168 @@ test('keyboard z copies skip-link targets through the same control', () => {
   assert.equal(clicks.skips, 1);
 });
 
+test('hash focuses Copy skip links when focus is not in an input', () => {
+  assert.match(html, /event\.key === '#'/);
+  assert.match(html, /getElementById\('copy-skips'\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /id="copy-skips"/);
+  assert.match(html, /id="skips"/);
+  assert.match(html, /nav class="skips" id="skips" tabindex="-1"/);
+  assert.match(html, /<kbd>#<\/kbd><\/dt><dd>Focus the Copy skip links control, or the skip-link row or catalog heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Press <kbd>#<\/kbd> to focus Copy skip links/);
+  assert.match(html, /This is distinct from <kbd>z<\/kbd>, which copies skip-link targets/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  const focused = [];
+  const clicks = { skips: 0 };
+  const assigned = [];
+  let keydown = null;
+  const copySkips = { focus() { focused.push('copy-skips'); }, click() { clicks.skips += 1; }, addEventListener() {} };
+  const skipRow = { focus() { focused.push('skips'); } };
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return copySkips;
+      if (id === 'skips') return skipRow;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('#', input, true);
+  fire('#', textarea, true);
+  fire('#', select, true);
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.skips, 0);
+  assert.deepEqual(assigned, []);
+  fire('#', body, true);
+  assert.deepEqual(focused, ['copy-skips']);
+  assert.equal(clicks.skips, 0);
+  assert.deepEqual(assigned, []);
+  fire('z', body, false);
+  assert.equal(clicks.skips, 1);
+  assert.deepEqual(focused, ['copy-skips']);
+  assert.deepEqual(assigned, []);
+});
+
+test('hash focuses the skip-link row when Copy skip links is missing', () => {
+  const focused = [];
+  const clicks = { skips: 0 };
+  const assigned = [];
+  let keydown = null;
+  const skipRow = { focus() { focused.push('skips'); } };
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return null;
+      if (id === 'skips') return skipRow;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '#',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: true,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['skips']);
+  assert.equal(clicks.skips, 0);
+  assert.deepEqual(assigned, []);
+});
+
+test('hash focuses the catalog heading when Copy skip links and the skip-link row are missing', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return null;
+      if (id === 'skips') return null;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '#',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: true,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['catalog-heading']);
+  assert.deepEqual(assigned, []);
+});
+
 test('copy skip links markdown is heading text plus hash hrefs from the skip links', async () => {
   let copied = '';
   let clickSkips = null;
