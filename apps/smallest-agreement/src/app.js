@@ -346,6 +346,38 @@ const presets = {
       },
     ],
   },
+  "shared-bike-shed": {
+    title: "Shared bike shed: access hours, lighting, and lock-up",
+    threshold: 70,
+    groups: [
+      { id: "cyclists", name: "Bike users", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "managers", name: "Building managers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "access", title: "Access hours", options: [
+          { id: "access-original", original: true, label: "Keep the shed locked from 20:00 to 07:00", changeCost: 0, support: { cyclists: 42, neighbours: 86, managers: 74 } },
+          { id: "access-late", original: false, label: "Allow fob access until 22:00", changeCost: 2, support: { cyclists: 86, neighbours: 62, managers: 70 } },
+          { id: "access-24", original: false, label: "Allow 24-hour fob access with a log", changeCost: 4, support: { cyclists: 90, neighbours: 40, managers: 48 } },
+        ],
+      },
+      {
+        id: "lighting", title: "Shed lighting", options: [
+          { id: "lighting-original", original: true, label: "Keep the existing sensor light", changeCost: 0, support: { cyclists: 48, neighbours: 80, managers: 72 } },
+          { id: "lighting-warm", original: false, label: "Add warm low-glare lighting on a timer", changeCost: 2, support: { cyclists: 82, neighbours: 74, managers: 76 } },
+          { id: "lighting-motion", original: false, label: "Install shielded motion lights facing the alley", changeCost: 3, support: { cyclists: 78, neighbours: 70, managers: 68 } },
+        ],
+      },
+      {
+        id: "lockup", title: "Lock-up", options: [
+          { id: "lockup-original", original: true, label: "Keep the shared padlock and a paper key list", changeCost: 0, support: { cyclists: 36, neighbours: 58, managers: 64 } },
+          { id: "lockup-fob", original: false, label: "Issue personal fobs and retire the padlock", changeCost: 2, support: { cyclists: 84, neighbours: 76, managers: 80 } },
+          { id: "lockup-camera", original: false, label: "Add a lock-up camera covering the door only", changeCost: 4, support: { cyclists: 70, neighbours: 52, managers: 78 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;

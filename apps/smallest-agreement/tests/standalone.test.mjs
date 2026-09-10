@@ -70,6 +70,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /library-quiet-hours/u);
   assert.match(html, /sports-fixture-night/u);
   assert.match(html, /market-stall-hours/u);
+  assert.match(html, /shared-bike-shed/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -733,6 +734,30 @@ test("market stall hours preset loads a distinct synthetic stall workshop", asyn
   assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
   assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
   assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.clauses(), /Match end-time/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Evening hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+});
+
+test("shared bike shed preset loads a distinct synthetic neighbour workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "shared-bike-shed");
+  app.click("#load-preset");
+  assert.match(app.title(), /Shared bike shed: access hours, lighting, and lock-up/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Access hours/u);
+  assert.match(app.clauses(), /Shed lighting/u);
+  assert.match(app.clauses(), /Lock-up/u);
+  assert.match(app.groups(), /Bike users/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /Building managers/u);
+  assert.doesNotMatch(app.title(), /Market stall hours/u);
+  assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.clauses(), /Stall open hours/u);
   assert.doesNotMatch(app.clauses(), /Match end-time/u);
   assert.doesNotMatch(app.clauses(), /Park access hours/u);
   assert.doesNotMatch(app.clauses(), /Evening hours/u);
