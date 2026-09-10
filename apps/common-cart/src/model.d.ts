@@ -409,6 +409,8 @@ export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
 export function createWinningMerchantLabelMarkdown(rawScenario: unknown): string;
 /** Merchant-safe one-liner. Pickup or shipping, or None unlocked. No buyer data. */
 export function createWinningFulfillmentMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover fill. Secondary leftover merchant and counts only. Not tertiary. */
+export function createLeftoverFillMarkdown(rawScenario: unknown): string;
 export interface OrganizerLeftoverRow {
   label: string;
   quantity: number;

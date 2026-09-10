@@ -1254,6 +1254,15 @@ export function createWinningFulfillmentMarkdown(rawScenario) {
   return `Winning fulfillment: ${mode}\n`;
 }
 
+/** Organizer-private one-line leftover fill. Secondary leftover merchant and counts only. Not tertiary. */
+export function createLeftoverFillMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.secondary
+    ? `${coverage.secondary.merchant}, ${coverage.secondary.deliveredBuyers} buyers, ${coverage.secondary.fulfilledUnits} units`
+    : "none";
+  return `Common Cart leftover fill (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
 /** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
 export function organizerLeftoverRows(rawScenario) {
   const scenario = validateScenario(rawScenario);

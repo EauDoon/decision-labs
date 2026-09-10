@@ -11,7 +11,8 @@ import {
   validateScenario,
   createWinningMerchantLabelMarkdown,
   createLeftoverHeadroomMarkdown,
-  createWinningFulfillmentMarkdown
+  createWinningFulfillmentMarkdown,
+  createLeftoverFillMarkdown
 } from "../src/model.js";
 
 function leftoverFixture() {
@@ -273,6 +274,38 @@ test("winning fulfillment Markdown is honest when none unlocked", () => {
   assert.equal(markdown.includes("SECRET_LABEL"), false);
   assert.equal(markdown.includes("pickup"), false);
   assert.equal(markdown.includes("shipping"), false);
+});
+
+test("leftover fill Markdown is organizer-private one-line merchant and counts", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createLeftoverFillMarkdown(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  assert.equal(markdown.trim().includes("\n"), false);
+  assert.match(markdown, /organizer private/);
+  assert.match(markdown, /Not a merchant export/);
+  assert.match(markdown, new RegExp(`${coverage.secondary.merchant}, ${coverage.secondary.deliveredBuyers} buyers, ${coverage.secondary.fulfilledUnits} units`));
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes("Tea room"), false);
+  assert.equal(markdown.includes("Tertiary"), false);
+  assert.equal(markdown.includes("tertiary"), false);
+});
+
+test("leftover fill Markdown is honest when leftover fill is missing", () => {
+  const scenario = leftoverFixture();
+  scenario.offers[1].minimumUnits = 5000;
+  const markdown = createLeftoverFillMarkdown(scenario);
+  assert.match(markdown, /: none\. Not a merchant export\./);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("Leaf Collective"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
 });
 
 test("winning fulfillment copy sits next to leftover print and stays off the merchant table", async () => {
