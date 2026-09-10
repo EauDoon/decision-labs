@@ -56,12 +56,12 @@ npm run check
 
 - A deterministic 72-hour Friday-to-Monday simulation.
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
-- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), and Payday Friday burst (synthetic) presets.
+- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), Payday Friday burst (synthetic), and Public-holiday Monday (synthetic) presets.
 - Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, hours to first settlement, and hours to clear the queue.
 - An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains). Copy dashboard numbers as Markdown or export a one-row dashboard CSV.
-- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, peak queue, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
+- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, peak queue, selected Gantt hour copy, timing review, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
 - Canvas chart with a printable SVG queue path that can be downloaded as a file, a formula-safe hourly queue CSV, and a text-equivalent data table.
-- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, copy of the selected hour, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
+- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, a single-gate display filter, copy of the selected hour, copy of the peak-queue hour, copy of closed hours, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
 ## Scenario comparison and reserve planner
@@ -123,6 +123,21 @@ scripts/dev-server.mjs Dependency-free local development server
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## New in v1.5.2: peak-hour copy, holiday Monday and gate filter
+
+1. Copy the peak-queue hour as Markdown: hour label, queued AUD, and gate open or closed state, with a synthetic-not-live notice. Distinct from selected Gantt hour copy. Clipboard write has a textarea fallback.
+2. Filter the Gantt chart to a single gate (Issuer, Bank, Payout or FX), with All gates restore. Display only; the simulation is unchanged. Workspace JSON stores the filter. Unknown values are rejected.
+3. Use the Public-holiday Monday (synthetic) preset. It keeps the same Friday start as Normal Friday and keeps Monday banking windows closed. It is distinct from Long-weekend Friday start, Compressed Friday close, Payday Friday burst and Thin FX, Tight Windows.
+4. Copy the closed-hours list as Markdown: each hour and which gates are closed. This is a local drawing, not a bank feed.
+5. Filter the hourly queue table to hours with backlog above zero. Display only. Dashboard counts stay unchanged. Restore shows all hours.
+6. Press `C` to copy the selected Gantt hour Markdown, the same text as the copy button. The key is ignored while typing in an input, textarea or select.
+7. Press `T` to jump to the timing review panel heading. The key is ignored while typing.
+8. Copy the arrival-cohort table as Markdown: cohort window, arrivals and remaining. This is not a forecast.
+9. Print and print redacted include one line for the peak-queue hour. The saved scenario is unchanged.
+10. Workspace JSON stores the backlog-only queue-table filter. Older files that omit the field restore all hours. Analysis JSON still has no timestamps.
+
+v1.5.1 Gantt hour copy, payday burst and dashboard CSV remain below.
 
 ## New in v1.5.1: Gantt hour copy, payday burst and dashboard CSV
 

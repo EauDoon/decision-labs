@@ -24,6 +24,7 @@ test("analysisToJSON does not call the clock", async () => {
   const next = model.indexOf("export function ", start + 1);
   const body = model.slice(start, next);
   assert.doesNotMatch(body, /Date\.now|new Date|toISOString|performance\.now/);
+  assert.doesNotMatch(model, /Date\.now|Math\.random|fetch\(|XMLHttpRequest/);
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(app, /analysisToJSON\(baselineScenario, scenario/);
 });
