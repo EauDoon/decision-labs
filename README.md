@@ -221,7 +221,9 @@ product feed or add another public path. Copy catalog intro on that 404 page cop
 the printed heading and lede as Markdown. It does not fetch a product feed or
 add another public path. Copy version line on that 404 page copies the printed
 catalog version listing as one Markdown line. It does not fetch a package
-file or add another public path. When the catalog is served over http,
+file or add another public path. Copy first Trust item on that 404 page copies
+the printed first Trust and limits list item as one Markdown line. It does not
+fetch a policy file or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
 this catalog page as Markdown. It uses the browser clipboard when that API is

@@ -85,8 +85,9 @@ export function notFoundPage() {
     a:focus-visible, button:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
     .copy-versions-tools { margin: 16px 0 0; }
     .copy-version-line-tools { margin: 16px 0 0; }
+    .copy-first-trust-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -99,8 +100,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -110,7 +111,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -176,6 +177,11 @@ export function notFoundPage() {
       <span class="copy-trust-status" id="copy-trust-status" role="status"></span>
     </p>
     <textarea id="copy-trust-fallback" class="copy-trust-fallback" hidden readonly rows="8" aria-label="Trust and limits as Markdown"></textarea>
+    <p class="copy-first-trust-tools">
+      <button type="button" class="copy-first-trust" id="copy-first-trust">Copy first Trust item</button>
+      <span class="copy-first-trust-status" id="copy-first-trust-status" role="status"></span>
+    </p>
+    <textarea id="copy-first-trust-fallback" class="copy-first-trust-fallback" hidden readonly rows="2" aria-label="First Trust and limits item as Markdown"></textarea>
     <p><a href="/">Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap</a></p>
   </main>
   <script>
@@ -321,6 +327,41 @@ export function notFoundPage() {
             trustFallback.select();
           }
           if (trustStatus) trustStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog Trust and limits list, not a live policy feed.';
+        }
+      });
+      const firstTrustBtn = document.getElementById('copy-first-trust');
+      const firstTrustStatus = document.getElementById('copy-first-trust-status');
+      const firstTrustFallback = document.getElementById('copy-first-trust-fallback');
+      const firstTrustMarkdown = () => {
+        const item = document.querySelector('#trust li');
+        const text = item?.textContent.trim() ?? '';
+        if (!text) return '';
+        return '- ' + text;
+      };
+      firstTrustBtn?.addEventListener('click', async () => {
+        const markdown = firstTrustMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstTrustFallback) firstTrustFallback.hidden = true;
+          if (firstTrustStatus) {
+            firstTrustStatus.textContent = empty
+              ? 'First Trust and limits list item was missing. Copied an empty string. This is catalog copy, not a live policy feed.'
+              : 'Copied the first Trust and limits list item from this page as Markdown. Not a live policy feed.';
+          }
+        } catch {
+          if (firstTrustFallback) {
+            firstTrustFallback.hidden = false;
+            firstTrustFallback.value = markdown;
+            firstTrustFallback.focus();
+            firstTrustFallback.select();
+          }
+          if (firstTrustStatus) {
+            firstTrustStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First Trust and limits list item was missing. This is catalog copy, not a live policy feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first Trust and limits item, not a live policy feed.';
+          }
         }
       });
       const howBtn = document.getElementById('copy-how');
