@@ -29,6 +29,7 @@ import {
   selectedGanttHourToMarkdown,
   peakQueueHourToMarkdown,
   closedGanttHoursToMarkdown,
+  fxGanttHoursToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   ganttHourClosedOnAnyGate,
@@ -1333,6 +1334,9 @@ document.querySelector("#copy-peak-hour").addEventListener("click", async () => 
 document.querySelector("#copy-closed-hours").addEventListener("click", async () => {
   await copyClosedHoursMarkdown();
 });
+document.querySelector("#copy-fx-hours").addEventListener("click", async () => {
+  await copyFxHoursMarkdown();
+});
 document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
   const text = arrivalCohortsToMarkdown(scenario);
   await copyTextWithFallback(text, "#cohort-copy-fallback", "Arrival-cohort table copied as Markdown. This is a synthetic ledger, not a forecast.");
@@ -1463,6 +1467,10 @@ function copySelectedGanttHourMarkdown() {
 function copyClosedHoursMarkdown() {
   const text = closedGanttHoursToMarkdown(scenario);
   return copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
+}
+function copyFxHoursMarkdown() {
+  const text = fxGanttHoursToMarkdown(scenario);
+  return copyTextWithFallback(text, "#fx-hours-copy-fallback", "FX hours copied as Markdown. This list is a local drawing, not a bank feed.");
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();

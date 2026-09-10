@@ -1380,6 +1380,26 @@ export function closedGanttHoursToMarkdown(input) {
   ].join("\n");
 }
 
+/** Markdown of FX weekday versus weekend hours. Local drawing, not a bank feed. */
+export function fxGanttHoursToMarkdown(input) {
+  const schedule = buildGateSchedule(input);
+  const rows = [];
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    rows.push("| " + point.timeLabel + " (hour " + point.hour + ") | " + ganttGateStateLabel(point.fxWeekday, true) + " |");
+  }
+  return [
+    "# Weekend Gap FX hours",
+    "",
+    "Local drawing of modeled FX hours. Not a bank feed.",
+    "",
+    "| Hour | FX |",
+    "| --- | --- |",
+    ...rows,
+    ""
+  ].join("\n");
+}
+
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
 export function arrivalCohortsToMarkdown(input) {
   const result = runSimulation(input);
