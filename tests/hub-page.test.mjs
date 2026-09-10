@@ -5602,10 +5602,12 @@ test('close-brace plus pipe do not steal semicolon jobs last-How first-How or eq
   assert.match(html, /event\.key === '_'/);
   assert.match(html, /event\.key === '<'/);
   assert.match(html, /event\.key === '='/);
+  assert.match(html, /event\.key === '-'/);
   assert.match(html, /lastJobBtn\?\.click\(\)/);
   assert.match(html, /firstJobBtn\?\.click\(\)/);
   assert.match(html, /jobsBtn\?\.click\(\)/);
   assert.match(html, /lastHowBtn\?\.click\(\)/);
+  assert.match(html, /firstHowBtn\?\.click\(\)/);
   const clicks = { lastJob: 0, firstJob: 0, jobs: 0, lastHow: 0, firstHow: 0 };
   const focused = [];
   let keydown = null;
@@ -5657,6 +5659,7 @@ test('close-brace plus pipe do not steal semicolon jobs last-How first-How or eq
   fire('_');
   fire('<');
   fire('=');
+  fire('-');
   fire('}', true);
   fire('+', true);
   fire('|', true);
