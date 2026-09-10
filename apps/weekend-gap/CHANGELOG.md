@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.9 - 2026-09-10
+
+A workshop follow-up on 1.5.8. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.8 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `'` copies first closed bank hour through the existing copy control, using the same Markdown. Ignored while typing.
+- Keyboard `<` jumps to the first-closed-bank-hour copy control, or the Gantt heading if that control is missing. Ignored while typing.
+- Keyboard `>` jumps to the hide-zero-queue Gantt filter, or the Gantt heading if that control is missing. Ignored while typing.
+- Saturday early FX open (synthetic) preset: same 72-hour calendar as Normal Friday, FX window opens Saturday morning earlier than Thin Saturday FX, Friday late FX close, Monday late issuer open, and Early Monday bank open. Distinct from Normal Friday, Long-weekend Friday start, Compressed Friday close, Payday Friday burst, Public-holiday Monday, Saturday market burst, and Sunday stall close. Synthetic. Not a bank feed.
+- Filter that hides Gantt hours where the bank gate is closed. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideBankClosedGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hideWeekdayGanttHours`, `hideWeekendGanttHours`, `hideOpenGanttHours`, `hideClosedGanttHours`, `hideZeroQueueGanttHours`, every-gate-closed, and single-gate closed-only filters. The selected hour stays visible if it would otherwise hide.
+- Print and print redacted include the first closed bank hour as one line, with an honest empty when none. Counts of modeled hours, not a bank calendar. Redacted print stays redacted. The saved scenario is unchanged. Analysis JSON still has no timestamps.
+- Copy first closed issuer hour label as one-line Markdown with an honest empty when none exists. Clipboard write has a textarea fallback. Distinct from first-closed-FX copy and first-closed-bank copy. Synthetic, not live.
+
 ## 1.5.8 - 2026-09-10
 
 A workshop follow-up on 1.5.7. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.7 review UI stay in place. Analysis JSON still has no timestamps.
