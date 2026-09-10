@@ -691,14 +691,14 @@ function stressSection() {
   const collapseNote = collapseAllHoldCases
     ? `${hiddenHoldCount} all-hold ${hiddenHoldCount === 1 ? 'case is' : 'cases are'} hidden from this table. ${stress.passCount} of ${stress.caseCount} tested cases still hold. Counts are unchanged.`
     : 'Collapse cases every participant holds to hide those rows from this table only. Counts stay the same.';
-  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.4.3</span></div>
+  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title" tabindex="-1">Compound stress and negotiation</h2><span class="optional">v1.4.3</span></div>
     <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
       <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
       <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button><button type="button" data-action="export-csv">Export all cases CSV</button><button type="button" data-action="export-visible-csv">Export visible cases CSV</button><button type="button" data-action="copy-visible-csv">Copy visible cases CSV</button></div>
       <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant. ${collapseNote}</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
-    <details class="case-details"><summary>Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods. ${visibleCases.length} of ${stress.caseCount} rows are visible.</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases || `<tr><td colspan="5">Every displayed case currently holds. ${stress.passCount} of ${stress.caseCount} tested cases hold. Expand to inspect all-hold rows. Counts are unchanged.</td></tr>`}</tbody></table></div></details>
+    <details class="case-details"><summary id="inspect-cases-title">Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods. ${visibleCases.length} of ${stress.caseCount} rows are visible.</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases || `<tr><td colspan="5">Every displayed case currently holds. ${stress.passCount} of ${stress.caseCount} tested cases hold. Expand to inspect all-hold rows. Counts are unchanged.</td></tr>`}</tbody></table></div></details>
     <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
 }
 
@@ -1600,6 +1600,11 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === 'd' || event.key === 'D') {
     const target = document.querySelector('#deal-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'k' || event.key === 'K') {
+    const target = document.querySelector('#compound-title') ?? document.querySelector('#inspect-cases-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -2692,6 +2697,7 @@ function helpDialog() {
         <li><kbd>b</kbd> Jump to the viability and binding-limit card heading</li>
         <li><kbd>t</kbd> Jump to the tornado chart heading</li>
         <li><kbd>d</kbd> Jump to the Shared deal heading</li>
+        <li><kbd>k</kbd> Jump to the Compound stress heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
