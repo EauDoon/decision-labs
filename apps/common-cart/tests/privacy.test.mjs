@@ -37,6 +37,7 @@ import {
   createLeftoverFillFulfillmentMarkdown,
   createLeftoverFillDeliveryMarkdown,
   createLeftoverFillPickupMarkdown,
+  createLeftoverFillLabelMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   createUncoveredLeftoverUnitCountMarkdown
@@ -490,6 +491,42 @@ test("merchant surfaces omit leftover fill pickup copy", async () => {
   for (const text of merchantSurfaces) {
     assert.equal(String(text).includes("leftover fill pickup (organizer private)"), false);
     assert.equal(String(text).includes("copy-leftover-fill-pickup"), false);
+    assert.equal(String(text).includes("Not a merchant export"), false);
+    assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
+  }
+});
+
+test("merchant surfaces omit leftover fill label copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-label"/u);
+  assert.match(buyerPanel, /Leftover fill label copy is leftover-fill offer label as merchant and variant/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-label"), false);
+  assert.equal(merchantPanel.includes("Copy leftover fill label"), false);
+  assert.equal(merchantPanel.includes("Leftover fill label copy"), false);
+  assert.equal(merchantPanel.includes("createLeftoverFillLabelMarkdown"), false);
+  const leftoverFillLabel = createLeftoverFillLabelMarkdown(secretNeighbourhood());
+  assert.match(leftoverFillLabel, /organizer private/);
+  assert.match(leftoverFillLabel, /Not a merchant export/);
+  assertOmitsPrivateBuyers(leftoverFillLabel, ["SECRET_TITLE"]);
+  const left = secretNeighbourhood();
+  const merchantSurfaces = [
+    JSON.stringify(createMerchantReport(left)),
+    JSON.stringify(createMerchantResidualReport(left)),
+    createWinnerAggregatesMarkdown(left),
+    createDeliveryHeatmapCsv(left),
+    createOfferCsv(left),
+    createVariantOverlapCsv(left),
+    createVariantOverlapMarkdown(left),
+    createExclusionCountsMarkdown(left, left.offers[1].id),
+    createWinningMerchantLabelMarkdown(left),
+    createWinningFulfillmentMarkdown(left),
+    createWinningRemainingCapacityMarkdown(left)
+  ];
+  for (const text of merchantSurfaces) {
+    assert.equal(String(text).includes("leftover fill label (organizer private)"), false);
+    assert.equal(String(text).includes("copy-leftover-fill-label"), false);
     assert.equal(String(text).includes("Not a merchant export"), false);
     assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
   }
