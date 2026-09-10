@@ -2573,6 +2573,46 @@ function jumpToBelowFloor() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToVetoGroup() {
+  const first = state.proposal.groups.find((group) => group.veto === true);
+  if (!first) {
+    $("#groups-heading")?.focus?.();
+    return;
+  }
+  let needsRender = false;
+  if (belowFloorGroupsOnly) {
+    const inspected = inspectedPackage(currentResult());
+    const below = inspected
+      ? groupsBelowSupportRequirement(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const belowIds = new Set(below.status === "ok" ? below.groups.map((group) => group.id) : []);
+    if (!belowIds.has(first.id)) {
+      belowFloorGroupsOnly = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
+  if (hideGroupsAtFloor) {
+    const inspected = inspectedPackage(currentResult());
+    const meeting = inspected
+      ? groupsMeetingDeclaredSupportFloor(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const meetingIds = new Set(meeting.status === "ok" ? meeting.groups.map((group) => group.id) : []);
+    if (meetingIds.has(first.id)) {
+      hideGroupsAtFloor = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
+  if (needsRender) renderGroups(blockingVetoIds(currentResult()));
+  const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToChangedClause() {
   const result = currentResult();
   const changed = changedClauseIds(state.proposal, result);
@@ -2784,6 +2824,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "q" || event.key === "Q") {
     event.preventDefault();
     jumpToChangedClause();
+  } else if (event.key === "y" || event.key === "Y") {
+    event.preventDefault();
+    jumpToVetoGroup();
   }
 });
 
