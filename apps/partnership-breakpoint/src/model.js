@@ -212,6 +212,15 @@ export const PRESETS = Object.freeze({
       { id: 'ticketing', name: 'Ticketing', revenueShare: 0.23, variableCostPerTransaction: 0.35, fixedMonthlyCost: 400, minimumAcceptableProfit: 250, capacity: 2200, minimumCommitment: 0, riskCost: 80 },
     ],
   },
+  sportsCarnivalSplit: {
+    name: 'Sports carnival split',
+    deal: { monthlyVolume: 2800, feePerTransaction: 16, addressableVolume: 4200, volumeShockPct: 0 },
+    participants: [
+      { id: 'carnival-committee', name: 'Carnival committee', revenueShare: 0.43, variableCostPerTransaction: 1.45, fixedMonthlyCost: 3100, minimumAcceptableProfit: 1500, capacity: 3600, minimumCommitment: 0, riskCost: 480 },
+      { id: 'ride-operator', name: 'Ride operator', revenueShare: 0.35, variableCostPerTransaction: 3.2, fixedMonthlyCost: 2200, minimumAcceptableProfit: 1100, capacity: 4800, minimumCommitment: 350, riskCost: 360 },
+      { id: 'ticket-booth', name: 'Ticket booth', revenueShare: 0.22, variableCostPerTransaction: 0.48, fixedMonthlyCost: 750, minimumAcceptableProfit: 400, capacity: 3200, minimumCommitment: 0, riskCost: 130 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
