@@ -82,6 +82,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>_<\/kbd> Jump to the first below-floor group copy control, or the groups heading/u);
   assert.match(html, /<kbd>\{<\/kbd> Jump to the hide-groups-below-threshold control, or the groups heading/u);
   assert.match(html, /<kbd>\}<\/kbd> Copy the groups-meeting-threshold count as one-line Markdown/u);
+  assert.match(html, /<kbd>\+<\/kbd> Jump to the threshold-group count copy control, or the groups or results heading/u);
   assert.match(html, /id="locks-heading"/u);
   assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
@@ -3165,7 +3166,30 @@ test("keyboard equals jumps to hide-groups-meeting-threshold unless an input is 
   app.keydown("=", { tagName: "SELECT", isContentEditable: false });
   assert.equal(app.focused(), "");
   app.keydown("+");
+  assert.equal(app.focused(), "#copy-threshold-group-count-button");
+  app.clearFocus();
+  app.keydown("=");
+  assert.equal(app.focused(), "#hide-groups-meeting-threshold");
+});
+
+test("keyboard plus jumps to the threshold-group count copy control unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>\+<\/kbd> Jump to the threshold-group count copy control, or the groups or results heading/u);
+  assert.match(html, /id="copy-threshold-group-count-button"/u);
+  assert.match(html, /id="groups-heading"/u);
+  assert.match(html, /id="results-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("+");
+  assert.equal(app.focused(), "#copy-threshold-group-count-button");
+  app.clearFocus();
+  app.keydown("+", { tagName: "INPUT", isContentEditable: false });
   assert.equal(app.focused(), "");
+  app.keydown("+", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("+", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("=");
+  assert.equal(app.focused(), "#hide-groups-meeting-threshold");
 });
 
 test("keyboard comma copies the recommended package option count unless an input is active", async () => {
