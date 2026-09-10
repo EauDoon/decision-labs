@@ -143,6 +143,8 @@ SOFTWARE.
           <p id="below-floor-groups-filter-note" class="field-note">Shows groups whose average on the inspected package is below their support floor, or the approval threshold when no floor is set. Hidden groups still count in the model. Solver counts stay the same.</p>
           <label class="hide-groups-at-floor-filter" for="hide-groups-at-floor"><input id="hide-groups-at-floor" type="checkbox"> Hide groups currently meeting their support floor</label>
           <p id="hide-groups-at-floor-filter-note" class="field-note">Hides groups whose average on the inspected package meets a declared support floor. Groups without a floor stay visible. Hidden groups still count in the model. The solver is unchanged.</p>
+          <label class="hide-groups-without-floors-filter" for="hide-groups-without-floors"><input id="hide-groups-without-floors" type="checkbox"> Hide groups that have no support floor</label>
+          <p id="hide-groups-without-floors-filter-note" class="field-note">Hides groups that have no declared support floor. Groups with a floor stay visible. Hidden groups still count in the model. The solver is unchanged.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
           <textarea id="groups-paste" rows="8" spellcheck="false" aria-describedby="groups-paste-note"></textarea>

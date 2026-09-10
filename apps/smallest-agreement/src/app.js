@@ -465,6 +465,7 @@ let lockedClausesOnly = false;
 let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
 let hideGroupsAtFloor = false;
+let hideGroupsWithoutFloors = false;
 let overBudgetClausesOnly = false;
 let noCheaperRemainingClausesOnly = false;
 let printRedacted = false;
@@ -544,6 +545,7 @@ function loadWorkspacePrefs() {
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
     overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
     hideGroupsAtFloor = parsed?.hideGroupsAtFloor === true;
+    hideGroupsWithoutFloors = parsed?.hideGroupsWithoutFloors === true;
     noCheaperRemainingClausesOnly = parsed?.noCheaperRemainingClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
@@ -552,7 +554,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -757,6 +759,8 @@ function renderGroups(vetoBlocks = new Set()) {
   if (belowCheckbox) belowCheckbox.checked = belowFloorGroupsOnly;
   const hideAtFloorCheckbox = $("#hide-groups-at-floor");
   if (hideAtFloorCheckbox) hideAtFloorCheckbox.checked = hideGroupsAtFloor;
+  const hideWithoutFloorsCheckbox = $("#hide-groups-without-floors");
+  if (hideWithoutFloorsCheckbox) hideWithoutFloorsCheckbox.checked = hideGroupsWithoutFloors;
   const inspected = inspectedPackage(currentResult());
   const below = inspected
     ? groupsBelowSupportRequirement(state.proposal, inspected)
@@ -770,12 +774,17 @@ function renderGroups(vetoBlocks = new Set()) {
     if (vetoGroupsOnly && group.veto !== true) return false;
     if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
     if (hideGroupsAtFloor && meetingIds.has(group.id)) return false;
+    if (hideGroupsWithoutFloors && !Object.hasOwn(group, "minSupport")) return false;
     return true;
   });
   const status = $("#veto-groups-status");
-  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor;
+  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors;
   if (!visible.length) {
-    const message = hideGroupsAtFloor && !vetoGroupsOnly && !belowFloorGroupsOnly
+    const message = hideGroupsWithoutFloors && hideGroupsAtFloor && !vetoGroupsOnly && !belowFloorGroupsOnly
+      ? "No groups remain after hiding groups that currently meet their support floor or have no support floor. Hidden groups still count in the model."
+      : hideGroupsWithoutFloors && !vetoGroupsOnly && !belowFloorGroupsOnly && !hideGroupsAtFloor
+      ? "No groups remain after hiding groups that have no support floor. Hidden groups still count in the model."
+      : hideGroupsAtFloor && !vetoGroupsOnly && !belowFloorGroupsOnly
       ? "No groups remain after hiding groups that currently meet their support floor. Hidden groups still count in the model."
       : belowFloorGroupsOnly && vetoGroupsOnly
       ? "No groups match the veto and below-floor filters. Hidden groups still count in the model."
@@ -1609,6 +1618,14 @@ function setHideGroupsAtFloor(next) {
   renderGroups(blockingVetoIds(currentResult()));
 }
 
+function setHideGroupsWithoutFloors(next) {
+  hideGroupsWithoutFloors = next === true;
+  const checkbox = $("#hide-groups-without-floors");
+  if (checkbox) checkbox.checked = hideGroupsWithoutFloors;
+  persistWorkspacePrefs();
+  renderGroups(blockingVetoIds(currentResult()));
+}
+
 $("#veto-groups-only").addEventListener("change", (event) => {
   setVetoGroupsOnly(event.target.checked === true);
 });
@@ -1617,6 +1634,9 @@ $("#below-floor-groups-only").addEventListener("change", (event) => {
 });
 $("#hide-groups-at-floor").addEventListener("change", (event) => {
   setHideGroupsAtFloor(event.target.checked === true);
+});
+$("#hide-groups-without-floors").addEventListener("change", (event) => {
+  setHideGroupsWithoutFloors(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -1975,7 +1995,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -2301,6 +2321,7 @@ $("#import-file").addEventListener("change", async (event) => {
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
       hideGroupsAtFloor = workspace.hideGroupsAtFloor === true;
+      hideGroupsWithoutFloors = workspace.hideGroupsWithoutFloors === true;
       noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
@@ -2476,6 +2497,7 @@ function jumpToGroups() {
     if (vetoGroupsOnly && group.veto !== true) return false;
     if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
     if (hideGroupsAtFloor && meetingIds.has(group.id)) return false;
+    if (hideGroupsWithoutFloors && !Object.hasOwn(group, "minSupport")) return false;
     return true;
   });
   if (visible.length) {
@@ -2597,6 +2619,11 @@ function jumpToBelowFloor() {
       needsRender = true;
     }
   }
+  if (hideGroupsWithoutFloors && !Object.hasOwn(first, "minSupport")) {
+    hideGroupsWithoutFloors = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
   if (needsRender) renderGroups(blockingVetoIds(currentResult()));
   const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
   if (target?.focus) {
@@ -2636,6 +2663,11 @@ function jumpToVetoGroup() {
       persistWorkspacePrefs();
       needsRender = true;
     }
+  }
+  if (hideGroupsWithoutFloors && !Object.hasOwn(first, "minSupport")) {
+    hideGroupsWithoutFloors = false;
+    persistWorkspacePrefs();
+    needsRender = true;
   }
   if (needsRender) renderGroups(blockingVetoIds(currentResult()));
   const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);

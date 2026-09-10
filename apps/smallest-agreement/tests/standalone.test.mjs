@@ -101,6 +101,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Show groups below their support floor/u);
   assert.match(html, /id="hide-groups-at-floor"/u);
   assert.match(html, /Hide groups currently meeting their support floor/u);
+  assert.match(html, /id="hide-groups-without-floors"/u);
+  assert.match(html, /Hide groups that have no support floor/u);
   assert.match(html, /id="veto-groups-status"/u);
   assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
@@ -320,6 +322,11 @@ async function savedWorkbench(storage, hash = "") {
     },
     filterHideGroupsAtFloor: (checked) => {
       const target = element("#hide-groups-at-floor");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
+    filterHideGroupsWithoutFloors: (checked) => {
+      const target = element("#hide-groups-without-floors");
       target.checked = checked;
       target.events.get("change")({ target: { checked } });
     },
@@ -978,6 +985,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /\.hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note/u);
+  assert.match(html, /\.hide-groups-without-floors-filter, #hide-groups-without-floors-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -1489,6 +1497,65 @@ test("hide-groups-at-floor hides groups that meet a declared floor without chang
   assert.equal(JSON.parse(filteredStorage.get("smallest-agreement:proposal:v1")).title, "Hide at floor workshop");
   assert.equal(JSON.parse(filteredStorage.get("smallest-agreement:workspace:v1")).hideGroupsAtFloor, true);
   assert.equal(Object.hasOwn(JSON.parse(filteredStorage.get("smallest-agreement:proposal:v1")), "hideGroupsAtFloor"), false);
+});
+
+test("hide-groups-without-floors hides groups with no floor without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="hide-groups-without-floors"/u);
+  assert.match(html, /Hide groups that have no support floor/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterHideGroupsWithoutFloors(true);
+  assert.match(app.groups(), /No groups remain after hiding groups that have no support floor/u);
+  assert.match(app.shares(), /Residents/u);
+  assert.match(app.shares(), /Shopkeepers/u);
+  assert.match(app.shares(), /Park stewards/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.filterHideGroupsAtFloor(true);
+  assert.match(app.groups(), /No groups remain after hiding groups that currently meet their support floor or have no support floor/u);
+  app.filterHideGroupsAtFloor(false);
+  app.filterLockedClauses(true);
+  assert.match(app.clauses(), /No locked clauses match this filter/u);
+  app.filterLockedClauses(false);
+  app.filterChangedClauses(true);
+  assert.match(app.clauses(), /No clauses differ between the original and recommended packages/u);
+  app.filterChangedClauses(false);
+  app.filterHideGroupsWithoutFloors(false);
+  assert.match(app.groups(), /Residents/u);
+
+  const protectedStorage = new Map();
+  const protectedApp = await savedWorkbench(protectedStorage);
+  protectedApp.field("#preset-select", "protected-access");
+  protectedApp.click("#load-preset");
+  const protectedBefore = protectedStorage.get("smallest-agreement:proposal:v1");
+  protectedApp.filterHideGroupsWithoutFloors(true);
+  assert.doesNotMatch(protectedApp.groups(), /data-group-id="regular"/u);
+  assert.match(protectedApp.groups(), /New participants/u);
+  assert.match(protectedApp.shares(), /Regular participants/u);
+  assert.match(protectedApp.vetoGroupsStatus(), /Showing 1 of 2 groups/u);
+  protectedApp.filterHideGroupsAtFloor(true);
+  assert.match(protectedApp.groups(), /No groups remain after hiding groups that currently meet their support floor or have no support floor/u);
+  assert.match(protectedApp.shares(), /Regular participants/u);
+  protectedApp.filterHideGroupsAtFloor(false);
+  assert.match(protectedApp.groups(), /New participants/u);
+  assert.doesNotMatch(protectedApp.groups(), /data-group-id="regular"/u);
+  assert.equal(JSON.parse(protectedStorage.get("smallest-agreement:proposal:v1")).title, "Protected Access: shared workshop");
+  assert.equal(JSON.parse(protectedStorage.get("smallest-agreement:workspace:v1")).hideGroupsWithoutFloors, true);
+  assert.equal(Object.hasOwn(JSON.parse(protectedStorage.get("smallest-agreement:proposal:v1")), "hideGroupsWithoutFloors"), false);
+  assert.equal(protectedStorage.get("smallest-agreement:proposal:v1"), protectedBefore);
+
+  const clubStorage = new Map();
+  const club = await savedWorkbench(clubStorage);
+  club.field("#preset-select", "club-constitution");
+  club.click("#load-preset");
+  club.filterHideGroupsWithoutFloors(true);
+  assert.doesNotMatch(club.groups(), /data-group-id="officers"/u);
+  club.clearFocus();
+  club.keydown("y");
+  assert.equal(club.focused(), '[data-field="group-name"][data-group-id="officers"]');
+  assert.match(club.groups(), /Officers/u);
+  assert.equal(JSON.parse(clubStorage.get("smallest-agreement:workspace:v1")).hideGroupsWithoutFloors, false);
 });
 
 test("veto-only group filter hides non-veto cards without changing the stored draft", async () => {
@@ -2459,6 +2526,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(Object.hasOwn(proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(proposal, "overBudgetClausesOnly"), false);
   assert.equal(Object.hasOwn(proposal, "hideGroupsAtFloor"), false);
+  assert.equal(Object.hasOwn(proposal, "hideGroupsWithoutFloors"), false);
   assert.equal(Object.hasOwn(proposal, "noCheaperRemainingClausesOnly"), false);
   assert.equal(proposal.clauses.length, 3);
   assert.match(app.groups(), /No veto groups match this filter/u);
@@ -2468,12 +2536,14 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   app.filterBelowFloorGroups(true);
   app.filterOverBudgetClauses(true);
   app.filterHideGroupsAtFloor(true);
+  app.filterHideGroupsWithoutFloors(true);
   app.filterNoCheaperRemainingClauses(true);
   const nextPrefs = JSON.parse(storage.get("smallest-agreement:workspace:v1"));
   assert.equal(nextPrefs.changedClausesOnly, true);
   assert.equal(nextPrefs.belowFloorGroupsOnly, true);
   assert.equal(nextPrefs.overBudgetClausesOnly, true);
   assert.equal(nextPrefs.hideGroupsAtFloor, true);
+  assert.equal(nextPrefs.hideGroupsWithoutFloors, true);
   assert.equal(nextPrefs.noCheaperRemainingClausesOnly, true);
   app.filterVetoGroups(false);
   app.filterLockedClauses(false);
@@ -2497,6 +2567,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.match(app.clauses(), /Park access hours/u);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).vetoGroupsOnly, false);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).lockedClausesOnly, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideGroupsWithoutFloors, false);
   await app.importJson(JSON.stringify({
     format: "smallest-agreement-workspace",
     version: 1,
