@@ -4458,3 +4458,93 @@ test('copy last How it works item control is distinct from Copy How it works and
   assert.doesNotMatch(html, /hosted API/i);
 });
 
+test('copy last How it works item markdown is the last How list item, or empty if missing', async () => {
+  assert.match(html, /lastHowMarkdown/);
+  assert.match(html, /querySelectorAll\('#how-it-works li'\)/);
+  assert.match(html, /items\[items\.length - 1\]/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /lastHowFallback\.hidden = false/);
+  assert.match(html, /lastHowFallback\.select\(\)/);
+  assert.match(html, /Not a live policy feed/);
+  assert.match(html, /This is the last How it works item, not a live policy feed/);
+  assert.match(html, /Copied an empty string/);
+  let copied = '';
+  let clickLast = null;
+  let items = [
+    { textContent: 'First How it works item. Copy first How it works item copies the first list item.' },
+    { textContent: 'How copy jump. Key equals focuses Copy How it works.' },
+    { textContent: 'Last How it works item. Copy last How it works item copies the last list item.' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-how') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-how-status') return { textContent: '' };
+      if (id === 'copy-last-how-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#how-it-works li' ? items : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- Last How it works item. Copy last How it works item copies the last list item.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /## How it works/);
+  assert.doesNotMatch(copied, /First How it works item/);
+  assert.doesNotMatch(copied, /live policy feed/);
+  items = [];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
+});
+
+test('copy last How it works item shows a visible textarea when clipboard is unavailable', async () => {
+  let clickLast = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-how') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-how-status') return status;
+      if (id === 'copy-last-how-fallback') return fallback;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#how-it-works li' ? [{ textContent: 'Last How it works item. Copy last How it works item copies the last list item.' }] : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickLast();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Last How it works item. Copy last How it works item copies the last list item.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live policy feed/);
+});
+
+test('print CSS hides copy last How tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-last-how-tools, \.copy-last-how-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-first-how-tools, \.copy-first-how-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
