@@ -80,6 +80,21 @@ test("keyboard handler jumps to uncovered leftover when not typing", async () =>
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
 
+test("shortcut help documents the buyer paste jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>s<\/kbd> Focus the buyer CSV or TSV paste control/u);
+  assert.match(html, /id="paste-buyers"/u);
+});
+
+test("keyboard handler jumps to buyer paste when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "s"\)/u);
+  assert.match(app, /function focusBuyerPaste\(/u);
+  assert.match(app, /#paste-buyers/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
 test("shortcut help documents leftover print", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /<kbd>p<\/kbd> Print an organizer leftover one-pager/u);

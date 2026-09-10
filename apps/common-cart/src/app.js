@@ -796,6 +796,11 @@ function handleShortcut(event) {
     focusUncoveredLeftover();
     return;
   }
+  if (key === "s") {
+    event.preventDefault();
+    focusBuyerPaste();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -850,6 +855,12 @@ function focusUncoveredLeftover() {
     return;
   }
   document.querySelector("#residual-title")?.focus();
+}
+
+function focusBuyerPaste() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#paste-buyers")?.focus();
 }
 
 function focusOffersList() {
