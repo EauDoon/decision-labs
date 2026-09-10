@@ -61,7 +61,7 @@ test('standalone renderer refuses missing markers and external CSS resources', (
   assert.throws(() => renderStandalone({ html, css: 'body { background: url(image.png); }', model: '', app: appImport }), /URL resource/);
 });
 
-test('standalone retains 1.5.10 review tools and 1.5.11 copy controls', async () => {
+test('standalone retains 1.5.11 review tools and 1.5.12 copy controls', async () => {
   const html = await buildStandalone();
   assert.match(html, /createPartnershipReviewPacket/);
   assert.match(html, /replayPartnershipReviewPacket/);
