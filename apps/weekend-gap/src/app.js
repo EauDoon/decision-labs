@@ -42,6 +42,7 @@ import {
   firstOpenFxHourToMarkdown,
   firstOpenBankHourToMarkdown,
   firstOpenIssuerHourToMarkdown,
+  lastOpenIssuerHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   firstClosedFxGanttHour,
@@ -64,6 +65,7 @@ import {
   ganttHourFxOpen,
   ganttHourBankOpen,
   ganttHourIssuerOpen,
+  ganttHourWeekendIssuerOpen,
   GANTT_GATE_FILTERS,
   gateDisplayLabels,
   GENERIC_GATE_LABELS,
@@ -91,7 +93,7 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, hideWeekdayGanttHours: false, hideWeekendGanttHours: false, hideOpenGanttHours: false, hideClosedGanttHours: false, hideZeroQueueGanttHours: false, hideBankClosedGanttHours: false, hideIssuerClosedGanttHours: false, hidePayoutClosedGanttHours: false, hideFxClosedGanttHours: false, hidePayoutOpenGanttHours: false, hideFxOpenGanttHours: false, hideBankOpenGanttHours: false, hideIssuerOpenGanttHours: false };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, hideWeekdayGanttHours: false, hideWeekendGanttHours: false, hideOpenGanttHours: false, hideClosedGanttHours: false, hideZeroQueueGanttHours: false, hideBankClosedGanttHours: false, hideIssuerClosedGanttHours: false, hidePayoutClosedGanttHours: false, hideFxClosedGanttHours: false, hidePayoutOpenGanttHours: false, hideFxOpenGanttHours: false, hideBankOpenGanttHours: false, hideIssuerOpenGanttHours: false, hideWeekendIssuerOpenGanttHours: false };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -497,13 +499,14 @@ function renderGantt() {
   const hideFxOpenHours = Boolean(document.querySelector("#gantt-hide-fx-open")?.checked);
   const hideBankOpenHours = Boolean(document.querySelector("#gantt-hide-bank-open")?.checked);
   const hideIssuerOpenHours = Boolean(document.querySelector("#gantt-hide-issuer-open")?.checked);
+  const hideWeekendIssuerOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-issuer-open")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, hideZeroQueueHours, hideBankClosedHours, hideIssuerClosedHours, hidePayoutClosedHours, hideFxClosedHours, hidePayoutOpenHours, hideFxOpenHours, hideBankOpenHours, hideIssuerOpenHours, gateFilter });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, hideZeroQueueHours, hideBankClosedHours, hideIssuerClosedHours, hidePayoutClosedHours, hideFxClosedHours, hidePayoutOpenHours, hideFxOpenHours, hideBankOpenHours, hideIssuerOpenHours, hideWeekendIssuerOpenHours, gateFilter });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([selectedHour]);
-  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours && !hideWeekendHours && !hideOpenHours && !hideClosedHours && !hideZeroQueueHours && !hideBankClosedHours && !hideIssuerClosedHours && !hidePayoutClosedHours && !hideFxClosedHours && !hidePayoutOpenHours && !hideFxOpenHours && !hideBankOpenHours && !hideIssuerOpenHours) {
+  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours && !hideWeekendHours && !hideOpenHours && !hideClosedHours && !hideZeroQueueHours && !hideBankClosedHours && !hideIssuerClosedHours && !hidePayoutClosedHours && !hideFxClosedHours && !hidePayoutOpenHours && !hideFxOpenHours && !hideBankOpenHours && !hideIssuerOpenHours && !hideWeekendIssuerOpenHours) {
     rowIndexes.add(0);
     rowIndexes.add(SIMULATION_HOURS);
   }
@@ -522,6 +525,7 @@ function renderGantt() {
     if (hideFxOpenHours && ganttHourFxOpen(point) && hour !== selectedHour) continue;
     if (hideBankOpenHours && ganttHourBankOpen(point) && hour !== selectedHour) continue;
     if (hideIssuerOpenHours && ganttHourIssuerOpen(point) && hour !== selectedHour) continue;
+    if (hideWeekendIssuerOpenHours && ganttHourWeekendIssuerOpen(point) && hour !== selectedHour) continue;
     if (everyClosedOnly) {
       if (ganttHourClosedOnEveryGate(point)) rowIndexes.add(hour);
       continue;
@@ -610,6 +614,9 @@ function renderGantt() {
     }
     if (hideIssuerOpenHours) {
       filterNote.textContent += ` Hours where the issuer gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
+    }
+    if (hideWeekendIssuerOpenHours) {
+      filterNote.textContent += ` Weekend hours where the issuer gate is open are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
     }
   }
 }
@@ -1366,7 +1373,8 @@ function currentWorkspace() {
     hidePayoutOpenGanttHours: Boolean(document.querySelector("#gantt-hide-payout-open")?.checked),
     hideFxOpenGanttHours: Boolean(document.querySelector("#gantt-hide-fx-open")?.checked),
     hideBankOpenGanttHours: Boolean(document.querySelector("#gantt-hide-bank-open")?.checked),
-    hideIssuerOpenGanttHours: Boolean(document.querySelector("#gantt-hide-issuer-open")?.checked) });
+    hideIssuerOpenGanttHours: Boolean(document.querySelector("#gantt-hide-issuer-open")?.checked),
+    hideWeekendIssuerOpenGanttHours: Boolean(document.querySelector("#gantt-hide-weekend-issuer-open")?.checked) });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -1376,7 +1384,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true, hideZeroQueueGanttHours: saved.hideZeroQueueGanttHours === true, hideBankClosedGanttHours: saved.hideBankClosedGanttHours === true, hideIssuerClosedGanttHours: saved.hideIssuerClosedGanttHours === true, hidePayoutClosedGanttHours: saved.hidePayoutClosedGanttHours === true, hideFxClosedGanttHours: saved.hideFxClosedGanttHours === true, hidePayoutOpenGanttHours: saved.hidePayoutOpenGanttHours === true, hideFxOpenGanttHours: saved.hideFxOpenGanttHours === true, hideBankOpenGanttHours: saved.hideBankOpenGanttHours === true, hideIssuerOpenGanttHours: saved.hideIssuerOpenGanttHours === true };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true, hideZeroQueueGanttHours: saved.hideZeroQueueGanttHours === true, hideBankClosedGanttHours: saved.hideBankClosedGanttHours === true, hideIssuerClosedGanttHours: saved.hideIssuerClosedGanttHours === true, hidePayoutClosedGanttHours: saved.hidePayoutClosedGanttHours === true, hideFxClosedGanttHours: saved.hideFxClosedGanttHours === true, hidePayoutOpenGanttHours: saved.hidePayoutOpenGanttHours === true, hideFxOpenGanttHours: saved.hideFxOpenGanttHours === true, hideBankOpenGanttHours: saved.hideBankOpenGanttHours === true, hideIssuerOpenGanttHours: saved.hideIssuerOpenGanttHours === true, hideWeekendIssuerOpenGanttHours: saved.hideWeekendIssuerOpenGanttHours === true };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, ganttHourIndex: selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -1388,7 +1396,7 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true, hideZeroQueueGanttHours: saved.hideZeroQueueGanttHours === true, hideBankClosedGanttHours: saved.hideBankClosedGanttHours === true, hideIssuerClosedGanttHours: saved.hideIssuerClosedGanttHours === true, hidePayoutClosedGanttHours: saved.hidePayoutClosedGanttHours === true, hideFxClosedGanttHours: saved.hideFxClosedGanttHours === true, hidePayoutOpenGanttHours: saved.hidePayoutOpenGanttHours === true, hideFxOpenGanttHours: saved.hideFxOpenGanttHours === true, hideBankOpenGanttHours: saved.hideBankOpenGanttHours === true, hideIssuerOpenGanttHours: saved.hideIssuerOpenGanttHours === true };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true, hideZeroQueueGanttHours: saved.hideZeroQueueGanttHours === true, hideBankClosedGanttHours: saved.hideBankClosedGanttHours === true, hideIssuerClosedGanttHours: saved.hideIssuerClosedGanttHours === true, hidePayoutClosedGanttHours: saved.hidePayoutClosedGanttHours === true, hideFxClosedGanttHours: saved.hideFxClosedGanttHours === true, hidePayoutOpenGanttHours: saved.hidePayoutOpenGanttHours === true, hideFxOpenGanttHours: saved.hideFxOpenGanttHours === true, hideBankOpenGanttHours: saved.hideBankOpenGanttHours === true, hideIssuerOpenGanttHours: saved.hideIssuerOpenGanttHours === true, hideWeekendIssuerOpenGanttHours: saved.hideWeekendIssuerOpenGanttHours === true };
   baselineScenario={...saved.baseline}; selectedHour=saved.ganttHourIndex ?? saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
@@ -1412,6 +1420,7 @@ function applyWorkspace(saved) {
   document.querySelector("#gantt-hide-fx-open").checked = saved.hideFxOpenGanttHours === true;
   document.querySelector("#gantt-hide-bank-open").checked = saved.hideBankOpenGanttHours === true;
   document.querySelector("#gantt-hide-issuer-open").checked = saved.hideIssuerOpenGanttHours === true;
+  document.querySelector("#gantt-hide-weekend-issuer-open").checked = saved.hideWeekendIssuerOpenGanttHours === true;
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -1528,6 +1537,10 @@ document.querySelector("#gantt-hide-issuer-open").addEventListener("change",()=>
   renderGantt();
   saveWorkspace();
 });
+document.querySelector("#gantt-hide-weekend-issuer-open").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
 document.querySelector("#gantt-gate-filter").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
@@ -1620,6 +1633,9 @@ document.querySelector("#copy-first-open-bank").addEventListener("click", async 
 });
 document.querySelector("#copy-first-open-issuer").addEventListener("click", async () => {
   await copyFirstOpenIssuerHourMarkdown();
+});
+document.querySelector("#copy-last-open-issuer").addEventListener("click", async () => {
+  await copyLastOpenIssuerHourMarkdown();
 });
 document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
   const text = arrivalCohortsToMarkdown(scenario);
@@ -1937,6 +1953,10 @@ function copyFirstOpenIssuerHourMarkdown() {
   const text = firstOpenIssuerHourToMarkdown(scenario);
   return copyTextWithFallback(text, "#first-open-issuer-copy-fallback", "First open issuer hour copied as one-line Markdown. This is a synthetic label, not live issuer data.");
 }
+function copyLastOpenIssuerHourMarkdown() {
+  const text = lastOpenIssuerHourToMarkdown(scenario);
+  return copyTextWithFallback(text, "#last-open-issuer-copy-fallback", "Last open issuer hour copied as one-line Markdown. This is a synthetic label, not live issuer data.");
+}
 function jumpToFirstClosedBankCopy() {
   const control = document.querySelector("#copy-first-closed-bank");
   if (control) {
@@ -1993,6 +2013,15 @@ function jumpToFirstOpenBankCopy() {
 }
 function jumpToFirstOpenIssuerCopy() {
   const control = document.querySelector("#copy-first-open-issuer");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
+function jumpToLastOpenIssuerCopy() {
+  const control = document.querySelector("#copy-last-open-issuer");
   if (control) {
     control.focus();
     control.scrollIntoView?.({ block: "start" });
@@ -2072,6 +2101,15 @@ function jumpToHideIssuerOpenFilter() {
   }
   return jumpToGantt();
 }
+function jumpToHideWeekendIssuerOpenFilter() {
+  const control = document.querySelector("#gantt-hide-weekend-issuer-open");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
 });
@@ -2109,9 +2147,10 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   const hideFxOpenHours = Boolean(document.querySelector("#gantt-hide-fx-open")?.checked);
   const hideBankOpenHours = Boolean(document.querySelector("#gantt-hide-bank-open")?.checked);
   const hideIssuerOpenHours = Boolean(document.querySelector("#gantt-hide-issuer-open")?.checked);
+  const hideWeekendIssuerOpenHours = Boolean(document.querySelector("#gantt-hide-weekend-issuer-open")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, hideZeroQueueHours, hideBankClosedHours, hideIssuerClosedHours, hidePayoutClosedHours, hideFxClosedHours, hidePayoutOpenHours, hideFxOpenHours, hideBankOpenHours, hideIssuerOpenHours, gateFilter, redacted: true });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, hideZeroQueueHours, hideBankClosedHours, hideIssuerClosedHours, hidePayoutClosedHours, hideFxClosedHours, hidePayoutOpenHours, hideFxOpenHours, hideBankOpenHours, hideIssuerOpenHours, hideWeekendIssuerOpenHours, gateFilter, redacted: true });
   window.print();
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
@@ -2356,6 +2395,11 @@ document.addEventListener("keydown", (event) => {
     copyFirstOpenIssuerHourMarkdown();
     return;
   }
+  if (event.key === "5") {
+    event.preventDefault();
+    copyLastOpenIssuerHourMarkdown();
+    return;
+  }
   if (event.key === "<") {
     event.preventDefault();
     jumpToFirstClosedBankCopy();
@@ -2396,6 +2440,11 @@ document.addEventListener("keydown", (event) => {
     jumpToFirstOpenIssuerCopy();
     return;
   }
+  if (event.key === "6") {
+    event.preventDefault();
+    jumpToLastOpenIssuerCopy();
+    return;
+  }
   if (event.key === ">") {
     event.preventDefault();
     jumpToHideZeroQueueFilter();
@@ -2434,6 +2483,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "`") {
     event.preventDefault();
     jumpToHideIssuerOpenFilter();
+    return;
+  }
+  if (event.key === "7") {
+    event.preventDefault();
+    jumpToHideWeekendIssuerOpenFilter();
     return;
   }
   if (event.key === "n" || event.key === "N") {
