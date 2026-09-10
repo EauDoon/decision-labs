@@ -140,6 +140,7 @@ export const presets: Readonly<{
   garden: Scenario;
   schoolFete: Scenario;
   officeFruit: Scenario;
+  libraryPaper: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -262,7 +263,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -367,6 +368,8 @@ export interface WinnerBudgetLeftover {
   note: string;
 }
 export function winnerBudgetLeftover(rawScenario: unknown): WinnerBudgetLeftover;
+/** Organizer-private one-line leftover unspent item headroom. Currency and counts only. Not a rebate. */
+export function createLeftoverHeadroomMarkdown(rawScenario: unknown): string;
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
 export function neutralizeSpreadsheetCell(value: unknown): unknown;
 export function parseBuyerCsv(text: unknown): Buyer[];
@@ -398,10 +401,14 @@ export interface LeftoverCoverageRow {
 export function leftoverCoverageRows(rawScenario: unknown): LeftoverCoverageRow[];
 /** Display-only leftover table filter. Matching is unchanged. */
 export function filterLeftoverCoverageRowsHidingCovered(rawScenario: unknown, hideCovered: boolean): LeftoverCoverageRow[];
+/** Display-only leftover table filter. Matching is unchanged. Hides the tertiary leftover-coverage row when present. */
+export function filterLeftoverCoverageRowsHidingTertiary(rawScenario: unknown, hideTertiary: boolean): LeftoverCoverageRow[];
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
 export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
 /** Merchant label only. Honest empty when none unlocked. No buyer data. */
 export function createWinningMerchantLabelMarkdown(rawScenario: unknown): string;
+/** Merchant-safe one-liner. Pickup or shipping, or None unlocked. No buyer data. */
+export function createWinningFulfillmentMarkdown(rawScenario: unknown): string;
 export interface OrganizerLeftoverRow {
   label: string;
   quantity: number;

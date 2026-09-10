@@ -80,6 +80,23 @@ test("keyboard handler jumps to uncovered leftover when not typing", async () =>
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
 
+test("shortcut help documents the uncovered leftover coverage jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>d<\/kbd> Focus the first uncovered leftover coverage row, or leftover heading if none/u);
+  assert.match(html, /id="leftover-coverage-rows"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to the first uncovered leftover coverage row when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "d"\)/u);
+  assert.match(app, /function focusUncoveredLeftoverCoverageRow\(/u);
+  assert.match(app, /#leftover-coverage-rows \.leftover-uncovered/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
 test("shortcut help documents the buyer paste jump", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /<kbd>s<\/kbd> Focus the buyer CSV or TSV paste control/u);
@@ -196,7 +213,6 @@ test("keyboard handler focuses the offer fulfillment filter when not typing", as
   assert.match(app, /#offer-fulfillment-filter/u);
   assert.match(app, /#merchant-tab/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
-  assert.doesNotMatch(app, /if \(key === "g"\)/u);
 });
 
 test("shortcut help documents leftover item headroom jump", async () => {
@@ -230,4 +246,74 @@ test("keyboard handler opens and focuses the review panel when not typing", asyn
   assert.match(app, /querySelector\("summary"\)\?\.focus\(\)/u);
   assert.match(app, /#buyer-tab/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("shortcut help documents the group headroom jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>g<\/kbd> Focus group headroom/u);
+  assert.match(html, /id="metric-savings"[^>]*tabindex="-1"/u);
+});
+
+test("keyboard handler jumps to group headroom when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "g"\)/u);
+  assert.match(app, /function focusGroupHeadroom\(/u);
+  assert.match(app, /#metric-savings/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("shortcut help documents leftover unspent item headroom copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>i<\/kbd> Copy leftover unspent item headroom \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-headroom"/u);
+});
+
+test("keyboard handler copies leftover unspent item headroom when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "i"\)/u);
+  assert.match(app, /function copyLeftoverHeadroom\(/u);
+  assert.match(app, /createLeftoverHeadroomMarkdown\(scenario\)/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+});
+
+test("shortcut help documents the requested units jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>q<\/kbd> Focus requested units/u);
+  assert.match(html, /id="metric-units"[^>]*tabindex="-1"/u);
+});
+
+test("keyboard handler jumps to requested units when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "q"\)/u);
+  assert.match(app, /function focusRequestedUnits\(/u);
+  assert.match(app, /#metric-units/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("shortcut help documents the private buyer report jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>x<\/kbd> Focus Export private buyer report \(organizer private\)/u);
+  assert.match(html, /id="buyer-report"/u);
+});
+
+test("keyboard handler focuses Export private buyer report when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "x"\)/u);
+  assert.match(app, /function focusPrivateBuyerReport\(/u);
+  assert.match(app, /#buyer-report/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("Export private buyer report stays organizer-private in the buyer room", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  const report = buyerPanel.slice(buyerPanel.indexOf('id="buyer-report"'), buyerPanel.indexOf("Capacity leftover"));
+  assert.match(report, /This export is organizer-private/u);
+  assert.equal(merchantPanel.includes("buyer-report"), false);
+  assert.match(app, /organizer private/u);
+  assert.match(app, /This is not a merchant export/u);
 });
