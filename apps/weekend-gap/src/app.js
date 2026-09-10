@@ -1867,6 +1867,15 @@ function jumpToFirstClosedPayoutCopy() {
   }
   return jumpToGantt();
 }
+function jumpToFirstOpenPayoutCopy() {
+  const control = document.querySelector("#copy-first-open-payout");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 function jumpToHideZeroQueueFilter() {
   const control = document.querySelector("#gantt-hide-zero-queue");
   if (control) {
@@ -2186,6 +2195,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "+") {
     event.preventDefault();
     jumpToFirstClosedFxCopyOrGantt();
+    return;
+  }
+  if (event.key === "!") {
+    event.preventDefault();
+    jumpToFirstOpenPayoutCopy();
     return;
   }
   if (event.key === ">") {
