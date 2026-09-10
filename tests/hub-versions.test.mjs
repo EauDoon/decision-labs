@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -52,7 +52,25 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, /id="copy-jobs"/);
   assert.match(page, />Copy jobs</);
   assert.match(page, /id="catalog-jobs"/);
-  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.match(page, /Not a live product feed/);
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(page, /XMLHttpRequest/);
+});
+
+test('404 catalog jobs match the four catalog cards', () => {
+  const jobs = catalogJobs();
+  assert.equal(jobs.length, 4);
+  assert.equal(jobs[0].name, 'Partnership Breakpoint');
+  assert.equal(jobs[1].name, 'Common Cart');
+  assert.equal(jobs[2].name, 'The Smallest Agreement');
+  assert.equal(jobs[3].name, 'Weekend Gap');
+  for (const { name, job } of jobs) {
+    assert.match(job, /\S/);
+    assert.equal(html.includes(`<h3>${name}</h3>`), true, `${name} heading missing from catalog`);
+    assert.equal(html.includes(`<p class="job">${job}</p>`), true, `${name} job missing from catalog`);
+  }
+  const page = notFoundPage();
+  for (const { name, job } of jobs) {
+    assert.equal(page.includes(`${name}: ${job}`), true, `${name} job missing from 404 page`);
+  }
 });

@@ -558,6 +558,39 @@ test('404 copy-jobs script parses as classic browser JavaScript', () => {
   assert.equal(PUBLIC_PATHS.length, 6);
 });
 
+test('404 copy jobs shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const items = [{ textContent: 'Partnership Breakpoint: Find which participant in a revenue split.' }];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-jobs') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-jobs-status') return status;
+      if (id === 'copy-jobs-fallback') return fallback;
+      return null;
+    },
+    querySelector() { return null; },
+    querySelectorAll(selector) {
+      return selector === '#catalog-jobs li' ? items : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Partnership Breakpoint: Find which participant in a revenue split.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
 test('404 copy jobs stays GET HEAD only with connect-src none', async (t) => {
   assert.equal(PUBLIC_PATHS.length, 6);
   assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
