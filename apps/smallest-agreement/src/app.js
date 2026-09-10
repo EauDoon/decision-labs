@@ -19,6 +19,7 @@ import {
   previewRenormalizedWeights,
   applyRenormalizedWeights,
   duplicateParticipantGroup,
+  moveClause,
   sortPackageGapRows,
   formatSupportMatrixCsv,
   parseSupportMatrixCsv,
@@ -32,6 +33,7 @@ import {
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
+  formatPinnedPackagesMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -275,6 +277,38 @@ const presets = {
       },
     ],
   },
+  "sports-fixture-night": {
+    title: "Sports Fixture Night: match end-time, floodlights, and parking",
+    threshold: 70,
+    groups: [
+      { id: "members", name: "Members", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "rangers", name: "Council rangers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "endtime", title: "Match end-time", options: [
+          { id: "endtime-original", original: true, label: "Kick off at 19:30 and finish by 21:15", changeCost: 0, support: { members: 82, neighbours: 38, rangers: 64 } },
+          { id: "endtime-early", original: false, label: "Kick off at 18:30 and finish by 20:15", changeCost: 2, support: { members: 58, neighbours: 84, rangers: 78 } },
+          { id: "endtime-weekend", original: false, label: "Move the fixture to Saturday afternoon", changeCost: 4, support: { members: 46, neighbours: 90, rangers: 72 } },
+        ],
+      },
+      {
+        id: "floodlights", title: "Floodlights", options: [
+          { id: "floodlights-original", original: true, label: "Keep floodlights on until 22:00", changeCost: 0, support: { members: 88, neighbours: 28, rangers: 52 } },
+          { id: "floodlights-curfew", original: false, label: "Switch floodlights off at 21:00", changeCost: 2, support: { members: 70, neighbours: 76, rangers: 80 } },
+          { id: "floodlights-baffles", original: false, label: "Keep 22:00 with baffled lamps and a cut-off", changeCost: 3, support: { members: 80, neighbours: 68, rangers: 74 } },
+        ],
+      },
+      {
+        id: "parking", title: "Match-night parking", options: [
+          { id: "parking-original", original: true, label: "Allow unmanaged street parking", changeCost: 0, support: { members: 74, neighbours: 32, rangers: 40 } },
+          { id: "parking-stewards", original: false, label: "Steward the club car park until 21:30", changeCost: 2, support: { members: 84, neighbours: 72, rangers: 82 } },
+          { id: "parking-shuttle", original: false, label: "Use off-site overflow and a shuttle", changeCost: 4, support: { members: 62, neighbours: 86, rangers: 70 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -286,6 +320,8 @@ let lockPreview = null;
 let clauseFilter = "";
 let clauseDensity = "comfortable";
 let vetoGroupsOnly = false;
+let lockedClausesOnly = false;
+let printRedacted = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
 let weightPreviewKey = "";
@@ -299,25 +335,40 @@ const $ = (selector) => document.querySelector(selector);
 const escapeHtml = (value) => String(value).replace(/[&<>'"]/g, (character) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", "'": "&#39;", '"': "&quot;" })[character]);
 function clone(value) { return JSON.parse(JSON.stringify(value)); }
 
+function groupDisplayName(group) {
+  if (!printRedacted) return group.name;
+  const index = state.proposal.groups.findIndex((row) => row.id === group.id);
+  return `Group ${index >= 0 ? index + 1 : state.proposal.groups.length + 1}`;
+}
+
+function renderPrintKicker() {
+  const kicker = $(".facilitator-pack-kicker");
+  if (!kicker) return;
+  kicker.textContent = printRedacted
+    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. The saved draft is unchanged. The workshop tour is hidden. This is a decision aid, not a recorded vote."
+    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes and veto highlights. This is a decision aid, not a recorded vote.";
+}
+
 function firstProposalError(proposal) {
   return validateProposal(proposal).errors[0];
 }
 
-function loadClauseDensity() {
+function loadWorkspacePrefs() {
   try {
     const raw = localStorage.getItem(WORKSPACE_KEY);
-    if (!raw) return "comfortable";
+    if (!raw) return;
     const parsed = JSON.parse(raw);
-    if (parsed?.clauseDensity === "compact" || parsed?.clauseDensity === "comfortable") return parsed.clauseDensity;
+    if (parsed?.clauseDensity === "compact" || parsed?.clauseDensity === "comfortable") clauseDensity = parsed.clauseDensity;
+    vetoGroupsOnly = parsed?.vetoGroupsOnly === true;
+    lockedClausesOnly = parsed?.lockedClausesOnly === true;
   } catch {
-    return "comfortable";
+    /* storage may be unavailable or invalid */
   }
-  return "comfortable";
 }
 
-function persistClauseDensity() {
+function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -499,6 +550,7 @@ function render() {
   applyClauseDensity();
   renderBallot(vetoBlocks);
   renderResults(result, vetoBlocks);
+  renderPrintKicker();
 }
 
 function inspectedPackage(result) {
@@ -529,7 +581,7 @@ function renderGroups(vetoBlocks = new Set()) {
   } else {
     if (status) status.textContent = vetoGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
     $("#groups-editor").innerHTML = visible.map((group) => `
-    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}">
+    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}"${vetoBlocks.has(group.id) ? ` data-veto-block="${escapeHtml(group.id)}" tabindex="-1"` : ""}>
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
       <button class="text-button" type="button" data-action="duplicate-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length >= MAX_GROUPS ? "disabled" : ""}>Duplicate group</button>
@@ -579,15 +631,22 @@ function clauseMatchesFilter(clause, query) {
 function renderClauses() {
   const { groups } = state.proposal;
   const query = clauseFilter.trim().toLowerCase();
-  const visible = state.proposal.clauses.filter((clause) => clauseMatchesFilter(clause, query));
+  const checkbox = $("#locked-clauses-only");
+  if (checkbox) checkbox.checked = lockedClausesOnly;
+  const visible = state.proposal.clauses.filter((clause) => {
+    if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
+    return clauseMatchesFilter(clause, query);
+  });
   const status = $("#clause-filter-status");
   if (!visible.length) {
-    const message = "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
+    const message = lockedClausesOnly && query === ""
+      ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
+      : "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
     if (status) status.textContent = message;
     $("#clauses-editor").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
-  if (status) status.textContent = query === "" ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
+  if (status) status.textContent = query === "" && !lockedClausesOnly ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
   $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
@@ -627,9 +686,10 @@ function renderBallot(vetoBlocks = blockingVetoIds(currentResult())) {
   const proposal = state.proposal;
   const blocking = proposal.groups.filter((group) => vetoBlocks.has(group.id));
   const vetoNote = blocking.length
-    ? `<p class="veto-blocking-note">Veto not met on the inspected package for: ${blocking.map((group) => escapeHtml(group.name)).join(", ")}. This is a numerical constraint, not a legal right.</p>`
+    ? `<p class="veto-blocking-note">Veto not met on the inspected package for: ${blocking.map((group) => escapeHtml(groupDisplayName(group))).join(", ")}. This is a numerical constraint, not a legal right.</p>`
     : "";
-  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p>${vetoNote}${proposal.clauses.map((clause) => `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`).join("")}`;
+  const groupList = proposal.groups.map((group) => escapeHtml(groupDisplayName(group))).join(", ");
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${vetoNote}${proposal.clauses.map((clause) => `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`).join("")}`;
 }
 
 function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
@@ -649,6 +709,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
@@ -853,7 +914,7 @@ function renderStressTest(result) {
   const original = stressed.original;
   $("#stress-result").innerHTML = `<div class="result-summary"><div class="metric"><span class="metric-label">Entered approval</span><strong>${formatPercent(original.approval)}</strong></div><div class="metric"><span class="metric-label">Downside approval</span><strong>${formatPercent(summary.approval)}</strong></div><div class="metric"><span class="metric-label">Downside margin</span><strong class="${summary.approval + 1e-9 >= state.proposal.threshold ? "positive" : "negative"}">${formatMargin(summary.approval - state.proposal.threshold)}</strong></div><div class="metric cost"><span class="metric-label">Drop applied</span><strong>${drop} points</strong></div></div><p><strong>${stressed.status === "passing" ? "The same recommendation still passes this downside scenario." : "The recommendation fails this downside scenario."}</strong> Every score was reduced by ${drop} points and stopped at zero. This is not a probability of consent.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Entered support</th><th scope="col">Downside support</th><th scope="col">Floor</th></tr></thead><tbody>${summary.byGroup.map((group, index) => {
     const floor = summary.constraints.floors.find((row) => row.id === group.id);
-    return `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(original.byGroup[index].approval)}</td><td>${formatPercent(group.approval)}</td><td>${floor ? `${floor.minimum}%: ${floor.met ? "met" : "not met"}` : "None"}</td></tr>`;
+    return `<tr><th scope="row">${escapeHtml(groupDisplayName(group))}</th><td>${formatPercent(original.byGroup[index].approval)}</td><td>${formatPercent(group.approval)}</td><td>${floor ? `${floor.minimum}%: ${floor.met ? "met" : "not met"}` : "None"}</td></tr>`;
   }).join("")}</tbody></table></div>`;
 }
 $("#support-drop").addEventListener("input", () => renderStressTest(currentResult()));
@@ -879,10 +940,10 @@ function renderManualPackage(result) {
   const failures = [];
   if (summary.approval + 1e-9 < state.proposal.threshold) failures.push('Below the overall threshold');
   if (summary.constraints.budget && !summary.constraints.budget.met) failures.push('Over the cost budget');
-  for (const floor of summary.constraints.floors) if (!floor.met) failures.push(escapeHtml(floor.name) + ' below its support floor');
-  for (const veto of summary.constraints.vetoes ?? []) if (!veto.met) failures.push(escapeHtml(veto.name) + ' below its veto threshold');
+  for (const floor of summary.constraints.floors) if (!floor.met) failures.push(escapeHtml(groupDisplayName(floor)) + ' below its support floor');
+  for (const veto of summary.constraints.vetoes ?? []) if (!veto.met) failures.push(escapeHtml(groupDisplayName(veto)) + ' below its veto threshold');
   for (const lock of summary.constraints.locks) if (!lock.met) failures.push(escapeHtml(lock.clauseTitle) + ' does not use its locked option');
-  $("#manual-result").innerHTML = '<p><strong>' + (evaluated.status === 'passing' ? 'Passes all configured requirements.' : 'Does not pass: ' + failures.join('; ') + '.') + '</strong></p><p>Approval ' + formatPercent(summary.approval) + '. Change cost ' + summary.changeCost.toFixed(1) + '. ' + summary.changedClauseCount + ' changed clauses.' + (result.agreement ? ' Cost difference from the recommendation: ' + (summary.changeCost - result.agreement.changeCost).toFixed(1) + '.' : '') + '</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Custom support</th><th scope="col">Change from original</th></tr></thead><tbody>' + summary.groupDeltas.map((group) => '<tr><th scope="row">' + escapeHtml(group.name) + '</th><td>' + formatPercent(group.after) + '</td><td>' + formatMargin(group.delta) + '</td></tr>').join('') + '</tbody></table></div>';
+  $("#manual-result").innerHTML = '<p><strong>' + (evaluated.status === 'passing' ? 'Passes all configured requirements.' : 'Does not pass: ' + failures.join('; ') + '.') + '</strong></p><p>Approval ' + formatPercent(summary.approval) + '. Change cost ' + summary.changeCost.toFixed(1) + '. ' + summary.changedClauseCount + ' changed clauses.' + (result.agreement ? ' Cost difference from the recommendation: ' + (summary.changeCost - result.agreement.changeCost).toFixed(1) + '.' : '') + '</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Custom support</th><th scope="col">Change from original</th></tr></thead><tbody>' + summary.groupDeltas.map((group) => '<tr><th scope="row">' + escapeHtml(groupDisplayName(group)) + '</th><td>' + formatPercent(group.after) + '</td><td>' + formatMargin(group.delta) + '</td></tr>').join('') + '</tbody></table></div>';
 }
 
 $("#use-recommendation").addEventListener("click", () => {
@@ -904,7 +965,7 @@ function renderAlternatives(result) {
       const clause = state.proposal.clauses[i];
       return `${escapeHtml(clause.title)}: ${escapeHtml(option.label)} <button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`;
     }).join("<br>");
-    return `<tr><th scope="row">${index + 1}. ${packageLines}</th><td>${candidate.changeCost.toFixed(1)}</td><td>${formatPercent(candidate.approval)}</td><td>${formatPercent(Math.min(...candidate.byGroup.map((group) => group.approval)))}</td><td>${candidate.supportersLost.map((group) => escapeHtml(group.name)).join(", ") || "None"}</td></tr>`;
+    return `<tr><th scope="row">${index + 1}. ${packageLines}</th><td>${candidate.changeCost.toFixed(1)}</td><td>${formatPercent(candidate.approval)}</td><td>${formatPercent(Math.min(...candidate.byGroup.map((group) => group.approval)))}</td><td>${candidate.supportersLost.map((group) => escapeHtml(groupDisplayName(group))).join(", ") || "None"}</td></tr>`;
   }).join("");
   $("#passing-alternatives").innerHTML = `<p>${result.passingCombinations} passing combinations. Showing the first ${candidates.length} by lowest cost, fewest changes, higher approval, then option IDs. These are ranked choices, not a fairness ranking. Try this option locks one choice and re-solves the rest.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Rank and package</th><th scope="col">Cost</th><th scope="col">Approval</th><th scope="col">Lowest group support</th><th scope="col">Groups losing support</th></tr></thead><tbody>${rows}</tbody></table></div>`;
 }
@@ -942,7 +1003,7 @@ function renderLeaveOneOut(result) {
     return;
   }
   const source = result.agreement ? "recommended package" : "original package";
-  $("#leave-one-out").innerHTML = `<p>Inspecting the ${source}. Full weighted approval ${formatPercent(table.fullApproval)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Omitted group</th><th scope="col">Weight</th><th scope="col">Approval without the group</th><th scope="col">Change from full approval</th></tr></thead><tbody>${table.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${row.weight}</td><td>${row.approval == null ? "Not defined with one group" : formatPercent(row.approval)}</td><td class="${row.delta > 0.0001 ? "positive" : row.delta < -0.0001 ? "negative" : ""}">${row.delta == null ? "Not defined" : formatMargin(row.delta)}</td></tr>`).join("")}</tbody></table></div>`;
+  $("#leave-one-out").innerHTML = `<p>Inspecting the ${source}. Full weighted approval ${formatPercent(table.fullApproval)}.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Omitted group</th><th scope="col">Weight</th><th scope="col">Approval without the group</th><th scope="col">Change from full approval</th></tr></thead><tbody>${table.rows.map((row) => `<tr><th scope="row">${escapeHtml(groupDisplayName(row))}</th><td>${row.weight}</td><td>${row.approval == null ? "Not defined with one group" : formatPercent(row.approval)}</td><td class="${row.delta > 0.0001 ? "positive" : row.delta < -0.0001 ? "negative" : ""}">${row.delta == null ? "Not defined" : formatMargin(row.delta)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function renderGroupContribution(result) {
@@ -957,7 +1018,7 @@ function renderGroupContribution(result) {
     return;
   }
   const source = result.agreement ? "recommended package" : "original package";
-  $("#group-contribution").innerHTML = `<p>Inspecting the ${source}. Overall approval ${formatPercent(analysis.overallApproval)}. Original ${formatPercent(analysis.originalApproval)}. Method: weight share times group average. Pulls sum to the change in overall approval.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight share</th><th scope="col">Selected support</th><th scope="col">Original support</th><th scope="col">Contribution</th><th scope="col">Pull on overall approval</th></tr></thead><tbody>${analysis.rows.map((row) => `<tr><th scope="row">${escapeHtml(row.name)}</th><td>${(row.share * 100).toFixed(1)}%</td><td>${formatPercent(row.selectedApproval)}</td><td>${formatPercent(row.originalApproval)}</td><td>${formatPercent(row.contribution)}</td><td class="${row.overallPull > 0.0001 ? "positive" : row.overallPull < -0.0001 ? "negative" : ""}">${formatMargin(row.overallPull)}</td></tr>`).join("")}</tbody></table></div>`;
+  $("#group-contribution").innerHTML = `<p>Inspecting the ${source}. Overall approval ${formatPercent(analysis.overallApproval)}. Original ${formatPercent(analysis.originalApproval)}. Method: weight share times group average. Pulls sum to the change in overall approval.</p><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight share</th><th scope="col">Selected support</th><th scope="col">Original support</th><th scope="col">Contribution</th><th scope="col">Pull on overall approval</th></tr></thead><tbody>${analysis.rows.map((row) => `<tr><th scope="row">${escapeHtml(groupDisplayName(row))}</th><td>${(row.share * 100).toFixed(1)}%</td><td>${formatPercent(row.selectedApproval)}</td><td>${formatPercent(row.originalApproval)}</td><td>${formatPercent(row.contribution)}</td><td class="${row.overallPull > 0.0001 ? "positive" : row.overallPull < -0.0001 ? "negative" : ""}">${formatMargin(row.overallPull)}</td></tr>`).join("")}</tbody></table></div>`;
 }
 
 function customOptionIds() {
@@ -991,9 +1052,12 @@ function renderSideBySide(result) {
     const title = `${escapeHtml(row.clauseTitle)}${note ? `<br><small>Facilitator note: ${escapeHtml(note)}</small>` : ""}`;
     return `<tr><th scope="row">${title}</th><td>${choiceCell(row.original)}</td><td>${row.recommended ? choiceCell(row.recommended, changed ? " (changed)" : "") : "No recommendation"}</td><td>${choiceCell(row.custom, customNote)}</td></tr>`;
   }).join("");
-  const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(group.name)}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
+  const groupRows = comparison.groups.map((group) => `<tr><th scope="row">${escapeHtml(groupDisplayName(group))}</th><td>${formatPercent(group.original)}</td><td>${group.recommended == null ? "No recommendation" : formatPercent(group.recommended)}</td><td>${formatPercent(group.custom)}</td></tr>`).join("");
   const recommendedLock = recommendedIds ? `<p>${lockPackageButton(recommendedIds, "Lock recommended package")} Applying locks is one draft edit, so undo restores the previous locks. Locked search still reports a deliberation aid, not a decision.</p>` : "";
   $("#side-by-side").innerHTML = `<p>Original overall approval ${formatPercent(comparison.originalApproval)}. Recommended ${comparison.recommendedApproval == null ? "not found" : formatPercent(comparison.recommendedApproval)}. Custom ${formatPercent(comparison.customApproval)}. Original cost ${comparison.originalCost.toFixed(1)}. Recommended cost ${comparison.recommendedCost == null ? "not found" : comparison.recommendedCost.toFixed(1)}. Custom cost ${comparison.customCost.toFixed(1)}.</p>${recommendedLock}<div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Clause</th><th scope="col">Current original</th><th scope="col">Solver recommendation</th><th scope="col">Custom package</th></tr></thead><tbody>${clauseRows}</tbody></table></div><div class="options-table-wrap"><table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Current approval</th><th scope="col">Recommended approval</th><th scope="col">Custom approval</th></tr></thead><tbody>${groupRows}</tbody></table></div>`;
+  const table = formatPinnedPackagesMarkdown(state.proposal, recommendedIds, customOptionIds());
+  const fallback = $("#package-table-fallback");
+  if (fallback) fallback.value = table.status === "ok" ? table.text : "";
 }
 
 function renderConstraints(result, vetoBlocks = new Set()) {
@@ -1001,8 +1065,8 @@ function renderConstraints(result, vetoBlocks = new Set()) {
   const rows = [];
   const mark = (met) => met ? "Met" : "Not met";
   if (checks.budget) rows.push(`<tr><th scope="row">Total change cost</th><td>At most ${checks.budget.maximum}</td><td>${checks.budget.actual}</td><td>${mark(checks.budget.met)}</td></tr>`);
-  for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(floor.name)} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
-  for (const veto of checks.vetoes ?? []) rows.push(`<tr class="${vetoBlocks.has(veto.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(veto.name)} veto</th><td>At least ${veto.required}%</td><td>${formatPercent(veto.actual)}</td><td>${mark(veto.met)}</td></tr>`);
+  for (const floor of checks.floors) rows.push(`<tr><th scope="row">${escapeHtml(groupDisplayName(floor))} support</th><td>At least ${floor.minimum}%</td><td>${formatPercent(floor.actual)}</td><td>${mark(floor.met)}</td></tr>`);
+  for (const veto of checks.vetoes ?? []) rows.push(`<tr class="${vetoBlocks.has(veto.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(groupDisplayName(veto))} veto</th><td>At least ${veto.required}%</td><td>${formatPercent(veto.actual)}</td><td>${mark(veto.met)}</td></tr>`);
   for (const lock of checks.locks) rows.push(`<tr><th scope="row">${escapeHtml(lock.clauseTitle)}</th><td>${escapeHtml(lock.label)}</td><td>Locked option</td><td>${mark(lock.met)}</td></tr>`);
   const inspected = result.agreement ? "Recommended combination" : "Original proposal, no recommendation found";
   const counts = result.checkedCombinations === 1 && result.status === "already_passing" ? "The original proposal meets every requirement with zero changes. No further enumeration is needed." : `${result.eligibleCombinations.toLocaleString()} combinations meet all constraints. ${result.rejected.anyConstraint.toLocaleString()} rejected: ${result.rejected.budget.toLocaleString()} over budget, ${result.rejected.floors.toLocaleString()} below a group floor, and ${result.rejected.vetoes.toLocaleString()} below a veto. These counts can overlap. Locks exclude other options before enumeration.`;
@@ -1026,7 +1090,7 @@ function renderChanges(agreement, current) {
   }
   changes.innerHTML = agreement.changes.length ? agreement.changes.map((change) => `<div class="change-item"><strong>${escapeHtml(change.clauseTitle)}</strong><span>${escapeHtml(change.from)} to ${escapeHtml(change.to)}. Cost ${change.changeCost.toFixed(1)}.</span></div>`).join("") : '<p class="empty-state">Keep every original option.</p>';
   const deltas = agreement.groupDeltas.filter((group) => Math.abs(group.delta) > 0.0001);
-  shifts.innerHTML = deltas.length ? deltas.map((group) => `<div class="shift-item"><strong>${escapeHtml(group.name)}</strong> <span class="${group.delta > 0 ? "positive" : "negative"}">${group.delta > 0 ? "+" : ""}${group.delta.toFixed(1)} points</span><br><span>${formatPercent(group.before)} to ${formatPercent(group.after)}</span></div>`).join("") : '<p class="empty-state">No group support changes.</p>';
+  shifts.innerHTML = deltas.length ? deltas.map((group) => `<div class="shift-item"><strong>${escapeHtml(groupDisplayName(group))}</strong> <span class="${group.delta > 0 ? "positive" : "negative"}">${group.delta > 0 ? "+" : ""}${group.delta.toFixed(1)} points</span><br><span>${formatPercent(group.before)} to ${formatPercent(group.after)}</span></div>`).join("") : '<p class="empty-state">No group support changes.</p>';
 }
 
 function lockPackageButton(optionIds, label) {
@@ -1143,7 +1207,7 @@ function drawCoalition(current, agreement) {
   rows.forEach((group, index) => {
     const y = 12 + index * rowHeight;
     context.fillStyle = "#19352d";
-    context.fillText(group.name.slice(0, 18), 8, y + 10);
+    context.fillText(groupDisplayName(group).slice(0, 18), 8, y + 10);
     context.fillStyle = "#e8dfd0";
     context.fillRect(barStart, y, barWidth, 8);
     context.fillStyle = "#3778a6";
@@ -1163,7 +1227,7 @@ function drawCoalition(current, agreement) {
 
 function renderCoalitionTable(current, agreement, vetoBlocks = new Set()) {
   if (!current) return;
-  $("#coalition-table").innerHTML = `<table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Current</th><th scope="col">Recommended</th></tr></thead><tbody>${current.byGroup.map((group, index) => `<tr class="${vetoBlocks.has(group.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(group.name)}</th><td>${group.weight}</td><td>${formatPercent(group.approval)}</td><td>${agreement ? formatPercent(agreement.byGroup[index].approval) : "Not found"}</td></tr>`).join("")}</tbody></table>`;
+  $("#coalition-table").innerHTML = `<table class="coalition-table"><thead><tr><th scope="col">Group</th><th scope="col">Weight</th><th scope="col">Current</th><th scope="col">Recommended</th></tr></thead><tbody>${current.byGroup.map((group, index) => `<tr class="${vetoBlocks.has(group.id) ? "veto-blocking" : ""}"><th scope="row">${escapeHtml(groupDisplayName(group))}</th><td>${group.weight}</td><td>${formatPercent(group.approval)}</td><td>${agreement ? formatPercent(agreement.byGroup[index].approval) : "Not found"}</td></tr>`).join("")}</tbody></table>`;
 }
 
 function groupById(id) { return state.proposal.groups.find((group) => group.id === id); }
@@ -1237,14 +1301,27 @@ $("#clause-filter").addEventListener("input", (event) => {
   renderClauses();
   applyClauseDensity();
 });
-$("#clause-density").addEventListener("change", (event) => {
-  clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
-  persistClauseDensity();
+$("#locked-clauses-only").addEventListener("change", (event) => {
+  lockedClausesOnly = event.target.checked === true;
+  persistWorkspacePrefs();
+  renderClauses();
   applyClauseDensity();
 });
-$("#veto-groups-only").addEventListener("change", (event) => {
-  vetoGroupsOnly = event.target.checked === true;
+$("#clause-density").addEventListener("change", (event) => {
+  clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
+  persistWorkspacePrefs();
+  applyClauseDensity();
+});
+function setVetoGroupsOnly(next) {
+  vetoGroupsOnly = next === true;
+  const checkbox = $("#veto-groups-only");
+  if (checkbox) checkbox.checked = vetoGroupsOnly;
+  persistWorkspacePrefs();
   renderGroups(blockingVetoIds(currentResult()));
+}
+
+$("#veto-groups-only").addEventListener("change", (event) => {
+  setVetoGroupsOnly(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -1438,14 +1515,15 @@ document.addEventListener("click", (event) => {
     ] });
   });
   if (action === "remove-clause") changeAndRender(() => { state.proposal.clauses = state.proposal.clauses.filter((clause) => clause.id !== button.dataset.clauseId); });
-  if (action === "move-clause") changeAndRender(() => {
-    const index = state.proposal.clauses.findIndex((clause) => clause.id === button.dataset.clauseId);
-    const offset = button.dataset.direction === "up" ? -1 : 1;
-    const target = index + offset;
-    if (index < 0 || target < 0 || target >= state.proposal.clauses.length) return;
-    const [row] = state.proposal.clauses.splice(index, 1);
-    state.proposal.clauses.splice(target, 0, row);
-  });
+  if (action === "move-clause") {
+    const moved = moveClause(state.proposal, button.dataset.clauseId, button.dataset.direction);
+    if (moved.status !== "ok") {
+      notifyDraft(`Could not move that clause: ${moved.errors[0]}`);
+      return;
+    }
+    changeAndRender(() => { state.proposal = moved.proposal; });
+    return;
+  }
   if (action === "duplicate-clause") changeAndRender(() => {
     if (state.proposal.clauses.length >= MAX_CLAUSES) return;
     const source = clauseById(button.dataset.clauseId);
@@ -1606,10 +1684,10 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
-  notifyDraft("Workspace JSON downloaded with the current draft and clause card density.");
+  notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
 });
 $("#export-locks-button").addEventListener("click", () => {
   const exported = formatLocksJson(state.proposal);
@@ -1642,7 +1720,18 @@ $("#locks-import-file").addEventListener("change", async (event) => {
   changeAndRender(() => { state.proposal = parsed.proposal; });
   notifyDraft(`Imported ${parsed.applied} clause lock${parsed.applied === 1 ? "" : "s"}. Every previous lock was replaced. Undo restores the previous draft.`);
 });
-$("#print-button").addEventListener("click", () => window.print());
+function printFacilitatorPack(redacted) {
+  printRedacted = redacted === true;
+  render();
+  window.print();
+}
+$("#print-button").addEventListener("click", () => printFacilitatorPack(false));
+$("#print-redacted-button").addEventListener("click", () => printFacilitatorPack(true));
+window.addEventListener("afterprint", () => {
+  if (!printRedacted) return;
+  printRedacted = false;
+  render();
+});
 $("#worksheet-button").addEventListener("click", () => {
   const worksheet = formatDiscussionWorksheet(state.proposal);
   if (worksheet.status !== "ok") return notifyDraft("Fix the draft before exporting the discussion worksheet.");
@@ -1753,6 +1842,16 @@ $("#clauses-import-file").addEventListener("change", async (event) => {
   changeAndRender(() => { state.proposal = parsed.proposal; });
   notifyDraft(`Imported ${parsed.importedClauses} clauses (${parsed.importedOptions} options) from CSV. Undo restores the previous draft.`);
 });
+$("#clause-paste-button").addEventListener("click", () => {
+  const pasted = $("#clause-paste")?.value ?? "";
+  const parsed = parseClauseOptionsCsv(pasted, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Pasted clauses failed (${first.code}): ${first.message}`);
+  }
+  changeAndRender(() => { state.proposal = parsed.proposal; });
+  notifyDraft(`Imported ${parsed.importedClauses} clauses (${parsed.importedOptions} options) from the pasted table. Undo restores the previous draft.`);
+});
 $("#brief-button").addEventListener("click", () => {
   downloadText("smallest-agreement-brief.md", formatDecisionBrief(state.proposal, currentResult()), "text/markdown");
   state.saveMessage = "Decision brief downloaded.";
@@ -1767,6 +1866,22 @@ $("#copy-package-button").addEventListener("click", async () => {
     notifyDraft("Recommended package copied as Markdown. It is a decision aid, not a recorded vote.");
   } catch {
     notifyDraft("Could not copy to the clipboard. Export the brief instead.");
+  }
+});
+$("#copy-packages-table-button").addEventListener("click", async () => {
+  const result = currentResult();
+  if (result.status === "invalid") return notifyDraft("Fix the draft before copying the package table.");
+  const recommendedIds = result.agreement ? result.agreement.options.map((option) => option.id) : null;
+  const packaged = formatPinnedPackagesMarkdown(state.proposal, recommendedIds, customOptionIds());
+  if (packaged.status !== "ok") return notifyDraft(packaged.errors?.[0] ?? "Could not build the package table.");
+  const fallback = $("#package-table-fallback");
+  if (fallback) fallback.value = packaged.text;
+  try {
+    await navigator.clipboard.writeText(packaged.text);
+    notifyDraft("Package table copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the package table from the Markdown box. It is not a recorded vote.");
   }
 });
 $("#copy-veto-button").addEventListener("click", async () => {
@@ -1805,9 +1920,14 @@ $("#import-file").addEventListener("change", async (event) => {
   const workspace = parseWorkspaceJson(text);
   if (workspace.status === "ok") {
     state.proposal = workspace.proposal;
-    if (workspace.clauseDensity) {
+    if (workspace.kind === "workspace") {
+      if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") clauseDensity = workspace.clauseDensity;
+      vetoGroupsOnly = workspace.vetoGroupsOnly === true;
+      lockedClausesOnly = workspace.lockedClausesOnly === true;
+      persistWorkspacePrefs();
+    } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
-      persistClauseDensity();
+      persistWorkspacePrefs();
     }
     save();
     state.saveMessage = workspace.kind === "workspace"
@@ -1816,7 +1936,7 @@ $("#import-file").addEventListener("change", async (event) => {
     render();
     return;
   }
-  if (workspace.errors?.[0]?.code === "invalid_density" || workspace.errors?.[0]?.code === "invalid_format") {
+  if (workspace.errors?.[0]?.code === "invalid_density" || workspace.errors?.[0]?.code === "invalid_format" || workspace.errors?.[0]?.code === "invalid_filter") {
     state.saveMessage = `Import failed (${workspace.errors[0].code}): ${workspace.errors[0].message}`;
     $("#autosave-status").textContent = state.saveMessage;
     return;
@@ -1964,6 +2084,35 @@ function jumpToLocks() {
   }
   $("#clear-locks")?.focus?.();
 }
+function jumpToGroups() {
+  const visible = vetoGroupsOnly
+    ? state.proposal.groups.filter((group) => group.veto === true)
+    : state.proposal.groups;
+  if (visible.length) {
+    const first = visible[0];
+    const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
+    if (target?.focus) {
+      target.focus();
+      return;
+    }
+  }
+  $("#groups-heading")?.focus?.();
+}
+
+function jumpToVetoBlockers() {
+  const blocking = blockingVetoIds(currentResult());
+  const first = state.proposal.groups.find((group) => blocking.has(group.id));
+  if (first) {
+    const target = $(`[data-veto-block="${first.id}"]`);
+    if (target?.focus) {
+      target.focus();
+      return;
+    }
+  }
+  $("#constraint-checks")?.focus?.();
+  notifyDraft("No veto-blocker highlight is on screen. Review the veto list in Constraint checks. A veto is a numerical constraint, not a legal right.");
+}
+
 function findAgreement() {
   $("#results-heading")?.focus?.();
   notifyDraft("Search already runs as you edit. Review the recommendation below.");
@@ -2012,10 +2161,20 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "l" || event.key === "L") {
     event.preventDefault();
     jumpToLocks();
+  } else if (event.key === "v" || event.key === "V") {
+    event.preventDefault();
+    setVetoGroupsOnly(!vetoGroupsOnly);
+  } else if (event.key === "b" || event.key === "B") {
+    event.preventDefault();
+    jumpToVetoBlockers();
+  } else if (event.key === "g" || event.key === "G") {
+    event.preventDefault();
+    jumpToGroups();
   }
 });
 
-clauseDensity = loadClauseDensity();
+clauseDensity = "comfortable";
+loadWorkspacePrefs();
 render();
 startCoachIfNeeded();
 

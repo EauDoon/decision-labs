@@ -48,6 +48,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>\/<\/kbd> Focus the clause filter/u);
   assert.match(html, /Focus Add group/u);
   assert.match(html, /Jump to the first locked clause/u);
+  assert.match(html, /<kbd>v<\/kbd> Toggle the veto-only group filter/u);
+  assert.match(html, /<kbd>b<\/kbd> Jump to the first veto-blocker highlight, or the veto list/u);
+  assert.match(html, /<kbd>g<\/kbd> Focus the participant groups heading or the first group card/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -61,15 +64,20 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /workplace-hybrid/u);
   assert.match(html, /club-constitution/u);
   assert.match(html, /library-quiet-hours/u);
+  assert.match(html, /sports-fixture-night/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
   assert.match(html, /Show veto groups only/u);
+  assert.match(html, /id="locked-clauses-only"/u);
+  assert.match(html, /Show locked clauses only/u);
   assert.match(html, /id="veto-groups-status"/u);
   assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
   assert.match(html, /id="printable-ballot"/u);
   assert.match(html, /Print facilitator pack/u);
+  assert.match(html, /Print redacted/u);
+  assert.match(html, /id="print-redacted-button"/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
@@ -89,6 +97,12 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="clause-density"/u);
   assert.match(html, /id="copy-veto-button"/u);
   assert.match(html, /Copy veto blockers/u);
+  assert.match(html, /id="copy-packages-table-button"/u);
+  assert.match(html, /Copy package table/u);
+  assert.match(html, /id="package-table-fallback"/u);
+  assert.match(html, /id="clause-paste"/u);
+  assert.match(html, /Paste clause options TSV or CSV/u);
+  assert.match(html, /id="clause-paste-button"/u);
   assert.match(html, /id="file-compare-heading"/u);
   assert.match(html, /id="compare-files-button"/u);
   assert.match(html, /id="coach-again"/u);
@@ -137,7 +151,12 @@ async function savedWorkbench(storage, hash = "") {
     }
     return elements.get(selector);
   };
-  const clipboard = { text: "", writeText(value) { this.text = value; return Promise.resolve(); } };
+  const clipboard = { text: "", blocked: false, writeText(value) {
+    if (this.blocked) return Promise.reject(new Error("clipboard blocked"));
+    this.text = value;
+    return Promise.resolve();
+  } };
+  let printCalls = 0;
   const context = vm.createContext({ console, TextEncoder, TextDecoder, Uint8Array, atob,
     document: {
       querySelector: element,
@@ -145,7 +164,12 @@ async function savedWorkbench(storage, hash = "") {
       querySelectorAll: () => [],
       addEventListener: (name, callback) => documentEvents.set(name, callback),
     },
-    window: { devicePixelRatio: 1, addEventListener() {}, navigator: { clipboard } },
+    window: {
+      devicePixelRatio: 1,
+      addEventListener() {},
+      navigator: { clipboard },
+      print() { printCalls += 1; },
+    },
     navigator: { clipboard },
     location: { hash, protocol: "file:" },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => storage.set(key, value) },
@@ -189,6 +213,7 @@ async function savedWorkbench(storage, hash = "") {
       };
       await element("#clauses-import-file").events.get("change")({ target });
     },
+    pasteClauses: (value) => { element("#clause-paste").value = value; },
     importLocksJson: async (contents, { size } = {}) => {
       const target = {
         files: [{ size: size ?? contents.length, text: async () => contents }],
@@ -218,6 +243,11 @@ async function savedWorkbench(storage, hash = "") {
       target.events.get("change")({ target: { checked } });
     },
     vetoGroupsStatus: () => element("#veto-groups-status").textContent,
+    filterLockedClauses: (checked) => {
+      const target = element("#locked-clauses-only");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
     coalition: () => element("#coalition-table").innerHTML,
@@ -247,6 +277,9 @@ async function savedWorkbench(storage, hash = "") {
     },
     focused: () => focusedSelector,
     clipboardText: () => clipboard.text,
+    blockClipboard: () => { clipboard.blocked = true; },
+    printCalls: () => printCalls,
+    packageTable: () => element("#package-table-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
     compareFiles: async (left, right) => {
       await element("#compare-file-left").events.get("change")({
@@ -628,6 +661,29 @@ test("library quiet hours preset loads a distinct synthetic reading-room worksho
   assert.doesNotMatch(app.clauses(), /Meeting quorum/u);
 });
 
+test("sports fixture night preset loads a distinct synthetic match-evening workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "sports-fixture-night");
+  app.click("#load-preset");
+  assert.match(app.title(), /Sports Fixture Night: match end-time, floodlights, and parking/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Match end-time/u);
+  assert.match(app.clauses(), /Floodlights/u);
+  assert.match(app.clauses(), /Match-night parking/u);
+  assert.match(app.groups(), /Members/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /Council rangers/u);
+  assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Club Constitution/u);
+  assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekly office presence/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Meeting quorum/u);
+  assert.doesNotMatch(app.clauses(), /Evening hours/u);
+});
+
 test("keyboard f focuses the clause filter unless an input is active", async () => {
   const app = await savedWorkbench(new Map());
   app.keydown("f");
@@ -712,13 +768,16 @@ test("printable worksheet lists every clause option without recording a vote", a
   assert.match(app.ballot(), /Park access hours/u);
   assert.match(app.ballot(), /Close at 20:00 every day \(original\)/u);
   assert.match(app.ballot(), /ballot-box/u);
+  assert.match(app.ballot(), /Participant groups: Residents, Shopkeepers, Park stewards/u);
 });
 
 test("print facilitator pack keeps pin columns, notes, and veto highlights while hiding the coach", async () => {
   const html = await standaloneBytes();
   assert.match(html, /Print facilitator pack/u);
+  assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /#coach-again, #shortcut-overlay \{ display: none !important; \}/u);
+  assert.match(html, /#coach-again, #shortcut-overlay, \.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note \{ display: none !important; \}/u);
+  assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -729,11 +788,46 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.equal(app.coachHidden(), false);
 });
 
+test("print redacted replaces group display names without changing the saved draft", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for redacted print");
+  app.edit("group-floor", 40, { field: "group-floor", groupId: "residents" });
+  assert.match(app.coalition(), /Residents/u);
+  assert.match(app.sideBySide(), /Residents/u);
+  assert.match(app.constraints(), /Residents support/u);
+  assert.match(app.ballot(), /Participant groups: Residents, Shopkeepers, Park stewards/u);
+  assert.match(app.groups(), /Residents/u);
+  app.click("#print-button");
+  assert.equal(app.printCalls(), 1);
+  assert.match(app.coalition(), /Residents/u);
+  app.click("#print-redacted-button");
+  assert.equal(app.printCalls(), 2);
+  assert.match(app.coalition(), /Group 1/u);
+  assert.match(app.coalition(), /Group 2/u);
+  assert.match(app.coalition(), /Group 3/u);
+  assert.doesNotMatch(app.coalition(), /Residents/u);
+  assert.match(app.sideBySide(), /Group 1/u);
+  assert.doesNotMatch(app.sideBySide(), /Residents/u);
+  assert.match(app.constraints(), /Group 1 support/u);
+  assert.doesNotMatch(app.constraints(), /Residents/u);
+  assert.match(app.ballot(), /Participant groups: Group 1, Group 2, Group 3/u);
+  assert.doesNotMatch(app.ballot(), /Residents/u);
+  assert.match(app.groups(), /Residents/u);
+  const saved = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(saved.groups[0].name, "Residents");
+  assert.equal(saved.groups[1].name, "Shopkeepers");
+  assert.equal(saved.groups[2].name, "Park stewards");
+});
+
 test("moving a clause changes documented tie-breaker order and supports undo", async () => {
   const storage = new Map();
   const app = await savedWorkbench(storage);
   app.setTitle("Workshop draft for clause order");
   const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  app.clickAction("move-clause", { clauseId: "hours", direction: "up" });
+  assert.match(app.message(), /Could not move that clause/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses[0].id, "hours");
   app.clickAction("move-clause", { clauseId: "hours", direction: "down" });
   const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
   assert.equal(after.clauses[0].id, before.clauses[1].id);
@@ -827,6 +921,34 @@ test("clause filter live region announces when no clauses match", async () => {
   assert.equal(app.filterStatus(), "");
 });
 
+test("locked-clause filter hides unlocked cards without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="locked-clauses-only"/u);
+  assert.match(html, /Show locked clauses only/u);
+  assert.match(html, /draft choice, not a recorded vote/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterLockedClauses(true);
+  assert.match(app.clauses(), /No locked clauses match this filter/u);
+  assert.match(app.filterStatus(), /No locked clauses match this filter/u);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  assert.match(app.ballot(), /Weekend market use/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.filterLockedClauses(false);
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  app.filterLockedClauses(true);
+  assert.match(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.doesNotMatch(app.clauses(), /Path lighting/u);
+  assert.match(app.filterStatus(), /Showing 1 of 3 clauses/u);
+  assert.match(app.ballot(), /Weekend market use/u);
+  const saved = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(saved.clauses.length, 3);
+  assert.equal(saved.clauses.find((clause) => clause.id === "hours").lockedOptionId, "hours-pilot");
+});
+
 test("veto-only group filter hides non-veto cards without changing the stored draft", async () => {
   const html = await standaloneBytes();
   assert.match(html, /id="veto-groups-status"[^>]*role="status"/u);
@@ -848,6 +970,82 @@ test("veto-only group filter hides non-veto cards without changing the stored dr
   assert.doesNotMatch(app.groups(), /data-group-id="members"/u);
   assert.match(app.shares(), /Members/u);
   assert.match(app.vetoGroupsStatus(), /Showing 1 of 3 groups/u);
+});
+
+test("keyboard v toggles the veto-only group filter unless an input is active", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.keydown("v");
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  assert.match(app.vetoGroupsStatus(), /No veto groups match this filter/u);
+  assert.match(app.shares(), /Residents/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.clearFocus();
+  app.keydown("v", { tagName: "INPUT", isContentEditable: false });
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  app.keydown("v", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  app.keydown("v");
+  assert.match(app.groups(), /Residents/u);
+  app.field("#preset-select", "club-constitution");
+  app.click("#load-preset");
+  app.keydown("V");
+  assert.match(app.groups(), /Officers/u);
+  assert.doesNotMatch(app.groups(), /Club staff/u);
+  assert.doesNotMatch(app.groups(), /data-group-id="members"/u);
+  assert.match(app.shares(), /Members/u);
+});
+
+test("keyboard b jumps to the first veto-blocker highlight unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>b<\/kbd> Jump to the first veto-blocker highlight, or the veto list/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("b");
+  assert.equal(app.focused(), "#constraint-checks");
+  app.clearFocus();
+  app.keydown("b", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("b", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const key = "smallest-agreement:proposal:v1";
+  const draft = {
+    title: "Veto jump workshop",
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { majority: 90, minority: 10 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { majority: 88, minority: 20 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { majority: 85, minority: 30 } },
+    ] }],
+  };
+  const blocked = await savedWorkbench(new Map([[key, JSON.stringify(draft)]]));
+  assert.match(blocked.groups(), /data-veto-block="minority"/u);
+  blocked.keydown("B");
+  assert.equal(blocked.focused(), '[data-veto-block="minority"]');
+});
+
+test("keyboard g focuses the first group card unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="groups-heading"/u);
+  assert.match(html, /<kbd>g<\/kbd> Focus the participant groups heading or the first group card/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("g");
+  assert.equal(app.focused(), '[data-field="group-name"][data-group-id="residents"]');
+  app.clearFocus();
+  app.keydown("g", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("g", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("G");
+  assert.equal(app.focused(), '[data-field="group-name"][data-group-id="residents"]');
+  app.filterVetoGroups(true);
+  app.clearFocus();
+  app.keydown("g");
+  assert.equal(app.focused(), "#groups-heading");
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {
@@ -970,6 +1168,29 @@ test("copy recommended package writes Markdown to the clipboard", async () => {
   assert.match(app.message(), /Recommended package copied as Markdown/u);
 });
 
+test("copy package table writes a Markdown comparison and keeps a textarea fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-packages-table-button"/u);
+  assert.match(html, /id="package-table-fallback"/u);
+  assert.match(html, /not a recorded vote/u);
+  const app = await savedWorkbench(new Map());
+  assert.match(app.packageTable(), /^# Original, recommended, and pinned packages\n/u);
+  assert.match(app.packageTable(), /\| Clause \| Original \| Recommended \| Pinned \|/u);
+  assert.match(app.packageTable(), /Park access hours/u);
+  await app.click("#copy-packages-table-button");
+  assert.equal(app.clipboardText(), app.packageTable());
+  assert.match(app.clipboardText(), /not a recorded vote or a claim of legitimacy/u);
+  assert.match(app.message(), /Package table copied as Markdown/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-packages-table-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#package-table-fallback");
+  assert.match(blocked.packageTable(), /\| Clause \| Original \| Recommended \| Pinned \|/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a recorded vote/u);
+});
+
 test("copy veto blockers writes a constraint list rather than a legitimacy claim", async () => {
   const key = "smallest-agreement:proposal:v1";
   const draft = {
@@ -1067,6 +1288,45 @@ test("clauses CSV import replaces options with named errors and supports undo", 
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
 });
 
+test("pasting TSV or CSV clause options uses the same validation and is undoable", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for pasted clauses");
+  const before = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  app.pasteClauses("clause_id\toption_id\tclause_title\toption_label\toriginal\tchange_cost\thidden\nhours\thours-original\tHours\tKeep\tyes\t0\tx\n");
+  app.click("#clause-paste-button");
+  assert.match(app.message(), /Pasted clauses failed \(unknown_column\)/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+  const tsv = [
+    "clause_id\toption_id\tclause_title\toption_label\toriginal\tchange_cost",
+    "hours\thours-original\tPark hours\tClose at 20:00\tyes\t0",
+    "hours\thours-seasonal\tPark hours\tSeasonal close\tno\t2",
+    "hours\thours-pilot\tPark hours\tFriday trial\tno\t3",
+  ].join("\n");
+  app.pasteClauses(tsv);
+  app.click("#clause-paste-button");
+  const after = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(after.clauses.length, 1);
+  assert.equal(after.clauses[0].title, "Park hours");
+  assert.equal(after.clauses[0].options[0].label, "Close at 20:00");
+  assert.equal(after.clauses[0].options[0].support.residents, before.clauses[0].options[0].support.residents);
+  assert.match(app.message(), /Imported 1 clauses \(3 options\) from the pasted table/u);
+  app.click("#undo-button");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.length, before.clauses.length);
+  const csv = [
+    "clause_id,option_id,clause_title,option_label,original,change_cost",
+    "path,path-original,Path lighting,Keep lamps,yes,0",
+    "path,path-warm,Path lighting,Warm lights,no,3",
+    "path,path-motion,Path lighting,Motion lights,no,4",
+  ].join("\n");
+  app.pasteClauses(csv);
+  app.click("#clause-paste-button");
+  const csvAfter = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(csvAfter.clauses[0].id, "path");
+  assert.equal(csvAfter.clauses[0].title, "Path lighting");
+  assert.match(app.message(), /from the pasted table/u);
+});
+
 test("locks JSON import replaces every lock, fails closed on unknown ids, and can be undone", async () => {
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -1115,6 +1375,53 @@ test("clause density persists in workspace JSON and local workspace prefs", asyn
   await app.importJson(workspace);
   assert.match(app.message(), /Imported workspace/u);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).clauseDensity, "compact");
+});
+
+test("workspace JSON persists veto-only and locked-clause filters that the solver ignores", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for display filters");
+  app.filterVetoGroups(true);
+  app.filterLockedClauses(true);
+  const prefs = JSON.parse(storage.get("smallest-agreement:workspace:v1"));
+  assert.equal(prefs.vetoGroupsOnly, true);
+  assert.equal(prefs.lockedClausesOnly, true);
+  const proposal = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(Object.hasOwn(proposal, "vetoGroupsOnly"), false);
+  assert.equal(Object.hasOwn(proposal, "lockedClausesOnly"), false);
+  assert.equal(proposal.clauses.length, 3);
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  assert.match(app.clauses(), /No locked clauses match this filter/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  app.filterVetoGroups(false);
+  app.filterLockedClauses(false);
+  await app.importJson(JSON.stringify({
+    format: "smallest-agreement-workspace",
+    version: 1,
+    vetoGroupsOnly: true,
+    lockedClausesOnly: true,
+    proposal,
+  }));
+  assert.match(app.message(), /Imported workspace/u);
+  assert.match(app.groups(), /No veto groups match this filter/u);
+  assert.match(app.clauses(), /No locked clauses match this filter/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).vetoGroupsOnly, true);
+  await app.importJson(JSON.stringify({
+    format: "smallest-agreement-workspace",
+    version: 1,
+    proposal,
+  }));
+  assert.match(app.groups(), /Residents/u);
+  assert.match(app.clauses(), /Park access hours/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).vetoGroupsOnly, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).lockedClausesOnly, false);
+  await app.importJson(JSON.stringify({
+    format: "smallest-agreement-workspace",
+    version: 1,
+    vetoGroupsOnly: "yes",
+    proposal,
+  }));
+  assert.match(app.message(), /Import failed \(invalid_filter\)/u);
 });
 
 test("resetting one group's support to blank is undoable and leaves other scores", async () => {
