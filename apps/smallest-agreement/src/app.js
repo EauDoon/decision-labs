@@ -2725,6 +2725,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "h" || event.key === "H") {
     event.preventDefault();
     jumpToMethod();
+  } else if (event.key === "i" || event.key === "I") {
+    event.preventDefault();
+    copyOriginalVersusRecommended();
   }
 });
 

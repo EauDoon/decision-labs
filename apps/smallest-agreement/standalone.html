@@ -589,6 +589,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>j</kbd> Copy remaining change-budget as one-line Markdown</li>
           <li><kbd>x</kbd> Focus the JSON export control</li>
           <li><kbd>h</kbd> Jump to the workshop method / How it works heading</li>
+          <li><kbd>i</kbd> Copy original versus recommended labels and costs as compact Markdown</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -5999,6 +6000,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "h" || event.key === "H") {
     event.preventDefault();
     jumpToMethod();
+  } else if (event.key === "i" || event.key === "I") {
+    event.preventDefault();
+    copyOriginalVersusRecommended();
   }
 });
 

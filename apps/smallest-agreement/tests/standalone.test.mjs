@@ -63,6 +63,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>j<\/kbd> Copy remaining change-budget as one-line Markdown/u);
   assert.match(html, /<kbd>x<\/kbd> Focus the JSON export control/u);
   assert.match(html, /<kbd>h<\/kbd> Jump to the workshop method \/ How it works heading/u);
+  assert.match(html, /<kbd>i<\/kbd> Copy original versus recommended labels and costs as compact Markdown/u);
   assert.match(html, /id="method-heading"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
@@ -1750,6 +1751,32 @@ test("keyboard j copies remaining change-budget unless an input is active", asyn
   assert.equal(blocked.focused(), "#remaining-budget-fallback");
   blocked.clearFocus();
   blocked.keydown("j", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(blocked.focused(), "");
+});
+
+test("keyboard i copies original versus recommended labels and costs unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>i<\/kbd> Copy original versus recommended labels and costs as compact Markdown/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("i");
+  assert.match(app.clipboardText(), /^# Original versus recommended package/u);
+  assert.match(app.clipboardText(), /option labels and costs only/u);
+  assert.match(app.clipboardText(), /not a recorded vote/u);
+  assert.doesNotMatch(app.clipboardText(), /^# Recommended package/u);
+  app.clearFocus();
+  app.keydown("i", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("i", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const again = await savedWorkbench(new Map());
+  again.keydown("I");
+  assert.match(again.clipboardText(), /^# Original versus recommended package/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-original-versus-recommended-button");
+  assert.equal(blocked.focused(), "#original-versus-recommended-fallback");
+  blocked.clearFocus();
+  blocked.keydown("i", { tagName: "INPUT", isContentEditable: false });
   assert.equal(blocked.focused(), "");
 });
 
