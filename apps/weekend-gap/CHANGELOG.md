@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.7 - 2026-09-10
+
+A workshop follow-up on 1.5.6. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.6 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `,` copies hours-to-first-settlement through the existing copy control, using the same Markdown. Ignored while typing.
+- Keyboard `.` jumps to the first-closed-FX-hour copy control, or the FX Gantt row or dashboard heading if that control is missing. Ignored while typing.
+- Keyboard `/` without Shift jumps to the remaining-reserve copy control, or the dashboard heading if that control is missing. Ignored while typing. Shift+/ stays help (`?`). Keyboard `z` still copies remaining reserve.
+- Friday late FX close (synthetic) preset: same 72-hour calendar as Normal Friday, Friday FX window closes one hour later. Distinct from Payday Friday, Public-holiday Monday, Saturday market, Sunday stall close, Thin Saturday FX, Thin FX Tight Windows, Long-weekend, Compressed Friday, and Early Monday bank open. Not a live queue.
+- Filter that hides Gantt hours closed on every gate. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideClosedGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Inverse of `hideOpenGanttHours`. Hide-weekend, hide-weekday, every-gate-closed, and single-gate filters still compose.
+- Print and print redacted include the first closed FX hour label. Counts of modeled hours, not a bank calendar. The saved scenario is unchanged.
+- Copy hours-to-clear stays a dedicated button through the existing hours-to-clear control. One-line Markdown with a clipboard fallback and an honest empty when there is no queue.
+
 ## 1.5.6 - 2026-09-10
 
 A workshop follow-up on 1.5.5. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.5 review UI stay in place. Analysis JSON still has no timestamps.

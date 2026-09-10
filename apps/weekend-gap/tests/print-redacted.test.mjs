@@ -58,7 +58,7 @@ test("print redacted control is present and does not write back labels", async (
   assert.match(html, /class="gate-redacted-label"/);
   assert.match(css, /\.print-redacted \.gate-live-label/);
   assert.match(css, /\.print-redacted \.gate-redacted-label/);
-  assert.match(app, /buildGateGanttSvg\(scenario, selectedHour, \{ closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, gateFilter, redacted: true \}\)/);
+  assert.match(app, /buildGateGanttSvg\(scenario, selectedHour, \{ closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, gateFilter, redacted: true \}\)/);
   const printHandler = app.slice(app.indexOf('document.querySelector("#print-redacted")'), app.indexOf('document.querySelector("#copy-dashboard-markdown")'));
   assert.doesNotMatch(printHandler, /setScenario\(/);
   assert.match(printHandler, /The saved scenario was not changed/);

@@ -70,6 +70,7 @@ const appImportMarker = `import {
   firstClosedFxHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
+  firstClosedFxGanttHour,
   ganttHourClosedOnAnyGate,
   ganttHourClosedOnEveryGate,
   ganttHourOpenOnEveryGate,
