@@ -1897,7 +1897,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
@@ -1906,6 +1906,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(exported.hideGroupsWithoutFloors, true);
   assert.equal(exported.noCheaperRemainingClausesOnly, true);
   assert.equal(exported.hideUnlockedClauses, true);
+  assert.equal(exported.hideLockedClauses, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
@@ -1915,6 +1916,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parsed.hideGroupsWithoutFloors, true);
   assert.equal(parsed.noCheaperRemainingClausesOnly, true);
   assert.equal(parsed.hideUnlockedClauses, true);
+  assert.equal(parsed.hideLockedClauses, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
@@ -1922,6 +1924,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(Object.hasOwn(parsed.proposal, "hideGroupsWithoutFloors"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "noCheaperRemainingClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideUnlockedClauses"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideLockedClauses"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
@@ -1931,6 +1934,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(omitted.hideGroupsWithoutFloors, false);
   assert.equal(omitted.noCheaperRemainingClausesOnly, false);
   assert.equal(omitted.hideUnlockedClauses, false);
+  assert.equal(omitted.hideLockedClauses, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
@@ -1939,6 +1943,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(bare.hideGroupsWithoutFloors, null);
   assert.equal(bare.noCheaperRemainingClausesOnly, null);
   assert.equal(bare.hideUnlockedClauses, null);
+  assert.equal(bare.hideLockedClauses, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
@@ -1948,6 +1953,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(formatWorkspaceJson(input, { hideGroupsWithoutFloors: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { noCheaperRemainingClausesOnly: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { hideUnlockedClauses: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideLockedClauses: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
