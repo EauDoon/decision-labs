@@ -1026,6 +1026,11 @@ function handleShortcut(event) {
     focusUncoveredLeftoverUnitCountCopy();
     return;
   }
+  if (key === "=") {
+    event.preventDefault();
+    focusHideBuyersWithLeftover();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1213,6 +1218,17 @@ function focusHideFullyFilledBuyers() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const hide = document.querySelector("#hide-fully-filled-buyers");
+  if (hide) {
+    hide.focus();
+    return;
+  }
+  document.querySelector("#buyers-list")?.focus();
+}
+
+function focusHideBuyersWithLeftover() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const hide = document.querySelector("#hide-buyers-with-leftover");
   if (hide) {
     hide.focus();
     return;
