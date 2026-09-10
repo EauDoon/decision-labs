@@ -65,6 +65,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'breakpoint-label-copy-text', 'copy-first-breakpoint-label',
         'viability-label-copy-text', 'copy-viability-label',
         'print-report', 'print-one-pager-title',
+        'remaining-copy-text', 'copy-first-breakpoint-remaining',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -734,6 +735,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Participant 3\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
+  assert.doesNotMatch(snapshot, /Least-headroom participant: Liquidity Partner/);
   assert.doesNotMatch(snapshot, /First-breakpoint participant: Liquidity Partner/);
   assert.match(html, /\.print-redacted \.participant-live-name/);
   assert.match(html, /\.print-redacted \.participant-redacted-name/);
@@ -2487,6 +2489,56 @@ test('copy least-headroom participant label is one Markdown line with an honest 
   denied.click('copy-viability-label');
   assert.match(denied.markup(), /id="viability-label-copy-text"/);
   assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('copy first-breakpoint remaining-to-hold is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-first-breakpoint-remaining"/);
+  fallback.click('copy-first-breakpoint-remaining');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="remaining-copy-text"/);
+  assert.match(fallback.markup(), /First-breakpoint remaining-to-hold: 0\.0% share for Liquidity Partner\. Synthetic ranking, not a forecast\./);
+  assert.match(fallback.markup(), /id="remaining-copy-title">First-breakpoint remaining-to-hold Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-remaining-copy');
+  assert.doesNotMatch(fallback.markup(), /id="remaining-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-first-breakpoint-remaining');
+  assert.match(fallback.markup(), /id="remaining-copy-text"/);
+  assert.match(fallback.markup(), />First-breakpoint remaining-to-hold: none entered\.</);
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="viability-label-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-first-breakpoint-remaining');
+  assert.equal(withClipboard.copied().length, 1);
+  const text = withClipboard.copied()[0];
+  assert.equal(text.split('\n').length, 1);
+  assert.equal(text, 'First-breakpoint remaining-to-hold: 0.0% share for Liquidity Partner. Synthetic ranking, not a forecast.');
+  assert.doesNotMatch(text, /First-breakpoint participant: Liquidity Partner/);
+  assert.doesNotMatch(text, /Least-headroom participant/);
+  assert.doesNotMatch(text, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="remaining-copy-text"/);
+  withClipboard.edit('deal.monthlyVolume', '');
+  withClipboard.click('copy-first-breakpoint-remaining');
+  assert.equal(withClipboard.copied()[1], 'First-breakpoint remaining-to-hold: none entered.');
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-first-breakpoint-remaining');
+  assert.match(denied.markup(), /id="remaining-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const failing = clonePreset('balanced');
+  failing.participants[2].minimumAcceptableProfit = 10000;
+  const already = await workbench('file:', { clipboard: 'ok' });
+  already.import(failing);
+  already.click('copy-first-breakpoint-remaining');
+  assert.equal(already.copied().at(-1), 'First-breakpoint remaining-to-hold: 485,000 txn for Liquidity Partner. Synthetic ranking, not a forecast.');
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
