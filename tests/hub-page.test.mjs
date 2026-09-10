@@ -140,6 +140,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /School disco, below-floor copy, and below-threshold hide in The Smallest Agreement 1\.5\.9/);
   assert.match(html, /Sports day, below-floor copy, and veto hide in The Smallest Agreement 1\.5\.10/);
   assert.match(html, /Netball training, threshold-count copy, and non-veto hide in The Smallest Agreement 1\.5\.11/);
+  assert.match(html, /Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1\.5\.12/);
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /Dashboard copy, file compare, and compressed Friday in Weekend Gap 1\.4\.3/);
@@ -211,6 +212,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /School disco hours start, below-floor count copy shortcut/);
   assert.match(readme, /Sports day hours start, first below-floor group copy shortcut/);
   assert.match(readme, /Netball training hours start, threshold-group count copy shortcut/);
+  assert.match(readme, /Swimming club hours start, first-veto-group copy shortcut/);
   assert.match(readme, /queue-clear hours and Gantt compare/);
   assert.match(readme, /queue CSV export, peak-queue jump/);
   assert.match(readme, /dashboard Markdown copy, two-file compare/);
