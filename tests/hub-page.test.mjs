@@ -486,6 +486,16 @@ test('shortcuts panel lists v l o j with honest limits', () => {
   assert.match(readme, /It does not claim a\s+copy succeeded on a file URL/);
 });
 
+test('shortcuts panel lists m x i s with honest limits', () => {
+  assert.match(html, /<kbd>m<\/kbd><\/dt><dd>Focus the main catalog content. This key does not open a workbench./);
+  assert.match(html, /<kbd>x<\/kbd><\/dt><dd>Clear last-launched storage in this browser and hide the recency notes. This is this-browser storage, not a cloud recency. A storage write failure stays silent and does not clear drafts./);
+  assert.match(html, /<kbd>i<\/kbd><\/dt><dd>Copy Trust and limits as Markdown from this catalog page, not a live policy feed. Clipboard write uses the visible text box when the clipboard API is unavailable./);
+  assert.match(html, /<kbd>s<\/kbd><\/dt><dd>Focus the first Open workbench link. This key moves focus; it does not open the workbench./);
+  assert.match(html, /Shortcuts are ignored while focus is in an input, textarea, or select/);
+  assert.match(html, /not a live policy feed/);
+  assert.match(html, /not a cloud recency/);
+});
+
 test('keyboard o opens the last-launched workbench like keys 1 to 4', () => {
   assert.match(html, /event\.key === 'o'/);
   assert.match(html, /inEditable\(event\.target\)/);
