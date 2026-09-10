@@ -353,6 +353,19 @@ test("single-gate Gantt filter persists in workspace JSON and older files restor
   assert.equal(legacy.nodes.get("gantt-gate-filter").value, "all");
 });
 
+test("backlog-only queue table filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("queue-backlog-only").checked = true;
+  await ui.nodes.get("queue-backlog-only").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).queueBacklogOnly, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("queue-backlog-only").checked, true);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.queueBacklogOnly;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("queue-backlog-only").checked, false);
+});
+
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);
