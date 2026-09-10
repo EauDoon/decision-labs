@@ -918,6 +918,11 @@ function handleShortcut(event) {
     copyWinningRemainingCapacity();
     return;
   }
+  if (key === ".") {
+    event.preventDefault();
+    focusWinningRemainingCapacityCopy();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -955,6 +960,17 @@ function focusGroupHeadroom() {
 
 function focusRequestedUnits() {
   document.querySelector("#metric-units")?.focus();
+}
+
+function focusWinningRemainingCapacityCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-winning-remaining-capacity");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#winner-summary")?.focus();
 }
 
 function focusPrivateBuyerReport() {
