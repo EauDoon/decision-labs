@@ -108,6 +108,19 @@ test("workspace stores an optional fulfillment filter and older files omit it sa
   assert.throws(() => validateWorkspace({ version: 1, rooms: [], constructor: "all" }), /unexpected field: constructor/);
 });
 
+test("workspace stores hide excluded buyers and older files default to show-all", () => {
+  const s = clonePreset();
+  const legacy = validateWorkspace({ version: 1, rooms: [s] });
+  assert.equal(Object.hasOwn(legacy, "hideExcludedBuyers"), true);
+  assert.equal(legacy.hideExcludedBuyers, false);
+  const hidden = validateWorkspace({ version: 1, rooms: [s], hideExcludedBuyers: true });
+  assert.equal(hidden.hideExcludedBuyers, true);
+  const shown = validateWorkspace({ version: 1, rooms: [], hideExcludedBuyers: false });
+  assert.equal(shown.hideExcludedBuyers, false);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideExcludedBuyers: "true" }), /true or false/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideExcludedBuyers: 1 }), /true or false/);
+});
+
 test("scenario comparison includes residual leftover and unfilled counts", () => {
   const before = clonePreset("neighbourhood");
   const after = clonePreset("neighbourhood");

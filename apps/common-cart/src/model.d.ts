@@ -137,6 +137,7 @@ export const presets: Readonly<{
   pantry: Scenario;
   officePantry: Scenario;
   hardware: Scenario;
+  garden: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -209,6 +210,7 @@ export interface ExclusionGroup {
   buyerIds: string[];
 }
 export function groupExclusionReasons(rawScenario: unknown, offerId: string): ExclusionGroup[];
+export function createExclusionCountsMarkdown(rawScenario: unknown, offerId: string): string;
 export function aggregateDemand(rawScenario: unknown): DemandGroup[];
 
 export interface DeliveryBucket {
@@ -245,6 +247,7 @@ export interface VariantOverlapMatrix {
 }
 export function variantOverlapMatrix(rawScenario: unknown): VariantOverlapMatrix;
 export function createVariantOverlapCsv(rawScenario: unknown): string;
+export function createVariantOverlapMarkdown(rawScenario: unknown): string;
 export function encodeScenario(rawScenario: unknown): string;
 export function encodeRedactedScenario(rawScenario: unknown): string;
 export function decodeScenario(value: unknown): Scenario;
@@ -257,7 +260,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -291,6 +294,7 @@ export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenar
 export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "all" | "shipping" | "pickup"): string[];
 export function acceptedVariantFilterOptions(rawScenario: unknown): string[];
 export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: string): string[];
+export function filterBuyerIdsHidingExcluded(rawScenario: unknown, offerId: string, hideExcluded: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
@@ -322,6 +326,35 @@ export interface ThreeRoomRow {
 export interface ThreeRoomComparison { sameCurrency: boolean; currencyWarning: string | null; rooms: ThreeRoomRow[]; }
 export function compareThreeRooms(first: unknown, second: unknown, third: unknown): ThreeRoomComparison;
 export function landedTotalsComparison(leftCurrency: unknown, rightCurrency: unknown): { sameCurrency: boolean; comparable: boolean; warning: string | null };
+export interface OfferIdentitySide {
+  offerId: string;
+  merchant: string;
+  category: string;
+  variant: string;
+  fulfillment: "shipping" | "pickup";
+  status: string;
+  fulfilledUnits: number;
+  includedBuyerCount: number;
+  itemPrice: number | null;
+  landedTotal: number | null;
+}
+export interface OfferIdentityComparison {
+  leftCurrency: string;
+  rightCurrency: string;
+  leftBuyerCount: number;
+  rightBuyerCount: number;
+  leftRequestedUnits: number;
+  rightRequestedUnits: number;
+  leftOfferCount: number;
+  rightOfferCount: number;
+  sameCurrency: boolean;
+  currencyWarning: string | null;
+  shared: Array<{ offerId: string; left: OfferIdentitySide; right: OfferIdentitySide }>;
+  missingFromRight: string[];
+  missingFromLeft: string[];
+}
+export function compareRoomsByOfferIdentity(leftRaw: unknown, rightRaw: unknown): OfferIdentityComparison;
+export function createOfferIdentityCompareMarkdown(leftRaw: unknown, rightRaw: unknown): string;
 export function createMerchantReport(rawScenario: unknown): MerchantReport;
 export function createMerchantResidualReport(rawScenario: unknown): MerchantResidualReport;
 export interface WinnerBudgetLeftover {
@@ -333,8 +366,12 @@ export function winnerBudgetLeftover(rawScenario: unknown): WinnerBudgetLeftover
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
 export function neutralizeSpreadsheetCell(value: unknown): unknown;
 export function parseBuyerCsv(text: unknown): Buyer[];
+export function parseBuyerTable(text: unknown): Buyer[];
 export function importBuyersFromCsv(rawScenario: unknown, text: unknown): Scenario;
+export function importBuyersFromTable(rawScenario: unknown, text: unknown): Scenario;
 export function buyerCsvTemplate(): string;
+/** Organizer-only. Same columns as import. Formula-safe. Includes private labels and optional budgets. */
+export function createOrganizerBuyerCsv(rawScenario: unknown): string;
 export function parseOfferCsv(text: unknown, defaults?: { category?: string; minimumUnits?: number; deliveryDays?: number }): Offer[];
 export function importOffersFromCsv(rawScenario: unknown, text: unknown): Scenario;
 export function offerCsvTemplate(): string;

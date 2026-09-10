@@ -65,10 +65,12 @@ SOFTWARE.
         <li><kbd>r</kbd> Redo</li>
         <li><kbd>e</kbd> Export JSON</li>
         <li><kbd>n</kbd> Add a buyer</li>
+        <li><kbd>a</kbd> Add an offer</li>
         <li><kbd>m</kbd> Focus the merchant inspector region</li>
         <li><kbd>o</kbd> Focus the offers list</li>
         <li><kbd>b</kbd> Focus the buyer list</li>
         <li><kbd>w</kbd> Focus the winner and inspector summary</li>
+        <li><kbd>l</kbd> Focus leftover residual coverage</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -115,6 +117,7 @@ SOFTWARE.
           <button class="preset" data-preset="pantry" type="button">Pantry staples</button>
           <button class="preset" data-preset="officePantry" type="button">Office pantry</button>
           <button class="preset" data-preset="hardware" type="button">Hardware tools</button>
+          <button class="preset" data-preset="garden" type="button">Garden seed</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -198,6 +201,7 @@ SOFTWARE.
           <div class="button-row print-chrome">
             <button id="add-buyer" class="primary" type="button">Add buyer</button>
             <button id="import-buyers" type="button">Import buyer CSV</button>
+            <button id="export-buyers-csv" type="button">Export organizer buyer CSV</button>
             <button id="restore-removed-buyer" type="button" disabled>Restore last removed buyer</button>
             <button id="buyer-csv-template" type="button">Download CSV template</button>
             <input id="import-buyers-file" type="file" accept=".csv,text/csv,text/plain" hidden>
@@ -220,7 +224,11 @@ SOFTWARE.
               <option value="all">All</option>
             </select>
           </label>
-          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only.</p>
+          <label class="checkbox-field">
+            <input id="hide-excluded-buyers" type="checkbox">
+            Hide excluded buyers
+          </label>
+          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded choice is kept in this browser's workspace file. Older workspace files without it still show every buyer.</p>
         </div>
         <div class="table-shell print-private" id="buyers-list" tabindex="-1" role="region" aria-label="Buyer constraints list">
           <table>
@@ -245,6 +253,13 @@ SOFTWARE.
           <button id="restore-neighbourhood" type="button">Restore neighbourhood example</button>
         </div>
         <p id="variants-help" class="canvas-note print-chrome">Accepted variants are a comma-separated list. At least one name is required. Buyer CSV columns: label, category, quantity, max unit price, latest delivery days, variants, and optional max order total.</p>
+        <div class="snapshot-bar print-chrome" aria-label="Paste buyers from a spreadsheet">
+          <label>Paste buyer CSV or TSV
+            <textarea id="paste-buyers" rows="6" spellcheck="false" aria-describedby="paste-buyers-help" placeholder="label, category, quantity, max unit price, latest delivery days, variants"></textarea>
+          </label>
+          <button id="paste-buyers-apply" type="button">Replace buyers from paste</button>
+          <p id="paste-buyers-help">Same columns and validation as buyer CSV import. A tab in the first line is read as TSV. Valid paste replaces buyers, keeps offers, and is undoable.</p>
+        </div>
         <article class="panel print-chrome" aria-labelledby="buyer-variant-counts-title">
           <div class="panel-heading">
             <div>
@@ -319,12 +334,14 @@ SOFTWARE.
               <tbody id="exclusion-groups"></tbody>
             </table>
           </div>
+          <button id="copy-exclusion-counts" class="print-chrome" type="button">Copy exclusion counts</button>
+          <p class="canvas-note print-chrome">Merchant-safe reason counts only. Labels, IDs, budgets, and allocations stay out.</p>
           <p class="canvas-note print-chrome">This buyer-level explanation stays in the buyer room. The merchant table continues to show aggregate ranges only.</p>
           <article class="panel residual-panel print-keep" aria-labelledby="residual-title">
             <div class="panel-heading">
               <div>
                 <p class="section-number">Unfilled after winner</p>
-                <h3 id="residual-title">Residual coverage on leftover demand</h3>
+                <h3 id="residual-title" tabindex="-1">Residual coverage on leftover demand</h3>
               </div>
             </div>
             <p id="residual-note" class="canvas-note"></p>
@@ -359,6 +376,17 @@ SOFTWARE.
           <button id="merchant-residual-report" type="button">Export residual coverage (aggregate)</button>
           <button id="copy-winner-aggregates" type="button">Copy winner aggregates</button>
           <p>This JSON report contains offer outcomes and group totals. Buyer labels, IDs, budgets, and allocations are excluded. Small groups can still reveal information. Winner markdown is aggregates only.</p>
+        </div>
+        <div class="snapshot-bar print-chrome" aria-label="Compare two room JSON files by offer identity">
+          <label>Left room JSON
+            <input id="compare-offer-json-left" type="file" accept="application/json,application/json,.json">
+          </label>
+          <label>Right room JSON
+            <input id="compare-offer-json-right" type="file" accept="application/json,application/json,.json">
+          </label>
+          <button id="compare-offer-identity" type="button">Compare rooms by offer id</button>
+          <p>Merchant-facing counts only. Matching offer ids are compared. Missing ids are listed and are not filled with zeros. The open room stays in place.</p>
+          <pre id="offer-identity-compare" class="compare-pre" hidden></pre>
         </div>
         <div class="section-heading print-chrome">
           <div>
@@ -442,6 +470,7 @@ SOFTWARE.
               </table>
             </div>
             <button id="overlap-csv" class="print-chrome" type="button">Copy overlap CSV</button>
+            <button id="overlap-markdown" class="print-chrome" type="button">Copy overlap Markdown</button>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>

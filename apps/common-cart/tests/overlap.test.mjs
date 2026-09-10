@@ -1,6 +1,7 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, variantOverlapMatrix, createVariantOverlapCsv } from "../src/model.js";
+import { clonePreset, variantOverlapMatrix, createVariantOverlapCsv, createVariantOverlapMarkdown } from "../src/model.js";
+import { readFile } from "node:fs/promises";
 
 test("variant overlap matrix counts buyers who accept each offered variant", () => {
   const scenario = clonePreset("neighbourhood");
@@ -74,3 +75,34 @@ test("variant overlap CSV escapes formula-like variant names", () => {
   const csv = createVariantOverlapCsv(scenario);
   assert.match(csv, /"'=cmd"/);
 });
+
+test("variant overlap Markdown is counts only and omits private buyer rows", () => {
+  const scenario = clonePreset("studio");
+  scenario.buyers[0].label = "SECRET_LABEL";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createVariantOverlapMarkdown(scenario);
+  const matrix = variantOverlapMatrix(scenario);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes('"selectedBuyerIds":'), false);
+  assert.equal(markdown.includes('"allocations":'), false);
+  assert.match(markdown, /# Common Cart variant overlap/);
+  assert.match(markdown, /Labels, IDs, budgets, and allocations are omitted/);
+  assert.match(markdown, new RegExp(`\\| ${matrix.variants[0].variant} \\| ${matrix.cells[0].map((cell) => cell.buyerCount).join(" \\| ")} \\|`));
+  for (const entry of matrix.variants) {
+    assert.match(markdown, new RegExp(`\\| ${entry.variant} \\| ${entry.offerCount} \\| ${entry.buyerCount} \\| ${entry.units} \\|`));
+  }
+});
+
+test("the merchant table can copy overlap Markdown", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="overlap-markdown"/u);
+  assert.match(html, /Copy overlap Markdown/u);
+  assert.match(app, /createVariantOverlapMarkdown\(/u);
+});
+
