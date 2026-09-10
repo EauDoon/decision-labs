@@ -39,6 +39,7 @@ import {
   formatFirstVetoGroupLabelMarkdown,
   formatVetoGroupCountMarkdown,
   formatFirstNonVetoGroupLabelMarkdown,
+  formatLastVetoGroupLabelMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -1907,7 +1908,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true, hideGroupsMeetingThreshold: true, hideGroupsBelowThreshold: true, hideVetoGroups: true, hideNonVetoGroups: true, hideFirstVetoGroup: true, hideLastVetoGroup: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true, hideGroupsMeetingThreshold: true, hideGroupsBelowThreshold: true, hideVetoGroups: true, hideNonVetoGroups: true, hideFirstVetoGroup: true, hideLastVetoGroup: true, hideFirstNonVetoGroup: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
@@ -1923,6 +1924,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(exported.hideNonVetoGroups, true);
   assert.equal(exported.hideFirstVetoGroup, true);
   assert.equal(exported.hideLastVetoGroup, true);
+  assert.equal(exported.hideFirstNonVetoGroup, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
@@ -1939,6 +1941,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parsed.hideNonVetoGroups, true);
   assert.equal(parsed.hideFirstVetoGroup, true);
   assert.equal(parsed.hideLastVetoGroup, true);
+  assert.equal(parsed.hideFirstNonVetoGroup, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
@@ -1953,6 +1956,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(Object.hasOwn(parsed.proposal, "hideNonVetoGroups"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideFirstVetoGroup"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideLastVetoGroup"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideFirstNonVetoGroup"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
@@ -1969,6 +1973,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(omitted.hideNonVetoGroups, false);
   assert.equal(omitted.hideFirstVetoGroup, false);
   assert.equal(omitted.hideLastVetoGroup, false);
+  assert.equal(omitted.hideFirstNonVetoGroup, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
@@ -1984,6 +1989,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(bare.hideNonVetoGroups, null);
   assert.equal(bare.hideFirstVetoGroup, null);
   assert.equal(bare.hideLastVetoGroup, null);
+  assert.equal(bare.hideFirstNonVetoGroup, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
@@ -2006,6 +2012,8 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideFirstVetoGroup: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { hideLastVetoGroup: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideLastVetoGroup: 1, proposal: input })).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideFirstNonVetoGroup: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideFirstNonVetoGroup: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -2680,6 +2688,70 @@ test("first non-veto group label Markdown escapes the group name and is not a le
   assert.equal(copied.label, "Open*bloc [A]");
   assert.equal(copied.text, "First non-veto group: Open\\*bloc \\[A\\]. A veto is a number you entered, not a legal right. The label is not a legal identity.\n");
   assert.doesNotMatch(copied.text, /First veto group/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("last veto group label Markdown is one line, honest when none, and not a legal right", () => {
+  const input = proposal({
+    groups: [
+      { id: "open", name: "Open", weight: 1 },
+      { id: "veto", name: "Neighbours", weight: 1, veto: true },
+      { id: "later", name: "Later veto", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { open: 50, veto: 50, later: 50 }),
+      option("alt", false, { open: 80, veto: 40, later: 40 }, 1),
+      option("other", false, { open: 70, veto: 30, later: 30 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatLastVetoGroupLabelMarkdown(input);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.label, "Later veto");
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Last veto group: Later veto. A veto is a number you entered, not a legal right.\n");
+  assert.doesNotMatch(copied.text, /First veto group/u);
+  assert.doesNotMatch(copied.text, /First non-veto group/u);
+  assert.doesNotMatch(copied.text, /Neighbours/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const none = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const empty = formatLastVetoGroupLabelMarkdown(none);
+  assert.equal(empty.status, "ok");
+  assert.equal(empty.empty, true);
+  assert.equal(empty.text, "No veto group is marked, so there is no last veto group label to copy. A veto is a number you entered, not a legal right.\n");
+  assert.equal(empty.text.trim().includes("\n"), false);
+  assert.equal(formatLastVetoGroupLabelMarkdown({ title: "" }).status, "invalid");
+});
+
+test("last veto group label Markdown escapes the group name and is not a legal right", () => {
+  const input = proposal({
+    groups: [
+      { id: "open", name: "Open", weight: 1 },
+      { id: "veto", name: "First veto", weight: 1, veto: true },
+      { id: "later", name: "Veto*group [A]", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { open: 50, veto: 50, later: 50 }),
+      option("alt", false, { open: 80, veto: 40, later: 40 }, 1),
+      option("other", false, { open: 70, veto: 30, later: 30 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatLastVetoGroupLabelMarkdown(input);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.label, "Veto*group [A]");
+  assert.equal(copied.text, "Last veto group: Veto\\*group \\[A\\]. A veto is a number you entered, not a legal right.\n");
+  assert.doesNotMatch(copied.text, /First veto group/u);
+  assert.doesNotMatch(copied.text, /First non-veto group/u);
   assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
   assert.equal(JSON.stringify(input), before);
 });
