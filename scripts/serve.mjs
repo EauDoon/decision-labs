@@ -87,8 +87,9 @@ export function notFoundPage() {
     .copy-version-line-tools { margin: 16px 0 0; }
     .copy-first-trust-tools { margin: 16px 0 0; }
     .copy-first-how-tools { margin: 16px 0 0; }
+    .copy-last-how-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -101,8 +102,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -112,7 +113,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -168,6 +169,11 @@ export function notFoundPage() {
       <span class="copy-first-how-status" id="copy-first-how-status" role="status"></span>
     </p>
     <textarea id="copy-first-how-fallback" class="copy-first-how-fallback" hidden readonly rows="2" aria-label="First How it works item as Markdown"></textarea>
+    <p class="copy-last-how-tools">
+      <button type="button" class="copy-last-how" id="copy-last-how">Copy last How it works item</button>
+      <span class="copy-last-how-status" id="copy-last-how-status" role="status"></span>
+    </p>
+    <textarea id="copy-last-how-fallback" class="copy-last-how-fallback" hidden readonly rows="2" aria-label="Last How it works item as Markdown"></textarea>
     <section class="trust" id="trust">
       <h2 id="trust-title">Trust and limits</h2>
       <ul>
@@ -428,6 +434,42 @@ export function notFoundPage() {
             firstHowStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. First How it works list item was missing. This is catalog copy, not a live policy feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first How it works item, not a live policy feed.';
+          }
+        }
+      });
+      const lastHowBtn = document.getElementById('copy-last-how');
+      const lastHowStatus = document.getElementById('copy-last-how-status');
+      const lastHowFallback = document.getElementById('copy-last-how-fallback');
+      const lastHowMarkdown = () => {
+        const items = document.querySelectorAll('#how-it-works li');
+        const item = items[items.length - 1];
+        const text = item?.textContent.trim() ?? '';
+        if (!text) return '';
+        return '- ' + text;
+      };
+      lastHowBtn?.addEventListener('click', async () => {
+        const markdown = lastHowMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastHowFallback) lastHowFallback.hidden = true;
+          if (lastHowStatus) {
+            lastHowStatus.textContent = empty
+              ? 'Last How it works list item was missing. Copied an empty string. This is catalog copy, not a live policy feed.'
+              : 'Copied the last How it works list item from this page as Markdown. Not a live policy feed.';
+          }
+        } catch {
+          if (lastHowFallback) {
+            lastHowFallback.hidden = false;
+            lastHowFallback.value = markdown;
+            lastHowFallback.focus();
+            lastHowFallback.select();
+          }
+          if (lastHowStatus) {
+            lastHowStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last How it works list item was missing. This is catalog copy, not a live policy feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last How it works item, not a live policy feed.';
           }
         }
       });
