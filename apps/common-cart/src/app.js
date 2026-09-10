@@ -292,15 +292,7 @@ function bindStaticEvents() {
       setStatus("Winner aggregates downloaded as Markdown. Counts and totals only.", true);
     } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
   });
-  document.querySelector("#copy-leftover-coverage").addEventListener("click", () => {
-    try {
-      copyTextWithFallback(
-        createLeftoverCoverageMarkdown(scenario),
-        "Leftover coverage copied as organizer-private Markdown. Buyer counts and units only. This is not a merchant export.",
-        "Clipboard was blocked. Organizer-private leftover Markdown is in the textarea. Buyer counts and units only. This is not a merchant export."
-      );
-    } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
-  });
+  document.querySelector("#copy-leftover-coverage").addEventListener("click", copyLeftoverCoverage);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
       copyTextWithFallback(
@@ -802,6 +794,11 @@ function handleShortcut(event) {
   if (key === "s") {
     event.preventDefault();
     focusBuyerPaste();
+    return;
+  }
+  if (key === "c") {
+    event.preventDefault();
+    copyLeftoverCoverage();
     return;
   }
 }
@@ -2109,6 +2106,16 @@ function exportScenario() {
   } catch (error) {
     setStatus(`Export failed: ${messageOf(error)}`);
   }
+}
+
+function copyLeftoverCoverage() {
+  try {
+    copyTextWithFallback(
+      createLeftoverCoverageMarkdown(scenario),
+      "Leftover coverage copied as organizer-private Markdown. Buyer counts and units only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover Markdown is in the textarea. Buyer counts and units only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
 }
 
 function copyTextWithFallback(text, successMessage, fallbackMessage) {

@@ -94,6 +94,8 @@ test("the buyer room copies leftover coverage with a textarea fallback", async (
   assert.equal(merchantPanel.includes("copy-leftover-coverage"), false);
   assert.equal(merchantPanel.includes("clipboard-fallback-text"), false);
   assert.match(app, /createLeftoverCoverageMarkdown\(/u);
+  assert.match(app, /function copyLeftoverCoverage\(/u);
   assert.match(app, /function copyTextWithFallback\(/u);
   assert.match(app, /clipboard-fallback-text/u);
+  assert.match(app, /if \(key === "c"\)/u);
 });

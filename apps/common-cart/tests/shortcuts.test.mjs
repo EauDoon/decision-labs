@@ -150,3 +150,18 @@ test("keyboard handler clicks add offer when not typing", async () => {
   assert.match(app, /#merchant-tab/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
+
+test("shortcut help documents leftover residual coverage copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>c<\/kbd> Copy leftover residual coverage \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-coverage"/u);
+});
+
+test("keyboard handler copies leftover residual coverage when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "c"\)/u);
+  assert.match(app, /function copyLeftoverCoverage\(/u);
+  assert.match(app, /createLeftoverCoverageMarkdown\(scenario\)/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+});
