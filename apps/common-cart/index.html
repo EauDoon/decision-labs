@@ -74,12 +74,17 @@ SOFTWARE.
         <li><kbd>p</kbd> Print an organizer leftover one-pager</li>
         <li><kbd>v</kbd> Focus the variant overlap region</li>
         <li><kbd>j</kbd> Focus the first uncovered leftover row</li>
+        <li><kbd>d</kbd> Focus the first uncovered leftover coverage row, or leftover heading if none</li>
         <li><kbd>s</kbd> Focus the buyer CSV or TSV paste control</li>
         <li><kbd>c</kbd> Copy leftover residual coverage (organizer private)</li>
         <li><kbd>t</kbd> Focus tertiary leftover fill</li>
         <li><kbd>f</kbd> Focus the offer fulfillment filter</li>
         <li><kbd>h</kbd> Focus leftover item headroom after the winner</li>
         <li><kbd>k</kbd> Focus the organizer review panel</li>
+        <li><kbd>g</kbd> Focus group headroom</li>
+        <li><kbd>i</kbd> Copy leftover unspent item headroom (organizer private)</li>
+        <li><kbd>q</kbd> Focus requested units</li>
+        <li><kbd>x</kbd> Focus Export private buyer report (organizer private)</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -129,6 +134,7 @@ SOFTWARE.
           <button class="preset" data-preset="garden" type="button">Garden seed</button>
           <button class="preset" data-preset="schoolFete" type="button">School fete</button>
           <button class="preset" data-preset="officeFruit" type="button">Office fruit</button>
+          <button class="preset" data-preset="libraryPaper" type="button">Library paper</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -166,7 +172,7 @@ SOFTWARE.
       </article>
       <article class="metric">
         <span class="metric-label">Requested units</span>
-        <strong id="metric-units">0</strong>
+        <strong id="metric-units" tabindex="-1">0</strong>
         <small id="metric-buyers">0 buyers</small>
       </article>
       <article class="metric">
@@ -176,7 +182,7 @@ SOFTWARE.
       </article>
       <article class="metric">
         <span class="metric-label">Group headroom</span>
-        <strong id="metric-savings">A$0</strong>
+        <strong id="metric-savings" tabindex="-1">A$0</strong>
         <small>Against included buyers' maximums</small>
       </article>
     </section>
@@ -365,9 +371,14 @@ SOFTWARE.
             <p id="residual-note" class="canvas-note"></p>
             <div id="residual-summary" class="residual-summary"></div>
             <p id="leftover-headroom" class="canvas-note leftover-headroom" tabindex="-1">Unspent item headroom after winner: none yet</p>
+            <button id="copy-leftover-headroom" class="print-chrome" type="button">Copy leftover unspent item headroom (organizer private)</button>
+            <p class="canvas-note print-chrome">Organizer-private one-line Markdown of leftover unspent item headroom. Currency and counts only. Not a rebate. This is not a merchant export.</p>
             <p id="leftover-print-winner" class="canvas-note leftover-print-winner print-leftover-keep">Winner merchant: None unlocked</p>
+            <p id="leftover-print-uncovered" class="canvas-note leftover-print-uncovered print-leftover-keep">Uncovered leftover: 0 buyers, 0 units</p>
             <button id="copy-winning-merchant" class="print-chrome" type="button">Copy winning merchant label</button>
             <p class="canvas-note print-chrome">Copies the winning merchant name only. Honest empty when none unlocked. Buyer identities stay out.</p>
+            <button id="copy-winning-fulfillment" class="print-chrome" type="button">Copy winning fulfillment mode</button>
+            <p class="canvas-note print-chrome">Copies pickup or shipping only. Honest empty when none unlocked. Buyer identities stay out.</p>
             <div id="leftover-print-overlap" class="table-shell compact print-leftover-keep">
               <table>
                 <caption>Merchant-safe variant overlap counts. Buyer counts only. Labels, IDs, budgets, and allocations are omitted.</caption>
@@ -387,6 +398,11 @@ SOFTWARE.
               Hide leftover rows that are fully covered
             </label>
             <p id="hide-covered-leftover-note" class="canvas-note print-chrome">Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide-covered leftover choice is kept in this browser's workspace file. Older workspace files without it still show every leftover row.</p>
+            <label class="checkbox-field print-chrome">
+              <input id="hide-tertiary-leftover-row" type="checkbox">
+              Hide the tertiary leftover coverage row
+            </label>
+            <p id="hide-tertiary-leftover-note" class="canvas-note print-chrome">Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide-tertiary leftover choice is kept in this browser's workspace file. Older workspace files without it still show every leftover row.</p>
             <div id="leftover-buyer-list" class="table-shell compact print-private">
               <table>
                 <caption>Organizer leftover buyers after the winner. Private labels. This list is organizer-private and is not a merchant export.</caption>
@@ -401,7 +417,7 @@ SOFTWARE.
           </article>
           <button id="buyer-report" class="print-chrome" type="button">Export private buyer report (CSV)</button>
           <button id="organizer-briefing" class="print-chrome" type="button">Export organizer briefing</button>
-          <p class="canvas-note print-chrome">Exports the inspected offer, including buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
+          <p class="canvas-note print-chrome">This export is organizer-private. It includes the inspected offer, buyer labels, exclusions, and individual costs. Keep this report private. Formula-like text is escaped for spreadsheet safety.</p>
           <p class="canvas-note print-chrome">The item ceiling excludes shipping. Set an optional maximum order total to require the whole order, including shipping, to fit a budget. Blank means no total budget. A budget applies independently at every price tier.</p>
           <div class="print-chrome">
           <h4>Capacity leftover</h4>

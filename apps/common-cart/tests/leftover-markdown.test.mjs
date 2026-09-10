@@ -9,7 +9,9 @@ import {
   computeResidualCoverage,
   evaluateMarket,
   validateScenario,
-  createWinningMerchantLabelMarkdown
+  createWinningMerchantLabelMarkdown,
+  createLeftoverHeadroomMarkdown,
+  createWinningFulfillmentMarkdown
 } from "../src/model.js";
 
 function leftoverFixture() {
@@ -184,5 +186,105 @@ test("winning merchant copy sits next to leftover print and stays off the mercha
   assert.equal(merchantPanel.includes("copy-winning-merchant"), false);
   assert.match(app, /createWinningMerchantLabelMarkdown\(/u);
   assert.match(app, /function copyWinningMerchantLabel\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
+});
+
+test("leftover unspent item headroom Markdown is organizer-private currency and counts", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const leftover = createLeftoverHeadroomMarkdown(scenario);
+  assert.equal(leftover.trim().includes("\n"), false);
+  assert.match(leftover, /organizer private/);
+  assert.match(leftover, /Not a rebate/);
+  assert.match(leftover, /AUD /);
+  assert.match(leftover, /included buyers/);
+  assert.equal(leftover.includes("SECRET_TITLE"), false);
+  assert.equal(leftover.includes("SECRET_LABEL"), false);
+  assert.equal(leftover.includes("SECRET_ID"), false);
+  assert.equal(leftover.includes("987654.32"), false);
+  assert.equal(leftover.includes("maxUnitPrice"), false);
+  assert.equal(leftover.includes("leftoverBuyerIds"), false);
+  assert.equal(leftover.includes("Tea room"), false);
+  assert.equal(leftover.includes("Harbour Roasters"), false);
+});
+
+test("leftover unspent item headroom Markdown is honest when none unlocked", () => {
+  const scenario = leftoverFixture();
+  scenario.offers.forEach((offer) => { offer.minimumUnits = 5000; });
+  const leftover = createLeftoverHeadroomMarkdown(scenario);
+  assert.match(leftover, /: none\. Not a rebate\./);
+  assert.equal(leftover.includes("SECRET_LABEL"), false);
+  assert.equal(leftover.includes("Harbour Roasters"), false);
+});
+
+test("the buyer room copies leftover unspent item headroom with a textarea fallback", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-headroom"/u);
+  assert.match(buyerPanel, /Copy leftover unspent item headroom \(organizer private\)/u);
+  assert.match(buyerPanel, /Not a rebate/u);
+  assert.equal(merchantPanel.includes("copy-leftover-headroom"), false);
+  assert.match(app, /createLeftoverHeadroomMarkdown\(/u);
+  assert.match(app, /function copyLeftoverHeadroom\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
+  assert.match(app, /if \(key === "i"\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.match(app, /This is not a merchant export/u);
+});
+
+test("winning fulfillment Markdown is pickup or shipping only", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createWinningFulfillmentMarkdown(scenario);
+  const market = evaluateMarket(scenario);
+  assert.equal(markdown.trim().includes("\n"), false);
+  assert.match(markdown, /^Winning fulfillment: (pickup|shipping)$/m);
+  assert.match(markdown, new RegExp(`Winning fulfillment: ${market.winner.offer.fulfillment}`));
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes("Tea room"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+});
+
+test("winning fulfillment Markdown copies pickup when the winner is pickup", () => {
+  const scenario = leftoverFixture();
+  scenario.offers[0].fulfillment = "pickup";
+  const markdown = createWinningFulfillmentMarkdown(scenario);
+  assert.match(markdown, /^Winning fulfillment: pickup$/m);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+});
+
+test("winning fulfillment Markdown is honest when none unlocked", () => {
+  const scenario = leftoverFixture();
+  scenario.offers.forEach((offer) => { offer.minimumUnits = 5000; });
+  const markdown = createWinningFulfillmentMarkdown(scenario);
+  assert.match(markdown, /^Winning fulfillment: None unlocked$/m);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("pickup"), false);
+  assert.equal(markdown.includes("shipping"), false);
+});
+
+test("winning fulfillment copy sits next to leftover print and stays off the merchant table", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const leftover = html.slice(html.indexOf('id="leftover-print-winner"'), html.indexOf('id="copy-leftover-coverage"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(leftover, /id="copy-winning-fulfillment"/u);
+  assert.match(leftover, /Copy winning fulfillment mode/u);
+  assert.match(leftover, /Honest empty when none unlocked/u);
+  assert.equal(merchantPanel.includes("copy-winning-fulfillment"), false);
+  assert.match(app, /createWinningFulfillmentMarkdown\(/u);
+  assert.match(app, /function copyWinningFulfillment\(/u);
   assert.match(app, /function copyTextWithFallback\(/u);
 });

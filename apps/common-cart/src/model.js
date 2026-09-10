@@ -159,6 +159,23 @@ export const presets = Object.freeze({
       offer("O02", "Apple Share", "Office fruit crate", "Apple crate", 15, 8, 5, 24, 1.5),
       { ...offer("O03", "Lobby Fruit Pickup", "Office fruit crate", "Mixed seasonal", 13, 12, 3, 28, 6), fulfillment: "pickup" }
     ]
+  },
+  libraryPaper: {
+    title: "Library photocopy paper",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Main desk", "Photocopy paper ream", 10, 8, 7, ["A4 80gsm", "Recycled A4"]),
+      buyer("B02", "Study carrels", "Photocopy paper ream", 16, 7, 5, ["A4 80gsm"]),
+      buyer("B03", "Periodicals", "Photocopy paper ream", 6, 12, 10, ["A3 80gsm"]),
+      buyer("B04", "Children wing", "Photocopy paper ream", 12, 9, 8, ["A4 80gsm", "A3 80gsm"]),
+      buyer("B05", "Local history", "Photocopy paper ream", 8, 6, 4, ["Recycled A4"]),
+      buyer("B06", "Branch annex", "Photocopy paper ream", 14, 8, 9, ["A4 80gsm", "Recycled A4"])
+    ],
+    offers: [
+      offer("O01", "Desk Delivery Paper", "Photocopy paper ream", "A4 80gsm", 5.5, 20, 4, 50, 2),
+      offer("O02", "Wide Format Supply", "Photocopy paper ream", "A3 80gsm", 9, 8, 6, 24, 3),
+      { ...offer("O03", "Lobby Paper Pickup", "Photocopy paper ream", "Recycled A4", 5, 12, 2, 40, 4), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -200,7 +217,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -233,7 +250,15 @@ export function validateWorkspace(candidate) {
     }
     hideCoveredLeftover = hideCoveredLeftoverRows;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover };
+  const hideTertiaryLeftoverRow = own(candidate, "hideTertiaryLeftoverRow");
+  let hideTertiaryLeftover = false;
+  if (hideTertiaryLeftoverRow !== undefined) {
+    if (hideTertiaryLeftoverRow !== true && hideTertiaryLeftoverRow !== false) {
+      throw new ScenarioError("Hide tertiary leftover row must be true or false.");
+    }
+    hideTertiaryLeftover = hideTertiaryLeftoverRow;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -657,6 +682,16 @@ export function winnerBudgetLeftover(rawScenario) {
     unspentHeadroom,
     note: "Organizer-only sum of included buyers' unused item-ceiling headroom after the winning allocation. Not a rebate or merchant payout."
   };
+}
+
+/** Organizer-private one-line leftover unspent item headroom. Currency and counts only. Not a rebate. */
+export function createLeftoverHeadroomMarkdown(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const leftover = winnerBudgetLeftover(rawScenario);
+  const amount = leftover.note.startsWith("No winning offer")
+    ? "none"
+    : `${scenario.currency} ${leftover.unspentHeadroom} across ${leftover.includedBuyerCount} included buyers`;
+  return `Common Cart leftover unspent item headroom (organizer private): ${amount}. Not a rebate.\n`;
 }
 
 /** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
@@ -1159,6 +1194,16 @@ export function filterLeftoverCoverageRowsHidingCovered(rawScenario, hideCovered
   return rows.filter((row) => !row.covered);
 }
 
+/** Display-only leftover table filter. Matching is unchanged. */
+export function filterLeftoverCoverageRowsHidingTertiary(rawScenario, hideTertiary) {
+  if (hideTertiary !== true && hideTertiary !== false) {
+    throw new ScenarioError("Hide tertiary leftover row must be true or false.");
+  }
+  const rows = leftoverCoverageRows(rawScenario);
+  if (!hideTertiary) return rows;
+  return rows.filter((row) => row.id !== "tertiary-fill");
+}
+
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
 export function createLeftoverCoverageMarkdown(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
@@ -1200,6 +1245,13 @@ export function createWinningMerchantLabelMarkdown(rawScenario) {
     `Merchant label only. Buyer identities, IDs, budgets, and allocations are omitted.`
   ];
   return `${lines.join("\n")}\n`;
+}
+
+/** Merchant-safe winning fulfillment mode. Honest empty when none unlocked. No buyer data. */
+export function createWinningFulfillmentMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const mode = market.winner ? market.winner.offer.fulfillment : "None unlocked";
+  return `Winning fulfillment: ${mode}\n`;
 }
 
 /** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
