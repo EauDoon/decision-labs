@@ -306,6 +306,21 @@ test("keyboard handler focuses Export private buyer report when not typing", asy
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
 
+test("shortcut help documents leftover fill copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>y<\/kbd> Copy leftover fill \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-fill"/u);
+});
+
+test("keyboard handler copies leftover fill when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "y"\)/u);
+  assert.match(app, /function copyLeftoverFill\(/u);
+  assert.match(app, /createLeftoverFillMarkdown\(scenario\)/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+});
+
 test("Export private buyer report stays organizer-private in the buyer room", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");

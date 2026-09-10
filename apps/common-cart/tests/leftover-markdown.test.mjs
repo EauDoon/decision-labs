@@ -308,6 +308,23 @@ test("leftover fill Markdown is honest when leftover fill is missing", () => {
   assert.equal(markdown.includes("Harbour Roasters"), false);
 });
 
+test("the buyer room copies leftover fill with a textarea fallback", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill"/u);
+  assert.match(buyerPanel, /Copy leftover fill \(organizer private\)/u);
+  assert.match(buyerPanel, /Leftover fill copy is the secondary leftover merchant label/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill"), false);
+  assert.match(app, /createLeftoverFillMarkdown\(/u);
+  assert.match(app, /function copyLeftoverFill\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
+  assert.match(app, /if \(key === "y"\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.match(app, /This is not a merchant export/u);
+});
+
 test("winning fulfillment copy sits next to leftover print and stays off the merchant table", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
