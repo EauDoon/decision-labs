@@ -162,6 +162,74 @@ test('catalog keys tilde exclamation open-paren stay distinct from g n last-job 
   assert.match(html, /lastHowBtn\?\.click\(\)/);
 });
 
+test('catalog keys close-paren stay distinct from tilde open-paren g and n', () => {
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /event\.key === '~'/);
+  assert.match(html, /event\.key === '\('/);
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /event\.key === 'n'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="\)"/);
+  assert.match(html, /id="copy-first-whats-new"/);
+  assert.match(html, />Copy first What's new heading</);
+  assert.match(html, /id="copy-last-whats-new"/);
+  assert.match(html, />Copy last What's new heading</);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === '~'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === '\('/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === 'g'/)?.[0]);
+  assert.match(html, /firstWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /lastWhatsNewBtn\?\.click\(\)/);
+});
+
+test('catalog keys at stay distinct from e and close-paren', () => {
+  assert.match(html, /event\.key === '@'/);
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /id="copy-lede"/);
+  assert.match(html, />Copy catalog intro</);
+  assert.match(html, /id="catalog-heading"/);
+  assert.notEqual(html.match(/event\.key === '@'/)?.[0], html.match(/event\.key === 'e'/)?.[0]);
+  assert.match(html, /ledeBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-lede'\) \|\| document\.getElementById\('catalog-heading'\)/);
+});
+
+test('catalog keys hash stay distinct from z and at', () => {
+  assert.match(html, /event\.key === '#'/);
+  assert.match(html, /event\.key === 'z'/);
+  assert.match(html, /event\.key === '@'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /id="copy-skips"/);
+  assert.match(html, />Copy skip links</);
+  assert.match(html, /id="skips"/);
+  assert.notEqual(html.match(/event\.key === '#'/)?.[0], html.match(/event\.key === 'z'/)?.[0]);
+  assert.match(html, /skipsBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-skips'\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
+});
+
+test('catalog keys close-paren at and hash stay distinct from tilde open-paren e z g n', () => {
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /event\.key === '@'/);
+  assert.match(html, /event\.key === '#'/);
+  assert.match(html, /event\.key === '~'/);
+  assert.match(html, /event\.key === '\('/);
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /event\.key === 'z'/);
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /event\.key === 'n'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === '~'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === '\('/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '@'/)?.[0], html.match(/event\.key === 'e'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '#'/)?.[0], html.match(/event\.key === 'z'/)?.[0]);
+  assert.match(html, /firstWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /lastWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /ledeBtn\?\.click\(\)/);
+  assert.match(html, /skipsBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-lede'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /getElementById\('copy-skips'\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
+});
+
 test('print CSS hides copy last job tools like other copy tools', () => {
   const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
   assert.match(print, /\.copy-last-job-tools, \.copy-last-job-fallback \{ display: none !important; \}/);
@@ -221,7 +289,30 @@ test('404 Copy last What\'s new heading does not expand PUBLIC_PATHS or connect-
   assert.match(page, /id="whats-new"/);
   assert.match(page, /id="copy-last-job"/);
   assert.match(page, />Copy last job</);
-  assert.doesNotMatch(page, /id="copy-first-whats-new"/);
+  assert.match(page, /id="copy-first-whats-new"/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(serve, /hosted API/i);
+});
+
+test('404 Copy first What\'s new heading does not expand PUBLIC_PATHS or connect-src', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  assert.match(serve, /request\.method !== 'GET' && request\.method !== 'HEAD'/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-first-whats-new"/);
+  assert.match(page, />Copy first What's new heading</);
+  assert.match(page, /firstWhatsNewMarkdown/);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /id="copy-last-whats-new"/);
+  assert.match(page, />Copy last What's new heading</);
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(serve, /hosted API/i);
 });
