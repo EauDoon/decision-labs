@@ -59,6 +59,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>w<\/kbd> Jump to group weights or renormalize controls/u);
   assert.match(html, /<kbd>m<\/kbd> Jump to remaining change-budget or cost margin/u);
   assert.match(html, /<kbd>d<\/kbd> Jump to the first group below its support floor, or the groups heading/u);
+  assert.match(html, /<kbd>o<\/kbd> Jump to the first recommended-package option card, or the clauses heading/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -1454,6 +1455,37 @@ test("keyboard d jumps to the first group below its support floor unless an inpu
   const cleared = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
   cleared.keydown("d");
   assert.equal(cleared.focused(), "#groups-heading");
+});
+
+test("keyboard o jumps to the first recommended-package option unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>o<\/kbd> Jump to the first recommended-package option card, or the clauses heading/u);
+  assert.match(html, /id="clauses-heading"/u);
+  const app = await savedWorkbench(new Map());
+  assert.match(app.clauses(), /data-recommended-option="hours-original"/u);
+  app.keydown("o");
+  assert.equal(app.focused(), '[data-recommended-option="hours-original"]');
+  app.clearFocus();
+  app.keydown("o", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("o", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("O");
+  assert.equal(app.focused(), '[data-recommended-option="hours-original"]');
+  const draft = {
+    title: "No recommendation jump workshop",
+    threshold: 95,
+    maxChangeCost: 0,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { g: 10 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { g: 90 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+  const missing = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  missing.keydown("o");
+  assert.equal(missing.focused(), "#clauses-heading");
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {
