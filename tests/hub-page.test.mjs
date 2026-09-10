@@ -7804,9 +7804,11 @@ test('dollar caret and backtick stay distinct from asterisk ampersand percent an
   assert.match(html, /event\.key === '&'/);
   assert.match(html, /event\.key === '%'/);
   assert.match(html, /event\.key === '"'/);
+  assert.match(html, /event\.key === ':'/);
   assert.match(html, /lastWorkbenchBtn\?\.click\(\)/);
   assert.match(html, /firstWorkbenchBtn\?\.click\(\)/);
   assert.match(html, /lastTrustBtn\?\.click\(\)/);
+  assert.match(html, /firstTrustBtn\?\.click\(\)/);
   assert.match(readme, /Press `\$` to copy the last workbench heading/);
   assert.match(readme, /Press `\^` to focus the Copy last workbench heading control/);
   assert.match(readme, /Press `` ` `` to focus the Copy last Trust item control/);
@@ -7858,6 +7860,7 @@ test('dollar caret and backtick stay distinct from asterisk ampersand percent an
   fire('&', true);
   fire('%', true);
   fire('"', true);
+  fire(':', true);
   assert.equal(clicks.lastWorkbench, 1);
   assert.equal(clicks.firstWorkbench, 1);
   assert.equal(clicks.lastTrust, 1);
