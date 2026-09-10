@@ -416,6 +416,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
  * @property {boolean} [hideHoldingParticipants] Optional roster display preference. Omitted files default to showing holders.
  * @property {boolean} [hideAllHoldLedger] Optional ledger display preference. Omitted files default to showing all-hold rows.
  * @property {boolean} [hideZeroShareParticipants] Optional roster display preference. Omitted files default to showing zero-share rows.
+ * @property {boolean} [hideParticipantsOverCapacity] Optional roster display preference. Omitted files default to showing rows whose volume is above listed capacity.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -429,7 +430,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
 const EPSILON = 1e-9;
 const MAX_PARTICIPANTS = 24;
 const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -542,6 +543,15 @@ const PRESETS = Object.freeze({
       { id: 'podcast-network', name: 'Podcast network', revenueShare: 0.42, variableCostPerTransaction: 0.9, fixedMonthlyCost: 8000, minimumAcceptableProfit: 4500, capacity: 5000, minimumCommitment: 1000, riskCost: 1100 },
     ],
   },
+  communityHallSplit: {
+    name: 'Community hall split',
+    deal: { monthlyVolume: 2000, feePerTransaction: 28, addressableVolume: 3500, volumeShockPct: 0 },
+    participants: [
+      { id: 'venue', name: 'Venue', revenueShare: 0.45, variableCostPerTransaction: 1.5, fixedMonthlyCost: 8000, minimumAcceptableProfit: 5000, capacity: 3000, minimumCommitment: 0, riskCost: 1200 },
+      { id: 'promoter', name: 'Promoter', revenueShare: 0.35, variableCostPerTransaction: 4, fixedMonthlyCost: 2500, minimumAcceptableProfit: 3500, capacity: 4500, minimumCommitment: 400, riskCost: 800 },
+      { id: 'sound', name: 'Sound', revenueShare: 0.2, variableCostPerTransaction: 2.8, fixedMonthlyCost: 1800, minimumAcceptableProfit: 2000, capacity: 2800, minimumCommitment: 0, riskCost: 400 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -615,6 +625,12 @@ function validateConfiguration(config) {
     const hideZero = own(config, 'hideZeroShareParticipants');
     if (hideZero !== true && hideZero !== false) {
       errors.push('Hide zero-share participants must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideParticipantsOverCapacity')) {
+    const hideOver = own(config, 'hideParticipantsOverCapacity');
+    if (hideOver !== true && hideOver !== false) {
+      errors.push('Hide participants over capacity must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
@@ -2251,6 +2267,7 @@ let tornadoCopyText = '';
 let operatingCopyText = '';
 let splitCopyText = '';
 let allocationCopyText = '';
+let titleCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -2262,6 +2279,7 @@ let collapseAllHoldCases = false;
 let hideHoldingParticipants = false;
 let hideAllCompoundHolders = false;
 let hideZeroShareParticipants = false;
+let hideParticipantsOverCapacity = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -2285,6 +2303,7 @@ function checkpoint() {
   operatingCopyText = '';
   splitCopyText = '';
   allocationCopyText = '';
+  titleCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -2315,6 +2334,7 @@ function travelHistory(direction) {
   operatingCopyText = '';
   splitCopyText = '';
   allocationCopyText = '';
+  titleCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -2420,6 +2440,7 @@ function readCollapsePreference() {
   hideHoldingParticipants = state.hideHoldingParticipants === true;
   hideAllCompoundHolders = state.hideAllHoldLedger === true;
   hideZeroShareParticipants = state.hideZeroShareParticipants === true;
+  hideParticipantsOverCapacity = state.hideParticipantsOverCapacity === true;
 }
 
 function writeCollapsePreference() {
@@ -2431,6 +2452,8 @@ function writeCollapsePreference() {
   else delete state.hideAllHoldLedger;
   if (hideZeroShareParticipants) state.hideZeroShareParticipants = true;
   else delete state.hideZeroShareParticipants;
+  if (hideParticipantsOverCapacity) state.hideParticipantsOverCapacity = true;
+  else delete state.hideParticipantsOverCapacity;
 }
 
 function compactErrorMessage(error) {
@@ -2655,9 +2678,19 @@ function participantHasZeroShare(participant) {
   return Number.isFinite(participant.revenueShare) && Math.abs(participant.revenueShare) <= 1e-9;
 }
 
+function participantOverListedCapacity(result, participant) {
+  if (!result) return false;
+  const capacity = participant.capacity;
+  if (capacity == null || !Number.isFinite(capacity)) return false;
+  const volume = result.effectiveVolume;
+  if (!Number.isFinite(volume)) return false;
+  return volume > capacity + 1e-9;
+}
+
 function participantHiddenFromRoster(result, participant) {
   if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
   if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
+  if (hideParticipantsOverCapacity && participantOverListedCapacity(result, participant)) return true;
   return false;
 }
 
@@ -2668,6 +2701,9 @@ function inputPanel(result) {
     : 0;
   const hiddenZeroCount = hideZeroShareParticipants
     ? state.participants.filter((participant) => participantHasZeroShare(participant)).length
+    : 0;
+  const hiddenOverCount = hideParticipantsOverCapacity && result
+    ? state.participants.filter((participant) => participantOverListedCapacity(result, participant)).length
     : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
   const participantForms = state.participants.map((participant, index) => {
@@ -2707,14 +2743,20 @@ function inputPanel(result) {
   const zeroShareFilterNote = hideZeroShareParticipants
     ? `${hiddenZeroCount} participant${hiddenZeroCount === 1 ? '' : 's'} with zero revenue share ${hiddenZeroCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
     : 'Hide participants with zero revenue share to filter this roster display only. Expand restores them. Counts stay the same.';
+  const overCapacityFilterNote = hideParticipantsOverCapacity
+    ? `${hiddenOverCount} participant${hiddenOverCount === 1 ? '' : 's'} whose volume is above listed capacity ${hiddenOverCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
+    : 'Hide participants whose volume is above listed capacity to filter this roster display only. Expand restores them. Counts stay the same.';
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
-    ? hideHoldingParticipants && !hideZeroShareParticipants
+    ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-      : hideZeroShareParticipants && !hideHoldingParticipants
+      : rosterFilterCount === 1 && hideZeroShareParticipants
         ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has a zero revenue share. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-        : hideHoldingParticipants || hideZeroShareParticipants
-          ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-          : ''
+        : rosterFilterCount === 1 && hideParticipantsOverCapacity
+          ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has volume above listed capacity. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+          : rosterFilterCount > 0
+            ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+            : ''
     : '';
 
   return `
@@ -2733,7 +2775,7 @@ function inputPanel(result) {
             ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, max: 100, step: '0.1', title: 'Baseline volume reduction, 0 through 100. There is no separate churn field.' })}
             ${field({ label: 'Deal notes', path: 'deal.notes', value: state.deal.notes ?? '', optional: true, wide: true, type: 'textarea', maxLength: 500, title: 'Optional notes, 1 through 500 characters after trimming. Leave blank to omit. Shown in reports and print.' })}
           </div>
-          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button></div>
+          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button><button type="button" data-action="copy-deal-title">Copy deal title and currency</button></div>
         </section>
         <section class="input-section" aria-labelledby="stress-inputs-title">
           <h2 id="stress-inputs-title">Compound stress settings</h2>
@@ -2756,11 +2798,13 @@ function inputPanel(result) {
           <h2 id="participant-inputs-title" tabindex="-1">Participants</h2>
           <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
           ${duplicateNameWarning()}
-          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="copy-allocation-balance">Copy allocation balance</button><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability. Copy allocation balance names missing or excess share. It is not a negotiated allocation.</p>
+          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="copy-allocation-balance">Copy allocation balance</button><button type="button" id="equal-split" data-action="equal-shares">Split equally</button><button type="button" id="normalize-shares" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability. Copy allocation balance names missing or excess share. It is not a negotiated allocation.</p>
           <div class="button-row"><button type="button" data-action="hide-holding-participants" aria-pressed="${hideHoldingParticipants}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants who currently hold</button><button type="button" data-action="show-holding-participants" ${hideHoldingParticipants ? '' : 'disabled'}>Show holding participants</button></div>
           <p class="notice">${rosterFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-zero-share-participants" aria-pressed="${hideZeroShareParticipants}">Hide participants with zero revenue share</button><button type="button" data-action="show-zero-share-participants" ${hideZeroShareParticipants ? '' : 'disabled'}>Show zero-share participants</button></div>
           <p class="notice">${zeroShareFilterNote}</p>
+          <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button></div>
+          <p class="notice">${overCapacityFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
@@ -2802,7 +2846,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -2824,6 +2868,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
+    <section class="print-only print-keep"><h2>Deal title</h2><p>${state.deal.title ? escapeAttribute(state.deal.title) : 'No deal title was entered.'}</p></section>
     <section class="print-only print-keep"><h2>Least headroom</h2><p>${escapeAttribute(result.weakestParticipant.name)} has the least volume headroom to its ${escapeAttribute(result.weakestParticipant.bindingConstraint.label)} limit.</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
@@ -2858,6 +2903,7 @@ function resultsPanel(result) {
     ${splitCopySection()}
     ${allocationCopySection()}
     ${breakpointSnapshotCopySection()}
+    ${titleCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -2922,7 +2968,7 @@ function stressSection() {
       <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant. ${collapseNote}</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
-    <details class="case-details"><summary id="inspect-cases-title">Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods. ${visibleCases.length} of ${stress.caseCount} rows are visible.</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases || `<tr><td colspan="5">Every displayed case currently holds. ${stress.passCount} of ${stress.caseCount} tested cases hold. Expand to inspect all-hold rows. Counts are unchanged.</td></tr>`}</tbody></table></div></details>
+    <details class="case-details"><summary id="inspect-cases-title" tabindex="-1">Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods. ${visibleCases.length} of ${stress.caseCount} rows are visible.</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases || `<tr><td colspan="5">Every displayed case currently holds. ${stress.passCount} of ${stress.caseCount} tested cases hold. Expand to inspect all-hold rows. Counts are unchanged.</td></tr>`}</tbody></table></div></details>
     <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
 }
 
@@ -3341,6 +3387,7 @@ function attachEvents() {
     if (action === 'close-operating-copy') { operatingCopyText = ''; render(); return; }
     if (action === 'close-split-copy') { splitCopyText = ''; render(); return; }
     if (action === 'close-allocation-copy') { allocationCopyText = ''; render(); return; }
+    if (action === 'close-title-copy') { titleCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -3396,6 +3443,24 @@ function attachEvents() {
     }
     if (action === 'show-zero-share-participants') {
       hideZeroShareParticipants = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-over-capacity-participants') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding participants whose volume is above listed capacity.');
+        return;
+      }
+      hideParticipantsOverCapacity = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-over-capacity-participants') {
+      hideParticipantsOverCapacity = false;
       writeCollapsePreference();
       saveState();
       render();
@@ -3529,6 +3594,7 @@ function attachEvents() {
     if (action === 'copy-operating-region') copyOperatingRegion();
     if (action === 'copy-tested-split') copyTestedSplit();
     if (action === 'copy-allocation-balance') copyAllocationBalance();
+    if (action === 'copy-deal-title') copyDealTitleCurrency();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -3894,6 +3960,25 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === 'v' || event.key === 'V') {
     const target = document.querySelector('#viability-card') ?? document.querySelector('#viability-heading');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'i' || event.key === 'I') {
+    const target = document.querySelector('#inspect-cases-title')
+      ?? document.querySelector('#imported-compare-title')
+      ?? document.querySelector('#comparison-title')
+      ?? document.querySelector('#three-compare-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'o' || event.key === 'O') {
+    const target = document.querySelector('#operating-region-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'j' || event.key === 'J') copyCapacityUtilization();
+  if (event.key === 'q' || event.key === 'Q') {
+    const target = document.querySelector('#equal-split') ?? document.querySelector('#normalize-shares');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -4551,7 +4636,7 @@ function capacityUtilizationMarkdown(result) {
     lines.push('| ' + reportText(participant.name) + ' | ' + capacityUtilizationLabel(participant) + ' |');
   }
   lines.push('');
-  lines.push('Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied. This is a display, not a probability.');
+  lines.push('Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied. This is a display, not a probability. It is not a forecast.');
   lines.push('');
   return lines.join('\n');
 }
@@ -4576,7 +4661,7 @@ function copyCapacityUtilization() {
   }
   const text = capacityUtilizationMarkdown(calculatePartnership(state));
   const clipboard = globalThis.navigator?.clipboard;
-  const copiedNote = 'Capacity utilization copied as Markdown. It is a display, not a probability.';
+  const copiedNote = 'Capacity utilization copied as Markdown. It is a display, not a probability. It is not a forecast.';
   const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
   if (clipboard && typeof clipboard.writeText === 'function') {
     try {
@@ -4867,6 +4952,57 @@ function copyAllocationBalance() {
     }
   }
   showAllocationCopyFallback(text, fallbackNote);
+}
+
+function dealTitleCurrencyMarkdown() {
+  const title = typeof state.deal.title === 'string' && state.deal.title.trim()
+    ? reportText(state.deal.title.trim())
+    : '';
+  const currency = currencyPrefix();
+  if (!title && !currency) return 'Deal title and currency: none entered.';
+  return 'Deal title: ' + (title || 'none') + '. Currency: ' + (currency || 'none') + '.';
+}
+
+function showTitleCopyFallback(text, message) {
+  titleCopyText = text;
+  render();
+  document.querySelector('#title-copy-text')?.focus();
+  setNotice(message);
+}
+
+function titleCopySection() {
+  if (!titleCopyText) return '';
+  return `<section class="panel" aria-labelledby="title-copy-title"><div class="panel-heading"><h2 id="title-copy-title">Deal title and currency Markdown</h2><button type="button" data-action="close-title-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is user-entered display text, not a forecast.</p><label class="brief-copy-label" for="title-copy-text">Deal title and currency Markdown</label><textarea id="title-copy-text" readonly rows="4">${escapeAttribute(titleCopyText)}</textarea></div></section>`;
+}
+
+function copyDealTitleCurrency() {
+  const text = dealTitleCurrencyMarkdown();
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Deal title and currency copied as Markdown. Display text, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          titleCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showTitleCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      titleCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showTitleCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showTitleCopyFallback(text, fallbackNote);
 }
 
 function exportTornadoSvg() {
@@ -5179,6 +5315,10 @@ function helpDialog() {
         <li><kbd>a</kbd> Jump to Add participant</li>
         <li><kbd>m</kbd> Jump to deal notes</li>
         <li><kbd>v</kbd> Jump to the viability card</li>
+        <li><kbd>i</kbd> Jump to the inspect or compare cases heading</li>
+        <li><kbd>o</kbd> Jump to the Operating region heading</li>
+        <li><kbd>j</kbd> Copy capacity utilization as Markdown</li>
+        <li><kbd>q</kbd> Jump to Equal split or Normalize current shares</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
