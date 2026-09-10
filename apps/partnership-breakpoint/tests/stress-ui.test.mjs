@@ -61,7 +61,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'least-headroom-participant', 'participant-inputs-title',
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
         'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
-        'title-copy-text', 'over-capacity-participant',
+        'title-copy-text', 'over-capacity-participant', 'copy-deal-title',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1239,6 +1239,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>q<\/kbd> Jump to Equal split or Normalize current shares/);
   assert.match(app.markup(), /<kbd>x<\/kbd> Jump to the first roster row over listed capacity, or the Participants heading if none/);
   assert.match(app.markup(), /<kbd>y<\/kbd> Copy deal notes as one-line Markdown/);
+  assert.match(app.markup(), /<kbd>z<\/kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1689,6 +1690,25 @@ test('keyboard y copies deal notes as one-line Markdown and ignores focused inpu
   assert.match(denied.markup(), /id="notes-copy-text"/);
   assert.match(denied.markup(), /Deal notes: Keep the fee floor in view\./);
   assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('keyboard z jumps to Copy deal title and currency unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-deal-title"/);
+  assert.match(app.markup(), /id="deal-inputs-title" tabindex="-1"/);
+  app.keydown('z');
+  assert.ok(app.focused().includes('#copy-deal-title'));
+  assert.ok(app.focused().includes('scroll:#copy-deal-title'));
+  const before = app.focused().length;
+  app.keydown('z', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('z', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('z');
+  assert.ok(app.focused().includes('#copy-deal-title'));
+  assert.ok(app.focused().includes('scroll:#copy-deal-title'));
 });
 
 test('keyboard i jumps to inspect or compare cases unless a field is focused', async () => {

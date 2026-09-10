@@ -586,7 +586,7 @@ function inputPanel(result) {
             ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, max: 100, step: '0.1', title: 'Baseline volume reduction, 0 through 100. There is no separate churn field.' })}
             ${field({ label: 'Deal notes', path: 'deal.notes', value: state.deal.notes ?? '', optional: true, wide: true, type: 'textarea', maxLength: 500, title: 'Optional notes, 1 through 500 characters after trimming. Leave blank to omit. Shown in reports and print.' })}
           </div>
-          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button><button type="button" data-action="copy-deal-title">Copy deal title and currency</button></div>
+          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button><button type="button" id="copy-deal-title" data-action="copy-deal-title">Copy deal title and currency</button></div>
         </section>
         <section class="input-section" aria-labelledby="stress-inputs-title">
           <h2 id="stress-inputs-title">Compound stress settings</h2>
@@ -1799,6 +1799,11 @@ window.addEventListener('keydown', (event) => {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'y' || event.key === 'Y') copyDealNotesLine();
+  if (event.key === 'z' || event.key === 'Z') {
+    const target = document.querySelector('#copy-deal-title') ?? document.querySelector('#deal-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -3159,6 +3164,7 @@ function helpDialog() {
         <li><kbd>q</kbd> Jump to Equal split or Normalize current shares</li>
         <li><kbd>x</kbd> Jump to the first roster row over listed capacity, or the Participants heading if none</li>
         <li><kbd>y</kbd> Copy deal notes as one-line Markdown</li>
+        <li><kbd>z</kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
