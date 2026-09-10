@@ -211,6 +211,7 @@ SOFTWARE.
             <p id="search-meta" class="search-meta"></p>
           </div>
           <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.</p>
+          <h2 id="print-heading" class="visually-hidden" tabindex="-1">Facilitator pack</h2>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
           <section class="result-card" aria-labelledby="side-by-side-heading">
@@ -238,6 +239,7 @@ SOFTWARE.
             <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
             <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
             <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
+            <h3 id="locks-heading" tabindex="-1">Locks</h3>
             <label class="locks-markdown-fallback-label" for="locks-markdown-fallback">Current locks Markdown</label>
             <textarea id="locks-markdown-fallback" readonly rows="8" spellcheck="false" aria-describedby="locks-markdown-fallback-note"></textarea>
             <p id="locks-markdown-fallback-note" class="field-note">Each clause title is followed by the locked option label, or Unlocked. It is a draft choice list, not a legal hold. If the clipboard is blocked, copy from this box.</p>
@@ -403,6 +405,8 @@ SOFTWARE.
           <li><kbd>,</kbd> Copy the recommended package option count as one-line Markdown</li>
           <li><kbd>.</kbd> Jump to the first locked clause card, or the clauses heading</li>
           <li><kbd>;</kbd> Copy the current lock count as one-line Markdown</li>
+          <li><kbd>[</kbd> Jump to the lock-count copy control, or the locks heading</li>
+          <li><kbd>]</kbd> Jump to Print facilitator pack, or the facilitator pack heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>

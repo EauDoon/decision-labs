@@ -70,6 +70,10 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>,<\/kbd> Copy the recommended package option count as one-line Markdown/u);
   assert.match(html, /<kbd>\.<\/kbd> Jump to the first locked clause card, or the clauses heading/u);
   assert.match(html, /<kbd>;<\/kbd> Copy the current lock count as one-line Markdown/u);
+  assert.match(html, /<kbd>\[<\/kbd> Jump to the lock-count copy control, or the locks heading/u);
+  assert.match(html, /<kbd>\]<\/kbd> Jump to Print facilitator pack, or the facilitator pack heading/u);
+  assert.match(html, /id="locks-heading"/u);
+  assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
@@ -2196,7 +2200,7 @@ test("keyboard semicolon copies the current lock count unless an input is active
   assert.equal(app.clipboardText(), app.lockCount());
   assert.doesNotMatch(app.clipboardText(), /# Current clause locks/u);
   assert.doesNotMatch(app.clipboardText(), /Unlocked/u);
-  assert.match(app.message(), /not a legal hold/u);
+  assert.match(app.clipboardText(), /not a legal hold/u);
   app.clearFocus();
   app.keydown(";", { tagName: "INPUT", isContentEditable: false });
   assert.equal(app.focused(), "");
@@ -2217,6 +2221,44 @@ test("keyboard semicolon copies the current lock count unless an input is active
   blocked.clearFocus();
   blocked.keydown(";", { tagName: "INPUT", isContentEditable: false });
   assert.equal(blocked.focused(), "");
+});
+
+test("keyboard [ jumps to the lock-count copy control unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>\[<\/kbd> Jump to the lock-count copy control, or the locks heading/u);
+  assert.match(html, /id="copy-lock-count-button"/u);
+  assert.match(html, /id="locks-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("[");
+  assert.equal(app.focused(), "#copy-lock-count-button");
+  app.clearFocus();
+  app.keydown("[", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("[", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("[", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("{");
+  assert.equal(app.focused(), "");
+});
+
+test("keyboard ] jumps to Print facilitator pack unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>\]<\/kbd> Jump to Print facilitator pack, or the facilitator pack heading/u);
+  assert.match(html, /id="print-button"/u);
+  assert.match(html, /id="print-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("]");
+  assert.equal(app.focused(), "#print-button");
+  app.clearFocus();
+  app.keydown("]", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("]", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("]", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("}");
+  assert.equal(app.focused(), "");
 });
 
 test("keyboard comma copies the recommended package option count unless an input is active", async () => {

@@ -2924,6 +2924,24 @@ function jumpToNumericThreshold() {
   jumpToMethod();
 }
 
+function jumpToLockCountCopy() {
+  const control = $("#copy-lock-count-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#locks-heading")?.focus?.();
+}
+
+function jumpToPrintPack() {
+  const control = $("#print-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#print-heading")?.focus?.();
+}
+
 function jumpToRecommendedOption() {
   const result = currentResult();
   const recommended = result.agreement?.options;
@@ -3098,6 +3116,12 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === ";") {
     event.preventDefault();
     copyLockCount();
+  } else if (event.key === "[") {
+    event.preventDefault();
+    jumpToLockCountCopy();
+  } else if (event.key === "]") {
+    event.preventDefault();
+    jumpToPrintPack();
   }
 });
 
