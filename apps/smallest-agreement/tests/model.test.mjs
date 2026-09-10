@@ -24,6 +24,7 @@ import {
   duplicateClauseOption,
   changedClauseIds,
   groupsBelowSupportRequirement,
+  overBudgetClauseIds,
   formatCurrentLocksMarkdown,
   formatRecommendedChangeCostCsv,
   parseClauseOptionsCsv,
@@ -1649,27 +1650,33 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
+  assert.equal(exported.overBudgetClausesOnly, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
   assert.equal(parsed.belowFloorGroupsOnly, true);
+  assert.equal(parsed.overBudgetClausesOnly, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
   assert.equal(omitted.belowFloorGroupsOnly, false);
+  assert.equal(omitted.overBudgetClausesOnly, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
+  assert.equal(bare.overBudgetClausesOnly, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, belowFloorGroupsOnly: 1, proposal: input })).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { overBudgetClausesOnly: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -1693,6 +1700,49 @@ test("changedClauseIds lists clauses whose recommended option is not the origina
   assert.deepEqual(changed.clauseIds, ["one"]);
   assert.deepEqual(changedClauseIds(input, { status: "infeasible" }).clauseIds, []);
   assert.equal(changedClauseIds({ title: "" }, result).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+  assert.deepEqual(findSmallestAgreement(input), result);
+});
+
+test("overBudgetClauseIds lists clauses whose cheapest remaining change exceeds leftover budget", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "keep", title: "Keep", options: [
+        option("keep-original", true, { g: 90 }), option("keep-alt", false, { g: 40 }, 5), option("keep-other", false, { g: 20 }, 8),
+      ] },
+      { id: "spend", title: "Spend", options: [
+        option("spend-original", true, { g: 40 }), option("spend-alt", false, { g: 90 }, 2), option("spend-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  input.maxChangeCost = 3;
+  const before = JSON.stringify(input);
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "found");
+  assert.equal(result.agreement.changeCost, 2);
+  const listed = overBudgetClauseIds(input, result);
+  assert.equal(listed.status, "ok");
+  assert.equal(listed.exhausted, false);
+  assert.equal(listed.remaining, 1);
+  assert.deepEqual(listed.clauseIds, ["keep"]);
+  const unlimited = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  assert.deepEqual(overBudgetClauseIds(unlimited, findSmallestAgreement(unlimited)).clauseIds, []);
+  const exhausted = proposal({
+    threshold: 70,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 40 }), option("alt", false, { g: 90 }, 2), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  exhausted.maxChangeCost = 2;
+  const spent = overBudgetClauseIds(exhausted, findSmallestAgreement(exhausted));
+  assert.equal(spent.exhausted, true);
+  assert.deepEqual(spent.clauseIds, ["one"]);
+  assert.equal(overBudgetClauseIds({ title: "" }, result).status, "invalid");
   assert.equal(JSON.stringify(input), before);
   assert.deepEqual(findSmallestAgreement(input), result);
 });

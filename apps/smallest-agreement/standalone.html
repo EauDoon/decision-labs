@@ -118,6 +118,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .locked-clauses-filter input { width: auto; }
 .changed-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
 .changed-clauses-filter input { width: auto; }
+.over-budget-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
+.over-budget-clauses-filter input { width: auto; }
 .clause-density-label { display: grid; gap: .35rem; max-width: 16rem; margin: 0 0 .75rem; font-size: .88rem; font-weight: 700; }
 #clauses-editor.clause-density-compact { gap: .45rem; }
 #clauses-editor.clause-density-compact .clause-card { padding: .55rem .7rem; }
@@ -202,7 +204,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -380,13 +382,15 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <p id="locked-clauses-filter-note" class="field-note">The filter hides unlocked clause cards. Every clause still participates in search and export. A lock is a draft choice, not a recorded vote.</p>
           <label class="changed-clauses-filter" for="changed-clauses-only"><input id="changed-clauses-only" type="checkbox"> Show clauses that differ from the recommendation</label>
           <p id="changed-clauses-filter-note" class="field-note">Shows clause cards whose original option is not the recommended option. Hidden cards still count in the model. The solver is unchanged.</p>
+          <label class="over-budget-clauses-filter" for="over-budget-clauses-only"><input id="over-budget-clauses-only" type="checkbox"> Show clauses whose cheapest remaining change exceeds remaining budget</label>
+          <p id="over-budget-clauses-filter-note" class="field-note">Shows clause cards whose cheapest remaining change costs more than leftover budget. When the budget is exhausted, every clause card is shown. Hidden cards still count in the model. The solver is unchanged.</p>
           <label class="clause-density-label" for="clause-density">Clause card density
             <select id="clause-density">
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
           </label>
-          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, or that match the original when Show clauses that differ from the recommendation is on. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that match the original when Show clauses that differ from the recommendation is on, or whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on. When the budget is exhausted, that last filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
           <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
@@ -1541,6 +1545,45 @@ function groupsBelowSupportRequirement(proposal, options) {
   return { status: "ok", groups };
 }
 
+/**
+ * Clause ids whose cheapest remaining change exceeds leftover change budget.
+ * Remaining change is the lowest changeCost among options other than the inspected selection.
+ * When leftover budget is 0 or negative, every clause is listed.
+ * Unlimited budget (omitted maxChangeCost) yields an empty list.
+ * Display-only. The solver ignores this list.
+ */
+function overBudgetClauseIds(proposal, result) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Object.hasOwn(proposal, "maxChangeCost")) {
+    return { status: "ok", clauseIds: [], remaining: null, exhausted: false };
+  }
+  if (!isFiniteNumber(proposal.maxChangeCost)) {
+    return { status: "invalid", errors: [`maxChangeCost must be from 0 through ${MAX_CHANGE_COST * MAX_CLAUSES}, or omitted.`] };
+  }
+  const selected = result?.agreement?.options ?? result?.baseline?.options;
+  if (!Array.isArray(selected) || selected.length !== proposal.clauses.length) {
+    return { status: "ok", clauseIds: [], remaining: proposal.maxChangeCost, exhausted: proposal.maxChangeCost <= EPSILON };
+  }
+  const used = result?.agreement?.changeCost ?? result?.baseline?.changeCost ?? 0;
+  const remaining = proposal.maxChangeCost - used;
+  if (remaining <= EPSILON) {
+    return { status: "ok", clauseIds: proposal.clauses.map((clause) => clause.id), remaining, exhausted: true };
+  }
+  const clauseIds = [];
+  for (let index = 0; index < proposal.clauses.length; index += 1) {
+    const clause = proposal.clauses[index];
+    const selectedId = selected[index]?.id;
+    let cheapest = Infinity;
+    for (const option of clause.options) {
+      if (option.id === selectedId) continue;
+      if (option.changeCost < cheapest) cheapest = option.changeCost;
+    }
+    if (cheapest - remaining > EPSILON) clauseIds.push(clause.id);
+  }
+  return { status: "ok", clauseIds, remaining, exhausted: false };
+}
+
 /** A deterministic downside scenario, not a probability estimate or a new optimization. */
 function stressPackage(proposal, optionIds, supportDrop) {
   if (!Number.isFinite(supportDrop) || supportDrop < 0 || supportDrop > 100) {
@@ -2485,6 +2528,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "lockedClausesOnly",
   "changedClausesOnly",
   "belowFloorGroupsOnly",
+  "overBudgetClausesOnly",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2493,6 +2537,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "lockedClausesOnly",
   "changedClausesOnly",
   "belowFloorGroupsOnly",
+  "overBudgetClausesOnly",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2532,6 +2577,8 @@ function formatWorkspaceJson(proposal, prefs = {}) {
   if (changedClausesOnly.error) return { status: "invalid", errors: [changedClausesOnly.error] };
   const belowFloorGroupsOnly = readWorkspaceBoolean(prefs, "belowFloorGroupsOnly");
   if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
+  const overBudgetClausesOnly = readWorkspaceBoolean(prefs, "overBudgetClausesOnly");
+  if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2539,6 +2586,7 @@ function formatWorkspaceJson(proposal, prefs = {}) {
     lockedClausesOnly: lockedClausesOnly.value,
     changedClausesOnly: changedClausesOnly.value,
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
+    overBudgetClausesOnly: overBudgetClausesOnly.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2547,6 +2595,7 @@ function formatWorkspaceJson(proposal, prefs = {}) {
       lockedClausesOnly: lockedClausesOnly.value,
       changedClausesOnly: changedClausesOnly.value,
       belowFloorGroupsOnly: belowFloorGroupsOnly.value,
+      overBudgetClausesOnly: overBudgetClausesOnly.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2568,6 +2617,7 @@ function parseWorkspaceJson(text) {
       lockedClausesOnly: null,
       changedClausesOnly: null,
       belowFloorGroupsOnly: null,
+      overBudgetClausesOnly: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2592,6 +2642,8 @@ function parseWorkspaceJson(text) {
   if (changedClausesOnly.error) return { status: "invalid", errors: [changedClausesOnly.error] };
   const belowFloorGroupsOnly = readWorkspaceBoolean(raw, "belowFloorGroupsOnly");
   if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
+  const overBudgetClausesOnly = readWorkspaceBoolean(raw, "overBudgetClausesOnly");
+  if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2601,6 +2653,7 @@ function parseWorkspaceJson(text) {
     lockedClausesOnly: lockedClausesOnly.value,
     changedClausesOnly: changedClausesOnly.value,
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
+    overBudgetClausesOnly: overBudgetClausesOnly.value,
   };
 }
 
@@ -3393,6 +3446,7 @@ let vetoGroupsOnly = false;
 let lockedClausesOnly = false;
 let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
+let overBudgetClausesOnly = false;
 let printRedacted = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
@@ -3453,6 +3507,7 @@ function loadWorkspacePrefs() {
     lockedClausesOnly = parsed?.lockedClausesOnly === true;
     changedClausesOnly = parsed?.changedClausesOnly === true;
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
+    overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
   }
@@ -3460,7 +3515,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -3741,16 +3796,24 @@ function renderClauses() {
   if (checkbox) checkbox.checked = lockedClausesOnly;
   const changedCheckbox = $("#changed-clauses-only");
   if (changedCheckbox) changedCheckbox.checked = changedClausesOnly;
+  const overBudgetCheckbox = $("#over-budget-clauses-only");
+  if (overBudgetCheckbox) overBudgetCheckbox.checked = overBudgetClausesOnly;
   const changed = changedClauseIds(state.proposal, currentResult());
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
+  const overBudget = overBudgetClauseIds(state.proposal, currentResult());
+  const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
   const visible = state.proposal.clauses.filter((clause) => {
     if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
     if (changedClausesOnly && !changedIds.has(clause.id)) return false;
+    if (overBudgetClausesOnly && !overBudgetIds.has(clause.id)) return false;
     return clauseMatchesFilter(clause, query);
   });
   const status = $("#clause-filter-status");
+  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly;
   if (!visible.length) {
-    const message = changedClausesOnly && query === "" && !lockedClausesOnly
+    const message = overBudgetClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly
+      ? "No clauses have a cheapest remaining change that exceeds the remaining budget. Hidden cards still count in the model."
+      : changedClausesOnly && query === "" && !lockedClausesOnly
       ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
       : lockedClausesOnly && query === ""
         ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
@@ -3759,7 +3822,7 @@ function renderClauses() {
     $("#clauses-editor").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
-  if (status) status.textContent = query === "" && !lockedClausesOnly && !changedClausesOnly ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
+  if (status) status.textContent = clauseFiltersIdle ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
   $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" data-clause-id="${escapeHtml(clause.id)}" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
@@ -4428,6 +4491,12 @@ $("#changed-clauses-only").addEventListener("change", (event) => {
   renderClauses();
   applyClauseDensity();
 });
+$("#over-budget-clauses-only").addEventListener("change", (event) => {
+  overBudgetClausesOnly = event.target.checked === true;
+  persistWorkspacePrefs();
+  renderClauses();
+  applyClauseDensity();
+});
 $("#clause-density").addEventListener("change", (event) => {
   clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
   persistWorkspacePrefs();
@@ -4812,7 +4881,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -5094,6 +5163,7 @@ $("#import-file").addEventListener("change", async (event) => {
       lockedClausesOnly = workspace.lockedClausesOnly === true;
       changedClausesOnly = workspace.changedClausesOnly === true;
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
+      overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
@@ -5286,6 +5356,8 @@ function jumpToUnlocked() {
   const query = clauseFilter.trim().toLowerCase();
   const changed = changedClauseIds(state.proposal, currentResult());
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
+  const overBudget = overBudgetClauseIds(state.proposal, currentResult());
+  const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
   let needsRender = false;
   if (!clauseMatchesFilter(firstUnlocked, query)) {
     clauseFilter = "";
@@ -5300,6 +5372,11 @@ function jumpToUnlocked() {
   }
   if (changedClausesOnly && !changedIds.has(firstUnlocked.id)) {
     changedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (overBudgetClausesOnly && !overBudgetIds.has(firstUnlocked.id)) {
+    overBudgetClausesOnly = false;
     persistWorkspacePrefs();
     needsRender = true;
   }

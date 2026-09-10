@@ -53,6 +53,7 @@ const appImport = `import {
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
+  overBudgetClauseIds,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,

@@ -39,6 +39,7 @@ import {
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
+  overBudgetClauseIds,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -392,6 +393,7 @@ let vetoGroupsOnly = false;
 let lockedClausesOnly = false;
 let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
+let overBudgetClausesOnly = false;
 let printRedacted = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
@@ -452,6 +454,7 @@ function loadWorkspacePrefs() {
     lockedClausesOnly = parsed?.lockedClausesOnly === true;
     changedClausesOnly = parsed?.changedClausesOnly === true;
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
+    overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
   }
@@ -459,7 +462,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -740,16 +743,24 @@ function renderClauses() {
   if (checkbox) checkbox.checked = lockedClausesOnly;
   const changedCheckbox = $("#changed-clauses-only");
   if (changedCheckbox) changedCheckbox.checked = changedClausesOnly;
+  const overBudgetCheckbox = $("#over-budget-clauses-only");
+  if (overBudgetCheckbox) overBudgetCheckbox.checked = overBudgetClausesOnly;
   const changed = changedClauseIds(state.proposal, currentResult());
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
+  const overBudget = overBudgetClauseIds(state.proposal, currentResult());
+  const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
   const visible = state.proposal.clauses.filter((clause) => {
     if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
     if (changedClausesOnly && !changedIds.has(clause.id)) return false;
+    if (overBudgetClausesOnly && !overBudgetIds.has(clause.id)) return false;
     return clauseMatchesFilter(clause, query);
   });
   const status = $("#clause-filter-status");
+  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly;
   if (!visible.length) {
-    const message = changedClausesOnly && query === "" && !lockedClausesOnly
+    const message = overBudgetClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly
+      ? "No clauses have a cheapest remaining change that exceeds the remaining budget. Hidden cards still count in the model."
+      : changedClausesOnly && query === "" && !lockedClausesOnly
       ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
       : lockedClausesOnly && query === ""
         ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
@@ -758,7 +769,7 @@ function renderClauses() {
     $("#clauses-editor").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
-  if (status) status.textContent = query === "" && !lockedClausesOnly && !changedClausesOnly ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
+  if (status) status.textContent = clauseFiltersIdle ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
   $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
     <article class="clause-card" data-clause-id="${escapeHtml(clause.id)}" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
@@ -1427,6 +1438,12 @@ $("#changed-clauses-only").addEventListener("change", (event) => {
   renderClauses();
   applyClauseDensity();
 });
+$("#over-budget-clauses-only").addEventListener("change", (event) => {
+  overBudgetClausesOnly = event.target.checked === true;
+  persistWorkspacePrefs();
+  renderClauses();
+  applyClauseDensity();
+});
 $("#clause-density").addEventListener("change", (event) => {
   clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
   persistWorkspacePrefs();
@@ -1811,7 +1828,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -2093,6 +2110,7 @@ $("#import-file").addEventListener("change", async (event) => {
       lockedClausesOnly = workspace.lockedClausesOnly === true;
       changedClausesOnly = workspace.changedClausesOnly === true;
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
+      overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
@@ -2285,6 +2303,8 @@ function jumpToUnlocked() {
   const query = clauseFilter.trim().toLowerCase();
   const changed = changedClauseIds(state.proposal, currentResult());
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
+  const overBudget = overBudgetClauseIds(state.proposal, currentResult());
+  const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
   let needsRender = false;
   if (!clauseMatchesFilter(firstUnlocked, query)) {
     clauseFilter = "";
@@ -2299,6 +2319,11 @@ function jumpToUnlocked() {
   }
   if (changedClausesOnly && !changedIds.has(firstUnlocked.id)) {
     changedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (overBudgetClausesOnly && !overBudgetIds.has(firstUnlocked.id)) {
+    overBudgetClausesOnly = false;
     persistWorkspacePrefs();
     needsRender = true;
   }
