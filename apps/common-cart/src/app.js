@@ -1977,6 +1977,8 @@ function refresh() {
     if (leftoverPrintFillRemaining) leftoverPrintFillRemaining.textContent = "Leftover fill remaining capacity: none";
     const leftoverPrintFillFulfillment = document.querySelector("#leftover-print-fill-fulfillment");
     if (leftoverPrintFillFulfillment) leftoverPrintFillFulfillment.textContent = "Leftover fill fulfillment: none";
+    const leftoverPrintFillDelivery = document.querySelector("#leftover-print-fill-delivery");
+    if (leftoverPrintFillDelivery) leftoverPrintFillDelivery.textContent = "Leftover fill delivery days: none";
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -2328,6 +2330,16 @@ function renderLeftoverCoverageTable(rawScenario) {
     leftoverFillFulfillmentPrint.textContent = coverage.secondary && leftoverOffer
       ? `Leftover fill fulfillment: ${leftoverOffer.fulfillment === "pickup" ? "pickup" : "shipping"}`
       : "Leftover fill fulfillment: none";
+  }
+  const leftoverFillDeliveryPrint = document.querySelector("#leftover-print-fill-delivery");
+  if (leftoverFillDeliveryPrint) {
+    const coverage = computeResidualCoverage(rawScenario);
+    const leftoverOffer = coverage.secondary
+      ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
+      : null;
+    leftoverFillDeliveryPrint.textContent = coverage.secondary && leftoverOffer
+      ? `Leftover fill delivery days: ${leftoverOffer.deliveryDays} days`
+      : "Leftover fill delivery days: none";
   }
   const uncoveredPrint = document.querySelector("#leftover-print-uncovered");
   if (uncoveredPrint) {
