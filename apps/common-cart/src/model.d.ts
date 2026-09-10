@@ -441,6 +441,8 @@ export function organizerLeftoverRows(rawScenario: unknown): OrganizerLeftoverRo
 export function createWinnerInspectorSummaryMarkdown(rawScenario: unknown): string;
 /** Organizer-private uncovered leftover Markdown. Counts and units only. */
 export function createUncoveredLeftoverCountsMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line uncovered leftover unit-count. Count only. Not a merchant export. */
+export function createUncoveredLeftoverUnitCountMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];

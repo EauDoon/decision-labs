@@ -15,7 +15,8 @@ import {
   createLeftoverFillMarkdown,
   createLeftoverFillUnitCountMarkdown,
   createWinningRemainingCapacityMarkdown,
-  createRequestedUnitsMarkdown
+  createRequestedUnitsMarkdown,
+  createUncoveredLeftoverUnitCountMarkdown
 } from "../src/model.js";
 
 function leftoverFixture() {
@@ -339,6 +340,49 @@ test("leftover fill unit-count Markdown is honest when leftover fill is missing"
   const scenario = leftoverFixture();
   scenario.offers[1].minimumUnits = 5000;
   const markdown = createLeftoverFillUnitCountMarkdown(scenario);
+  assert.match(markdown, /: none\. Not a merchant export\./);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("Leaf Collective"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+});
+
+test("uncovered leftover unit-count Markdown is organizer-private count only", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  scenario.offers[1].minimumUnits = 40;
+  const markdown = createUncoveredLeftoverUnitCountMarkdown(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  assert.equal(markdown.trim().includes("\n"), false);
+  assert.match(markdown, /organizer private/);
+  assert.match(markdown, /Not a merchant export/);
+  assert.match(markdown, new RegExp(`: ${coverage.unfilledUnits}\\.`));
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes("Tea room"), false);
+  assert.equal(markdown.includes("Leaf Collective"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+  assert.equal(markdown.includes("Uncovered leftover buyers"), false);
+  assert.equal(markdown.includes("leftover fill units"), false);
+});
+
+test("uncovered leftover unit-count Markdown is honest when leftover is missing", () => {
+  const scenario = leftoverFixture();
+  scenario.buyers.forEach((buyer) => {
+    buyer.category = "Coffee beans";
+    buyer.allowedVariants = ["Medium roast"];
+    buyer.maxUnitPrice = 30;
+    buyer.latestDeliveryDays = 10;
+  });
+  scenario.offers.forEach((offer) => { offer.minimumUnits = 1; offer.capacity = 5000; });
+  const coverage = computeResidualCoverage(scenario);
+  assert.equal(coverage.leftoverBuyerCount, 0);
+  const markdown = createUncoveredLeftoverUnitCountMarkdown(scenario);
   assert.match(markdown, /: none\. Not a merchant export\./);
   assert.equal(markdown.includes("SECRET_LABEL"), false);
   assert.equal(markdown.includes("Leaf Collective"), false);

@@ -1512,6 +1512,13 @@ export function createUncoveredLeftoverCountsMarkdown(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Organizer-private one-line uncovered leftover unit-count. Count only. Not a merchant export. */
+export function createUncoveredLeftoverUnitCountMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.leftoverBuyerCount > 0 ? String(coverage.unfilledUnits) : "none";
+  return `Common Cart uncovered leftover units (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
 export function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {
