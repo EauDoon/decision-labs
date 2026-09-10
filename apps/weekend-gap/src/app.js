@@ -1772,8 +1772,26 @@ function jumpToFirstClosedBankCopy() {
   }
   return jumpToGantt();
 }
+function jumpToFirstClosedIssuerCopy() {
+  const control = document.querySelector("#copy-first-closed-issuer");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 function jumpToHideZeroQueueFilter() {
   const control = document.querySelector("#gantt-hide-zero-queue");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
+function jumpToHideBankClosedFilter() {
+  const control = document.querySelector("#gantt-hide-bank-closed");
   if (control) {
     control.focus();
     control.scrollIntoView?.({ block: "start" });
@@ -2033,9 +2051,19 @@ document.addEventListener("keydown", (event) => {
     jumpToFirstClosedBankCopy();
     return;
   }
+  if (event.key === "-") {
+    event.preventDefault();
+    jumpToFirstClosedIssuerCopy();
+    return;
+  }
   if (event.key === ">") {
     event.preventDefault();
     jumpToHideZeroQueueFilter();
+    return;
+  }
+  if (event.key === "=") {
+    event.preventDefault();
+    jumpToHideBankClosedFilter();
     return;
   }
   if (event.key === "n" || event.key === "N") {

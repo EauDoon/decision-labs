@@ -821,6 +821,39 @@ test("keyboard apostrophe copies first closed bank hour through the existing con
   assert.equal(ui.nodes.get("first-closed-bank-copy-fallback").hidden, true);
 });
 
+test("keyboard hyphen jumps to the first-closed-issuer copy control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("-");
+  assert.equal(ui.nodes.get("copy-first-closed-issuer").focused, true);
+  ui.nodes.get("copy-first-closed-issuer").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("-", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-first-closed-issuer").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("-", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-first-closed-issuer").focused, false);
+  await ui.keydown("-", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-first-closed-issuer").focused, false);
+});
+
+test("keyboard equals jumps to the hide-bank-closed filter and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("=");
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, true);
+  ui.nodes.get("gantt-hide-bank-closed").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("=", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("=", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, false);
+  await ui.keydown("=", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, false);
+  await ui.keydown(">");
+  assert.equal(ui.nodes.get("gantt-hide-zero-queue").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, false);
+});
+
 test("keyboard less-than jumps to the first-closed-bank copy control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("<");
