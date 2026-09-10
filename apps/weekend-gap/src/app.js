@@ -1455,6 +1455,14 @@ function jumpToSelectedGanttHour() {
   rememberChart("gantt");
   return true;
 }
+function jumpToHoursToClear() {
+  const line = document.querySelector("#hours-to-clear-line");
+  if (!line) return false;
+  line.setAttribute("tabindex", "-1");
+  line.focus();
+  line.scrollIntoView?.({ block: "start" });
+  return true;
+}
 function jumpToGanttBankRow() {
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
@@ -1676,6 +1684,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "h" || event.key === "H") {
     event.preventDefault();
     jumpToSelectedGanttHour();
+    return;
+  }
+  if (event.key === "k" || event.key === "K") {
+    event.preventDefault();
+    jumpToHoursToClear();
     return;
   }
   if (event.key === "b" || event.key === "B") {

@@ -478,6 +478,20 @@ test("keyboard t jumps to the timing review and ignores the key while typing", a
   assert.equal(ui.nodes.get("weekend-review-title").focused, false);
 });
 
+test("keyboard k jumps to the hours-to-clear line and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("k");
+  assert.equal(ui.nodes.get("hours-to-clear-line").focused, true);
+  assert.equal(ui.nodes.get("hours-to-clear-line").attributes.tabindex, "-1");
+  ui.nodes.get("hours-to-clear-line").focused = false;
+  await ui.keydown("K", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("hours-to-clear-line").focused, false);
+  await ui.keydown("k", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("hours-to-clear-line").focused, false);
+  await ui.keydown("k", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("hours-to-clear-line").focused, false);
+});
+
 test("keyboard h jumps to the selected Gantt hour table and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("h");
