@@ -932,7 +932,7 @@ function handleShortcut(event) {
     focusPrivateBuyerReport();
     return;
   }
-  if (key === "y") {
+  if (key === "y" || key === ";") {
     event.preventDefault();
     copyLeftoverFill();
     return;

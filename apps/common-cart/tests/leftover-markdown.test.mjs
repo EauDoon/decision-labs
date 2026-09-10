@@ -322,7 +322,7 @@ test("the buyer room copies leftover fill with a textarea fallback", async () =>
   assert.match(app, /createLeftoverFillMarkdown\(/u);
   assert.match(app, /function copyLeftoverFill\(/u);
   assert.match(app, /function copyTextWithFallback\(/u);
-  assert.match(app, /if \(key === "y"\)/u);
+  assert.match(app, /if \(key === "y" \|\| key === ";"\)/u);
   assert.match(app, /organizer-private Markdown/u);
   assert.match(app, /This is not a merchant export/u);
 });

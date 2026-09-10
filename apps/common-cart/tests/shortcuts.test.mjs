@@ -309,16 +309,27 @@ test("keyboard handler focuses Export private buyer report when not typing", asy
 test("shortcut help documents leftover fill copy", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /<kbd>y<\/kbd> Copy leftover fill \(organizer private\)/u);
+  assert.match(html, /<kbd>;<\/kbd> Copy leftover fill \(organizer private\)/u);
   assert.match(html, /id="copy-leftover-fill"/u);
 });
 
 test("keyboard handler copies leftover fill when not typing", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
-  assert.match(app, /if \(key === "y"\)/u);
+  assert.match(app, /if \(key === "y" \|\| key === ";"\)/u);
   assert.match(app, /function copyLeftoverFill\(/u);
   assert.match(app, /createLeftoverFillMarkdown\(scenario\)/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.match(app, /organizer-private Markdown/u);
+});
+
+test("semicolon leftover fill copy uses the existing leftover-fill control and y still copies", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "y" \|\| key === ";"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+  assert.match(app, /function copyLeftoverFill\(/u);
+  assert.match(app, /createLeftoverFillMarkdown\(scenario\)/u);
+  assert.match(html, /id="copy-leftover-fill"/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
 
 test("shortcut help documents the leftover fill jump", async () => {
@@ -383,7 +394,7 @@ test("keyboard handler jumps to leftover fill copy with slash without Shift", as
   assert.match(app, /#buyer-tab/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.match(app, /event\.key === "\?" \|\| \(event\.shiftKey && event\.key === "\/"\)/u);
-  assert.match(app, /if \(key === "y"\)/u);
+  assert.match(app, /if \(key === "y" \|\| key === ";"\)/u);
   assert.match(app, /function copyLeftoverFill\(/u);
 });
 
