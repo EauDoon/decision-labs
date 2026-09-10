@@ -659,6 +659,16 @@ export function winnerBudgetLeftover(rawScenario) {
   };
 }
 
+/** Organizer-private one-line leftover unspent item headroom. Currency and counts only. Not a rebate. */
+export function createLeftoverHeadroomMarkdown(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const leftover = winnerBudgetLeftover(rawScenario);
+  const amount = leftover.note.startsWith("No winning offer")
+    ? "none"
+    : `${scenario.currency} ${leftover.unspentHeadroom} across ${leftover.includedBuyerCount} included buyers`;
+  return `Common Cart leftover unspent item headroom (organizer private): ${amount}. Not a rebate.\n`;
+}
+
 /** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
 export function createMerchantReport(rawScenario) {
   const market = evaluateMarket(rawScenario);

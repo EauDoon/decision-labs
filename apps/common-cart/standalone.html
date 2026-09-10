@@ -480,6 +480,7 @@ footer {
         <li><kbd>h</kbd> Focus leftover item headroom after the winner</li>
         <li><kbd>k</kbd> Focus the organizer review panel</li>
         <li><kbd>g</kbd> Focus group headroom</li>
+        <li><kbd>i</kbd> Copy leftover unspent item headroom (organizer private)</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -765,6 +766,8 @@ footer {
             <p id="residual-note" class="canvas-note"></p>
             <div id="residual-summary" class="residual-summary"></div>
             <p id="leftover-headroom" class="canvas-note leftover-headroom" tabindex="-1">Unspent item headroom after winner: none yet</p>
+            <button id="copy-leftover-headroom" class="print-chrome" type="button">Copy leftover unspent item headroom (organizer private)</button>
+            <p class="canvas-note print-chrome">Organizer-private one-line Markdown of leftover unspent item headroom. Currency and counts only. Not a rebate. This is not a merchant export.</p>
             <p id="leftover-print-winner" class="canvas-note leftover-print-winner print-leftover-keep">Winner merchant: None unlocked</p>
             <button id="copy-winning-merchant" class="print-chrome" type="button">Copy winning merchant label</button>
             <p class="canvas-note print-chrome">Copies the winning merchant name only. Honest empty when none unlocked. Buyer identities stay out.</p>
@@ -1673,6 +1676,16 @@ function winnerBudgetLeftover(rawScenario) {
     unspentHeadroom,
     note: "Organizer-only sum of included buyers' unused item-ceiling headroom after the winning allocation. Not a rebate or merchant payout."
   };
+}
+
+/** Organizer-private one-line leftover unspent item headroom. Currency and counts only. Not a rebate. */
+function createLeftoverHeadroomMarkdown(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const leftover = winnerBudgetLeftover(rawScenario);
+  const amount = leftover.note.startsWith("No winning offer")
+    ? "none"
+    : `${scenario.currency} ${leftover.unspentHeadroom} across ${leftover.includedBuyerCount} included buyers`;
+  return `Common Cart leftover unspent item headroom (organizer private): ${amount}. Not a rebate.\n`;
 }
 
 /** Explicit public projection: never serialize a Scenario or evaluation wholesale. */
@@ -3397,6 +3410,7 @@ function bindStaticEvents() {
   });
   document.querySelector("#copy-leftover-coverage").addEventListener("click", copyLeftoverCoverage);
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
+  document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
   document.querySelector("#copy-winning-merchant").addEventListener("click", copyWinningMerchantLabel);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
@@ -3946,6 +3960,11 @@ function handleShortcut(event) {
   if (key === "g") {
     event.preventDefault();
     focusGroupHeadroom();
+    return;
+  }
+  if (key === "i") {
+    event.preventDefault();
+    copyLeftoverHeadroom();
     return;
   }
 }
@@ -5371,6 +5390,16 @@ function copyUncoveredLeftoverCounts() {
       "Clipboard was blocked. Organizer-private uncovered leftover Markdown is in the textarea. Counts and units only. This is not a merchant export."
     );
   } catch (error) { setStatus(`Uncovered leftover copy failed: ${messageOf(error)}`); }
+}
+
+function copyLeftoverHeadroom() {
+  try {
+    copyTextWithFallback(
+      createLeftoverHeadroomMarkdown(scenario),
+      "Leftover unspent item headroom copied as organizer-private Markdown. Currency and counts only. Not a rebate. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover headroom Markdown is in the textarea. Currency and counts only. Not a rebate. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover headroom copy failed: ${messageOf(error)}`); }
 }
 
 function copyWinningMerchantLabel() {

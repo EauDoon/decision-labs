@@ -261,3 +261,18 @@ test("keyboard handler jumps to group headroom when not typing", async () => {
   assert.match(app, /#metric-savings/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
+
+test("shortcut help documents leftover unspent item headroom copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>i<\/kbd> Copy leftover unspent item headroom \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-headroom"/u);
+});
+
+test("keyboard handler copies leftover unspent item headroom when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "i"\)/u);
+  assert.match(app, /function copyLeftoverHeadroom\(/u);
+  assert.match(app, /createLeftoverHeadroomMarkdown\(scenario\)/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+});

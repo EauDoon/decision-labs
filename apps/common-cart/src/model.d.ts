@@ -367,6 +367,8 @@ export interface WinnerBudgetLeftover {
   note: string;
 }
 export function winnerBudgetLeftover(rawScenario: unknown): WinnerBudgetLeftover;
+/** Organizer-private one-line leftover unspent item headroom. Currency and counts only. Not a rebate. */
+export function createLeftoverHeadroomMarkdown(rawScenario: unknown): string;
 export function createBuyerCsv(rawScenario: unknown, offerId: string): string;
 export function neutralizeSpreadsheetCell(value: unknown): unknown;
 export function parseBuyerCsv(text: unknown): Buyer[];

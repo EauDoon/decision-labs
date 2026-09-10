@@ -27,7 +27,8 @@ import {
   createLeftoverCoverageMarkdown,
   createWinnerInspectorSummaryMarkdown,
   createUncoveredLeftoverCountsMarkdown,
-  createWinningMerchantLabelMarkdown
+  createWinningMerchantLabelMarkdown,
+  createLeftoverHeadroomMarkdown
 } from "../src/model.js";
 
 const PRIVATE_BUYER_MARKERS = ["SECRET_LABEL", "SECRET_ID", "SECRET_STUDIO", "987654.32", "maxUnitPrice", "leftoverBuyerIds", '"selectedBuyerIds":', '"allocations":'];
@@ -165,6 +166,15 @@ test("uncovered leftover and winning merchant Markdown omit buyer identities", (
   assert.match(uncovered, /not a merchant export/);
   assert.match(merchant, /Merchant label only/);
   assert.match(merchant, /Harbour Roasters|None unlocked/);
+});
+
+test("leftover unspent item headroom Markdown omits buyer identities", () => {
+  const scenario = secretNeighbourhood();
+  const leftover = createLeftoverHeadroomMarkdown(scenario);
+  assertOmitsPrivateBuyers(leftover, ["SECRET_TITLE"]);
+  assert.match(leftover, /organizer private/);
+  assert.match(leftover, /Not a rebate/);
+  assert.equal(leftover.includes("Harbour Roasters"), false);
 });
 
 test("leftover print one-pager uses merchant labels and omits private buyer rows", async () => {
