@@ -76,6 +76,7 @@ let splitCopyText = '';
 let allocationCopyText = '';
 let titleCopyText = '';
 let breakpointLabelCopyText = '';
+let remainingCopyText = '';
 let viabilityLabelCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
@@ -117,6 +118,7 @@ function checkpoint() {
   allocationCopyText = '';
   titleCopyText = '';
   breakpointLabelCopyText = '';
+  remainingCopyText = '';
   viabilityLabelCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
@@ -150,6 +152,7 @@ function travelHistory(direction) {
   allocationCopyText = '';
   titleCopyText = '';
   breakpointLabelCopyText = '';
+  remainingCopyText = '';
   viabilityLabelCopyText = '';
   importSequence += 1;
   activePreset = '';
@@ -461,7 +464,7 @@ function shockUnits(kind) {
 }
 
 function copyFirstBreakpointButton() {
-  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button><button type="button" id="copy-first-breakpoint-label" data-action="copy-first-breakpoint-label">Copy first-breakpoint participant label</button></div>`;
+  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button><button type="button" id="copy-first-breakpoint-label" data-action="copy-first-breakpoint-label">Copy first-breakpoint participant label</button><button type="button" id="copy-first-breakpoint-remaining" data-action="copy-first-breakpoint-remaining">Copy first-breakpoint remaining-to-hold</button></div>`;
 }
 
 function breakpointSection(result) {
@@ -732,7 +735,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${viabilityLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${viabilityLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -794,6 +797,7 @@ function resultsPanel(result) {
     ${breakpointSnapshotCopySection()}
     ${titleCopySection()}
     ${breakpointLabelCopySection()}
+    ${remainingCopySection()}
     ${viabilityLabelCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
@@ -1280,6 +1284,7 @@ function attachEvents() {
     if (action === 'close-allocation-copy') { allocationCopyText = ''; render(); return; }
     if (action === 'close-title-copy') { titleCopyText = ''; render(); return; }
     if (action === 'close-breakpoint-label-copy') { breakpointLabelCopyText = ''; render(); return; }
+    if (action === 'close-remaining-copy') { remainingCopyText = ''; render(); return; }
     if (action === 'close-viability-label-copy') { viabilityLabelCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
@@ -1529,6 +1534,7 @@ function attachEvents() {
     if (action === 'copy-first-breakpoint') copyFirstBreakpoint();
     if (action === 'copy-first-breakpoint-snapshot') copyFirstBreakpointSnapshot();
     if (action === 'copy-first-breakpoint-label') copyFirstBreakpointLabel();
+    if (action === 'copy-first-breakpoint-remaining') copyFirstBreakpointRemainingToHold();
     if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-waterfall') copyContributionWaterfall();
@@ -2422,6 +2428,71 @@ function copyFirstBreakpointLabel() {
     }
   }
   showBreakpointLabelCopyFallback(text, fallbackNote);
+}
+
+function firstBreakpointRemainingToHoldMarkdown(result) {
+  const breakpoint = result?.firstBreakpoint;
+  if (!breakpoint?.participant) return 'First-breakpoint remaining-to-hold: none entered.';
+  const participant = breakpoint.participant;
+  const name = reportText(participant.name);
+  const kind = breakpoint.kind;
+  if (kind === 'volume' || kind === 'volumeIncrease') {
+    const remaining = participant.headroomToExit == null ? null : Math.max(0, -participant.headroomToExit);
+    if (remaining == null || !Number.isFinite(remaining)) return 'First-breakpoint remaining-to-hold: none entered.';
+    return 'First-breakpoint remaining-to-hold: ' + formatVolume(remaining) + ' for ' + name + '. Synthetic ranking, not a forecast.';
+  }
+  const volume = result.effectiveVolume;
+  const fee = result.deal.feePerTransaction;
+  const gross = volume * fee;
+  const needs = participant.variableCost + participant.fixedCost + participant.riskCost + participant.minimumAcceptableProfit;
+  if (!(gross > 0) || !Number.isFinite(needs)) return 'First-breakpoint remaining-to-hold: none entered.';
+  const remainingShare = Math.max(0, needs / gross - participant.revenueShare);
+  if (!Number.isFinite(remainingShare)) return 'First-breakpoint remaining-to-hold: none entered.';
+  return 'First-breakpoint remaining-to-hold: ' + formatPct(remainingShare * 100) + ' share for ' + name + '. Synthetic ranking, not a forecast.';
+}
+
+function showRemainingCopyFallback(text, message) {
+  remainingCopyText = text;
+  render();
+  document.querySelector('#remaining-copy-text')?.focus();
+  setNotice(message);
+}
+
+function remainingCopySection() {
+  if (!remainingCopyText) return '';
+  return `<section class="panel" aria-labelledby="remaining-copy-title"><div class="panel-heading"><h2 id="remaining-copy-title">First-breakpoint remaining-to-hold Markdown</h2><button type="button" data-action="close-remaining-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is the volume or share still needed for the first-breakpoint participant. It is distinct from first-breakpoint label copy and least-headroom copy.</p><label class="brief-copy-label" for="remaining-copy-text">First-breakpoint remaining-to-hold Markdown</label><textarea id="remaining-copy-text" readonly rows="4">${escapeAttribute(remainingCopyText)}</textarea></div></section>`;
+}
+
+function copyFirstBreakpointRemainingToHold() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = firstBreakpointRemainingToHoldMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'First-breakpoint remaining-to-hold copied as Markdown. Synthetic ranking, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          remainingCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showRemainingCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      remainingCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showRemainingCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showRemainingCopyFallback(text, fallbackNote);
 }
 
 function leastHeadroomLabelMarkdown(result) {
