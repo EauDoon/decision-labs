@@ -2168,6 +2168,33 @@ export function formatVetoGroupCountMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the first group that is not marked as a veto group.
+ * Honest when none. Distinct from first veto group copy and veto-group count copy.
+ * A veto is a number you entered, not a legal right.
+ * Do not treat the label as a legal identity.
+ */
+export function formatFirstNonVetoGroupLabelMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const disclaimer = "A veto is a number you entered, not a legal right. The label is not a legal identity.";
+  const first = p.groups.find((group) => group.veto !== true);
+  if (!first) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No non-veto group is marked, so there is no first non-veto group label to copy. ${disclaimer}\n`,
+    };
+  }
+  return {
+    status: "ok",
+    empty: false,
+    label: first.name,
+    text: `First non-veto group: ${briefText(first.name)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2451,6 +2478,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideVetoGroups",
   "hideNonVetoGroups",
   "hideFirstVetoGroup",
+  "hideLastVetoGroup",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2470,6 +2498,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideVetoGroups",
   "hideNonVetoGroups",
   "hideFirstVetoGroup",
+  "hideLastVetoGroup",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2531,6 +2560,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideNonVetoGroups.error) return { status: "invalid", errors: [hideNonVetoGroups.error] };
   const hideFirstVetoGroup = readWorkspaceBoolean(prefs, "hideFirstVetoGroup");
   if (hideFirstVetoGroup.error) return { status: "invalid", errors: [hideFirstVetoGroup.error] };
+  const hideLastVetoGroup = readWorkspaceBoolean(prefs, "hideLastVetoGroup");
+  if (hideLastVetoGroup.error) return { status: "invalid", errors: [hideLastVetoGroup.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2549,6 +2580,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideVetoGroups: hideVetoGroups.value,
     hideNonVetoGroups: hideNonVetoGroups.value,
     hideFirstVetoGroup: hideFirstVetoGroup.value,
+    hideLastVetoGroup: hideLastVetoGroup.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2568,6 +2600,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideVetoGroups: hideVetoGroups.value,
       hideNonVetoGroups: hideNonVetoGroups.value,
       hideFirstVetoGroup: hideFirstVetoGroup.value,
+      hideLastVetoGroup: hideLastVetoGroup.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2600,6 +2633,7 @@ export function parseWorkspaceJson(text) {
       hideVetoGroups: null,
       hideNonVetoGroups: null,
       hideFirstVetoGroup: null,
+      hideLastVetoGroup: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2646,6 +2680,8 @@ export function parseWorkspaceJson(text) {
   if (hideNonVetoGroups.error) return { status: "invalid", errors: [hideNonVetoGroups.error] };
   const hideFirstVetoGroup = readWorkspaceBoolean(raw, "hideFirstVetoGroup");
   if (hideFirstVetoGroup.error) return { status: "invalid", errors: [hideFirstVetoGroup.error] };
+  const hideLastVetoGroup = readWorkspaceBoolean(raw, "hideLastVetoGroup");
+  if (hideLastVetoGroup.error) return { status: "invalid", errors: [hideLastVetoGroup.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2666,6 +2702,7 @@ export function parseWorkspaceJson(text) {
     hideVetoGroups: hideVetoGroups.value,
     hideNonVetoGroups: hideNonVetoGroups.value,
     hideFirstVetoGroup: hideFirstVetoGroup.value,
+    hideLastVetoGroup: hideLastVetoGroup.value,
   };
 }
 

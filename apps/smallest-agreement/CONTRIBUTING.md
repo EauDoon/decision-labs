@@ -13,7 +13,7 @@ Changes to `src/model.js` require tests for the affected calculation or outcome.
 - The safety bound returns an explicit result rather than a partial recommendation.
 - The model treats option labels as opaque text.
 - The app does not claim legitimacy, consent, or authority from a calculated score.
-- Display filters such as hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideGroupsBelowThreshold, hideGroupsMeetingThreshold, and hideGroupsAtFloor must not change search math. Persist them as optional workspace booleans, reject unknown keys, and default omitted flags to show-all.
+- Display filters such as hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideGroupsBelowThreshold, hideGroupsMeetingThreshold, and hideGroupsAtFloor must not change search math. Persist them as optional workspace booleans, reject unknown keys, and default omitted flags to show-all.
 
 If a tie-breaker, formula, threshold interpretation, or bound changes, update `MODEL.md`, browser-visible Method and Limits copy, and relevant tests in the same change.
 

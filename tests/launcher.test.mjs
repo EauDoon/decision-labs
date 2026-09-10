@@ -4,7 +4,7 @@ import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -1926,7 +1926,7 @@ test('404 copy last What\'s new heading is distinct from Copy last job', async (
   assert.equal(job, '- Weekend Gap: Follow synthetic AUD redemption demand.');
   assert.equal(news, '- Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11');
   assert.notEqual(news, job);
-  assert.doesNotMatch(page, /id="copy-first-whats-new"/);
+  assert.match(page, /id="copy-first-whats-new"/);
   assert.equal(PUBLIC_PATHS.length, 6);
 });
 
@@ -1945,7 +1945,7 @@ test('404 copy last What\'s new heading uses the printed heading without extra p
   assert.match(page, /Not a live product feed/);
   assert.match(page, /id="copy-last-job"/);
   assert.match(page, />Copy last job</);
-  assert.doesNotMatch(page, /id="copy-first-whats-new"/);
+  assert.match(page, /id="copy-first-whats-new"/);
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(page, /XMLHttpRequest/);
   assert.equal(PUBLIC_PATHS.length, 6);
@@ -2039,13 +2039,221 @@ test('404 copy last What\'s new heading stays GET HEAD only with connect-src non
   assert.match(missing.body, /id="whats-new"/);
   assert.match(missing.body, /Not a live product feed/);
   assert.match(missing.body, /id="copy-last-job"/);
-  assert.doesNotMatch(missing.body, /id="copy-first-whats-new"/);
+  assert.match(missing.body, /id="copy-first-whats-new"/);
   assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
   const head = await new Promise((resolve, reject) => {
     const req = request({
       hostname: '127.0.0.1',
       port,
       path: '/no-copy-last-whats-new-path',
+      method: 'HEAD',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(head.status, 404);
+  assert.equal(head.body, '');
+});
+
+test('404 copy first What\'s new heading markdown is the first printed What\'s new heading', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  let firstHeading = { textContent: 'Last What\'s new copy, last-news jump, and first-news jump' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-whats-new') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-whats-new-status') return { textContent: '' };
+      if (id === 'copy-first-whats-new-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? firstHeading : null;
+    },
+    querySelectorAll: () => [],
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '- Last What\'s new copy, last-news jump, and first-news jump');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Saturday early payout/);
+  assert.doesNotMatch(copied, /live product feed/);
+  firstHeading = null;
+  copied = 'stale';
+  await click();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first What\'s new heading is distinct from Copy last What\'s new heading', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let lastCopied = '';
+  let clickFirst = null;
+  let clickLast = null;
+  const headings = [
+    { textContent: 'Last What\'s new copy, last-news jump, and first-news jump' },
+    { textContent: 'Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-whats-new') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-whats-new-status') return { textContent: '' };
+      if (id === 'copy-first-whats-new-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-last-whats-new') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-whats-new-status') return { textContent: '' };
+      if (id === 'copy-last-whats-new-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? headings[0] : null;
+    },
+    querySelectorAll(selector) {
+      return selector === '#whats-new h3' ? headings : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { lastCopied = text; } } },
+  });
+  await clickFirst();
+  const first = lastCopied;
+  await clickLast();
+  const last = lastCopied;
+  assert.equal(first, '- Last What\'s new copy, last-news jump, and first-news jump');
+  assert.equal(last, '- Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12');
+  assert.notEqual(first, last);
+  assert.match(page, /id="copy-first-whats-new"/);
+  assert.match(page, /id="copy-last-whats-new"/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first What\'s new heading uses the printed heading without extra public paths', () => {
+  const page = notFoundPage();
+  const firstHeading = catalogFirstWhatsNewHeading();
+  const lastHeading = catalogLastWhatsNewHeading();
+  assert.match(firstHeading, /\S/);
+  assert.equal(page.includes(firstHeading), true, '404 page should print the first What\'s new heading');
+  assert.equal(page.includes(lastHeading), true, '404 page should still print the last What\'s new heading');
+  assert.match(page, /id="copy-first-whats-new"/);
+  assert.match(page, />Copy first What's new heading</);
+  assert.match(page, /id="copy-first-whats-new-fallback"/);
+  assert.match(page, /textarea id="copy-first-whats-new-fallback"/);
+  assert.match(page, /firstWhatsNewMarkdown/);
+  assert.match(page, /querySelector\('#whats-new h3'\)/);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-last-whats-new"/);
+  assert.match(page, />Copy last What's new heading</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy-first-whats-new script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /firstWhatsNewMarkdown/);
+  assert.match(source, /Not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first What\'s new heading shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-whats-new') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-whats-new-status') return status;
+      if (id === 'copy-first-whats-new-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? { textContent: 'Last What\'s new copy, last-news jump, and first-news jump' } : null;
+    },
+    querySelectorAll: () => [],
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Last What\'s new copy, last-news jump, and first-news jump');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first What\'s new heading stays GET HEAD only with connect-src none', async (t) => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-whats-new-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /id="copy-first-whats-new"/);
+  assert.match(missing.body, />Copy first What's new heading</);
+  assert.match(missing.body, /id="whats-new"/);
+  assert.match(missing.body, /Not a live product feed/);
+  assert.match(missing.body, /id="copy-last-whats-new"/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+  const head = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-whats-new-path',
       method: 'HEAD',
       headers: { host: `127.0.0.1:${port}` },
     }, (res) => {

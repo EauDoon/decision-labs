@@ -54,19 +54,32 @@ export function catalogJobs() {
   return cards;
 }
 
-export function catalogLastWhatsNewHeading() {
+function catalogWhatsNewHeadings() {
   const html = readFileSync(new URL('index.html', root), 'utf8');
   const start = html.indexOf('id="whats-new"');
   const end = html.indexOf('id="workbenches"', start);
   const section = start >= 0 && end > start ? html.slice(start, end) : '';
-  const headings = [...section.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1].trim());
+  return [...section.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1].trim());
+}
+
+export function catalogFirstWhatsNewHeading() {
+  return catalogWhatsNewHeadings()[0] ?? '';
+}
+
+export function catalogLastWhatsNewHeading() {
+  const headings = catalogWhatsNewHeadings();
   return headings[headings.length - 1] ?? '';
 }
 
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
+  const firstWhatsNew = catalogFirstWhatsNewHeading();
   const lastWhatsNew = catalogLastWhatsNewHeading();
+  const newsHeadings = [];
+  if (firstWhatsNew) newsHeadings.push(firstWhatsNew);
+  if (lastWhatsNew && lastWhatsNew !== firstWhatsNew) newsHeadings.push(lastWhatsNew);
+  const newsList = newsHeadings.map((heading) => `<li><h3>${escapeHtml(heading)}</h3></li>`).join('\n        ');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -100,8 +113,9 @@ export function notFoundPage() {
     .copy-last-how-tools { margin: 16px 0 0; }
     .copy-last-job-tools { margin: 16px 0 0; }
     .copy-last-whats-new-tools { margin: 16px 0 0; }
+    .copy-first-whats-new-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -114,8 +128,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -125,7 +139,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -171,9 +185,14 @@ export function notFoundPage() {
     <section class="whats-new" id="whats-new">
       <h2 id="whats-new-title">What's new</h2>
       <ul class="whats-new-list">
-        <li><h3>${escapeHtml(lastWhatsNew)}</h3></li>
+        ${newsList}
       </ul>
     </section>
+    <p class="copy-first-whats-new-tools">
+      <button type="button" class="copy-first-whats-new" id="copy-first-whats-new">Copy first What's new heading</button>
+      <span class="copy-first-whats-new-status" id="copy-first-whats-new-status" role="status"></span>
+    </p>
+    <textarea id="copy-first-whats-new-fallback" class="copy-first-whats-new-fallback" hidden readonly rows="2" aria-label="First What's new heading as Markdown"></textarea>
     <p class="copy-last-whats-new-tools">
       <button type="button" class="copy-last-whats-new" id="copy-last-whats-new">Copy last What's new heading</button>
       <span class="copy-last-whats-new-status" id="copy-last-whats-new-status" role="status"></span>
@@ -376,6 +395,41 @@ export function notFoundPage() {
             lastJobStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. Last workbench job was missing. This is catalog copy, not a live product feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last catalog job, not a live product feed.';
+          }
+        }
+      });
+      const firstWhatsNewBtn = document.getElementById('copy-first-whats-new');
+      const firstWhatsNewStatus = document.getElementById('copy-first-whats-new-status');
+      const firstWhatsNewFallback = document.getElementById('copy-first-whats-new-fallback');
+      const firstWhatsNewMarkdown = () => {
+        const heading = document.querySelector('#whats-new h3');
+        const text = heading?.textContent.trim() ?? '';
+        if (!text) return '';
+        return '- ' + text;
+      };
+      firstWhatsNewBtn?.addEventListener('click', async () => {
+        const markdown = firstWhatsNewMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstWhatsNewFallback) firstWhatsNewFallback.hidden = true;
+          if (firstWhatsNewStatus) {
+            firstWhatsNewStatus.textContent = empty
+              ? "First What's new heading was missing. Copied an empty string. This is catalog copy, not a live product feed."
+              : "Copied the first What's new heading from this page as Markdown. Not a live product feed.";
+          }
+        } catch {
+          if (firstWhatsNewFallback) {
+            firstWhatsNewFallback.hidden = false;
+            firstWhatsNewFallback.value = markdown;
+            firstWhatsNewFallback.focus();
+            firstWhatsNewFallback.select();
+          }
+          if (firstWhatsNewStatus) {
+            firstWhatsNewStatus.textContent = empty
+              ? "Clipboard unavailable. Copy the empty string from the text box. First What's new heading was missing. This is catalog copy, not a live product feed."
+              : "Clipboard unavailable. Copy the Markdown from the text box. This is the first What's new heading, not a live product feed.";
           }
         }
       });
