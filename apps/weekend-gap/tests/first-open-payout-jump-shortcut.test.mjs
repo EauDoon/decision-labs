@@ -17,7 +17,7 @@ test("keyboard bang is wired to the first-open-payout-hour copy control", async 
   assert.match(app, /function jumpToGantt/);
   assert.notEqual(app.match(/function jumpToFirstOpenPayoutCopy/)?.[0], app.match(/function jumpToFirstClosedFxCopyOrGantt/)?.[0]);
   assert.notEqual(app.match(/function jumpToFirstOpenPayoutCopy/)?.[0], app.match(/function jumpToGantt/)?.[0]);
-  const bangFn = app.slice(app.indexOf("function jumpToFirstOpenPayoutCopy"), app.indexOf("function jumpToHideZeroQueueFilter"));
+  const bangFn = app.slice(app.indexOf("function jumpToFirstOpenPayoutCopy"), app.indexOf("function jumpToFirstOpenFxCopy"));
   assert.match(bangFn, /jumpToGantt\(\)/);
   assert.doesNotMatch(bangFn, /copyFirstOpenPayoutHourMarkdown/);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
