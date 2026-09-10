@@ -106,7 +106,9 @@ Press `t` to focus Trust and limits. Press `c` to copy the catalog address
 when this page is served over http. On a file URL that key does not claim a
 copy succeeded. Press `v` to copy catalog versions from this page. That key
 uses the same Copy versions control, including the visible text box when the
-clipboard API is unavailable. Press `?` on the catalog for the in-page shortcut list. The branded 404
+clipboard API is unavailable. Press `l` to focus the workbench card that is
+Last launched in this browser, or the workbenches heading if none is stored.
+That recency is storage in this browser, not a cloud recency. Press `?` on the catalog for the in-page shortcut list. The branded 404
 page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
 Smallest Agreement, and Weekend Gap. When the catalog is served over http,

@@ -290,6 +290,21 @@ test('copy versions copies catalog names as Markdown with a visible fallback', (
   assert.doesNotMatch(html, /hosted API/i);
 });
 
+test('keyboard l focuses the last-launched workbench card in this browser', () => {
+  assert.match(html, /event\.key === 'l'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /data-workbench="1"/);
+  assert.match(html, /data-workbench="4"/);
+  assert.match(html, /querySelector\('\.workbench\[data-workbench="' \+ stored \+ '"\]'\)/);
+  assert.match(html, /card\.focus\(\)/);
+  assert.match(html, /getElementById\('workbenches'\)\?\.focus\(\)/);
+  assert.match(html, /<kbd>l<\/kbd><\/dt><dd>Focus the last-launched workbench card, or the workbenches heading if none is stored/);
+  assert.match(html, /Press <kbd>l<\/kbd> to focus the last-launched workbench/);
+  assert.match(html, /not a cloud recency/);
+  assert.match(readme, /Press `l` to focus the workbench card/);
+  assert.match(readme, /not a cloud recency/);
+});
+
 test('keyboard v copies catalog versions through the same control', () => {
   assert.match(html, /event\.key === 'v'/);
   assert.match(html, /versionsBtn\?\.click\(\)/);
