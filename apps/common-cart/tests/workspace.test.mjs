@@ -121,6 +121,22 @@ test("workspace stores hide excluded buyers and older files default to show-all"
   assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideExcludedBuyers: 1 }), /true or false/);
 });
 
+test("workspace stores hide unwinnable offers and older files default to show-all", () => {
+  const s = clonePreset();
+  const legacy = validateWorkspace({ version: 1, rooms: [s] });
+  assert.equal(Object.hasOwn(legacy, "hideUnwinnableOffers"), true);
+  assert.equal(legacy.hideUnwinnableOffers, false);
+  assert.equal(legacy.hideExcludedBuyers, false);
+  const hidden = validateWorkspace({ version: 1, rooms: [s], hideUnwinnableOffers: true, hideExcludedBuyers: true });
+  assert.equal(hidden.hideUnwinnableOffers, true);
+  assert.equal(hidden.hideExcludedBuyers, true);
+  const shown = validateWorkspace({ version: 1, rooms: [], hideUnwinnableOffers: false });
+  assert.equal(shown.hideUnwinnableOffers, false);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideUnwinnableOffers: "true" }), /true or false/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideUnwinnableOffers: 1 }), /true or false/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], extra: true }), /unexpected field/);
+});
+
 test("scenario comparison includes residual leftover and unfilled counts", () => {
   const before = clonePreset("neighbourhood");
   const after = clonePreset("neighbourhood");

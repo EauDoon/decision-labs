@@ -96,6 +96,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
   assert.match(html, /Buyer CSV, leftover jump, and garden preset in Common Cart 1\.4\.1/);
+  assert.match(html, /Leftover copy, school fete, and overlap Markdown in Common Cart 1\.4\.2/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -126,6 +127,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /offer CSV import, buyer\s+sort/);
   assert.match(readme, /offer CSV export, variant\s+filter/);
   assert.match(readme, /organizer buyer\s+CSV, leftover jump/);
+  assert.match(readme, /organizer leftover copy, school fete catering/);
   assert.match(readme, /waterfall SVG download, compare and print keys/);
   assert.match(readme, /waterfall\s+Markdown copy, the Talent, agent, and platform start/);
   assert.match(readme, /package pin, locks, and notes/);
