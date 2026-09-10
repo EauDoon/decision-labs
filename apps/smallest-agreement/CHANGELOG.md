@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.15 - 2026-09-10
+
+A workshop follow-up on 1.5.14. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `$` copies the last veto group label through the existing `#copy-last-veto-group-button` (same one-line Markdown). Ignored while typing. Distinct from `*` first-non-veto copy and `(` veto-group count copy. A veto is a number you entered, not a legal right.
+- Keyboard `^` jumps to that last veto group copy control, or the groups heading if missing. Ignored while typing. It does not copy. Distinct from `&` first-non-veto copy jump.
+- Keyboard backtick jumps to the hide-first-non-veto-group control, or the groups heading if missing. Ignored while typing. Distinct from `%` hide-last-veto-group.
+- Tennis club hours preset: synthetic students, neighbours (a veto group), and P&C scoring court booking, ball machines, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, Rooftop BBQ hours, School disco hours, Sports day hours, Netball training hours, Swimming club hours, Athletics club hours, and Cricket club hours. Not a recorded vote.
+- Hide only the last non-veto-group row on screen. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstNonVetoGroup and hideNonVetoGroups. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all. If composed with other hides, the empty-groups notice is honest and model counts stay the same. A veto is a number you entered, not a legal right.
+- Print facilitator pack includes the last veto group label as one line. Print redacted still uses Group 1 through Group N. Honest when none. A veto is a number you entered, not a legal right. The saved draft is unchanged.
+
 ## 1.5.14 - 2026-09-10
 
 A workshop follow-up on 1.5.13. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
