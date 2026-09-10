@@ -198,3 +198,18 @@ test("keyboard handler focuses the offer fulfillment filter when not typing", as
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.doesNotMatch(app, /if \(key === "g"\)/u);
 });
+
+test("shortcut help documents leftover item headroom jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>h<\/kbd> Focus leftover item headroom after the winner/u);
+  assert.match(html, /id="leftover-headroom"[^>]*tabindex="-1"/u);
+});
+
+test("keyboard handler jumps to leftover item headroom when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "h"\)/u);
+  assert.match(app, /function focusLeftoverHeadroom\(/u);
+  assert.match(app, /#leftover-headroom/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});

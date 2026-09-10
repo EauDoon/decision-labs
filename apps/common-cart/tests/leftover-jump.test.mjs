@@ -74,3 +74,15 @@ test("tertiary leftover fill stays on the organizer leftover table", async () =>
   assert.match(app, /#tertiary-fill/u);
   assert.match(app, /#residual-title/u);
 });
+
+test("leftover item headroom has a stable organizer focus target", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="leftover-headroom"/u);
+  assert.match(buyerPanel, /Unspent item headroom after winner/u);
+  assert.equal(merchantPanel.includes("leftover-headroom"), false);
+  assert.match(app, /function focusLeftoverHeadroom\(/u);
+  assert.match(app, /#leftover-headroom/u);
+});

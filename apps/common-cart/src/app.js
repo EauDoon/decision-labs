@@ -813,6 +813,11 @@ function handleShortcut(event) {
     focusOfferFulfillmentFilter();
     return;
   }
+  if (key === "h") {
+    event.preventDefault();
+    focusLeftoverHeadroom();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -836,6 +841,12 @@ function focusResidualCoverage() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverHeadroom() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#leftover-headroom")?.focus();
 }
 
 function printLeftoverOnePager() {
@@ -1319,6 +1330,8 @@ function refresh() {
     if (leftoverRows) leftoverRows.replaceChildren();
     const leftoverBuyers = document.querySelector("#leftover-buyer-rows");
     if (leftoverBuyers) leftoverBuyers.replaceChildren();
+    const leftoverHeadroom = document.querySelector("#leftover-headroom");
+    if (leftoverHeadroom) leftoverHeadroom.textContent = "Unspent item headroom after winner will appear once every field is valid.";
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -1540,6 +1553,13 @@ function renderResidualCoverage(rawScenario) {
   note.textContent = coverage.note;
   const formatter = money(rawScenario.currency);
   const list = document.createElement("dl");
+  const leftover = winnerBudgetLeftover(rawScenario);
+  const headroom = document.querySelector("#leftover-headroom");
+  if (headroom) {
+    headroom.textContent = coverage.primary
+      ? `Unspent item headroom after winner: ${formatter.format(leftover.unspentHeadroom)}`
+      : leftover.note;
+  }
   if (!coverage.primary) {
     appendDetail(list, "Winning offer", "None unlocked");
     appendDetail(list, "Unfilled buyers", coverage.unfilledBuyerCount);
@@ -1568,8 +1588,6 @@ function renderResidualCoverage(rawScenario) {
     appendDetail(list, "Third leftover offer", "No third distinct offer on remaining whole orders");
   }
   appendDetail(list, "Still unfilled", `${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`);
-  const leftover = winnerBudgetLeftover(rawScenario);
-  appendDetail(list, "Unspent item headroom after winner", formatter.format(leftover.unspentHeadroom));
   const leftoverNote = document.createElement("p");
   leftoverNote.className = "canvas-note";
   leftoverNote.textContent = leftover.note;
