@@ -270,7 +270,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -317,6 +317,8 @@ export function filterBuyerIdsHidingFullyFilled(rawScenario: unknown, hideFullyF
 export function filterBuyerIdsHidingBuyersWithLeftover(rawScenario: unknown, hideBuyersWithLeftover: boolean): string[];
 /** Display-only. Matching is unchanged. Hides buyers with zero allocated units after the winner. When hideUnservedBuyers is false, every buyer id is returned. */
 export function filterBuyerIdsHidingUnservedBuyers(rawScenario: unknown, hideUnservedBuyers: boolean): string[];
+/** Display-only. Matching is unchanged. Hides leftover-only buyers (zero winner units, leftover fill and/or tertiary units greater than zero). Unserved buyers are not leftover-only. When hideLeftoverOnlyBuyers is false, every buyer id is returned. */
+export function filterBuyerIdsHidingLeftoverOnlyBuyers(rawScenario: unknown, hideLeftoverOnlyBuyers: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;

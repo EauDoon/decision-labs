@@ -336,7 +336,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -425,7 +425,15 @@ export function validateWorkspace(candidate) {
     }
     hideUnserved = hideUnservedBuyers;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved };
+  const hideLeftoverOnlyBuyers = own(candidate, "hideLeftoverOnlyBuyers");
+  let hideLeftoverOnly = false;
+  if (hideLeftoverOnlyBuyers !== undefined) {
+    if (hideLeftoverOnlyBuyers !== true && hideLeftoverOnlyBuyers !== false) {
+      throw new ScenarioError("Hide leftover-only buyers must be true or false.");
+    }
+    hideLeftoverOnly = hideLeftoverOnlyBuyers;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -616,6 +624,24 @@ export function filterBuyerIdsHidingUnservedBuyers(rawScenario, hideUnservedBuye
   for (const id of coverage.secondary?.selectedBuyerIds ?? []) served.add(id);
   for (const id of coverage.tertiary?.selectedBuyerIds ?? []) served.add(id);
   return scenario.buyers.filter((buyer) => served.has(buyer.id)).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides organizer buyer rows whose allocated units came only from leftover fill and/or tertiary fill. Unserved buyers (zero units from winner, leftover fill, and tertiary fill) are not leftover-only. */
+export function filterBuyerIdsHidingLeftoverOnlyBuyers(rawScenario, hideLeftoverOnlyBuyers) {
+  if (hideLeftoverOnlyBuyers !== true && hideLeftoverOnlyBuyers !== false) {
+    throw new ScenarioError("Hide leftover-only buyers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideLeftoverOnlyBuyers) return scenario.buyers.map((buyer) => buyer.id);
+  const market = evaluateMarket(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  const winnerIds = new Set(market.winner?.selectedBuyerIds ?? []);
+  const leftoverFillIds = new Set(coverage.secondary?.selectedBuyerIds ?? []);
+  const tertiaryIds = new Set(coverage.tertiary?.selectedBuyerIds ?? []);
+  return scenario.buyers.filter((buyer) => {
+    const leftoverOnly = !winnerIds.has(buyer.id) && (leftoverFillIds.has(buyer.id) || tertiaryIds.has(buyer.id));
+    return !leftoverOnly;
+  }).map((buyer) => buyer.id);
 }
 
 /** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */

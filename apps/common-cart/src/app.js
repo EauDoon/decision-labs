@@ -21,6 +21,7 @@ import {
   filterBuyerIdsHidingFullyFilled,
   filterBuyerIdsHidingBuyersWithLeftover,
   filterBuyerIdsHidingUnservedBuyers,
+  filterBuyerIdsHidingLeftoverOnlyBuyers,
   organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
@@ -137,6 +138,7 @@ let hideOffersWithRemainingCapacity = false;
 let hideFullyFilledBuyers = false;
 let hideBuyersWithLeftover = false;
 let hideUnservedBuyers = false;
+let hideLeftoverOnlyBuyers = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -161,6 +163,7 @@ function loadWorkspace() {
     hideFullyFilledBuyers = workspace.hideFullyFilledBuyers;
     hideBuyersWithLeftover = workspace.hideBuyersWithLeftover;
     hideUnservedBuyers = workspace.hideUnservedBuyers;
+    hideLeftoverOnlyBuyers = workspace.hideLeftoverOnlyBuyers;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -203,7 +206,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -745,6 +748,18 @@ function bindStaticEvents() {
       setStatus(hideUnservedBuyers
         ? "Hiding buyers with zero allocated units after the winner. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
         : "Showing unserved buyers again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#hide-leftover-only-buyers").addEventListener("change", (event) => {
+    hideLeftoverOnlyBuyers = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideLeftoverOnlyBuyers
+        ? "Hiding leftover-only buyers. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing leftover-only buyers again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -1493,6 +1508,8 @@ function renderEditor() {
   if (hideLeftoverBuyers) hideLeftoverBuyers.checked = hideBuyersWithLeftover;
   const hideUnserved = document.querySelector("#hide-unserved-buyers");
   if (hideUnserved) hideUnserved.checked = hideUnservedBuyers;
+  const hideLeftoverOnly = document.querySelector("#hide-leftover-only-buyers");
+  if (hideLeftoverOnly) hideLeftoverOnly.checked = hideLeftoverOnlyBuyers;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -1653,6 +1670,14 @@ function applyBuyerDisplayFilters() {
     try {
       const served = new Set(filterBuyerIdsHidingUnservedBuyers(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => served.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
+  if (hideLeftoverOnlyBuyers) {
+    try {
+      const leftoverOnlyHidden = new Set(filterBuyerIdsHidingLeftoverOnlyBuyers(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => leftoverOnlyHidden.has(id)));
     } catch {
       visibleIds = new Set();
     }
