@@ -1175,9 +1175,9 @@ test("print facilitator pack includes recommended package option labels", async 
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
 });
 
-test("print facilitator pack includes remaining change-budget without changing the saved draft", async () => {
+test("print facilitator pack includes remaining change-budget as one line without changing the saved draft", async () => {
   const html = await standaloneBytes();
-  assert.match(html, /remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count/u);
+  assert.match(html, /a one-line remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count/u);
   assert.match(html, /not a legal appropriation/u);
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -1215,7 +1215,7 @@ test("print facilitator pack includes remaining change-budget without changing t
   };
   const leftoverStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(leftover)]]);
   const leftoverApp = await savedWorkbench(leftoverStorage);
-  assert.match(leftoverApp.ballot(), /Remaining change-budget: 1\.0/u);
+  assert.match(leftoverApp.ballot(), /<p>Remaining change-budget: 1\.0\. This leftover is a draft accounting line, not a legal appropriation\.<\/p>/u);
   leftoverApp.click("#print-redacted-button");
   assert.match(leftoverApp.ballot(), /Participant groups: Group 1/u);
   assert.match(leftoverApp.ballot(), /Remaining change-budget: 1\.0/u);
