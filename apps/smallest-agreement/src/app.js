@@ -695,7 +695,7 @@ function renderGroups(vetoBlocks = new Set()) {
   } else {
     if (status) status.textContent = vetoGroupsOnly || belowFloorGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
     $("#groups-editor").innerHTML = visible.map((group) => `
-    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}"${vetoBlocks.has(group.id) ? ` data-veto-block="${escapeHtml(group.id)}" tabindex="-1"` : ""}>
+    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}"${vetoBlocks.has(group.id) ? ` data-veto-block="${escapeHtml(group.id)}"` : ""}${belowIds.has(group.id) ? ` data-below-floor="${escapeHtml(group.id)}"` : ""}${vetoBlocks.has(group.id) || belowIds.has(group.id) ? " tabindex=\"-1\"" : ""}>
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
       <button class="text-button" type="button" data-action="duplicate-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length >= MAX_GROUPS ? "disabled" : ""}>Duplicate group</button>
@@ -2397,6 +2397,35 @@ function jumpToWeights() {
   $("#weight-renorm")?.focus?.();
 }
 
+function firstGroupBelowSupportFloor() {
+  const inspected = inspectedPackage(currentResult());
+  if (!inspected) return null;
+  const below = groupsBelowSupportRequirement(state.proposal, inspected);
+  if (below.status !== "ok" || !below.groups.length) return null;
+  return state.proposal.groups.find((group) => group.id === below.groups[0].id) ?? null;
+}
+
+function jumpToBelowFloor() {
+  const first = firstGroupBelowSupportFloor();
+  if (!first) {
+    $("#groups-heading")?.focus?.();
+    return;
+  }
+  let needsRender = false;
+  if (vetoGroupsOnly && first.veto !== true) {
+    vetoGroupsOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) renderGroups(blockingVetoIds(currentResult()));
+  const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function findAgreement() {
   $("#results-heading")?.focus?.();
   notifyDraft("Search already runs as you edit. Review the recommendation below.");
@@ -2475,6 +2504,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "m" || event.key === "M") {
     event.preventDefault();
     $("#budget-remaining")?.focus?.();
+  } else if (event.key === "d" || event.key === "D") {
+    event.preventDefault();
+    jumpToBelowFloor();
   }
 });
 

@@ -58,6 +58,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>a<\/kbd> Focus Add clause/u);
   assert.match(html, /<kbd>w<\/kbd> Jump to group weights or renormalize controls/u);
   assert.match(html, /<kbd>m<\/kbd> Jump to remaining change-budget or cost margin/u);
+  assert.match(html, /<kbd>d<\/kbd> Jump to the first group below its support floor, or the groups heading/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -1420,6 +1421,39 @@ test("keyboard m jumps to remaining change-budget unless an input is active", as
   assert.equal(app.focused(), "");
   app.keydown("M");
   assert.equal(app.focused(), "#budget-remaining");
+});
+
+test("keyboard d jumps to the first group below its support floor unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>d<\/kbd> Jump to the first group below its support floor, or the groups heading/u);
+  assert.match(html, /id="groups-heading"/u);
+  const app = await savedWorkbench(new Map());
+  assert.match(app.groups(), /data-below-floor="residents"/u);
+  app.keydown("d");
+  assert.equal(app.focused(), '[data-field="group-name"][data-group-id="residents"]');
+  app.clearFocus();
+  app.keydown("d", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("d", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("D");
+  assert.equal(app.focused(), '[data-field="group-name"][data-group-id="residents"]');
+  const draft = {
+    title: "Floor jump workshop",
+    threshold: 50,
+    groups: [
+      { id: "cleared", name: "Cleared", weight: 1, minSupport: 40 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { cleared: 90, open: 90 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { cleared: 80, open: 80 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { cleared: 70, open: 70 } },
+    ] }],
+  };
+  const cleared = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  cleared.keydown("d");
+  assert.equal(cleared.focused(), "#groups-heading");
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {
