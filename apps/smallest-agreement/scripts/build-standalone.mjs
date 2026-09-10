@@ -53,6 +53,7 @@ const appImport = `import {
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
+  groupsMeetingDeclaredSupportFloor,
   overBudgetClauseIds,
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,

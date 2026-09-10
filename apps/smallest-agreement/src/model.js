@@ -975,6 +975,33 @@ export function groupsBelowSupportRequirement(proposal, options) {
 }
 
 /**
+ * Groups with a declared support floor whose average meets that floor
+ * on the inspected package. Groups without minSupport are omitted.
+ * Display-only. Solver counts stay the same.
+ */
+export function groupsMeetingDeclaredSupportFloor(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const byGroup = approvalByGroup(proposal.groups, selected);
+  const groups = [];
+  proposal.groups.forEach((group, index) => {
+    if (group.minSupport === undefined) return;
+    const actual = byGroup[index].approval;
+    if (group.minSupport - actual <= EPSILON) {
+      groups.push({ id: group.id, name: group.name, required: group.minSupport, actual });
+    }
+  });
+  return { status: "ok", groups };
+}
+
+/**
  * Clause ids whose cheapest remaining change exceeds leftover change budget.
  * Remaining change is the lowest changeCost among options other than the inspected selection.
  * When leftover budget is 0 or negative, every clause is listed.
@@ -2042,6 +2069,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "changedClausesOnly",
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
+  "hideGroupsAtFloor",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2051,6 +2079,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "changedClausesOnly",
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
+  "hideGroupsAtFloor",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2092,6 +2121,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
   const overBudgetClausesOnly = readWorkspaceBoolean(prefs, "overBudgetClausesOnly");
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
+  const hideGroupsAtFloor = readWorkspaceBoolean(prefs, "hideGroupsAtFloor");
+  if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2100,6 +2131,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     changedClausesOnly: changedClausesOnly.value,
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
+    hideGroupsAtFloor: hideGroupsAtFloor.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2109,6 +2141,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       changedClausesOnly: changedClausesOnly.value,
       belowFloorGroupsOnly: belowFloorGroupsOnly.value,
       overBudgetClausesOnly: overBudgetClausesOnly.value,
+      hideGroupsAtFloor: hideGroupsAtFloor.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2131,6 +2164,7 @@ export function parseWorkspaceJson(text) {
       changedClausesOnly: null,
       belowFloorGroupsOnly: null,
       overBudgetClausesOnly: null,
+      hideGroupsAtFloor: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2157,6 +2191,8 @@ export function parseWorkspaceJson(text) {
   if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
   const overBudgetClausesOnly = readWorkspaceBoolean(raw, "overBudgetClausesOnly");
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
+  const hideGroupsAtFloor = readWorkspaceBoolean(raw, "hideGroupsAtFloor");
+  if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2167,6 +2203,7 @@ export function parseWorkspaceJson(text) {
     changedClausesOnly: changedClausesOnly.value,
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
+    hideGroupsAtFloor: hideGroupsAtFloor.value,
   };
 }
 

@@ -24,6 +24,7 @@ import {
   duplicateClauseOption,
   changedClauseIds,
   groupsBelowSupportRequirement,
+  groupsMeetingDeclaredSupportFloor,
   overBudgetClauseIds,
   formatCurrentLocksMarkdown,
   formatGroupSupportMarkdown,
@@ -1754,33 +1755,39 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
   assert.equal(exported.overBudgetClausesOnly, true);
+  assert.equal(exported.hideGroupsAtFloor, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
   assert.equal(parsed.belowFloorGroupsOnly, true);
   assert.equal(parsed.overBudgetClausesOnly, true);
+  assert.equal(parsed.hideGroupsAtFloor, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideGroupsAtFloor"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
   assert.equal(omitted.belowFloorGroupsOnly, false);
   assert.equal(omitted.overBudgetClausesOnly, false);
+  assert.equal(omitted.hideGroupsAtFloor, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
   assert.equal(bare.overBudgetClausesOnly, null);
+  assert.equal(bare.hideGroupsAtFloor, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, belowFloorGroupsOnly: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { overBudgetClausesOnly: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideGroupsAtFloor: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -1874,6 +1881,32 @@ test("groupsBelowSupportRequirement uses each floor or the approval threshold", 
   assert.deepEqual(belowMid.groups.map((group) => group.id), ["open"]);
   assert.equal(belowMid.groups[0].required, 70);
   assert.equal(groupsBelowSupportRequirement(input, []).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("groupsMeetingDeclaredSupportFloor lists only groups that meet a declared floor", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", original: true, label: "Keep", changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", original: false, label: "Mid", changeCost: 1, support: { floored: 85, open: 40 } },
+      { id: "high", original: false, label: "High", changeCost: 2, support: { floored: 90, open: 80 } },
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const meetingOriginal = groupsMeetingDeclaredSupportFloor(input, originals);
+  assert.equal(meetingOriginal.status, "ok");
+  assert.deepEqual(meetingOriginal.groups.map((group) => group.id), []);
+  const mid = input.clauses[0].options[1];
+  const meetingMid = groupsMeetingDeclaredSupportFloor(input, [mid]);
+  assert.deepEqual(meetingMid.groups.map((group) => group.id), ["floored"]);
+  assert.equal(meetingMid.groups[0].required, 80);
+  assert.equal(groupsMeetingDeclaredSupportFloor(input, []).status, "invalid");
   assert.equal(JSON.stringify(input), before);
 });
 

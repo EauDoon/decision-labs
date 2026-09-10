@@ -39,6 +39,7 @@ import {
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
+  groupsMeetingDeclaredSupportFloor,
   overBudgetClauseIds,
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,
@@ -428,6 +429,7 @@ let vetoGroupsOnly = false;
 let lockedClausesOnly = false;
 let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
+let hideGroupsAtFloor = false;
 let overBudgetClausesOnly = false;
 let printRedacted = false;
 let nearMissSort = "approval_gap";
@@ -500,6 +502,7 @@ function loadWorkspacePrefs() {
     changedClausesOnly = parsed?.changedClausesOnly === true;
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
     overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
+    hideGroupsAtFloor = parsed?.hideGroupsAtFloor === true;
   } catch {
     /* storage may be unavailable or invalid */
   }
@@ -507,7 +510,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor }));
   } catch {
     /* storage may be unavailable */
   }
@@ -710,29 +713,39 @@ function renderGroups(vetoBlocks = new Set()) {
   if (checkbox) checkbox.checked = vetoGroupsOnly;
   const belowCheckbox = $("#below-floor-groups-only");
   if (belowCheckbox) belowCheckbox.checked = belowFloorGroupsOnly;
+  const hideAtFloorCheckbox = $("#hide-groups-at-floor");
+  if (hideAtFloorCheckbox) hideAtFloorCheckbox.checked = hideGroupsAtFloor;
   const inspected = inspectedPackage(currentResult());
   const below = inspected
     ? groupsBelowSupportRequirement(state.proposal, inspected)
     : { status: "ok", groups: [] };
   const belowIds = new Set(below.status === "ok" ? below.groups.map((group) => group.id) : []);
+  const meeting = inspected
+    ? groupsMeetingDeclaredSupportFloor(state.proposal, inspected)
+    : { status: "ok", groups: [] };
+  const meetingIds = new Set(meeting.status === "ok" ? meeting.groups.map((group) => group.id) : []);
   const visible = state.proposal.groups.filter((group) => {
     if (vetoGroupsOnly && group.veto !== true) return false;
     if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
+    if (hideGroupsAtFloor && meetingIds.has(group.id)) return false;
     return true;
   });
   const status = $("#veto-groups-status");
+  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor;
   if (!visible.length) {
-    const message = belowFloorGroupsOnly && vetoGroupsOnly
+    const message = hideGroupsAtFloor && !vetoGroupsOnly && !belowFloorGroupsOnly
+      ? "No groups remain after hiding groups that currently meet their support floor. Hidden groups still count in the model."
+      : belowFloorGroupsOnly && vetoGroupsOnly
       ? "No groups match the veto and below-floor filters. Hidden groups still count in the model."
       : belowFloorGroupsOnly
         ? "No groups are below their support floor or the approval threshold on the inspected package. Hidden groups still count in the model."
         : vetoGroupsOnly
           ? "No veto groups match this filter. Clear it to see every group. Hidden groups still count in the model."
           : "Add a participant group to begin.";
-    if (status) status.textContent = vetoGroupsOnly || belowFloorGroupsOnly ? message : "";
+    if (status) status.textContent = groupFiltersOn ? message : "";
     $("#groups-editor").innerHTML = `<p class="empty-state">${message}</p>`;
   } else {
-    if (status) status.textContent = vetoGroupsOnly || belowFloorGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
+    if (status) status.textContent = groupFiltersOn ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
     $("#groups-editor").innerHTML = visible.map((group) => `
     <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}"${vetoBlocks.has(group.id) ? ` data-veto-block="${escapeHtml(group.id)}"` : ""}${belowIds.has(group.id) ? ` data-below-floor="${escapeHtml(group.id)}"` : ""}${vetoBlocks.has(group.id) || belowIds.has(group.id) ? " tabindex=\"-1\"" : ""}>
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
@@ -1527,11 +1540,22 @@ function setBelowFloorGroupsOnly(next) {
   renderGroups(blockingVetoIds(currentResult()));
 }
 
+function setHideGroupsAtFloor(next) {
+  hideGroupsAtFloor = next === true;
+  const checkbox = $("#hide-groups-at-floor");
+  if (checkbox) checkbox.checked = hideGroupsAtFloor;
+  persistWorkspacePrefs();
+  renderGroups(blockingVetoIds(currentResult()));
+}
+
 $("#veto-groups-only").addEventListener("change", (event) => {
   setVetoGroupsOnly(event.target.checked === true);
 });
 $("#below-floor-groups-only").addEventListener("change", (event) => {
   setBelowFloorGroupsOnly(event.target.checked === true);
+});
+$("#hide-groups-at-floor").addEventListener("change", (event) => {
+  setHideGroupsAtFloor(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -1890,7 +1914,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -2201,6 +2225,7 @@ $("#import-file").addEventListener("change", async (event) => {
       changedClausesOnly = workspace.changedClausesOnly === true;
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
+      hideGroupsAtFloor = workspace.hideGroupsAtFloor === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
@@ -2367,9 +2392,14 @@ function jumpToGroups() {
     ? groupsBelowSupportRequirement(state.proposal, inspected)
     : { status: "ok", groups: [] };
   const belowIds = new Set(below.status === "ok" ? below.groups.map((group) => group.id) : []);
+  const meeting = inspected
+    ? groupsMeetingDeclaredSupportFloor(state.proposal, inspected)
+    : { status: "ok", groups: [] };
+  const meetingIds = new Set(meeting.status === "ok" ? meeting.groups.map((group) => group.id) : []);
   const visible = state.proposal.groups.filter((group) => {
     if (vetoGroupsOnly && group.veto !== true) return false;
     if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
+    if (hideGroupsAtFloor && meetingIds.has(group.id)) return false;
     return true;
   });
   if (visible.length) {
@@ -2471,6 +2501,18 @@ function jumpToBelowFloor() {
     vetoGroupsOnly = false;
     persistWorkspacePrefs();
     needsRender = true;
+  }
+  if (hideGroupsAtFloor) {
+    const inspected = inspectedPackage(currentResult());
+    const meeting = inspected
+      ? groupsMeetingDeclaredSupportFloor(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const meetingIds = new Set(meeting.status === "ok" ? meeting.groups.map((group) => group.id) : []);
+    if (meetingIds.has(first.id)) {
+      hideGroupsAtFloor = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
   }
   if (needsRender) renderGroups(blockingVetoIds(currentResult()));
   const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
