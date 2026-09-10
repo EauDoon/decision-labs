@@ -247,6 +247,34 @@ test('print CSS keeps How it works and hides skip links', () => {
   assert.match(html, /id="how-it-works"/);
 });
 
+test('unreadable last-launched storage stays silent and shows no recency note', () => {
+  assert.match(html, /Last-launched storage that is missing or unreadable is silent/);
+  assert.match(html, /the catalog shows no recency note/);
+  assert.match(html, /not a cloud recency/);
+  const notes = Object.fromEntries(['1', '2', '3', '4'].map((key) => [key, { hidden: true }]));
+  const document = {
+    getElementById: () => null,
+    querySelector(selector) {
+      const match = String(selector).match(/data-last-workbench="([1-4])"/);
+      return match ? notes[match[1]] : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: {
+      getItem() { throw new Error('Storage unreadable'); },
+      setItem() { throw new Error('Storage unreadable'); },
+    },
+  });
+  for (const key of ['1', '2', '3', '4']) {
+    assert.equal(notes[key].hidden, true, `workbench ${key} recency note should stay hidden`);
+  }
+});
+
 test('keys 1-4 remember last launched workbench in this browser', () => {
   assert.match(html, /decision-labs\.last-workbench/);
   assert.match(html, /localStorage\.setItem\(LAST_WORKBENCH_KEY, event\.key\)/);
@@ -254,7 +282,7 @@ test('keys 1-4 remember last launched workbench in this browser', () => {
   assert.match(html, /lastWorkbench === '1' \|\| lastWorkbench === '2' \|\| lastWorkbench === '3' \|\| lastWorkbench === '4'/);
   assert.match(html, /Last launched in this browser/);
   assert.match(html, /not a cloud recency/);
-  assert.match(html, /Missing or unreadable storage shows nothing/);
+  assert.match(html, /Last-launched storage that is missing or unreadable is silent/);
   assert.equal([...html.matchAll(/class="last-launched" data-last-workbench="[1-4]" hidden/g)].length, 4);
   assert.match(html, /window\.location\.assign\(link\.href\)/);
 });

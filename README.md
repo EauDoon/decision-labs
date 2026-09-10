@@ -232,4 +232,4 @@ repository-wide and component issues in the
 
 MIT. See [LICENSE](LICENSE) and each app's retained `LICENSE` file.
 
-The local last-launched marker updates from both the Open workbench links and keys 1 to 4. Storage failure does not prevent opening an app.
+The local last-launched marker updates from both the Open workbench links and keys 1 to 4. Storage failure does not prevent opening an app. Missing or unreadable last-launched storage is silent: no recency note appears.
