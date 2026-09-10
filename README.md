@@ -120,7 +120,9 @@ a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
 this catalog page as Markdown. It uses the browser clipboard when that API is
 available, and shows a visible text box if it is not. This is the catalog list,
-not a live product version.
+not a live product version. Copy jobs copies the four workbench names and
+one-sentence jobs from the catalog cards as Markdown, with the same clipboard
+and visible text box fallback. That list is not a live product feed.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.

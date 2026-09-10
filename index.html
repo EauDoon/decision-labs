@@ -232,7 +232,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions {
+    .copy-catalog-url, .copy-versions, .copy-jobs {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -246,19 +246,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools { margin: 12px 0 0; }
-    .copy-versions-fallback {
+    .copy-versions-tools, .copy-jobs-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -271,7 +271,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -313,7 +313,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -521,7 +521,7 @@
           <p class="version">Version <span data-app-version="partnership-breakpoint">1.5.1</span></p>
           <p class="last-launched" data-last-workbench="1" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p class="review-path"><strong>Review constraints and negotiation room.</strong> Check cost allowances, feasible volume and operational conflicts before exporting a review packet.</p>
-          <p>Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move.</p>
+          <p class="job">Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move.</p>
           <p class="sample">You will see <strong>Balanced</strong>, the built-in synthetic starting point: a shared-revenue case with participant costs and exit floors already filled in.</p>
         </div>
         <div class="actions">
@@ -536,7 +536,7 @@
           <p class="version">Version <span data-app-version="common-cart">1.4.1</span></p>
           <p class="last-launched" data-last-workbench="2" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p class="review-path"><strong>Review buyer coverage and offer resilience.</strong> In the buyer room, inspect private buyer alternatives and bounded offer changes.</p>
-          <p>Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view.</p>
+          <p class="job">Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view.</p>
           <p class="sample">You will see the built-in synthetic <strong>coffee</strong> scenario (Neighbourhood coffee run): pooled buyers and conditional merchant offers for coffee beans.</p>
         </div>
         <div class="actions">
@@ -551,7 +551,7 @@
           <p class="version">Version <span data-app-version="smallest-agreement">1.5.1</span></p>
           <p class="last-launched" data-last-workbench="3" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p class="review-path"><strong>Review the package before discussion.</strong> Inspect approval margins, alternatives and bounded rule changes before facilitation.</p>
-          <p>Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget.</p>
+          <p class="job">Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget.</p>
           <p class="sample">You will see <strong>Neighbourhood Plan</strong>, the built-in synthetic neighborhood-plan scenario: clause alternatives, an approval threshold, and a change-cost budget.</p>
         </div>
         <div class="actions">
@@ -566,7 +566,7 @@
           <p class="version">Version <span data-app-version="weekend-gap">1.5.1</span></p>
           <p class="last-launched" data-last-workbench="4" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p class="review-path"><strong>Review the timing behind the queue.</strong> Inspect arrival cohorts, closed intervals and reserve or throughput scenarios.</p>
-          <p>Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed.</p>
+          <p class="job">Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed.</p>
           <p class="sample">You will see <strong>Normal Friday</strong>, the built-in 72-hour synthetic redemption case from Friday afternoon through Monday.</p>
         </div>
         <div class="actions">
@@ -586,6 +586,8 @@
       <p>When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</p>
       <h3>Catalog versions</h3>
       <p>Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</p>
+      <h3>Catalog jobs</h3>
+      <p>Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</p>
       <h3>JSON export</h3>
       <p>Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</p>
       <h3>Independent workbenches</h3>
@@ -610,6 +612,11 @@
       <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
     </p>
     <textarea id="copy-versions-fallback" class="copy-versions-fallback" hidden readonly rows="4" aria-label="Workbench versions as Markdown"></textarea>
+    <p class="copy-jobs-tools" id="copy-jobs-tools">
+      <button type="button" class="copy-jobs" id="copy-jobs">Copy jobs</button>
+      <span class="copy-jobs-status" id="copy-jobs-status" role="status"></span>
+    </p>
+    <textarea id="copy-jobs-fallback" class="copy-jobs-fallback" hidden readonly rows="4" aria-label="Workbench jobs as Markdown"></textarea>
     <p>This page is the catalog. It is not a combined product version. Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap each ship their own version and changelog.</p>
     <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
   </footer>
@@ -692,6 +699,31 @@
             versionsFallback.select();
           }
           if (versionsStatus) versionsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product version.';
+        }
+      });
+      const jobsBtn = document.getElementById('copy-jobs');
+      const jobsStatus = document.getElementById('copy-jobs-status');
+      const jobsFallback = document.getElementById('copy-jobs-fallback');
+      const jobsMarkdown = () => [...document.querySelectorAll('article.workbench')].map((card) => {
+        const name = card.querySelector('h3')?.textContent.trim() ?? '';
+        const job = card.querySelector('p.job')?.textContent.trim() ?? '';
+        return `- ${name}: ${job}`;
+      }).join('\n');
+      jobsBtn?.addEventListener('click', async () => {
+        const markdown = jobsMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (jobsFallback) jobsFallback.hidden = true;
+          if (jobsStatus) jobsStatus.textContent = 'Copied names and jobs from this catalog page as Markdown. Not a live product feed.';
+        } catch {
+          if (jobsFallback) {
+            jobsFallback.hidden = false;
+            jobsFallback.value = markdown;
+            jobsFallback.focus();
+            jobsFallback.select();
+          }
+          if (jobsStatus) jobsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product feed.';
         }
       });
       const setOpen = (open, options = {}) => {

@@ -272,6 +272,26 @@ test('load focuses skip-link hash targets', () => {
   assert.match(html, /id="shortcuts"[^>]*tabindex="-1"/);
 });
 
+test('copy jobs copies catalog names and jobs as Markdown with a visible fallback', () => {
+  assert.match(html, /id="copy-jobs"/);
+  assert.match(html, />Copy jobs</);
+  assert.match(html, /id="copy-jobs-fallback"/);
+  assert.match(html, /class="copy-jobs-fallback"/);
+  assert.match(html, /textarea id="copy-jobs-fallback"/);
+  assert.match(html, /jobsMarkdown/);
+  assert.match(html, /querySelectorAll\('article\.workbench'\)/);
+  assert.match(html, /querySelector\('p\.job'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /jobsFallback\.hidden = false/);
+  assert.match(html, /jobsFallback\.select\(\)/);
+  assert.match(html, /Not a live product feed/);
+  assert.match(html, /It is not a live product feed/);
+  assert.equal([...html.matchAll(/class="job">/g)].length, 4);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy jobs copies the four workbench names/);
+  assert.match(readme, /not a live product feed/);
+});
+
 test('copy versions copies catalog names as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-versions"/);
   assert.match(html, />Copy versions</);
