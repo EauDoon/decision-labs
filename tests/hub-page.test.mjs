@@ -134,6 +134,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1\.4\.12/);
   assert.match(html, /Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1\.4\.13/);
   assert.match(html, /Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1\.4\.14/);
+  assert.match(html, /Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1\.4\.15/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -201,6 +202,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /leftover-fill fulfillment copy shortcut, the Swimming carnival lunch start/);
   assert.match(readme, /leftover-fill delivery copy shortcut, the Athletics carnival lunch start/);
   assert.match(readme, /leftover-fill pickup copy shortcut, the Cricket carnival lunch start/);
+  assert.match(readme, /leftover-fill label copy shortcut, the Tennis carnival lunch start/);
   assert.match(readme, /waterfall SVG download, compare and print keys/);
   assert.match(readme, /waterfall\s+Markdown copy, the Talent, agent, and platform start/);
   assert.match(readme, /tornado Markdown copy, the\s+Three-party joint venture start/);
@@ -5437,6 +5439,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
+  assert.equal(headings.includes('Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1.4.15'), true);
   assert.equal(headings.includes('Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1.5.12'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
@@ -5477,6 +5480,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Tennis carnival, last-over-capacity remaining copy, and last-within-capacity hide in Partnership Breakpoint 1.5.15'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
+  assert.equal(headings.includes('Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1.4.15'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
   assert.match(html, /Copy first workbench heading through asterisk as Markdown/);
