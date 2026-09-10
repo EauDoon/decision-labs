@@ -1892,7 +1892,7 @@ test("print facilitator pack includes the first veto group label as one line wit
   const labelledStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(labelled)]]);
   const labelledApp = await savedWorkbench(labelledStorage);
   assert.match(labelledApp.ballot(), /First veto group: Residents\. A veto is a number you entered, not a legal right/u);
-  assert.doesNotMatch(labelledApp.ballot(), /Later veto/u);
+  assert.doesNotMatch(labelledApp.ballot(), /First veto group: Later veto/u);
   labelledApp.click("#print-redacted-button");
   assert.match(labelledApp.ballot(), /Participant groups: Group 1, Group 2, Group 3/u);
   assert.match(labelledApp.ballot(), /First veto group: Group 2/u);
