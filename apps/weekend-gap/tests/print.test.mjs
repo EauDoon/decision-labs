@@ -12,6 +12,7 @@ test("print operations brief hides coach and help and keeps dashboard, Gantt and
   assert.match(html, /id="queue-clear-value"/);
   assert.match(html, /id="first-settlement-value"/);
   assert.match(html, /id="hours-to-first-settlement-line"/);
+  assert.match(html, /id="first-closed-fx-hour-line"/);
   assert.match(html, /id="peak-queue-hour-value"/);
   assert.match(html, /id="coach-overlay"/);
   assert.match(html, /id="coach-overlay"/);
