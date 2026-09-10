@@ -92,6 +92,7 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   assert.ok(peakRow);
   assert.match(peakRow.children[0].textContent, /Peak queue/);
   assert.match(ui.nodes.get("peak-queue-row-note").textContent, /peak queue checkpoint/);
+  await ui.edit("timeline-range", 65);
   ui.nodes.get("queue-backlog-only").checked = true;
   await ui.nodes.get("queue-backlog-only").emit("change");
   assert.ok(ui.nodes.get("timeline-table").children.length < 73);
