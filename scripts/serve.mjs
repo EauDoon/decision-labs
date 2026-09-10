@@ -114,6 +114,7 @@ export function notFoundPage() {
   const lastWhatsNew = catalogLastWhatsNewHeading();
   const firstWorkbench = catalogFirstWorkbenchHeading();
   const lastWorkbench = catalogLastWorkbenchHeading();
+  const lastReview = catalogLastReviewPath();
   const newsHeadings = [];
   if (firstWhatsNew) newsHeadings.push(firstWhatsNew);
   if (lastWhatsNew && lastWhatsNew !== firstWhatsNew) newsHeadings.push(lastWhatsNew);
@@ -121,9 +122,14 @@ export function notFoundPage() {
   const workbenchHeadings = [];
   if (firstWorkbench) workbenchHeadings.push(firstWorkbench);
   if (lastWorkbench && lastWorkbench !== firstWorkbench) workbenchHeadings.push(lastWorkbench);
-  const workbenchList = workbenchHeadings.map((heading) => `<article class="workbench">
-        <h3>${escapeHtml(heading)}</h3>
-      </article>`).join('\n      ');
+  const workbenchList = workbenchHeadings.map((heading, index, all) => {
+    const review = index === all.length - 1 && lastReview
+      ? `\n        <p class="review-path">${escapeHtml(lastReview)}</p>`
+      : '';
+    return `<article class="workbench">
+        <h3>${escapeHtml(heading)}</h3>${review}
+      </article>`;
+  }).join('\n      ');
   return `<!doctype html>
 <html lang="en">
 <head>
