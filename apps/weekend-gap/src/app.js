@@ -1538,6 +1538,15 @@ function jumpToSelectedGanttHour() {
   rememberChart("gantt");
   return true;
 }
+function jumpToHoursToClearCopy() {
+  const control = document.querySelector("#copy-hours-to-clear");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToDashboard();
+}
 function jumpToHoursToClear() {
   const line = document.querySelector("#hours-to-clear-line");
   if (!line) return false;
@@ -1900,6 +1909,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === ";") {
     event.preventDefault();
     copyHoursToClearMarkdown();
+    return;
+  }
+  if (event.key === "[") {
+    event.preventDefault();
+    jumpToHoursToClearCopy();
     return;
   }
   if (event.key === ".") {

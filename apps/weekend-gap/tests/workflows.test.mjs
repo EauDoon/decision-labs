@@ -684,6 +684,21 @@ test("keyboard comma copies hours-to-first-settlement Markdown through the exist
   assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
 });
 
+test("keyboard left bracket jumps to the hours-to-clear copy control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("[");
+  assert.equal(ui.nodes.get("copy-hours-to-clear").focused, true);
+  ui.nodes.get("copy-hours-to-clear").focused = false;
+  ui.nodes.get("outcome-title").focused = false;
+  await ui.keydown("[", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-hours-to-clear").focused, false);
+  assert.equal(ui.nodes.get("outcome-title").focused, false);
+  await ui.keydown("[", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-hours-to-clear").focused, false);
+  await ui.keydown("[", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-hours-to-clear").focused, false);
+});
+
 test("keyboard period jumps to the first-closed-FX copy control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown(".");
