@@ -158,7 +158,7 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 ## Redacted export
 
-`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case. Print one-pager includes the least-headroom participant line when the case is valid. The saved case is unchanged.
+`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case. Print one-pager includes the least-headroom participant line and an allocation-balance line when the case is valid. The saved case is unchanged.
 
 ## Participant CSV import
 
@@ -207,6 +207,8 @@ Hiding participants who hold in every tested compound case filters the participa
 Collapsing cases every participant holds hides those case-evidence rows from the inspect table only. Expand restores them. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking. Optional `collapseAllHoldCases` on a saved case is a boolean. Older files omit it and default to expanded. Present non-boolean values are rejected. Unknown sibling fields are still rejected.
 
 Optional `hideHoldingParticipants` on a saved case is a boolean roster display preference. Older files omit it and default to showing holders. Present non-boolean values are rejected. Hiding holders filters the roster cards only. Tested-case and model counts stay unchanged.
+
+Optional `hideZeroShareParticipants` on a saved case is a boolean roster display preference. Older files omit it and default to showing zero-share rows. Present non-boolean values are rejected. Hiding zero-share participants filters the roster cards only. Tested-case and model counts stay unchanged. The solver is unchanged. `hideHoldingParticipants` and `hideAllHoldLedger` remain independent flags.
 
 ### Feasible effective volume interval
 
