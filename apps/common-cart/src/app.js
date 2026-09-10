@@ -43,9 +43,12 @@ import {
   createOrganizerBriefing,
   createWinnerAggregatesMarkdown,
   leftoverCoverageRows,
+  filterLeftoverCoverageRowsHidingCovered,
   createLeftoverCoverageMarkdown,
+  createWinningMerchantLabelMarkdown,
   organizerLeftoverRows,
   createWinnerInspectorSummaryMarkdown,
+  createUncoveredLeftoverCountsMarkdown,
   createOfferIdentityCompareMarkdown,
   decodeScenario,
   duplicateEntry,
@@ -110,6 +113,7 @@ let offerSortPreviewIds = null;
 let buyerVariantFilter = "all";
 let hideExcludedBuyers = false;
 let hideUnwinnableOffers = false;
+let hideCoveredLeftoverRows = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -126,6 +130,7 @@ function loadWorkspace() {
     offerFulfillmentFilter = workspace.fulfillmentFilter;
     hideExcludedBuyers = workspace.hideExcludedBuyers;
     hideUnwinnableOffers = workspace.hideUnwinnableOffers;
+    hideCoveredLeftoverRows = workspace.hideCoveredLeftoverRows;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -168,7 +173,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -292,15 +297,9 @@ function bindStaticEvents() {
       setStatus("Winner aggregates downloaded as Markdown. Counts and totals only.", true);
     } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
   });
-  document.querySelector("#copy-leftover-coverage").addEventListener("click", () => {
-    try {
-      copyTextWithFallback(
-        createLeftoverCoverageMarkdown(scenario),
-        "Leftover coverage copied as organizer-private Markdown. Buyer counts and units only. This is not a merchant export.",
-        "Clipboard was blocked. Organizer-private leftover Markdown is in the textarea. Buyer counts and units only. This is not a merchant export."
-      );
-    } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
-  });
+  document.querySelector("#copy-leftover-coverage").addEventListener("click", copyLeftoverCoverage);
+  document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
+  document.querySelector("#copy-winning-merchant").addEventListener("click", copyWinningMerchantLabel);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
       copyTextWithFallback(
@@ -627,6 +626,18 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#hide-covered-leftover-rows").addEventListener("change", (event) => {
+    hideCoveredLeftoverRows = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyLeftoverCoverageDisplayFilter();
+      setStatus(hideCoveredLeftoverRows
+        ? "Hiding leftover coverage rows that are fully covered. Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing covered leftover rows again. Saved leftover matching stays unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#export-button").addEventListener("click", exportScenario);
   document.querySelector("#screenshot-mode").addEventListener("click", () => {
     screenshotMode = !screenshotMode;
@@ -804,6 +815,31 @@ function handleShortcut(event) {
     focusBuyerPaste();
     return;
   }
+  if (key === "c") {
+    event.preventDefault();
+    copyLeftoverCoverage();
+    return;
+  }
+  if (key === "t") {
+    event.preventDefault();
+    focusTertiaryLeftoverFill();
+    return;
+  }
+  if (key === "f") {
+    event.preventDefault();
+    focusOfferFulfillmentFilter();
+    return;
+  }
+  if (key === "h") {
+    event.preventDefault();
+    focusLeftoverHeadroom();
+    return;
+  }
+  if (key === "k") {
+    event.preventDefault();
+    focusCartReview();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -827,6 +863,20 @@ function focusResidualCoverage() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverHeadroom() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#leftover-headroom")?.focus();
+}
+
+function focusCartReview() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const panel = document.querySelector("#cart-review");
+  if (panel && !panel.open) panel.open = true;
+  panel?.querySelector("summary")?.focus();
 }
 
 function printLeftoverOnePager() {
@@ -860,6 +910,22 @@ function focusUncoveredLeftover() {
   document.querySelector("#residual-title")?.focus();
 }
 
+function focusTertiaryLeftoverFill() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  let tertiary = false;
+  try {
+    tertiary = Boolean(computeResidualCoverage(scenario).tertiary);
+  } catch {
+    tertiary = false;
+  }
+  if (tertiary) {
+    document.querySelector("#tertiary-fill")?.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
 function focusBuyerPaste() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
@@ -870,6 +936,12 @@ function focusOffersList() {
   const merchantTab = document.querySelector("#merchant-tab");
   if (merchantTab) activateTab(merchantTab);
   document.querySelector("#offers-list")?.focus();
+}
+
+function focusOfferFulfillmentFilter() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  if (merchantTab) activateTab(merchantTab);
+  document.querySelector("#offer-fulfillment-filter")?.focus();
 }
 
 function focusMerchantInspector() {
@@ -1288,6 +1360,10 @@ function refresh() {
     if (leftoverRows) leftoverRows.replaceChildren();
     const leftoverBuyers = document.querySelector("#leftover-buyer-rows");
     if (leftoverBuyers) leftoverBuyers.replaceChildren();
+    const leftoverHeadroom = document.querySelector("#leftover-headroom");
+    if (leftoverHeadroom) leftoverHeadroom.textContent = "Unspent item headroom after winner will appear once every field is valid.";
+    const leftoverOverlap = document.querySelector("#leftover-print-overlap-rows");
+    if (leftoverOverlap) leftoverOverlap.replaceChildren();
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -1509,6 +1585,13 @@ function renderResidualCoverage(rawScenario) {
   note.textContent = coverage.note;
   const formatter = money(rawScenario.currency);
   const list = document.createElement("dl");
+  const leftover = winnerBudgetLeftover(rawScenario);
+  const headroom = document.querySelector("#leftover-headroom");
+  if (headroom) {
+    headroom.textContent = coverage.primary
+      ? `Unspent item headroom after winner: ${formatter.format(leftover.unspentHeadroom)}`
+      : leftover.note;
+  }
   if (!coverage.primary) {
     appendDetail(list, "Winning offer", "None unlocked");
     appendDetail(list, "Unfilled buyers", coverage.unfilledBuyerCount);
@@ -1537,8 +1620,6 @@ function renderResidualCoverage(rawScenario) {
     appendDetail(list, "Third leftover offer", "No third distinct offer on remaining whole orders");
   }
   appendDetail(list, "Still unfilled", `${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`);
-  const leftover = winnerBudgetLeftover(rawScenario);
-  appendDetail(list, "Unspent item headroom after winner", formatter.format(leftover.unspentHeadroom));
   const leftoverNote = document.createElement("p");
   leftoverNote.className = "canvas-note";
   leftoverNote.textContent = leftover.note;
@@ -1552,6 +1633,7 @@ function leftoverRowCells(row) {
   element.dataset.stage = row.id;
   if (row.uncovered) element.classList.add("leftover-uncovered");
   element.tabIndex = -1;
+  if (hideCoveredLeftoverRows && row.covered) element.hidden = true;
   addCell(element, row.stage);
   addCell(element, row.merchant);
   addCell(element, String(row.buyerCount));
@@ -1559,11 +1641,29 @@ function leftoverRowCells(row) {
   return element;
 }
 
+function applyLeftoverCoverageDisplayFilter() {
+  const hideControl = document.querySelector("#hide-covered-leftover-rows");
+  if (hideControl) hideControl.checked = hideCoveredLeftoverRows;
+  const body = document.querySelector("#leftover-coverage-rows");
+  if (!body) return;
+  try {
+    const visible = new Set(filterLeftoverCoverageRowsHidingCovered(scenario, hideCoveredLeftoverRows).map((row) => row.id));
+    body.querySelectorAll("tr[data-stage]").forEach((row) => {
+      row.hidden = !visible.has(row.dataset.stage);
+    });
+  } catch {
+    body.querySelectorAll("tr[data-stage]").forEach((row) => {
+      row.hidden = false;
+    });
+  }
+}
+
 function renderLeftoverCoverageTable(rawScenario) {
   const body = document.querySelector("#leftover-coverage-rows");
   if (!body) return;
   const rows = leftoverCoverageRows(rawScenario);
   body.replaceChildren(...rows.map(leftoverRowCells));
+  applyLeftoverCoverageDisplayFilter();
   const winner = document.querySelector("#leftover-print-winner");
   if (winner) {
     const coverage = computeResidualCoverage(rawScenario);
@@ -1571,7 +1671,26 @@ function renderLeftoverCoverageTable(rawScenario) {
       ? `Winner merchant: ${coverage.primary.merchant}`
       : "Winner merchant: None unlocked";
   }
+  renderLeftoverPrintOverlap(rawScenario);
   renderOrganizerLeftoverRows(rawScenario);
+}
+
+function renderLeftoverPrintOverlap(rawScenario) {
+  const body = document.querySelector("#leftover-print-overlap-rows");
+  if (!body) return;
+  const matrix = variantOverlapMatrix(rawScenario);
+  if (matrix.variants.length === 0) {
+    setEmptyState(body, 4, "No offered variants.");
+    return;
+  }
+  body.replaceChildren(...matrix.variants.map((entry) => {
+    const row = document.createElement("tr");
+    addCell(row, entry.variant);
+    addCell(row, String(entry.offerCount));
+    addCell(row, String(entry.buyerCount));
+    addCell(row, String(entry.units));
+    return row;
+  }));
 }
 
 function renderOrganizerLeftoverRows(rawScenario) {
@@ -2109,6 +2228,36 @@ function exportScenario() {
   } catch (error) {
     setStatus(`Export failed: ${messageOf(error)}`);
   }
+}
+
+function copyLeftoverCoverage() {
+  try {
+    copyTextWithFallback(
+      createLeftoverCoverageMarkdown(scenario),
+      "Leftover coverage copied as organizer-private Markdown. Buyer counts and units only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover Markdown is in the textarea. Buyer counts and units only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
+}
+
+function copyUncoveredLeftoverCounts() {
+  try {
+    copyTextWithFallback(
+      createUncoveredLeftoverCountsMarkdown(scenario),
+      "Uncovered leftover counts copied as organizer-private Markdown. Counts and units only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private uncovered leftover Markdown is in the textarea. Counts and units only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Uncovered leftover copy failed: ${messageOf(error)}`); }
+}
+
+function copyWinningMerchantLabel() {
+  try {
+    copyTextWithFallback(
+      createWinningMerchantLabelMarkdown(scenario),
+      "Winning merchant label copied. Merchant name only. Buyer identities omitted.",
+      "Clipboard was blocked. Winning merchant label is in the textarea. Merchant name only. Buyer identities omitted."
+    );
+  } catch (error) { setStatus(`Winning merchant copy failed: ${messageOf(error)}`); }
 }
 
 function copyTextWithFallback(text, successMessage, fallbackMessage) {

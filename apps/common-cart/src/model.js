@@ -142,6 +142,23 @@ export const presets = Object.freeze({
       offer("O02", "Bake Share", "Fete catering pack", "Cake stall", 14, 10, 5, 24, 1.5),
       { ...offer("O03", "Hall Pickup Drinks", "Fete catering pack", "Drinks cooler", 11, 12, 3, 30, 6), fulfillment: "pickup" }
     ]
+  },
+  officeFruit: {
+    title: "Office fruit box",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Floor kitchen", "Office fruit crate", 6, 22, 5, ["Citrus mix", "Mixed seasonal"]),
+      buyer("B02", "Design studio", "Office fruit crate", 8, 18, 4, ["Apple crate"]),
+      buyer("B03", "Support pod", "Office fruit crate", 5, 24, 6, ["Citrus mix"]),
+      buyer("B04", "Night shift", "Office fruit crate", 7, 20, 5, ["Citrus mix", "Apple crate"]),
+      buyer("B05", "Front desk", "Office fruit crate", 4, 16, 3, ["Mixed seasonal"]),
+      buyer("B06", "Boardroom", "Office fruit crate", 9, 21, 7, ["Apple crate", "Mixed seasonal"])
+    ],
+    offers: [
+      offer("O01", "Citrus Cart Co", "Office fruit crate", "Citrus mix", 14, 10, 4, 30, 2),
+      offer("O02", "Apple Share", "Office fruit crate", "Apple crate", 15, 8, 5, 24, 1.5),
+      { ...offer("O03", "Lobby Fruit Pickup", "Office fruit crate", "Mixed seasonal", 13, 12, 3, 28, 6), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -183,7 +200,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -208,7 +225,15 @@ export function validateWorkspace(candidate) {
     }
     hideUnwinnable = hideUnwinnableOffers;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable };
+  const hideCoveredLeftoverRows = own(candidate, "hideCoveredLeftoverRows");
+  let hideCoveredLeftover = false;
+  if (hideCoveredLeftoverRows !== undefined) {
+    if (hideCoveredLeftoverRows !== true && hideCoveredLeftoverRows !== false) {
+      throw new ScenarioError("Hide covered leftover rows must be true or false.");
+    }
+    hideCoveredLeftover = hideCoveredLeftoverRows;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -1091,7 +1116,8 @@ export function leftoverCoverageRows(rawScenario) {
       merchant: coverage.primary?.merchant ?? "None",
       buyerCount: coverage.leftoverBuyerCount,
       units: coverage.leftoverUnits,
-      uncovered: false
+      uncovered: false,
+      covered: coverage.leftoverBuyerCount === 0
     },
     {
       id: "leftover-fill",
@@ -1099,7 +1125,8 @@ export function leftoverCoverageRows(rawScenario) {
       merchant: coverage.secondary?.merchant ?? "None",
       buyerCount: coverage.secondary ? coverage.secondary.deliveredBuyers : 0,
       units: coverage.secondary ? coverage.secondary.fulfilledUnits : 0,
-      uncovered: false
+      uncovered: false,
+      covered: Boolean(coverage.secondary)
     },
     {
       id: "tertiary-fill",
@@ -1107,7 +1134,8 @@ export function leftoverCoverageRows(rawScenario) {
       merchant: coverage.tertiary?.merchant ?? "None",
       buyerCount: coverage.tertiary ? coverage.tertiary.deliveredBuyers : 0,
       units: coverage.tertiary ? coverage.tertiary.fulfilledUnits : 0,
-      uncovered: false
+      uncovered: false,
+      covered: Boolean(coverage.tertiary)
     },
     {
       id: "uncovered-leftover",
@@ -1115,9 +1143,20 @@ export function leftoverCoverageRows(rawScenario) {
       merchant: "None",
       buyerCount: coverage.unfilledBuyerCount,
       units: coverage.unfilledUnits,
-      uncovered: coverage.leftoverBuyerCount > 0
+      uncovered: coverage.leftoverBuyerCount > 0,
+      covered: coverage.unfilledBuyerCount === 0
     }
   ];
+}
+
+/** Display-only leftover table filter. Matching is unchanged. */
+export function filterLeftoverCoverageRowsHidingCovered(rawScenario, hideCovered) {
+  if (hideCovered !== true && hideCovered !== false) {
+    throw new ScenarioError("Hide covered leftover rows must be true or false.");
+  }
+  const rows = leftoverCoverageRows(rawScenario);
+  if (!hideCovered) return rows;
+  return rows.filter((row) => !row.covered);
 }
 
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
@@ -1145,6 +1184,20 @@ export function createLeftoverCoverageMarkdown(rawScenario) {
     ...rows.map((row) => `| ${markdownTableCell(row.stage)} | ${markdownTableCell(row.merchant)} | ${row.buyerCount} | ${row.units} |`),
     ``,
     `Buyer counts and units only. Labels, IDs, budgets, and allocations are omitted.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+/** Merchant label only. Honest empty when none unlocked. No buyer data. */
+export function createWinningMerchantLabelMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const merchant = coverage.primary?.merchant ?? "None unlocked";
+  const lines = [
+    `# Common Cart winning merchant`,
+    ``,
+    merchant,
+    ``,
+    `Merchant label only. Buyer identities, IDs, budgets, and allocations are omitted.`
   ];
   return `${lines.join("\n")}\n`;
 }
@@ -1204,6 +1257,22 @@ export function createWinnerInspectorSummaryMarkdown(rawScenario) {
       : `- Tertiary fill: none.`,
     ``,
     `Buyer identities, IDs, budgets, and allocations are omitted.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+/** Organizer-private uncovered leftover Markdown. Counts and units only. */
+export function createUncoveredLeftoverCountsMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const lines = [
+    `# Common Cart uncovered leftover (organizer private)`,
+    ``,
+    `This Markdown is organizer-private. It is not a merchant export.`,
+    ``,
+    `- Uncovered leftover buyers: ${coverage.unfilledBuyerCount}`,
+    `- Uncovered leftover units: ${coverage.unfilledUnits}`,
+    ``,
+    `Counts and units only. Labels, IDs, budgets, and allocations are omitted.`
   ];
   return `${lines.join("\n")}\n`;
 }
