@@ -151,6 +151,7 @@ export const presets: Readonly<{
   swimmingCarnivalLunch: Scenario;
   athleticsCarnivalLunch: Scenario;
   cricketCarnivalLunch: Scenario;
+  tennisCarnivalLunch: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -273,7 +274,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByLeftoverFill: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -328,6 +329,8 @@ export function filterBuyerIdsHidingWinnerAllocatedBuyers(rawScenario: unknown, 
 export function filterBuyerIdsHidingBuyersFilledByLeftoverFill(rawScenario: unknown, hideBuyersFilledByLeftoverFill: boolean): string[];
 /** Display-only. Matching is unchanged. Hides only the last leftover-fill selectedBuyerIds entry. Winner-allocated, unserved, and other leftover-fill buyers stay visible. When hideLastBuyerFilledByLeftoverFill is false, every buyer id is returned. */
 export function filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(rawScenario: unknown, hideLastBuyerFilledByLeftoverFill: boolean): string[];
+/** Display-only. Matching is unchanged. Hides only the first leftover-fill selectedBuyerIds entry. Winner-allocated, unserved, and other leftover-fill buyers stay visible. When hideFirstBuyerFilledByLeftoverFill is false, every buyer id is returned. */
+export function filterBuyerIdsHidingFirstBuyerFilledByLeftoverFill(rawScenario: unknown, hideFirstBuyerFilledByLeftoverFill: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
