@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -81,6 +81,9 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, /id="copy-first-workbench"/);
   assert.match(page, />Copy first workbench heading</);
   assert.match(page, /firstWorkbenchMarkdown/);
+  assert.match(page, /id="copy-last-workbench"/);
+  assert.match(page, />Copy last workbench heading</);
+  assert.match(page, /lastWorkbenchMarkdown/);
 });
 
 test('404 catalog jobs match the four catalog cards', () => {
@@ -133,6 +136,25 @@ test('404 first workbench heading matches the first catalog workbench card headi
   assert.match(page, />Copy first workbench heading</);
   assert.match(page, /querySelector\('#workbenches article\.workbench h3'\)/);
   assert.match(page, /id="workbenches"/);
+});
+
+
+test('404 last workbench heading matches the last catalog workbench card heading', () => {
+  const heading = catalogLastWorkbenchHeading();
+  assert.equal(heading, 'Weekend Gap');
+  assert.equal(html.includes(`<h3>${heading}</h3>`), true, 'last workbench heading missing from catalog');
+  const first = catalogFirstWorkbenchHeading();
+  assert.equal(first, 'Partnership Breakpoint');
+  assert.notEqual(heading, first);
+  const page = notFoundPage();
+  assert.equal(page.includes(heading), true, 'last workbench heading missing from 404 page');
+  assert.equal(page.includes(first), true, 'first workbench heading missing from 404 page');
+  assert.match(page, /id="copy-last-workbench"/);
+  assert.match(page, />Copy last workbench heading</);
+  assert.match(page, /querySelectorAll\('#workbenches article\.workbench h3'\)/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /id="copy-first-workbench"/);
+  assert.match(page, />Copy first workbench heading</);
 });
 
 
