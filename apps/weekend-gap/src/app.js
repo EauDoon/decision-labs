@@ -27,8 +27,12 @@ import {
   buildGateGanttSvg,
   ganttToCSV,
   selectedGanttHourToMarkdown,
+  peakQueueHourToMarkdown,
+  closedGanttHoursToMarkdown,
+  arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   ganttHourClosedOnAnyGate,
+  GANTT_GATE_FILTERS,
   gateDisplayLabels,
   GENERIC_GATE_LABELS,
   buildGateSchedule,
@@ -53,7 +57,7 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, selectedChart: "queue", ganttClosedOnly: false };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -76,6 +80,7 @@ const elements = {
   settledTotal: document.querySelector("#settled-total-value"),
   finalQueue: document.querySelector("#final-queue-value"),
   peakQueue: document.querySelector("#peak-queue-value"),
+  peakQueueHour: document.querySelector("#peak-queue-hour-value"),
   backlogHours: document.querySelector("#backlog-hours-value"),
   firstSettlement: document.querySelector("#first-settlement-value"),
   queueClear: document.querySelector("#queue-clear-value"),
@@ -264,6 +269,9 @@ function render() {
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
+  elements.peakQueueHour.textContent = peakQueuedAud > 0
+    ? `${formatTime(peakQueueHour)} (hour ${peakQueueHour})`
+    : "No queue in 72h";
   elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS}`;
   elements.firstSettlement.textContent = hoursToFirstSettlement === null
     ? "No settlement in 72h"
@@ -329,11 +337,16 @@ function render() {
 
 function renderTable() {
   const mode = document.querySelector("#table-density").value;
+  const backlogOnly = Boolean(document.querySelector("#queue-backlog-only")?.checked);
   const peakHour = simulation.summary.peakQueueHour;
   const peakQueuedAud = simulation.summary.peakQueuedAud;
   const rowIndexes = new Set([selectedHour]);
   if (peakQueuedAud > 0) rowIndexes.add(peakHour);
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    if (backlogOnly) {
+      if (simulation.timeline[hour].queuedAud > 0) rowIndexes.add(hour);
+      continue;
+    }
     if(mode === "all" || (mode === "backlog" && simulation.timeline[hour].queuedAud > 0) || (mode === "snapshots" && hour % 6 === 0)) rowIndexes.add(hour);
   }
   const fragment = document.createDocumentFragment();
@@ -368,11 +381,20 @@ function renderTable() {
       ? `The highlighted row is the peak queue checkpoint at ${formatTime(peakHour)} (hour ${peakHour}).`
       : "No peak queue row is highlighted because demand never queued.";
   }
+  const filterNote = document.querySelector("#queue-backlog-filter-note");
+  if (filterNote) {
+    const backlogCount = simulation.timeline.filter((point) => point.queuedAud > 0).length;
+    filterNote.textContent = backlogOnly
+      ? `Showing hours with backlog (${backlogCount} of ${SIMULATION_HOURS + 1} checkpoints). Dashboard counts are unchanged.`
+      : `All checkpoints remain available. Use the backlog filter to hide hours with no queue. Dashboard counts are unchanged.`;
+  }
 }
 
 function renderGantt() {
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly });
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, gateFilter });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([selectedHour]);
@@ -419,6 +441,10 @@ function renderGantt() {
     filterNote.textContent = closedOnly
       ? `Showing hours closed on at least one gate (${closedCount} of ${SIMULATION_HOURS} chart hours). The model still contains ${SIMULATION_HOURS} hours. This table and chart are a local drawing.`
       : `All ${SIMULATION_HOURS} model hours remain available. Use the closed-hours filter to hide fully open hours in this local drawing.`;
+    if (gateFilter !== "all") {
+      const gateName = GENERIC_GATE_LABELS[gateFilter] || gateFilter;
+      filterNote.textContent += ` Chart shows ${gateName} only. Simulation is unchanged.`;
+    }
   }
 }
 
@@ -1158,7 +1184,9 @@ function currentWorkspace() {
     deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value,
     ganttDensity: document.querySelector("#gantt-density").value,
     selectedChart: document.querySelector("#selected-chart").value,
-    ganttClosedOnly: Boolean(document.querySelector("#gantt-closed-only")?.checked) });
+    ganttClosedOnly: Boolean(document.querySelector("#gantt-closed-only")?.checked),
+    ganttGateFilter: GANTT_GATE_FILTERS.includes(document.querySelector("#gantt-gate-filter")?.value) ? document.querySelector("#gantt-gate-filter").value : "all",
+    queueBacklogOnly: Boolean(document.querySelector("#queue-backlog-only")?.checked) });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -1168,7 +1196,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -1180,7 +1208,7 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true };
   baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
@@ -1188,6 +1216,8 @@ function applyWorkspace(saved) {
   document.querySelector("#gantt-density").value = saved.ganttDensity || "snapshots";
   document.querySelector("#selected-chart").value = saved.selectedChart || "queue";
   document.querySelector("#gantt-closed-only").checked = saved.ganttClosedOnly === true;
+  document.querySelector("#gantt-gate-filter").value = GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all";
+  document.querySelector("#queue-backlog-only").checked = saved.queueBacklogOnly === true;
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -1236,11 +1266,19 @@ document.querySelector("#redo-scenario").addEventListener("click",()=>{
 scenarioHistory=createScenarioHistory(scenario);renderHistory();
 
 document.querySelector("#table-density").addEventListener("change",renderTable);
+document.querySelector("#queue-backlog-only").addEventListener("change",()=>{
+  renderTable();
+  saveWorkspace();
+});
 document.querySelector("#gantt-density").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
 document.querySelector("#gantt-closed-only").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
+document.querySelector("#gantt-gate-filter").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
@@ -1285,8 +1323,19 @@ async function copyTextWithFallback(text, fallbackId, successMessage) {
   }
 }
 document.querySelector("#copy-gantt-hour").addEventListener("click", async () => {
-  const text = selectedGanttHourToMarkdown(scenario, selectedHour);
-  await copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
+  await copySelectedGanttHourMarkdown();
+});
+document.querySelector("#copy-peak-hour").addEventListener("click", async () => {
+  const text = peakQueueHourToMarkdown(scenario);
+  await copyTextWithFallback(text, "#peak-hour-copy-fallback", "Peak-queue hour copied as Markdown. This is a synthetic snapshot, not a live bank or payout queue.");
+});
+document.querySelector("#copy-closed-hours").addEventListener("click", async () => {
+  const text = closedGanttHoursToMarkdown(scenario);
+  await copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
+});
+document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
+  const text = arrivalCohortsToMarkdown(scenario);
+  await copyTextWithFallback(text, "#cohort-copy-fallback", "Arrival-cohort table copied as Markdown. This is a synthetic ledger, not a forecast.");
 });
 document.querySelector("#copy-bottleneck-markdown").addEventListener("click", async () => {
   const text = bottleneckCountsToMarkdown(scenario);
@@ -1376,6 +1425,20 @@ function jumpToGantt() {
   rememberChart("gantt");
   return true;
 }
+function jumpToTimingReview() {
+  const panel = document.querySelector("#weekend-review");
+  const heading = document.querySelector("#weekend-review-title");
+  if (!heading) return false;
+  if (panel) panel.open = true;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  return true;
+}
+function copySelectedGanttHourMarkdown() {
+  const text = selectedGanttHourToMarkdown(scenario, selectedHour);
+  return copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
+}
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
 });
@@ -1395,7 +1458,9 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.add("print-redacted");
   applyGateDisplayLabels(true);
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, redacted: true });
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, gateFilter, redacted: true });
   window.print();
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
@@ -1544,6 +1609,16 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "p" || event.key === "P") {
     event.preventDefault();
     jumpToPeakQueue();
+    return;
+  }
+  if (event.key === "c" || event.key === "C") {
+    event.preventDefault();
+    copySelectedGanttHourMarkdown();
+    return;
+  }
+  if (event.key === "t" || event.key === "T") {
+    event.preventDefault();
+    jumpToTimingReview();
     return;
   }
   if (event.key === "u" || event.key === "U") {

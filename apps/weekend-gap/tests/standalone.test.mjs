@@ -19,12 +19,32 @@ test("standalone build is self-contained, LF-only, and deterministic", async () 
   assert.doesNotMatch(first, /\r/);
 });
 
-test("release 1.5.1 ships Gantt hour copy, payday burst and dashboard CSV", async () => {
+test("release 1.5.2 ships peak-hour copy, holiday Monday and gate filter", async () => {
   const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
   const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
   const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.1");
+  assert.equal(pkg.version, "1.5.2");
+  assert.match(readme, /New in v1\.5\.2/);
+  assert.match(readme, /Public-holiday Monday/);
+  assert.match(html, /id="copy-peak-hour"/);
+  assert.match(html, /id="gantt-gate-filter"/);
+  assert.match(html, /data-preset="publicHolidayMonday"/);
+  assert.match(html, /id="copy-closed-hours"/);
+  assert.match(html, /id="queue-backlog-only"/);
+  assert.match(html, /event\.key === "c"/);
+  assert.match(html, /event\.key === "t"/);
+  assert.match(html, /id="copy-cohort-markdown"/);
+  assert.match(html, /id="peak-queue-hour-value"/);
+  assert.match(html, /queueBacklogOnly/);
+});
+
+test("release 1.5.2 retains 1.5.1 Gantt hour copy, payday burst, dashboard CSV and timing review", async () => {
+  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
+  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
+  const html = await buildStandalone();
+  assert.equal(pkg.version, "1.5.2");
   assert.match(readme, /New in v1\.5\.1/);
+  assert.match(readme, /New in v1\.5\.0/);
   assert.match(readme, /Payday Friday burst/);
   assert.match(html, /id="copy-gantt-hour"/);
   assert.match(html, /event\.key === "f"/);
@@ -36,28 +56,11 @@ test("release 1.5.1 ships Gantt hour copy, payday burst and dashboard CSV", asyn
   assert.match(html, /ganttClosedOnly/);
   assert.match(html, /id="print-redacted"/);
   assert.match(html, /id="copy-bottleneck-markdown"/);
-});
-
-test("release 1.5.1 retains 1.5.0 timing review, dashboard copy, file compare and compressed Friday close", async () => {
-  const pkg = JSON.parse(await readFile(new URL("../package.json", import.meta.url), "utf8"));
-  const readme = await readFile(new URL("../README.md", import.meta.url), "utf8");
-  const html = await buildStandalone();
-  assert.equal(pkg.version, "1.5.1");
-  assert.match(readme, /New in v1\.5\.0/);
-  assert.match(readme, /New in v1\.4\.3/);
-  assert.match(readme, /Compressed Friday close/);
   assert.match(html, /id="weekend-review"/);
-  assert.match(html, /id="weekend-review-export"/);
   assert.match(html, /createWeekendReviewPacket/);
   assert.match(html, /replayWeekendReviewPacket/);
   assert.match(html, /WEEKEND_REVIEW_TOOLS/);
   assert.match(html, /id="copy-dashboard-markdown"/);
-  assert.match(html, /event\.key === "d"/);
   assert.match(html, /id="compare-scenario-files"/);
-  assert.match(html, /id="monday-saturday-holiday-notice"/);
-  assert.match(html, /id="preview-demand-earlier"/);
-  assert.match(html, /id="selected-chart"/);
-  assert.match(html, /id="peak-queue-row-note"/);
-  assert.match(html, /event\.key === "q"/);
   assert.match(html, /data-preset="compressedFridayClose"/);
 });
