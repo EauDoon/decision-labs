@@ -1362,6 +1362,8 @@ function refresh() {
     if (leftoverBuyers) leftoverBuyers.replaceChildren();
     const leftoverHeadroom = document.querySelector("#leftover-headroom");
     if (leftoverHeadroom) leftoverHeadroom.textContent = "Unspent item headroom after winner will appear once every field is valid.";
+    const leftoverOverlap = document.querySelector("#leftover-print-overlap-rows");
+    if (leftoverOverlap) leftoverOverlap.replaceChildren();
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -1669,7 +1671,26 @@ function renderLeftoverCoverageTable(rawScenario) {
       ? `Winner merchant: ${coverage.primary.merchant}`
       : "Winner merchant: None unlocked";
   }
+  renderLeftoverPrintOverlap(rawScenario);
   renderOrganizerLeftoverRows(rawScenario);
+}
+
+function renderLeftoverPrintOverlap(rawScenario) {
+  const body = document.querySelector("#leftover-print-overlap-rows");
+  if (!body) return;
+  const matrix = variantOverlapMatrix(rawScenario);
+  if (matrix.variants.length === 0) {
+    setEmptyState(body, 4, "No offered variants.");
+    return;
+  }
+  body.replaceChildren(...matrix.variants.map((entry) => {
+    const row = document.createElement("tr");
+    addCell(row, entry.variant);
+    addCell(row, String(entry.offerCount));
+    addCell(row, String(entry.buyerCount));
+    addCell(row, String(entry.units));
+    return row;
+  }));
 }
 
 function renderOrganizerLeftoverRows(rawScenario) {
