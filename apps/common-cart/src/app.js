@@ -818,6 +818,11 @@ function handleShortcut(event) {
     focusLeftoverHeadroom();
     return;
   }
+  if (key === "k") {
+    event.preventDefault();
+    focusCartReview();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -847,6 +852,14 @@ function focusLeftoverHeadroom() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#leftover-headroom")?.focus();
+}
+
+function focusCartReview() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const panel = document.querySelector("#cart-review");
+  if (panel && !panel.open) panel.open = true;
+  panel?.querySelector("summary")?.focus();
 }
 
 function printLeftoverOnePager() {

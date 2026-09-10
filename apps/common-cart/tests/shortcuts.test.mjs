@@ -213,3 +213,21 @@ test("keyboard handler jumps to leftover item headroom when not typing", async (
   assert.match(app, /#buyer-tab/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
+
+test("shortcut help documents the organizer review panel jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>k<\/kbd> Focus the organizer review panel/u);
+  assert.match(html, /id="cart-review"/u);
+  assert.match(html, /<summary>Review buyer coverage and offer resilience<\/summary>/u);
+});
+
+test("keyboard handler opens and focuses the review panel when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "k"\)/u);
+  assert.match(app, /function focusCartReview\(/u);
+  assert.match(app, /#cart-review/u);
+  assert.match(app, /panel\.open = true/u);
+  assert.match(app, /querySelector\("summary"\)\?\.focus\(\)/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
