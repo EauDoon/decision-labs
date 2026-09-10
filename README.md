@@ -54,6 +54,9 @@ That copy is catalog copy, not a live product feed. If those nodes are
 missing, it copies an empty string. Keys `v` and `j` copy the printed version list and one-sentence jobs.
 Key `,` copies the footer version line from this page as one Markdown line.
 That copy is catalog copy, not a live product version.
+Key `[` focuses the Copy version line control, or the footer version line if
+that control is missing. That key moves focus; it does not open a workbench.
+It does not copy.
 Key `q` copies those same catalog jobs through the Copy jobs control. It does not fork that Markdown. Key `;` copies the first workbench name and one-sentence job from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that card is missing, it copies an empty string. That key is distinct from `j` and `q`, which copy all four jobs, and from `y`, which copies the last-launched job. Key `i` copies Trust and limits from this page as Markdown. That list is not a
 live policy feed. Key `u` copies How it works from this page as Markdown. That
 list is not a live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
@@ -188,7 +191,9 @@ uses the same Copy versions control, including the visible text box when the
 clipboard API is unavailable. Press `,` to copy the footer version line from
 this page as one Markdown line. That key uses the same Copy version line
 control, including the visible text box when the clipboard API is unavailable.
-This is catalog copy, not a live product version. Press `l` to focus the workbench card that is
+This is catalog copy, not a live product version. Press `[` to focus the Copy
+version line control, or the footer version line if that control is missing.
+That key moves focus; it does not open a workbench. It does not copy. Press `l` to focus the workbench card that is
 Last launched in this browser, or the workbenches heading if none is stored.
 That recency is storage in this browser, not a cloud recency. Press `o` to
 open that last-launched workbench. The key assigns `location` the same way
