@@ -160,7 +160,7 @@ test('standalone displays the complete compound grid with accessible controls an
   assert.match(app.markup(), /1 of 27 tested cases hold/);
   assert.match(app.markup(), /aria-labelledby="stress-inputs-title"/);
   assert.match(app.markup(), /data-path="stress.volumeDropPct"/);
-  assert.match(app.markup(), /<summary>Inspect all 27 compound cases<\/summary>/);
+  assert.match(app.markup(), /<summary id="inspect-cases-title">Inspect all 27 compound cases<\/summary>/);
   assert.match(app.markup(), /tabindex="0" role="region" aria-label="Compound case evidence/);
   assert.match(app.markup(), /data-action="apply-stress-proposal" disabled/);
 });
@@ -173,6 +173,7 @@ test('results jump nav is sticky, labeled, and keyboard-focusable via in-page li
   assert.match(app.markup(), /href="#first-breakpoint">First breakpoint<\/a>/);
   assert.match(app.markup(), /href="#fee-guidance-title">Fee guide<\/a>/);
   assert.match(app.markup(), /href="#charts-title">Charts<\/a>/);
+  assert.match(app.markup(), /href="#tornado-title">Tornado<\/a>/);
   assert.match(app.markup(), /href="#waterfall-title">Waterfall<\/a>/);
   assert.match(app.markup(), /href="#compound-title">Compound stress<\/a>/);
   assert.match(app.markup(), /href="#participant-ledger">Participant ledger<\/a>/);
