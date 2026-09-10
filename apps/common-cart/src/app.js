@@ -13,6 +13,7 @@ import {
   applyOfferSort,
   filterOfferIdsByFulfillment,
   filterOfferIdsHidingUnwinnable,
+  filterOfferIdsHidingZeroRemainingCapacity,
   acceptedVariantFilterOptions,
   filterBuyerIdsByAcceptedVariant,
   filterBuyerIdsHidingExcluded,
@@ -51,6 +52,7 @@ import {
   createWinningFulfillmentMarkdown,
   createLeftoverFillMarkdown,
   createWinningRemainingCapacityMarkdown,
+  createRequestedUnitsMarkdown,
   organizerLeftoverRows,
   createWinnerInspectorSummaryMarkdown,
   createUncoveredLeftoverCountsMarkdown,
@@ -122,6 +124,7 @@ let hideUnwinnableOffers = false;
 let hideCoveredLeftoverRows = false;
 let hideTertiaryLeftoverRow = false;
 let hideLeftoverFillRow = false;
+let hideZeroRemainingCapacityOffers = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -141,6 +144,7 @@ function loadWorkspace() {
     hideCoveredLeftoverRows = workspace.hideCoveredLeftoverRows;
     hideTertiaryLeftoverRow = workspace.hideTertiaryLeftoverRow;
     hideLeftoverFillRow = workspace.hideLeftoverFillRow;
+    hideZeroRemainingCapacityOffers = workspace.hideZeroRemainingCapacityOffers;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -183,7 +187,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -314,6 +318,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-winning-merchant").addEventListener("click", copyWinningMerchantLabel);
   document.querySelector("#copy-winning-fulfillment").addEventListener("click", copyWinningFulfillment);
   document.querySelector("#copy-winning-remaining-capacity").addEventListener("click", copyWinningRemainingCapacity);
+  document.querySelector("#copy-requested-units").addEventListener("click", copyRequestedUnits);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
       copyTextWithFallback(
@@ -616,6 +621,30 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#hide-zero-remaining-capacity-offers").addEventListener("change", (event) => {
+    hideZeroRemainingCapacityOffers = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyOfferFulfillmentFilter();
+      setStatus(hideZeroRemainingCapacityOffers
+        ? "Hiding offers with no remaining capacity after the winner. Display only. Saved offers and matching stay unchanged. Merchant views still show counts only."
+        : "Showing zero remaining-capacity offers again. Saved offers and matching stay unchanged.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#restore-zero-remaining-capacity-offers").addEventListener("click", () => {
+    hideZeroRemainingCapacityOffers = false;
+    persistWorkspaceDisplaySettings();
+    const hideControl = document.querySelector("#hide-zero-remaining-capacity-offers");
+    if (hideControl) hideControl.checked = false;
+    try {
+      applyOfferFulfillmentFilter();
+      setStatus("Restored remaining-capacity offers on screen. Saved offers and matching stay unchanged. Merchant views still show counts only.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#buyer-variant-filter").addEventListener("change", (event) => {
     buyerVariantFilter = event.target.value;
     try {
@@ -913,6 +942,21 @@ function handleShortcut(event) {
     focusLeftoverFill();
     return;
   }
+  if (key === ",") {
+    event.preventDefault();
+    copyWinningRemainingCapacity();
+    return;
+  }
+  if (key === ".") {
+    event.preventDefault();
+    focusWinningRemainingCapacityCopy();
+    return;
+  }
+  if (key === "/" && !event.shiftKey) {
+    event.preventDefault();
+    focusLeftoverFillCopy();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -950,6 +994,17 @@ function focusGroupHeadroom() {
 
 function focusRequestedUnits() {
   document.querySelector("#metric-units")?.focus();
+}
+
+function focusWinningRemainingCapacityCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-winning-remaining-capacity");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#winner-summary")?.focus();
 }
 
 function focusPrivateBuyerReport() {
@@ -1039,6 +1094,12 @@ function focusLeftoverFill() {
     return;
   }
   document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverFillCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#copy-leftover-fill")?.focus();
 }
 
 function focusBuyerPaste() {
@@ -1197,6 +1258,14 @@ function applyOfferFulfillmentFilter() {
       visibleIds = new Set();
     }
   }
+  if (hideZeroRemainingCapacityOffers) {
+    try {
+      const remaining = new Set(filterOfferIdsHidingZeroRemainingCapacity(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => remaining.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
   elements.offerRows.querySelectorAll("tr[data-id]").forEach((row) => {
     row.hidden = !visibleIds.has(row.dataset.id);
   });
@@ -1214,6 +1283,10 @@ function applyOfferFulfillmentFilter() {
   if (hideControl) hideControl.checked = hideUnwinnableOffers;
   const restore = document.querySelector("#restore-unwinnable-offers");
   if (restore) restore.disabled = !hideUnwinnableOffers;
+  const hideRemainingControl = document.querySelector("#hide-zero-remaining-capacity-offers");
+  if (hideRemainingControl) hideRemainingControl.checked = hideZeroRemainingCapacityOffers;
+  const restoreRemaining = document.querySelector("#restore-zero-remaining-capacity-offers");
+  if (restoreRemaining) restoreRemaining.disabled = !hideZeroRemainingCapacityOffers;
   const note = document.querySelector("#offer-filter-note");
   if (!note) return;
   const hiddenCount = scenario.offers.length - visibleIds.size;
@@ -1485,6 +1558,8 @@ function refresh() {
     if (leftoverPrintRequested) leftoverPrintRequested.textContent = "Requested units: 0";
     const leftoverPrintWinner = document.querySelector("#leftover-print-winner");
     if (leftoverPrintWinner) leftoverPrintWinner.textContent = "Winner merchant: None unlocked";
+    const leftoverPrintFill = document.querySelector("#leftover-print-fill");
+    if (leftoverPrintFill) leftoverPrintFill.textContent = "Leftover fill merchant: None";
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -1799,6 +1874,13 @@ function renderLeftoverCoverageTable(rawScenario) {
     winner.textContent = coverage.primary
       ? `Winner merchant: ${coverage.primary.merchant}`
       : "Winner merchant: None unlocked";
+  }
+  const leftoverFillPrint = document.querySelector("#leftover-print-fill");
+  if (leftoverFillPrint) {
+    const coverage = computeResidualCoverage(rawScenario);
+    leftoverFillPrint.textContent = coverage.secondary
+      ? `Leftover fill merchant: ${coverage.secondary.merchant}`
+      : "Leftover fill merchant: None";
   }
   const uncoveredPrint = document.querySelector("#leftover-print-uncovered");
   if (uncoveredPrint) {
@@ -2437,6 +2519,16 @@ function copyWinningRemainingCapacity() {
       "Clipboard was blocked. Winning remaining capacity is in the textarea. Remaining units only. Buyer identities omitted."
     );
   } catch (error) { setStatus(`Winning remaining capacity copy failed: ${messageOf(error)}`); }
+}
+
+function copyRequestedUnits() {
+  try {
+    copyTextWithFallback(
+      createRequestedUnitsMarkdown(scenario),
+      "Requested units copied as organizer-private Markdown. Count only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private requested units Markdown is in the textarea. Count only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Requested units copy failed: ${messageOf(error)}`); }
 }
 
 function copyTextWithFallback(text, successMessage, fallbackMessage) {

@@ -338,6 +338,55 @@ test("keyboard handler jumps to leftover fill when not typing", async () => {
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
 
+test("shortcut help documents remaining capacity copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>,<\/kbd> Copy remaining capacity on the unlocked winner/u);
+  assert.match(html, /id="copy-winning-remaining-capacity"/u);
+});
+
+test("keyboard handler copies remaining capacity with comma when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === ","\)/u);
+  assert.match(app, /function copyWinningRemainingCapacity\(/u);
+  assert.match(app, /createWinningRemainingCapacityMarkdown\(scenario\)/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("shortcut help documents remaining capacity copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>\.<\/kbd> Focus the remaining-capacity copy control, or winner heading if missing/u);
+  assert.match(html, /id="copy-winning-remaining-capacity"/u);
+  assert.match(html, /id="winner-summary"/u);
+});
+
+test("keyboard handler jumps to remaining capacity copy when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "\."\)/u);
+  assert.match(app, /function focusWinningRemainingCapacityCopy\(/u);
+  assert.match(app, /#copy-winning-remaining-capacity/u);
+  assert.match(app, /#winner-summary/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("shortcut help documents leftover fill copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>\/<\/kbd> Focus the leftover-fill copy control/u);
+  assert.match(html, /id="copy-leftover-fill"/u);
+});
+
+test("keyboard handler jumps to leftover fill copy with slash without Shift", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "\/" && !event\.shiftKey\)/u);
+  assert.match(app, /function focusLeftoverFillCopy\(/u);
+  assert.match(app, /#copy-leftover-fill/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /event\.key === "\?" \|\| \(event\.shiftKey && event\.key === "\/"\)/u);
+  assert.match(app, /if \(key === "y"\)/u);
+  assert.match(app, /function copyLeftoverFill\(/u);
+});
+
 test("Export private buyer report stays organizer-private in the buyer room", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
