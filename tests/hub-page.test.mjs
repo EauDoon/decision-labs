@@ -135,6 +135,10 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
   assert.match(readme, /Catalog keys `w`, `k`, `n`, and `c`/);
+  assert.match(readme, /Keys `v` and `j` copy the printed version list/);
+  assert.match(readme, /Keys `l` and `o` focus or open the last-launched workbench/);
+  assert.match(readme, /Key `o` assigns a location like keys 1 to 4/);
+  assert.match(readme, /does not claim a\s+copy succeeded on a file URL/);
   assert.match(readme, /Press `w` to focus the\s+workbenches/);
   assert.match(readme, /Press `k` to focus How it works/);
   assert.match(readme, /Press `n` to focus What's\s+new/);
@@ -336,6 +340,20 @@ test('copy versions copies catalog names as Markdown with a visible fallback', (
   assert.match(html, /It is not a live product version and it does not call a registry/);
   assert.match(html, /@media print[\s\S]*\.copy-versions-tools/);
   assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('shortcuts panel lists v l o j with honest limits', () => {
+  assert.match(html, /<kbd>v<\/kbd><\/dt><dd>Copy workbench names and versions as Markdown from this catalog page, not a live product version/);
+  assert.match(html, /<kbd>j<\/kbd><\/dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed/);
+  assert.match(html, /<kbd>l<\/kbd><\/dt><dd>Focus the last-launched workbench card, or the workbenches heading if none is stored/);
+  assert.match(html, /not a cloud recency/);
+  assert.match(html, /<kbd>o<\/kbd><\/dt><dd>Open the last-launched workbench, the same as keys 1 to 4/);
+  assert.match(html, /This key assigns a location; it does not copy/);
+  assert.match(html, /It does not claim a copy succeeded on a file URL/);
+  assert.match(readme, /Keys `v` and `j` copy the printed version list/);
+  assert.match(readme, /Keys `l` and `o` focus or open the last-launched workbench/);
+  assert.match(readme, /Key `o` assigns a location like keys 1 to 4/);
+  assert.match(readme, /It does not claim a\s+copy succeeded on a file URL/);
 });
 
 test('keyboard o opens the last-launched workbench like keys 1 to 4', () => {
