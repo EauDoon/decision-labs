@@ -2004,6 +2004,15 @@ function jumpToHidePayoutOpenFilter() {
   }
   return jumpToGantt();
 }
+function jumpToHideFxOpenFilter() {
+  const control = document.querySelector("#gantt-hide-fx-open");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
 });
@@ -2344,6 +2353,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "#") {
     event.preventDefault();
     jumpToHidePayoutOpenFilter();
+    return;
+  }
+  if (event.key === "%") {
+    event.preventDefault();
+    jumpToHideFxOpenFilter();
     return;
   }
   if (event.key === "n" || event.key === "N") {
