@@ -96,6 +96,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="copy-threshold-group-count-button" aria-keyshortcuts="}">Copy threshold-group count</button>
         <button class="button button-secondary" type="button" id="copy-first-veto-group-button" aria-keyshortcuts="~">Copy first veto group</button>
         <button class="button button-secondary" type="button" id="copy-veto-group-count-button" aria-keyshortcuts="(">Copy veto-group count</button>
+        <button class="button button-secondary" type="button" id="copy-first-non-veto-group-button">Copy first non-veto group</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -291,6 +292,9 @@ SOFTWARE.
             <label class="veto-group-count-fallback-label" for="veto-group-count-fallback">Veto-group count Markdown</label>
             <textarea id="veto-group-count-fallback" readonly rows="3" spellcheck="false" aria-describedby="veto-group-count-fallback-note"></textarea>
             <p id="veto-group-count-fallback-note" class="field-note">One line of the count of groups marked as a veto group, or an honest zero. Distinct from threshold-group count copy and first veto group copy. A veto is a number you entered, not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <label class="first-non-veto-group-fallback-label" for="first-non-veto-group-fallback">First non-veto group Markdown</label>
+            <textarea id="first-non-veto-group-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-non-veto-group-fallback-note"></textarea>
+            <p id="first-non-veto-group-fallback-note" class="field-note">One line of the first group that is not marked as a veto group, or an honest empty line when none. Distinct from first veto group copy and veto-group count copy. A veto is a number you entered, not a legal right. The label is not a legal identity. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
