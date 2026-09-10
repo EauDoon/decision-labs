@@ -91,6 +91,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /First How-it-works copy, How copy jump, and last Trust copy/);
   assert.match(html, /Last How copy, last-How jump, and first-How jump/);
   assert.match(html, /Last-job copy, last-job jump, and first-job jump/);
+  assert.match(html, /Last What's new copy, last-news jump, and first-news jump/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -227,6 +228,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /first How-it-works copy, How copy jump, and last Trust copy/);
   assert.match(readme, /last How-it-works copy, last-How jump, and first-How jump/);
   assert.match(readme, /last-job copy, last-job jump, and first-job jump/);
+  assert.match(readme, /last What's new copy, last-news jump, and first-news jump/);
   assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
@@ -241,6 +243,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy first How it works item on\s+that 404 page copies/);
   assert.match(readme, /Copy last How it works item on\s+that 404 page copies/);
   assert.match(readme, /Copy last job on\s+that 404 page copies/);
+  assert.match(readme, /Copy last What's new heading on\s+that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -5072,6 +5075,30 @@ test('What\'s new and README name last-job copy and jumps without changing workb
   assert.doesNotMatch(html, /live service/i);
 });
 
+test('What\'s new and README name last What\'s new copy and jumps without changing workbench versions', () => {
+  assert.match(html, /Last What's new copy, last-news jump, and first-news jump/);
+  assert.match(html, /Copy last What's new heading through tilde as Markdown/);
+  assert.match(html, /jump with keyboard exclamation/);
+  assert.match(html, /jump to Copy first What's new heading with keyboard open-paren/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /without adding a public path/);
+  assert.match(html, /Last-job copy, last-job jump, and first-job jump/);
+  assert.match(html, /Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11/);
+  assert.match(readme, /last What's new copy, last-news jump, and first-news jump/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy last What's new heading on\s+that 404 page copies/);
+  assert.match(readme, /Copy last What's new heading copies the last What's new heading/);
+  assert.match(readme, /Copy first What's new heading copies the first What's new heading/);
+  assert.match(readme, /Press `~` to copy the last What's new heading/);
+  assert.match(readme, /Press `!` to focus the Copy last What's new heading control/);
+  assert.match(readme, /Press `\(` to focus the Copy first What's new heading control/);
+  assert.match(readme, /Key `~` copies the last What's new heading/);
+  assert.match(readme, /Key `!` focuses the Copy last What's new heading control/);
+  assert.match(readme, /Key `\(` focuses the Copy first What's new heading control/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+});
+
 test('copy last job control is distinct from Copy first job and Copy jobs', () => {
   assert.match(html, /id="copy-last-job"/);
   assert.match(html, />Copy last job</);
@@ -5796,6 +5823,8 @@ test('keyboard tilde copies the last What\'s new heading through its own control
   assert.match(html, /If that heading is missing, this copies an empty string/);
   assert.match(html, /This is distinct from <kbd>g<\/kbd>, which focuses the first What's new heading/);
   assert.match(html, /from <kbd>n<\/kbd>, which focuses What's new/);
+  assert.match(readme, /Press `~` to copy the last What's new heading/);
+  assert.match(readme, /Key `~` copies the last What's new heading/);
   const clicks = { lastNews: 0, lastJob: 0, lastHow: 0 };
   const focused = [];
   const assigned = [];
@@ -5874,6 +5903,8 @@ test('exclamation focuses Copy last What\'s new heading when focus is not in an 
   assert.match(html, /Press <kbd>!<\/kbd> to focus Copy last What's new heading/);
   assert.match(html, /This key moves focus; it does not open a workbench/);
   assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Key `!` focuses the Copy last What's new heading control/);
+  assert.match(readme, /Press `!` to focus the Copy last What's new heading control/);
   const focused = [];
   const clicks = { lastNews: 0 };
   const assigned = [];
@@ -6083,6 +6114,8 @@ test('open-paren focuses Copy first What\'s new heading when focus is not in an 
   assert.match(html, /Press <kbd>\(<\/kbd> to focus Copy first What's new heading/);
   assert.match(html, /This is distinct from <kbd>g<\/kbd>, which focuses the first What's new heading itself/);
   assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Key `\(` focuses the Copy first What's new heading control/);
+  assert.match(readme, /Press `\(` to focus the Copy first What's new heading control/);
   const focused = [];
   const clicks = { firstNews: 0, lastNews: 0 };
   const assigned = [];
@@ -6190,5 +6223,76 @@ test('open-paren focuses the What\'s new heading when Copy first What\'s new hea
     preventDefault() {},
   });
   assert.deepEqual(focused, ['whats-new-title']);
+  assert.deepEqual(assigned, []);
+});
+
+test('tilde exclamation and open-paren do not steal g n close-brace or last-How', () => {
+  assert.match(html, /event\.key === '~'/);
+  assert.match(html, /event\.key === '!'/);
+  assert.match(html, /event\.key === '\('/);
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /event\.key === 'n'/);
+  assert.match(html, /event\.key === '}'/);
+  assert.match(html, /event\.key === '<'/);
+  assert.match(html, /lastWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /lastJobBtn\?\.click\(\)/);
+  assert.match(html, /lastHowBtn\?\.click\(\)/);
+  const clicks = { lastNews: 0, firstNews: 0, lastJob: 0, lastHow: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-whats-new') return { click() { clicks.lastNews += 1; }, addEventListener() {}, focus() { focused.push('copy-last-whats-new'); } };
+      if (id === 'copy-first-whats-new') return { click() { clicks.firstNews += 1; }, addEventListener() {}, focus() { focused.push('copy-first-whats-new'); } };
+      if (id === 'copy-last-job') return { click() { clicks.lastJob += 1; }, addEventListener() {}, focus() { focused.push('copy-last-job'); } };
+      if (id === 'copy-last-how') return { click() { clicks.lastHow += 1; }, addEventListener() {}, focus() { focused.push('copy-last-how'); } };
+      if (id === 'whats-new') return { focus() { focused.push('whats-new'); } };
+      if (id === 'whats-new-title') return { focus() { focused.push('whats-new-title'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? { focus() { focused.push('first-news-h3'); } } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, shiftKey = false) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  fire('g');
+  fire('n');
+  fire('}', true);
+  fire('<');
+  fire('~', true);
+  fire('!', true);
+  fire('(', true);
+  assert.equal(clicks.lastJob, 1);
+  assert.equal(clicks.lastHow, 1);
+  assert.equal(clicks.lastNews, 1);
+  assert.equal(clicks.firstNews, 0);
+  assert.deepEqual(focused, ['first-news-h3', 'whats-new', 'copy-last-whats-new', 'copy-first-whats-new']);
   assert.deepEqual(assigned, []);
 });
