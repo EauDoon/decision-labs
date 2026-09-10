@@ -2149,6 +2149,63 @@ test('keyboard colon copies first-breakpoint volume-to-hold through the same con
   assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
+test('keyboard quote copies over-capacity participant count through the same control', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-over-capacity-count"/);
+  assert.match(fallback.markup(), /id="copy-over-capacity-count"[^>]*aria-keyshortcuts='"'/);
+  fallback.keydown('"');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="over-capacity-count-copy-text"/);
+  assert.match(fallback.markup(), /Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\./);
+  assert.match(fallback.markup(), /id="over-capacity-count-copy-title">Over-capacity participant count Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="volume-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-over-capacity-count-copy');
+  assert.doesNotMatch(fallback.markup(), /id="over-capacity-count-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown('"', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('"', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown('"');
+  assert.match(fallback.markup(), /id="over-capacity-count-copy-text"/);
+  assert.match(fallback.markup(), />Over-capacity participant count: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown('"');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'Over-capacity participant count: 0. Count of roster rows currently over listed capacity. Not a forecast.');
+  assert.doesNotMatch(withClipboard.copied()[0], /First-breakpoint volume-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /First-breakpoint remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /Least-headroom participant/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown('"', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+  withClipboard.keydown("'");
+  assert.notEqual(withClipboard.copied().at(-1), withClipboard.copied()[0]);
+  assert.match(withClipboard.copied().at(-1), /First-breakpoint remaining-to-hold/);
+  withClipboard.keydown(':');
+  assert.match(withClipboard.copied().at(-1), /First-breakpoint volume-to-hold/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.keydown('"');
+  assert.match(denied.markup(), /id="over-capacity-count-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const over = await workbench('file:', { clipboard: 'ok' });
+  over.edit('deal.monthlyVolume', '116000');
+  over.keydown('"');
+  assert.equal(over.copied().at(-1), 'Over-capacity participant count: 1. Count of roster rows currently over listed capacity. Not a forecast.');
+});
+
 test('keyboard < jumps to Copy first-breakpoint remaining-to-hold unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
