@@ -2583,6 +2583,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "j" || event.key === "J") {
     event.preventDefault();
     copyRemainingBudget();
+  } else if (event.key === "x" || event.key === "X") {
+    event.preventDefault();
+    $("#export-button")?.focus?.();
   }
 });
 

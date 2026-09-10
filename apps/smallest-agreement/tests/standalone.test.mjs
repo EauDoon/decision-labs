@@ -61,6 +61,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>d<\/kbd> Jump to the first group below its support floor, or the groups heading/u);
   assert.match(html, /<kbd>o<\/kbd> Jump to the first recommended-package option card, or the clauses heading/u);
   assert.match(html, /<kbd>j<\/kbd> Copy remaining change-budget as one-line Markdown/u);
+  assert.match(html, /<kbd>x<\/kbd> Focus the JSON export control/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -1516,6 +1517,24 @@ test("keyboard j copies remaining change-budget unless an input is active", asyn
   blocked.clearFocus();
   blocked.keydown("j", { tagName: "INPUT", isContentEditable: false });
   assert.equal(blocked.focused(), "");
+});
+
+test("keyboard x focuses JSON export unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>x<\/kbd> Focus the JSON export control/u);
+  assert.match(html, /id="export-button"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("x");
+  assert.equal(app.focused(), "#export-button");
+  app.clearFocus();
+  app.keydown("x", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("x", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("x", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("X");
+  assert.equal(app.focused(), "#export-button");
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {

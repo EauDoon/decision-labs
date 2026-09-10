@@ -578,6 +578,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>d</kbd> Jump to the first group below its support floor, or the groups heading</li>
           <li><kbd>o</kbd> Jump to the first recommended-package option card, or the clauses heading</li>
           <li><kbd>j</kbd> Copy remaining change-budget as one-line Markdown</li>
+          <li><kbd>x</kbd> Focus the JSON export control</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -5733,6 +5734,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "j" || event.key === "J") {
     event.preventDefault();
     copyRemainingBudget();
+  } else if (event.key === "x" || event.key === "X") {
+    event.preventDefault();
+    $("#export-button")?.focus?.();
   }
 });
 
