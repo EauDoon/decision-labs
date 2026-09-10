@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { isStandaloneCurrent, renderStandalone } from '../scripts/build-standalone.mjs';
+import { isStandaloneCurrent, renderStandalone, buildStandalone } from '../scripts/build-standalone.mjs';
 
 const html = '<html><head><title>Partnership Breakpoint</title><link rel="stylesheet" href="styles.css" /></head><body><a href="MODEL.md">Read the full model</a><script type="module" src="src/app.js"></script></body></html>';
 const appImport = `import {
@@ -59,4 +59,19 @@ test('standalone renderer inlines local assets with deterministic LF bytes', () 
 test('standalone renderer refuses missing markers and external CSS resources', () => {
   assert.throws(() => renderStandalone({ html: '<html></html>', css: '', model: '', app: appImport }), /marker/);
   assert.throws(() => renderStandalone({ html, css: 'body { background: url(image.png); }', model: '', app: appImport }), /URL resource/);
+});
+
+test('standalone retains 1.5.8 review tools and 1.5.9 copy controls', async () => {
+  const html = await buildStandalone();
+  assert.match(html, /createPartnershipReviewPacket/);
+  assert.match(html, /replayPartnershipReviewPacket/);
+  assert.match(html, /PARTNERSHIP_REVIEW_TOOLS/);
+  assert.match(html, /analyzePartnershipReview/);
+  assert.match(html, /data-action="copy-first-breakpoint-remaining"/);
+  assert.match(html, /id="copy-first-breakpoint-remaining"/);
+  assert.match(html, /data-action="copy-first-breakpoint-volume"/);
+  assert.match(html, /data-action="hide-spare-capacity-participants"/);
+  assert.match(html, /data-action="hide-least-headroom-participants"/);
+  assert.match(html, /School concert split/);
+  assert.match(html, /hideParticipantsAtLeastHeadroom/);
 });
