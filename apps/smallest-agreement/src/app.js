@@ -3648,6 +3648,15 @@ function jumpToHideNonVetoGroups() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToVetoGroupCountCopy() {
+  const control = $("#copy-veto-group-count-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -3890,6 +3899,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "(") {
     event.preventDefault();
     copyVetoGroupCount();
+  } else if (event.key === ")") {
+    event.preventDefault();
+    jumpToVetoGroupCountCopy();
   }
 });
 
