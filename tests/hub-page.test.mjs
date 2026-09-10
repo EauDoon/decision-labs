@@ -92,6 +92,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Last How copy, last-How jump, and first-How jump/);
   assert.match(html, /Last-job copy, last-job jump, and first-job jump/);
   assert.match(html, /Last What's new copy, last-news jump, and first-news jump/);
+  assert.match(html, /First What's new copy, intro jump, and skip-link jump/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -237,6 +238,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /last How-it-works copy, last-How jump, and first-How jump/);
   assert.match(readme, /last-job copy, last-job jump, and first-job jump/);
   assert.match(readme, /last What's new copy, last-news jump, and first-news jump/);
+  assert.match(readme, /first What's new copy, intro jump, and skip-link jump/);
   assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
@@ -252,6 +254,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy last How it works item on\s+that 404 page copies/);
   assert.match(readme, /Copy last job on\s+that 404 page copies/);
   assert.match(readme, /Copy last What's new heading on\s+that 404 page copies/);
+  assert.match(readme, /Copy first What's new heading on\s+that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -1500,6 +1503,122 @@ test('keyboard e copies catalog heading and lede through the same control', () =
   assert.equal(clicks.lede, 1);
 });
 
+test('at focuses Copy catalog intro when focus is not in an input', () => {
+  assert.match(html, /event\.key === '@'/);
+  assert.match(html, /getElementById\('copy-lede'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /id="copy-lede"/);
+  assert.match(html, /id="catalog-heading"/);
+  assert.match(html, /<kbd>@<\/kbd><\/dt><dd>Focus the Copy catalog intro control, or the catalog heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Press <kbd>@<\/kbd> to focus Copy catalog intro/);
+  assert.match(html, /This is distinct from <kbd>e<\/kbd>, which copies the catalog heading and lede/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Key `@` focuses the Copy catalog intro control/);
+  assert.match(readme, /Press `@` to focus the Copy catalog intro control/);
+  const focused = [];
+  const clicks = { lede: 0 };
+  const assigned = [];
+  let keydown = null;
+  const copyLede = { focus() { focused.push('copy-lede'); }, click() { clicks.lede += 1; }, addEventListener() {} };
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return copyLede;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('@', input, true);
+  fire('@', textarea, true);
+  fire('@', select, true);
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.lede, 0);
+  assert.deepEqual(assigned, []);
+  fire('@', body, true);
+  assert.deepEqual(focused, ['copy-lede']);
+  assert.equal(clicks.lede, 0);
+  assert.deepEqual(assigned, []);
+  fire('e', body, false);
+  assert.equal(clicks.lede, 1);
+  assert.deepEqual(focused, ['copy-lede']);
+  assert.deepEqual(assigned, []);
+});
+
+test('at focuses the catalog heading when Copy catalog intro is missing', () => {
+  const focused = [];
+  const clicks = { lede: 0 };
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return null;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '@',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: true,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['catalog-heading']);
+  assert.equal(clicks.lede, 0);
+  assert.deepEqual(assigned, []);
+});
+
 test('copy catalog intro markdown is heading plus lede, or empty if nodes are missing', async () => {
   let copied = '';
   let clickLede = null;
@@ -1650,6 +1769,170 @@ test('keyboard z copies skip-link targets through the same control', () => {
   assert.equal(clicks.skips, 0);
   fire('z', body);
   assert.equal(clicks.skips, 1);
+});
+
+test('hash focuses Copy skip links when focus is not in an input', () => {
+  assert.match(html, /event\.key === '#'/);
+  assert.match(html, /getElementById\('copy-skips'\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /id="copy-skips"/);
+  assert.match(html, /id="skips"/);
+  assert.match(html, /nav class="skips" id="skips" tabindex="-1"/);
+  assert.match(html, /<kbd>#<\/kbd><\/dt><dd>Focus the Copy skip links control, or the skip-link row or catalog heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Press <kbd>#<\/kbd> to focus Copy skip links/);
+  assert.match(html, /This is distinct from <kbd>z<\/kbd>, which copies skip-link targets/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Key `#` focuses the Copy skip links control/);
+  assert.match(readme, /Press `#` to focus the Copy skip links control/);
+  const focused = [];
+  const clicks = { skips: 0 };
+  const assigned = [];
+  let keydown = null;
+  const copySkips = { focus() { focused.push('copy-skips'); }, click() { clicks.skips += 1; }, addEventListener() {} };
+  const skipRow = { focus() { focused.push('skips'); } };
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return copySkips;
+      if (id === 'skips') return skipRow;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('#', input, true);
+  fire('#', textarea, true);
+  fire('#', select, true);
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.skips, 0);
+  assert.deepEqual(assigned, []);
+  fire('#', body, true);
+  assert.deepEqual(focused, ['copy-skips']);
+  assert.equal(clicks.skips, 0);
+  assert.deepEqual(assigned, []);
+  fire('z', body, false);
+  assert.equal(clicks.skips, 1);
+  assert.deepEqual(focused, ['copy-skips']);
+  assert.deepEqual(assigned, []);
+});
+
+test('hash focuses the skip-link row when Copy skip links is missing', () => {
+  const focused = [];
+  const clicks = { skips: 0 };
+  const assigned = [];
+  let keydown = null;
+  const skipRow = { focus() { focused.push('skips'); } };
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return null;
+      if (id === 'skips') return skipRow;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '#',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: true,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['skips']);
+  assert.equal(clicks.skips, 0);
+  assert.deepEqual(assigned, []);
+});
+
+test('hash focuses the catalog heading when Copy skip links and the skip-link row are missing', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return null;
+      if (id === 'skips') return null;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '#',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: true,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['catalog-heading']);
+  assert.deepEqual(assigned, []);
 });
 
 test('copy skip links markdown is heading text plus hash hrefs from the skip links', async () => {
@@ -5108,6 +5391,36 @@ test('What\'s new and README name last What\'s new copy and jumps without changi
   assert.doesNotMatch(html, /live service/i);
 });
 
+test('What\'s new and README name first What\'s new copy, intro jump, and skip-link jump without changing workbench versions', () => {
+  const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
+  const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
+  assert.equal(headings[0], "First What's new copy, intro jump, and skip-link jump");
+  assert.equal(headings[headings.length - 1], 'Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12');
+  assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
+  assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
+  assert.equal(headings.includes('Swimming carnival, over-capacity label copy, and first-over-capacity hide in Partnership Breakpoint 1.5.12'), true);
+  assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
+  assert.equal(headings.includes('Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1.5.12'), true);
+  assert.match(html, /Copy first What's new heading through close-paren as Markdown/);
+  assert.match(html, /jump to Copy catalog intro with keyboard at/);
+  assert.match(html, /jump to Copy skip links with keyboard hash/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /without adding a public path/);
+  assert.match(html, /These are in-page catalog tools/);
+  assert.match(readme, /first What's new copy, intro jump, and skip-link jump/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy first What's new heading on\s+that 404 page copies/);
+  assert.match(readme, /Copy first What's new heading copies the first What's new heading/);
+  assert.match(readme, /Press `\)` to copy the first What's new heading/);
+  assert.match(readme, /Press `@` to focus the Copy catalog intro control/);
+  assert.match(readme, /Press `#` to focus the Copy skip links control/);
+  assert.match(readme, /Key `\)` copies the first What's new heading/);
+  assert.match(readme, /Key `@` focuses the Copy catalog intro control/);
+  assert.match(readme, /Key `#` focuses the Copy skip links control/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+});
+
 test('copy last job control is distinct from Copy first job and Copy jobs', () => {
   assert.match(html, /id="copy-last-job"/);
   assert.match(html, />Copy last job</);
@@ -6303,5 +6616,168 @@ test('tilde exclamation and open-paren do not steal g n close-brace or last-How'
   assert.equal(clicks.lastNews, 1);
   assert.equal(clicks.firstNews, 0);
   assert.deepEqual(focused, ['first-news-h3', 'whats-new', 'copy-last-whats-new', 'copy-first-whats-new']);
+  assert.deepEqual(assigned, []);
+});
+
+test('keyboard close-paren copies the first What\'s new heading through its own control', () => {
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /firstWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="\)"/);
+  assert.match(html, /<kbd>\)<\/kbd><\/dt><dd>Copy the first What's new heading as one Markdown line from this catalog page, not a live product feed/);
+  assert.match(html, /Press <kbd>\)<\/kbd> to copy the first What's new heading/);
+  assert.match(html, /If that heading is missing, this copies an empty string/);
+  assert.match(html, /This is distinct from <kbd>~<\/kbd>, which copies the last What's new heading/);
+  assert.match(html, /from <kbd>g<\/kbd>, which focuses the first What's new heading/);
+  assert.match(html, /from <kbd>\(<\/kbd>, which focuses Copy first What's new heading/);
+  assert.match(readme, /Press `\)` to copy the first What's new heading/);
+  assert.match(readme, /Key `\)` copies the first What's new heading/);
+  const clicks = { firstNews: 0, lastNews: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-whats-new') return { click() { clicks.firstNews += 1; }, addEventListener() {}, focus() { focused.push('copy-first-whats-new'); } };
+      if (id === 'copy-last-whats-new') return { click() { clicks.lastNews += 1; }, addEventListener() {}, focus() { focused.push('copy-last-whats-new'); } };
+      if (id === 'whats-new') return { focus() { focused.push('whats-new'); } };
+      if (id === 'whats-new-title') return { focus() { focused.push('whats-new-title'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? { focus() { focused.push('first-news-h3'); } } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire(')', input, true);
+  fire(')', textarea, true);
+  fire(')', select, true);
+  assert.equal(clicks.firstNews, 0);
+  assert.equal(clicks.lastNews, 0);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire(')', body, true);
+  assert.equal(clicks.firstNews, 1);
+  assert.equal(clicks.lastNews, 0);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('~', body, true);
+  assert.equal(clicks.lastNews, 1);
+  assert.equal(clicks.firstNews, 1);
+  fire('g', body, false);
+  assert.deepEqual(focused, ['first-news-h3']);
+  assert.equal(clicks.firstNews, 1);
+  fire('(', body, true);
+  assert.deepEqual(focused, ['first-news-h3', 'copy-first-whats-new']);
+  assert.equal(clicks.firstNews, 1);
+  assert.equal(clicks.lastNews, 1);
+  assert.deepEqual(assigned, []);
+});
+
+test('close-paren at and hash stay distinct from tilde open-paren e z g n', () => {
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /event\.key === '@'/);
+  assert.match(html, /event\.key === '#'/);
+  assert.match(html, /event\.key === '~'/);
+  assert.match(html, /event\.key === '\('/);
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /event\.key === 'z'/);
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /event\.key === 'n'/);
+  assert.match(html, /firstWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /lastWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /ledeBtn\?\.click\(\)/);
+  assert.match(html, /skipsBtn\?\.click\(\)/);
+  const clicks = { firstNews: 0, lastNews: 0, lede: 0, skips: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-whats-new') return { click() { clicks.firstNews += 1; }, addEventListener() {}, focus() { focused.push('copy-first-whats-new'); } };
+      if (id === 'copy-last-whats-new') return { click() { clicks.lastNews += 1; }, addEventListener() {}, focus() { focused.push('copy-last-whats-new'); } };
+      if (id === 'copy-lede') return { click() { clicks.lede += 1; }, addEventListener() {}, focus() { focused.push('copy-lede'); } };
+      if (id === 'copy-skips') return { click() { clicks.skips += 1; }, addEventListener() {}, focus() { focused.push('copy-skips'); } };
+      if (id === 'whats-new') return { focus() { focused.push('whats-new'); } };
+      if (id === 'whats-new-title') return { focus() { focused.push('whats-new-title'); } };
+      if (id === 'catalog-heading') return { focus() { focused.push('catalog-heading'); } };
+      if (id === 'skips') return { focus() { focused.push('skips'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? { focus() { focused.push('first-news-h3'); } } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, shiftKey = false) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  fire(')', true);
+  fire('@', true);
+  fire('#', true);
+  fire('~', true);
+  fire('(', true);
+  fire('e');
+  fire('z');
+  fire('g');
+  fire('n');
+  assert.equal(clicks.firstNews, 1);
+  assert.equal(clicks.lastNews, 1);
+  assert.equal(clicks.lede, 1);
+  assert.equal(clicks.skips, 1);
+  assert.deepEqual(focused, ['copy-lede', 'copy-skips', 'copy-first-whats-new', 'first-news-h3', 'whats-new']);
   assert.deepEqual(assigned, []);
 });
