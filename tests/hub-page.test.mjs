@@ -147,6 +147,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Late issuer, hours-to-clear copy, and zero-queue hide in Weekend Gap 1\.5\.8/);
   assert.match(html, /Early Saturday FX, bank-hour copy, and bank-closed hide in Weekend Gap 1\.5\.9/);
   assert.match(html, /Sunday late bank, issuer-hour copy, and issuer-closed hide in Weekend Gap 1\.5\.10/);
+  assert.match(html, /Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1\.5\.11/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
   assert.match(html, /Catalog cards list each workbench version next to its job/);
   assert.match(html, /not checkout, inventory, or a second live order/);
@@ -212,6 +213,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /hours-to-clear copy shortcut, Monday late issuer open/);
   assert.match(readme, /first-closed-bank copy shortcut, Saturday early FX open/);
   assert.match(readme, /first-closed-issuer copy shortcut, Sunday late bank close/);
+  assert.match(readme, /first-closed-payout copy shortcut, Sunday late payout close/);
   assert.match(readme, /how-it-works jump, version-line copy, and skip-link focus/);
   assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(readme, /trust-item jump, first-job copy, and 404 Copy version line/);
