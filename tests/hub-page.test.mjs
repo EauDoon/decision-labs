@@ -424,7 +424,57 @@ test('keyboard o opens the last-launched workbench like keys 1 to 4', () => {
   assert.match(html, /This key assigns a location; it does not copy/);
 });
 
-test('keyboard l focuses the last-launched workbench card in this browser', () => {
+test('keyboard x clears last-launched storage in this browser', () => {
+  assert.match(html, /event\.key === 'x'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /localStorage\.removeItem\(LAST_WORKBENCH_KEY\)/);
+  assert.match(html, /querySelectorAll\('\.last-launched'\)/);
+  assert.match(html, /note\.hidden = true/);
+  assert.match(html, /<kbd>x<\/kbd><\/dt><dd>Clear last-launched storage in this browser and hide the recency notes/);
+  assert.match(html, /This is this-browser storage, not a cloud recency/);
+  assert.match(html, /Press <kbd>x<\/kbd> to clear last-launched in this browser/);
+  assert.match(html, /not a cloud recency/);
+  assert.match(readme, /Press `x` to clear last-launched storage in this browser/);
+  assert.match(readme, /not a cloud recency/);
+  const notes = Object.fromEntries(['1', '2', '3', '4'].map((key) => [key, { hidden: false }]));
+  const stored = { value: '2' };
+  let keydown = null;
+  const document = {
+    getElementById: () => null,
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      if (selector === '.last-launched') return Object.values(notes);
+      return [];
+    },
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: {
+      getItem() { return stored.value; },
+      setItem(key, value) { stored.value = value; },
+      removeItem() { stored.value = null; },
+    },
+  });
+  keydown({
+    key: 'x',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {},
+  });
+  assert.equal(stored.value, null);
+  for (const key of ['1', '2', '3', '4']) {
+    assert.equal(notes[key].hidden, true, `workbench ${key} recency note should hide`);
+  }
+});
   assert.match(html, /event\.key === 'l'/);
   assert.match(html, /inEditable\(event\.target\)/);
   assert.match(html, /data-workbench="1"/);

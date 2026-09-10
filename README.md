@@ -122,7 +122,10 @@ That recency is storage in this browser, not a cloud recency. Press `o` to
 open that last-launched workbench. The key assigns `location` the same way
 keys 1 to 4 do, including writing last-launched storage. If none is stored,
 it focuses the workbenches and does not navigate. It does not copy, including
-on a file URL. Press `?` on the catalog for the in-page shortcut list. The branded 404
+on a file URL. Press `x` to clear last-launched storage in this browser and
+hide the recency notes. That clear is this-browser storage, not a cloud
+recency. If this browser refuses the storage write, the notes still hide for
+this view and no error is shown. Press `?` on the catalog for the in-page shortcut list. The branded 404
 page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
 Smallest Agreement, and Weekend Gap. Copy versions on that 404 page copies
@@ -242,4 +245,4 @@ repository-wide and component issues in the
 
 MIT. See [LICENSE](LICENSE) and each app's retained `LICENSE` file.
 
-The local last-launched marker updates from both the Open workbench links and keys 1 to 4. Storage failure does not prevent opening an app. Missing or unreadable last-launched storage is silent: no recency note appears.
+The local last-launched marker updates from both the Open workbench links and keys 1 to 4. Storage failure does not prevent opening an app. Missing or unreadable last-launched storage is silent: no recency note appears. Key `x` clears that marker in this browser and hides the notes. A storage write failure stays silent.
