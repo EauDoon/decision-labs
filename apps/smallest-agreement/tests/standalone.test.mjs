@@ -133,6 +133,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Hide groups currently meeting the approval threshold/u);
   assert.match(html, /id="hide-groups-below-threshold"/u);
   assert.match(html, /Hide groups currently below the approval threshold/u);
+  assert.match(html, /id="hide-veto-groups"/u);
+  assert.match(html, /Hide veto groups/u);
   assert.match(html, /id="veto-groups-status"/u);
   assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
@@ -396,6 +398,11 @@ async function savedWorkbench(storage, hash = "") {
     },
     filterHideGroupsBelowThreshold: (checked) => {
       const target = element("#hide-groups-below-threshold");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
+    filterHideVetoGroups: (checked) => {
+      const target = element("#hide-veto-groups");
       target.checked = checked;
       target.events.get("change")({ target: { checked } });
     },
@@ -1325,6 +1332,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /\.hide-groups-without-floors-filter, #hide-groups-without-floors-filter-note/u);
   assert.match(html, /\.hide-groups-meeting-threshold-filter, #hide-groups-meeting-threshold-filter-note/u);
   assert.match(html, /\.hide-groups-below-threshold-filter, #hide-groups-below-threshold-filter-note/u);
+  assert.match(html, /\.hide-veto-groups-filter, #hide-veto-groups-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -2262,6 +2270,67 @@ test("hide-groups-below-threshold hides groups below the numeric threshold witho
   })]]));
   empty.filterHideGroupsBelowThreshold(true);
   assert.match(empty.groups(), /No groups remain after hiding groups whose average is below the numeric approval threshold/u);
+});
+
+test("hide-veto-groups hides veto group cards without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="hide-veto-groups"/u);
+  assert.match(html, /Hide veto groups/u);
+  assert.match(html, /a number you entered, not a legal right/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterHideVetoGroups(true);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  assert.match(app.groups(), /Residents/u);
+  app.filterHideVetoGroups(false);
+  app.field("#preset-select", "club-constitution");
+  app.click("#load-preset");
+  const clubBefore = storage.get("smallest-agreement:proposal:v1");
+  app.filterHideVetoGroups(true);
+  assert.doesNotMatch(app.groups(), /data-group-id="officers"/u);
+  assert.match(app.groups(), /Members/u);
+  assert.match(app.groups(), /Club staff/u);
+  assert.match(app.shares(), /Officers/u);
+  assert.match(app.vetoGroupsStatus(), /Showing 2 of 3 groups/u);
+  app.filterVetoGroups(true);
+  assert.match(app.groups(), /No groups remain after hiding veto groups/u);
+  assert.match(app.shares(), /Officers/u);
+  app.filterVetoGroups(false);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), clubBefore);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideVetoGroups, true);
+  assert.equal(Object.hasOwn(JSON.parse(storage.get("smallest-agreement:proposal:v1")), "hideVetoGroups"), false);
+  app.filterHideVetoGroups(false);
+  assert.match(app.groups(), /Officers/u);
+  const empty = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify({
+    title: "Only veto groups workshop",
+    threshold: 70,
+    groups: [{ id: "veto", name: "Veto bloc", weight: 1, veto: true }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { veto: 90 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { veto: 80 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { veto: 70 } },
+    ] }],
+  })]]));
+  empty.filterHideVetoGroups(true);
+  assert.match(empty.groups(), /No groups remain after hiding veto groups/u);
+  assert.match(empty.groups(), /not a legal right/u);
+});
+
+test("keyboard y reveals a veto group hidden by hide-veto-groups", async () => {
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.field("#preset-select", "club-constitution");
+  app.click("#load-preset");
+  app.filterHideVetoGroups(true);
+  assert.doesNotMatch(app.groups(), /data-group-id="officers"/u);
+  assert.match(app.groups(), /Members/u);
+  app.clearFocus();
+  app.keydown("y");
+  assert.equal(app.focused(), '[data-field="group-name"][data-group-id="officers"]');
+  assert.match(app.groups(), /Officers/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideVetoGroups, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.find((group) => group.id === "officers").name, "Officers");
 });
 
 test("keyboard y reveals a veto group hidden by hide-groups-below-threshold", async () => {
@@ -3850,6 +3919,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(Object.hasOwn(proposal, "hideLockedClauses"), false);
   assert.equal(Object.hasOwn(proposal, "hideGroupsMeetingThreshold"), false);
   assert.equal(Object.hasOwn(proposal, "hideGroupsBelowThreshold"), false);
+  assert.equal(Object.hasOwn(proposal, "hideVetoGroups"), false);
   assert.equal(Object.hasOwn(proposal, "noCheaperRemainingClausesOnly"), false);
   assert.equal(proposal.clauses.length, 3);
   assert.match(app.groups(), /No veto groups match this filter/u);
@@ -3865,6 +3935,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   app.filterHideLockedClauses(true);
   app.filterHideGroupsMeetingThreshold(true);
   app.filterHideGroupsBelowThreshold(true);
+  app.filterHideVetoGroups(true);
   const nextPrefs = JSON.parse(storage.get("smallest-agreement:workspace:v1"));
   assert.equal(nextPrefs.changedClausesOnly, true);
   assert.equal(nextPrefs.belowFloorGroupsOnly, true);
@@ -3876,6 +3947,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(nextPrefs.hideLockedClauses, true);
   assert.equal(nextPrefs.hideGroupsMeetingThreshold, true);
   assert.equal(nextPrefs.hideGroupsBelowThreshold, true);
+  assert.equal(nextPrefs.hideVetoGroups, true);
   app.filterVetoGroups(false);
   app.filterLockedClauses(false);
   await app.importJson(JSON.stringify({
@@ -3903,10 +3975,18 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideLockedClauses, false);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideGroupsMeetingThreshold, false);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideGroupsBelowThreshold, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideVetoGroups, false);
   await app.importJson(JSON.stringify({
     format: "smallest-agreement-workspace",
     version: 1,
     vetoGroupsOnly: "yes",
+    proposal,
+  }));
+  assert.match(app.message(), /Import failed \(invalid_filter\)/u);
+  await app.importJson(JSON.stringify({
+    format: "smallest-agreement-workspace",
+    version: 1,
+    hideVetoGroups: "yes",
     proposal,
   }));
   assert.match(app.message(), /Import failed \(invalid_filter\)/u);
