@@ -810,6 +810,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>Least-headroom participant</h2><p>${escapeAttribute(leastHeadroomLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First-breakpoint participant</h2><p>${escapeAttribute(firstBreakpointLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First-breakpoint remaining-to-hold</h2><p>${escapeAttribute(firstBreakpointRemainingToHoldMarkdown(result))}</p></section>
+    <section class="print-only print-keep"><h2>First-breakpoint volume-to-hold</h2><p>${escapeAttribute(firstBreakpointVolumeToHoldMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
     <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
