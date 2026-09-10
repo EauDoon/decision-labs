@@ -148,6 +148,8 @@
     #shortcuts:focus-visible,
     #trust:focus,
     #trust:focus-visible,
+    #main:focus,
+    #main:focus-visible,
     .workbench:focus,
     .workbench:focus-visible {
       outline: 3px solid var(--focus);
@@ -396,7 +398,7 @@
     <a href="#how-it-works">How it works</a>
     <a href="#trust">Trust and limits</a>
   </nav>
-  <main class="shell" id="main">
+  <main class="shell" id="main" tabindex="-1">
     <section class="whats-new" id="whats-new" tabindex="-1" aria-labelledby="whats-new-title">
       <h2 id="whats-new-title">What's new</h2>
       <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank. Catalog cards list each workbench version next to its job.</p>
@@ -503,7 +505,7 @@
         <li data-app="smallest-agreement">1.5.2</li>
         <li data-app="weekend-gap">1.5.2</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>j</kbd> to copy catalog jobs. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>j</kbd> to copy catalog jobs. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -512,6 +514,7 @@
           <dt><kbd>3</kbd></dt><dd>Open The Smallest Agreement</dd>
           <dt><kbd>4</kbd></dt><dd>Open Weekend Gap</dd>
           <dt><kbd>h</kbd></dt><dd>Focus the catalog heading</dd>
+          <dt><kbd>m</kbd></dt><dd>Focus the main catalog content</dd>
           <dt><kbd>n</kbd></dt><dd>Focus What's new</dd>
           <dt><kbd>w</kbd></dt><dd>Focus the workbenches</dd>
           <dt><kbd>k</kbd></dt><dd>Focus How it works</dd>
@@ -770,6 +773,11 @@
         if (event.key === 'h') {
           event.preventDefault();
           document.getElementById('catalog-heading')?.focus();
+          return;
+        }
+        if (event.key === 'm') {
+          event.preventDefault();
+          document.getElementById('main')?.focus();
           return;
         }
         if (event.key === 'n') {

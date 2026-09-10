@@ -109,7 +109,8 @@ local drafts. A path outside that set still returns HTTP 404; the body is a
 Decision Labs page that points back to the catalog rather than a blank
 "Not found" line. Set `PORT` to an integer from 1 through 65535 to choose another
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
-an input. Press `h` to focus the catalog heading. Press `n` to focus What's
+an input. Press `h` to focus the catalog heading. Press `m` to focus the
+main catalog content. Press `n` to focus What's
 new. Press `w` to focus the workbenches. Press `k` to focus How it works.
 Press `t` to focus Trust and limits. Press `c` to copy the catalog address
 when this page is served over http. On a file URL that key does not claim a

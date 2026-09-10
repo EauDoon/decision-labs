@@ -18,7 +18,7 @@ test('catalog page keeps language, landmarks, skip, and focus contract', () => {
   assert.match(html, /id="catalog-heading" tabindex="-1"/);
   assert.match(html, /<header class="shell hero">/);
   assert.match(html, /<nav class="shell site-nav" aria-label="On this page">/);
-  assert.match(html, /<main class="shell" id="main">/);
+  assert.match(html, /<main class="shell" id="main" tabindex="-1">/);
   assert.match(html, /<footer class="shell site-footer">/);
   assert.match(html, /a:focus-visible, button:focus-visible/);
   assert.match(html, /prefers-reduced-motion: reduce/);
@@ -184,6 +184,18 @@ test('h focuses the catalog heading when focus is not in an input', () => {
   assert.match(html, /getElementById\('catalog-heading'\)\?\.focus\(\)/);
   assert.match(html, /<kbd>h<\/kbd><\/dt><dd>Focus the catalog heading/);
   assert.match(html, /inEditable\(event\.target\)/);
+});
+
+test('m focuses the main catalog when focus is not in an input', () => {
+  assert.match(html, /id="main" tabindex="-1"/);
+  assert.match(html, /<main class="shell" id="main" tabindex="-1">/);
+  assert.match(html, /event\.key === 'm'/);
+  assert.match(html, /getElementById\('main'\)\?\.focus\(\)/);
+  assert.match(html, /<kbd>m<\/kbd><\/dt><dd>Focus the main catalog content/);
+  assert.match(html, /Press <kbd>m<\/kbd> to focus the main catalog/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /#main:focus-visible/);
+  assert.match(readme, /Press `m` to focus the\s+main catalog content/);
 });
 
 test('w focuses the workbenches when focus is not in an input', () => {
