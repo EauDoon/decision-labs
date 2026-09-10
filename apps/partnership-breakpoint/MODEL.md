@@ -158,7 +158,7 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 ## Redacted export
 
-`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case.
+`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case. Print one-pager includes the least-headroom participant line when the case is valid. The saved case is unchanged.
 
 ## Participant CSV import
 
@@ -196,13 +196,13 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 
 ## Charts
 
-The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. Download tornado SVG writes that same chart as a standalone SVG file with an XML declaration and SVG namespace. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Download waterfall SVG writes every participant chart in one namespaced SVG file with the same XML declaration. Copy contribution waterfall copies each participant, contribution per transaction, and revenue share as Markdown. Both charts ship with text-equivalent tables. Neither assigns probability.
+The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. Hide unbounded shocks filters unbounded or impossible shocks from the displayed chart and table. Restore shows all. Download tornado SVG writes the displayed chart as a standalone SVG file with an XML declaration and SVG namespace. Copy tornado copies each participant, shock axis, and bounded percentage as Markdown. Unbounded shocks stay unbounded. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Download waterfall SVG writes every participant chart in one namespaced SVG file with the same XML declaration. Copy contribution waterfall copies each participant, contribution per transaction, and revenue share as Markdown. Both charts ship with text-equivalent tables. Neither assigns probability.
 
 ## Display-only stress mute
 
 Hiding a participant row in the stress ledger is a display filter. Case counts, hold counts, worst profit gaps, operational failures, and any tested proposal still include that participant. Showing the row again does not recalculate the grid.
 
-Hiding participants who hold in every tested compound case filters the participant ledger table only. Expand restores the rows. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking.
+Hiding participants who hold in every tested compound case filters the participant ledger table only. Expand restores the rows. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking. Optional `hideAllHoldLedger` on a saved case is a boolean. Older files omit it and default to showing those ledger rows. Present non-boolean values are rejected. Unknown sibling fields are still rejected.
 
 Collapsing cases every participant holds hides those case-evidence rows from the inspect table only. Expand restores them. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking. Optional `collapseAllHoldCases` on a saved case is a boolean. Older files omit it and default to expanded. Present non-boolean values are rejected. Unknown sibling fields are still rejected.
 
