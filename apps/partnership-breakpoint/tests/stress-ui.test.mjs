@@ -53,7 +53,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
-        'notes-copy-text',
+        'notes-copy-text', 'first-breakpoint-title',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1113,6 +1113,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>s<\/kbd> Jump to share-to-hold/);
   assert.match(app.markup(), /<kbd>c<\/kbd> Jump to snapshot or imported JSON compare/);
   assert.match(app.markup(), /<kbd>p<\/kbd> Print the one-pager/);
+  assert.match(app.markup(), /<kbd>f<\/kbd> Jump to the First breakpoint heading/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1237,6 +1238,24 @@ test('redacted export replaces names, clears the title, and keeps identifiers', 
   app.edit('deal.monthlyVolume', '');
   app.click('export-redacted');
   assert.equal(app.downloads().length, 1);
+});
+
+test('keyboard f jumps to the First breakpoint heading unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="first-breakpoint-title" tabindex="-1"/);
+  app.keydown('f');
+  assert.ok(app.focused().includes('#first-breakpoint-title'));
+  assert.ok(app.focused().includes('scroll:#first-breakpoint-title'));
+  const before = app.focused().length;
+  app.keydown('f', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('f', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('f');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
 });
 
 test('copy first breakpoint uses displayed labels and a clipboard fallback', async () => {

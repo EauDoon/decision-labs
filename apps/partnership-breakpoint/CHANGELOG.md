@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.5.2
+
+- Press `f` to jump to the First breakpoint heading when no field is focused. Shortcuts stay ignored while a field is focused.
+
 ## 1.5.1
 
 - Keeps the 1.5.0 constraint review: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, exact recompute, stale-read cancel, and no replacement of the working case.

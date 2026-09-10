@@ -406,24 +406,24 @@ function copyFirstBreakpointButton() {
 function breakpointSection(result) {
   const breakpoint = result.firstBreakpoint;
   if (!breakpoint?.participant) {
-    return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p>${copyFirstBreakpointButton()}</div></section>`;
+    return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
 
   const participantName = escapeAttribute(breakpoint.participant.name);
   const label = shockLabel(breakpoint.kind);
   const shock = breakpoint.shock;
   if (breakpoint.status === 'already-failing') {
-    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p>${copyFirstBreakpointButton()}</div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
   if (breakpoint.status === 'at-breakpoint') {
-    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p>${copyFirstBreakpointButton()}</div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
 
   const units = shockUnits(breakpoint.kind);
   const threshold = units === 'txn'
     ? `${formatNumber(shock.breakpoint)} txn`
     : `${formatNumber(shock.breakpoint, 4)} units / txn`;
-  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
+  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
 }
 
 function participantDetailsOpen(index) {
@@ -1478,6 +1478,11 @@ window.addEventListener('keydown', (event) => {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'p' || event.key === 'P') printOnePager();
+  if (event.key === 'f' || event.key === 'F') {
+    const target = document.querySelector('#first-breakpoint-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -2235,6 +2240,7 @@ function helpDialog() {
         <li><kbd>s</kbd> Jump to share-to-hold (preview if open, otherwise the first solver)</li>
         <li><kbd>c</kbd> Jump to snapshot or imported JSON compare heading</li>
         <li><kbd>p</kbd> Print the one-pager when the case is valid</li>
+        <li><kbd>f</kbd> Jump to the First breakpoint heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
