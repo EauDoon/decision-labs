@@ -29,6 +29,7 @@ import {
   clausesWithoutCheaperRemainingOption,
   formatCurrentLocksMarkdown,
   formatCurrentLockCountMarkdown,
+  formatFirstLockedClauseOptionLabelMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -2208,6 +2209,42 @@ test("current lock count Markdown is one line and is not a legal hold", () => {
   assert.equal(empty.count, 0);
   assert.equal(empty.text, "Current lock count: 0. Locks are draft choices, not a legal hold.\n");
   assert.equal(formatCurrentLockCountMarkdown({ title: "" }).status, "invalid");
+});
+
+test("first locked clause option label Markdown is one line and honest when none", () => {
+  const input = proposal({
+    clauses: [
+      { id: "one", title: "One", lockedOptionId: "one-change", options: [
+        option("one-original", true, { g: 50 }), option("one-change", false, { g: 80 }, 1), option("one-other", false, { g: 70 }, 2),
+      ] },
+      { id: "two", title: "Two", lockedOptionId: "two-original", options: [
+        option("two-original", true, { g: 50 }), option("two-change", false, { g: 80 }, 1), option("two-other", false, { g: 70 }, 2),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatFirstLockedClauseOptionLabelMarkdown(input);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "First locked clause option: one-change. Locks are draft choices, not a legal hold.\n");
+  assert.doesNotMatch(copied.text, /Current lock count/u);
+  assert.doesNotMatch(copied.text, /# Current clause locks/u);
+  assert.doesNotMatch(copied.text, /Unlocked/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const none = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const empty = formatFirstLockedClauseOptionLabelMarkdown(none);
+  assert.equal(empty.status, "ok");
+  assert.equal(empty.empty, true);
+  assert.equal(empty.text, "No clause is locked, so there is no first locked option label to copy. Locks are draft choices, not a legal hold.\n");
+  assert.equal(empty.text.trim().includes("\n"), false);
+  assert.equal(formatFirstLockedClauseOptionLabelMarkdown({ title: "" }).status, "invalid");
 });
 
 test("formatRecommendedChangeCostCsv writes formula-safe original vs recommended costs", () => {

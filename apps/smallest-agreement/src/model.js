@@ -1922,6 +1922,33 @@ export function formatCurrentLockCountMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the first locked clause option label for clipboard handoff.
+ * Honest when no clause is locked. Distinct from lock-count copy and current-locks copy.
+ * Locks are draft choices, not a legal hold.
+ */
+export function formatFirstLockedClauseOptionLabelMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const disclaimer = "Locks are draft choices, not a legal hold.";
+  const first = p.clauses.find((clause) => clause.lockedOptionId !== undefined);
+  if (!first) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No clause is locked, so there is no first locked option label to copy. ${disclaimer}\n`,
+    };
+  }
+  const locked = first.options.find((option) => option.id === first.lockedOptionId);
+  return {
+    status: "ok",
+    empty: false,
+    label: locked.label,
+    text: `First locked clause option: ${briefText(locked.label)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
