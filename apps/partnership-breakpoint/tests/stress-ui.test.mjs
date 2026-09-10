@@ -58,7 +58,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'tornado-title', 'tornado-copy-text', 'deal-inputs-title', 'operating-copy-text',
         'compound-title', 'inspect-cases-title', 'split-copy-text',
         'least-headroom-participant', 'participant-inputs-title',
-        'field-deal-notes',
+        'field-deal-notes', 'viability-card',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1174,6 +1174,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>h<\/kbd> Jump to the least-headroom participant card, or the Participants heading if none/);
   assert.match(app.markup(), /<kbd>a<\/kbd> Jump to Add participant/);
   assert.match(app.markup(), /<kbd>m<\/kbd> Jump to deal notes/);
+  assert.match(app.markup(), /<kbd>v<\/kbd> Jump to the viability card/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1335,6 +1336,24 @@ test('keyboard f jumps to the First breakpoint heading unless a field is focused
   app.keydown('f');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+});
+
+test('keyboard v jumps to the viability card unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="viability-card" tabindex="-1"/);
+  app.keydown('v');
+  assert.ok(app.focused().includes('#viability-card'));
+  assert.ok(app.focused().includes('scroll:#viability-card'));
+  const before = app.focused().length;
+  app.keydown('v', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('v', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('v');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="viability-card"/);
 });
 
 test('keyboard b jumps to the viability card heading unless a field is focused', async () => {

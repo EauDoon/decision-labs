@@ -600,7 +600,7 @@ function resultsPanel(result) {
     ? `${result.weakestParticipant.name} has the least volume headroom to its ${result.weakestParticipant.bindingConstraint.label} limit.`
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
   return `<section class="results" id="results-start">
-    <section class="status-card ${statusClass}" aria-labelledby="viability-heading" aria-live="polite">
+    <section class="status-card ${statusClass}" id="viability-card" tabindex="-1" aria-labelledby="viability-heading" aria-live="polite">
       <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button></div></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
     </section>
@@ -1656,6 +1656,11 @@ window.addEventListener('keydown', (event) => {
     const notes = document.querySelector('#field-deal-notes');
     notes?.focus?.({ preventScroll: false });
     notes?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'v' || event.key === 'V') {
+    const target = document.querySelector('#viability-card') ?? document.querySelector('#viability-heading');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
   }
 });
 
@@ -2821,6 +2826,7 @@ function helpDialog() {
         <li><kbd>h</kbd> Jump to the least-headroom participant card, or the Participants heading if none</li>
         <li><kbd>a</kbd> Jump to Add participant</li>
         <li><kbd>m</kbd> Jump to deal notes</li>
+        <li><kbd>v</kbd> Jump to the viability card</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
