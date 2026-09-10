@@ -8,7 +8,8 @@ import {
   leftoverCoverageRows,
   computeResidualCoverage,
   evaluateMarket,
-  validateScenario
+  validateScenario,
+  createWinningMerchantLabelMarkdown
 } from "../src/model.js";
 
 function leftoverFixture() {
@@ -141,4 +142,47 @@ test("the buyer room copies leftover coverage with a textarea fallback", async (
   assert.match(app, /function copyTextWithFallback\(/u);
   assert.match(app, /clipboard-fallback-text/u);
   assert.match(app, /if \(key === "c"\)/u);
+});
+
+test("winning merchant Markdown is the merchant label only", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createWinningMerchantLabelMarkdown(scenario);
+  const market = evaluateMarket(scenario);
+  assert.match(markdown, /# Common Cart winning merchant/);
+  assert.match(markdown, new RegExp(`^${market.winner.offer.merchant}$`, "m"));
+  assert.match(markdown, /Merchant label only/);
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes("Tea room"), false);
+  assert.equal(markdown.includes("8"), false);
+});
+
+test("winning merchant Markdown is honest when none unlocked", () => {
+  const scenario = leftoverFixture();
+  scenario.offers.forEach((offer) => { offer.minimumUnits = 5000; });
+  const markdown = createWinningMerchantLabelMarkdown(scenario);
+  assert.match(markdown, /^None unlocked$/m);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+});
+
+test("winning merchant copy sits next to leftover print and stays off the merchant table", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const leftover = html.slice(html.indexOf('id="leftover-print-winner"'), html.indexOf('id="copy-leftover-coverage"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(leftover, /id="copy-winning-merchant"/u);
+  assert.match(leftover, /Copy winning merchant label/u);
+  assert.match(leftover, /Honest empty when none unlocked/u);
+  assert.equal(merchantPanel.includes("copy-winning-merchant"), false);
+  assert.match(app, /createWinningMerchantLabelMarkdown\(/u);
+  assert.match(app, /function copyWinningMerchantLabel\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
 });

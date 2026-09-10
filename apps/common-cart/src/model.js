@@ -1188,6 +1188,20 @@ export function createLeftoverCoverageMarkdown(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Merchant label only. Honest empty when none unlocked. No buyer data. */
+export function createWinningMerchantLabelMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const merchant = coverage.primary?.merchant ?? "None unlocked";
+  const lines = [
+    `# Common Cart winning merchant`,
+    ``,
+    merchant,
+    ``,
+    `Merchant label only. Buyer identities, IDs, budgets, and allocations are omitted.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 /** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
 export function organizerLeftoverRows(rawScenario) {
   const scenario = validateScenario(rawScenario);

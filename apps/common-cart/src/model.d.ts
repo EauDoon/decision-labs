@@ -400,6 +400,8 @@ export function leftoverCoverageRows(rawScenario: unknown): LeftoverCoverageRow[
 export function filterLeftoverCoverageRowsHidingCovered(rawScenario: unknown, hideCovered: boolean): LeftoverCoverageRow[];
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
 export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
+/** Merchant label only. Honest empty when none unlocked. No buyer data. */
+export function createWinningMerchantLabelMarkdown(rawScenario: unknown): string;
 export interface OrganizerLeftoverRow {
   label: string;
   quantity: number;
