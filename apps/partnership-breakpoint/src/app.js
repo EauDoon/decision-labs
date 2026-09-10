@@ -675,12 +675,13 @@ function inputPanel(result) {
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
+          <h2 id="print-one-pager-title" class="visually-hidden" tabindex="-1">Print one-pager</h2>
           ${libraryPanel()}
           <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button><button type="button" data-action="open-help">Keyboard shortcuts</button><button type="button" data-action="show-coach">Show tour</button></div>
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Compare imported JSON shows honest diffs against the current draft without replacing it. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged. Export participant CSV uses those same columns and formula-safe cells.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="print-redacted">Print redacted</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button><button type="button" data-action="copy-deal-notes">Copy deal notes</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="copy-visible-csv">Copy visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" id="print-report" data-action="print-report">Print report</button><button type="button" data-action="print-redacted">Print redacted</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button><button type="button" data-action="copy-deal-notes">Copy deal notes</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="copy-visible-csv">Copy visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <label class="file-button">Compare imported JSON<input type="file" data-action="compare-import" accept="application/json,.json" /></label>
             <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
@@ -720,7 +721,7 @@ function resultsPanel(result) {
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
   return `<section class="results" id="results-start">
     <section class="status-card ${statusClass}" id="viability-card" tabindex="-1" aria-labelledby="viability-heading" aria-live="polite">
-      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button><button type="button" data-action="copy-viability-label">Copy least-headroom participant label</button></div></div>
+      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button><button type="button" id="copy-viability-label" data-action="copy-viability-label">Copy least-headroom participant label</button></div></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
     </section>
     <section class="metric-strip" aria-label="Deal summary">
@@ -1895,8 +1896,21 @@ window.addEventListener('keydown', (event) => {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === ',') copyFirstBreakpointLabel();
+  if (event.key === ';') copyLeastHeadroomLabel();
   if (event.key === '.') {
     const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === '[') {
+    const target = document.querySelector('#copy-viability-label')
+      ?? document.querySelector('#first-breakpoint-title')
+      ?? document.querySelector('#results-start');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === ']') {
+    const target = document.querySelector('#print-report') ?? document.querySelector('#print-one-pager-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -3376,6 +3390,9 @@ function helpDialog() {
         <li><kbd>,</kbd> Copy the first-breakpoint participant label as Markdown</li>
         <li><kbd>.</kbd> Jump to Copy first-breakpoint participant label, or the First breakpoint heading if missing</li>
         <li><kbd>/</kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing</li>
+        <li><kbd>;</kbd> Copy the least-headroom participant label as Markdown</li>
+        <li><kbd>[</kbd> Jump to Copy least-headroom participant label, or the First breakpoint or results heading if missing</li>
+        <li><kbd>]</kbd> Jump to Print one-pager, or the print / one-pager heading if missing</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
