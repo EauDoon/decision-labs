@@ -1060,6 +1060,11 @@ function handleShortcut(event) {
     focusHideBuyersWithLeftover();
     return;
   }
+  if (key === '"') {
+    event.preventDefault();
+    copyLeftoverFillMerchantLabel();
+    return;
+  }
 }
 
 function focusBuyersList() {
