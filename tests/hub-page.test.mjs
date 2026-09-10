@@ -1040,3 +1040,49 @@ test('copy jobs shows a visible textarea when clipboard is unavailable', async (
   assert.match(status.textContent, /not a live product feed/);
 });
 
+test('copy Trust markdown is the printed heading and list items', async () => {
+  let copied = '';
+  let clickTrust = null;
+  const heading = { textContent: 'Trust and limits' };
+  const items = [
+    { textContent: 'Local-first. Pages run in your browser.' },
+    { textContent: 'No account. There is no sign-in.' },
+    { textContent: 'Deterministic math. The same valid inputs produce the same outputs.' },
+    { textContent: 'Not a decision maker. People keep judgment.' },
+    { textContent: 'Model notes live in each workbench. Open the workbench for conventions.' },
+  ];
+  const section = {
+    querySelector(selector) {
+      return selector === 'h2' ? heading : null;
+    },
+    querySelectorAll(selector) {
+      return selector === 'ul li' ? items : [];
+    },
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-trust') return { addEventListener(name, handler) { if (name === 'click') clickTrust = handler; } };
+      if (id === 'copy-trust-status') return { textContent: '' };
+      if (id === 'copy-trust-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'trust') return section;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickTrust();
+  assert.equal(
+    copied,
+    '## Trust and limits\n- Local-first. Pages run in your browser.\n- No account. There is no sign-in.\n- Deterministic math. The same valid inputs produce the same outputs.\n- Not a decision maker. People keep judgment.\n- Model notes live in each workbench. Open the workbench for conventions.',
+  );
+  assert.doesNotMatch(copied, /live policy feed/);
+});
+
