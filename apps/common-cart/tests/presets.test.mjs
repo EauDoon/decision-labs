@@ -17,11 +17,41 @@ test("office pantry and hardware presets evaluate with distinct categories", () 
   assert.ok(hardware.results.some((result) => result.offer.fulfillment === "pickup"));
 });
 
+test("community garden bulk seed is distinct and includes a pickup offer", () => {
+  const garden = evaluateMarket(clonePreset("garden"));
+  const coffee = evaluateMarket(clonePreset("neighbourhood"));
+  const office = evaluateMarket(clonePreset("officePantry"));
+  const hardware = evaluateMarket(clonePreset("hardware"));
+  assert.ok(garden.winner);
+  assert.equal(garden.scenario.title, "Community garden bulk seed");
+  assert.equal(garden.scenario.buyers[0].category, "Garden seed pack");
+  assert.notEqual(garden.scenario.buyers[0].category, coffee.scenario.buyers[0].category);
+  assert.notEqual(garden.scenario.buyers[0].category, office.scenario.buyers[0].category);
+  assert.notEqual(garden.scenario.buyers[0].category, hardware.scenario.buyers[0].category);
+  assert.ok(garden.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Heirloom tomato")));
+  assert.ok(garden.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Cover crop")));
+  assert.ok(garden.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Potting soil")));
+  assert.ok(garden.results.some((result) => result.offer.fulfillment === "pickup"));
+  const quantities = garden.scenario.buyers.map((buyer) => buyer.quantity);
+  assert.equal(new Set(quantities).size > 1, true);
+  const first = evaluateMarket(clonePreset("garden"));
+  const second = evaluateMarket(validateScenario(clonePreset("garden")));
+  assert.equal(first.winner.offer.id, second.winner.offer.id);
+  assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
+});
+
 test("new presets survive validation and keep a deterministic winner", () => {
-  for (const name of ["officePantry", "hardware"]) {
+  for (const name of ["officePantry", "hardware", "garden"]) {
     const first = evaluateMarket(clonePreset(name));
     const second = evaluateMarket(validateScenario(clonePreset(name)));
     assert.equal(first.winner.offer.id, second.winner.offer.id);
     assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
   }
+});
+
+test("the example bar includes the community garden bulk seed preset", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /data-preset="garden"/u);
+  assert.match(html, /Garden seed/u);
 });

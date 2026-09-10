@@ -25,6 +25,8 @@ test("print one-pager hides coach, help, and private buyer rows", async () => {
   assert.match(buyerTable, /print-private/u);
   const inspectorTable = html.slice(html.indexOf("Buyer outcomes for the inspected offer") - 200, html.indexOf("Buyer outcomes for the inspected offer"));
   assert.match(inspectorTable, /print-private/u);
+  const review = html.slice(html.indexOf('id="cart-review"') - 80, html.indexOf('id="cart-review-tool"'));
+  assert.match(review, /print-chrome/u);
 });
 
 test("print one-pager keeps title, winner aggregates, residual, and heatmap", async () => {
