@@ -947,6 +947,13 @@ export function hoursToClearQueueToMarkdown(input) {
   return "Hours to clear queue: " + label + ". Synthetic educational snapshot, not live market data.";
 }
 
+/** One-line Markdown for hours to first settlement. Synthetic, not live, and distinct from hours-to-clear. */
+export function hoursToFirstSettlementToMarkdown(input) {
+  const result = runSimulation(input);
+  const label = hoursToFirstSettlementLabel(result.summary.hoursToFirstSettlement);
+  return "Hours to first settlement: " + label + ". Synthetic educational snapshot, not live market data.";
+}
+
 /** One-row formula-safe dashboard CSV. Empty cells mean the queue never cleared or never settled. */
 export function dashboardToCSV(input) {
   const result = runSimulation(input);

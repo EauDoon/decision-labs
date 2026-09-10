@@ -521,6 +521,23 @@ test("keyboard k jumps to the hours-to-clear line and ignores the key while typi
   assert.equal(ui.nodes.get("hours-to-clear-line").focused, false);
 });
 
+test("keyboard l copies hours-to-first-settlement Markdown and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("l");
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("hours-to-first-settlement-copy-fallback").value, /Hours to first settlement:/);
+  assert.match(ui.nodes.get("hours-to-first-settlement-copy-fallback").value, /Synthetic educational snapshot/);
+  assert.doesNotMatch(ui.nodes.get("hours-to-first-settlement-copy-fallback").value, /Hours to clear queue/);
+  ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden = true;
+  ui.nodes.get("hours-to-first-settlement-copy-fallback").value = "";
+  await ui.keydown("L", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
+  await ui.keydown("l", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
+  await ui.keydown("l", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
+});
+
 test("keyboard h jumps to the selected Gantt hour table and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("h");

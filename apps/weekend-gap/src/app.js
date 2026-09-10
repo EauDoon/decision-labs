@@ -57,6 +57,7 @@ import {
   reportToMarkdown,
   dashboardToMarkdown,
   hoursToClearQueueToMarkdown,
+  hoursToFirstSettlementToMarkdown,
   dashboardToCSV,
   compareScenarioFiles,
   compareThreeScenarioFiles
@@ -1614,9 +1615,16 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();
 });
+document.querySelector("#copy-hours-to-first-settlement").addEventListener("click", async () => {
+  await copyHoursToFirstSettlementMarkdown();
+});
 function copyHoursToClearMarkdown() {
   const text = hoursToClearQueueToMarkdown(scenario);
   return copyTextWithFallback(text, "#hours-to-clear-copy-fallback", "Hours to clear copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
+}
+function copyHoursToFirstSettlementMarkdown() {
+  const text = hoursToFirstSettlementToMarkdown(scenario);
+  return copyTextWithFallback(text, "#hours-to-first-settlement-copy-fallback", "Hours to first settlement copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
 }
 document.querySelector("#copy-dashboard-markdown").addEventListener("click", async () => {
   try {
@@ -1765,6 +1773,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "k" || event.key === "K") {
     event.preventDefault();
     jumpToHoursToClear();
+    return;
+  }
+  if (event.key === "l" || event.key === "L") {
+    event.preventDefault();
+    copyHoursToFirstSettlementMarkdown();
     return;
   }
   if (event.key === "n" || event.key === "N") {
