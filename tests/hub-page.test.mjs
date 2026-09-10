@@ -7091,3 +7091,121 @@ test('ampersand focuses the workbenches heading when Copy first workbench headin
   assert.deepEqual(assigned, []);
 });
 
+test('percent focuses Copy first Trust item when focus is not in an input', () => {
+  assert.match(html, /event\.key === '%'/);
+  assert.match(html, /getElementById\('copy-first-trust'\) \|\| document\.getElementById\('trust-title'\) \|\| document\.getElementById\('trust'\)/);
+  assert.match(html, /id="copy-first-trust"/);
+  assert.match(html, /id="trust-title"/);
+  assert.match(html, /<kbd>%<\/kbd><\/dt><dd>Focus the Copy first Trust item control, or the Trust and limits heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Press <kbd>%<\/kbd> to focus Copy first Trust item/);
+  assert.match(html, /This is distinct from <kbd>:<\/kbd>, which copies the first Trust and limits list item/);
+  assert.match(html, /from <kbd>\/<\/kbd>, which focuses the first Trust and limits list item/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  const focused = [];
+  const clicks = { firstTrust: 0 };
+  const assigned = [];
+  let keydown = null;
+  const copyFirstTrust = { focus() { focused.push('copy-first-trust'); }, click() { clicks.firstTrust += 1; }, addEventListener() {} };
+  const heading = { focus() { focused.push('trust-title'); } };
+  const firstTrustItem = { focus() { focused.push('first-trust-li'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-trust') return copyFirstTrust;
+      if (id === 'trust-title') return heading;
+      if (id === 'trust') return { focus() { focused.push('trust'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#trust li' ? firstTrustItem : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('%', input, true);
+  fire('%', textarea, true);
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.firstTrust, 0);
+  assert.deepEqual(assigned, []);
+  fire('%', body, true);
+  assert.deepEqual(focused, ['copy-first-trust']);
+  assert.equal(clicks.firstTrust, 0);
+  assert.deepEqual(assigned, []);
+  fire(':', body, true);
+  assert.equal(clicks.firstTrust, 1);
+  fire('/', body, false);
+  assert.deepEqual(focused, ['copy-first-trust', 'first-trust-li']);
+  assert.equal(clicks.firstTrust, 1);
+  assert.deepEqual(assigned, []);
+});
+
+test('percent focuses the Trust heading when Copy first Trust item is missing', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('trust-title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-trust') return null;
+      if (id === 'trust-title') return heading;
+      if (id === 'trust') return { focus() { focused.push('trust'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '%',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: true,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['trust-title']);
+  assert.deepEqual(assigned, []);
+});
+
