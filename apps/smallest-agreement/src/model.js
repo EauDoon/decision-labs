@@ -1028,6 +1028,32 @@ export function groupsMeetingApprovalThreshold(proposal, options) {
 }
 
 /**
+ * Groups whose average on the inspected package is below the numeric approval threshold.
+ * Distinct from groups below a declared support floor and from groups that meet the threshold.
+ * Display-only. Solver counts stay the same.
+ */
+export function groupsBelowApprovalThreshold(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const byGroup = approvalByGroup(proposal.groups, selected);
+  const groups = [];
+  proposal.groups.forEach((group, index) => {
+    const actual = byGroup[index].approval;
+    if (proposal.threshold - actual > EPSILON) {
+      groups.push({ id: group.id, name: group.name, required: proposal.threshold, actual });
+    }
+  });
+  return { status: "ok", groups };
+}
+
+/**
  * Groups with a declared support floor whose average is below that floor
  * on the inspected package. Groups without minSupport are omitted.
  * A floor is a number you entered, not a legal quorum.
@@ -2032,6 +2058,42 @@ export function formatGroupsBelowSupportFloorCountMarkdown(proposal, options) {
 }
 
 /**
+ * One-line Markdown of the first group currently below its declared support floor.
+ * Honest when none or no inspected package is available.
+ * Distinct from below-floor count copy, lock-count copy, and first-locked-option copy.
+ * A floor is a number you entered, not a legal quorum.
+ * Do not treat the label as a legal identity.
+ */
+export function formatFirstBelowSupportFloorGroupLabelMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum. The label is not a legal identity.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      text: `No inspected package is available, so there is no first below-floor group label to copy. ${disclaimer}\n`,
+    };
+  }
+  const listed = groupsBelowDeclaredSupportFloor(proposal, options);
+  if (listed.status !== "ok") return listed;
+  const first = listed.groups[0];
+  if (!first) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No group is below its support floor, so there is no first below-floor group label to copy. ${disclaimer}\n`,
+    };
+  }
+  return {
+    status: "ok",
+    empty: false,
+    label: first.name,
+    text: `First below-floor group: ${briefText(first.name)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2311,6 +2373,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideUnlockedClauses",
   "hideLockedClauses",
   "hideGroupsMeetingThreshold",
+  "hideGroupsBelowThreshold",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2326,6 +2389,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideUnlockedClauses",
   "hideLockedClauses",
   "hideGroupsMeetingThreshold",
+  "hideGroupsBelowThreshold",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2379,6 +2443,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideLockedClauses.error) return { status: "invalid", errors: [hideLockedClauses.error] };
   const hideGroupsMeetingThreshold = readWorkspaceBoolean(prefs, "hideGroupsMeetingThreshold");
   if (hideGroupsMeetingThreshold.error) return { status: "invalid", errors: [hideGroupsMeetingThreshold.error] };
+  const hideGroupsBelowThreshold = readWorkspaceBoolean(prefs, "hideGroupsBelowThreshold");
+  if (hideGroupsBelowThreshold.error) return { status: "invalid", errors: [hideGroupsBelowThreshold.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2393,6 +2459,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideUnlockedClauses: hideUnlockedClauses.value,
     hideLockedClauses: hideLockedClauses.value,
     hideGroupsMeetingThreshold: hideGroupsMeetingThreshold.value,
+    hideGroupsBelowThreshold: hideGroupsBelowThreshold.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2408,6 +2475,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideUnlockedClauses: hideUnlockedClauses.value,
       hideLockedClauses: hideLockedClauses.value,
       hideGroupsMeetingThreshold: hideGroupsMeetingThreshold.value,
+      hideGroupsBelowThreshold: hideGroupsBelowThreshold.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2436,6 +2504,7 @@ export function parseWorkspaceJson(text) {
       hideUnlockedClauses: null,
       hideLockedClauses: null,
       hideGroupsMeetingThreshold: null,
+      hideGroupsBelowThreshold: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2474,6 +2543,8 @@ export function parseWorkspaceJson(text) {
   if (hideLockedClauses.error) return { status: "invalid", errors: [hideLockedClauses.error] };
   const hideGroupsMeetingThreshold = readWorkspaceBoolean(raw, "hideGroupsMeetingThreshold");
   if (hideGroupsMeetingThreshold.error) return { status: "invalid", errors: [hideGroupsMeetingThreshold.error] };
+  const hideGroupsBelowThreshold = readWorkspaceBoolean(raw, "hideGroupsBelowThreshold");
+  if (hideGroupsBelowThreshold.error) return { status: "invalid", errors: [hideGroupsBelowThreshold.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2490,6 +2561,7 @@ export function parseWorkspaceJson(text) {
     hideUnlockedClauses: hideUnlockedClauses.value,
     hideLockedClauses: hideLockedClauses.value,
     hideGroupsMeetingThreshold: hideGroupsMeetingThreshold.value,
+    hideGroupsBelowThreshold: hideGroupsBelowThreshold.value,
   };
 }
 

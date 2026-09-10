@@ -76,4 +76,8 @@ test("the organizer hide-buyers-with-leftover filter is not on the merchant tabl
   assert.match(app, /hideBuyersWithLeftover/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
+  assert.match(app, /function focusHideBuyersWithLeftover\(/u);
+  assert.match(app, /#hide-buyers-with-leftover/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /if \(key === "="\)/u);
 });

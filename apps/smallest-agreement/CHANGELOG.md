@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.9 - 2026-09-10
+
+A workshop follow-up on 1.5.8. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `:` copies the below-floor group count through the existing `#copy-below-floor-count-button` (same one-line Markdown). Ignored while typing.
+- Keyboard `-` jumps to that below-floor group count copy control, or the groups heading if missing. Ignored while typing.
+- Keyboard `=` jumps to the hide-groups-meeting-threshold control, or the groups heading if missing. Ignored while typing.
+- School disco hours preset: synthetic students, neighbours (a veto group), and P&C scoring finish time, bass, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, and Rooftop BBQ hours. Not a recorded vote.
+- Hide groups whose inspected average is below the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, belowFloorGroupsOnly, leftover-budget, and locked-clause filters. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all.
+- Print facilitator pack includes the below-floor group count as one line. Print redacted still uses Group 1 through Group N. Honest zero. A floor is a number you entered, not a legal quorum. The saved draft is unchanged.
+- Copy the first below-floor group label as one-line Markdown, with a clipboard fallback. Honest when none. Distinct from below-floor count copy, lock-count copy, and first-locked-option copy. A floor is a number you entered, not a legal quorum. Do not treat the label as a legal identity.
+
 ## 1.5.8 - 2026-09-10
 
 A workshop follow-up on 1.5.7. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.

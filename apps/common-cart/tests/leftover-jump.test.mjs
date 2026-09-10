@@ -175,6 +175,37 @@ test("uncovered leftover unit-count copy stays on the organizer leftover control
   assert.match(app, /#copy-uncovered-leftover-units/u);
   assert.match(app, /function copyUncoveredLeftoverCounts\(/u);
   assert.match(app, /function copyLeftoverFillUnitCount\(/u);
+  assert.match(app, /if \(key === ":"\) \{\s*event\.preventDefault\(\);\s*copyUncoveredLeftoverUnitCount\(\);/u);
+});
+
+test("uncovered leftover unit-count copy jump stays on the organizer leftover units control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-uncovered-leftover-units"/u);
+  assert.match(buyerPanel, /id="residual-title"/u);
+  assert.equal(merchantPanel.includes("copy-uncovered-leftover-units"), false);
+  assert.equal(merchantPanel.includes("focusUncoveredLeftoverUnitCountCopy"), false);
+  assert.match(app, /function focusUncoveredLeftoverUnitCountCopy\(/u);
+  assert.match(app, /#copy-uncovered-leftover-units/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /if \(key === "-"\)/u);
+});
+
+test("leftover fill merchant copy stays on the organizer leftover control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-merchant"/u);
+  assert.match(buyerPanel, /Copy leftover fill merchant \(organizer private\)/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-merchant"), false);
+  assert.equal(merchantPanel.includes("copyLeftoverFillMerchantLabel"), false);
+  assert.match(app, /function copyLeftoverFillMerchantLabel\(/u);
+  assert.match(app, /#copy-leftover-fill-merchant/u);
+  assert.match(app, /function copyLeftoverFill\(/u);
+  assert.match(app, /function copyLeftoverFillUnitCount\(/u);
 });
 
 test("leftover print jump stays on the leftover print control", async () => {
