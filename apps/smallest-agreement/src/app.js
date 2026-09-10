@@ -693,6 +693,39 @@ const presets = {
       },
     ],
   },
+  "athletics-club-hours": {
+    title: "Athletics club hours: track open, PA volume, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "track-open", title: "Track open", options: [
+          { id: "track-open-original", original: true, label: "Keep weekday track open from 16:00 with no posted session rota", changeCost: 0, support: { students: 30, neighbours: 84, pandc: 72 } },
+          { id: "track-open-late", original: false, label: "Open weekday athletics at 17:30 with a posted session rota", changeCost: 2, support: { students: 84, neighbours: 58, pandc: 68 } },
+          { id: "track-open-weekend", original: false, label: "Hold Saturday morning track at 08:00 with a booking card", changeCost: 3, support: { students: 78, neighbours: 64, pandc: 66 } },
+        ],
+      },
+      {
+        id: "athletics-pa", title: "PA volume", options: [
+          { id: "athletics-pa-original", original: true, label: "No posted track PA volume cap", changeCost: 0, support: { students: 82, neighbours: 26, pandc: 40 } },
+          { id: "athletics-pa-cap", original: false, label: "Cap the track PA and face speakers toward the track", changeCost: 2, support: { students: 66, neighbours: 80, pandc: 76 } },
+          { id: "athletics-pa-cut", original: false, label: "Cut the track PA after the last session and use a handheld megaphone", changeCost: 4, support: { students: 48, neighbours: 86, pandc: 64 } },
+        ],
+      },
+      {
+        id: "track-lockup", title: "Track lock-up", options: [
+          { id: "track-lockup-original", original: true, label: "Leave the track gate on a shared padlock after club hours", changeCost: 0, support: { students: 34, neighbours: 50, pandc: 54 } },
+          { id: "track-lockup-steward", original: false, label: "Require a P&C steward to lock the track gate before 20:00", changeCost: 2, support: { students: 80, neighbours: 72, pandc: 82 } },
+          { id: "track-lockup-timer", original: false, label: "Add a timed lock on the track gate after the last session", changeCost: 3, support: { students: 70, neighbours: 68, pandc: 74 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
