@@ -7,7 +7,7 @@ import {
   attributeBottlenecks,
   buildGateGanttSvg,
   ganttHourHasZeroQueue,
-  buildGateGanttSvg,
+  runSimulation
 } from "../src/model.js";
 
 test("zero-queue helper hides hours whose synthetic queue is zero", () => {
