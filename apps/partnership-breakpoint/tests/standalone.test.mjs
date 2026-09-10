@@ -83,12 +83,15 @@ test('standalone retains 1.5.11 review tools and 1.5.12 copy controls', async ()
   assert.match(html, /id="copy-over-capacity-count"[^>]*aria-keyshortcuts='"'/);
   assert.match(html, /id="copy-first-over-capacity-label"/);
   assert.match(html, /id="copy-first-over-capacity-label"[^>]*aria-keyshortcuts="\}"/u);
+  assert.match(html, /id="hide-first-over-capacity-participant"/);
   assert.match(html, /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
+  assert.match(html, /id="copy-first-over-capacity-remaining"/);
   assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
   assert.match(html, /School concert split/);
   assert.match(html, /Sports carnival split/);
   assert.match(html, /Netball carnival/);
   assert.match(html, /Swimming carnival split/);
+  assert.match(html, /Athletics carnival split/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
