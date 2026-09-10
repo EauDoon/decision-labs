@@ -87,6 +87,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /How-it-works jump, version-line copy, and skip-link focus/);
   assert.match(html, /Skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(html, /Trust-item jump, first-job copy, and 404 Copy version line/);
+  assert.match(html, /Version-line jump, last-open jump, and 404 Copy first Trust item/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -183,6 +184,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /how-it-works jump, version-line copy, and skip-link focus/);
   assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(readme, /trust-item jump, first-job copy, and 404 Copy version line/);
+  assert.match(readme, /version-line jump, last-open jump, and 404 Copy first Trust item/);
   assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
@@ -193,6 +195,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy jobs on that 404 page copies/);
   assert.match(readme, /Copy catalog intro on that 404 page copies/);
   assert.match(readme, /Copy version line on that 404 page copies/);
+  assert.match(readme, /Copy first Trust item on that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -2082,6 +2085,17 @@ test('shortcuts panel lists d comma period with honest limits', () => {
   assert.match(readme, /Press `.` to focus Skip to catalog versions/);
 });
 
+test('What\'s new and README name this hub-only wave without changing workbench versions', () => {
+  assert.match(html, /Version-line jump, last-open jump, and 404 Copy first Trust item/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /without adding a public path/);
+  assert.match(readme, /version-line jump, last-open jump, and 404 Copy first Trust item/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy first Trust item on that 404 page copies/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+});
+
 test('shortcuts panel lists slash semicolon apostrophe with honest limits', () => {
   assert.match(html, /<kbd>\/<\/kbd><\/dt><dd>Focus the first Trust and limits list item, or the Trust and limits heading if none. This key moves focus; it does not open a workbench. Shift\+\/ stays <kbd>\?<\/kbd>./);
   assert.match(html, /<kbd>;<\/kbd><\/dt><dd>Copy the first workbench name and one-sentence job as one Markdown line from this catalog page, not a live product feed/);
@@ -2094,6 +2108,23 @@ test('shortcuts panel lists slash semicolon apostrophe with honest limits', () =
   assert.match(readme, /Press `\/` to focus the first Trust and limits list item/);
   assert.match(readme, /Press `;` to copy the first workbench name/);
   assert.match(readme, /Press `'` to focus Skip to Trust and limits/);
+});
+
+test('shortcuts panel lists brackets and colon with honest limits', () => {
+  assert.match(html, /<kbd>\[<\/kbd><\/dt><dd>Focus the Copy version line control, or the footer version line if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /<kbd>\]<\/kbd><\/dt><dd>Focus the last Open workbench link, or the workbenches heading if none. This key moves focus; it does not open the workbench./);
+  assert.match(html, /<kbd>:<\/kbd><\/dt><dd>Copy the first Trust and limits list item as one Markdown line from this catalog page, not a live policy feed/);
+  assert.match(html, /Shortcuts are ignored while focus is in an input, textarea, or select/);
+  assert.match(html, /not a live policy feed/);
+  assert.match(html, /id="copy-version-line"/);
+  assert.match(html, /id="copy-first-trust"/);
+  assert.match(html, /id="workbenches-title"/);
+  assert.match(html, /Press <kbd>\[<\/kbd> to focus Copy version line/);
+  assert.match(html, /Press <kbd>\]<\/kbd> to focus the last Open workbench link/);
+  assert.match(html, /Press <kbd>:<\/kbd> to copy the first Trust and limits list item/);
+  assert.match(readme, /Press `\[` to focus the Copy version line control/);
+  assert.match(readme, /Press `\]` to focus the last Open workbench link/);
+  assert.match(readme, /Press `:` to copy the first Trust and limits list item/);
 });
 
 test('shortcuts panel lists b e g q r z with honest limits', () => {
@@ -2920,6 +2951,78 @@ test('keyboard slash semicolon apostrophe are ignored in inputs using the same i
   fire("'", body);
   assert.deepEqual(focused, ['trust-li', 'skip-trust']);
   assert.equal(clicks.firstJob, 1);
+  assert.deepEqual(assigned, []);
+});
+
+test('keyboard brackets and colon are ignored in inputs using the same inEditable helper as c', () => {
+  assert.match(html, /const inEditable = \(node\) =>/);
+  assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /event\.key === '\['/);
+  assert.match(html, /event\.key === '\]'/);
+  assert.match(html, /event\.key === ':'/);
+  const clicks = { firstTrust: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const copyControl = { focus() { focused.push('copy-version-line'); }, addEventListener() {} };
+  const lastOpen = { focus() { focused.push('last-open'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-version-line') return copyControl;
+      if (id === 'copy-first-trust') return { click() { clicks.firstTrust += 1; }, addEventListener() {} };
+      if (id === 'workbenches-title') return { focus() { focused.push('workbenches-title'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#workbenches a.open' ? [lastOpen] : [];
+    },
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  for (const target of [input, textarea, select]) {
+    fire('[', target);
+    fire(']', target);
+    fire(':', target, true);
+    fire('c', target);
+  }
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.firstTrust, 0);
+  assert.deepEqual(assigned, []);
+  fire('[', body);
+  fire(']', body);
+  fire(':', body, true);
+  assert.deepEqual(focused, ['copy-version-line', 'last-open']);
+  assert.equal(clicks.firstTrust, 1);
   assert.deepEqual(assigned, []);
 });
 
