@@ -579,7 +579,7 @@ function inputPanel(result) {
           <h2 id="participant-inputs-title" tabindex="-1">Participants</h2>
           <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
           ${duplicateNameWarning()}
-          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="copy-allocation-balance">Copy allocation balance</button><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability. Copy allocation balance names missing or excess share. It is not a negotiated allocation.</p>
+          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="copy-allocation-balance">Copy allocation balance</button><button type="button" id="equal-split" data-action="equal-shares">Split equally</button><button type="button" id="normalize-shares" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability. Copy allocation balance names missing or excess share. It is not a negotiated allocation.</p>
           <div class="button-row"><button type="button" data-action="hide-holding-participants" aria-pressed="${hideHoldingParticipants}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants who currently hold</button><button type="button" data-action="show-holding-participants" ${hideHoldingParticipants ? '' : 'disabled'}>Show holding participants</button></div>
           <p class="notice">${rosterFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-zero-share-participants" aria-pressed="${hideZeroShareParticipants}">Hide participants with zero revenue share</button><button type="button" data-action="show-zero-share-participants" ${hideZeroShareParticipants ? '' : 'disabled'}>Show zero-share participants</button></div>
@@ -1734,6 +1734,11 @@ window.addEventListener('keydown', (event) => {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'j' || event.key === 'J') copyCapacityUtilization();
+  if (event.key === 'q' || event.key === 'Q') {
+    const target = document.querySelector('#equal-split') ?? document.querySelector('#normalize-shares');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -3019,6 +3024,7 @@ function helpDialog() {
         <li><kbd>i</kbd> Jump to the inspect or compare cases heading</li>
         <li><kbd>o</kbd> Jump to the Operating region heading</li>
         <li><kbd>j</kbd> Copy capacity utilization as Markdown</li>
+        <li><kbd>q</kbd> Jump to Equal split or Normalize current shares</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

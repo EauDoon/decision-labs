@@ -60,6 +60,9 @@ async function workbench(protocol = 'file:', options = {}) {
         'compound-title', 'inspect-cases-title', 'split-copy-text',
         'least-headroom-participant', 'participant-inputs-title',
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
+        'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
+        'least-headroom-participant', 'participant-inputs-title',
+        'field-deal-notes', 'viability-card', 'allocation-copy-text',
         'breakpoint-snapshot-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
@@ -1202,6 +1205,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>i<\/kbd> Jump to the inspect or compare cases heading/);
   assert.match(app.markup(), /<kbd>o<\/kbd> Jump to the Operating region heading/);
   assert.match(app.markup(), /<kbd>j<\/kbd> Copy capacity utilization as Markdown/);
+  assert.match(app.markup(), /<kbd>q<\/kbd> Jump to Equal split or Normalize current shares/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1507,6 +1511,25 @@ test('keyboard h jumps to the least-headroom participant card unless a field is 
   assert.ok(app.focused().includes('#participant-inputs-title'));
   assert.ok(app.focused().includes('scroll:#participant-inputs-title'));
   assert.doesNotMatch(app.markup(), /id="least-headroom-participant"/);
+});
+
+test('keyboard q jumps to Equal split or Normalize unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="equal-split"/);
+  assert.match(app.markup(), /id="normalize-shares"/);
+  app.keydown('q');
+  assert.ok(app.focused().includes('#equal-split'));
+  assert.ok(app.focused().includes('scroll:#equal-split'));
+  const before = app.focused().length;
+  app.keydown('q', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('q', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('q');
+  assert.ok(app.focused().includes('#equal-split'));
+  assert.ok(app.focused().includes('scroll:#equal-split'));
 });
 
 test('keyboard j copies capacity utilization as Markdown and ignores focused inputs', async () => {
