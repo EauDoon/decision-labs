@@ -207,6 +207,29 @@ test('catalog keys hash stay distinct from z and at', () => {
   assert.match(html, /getElementById\('copy-skips'\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
 });
 
+test('catalog keys close-paren at and hash stay distinct from tilde open-paren e z g n', () => {
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /event\.key === '@'/);
+  assert.match(html, /event\.key === '#'/);
+  assert.match(html, /event\.key === '~'/);
+  assert.match(html, /event\.key === '\('/);
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /event\.key === 'z'/);
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /event\.key === 'n'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === '~'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === '\('/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '@'/)?.[0], html.match(/event\.key === 'e'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '#'/)?.[0], html.match(/event\.key === 'z'/)?.[0]);
+  assert.match(html, /firstWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /lastWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /ledeBtn\?\.click\(\)/);
+  assert.match(html, /skipsBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-lede'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /getElementById\('copy-skips'\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
+});
+
 test('print CSS hides copy last job tools like other copy tools', () => {
   const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
   assert.match(print, /\.copy-last-job-tools, \.copy-last-job-fallback \{ display: none !important; \}/);

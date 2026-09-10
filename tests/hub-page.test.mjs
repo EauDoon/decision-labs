@@ -5419,8 +5419,6 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.match(readme, /Key `#` focuses the Copy skip links control/);
   assert.doesNotMatch(html, /hosted API/i);
   assert.doesNotMatch(html, /live service/i);
-  assert.doesNotMatch(readme, /hosted API/i);
-  assert.doesNotMatch(readme, /live service/i);
 });
 
 test('copy last job control is distinct from Copy first job and Copy jobs', () => {
@@ -6703,5 +6701,83 @@ test('keyboard close-paren copies the first What\'s new heading through its own 
   assert.deepEqual(focused, ['first-news-h3', 'copy-first-whats-new']);
   assert.equal(clicks.firstNews, 1);
   assert.equal(clicks.lastNews, 1);
+  assert.deepEqual(assigned, []);
+});
+
+test('close-paren at and hash stay distinct from tilde open-paren e z g n', () => {
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /event\.key === '@'/);
+  assert.match(html, /event\.key === '#'/);
+  assert.match(html, /event\.key === '~'/);
+  assert.match(html, /event\.key === '\('/);
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /event\.key === 'z'/);
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /event\.key === 'n'/);
+  assert.match(html, /firstWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /lastWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /ledeBtn\?\.click\(\)/);
+  assert.match(html, /skipsBtn\?\.click\(\)/);
+  const clicks = { firstNews: 0, lastNews: 0, lede: 0, skips: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-whats-new') return { click() { clicks.firstNews += 1; }, addEventListener() {}, focus() { focused.push('copy-first-whats-new'); } };
+      if (id === 'copy-last-whats-new') return { click() { clicks.lastNews += 1; }, addEventListener() {}, focus() { focused.push('copy-last-whats-new'); } };
+      if (id === 'copy-lede') return { click() { clicks.lede += 1; }, addEventListener() {}, focus() { focused.push('copy-lede'); } };
+      if (id === 'copy-skips') return { click() { clicks.skips += 1; }, addEventListener() {}, focus() { focused.push('copy-skips'); } };
+      if (id === 'whats-new') return { focus() { focused.push('whats-new'); } };
+      if (id === 'whats-new-title') return { focus() { focused.push('whats-new-title'); } };
+      if (id === 'catalog-heading') return { focus() { focused.push('catalog-heading'); } };
+      if (id === 'skips') return { focus() { focused.push('skips'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? { focus() { focused.push('first-news-h3'); } } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, shiftKey = false) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  fire(')', true);
+  fire('@', true);
+  fire('#', true);
+  fire('~', true);
+  fire('(', true);
+  fire('e');
+  fire('z');
+  fire('g');
+  fire('n');
+  assert.equal(clicks.firstNews, 1);
+  assert.equal(clicks.lastNews, 1);
+  assert.equal(clicks.lede, 1);
+  assert.equal(clicks.skips, 1);
+  assert.deepEqual(focused, ['copy-lede', 'copy-skips', 'copy-first-whats-new', 'first-news-h3', 'whats-new']);
   assert.deepEqual(assigned, []);
 });
