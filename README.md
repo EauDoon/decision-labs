@@ -77,7 +77,11 @@ copies How it works. Key `>` focuses the Copy last How it works item control,
 or the How it works heading if that control is missing. That key moves
 focus; it does not open a workbench. It does not copy. That key is distinct
 from `=`, which focuses Copy How it works, and from `k`, which focuses How
-it works. Keys `l` and `o` focus or open the last-launched workbench stored in this
+it works. Key `_` focuses the Copy first How it works item control, or the
+How it works heading if that control is missing. That key moves focus; it
+does not open a workbench. It does not copy. That key is distinct from `-`,
+which copies the first How it works list item, and from `d`, which focuses
+the first How it works list item. Keys `l` and `o` focus or open the last-launched workbench stored in this
 browser. Key `x` clears that last-launched marker in this browser. Key `y`
 copies the last-launched workbench name and one-sentence job from this-browser
 storage, or an empty line if none is stored. That recency
@@ -327,6 +331,10 @@ Press `>` to focus the Copy last How it works item control, or the How it
 works heading if that control is missing. That key moves focus; it does not
 open a workbench. It does not copy. That key is distinct from `=`, which
 focuses Copy How it works, and from `k`.
+Press `_` to focus the Copy first How it works item control, or the How it
+works heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `-`, which
+copies the first How it works list item, and from `d`.
 Press `y` to copy the last-launched workbench name and one-sentence job from
 this-browser storage. If none is stored, that key copies an empty line. This is
 not a cloud recency.
