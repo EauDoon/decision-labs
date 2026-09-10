@@ -22,6 +22,7 @@ import {
   filterBuyerIdsHidingBuyersWithLeftover,
   filterBuyerIdsHidingUnservedBuyers,
   filterBuyerIdsHidingLeftoverOnlyBuyers,
+  filterBuyerIdsHidingWinnerAllocatedBuyers,
   organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
@@ -140,6 +141,7 @@ let hideFullyFilledBuyers = false;
 let hideBuyersWithLeftover = false;
 let hideUnservedBuyers = false;
 let hideLeftoverOnlyBuyers = false;
+let hideWinnerAllocatedBuyers = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -165,6 +167,7 @@ function loadWorkspace() {
     hideBuyersWithLeftover = workspace.hideBuyersWithLeftover;
     hideUnservedBuyers = workspace.hideUnservedBuyers;
     hideLeftoverOnlyBuyers = workspace.hideLeftoverOnlyBuyers;
+    hideWinnerAllocatedBuyers = workspace.hideWinnerAllocatedBuyers;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -207,7 +210,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -762,6 +765,18 @@ function bindStaticEvents() {
       setStatus(hideLeftoverOnlyBuyers
         ? "Hiding leftover-only buyers. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
         : "Showing leftover-only buyers again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#hide-winner-allocated-buyers").addEventListener("change", (event) => {
+    hideWinnerAllocatedBuyers = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideWinnerAllocatedBuyers
+        ? "Hiding buyers that received winner units. Display only. Leftover-only and unserved buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing winner-allocated buyers again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -1554,6 +1569,8 @@ function renderEditor() {
   if (hideUnserved) hideUnserved.checked = hideUnservedBuyers;
   const hideLeftoverOnly = document.querySelector("#hide-leftover-only-buyers");
   if (hideLeftoverOnly) hideLeftoverOnly.checked = hideLeftoverOnlyBuyers;
+  const hideWinnerAllocated = document.querySelector("#hide-winner-allocated-buyers");
+  if (hideWinnerAllocated) hideWinnerAllocated.checked = hideWinnerAllocatedBuyers;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -1722,6 +1739,14 @@ function applyBuyerDisplayFilters() {
     try {
       const leftoverOnlyHidden = new Set(filterBuyerIdsHidingLeftoverOnlyBuyers(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => leftoverOnlyHidden.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
+  if (hideWinnerAllocatedBuyers) {
+    try {
+      const winnerAllocatedHidden = new Set(filterBuyerIdsHidingWinnerAllocatedBuyers(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => winnerAllocatedHidden.has(id)));
     } catch {
       visibleIds = new Set();
     }

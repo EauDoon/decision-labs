@@ -297,7 +297,11 @@ SOFTWARE.
             <input id="hide-leftover-only-buyers" type="checkbox" aria-keyshortcuts="@">
             Hide leftover-only buyers
           </label>
-          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, and hide-leftover-only-buyers choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
+          <label class="checkbox-field">
+            <input id="hide-winner-allocated-buyers" type="checkbox">
+            Hide buyers that received winner units
+          </label>
+          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, hide-leftover-only-buyers, and hide-winner-allocated-buyers choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
         </div>
         <div class="table-shell print-private" id="buyers-list" tabindex="-1" role="region" aria-label="Buyer constraints list">
           <table>

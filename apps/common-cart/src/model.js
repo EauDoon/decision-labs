@@ -353,7 +353,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -450,7 +450,15 @@ export function validateWorkspace(candidate) {
     }
     hideLeftoverOnly = hideLeftoverOnlyBuyers;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly };
+  const hideWinnerAllocatedBuyers = own(candidate, "hideWinnerAllocatedBuyers");
+  let hideWinnerAllocated = false;
+  if (hideWinnerAllocatedBuyers !== undefined) {
+    if (hideWinnerAllocatedBuyers !== true && hideWinnerAllocatedBuyers !== false) {
+      throw new ScenarioError("Hide winner-allocated buyers must be true or false.");
+    }
+    hideWinnerAllocated = hideWinnerAllocatedBuyers;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -659,6 +667,18 @@ export function filterBuyerIdsHidingLeftoverOnlyBuyers(rawScenario, hideLeftover
     const leftoverOnly = !winnerIds.has(buyer.id) && (leftoverFillIds.has(buyer.id) || tertiaryIds.has(buyer.id));
     return !leftoverOnly;
   }).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides organizer buyer rows that received winner units. Leftover-only and unserved buyers stay visible. */
+export function filterBuyerIdsHidingWinnerAllocatedBuyers(rawScenario, hideWinnerAllocatedBuyers) {
+  if (hideWinnerAllocatedBuyers !== true && hideWinnerAllocatedBuyers !== false) {
+    throw new ScenarioError("Hide winner-allocated buyers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideWinnerAllocatedBuyers) return scenario.buyers.map((buyer) => buyer.id);
+  const market = evaluateMarket(scenario);
+  const winnerIds = new Set(market.winner?.selectedBuyerIds ?? []);
+  return scenario.buyers.filter((buyer) => !winnerIds.has(buyer.id)).map((buyer) => buyer.id);
 }
 
 /** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
