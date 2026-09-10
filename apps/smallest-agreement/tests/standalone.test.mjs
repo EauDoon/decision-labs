@@ -155,7 +155,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Print redacted/u);
   assert.match(html, /id="print-redacted-button"/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count, the first below-floor group label as one line, and a one-line threshold-group count/u);
+  assert.match(html, /a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count, the first below-floor group label as one line, a one-line threshold-group count, and the first veto group label as one line/u);
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
   assert.match(html, /Duplicate group/u);
@@ -1838,6 +1838,62 @@ test("print facilitator pack includes the threshold-group count as one line with
   assert.match(zeroApp.ballot(), /Groups meeting the approval threshold: 0/u);
   assert.doesNotMatch(zeroApp.ballot(), /Residents/u);
   assert.equal(JSON.parse(zeroStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+});
+
+test("print facilitator pack includes the first veto group label as one line without changing the saved draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /the first veto group label as one line/u);
+  assert.match(html, /not a legal right/u);
+  const noneFixed = {
+    title: "Print no veto group workshop",
+    threshold: 70,
+    groups: [
+      { id: "open", name: "Residents", weight: 1 },
+      { id: "other", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "Hours", options: [
+      { id: "original", label: "Keep original hours", original: true, changeCost: 0, support: { open: 90, other: 80 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { open: 80, other: 70 } },
+      { id: "other-opt", label: "Other option", original: false, changeCost: 2, support: { open: 70, other: 60 } },
+    ] }],
+  };
+  const noneStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(noneFixed)]]);
+  const noneApp = await savedWorkbench(noneStorage);
+  assert.match(noneApp.ballot(), /No veto group is marked, so there is no first veto group label to copy\. A veto is a number you entered, not a legal right/u);
+  assert.match(noneApp.ballot(), /Participant groups: Residents, Open/u);
+  noneApp.click("#print-button");
+  assert.equal(noneApp.printCalls(), 1);
+  assert.match(noneApp.ballot(), /No veto group is marked/u);
+  noneApp.click("#print-redacted-button");
+  assert.equal(noneApp.printCalls(), 2);
+  assert.match(noneApp.ballot(), /Participant groups: Group 1, Group 2/u);
+  assert.match(noneApp.ballot(), /No veto group is marked/u);
+  assert.doesNotMatch(noneApp.ballot(), /Residents/u);
+  assert.equal(JSON.parse(noneStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+
+  const labelled = {
+    title: "Print first veto group workshop",
+    threshold: 70,
+    groups: [
+      { id: "open", name: "Open", weight: 1 },
+      { id: "veto", name: "Residents", weight: 1, veto: true },
+      { id: "later", name: "Later veto", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "Hours", options: [
+      { id: "original", label: "Keep original hours", original: true, changeCost: 0, support: { open: 90, veto: 80, later: 80 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { open: 80, veto: 70, later: 70 } },
+      { id: "other-opt", label: "Other option", original: false, changeCost: 2, support: { open: 70, veto: 60, later: 60 } },
+    ] }],
+  };
+  const labelledStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(labelled)]]);
+  const labelledApp = await savedWorkbench(labelledStorage);
+  assert.match(labelledApp.ballot(), /First veto group: Residents\. A veto is a number you entered, not a legal right/u);
+  assert.doesNotMatch(labelledApp.ballot(), /Later veto/u);
+  labelledApp.click("#print-redacted-button");
+  assert.match(labelledApp.ballot(), /Participant groups: Group 1, Group 2, Group 3/u);
+  assert.match(labelledApp.ballot(), /First veto group: Group 2/u);
+  assert.doesNotMatch(labelledApp.ballot(), /Residents/u);
+  assert.equal(JSON.parse(labelledStorage.get("smallest-agreement:proposal:v1")).groups[1].name, "Residents");
 });
 
 test("print facilitator pack includes the numeric approval threshold without changing the saved draft", async () => {
