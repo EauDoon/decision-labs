@@ -2451,6 +2451,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideVetoGroups",
   "hideNonVetoGroups",
   "hideFirstVetoGroup",
+  "hideLastVetoGroup",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2470,6 +2471,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideVetoGroups",
   "hideNonVetoGroups",
   "hideFirstVetoGroup",
+  "hideLastVetoGroup",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2531,6 +2533,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideNonVetoGroups.error) return { status: "invalid", errors: [hideNonVetoGroups.error] };
   const hideFirstVetoGroup = readWorkspaceBoolean(prefs, "hideFirstVetoGroup");
   if (hideFirstVetoGroup.error) return { status: "invalid", errors: [hideFirstVetoGroup.error] };
+  const hideLastVetoGroup = readWorkspaceBoolean(prefs, "hideLastVetoGroup");
+  if (hideLastVetoGroup.error) return { status: "invalid", errors: [hideLastVetoGroup.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2549,6 +2553,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideVetoGroups: hideVetoGroups.value,
     hideNonVetoGroups: hideNonVetoGroups.value,
     hideFirstVetoGroup: hideFirstVetoGroup.value,
+    hideLastVetoGroup: hideLastVetoGroup.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2568,6 +2573,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideVetoGroups: hideVetoGroups.value,
       hideNonVetoGroups: hideNonVetoGroups.value,
       hideFirstVetoGroup: hideFirstVetoGroup.value,
+      hideLastVetoGroup: hideLastVetoGroup.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2600,6 +2606,7 @@ export function parseWorkspaceJson(text) {
       hideVetoGroups: null,
       hideNonVetoGroups: null,
       hideFirstVetoGroup: null,
+      hideLastVetoGroup: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2646,6 +2653,8 @@ export function parseWorkspaceJson(text) {
   if (hideNonVetoGroups.error) return { status: "invalid", errors: [hideNonVetoGroups.error] };
   const hideFirstVetoGroup = readWorkspaceBoolean(raw, "hideFirstVetoGroup");
   if (hideFirstVetoGroup.error) return { status: "invalid", errors: [hideFirstVetoGroup.error] };
+  const hideLastVetoGroup = readWorkspaceBoolean(raw, "hideLastVetoGroup");
+  if (hideLastVetoGroup.error) return { status: "invalid", errors: [hideLastVetoGroup.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2666,6 +2675,7 @@ export function parseWorkspaceJson(text) {
     hideVetoGroups: hideVetoGroups.value,
     hideNonVetoGroups: hideNonVetoGroups.value,
     hideFirstVetoGroup: hideFirstVetoGroup.value,
+    hideLastVetoGroup: hideLastVetoGroup.value,
   };
 }
 
