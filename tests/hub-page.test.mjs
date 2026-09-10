@@ -290,6 +290,17 @@ test('copy versions copies catalog names as Markdown with a visible fallback', (
   assert.doesNotMatch(html, /hosted API/i);
 });
 
+test('keyboard v copies catalog versions through the same control', () => {
+  assert.match(html, /event\.key === 'v'/);
+  assert.match(html, /versionsBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /<kbd>v<\/kbd><\/dt><dd>Copy workbench names and versions as Markdown/);
+  assert.match(html, /Press <kbd>v<\/kbd> to copy catalog versions/);
+  assert.match(readme, /Press `v` to copy catalog versions/);
+  assert.match(html, /versionsMarkdown/);
+  assert.match(html, /versionsFallback\.hidden = false/);
+});
+
 test('keyboard c copies the catalog address on http through the same control', () => {
   assert.match(html, /event\.key === 'c'/);
   assert.match(html, /if \(catalogIsHttp\(\)\) copyBtn\?\.click\(\)/);

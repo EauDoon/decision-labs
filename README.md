@@ -104,7 +104,9 @@ an input. Press `h` to focus the catalog heading. Press `n` to focus What's
 new. Press `w` to focus the workbenches. Press `k` to focus How it works.
 Press `t` to focus Trust and limits. Press `c` to copy the catalog address
 when this page is served over http. On a file URL that key does not claim a
-copy succeeded. Press `?` on the catalog for the in-page shortcut list. The branded 404
+copy succeeded. Press `v` to copy catalog versions from this page. That key
+uses the same Copy versions control, including the visible text box when the
+clipboard API is unavailable. Press `?` on the catalog for the in-page shortcut list. The branded 404
 page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
 Smallest Agreement, and Weekend Gap. When the catalog is served over http,
