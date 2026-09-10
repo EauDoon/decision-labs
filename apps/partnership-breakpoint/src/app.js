@@ -745,7 +745,7 @@ function stressSection() {
       <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant. ${collapseNote}</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
-    <details class="case-details"><summary id="inspect-cases-title">Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods. ${visibleCases.length} of ${stress.caseCount} rows are visible.</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases || `<tr><td colspan="5">Every displayed case currently holds. ${stress.passCount} of ${stress.caseCount} tested cases hold. Expand to inspect all-hold rows. Counts are unchanged.</td></tr>`}</tbody></table></div></details>
+    <details class="case-details"><summary id="inspect-cases-title" tabindex="-1">Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods. ${visibleCases.length} of ${stress.caseCount} rows are visible.</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases || `<tr><td colspan="5">Every displayed case currently holds. ${stress.passCount} of ${stress.caseCount} tested cases hold. Expand to inspect all-hold rows. Counts are unchanged.</td></tr>`}</tbody></table></div></details>
     <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
 }
 
@@ -1717,6 +1717,14 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === 'v' || event.key === 'V') {
     const target = document.querySelector('#viability-card') ?? document.querySelector('#viability-heading');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'i' || event.key === 'I') {
+    const target = document.querySelector('#inspect-cases-title')
+      ?? document.querySelector('#imported-compare-title')
+      ?? document.querySelector('#comparison-title')
+      ?? document.querySelector('#three-compare-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -3002,6 +3010,7 @@ function helpDialog() {
         <li><kbd>a</kbd> Jump to Add participant</li>
         <li><kbd>m</kbd> Jump to deal notes</li>
         <li><kbd>v</kbd> Jump to the viability card</li>
+        <li><kbd>i</kbd> Jump to the inspect or compare cases heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

@@ -163,7 +163,7 @@ test('standalone displays the complete compound grid with accessible controls an
   assert.match(app.markup(), /1 of 27 tested cases hold/);
   assert.match(app.markup(), /aria-labelledby="stress-inputs-title"/);
   assert.match(app.markup(), /data-path="stress.volumeDropPct"/);
-  assert.match(app.markup(), /<summary id="inspect-cases-title">Inspect all 27 compound cases<\/summary>/);
+  assert.match(app.markup(), /<summary id="inspect-cases-title" tabindex="-1">Inspect all 27 compound cases<\/summary>/);
   assert.match(app.markup(), /tabindex="0" role="region" aria-label="Compound case evidence/);
   assert.match(app.markup(), /data-action="apply-stress-proposal" disabled/);
 });
@@ -1198,6 +1198,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>a<\/kbd> Jump to Add participant/);
   assert.match(app.markup(), /<kbd>m<\/kbd> Jump to deal notes/);
   assert.match(app.markup(), /<kbd>v<\/kbd> Jump to the viability card/);
+  assert.match(app.markup(), /<kbd>i<\/kbd> Jump to the inspect or compare cases heading/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1503,6 +1504,30 @@ test('keyboard h jumps to the least-headroom participant card unless a field is 
   assert.ok(app.focused().includes('#participant-inputs-title'));
   assert.ok(app.focused().includes('scroll:#participant-inputs-title'));
   assert.doesNotMatch(app.markup(), /id="least-headroom-participant"/);
+});
+
+test('keyboard i jumps to inspect or compare cases unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="inspect-cases-title" tabindex="-1"/);
+  app.keydown('i');
+  assert.ok(app.focused().includes('#inspect-cases-title'));
+  assert.ok(app.focused().includes('scroll:#inspect-cases-title'));
+  const before = app.focused().length;
+  app.keydown('i', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('i', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('i');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="inspect-cases-title"/);
+  const other = clonePreset('balanced');
+  other.participants[0].fixedMonthlyCost = 1900;
+  app.compareImport(other, undefined, false, { name: 'alt.json' });
+  app.keydown('i');
+  assert.ok(app.focused().includes('#imported-compare-title'));
+  assert.ok(app.focused().includes('scroll:#imported-compare-title'));
 });
 
 test('keyboard w jumps to the Contribution waterfall heading unless a field is focused', async () => {
