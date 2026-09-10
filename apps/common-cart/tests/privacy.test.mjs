@@ -33,7 +33,8 @@ import {
   createLeftoverFillMarkdown,
   createLeftoverFillUnitCountMarkdown,
   createWinningRemainingCapacityMarkdown,
-  createRequestedUnitsMarkdown
+  createRequestedUnitsMarkdown,
+  createUncoveredLeftoverUnitCountMarkdown
 } from "../src/model.js";
 
 const PRIVATE_BUYER_MARKERS = ["SECRET_LABEL", "SECRET_ID", "SECRET_STUDIO", "987654.32", "maxUnitPrice", "leftoverBuyerIds", '"selectedBuyerIds":', '"allocations":'];
@@ -256,6 +257,42 @@ test("merchant surfaces omit leftover fill unit-count copy", async () => {
   for (const text of merchantSurfaces) {
     assert.equal(String(text).includes("leftover fill units (organizer private)"), false);
     assert.equal(String(text).includes("copy-leftover-fill-units"), false);
+    assert.equal(String(text).includes("Not a merchant export"), false);
+    assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
+  }
+});
+
+test("merchant surfaces omit uncovered leftover unit-count copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-uncovered-leftover-units"/u);
+  assert.match(buyerPanel, /Uncovered leftover unit-count copy is count only/u);
+  assert.equal(merchantPanel.includes("copy-uncovered-leftover-units"), false);
+  assert.equal(merchantPanel.includes("Copy uncovered leftover units"), false);
+  assert.equal(merchantPanel.includes("Uncovered leftover unit-count copy"), false);
+  assert.equal(merchantPanel.includes("createUncoveredLeftoverUnitCountMarkdown"), false);
+  const uncoveredUnits = createUncoveredLeftoverUnitCountMarkdown(secretNeighbourhood());
+  assert.match(uncoveredUnits, /organizer private/);
+  assert.match(uncoveredUnits, /Not a merchant export/);
+  assertOmitsPrivateBuyers(uncoveredUnits, ["SECRET_TITLE"]);
+  const left = secretNeighbourhood();
+  const merchantSurfaces = [
+    JSON.stringify(createMerchantReport(left)),
+    JSON.stringify(createMerchantResidualReport(left)),
+    createWinnerAggregatesMarkdown(left),
+    createDeliveryHeatmapCsv(left),
+    createOfferCsv(left),
+    createVariantOverlapCsv(left),
+    createVariantOverlapMarkdown(left),
+    createExclusionCountsMarkdown(left, left.offers[1].id),
+    createWinningMerchantLabelMarkdown(left),
+    createWinningFulfillmentMarkdown(left),
+    createWinningRemainingCapacityMarkdown(left)
+  ];
+  for (const text of merchantSurfaces) {
+    assert.equal(String(text).includes("uncovered leftover units (organizer private)"), false);
+    assert.equal(String(text).includes("copy-uncovered-leftover-units"), false);
     assert.equal(String(text).includes("Not a merchant export"), false);
     assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
   }
