@@ -388,6 +388,7 @@ footer {
   body.print-leftover #leftover-print-fill,
   body.print-leftover #leftover-print-fill-merchant,
   body.print-leftover #leftover-print-fill-remaining,
+  body.print-leftover #leftover-print-fill-fulfillment,
   body.print-leftover .scoreboard .metric.feature {
     display: block !important;
   }
