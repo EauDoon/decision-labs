@@ -59,7 +59,7 @@ That copy is catalog copy, not a live product version.
 Key `[` focuses the Copy version line control, or the footer version line if
 that control is missing. That key moves focus; it does not open a workbench.
 It does not copy.
-Key `q` copies those same catalog jobs through the Copy jobs control. It does not fork that Markdown. Key `;` copies the first workbench name and one-sentence job from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that card is missing, it copies an empty string. That key is distinct from `j` and `q`, which copy all four jobs, and from `y`, which copies the last-launched job. Key `:` copies the first Trust and limits list item from this page as one Markdown line. That copy is catalog copy, not a live policy feed. If that item is missing, it copies an empty string. That key is distinct from `i`, which copies the full Trust and limits list, and from `;`, which copies the first workbench job. Key `i` copies Trust and limits from this page as Markdown. That list is not a
+Key `q` copies those same catalog jobs through the Copy jobs control. It does not fork that Markdown. Key `;` copies the first workbench name and one-sentence job from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that card is missing, it copies an empty string. That key is distinct from `j` and `q`, which copy all four jobs, and from `y`, which copies the last-launched job. Key `:` copies the first Trust and limits list item from this page as one Markdown line. That copy is catalog copy, not a live policy feed. If that item is missing, it copies an empty string. That key is distinct from `i`, which copies the full Trust and limits list, and from `;`, which copies the first workbench job. Key `"` copies the last Trust and limits list item from this page as one Markdown line. That copy is catalog copy, not a live policy feed. If that item is missing, it copies an empty string. That key is distinct from `:`, which copies the first Trust and limits list item, and from `i`, which copies the full Trust and limits list. Key `i` copies Trust and limits from this page as Markdown. That list is not a
 live policy feed. Key `u` copies How it works from this page as Markdown. That
 list is not a live policy feed. Key `-` copies the first How it works list
 item from this page as one Markdown line. That copy is catalog copy, not a
@@ -267,6 +267,12 @@ the visible text box when the clipboard API is unavailable. If that item is
 missing, it copies an empty string. This is catalog copy, not a live policy
 feed. It is distinct from `i`, which copies the full Trust and limits list, and
 from `;`.
+Press `"` to copy the last Trust and limits list item from this page as one
+Markdown line. That key uses the same Copy last Trust item control, including
+the visible text box when the clipboard API is unavailable. If that item is
+missing, it copies an empty string. This is catalog copy, not a live policy
+feed. It is distinct from `:`, which copies the first Trust and limits list
+item, and from `i`.
 Copy skip links copies the six skip-link labels and hash hrefs already printed
 in the skip navigation as Markdown, with the same clipboard and visible text
 box fallback. This is in-page navigation copy, not a sitemap API.
@@ -280,6 +286,12 @@ and visible text box fallback. If that item is missing, it copies an empty
 string. That copy is catalog copy, not a live policy feed. It is distinct
 from Copy Trust and limits, which copies the full list, and from Copy first
 job.
+Copy last Trust item copies the last Trust and limits list item already
+printed on this catalog page as one Markdown line, with the same clipboard
+and visible text box fallback. If that item is missing, it copies an empty
+string. That copy is catalog copy, not a live policy feed. It is distinct
+from Copy first Trust item, which copies the first item, and from Copy Trust
+and limits, which copies the full list.
 Press `i` to copy Trust and limits through that same control.
 Press `u` to copy How it works through that same control.
 Press `-` to copy the first How it works list item from this page as one
