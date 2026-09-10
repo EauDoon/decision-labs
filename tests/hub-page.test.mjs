@@ -1120,6 +1120,117 @@ test('s focuses the first Open workbench link when focus is not in an input', ()
   assert.deepEqual(focused, ['open']);
 });
 
+test('right bracket focuses the last Open workbench link when focus is not in an input', () => {
+  assert.match(html, /event\.key === '\]'/);
+  assert.match(html, /querySelectorAll\('#workbenches a\.open'\)/);
+  assert.match(html, /opens\[opens\.length - 1\]/);
+  assert.match(html, /getElementById\('workbenches-title'\)/);
+  assert.match(html, /id="workbenches-title"/);
+  assert.match(html, /<kbd>\]<\/kbd><\/dt><dd>Focus the last Open workbench link, or the workbenches heading if none. This key moves focus; it does not open the workbench./);
+  assert.match(html, /Press <kbd>\]<\/kbd> to focus the last Open workbench link/);
+  assert.match(html, /This key moves focus; it does not open the workbench/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Key `\]` focuses the last Open workbench/);
+  assert.match(readme, /Press `\]` to focus the last Open workbench link/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const lastOpen = { focus() { focused.push('last-open'); } };
+  const heading = { focus() { focused.push('workbenches-title'); } };
+  const section = { focus() { focused.push('workbenches'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'workbenches-title') return heading;
+      if (id === 'workbenches') return section;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#workbenches a.open'
+        ? [{ focus() { focused.push('first-open'); } }, lastOpen]
+        : [];
+    },
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire(']', input);
+  fire(']', textarea);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire(']', body);
+  assert.deepEqual(focused, ['last-open']);
+  assert.deepEqual(assigned, []);
+});
+
+test('right bracket focuses the workbenches heading when no Open workbench link exists', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('workbenches-title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'workbenches-title') return heading;
+      if (id === 'workbenches') return { focus() { focused.push('workbenches'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: ']',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['workbenches-title']);
+  assert.deepEqual(assigned, []);
+});
+
 test('catalog does not use CSS animation', () => {
   const style = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
   assert.doesNotMatch(style, /@keyframes/);
