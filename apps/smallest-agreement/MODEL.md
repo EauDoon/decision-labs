@@ -2,7 +2,7 @@
 
 ## Purpose
 
-The model compares explicitly supplied structured options. It finds the smallest calculated change that crosses a configurable approval threshold. It makes no claim that the result is a collective decision.
+The model compares explicitly supplied structured options. It finds the smallest calculated change that crosses a configurable approval threshold. It makes no claim that the result is a collective decision. Version 1.5.1 keeps the 1.5.0 review packet contract. Workshop display filters, print redaction, pasted clause tables, and `moveClause` do not change search math. A veto is a number, not a legal right. Locks are draft choices.
 
 ## Inputs
 
@@ -65,7 +65,7 @@ An agreement passes when overall approval is at least the threshold and every co
 | `clauses[].lockedOptionId` | An option ID belonging to that clause | The search must select this option. Other choices stay in the draft but are excluded from search. |
 | `clauses[].note` | String of 1 to 240 characters | Facilitator reminder shown on the worksheet. The solver ignores it. |
 
-Omit an optional field to disable it. `null`, numeric strings, unknown option references, and out-of-range values are invalid. `groups[].veto` must be a boolean if present; `false` and omitted are equivalent and are dropped from canonical JSON. In the GUI, a blank budget or floor omits the field; zero remains a real constraint. Locks may select originals or alternatives. A locked alternative still contributes its full cost and counts as a changed clause. Removing a locked option requires unlocking it first.
+Omit an optional field to disable it. `null`, numeric strings, unknown option references, and out-of-range values are invalid. `groups[].veto` must be a boolean if present; `false` and omitted are equivalent and are dropped from canonical JSON. In the GUI, a blank budget or floor omits the field; zero remains a real constraint. Locks may select originals or alternatives. A locked alternative still contributes its full cost and counts as a changed clause. Removing a locked option requires unlocking it first. Locks are draft choices, not recorded votes.
 
 All constraints apply together. No priority rule silently relaxes a budget, floor, veto, or lock to make a proposal pass. A group floor or veto applies to an average, not to every individual clause and not to semantic consent or a legal right. JSON canonicalization preserves understood constraints and drops unrelated fields. Unconstrained v1 drafts remain valid and retain their original field shape. Drafts without `veto` stay valid; the field is not added during canonicalization.
 
@@ -186,4 +186,4 @@ The optional package review can stress one group at a time while holding the sel
 
 ### Review packet contract
 
-`createAgreementReviewPacket(proposal, tool)` and `replayAgreementReviewPacket(packet)` bind canonical inputs to exact review result primitives. Version 1 uses format `agreement-review`, six strict top-level fields and a 1 MiB serialized cap. Replay recomputes; changing an input snapshot or result rejects the packet. These are unsigned records, not authenticated decisions. Aggregate calculations preserve full floating-point values in the packet even when the display rounds. The normal solver retains its 50,000-combination cap. Threshold/budget reviews cap each of at most five additional searches at 10,000; single-lock reviews share a total 50,000-candidate budget across their counterfactual searches.
+`createAgreementReviewPacket(proposal, tool)` and `replayAgreementReviewPacket(packet)` bind canonical inputs to exact review result primitives. Version 1 uses format `agreement-review`, six strict top-level fields and a 1 MiB serialized cap. Replay recomputes; changing an input snapshot or result rejects the packet. These are unsigned records, not authenticated decisions. Aggregate calculations preserve full floating-point values in the packet even when the display rounds. The normal solver retains its 50,000-combination cap. Threshold/budget reviews cap each of at most five additional searches at 10,000; single-lock reviews share a total 50,000-candidate budget across their counterfactual searches. 1.5.1 does not change this contract or AGREEMENT_REVIEW_TOOLS.
