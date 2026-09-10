@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.6 - 2026-09-10
+
+A workshop follow-up on 1.5.5. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `z` jumps to the numeric approval threshold field, or the method heading if that field is missing. Ignored while typing.
+- Keyboard `,` (comma, no shift) copies the recommended package option count as one-line Markdown (count only), with a clipboard fallback. It is not a recorded vote.
+- Keyboard `.` jumps to the first locked clause card, or the clauses heading if none. Ignored while typing.
+- Community garden watering preset: synthetic plot-holders, neighbours (a veto group), and garden committee scoring watering hours, hose noise, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, and Hall hire hours. Not a recorded vote.
+- Hide unlocked clauses. Hidden clauses still count in the model. The solver is unchanged. Distinct from hideGroupsAtFloor, hideGroupsWithoutFloors, leftover-budget clause filter, and the lock filter. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all.
+- Print facilitator pack includes a one-line lock count. Print redacted still uses Group 1 through Group N. Locks are draft choices, not a legal hold. The saved draft is unchanged.
+- Copy current lock count as one-line Markdown, with a clipboard fallback. Locks are draft choices, not a legal hold.
+
 ## 1.5.5 - 2026-09-10
 
 A workshop follow-up on 1.5.4. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.

@@ -28,10 +28,12 @@ import {
   overBudgetClauseIds,
   clausesWithoutCheaperRemainingOption,
   formatCurrentLocksMarkdown,
+  formatCurrentLockCountMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
   formatApprovalThresholdMarkdown,
+  formatRecommendedPackageOptionCountMarkdown,
   formatRecommendedChangeCostCsv,
   parseClauseOptionsCsv,
   formatClauseOptionsCsv,
@@ -1657,6 +1659,76 @@ test("approval threshold Markdown is one line and is not a legal quorum", () => 
   assert.equal(formatApprovalThresholdMarkdown({ title: "" }).status, "invalid");
 });
 
+test("recommended package option count Markdown is one line, count only, and is not a recorded vote", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 90 }), option("two-change", false, { g: 40 }, 1), option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const result = findSmallestAgreement(input);
+  const copied = formatRecommendedPackageOptionCountMarkdown(input, result);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.count, 2);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Recommended package option count: 2. This is a decision aid, not a recorded vote.\n");
+  assert.doesNotMatch(copied.text, /one-change|two-original/u);
+  assert.doesNotMatch(copied.text, /^# Recommended package/u);
+  assert.doesNotMatch(copied.text, /leftover change-budget/u);
+  assert.doesNotMatch(copied.text, /Approval threshold:/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const neighbourhood = formatRecommendedPackageOptionCountMarkdown({
+    title: "Neighbourhood Plan: the shared green",
+    threshold: 68,
+    groups: [
+      { id: "residents", name: "Residents", weight: 3 },
+      { id: "shopkeepers", name: "Shopkeepers", weight: 2 },
+      { id: "stewards", name: "Park stewards", weight: 2 },
+    ],
+    clauses: [
+      { id: "hours", title: "Park access hours", options: [
+        { id: "hours-original", original: true, label: "Close at 20:00 every day", changeCost: 0, support: { residents: 78, shopkeepers: 55, stewards: 88 } },
+        { id: "hours-seasonal", original: false, label: "Use seasonal closing times", changeCost: 2, support: { residents: 86, shopkeepers: 74, stewards: 73 } },
+        { id: "hours-pilot", original: false, label: "Trial a 21:00 Friday close for three months", changeCost: 3, support: { residents: 84, shopkeepers: 83, stewards: 60 } },
+      ] },
+      { id: "market", title: "Weekend market use", options: [
+        { id: "market-original", original: true, label: "No regular market use", changeCost: 0, support: { residents: 60, shopkeepers: 52, stewards: 91 } },
+        { id: "market-monthly", original: false, label: "Permit one monthly market with clean-up bond", changeCost: 2, support: { residents: 74, shopkeepers: 89, stewards: 72 } },
+        { id: "market-seasonal", original: false, label: "Permit a summer market series", changeCost: 5, support: { residents: 68, shopkeepers: 93, stewards: 48 } },
+      ] },
+      { id: "path", title: "Path lighting", options: [
+        { id: "path-original", original: true, label: "Replace failed lamps as needed", changeCost: 0, support: { residents: 58, shopkeepers: 63, stewards: 80 } },
+        { id: "path-warm", original: false, label: "Install warm low-level path lighting", changeCost: 3, support: { residents: 85, shopkeepers: 76, stewards: 67 } },
+        { id: "path-motion", original: false, label: "Install motion-activated lighting", changeCost: 4, support: { residents: 78, shopkeepers: 71, stewards: 75 } },
+      ] },
+    ],
+  });
+  assert.equal(neighbourhood.status, "ok");
+  assert.equal(neighbourhood.count, 3);
+  assert.equal(neighbourhood.text, "Recommended package option count: 3. This is a decision aid, not a recorded vote.\n");
+  const missing = proposal({
+    threshold: 95,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 10 }), option("alt", false, { g: 20 }, 1), option("other", false, { g: 30 }, 2),
+    ] }],
+  });
+  missing.maxChangeCost = 0;
+  const none = formatRecommendedPackageOptionCountMarkdown(missing);
+  assert.equal(none.status, "unavailable");
+  assert.match(none.text, /No recommended package is available/u);
+  assert.match(none.text, /not a recorded vote/u);
+  assert.doesNotMatch(none.text, /one-change|Keep original/u);
+  assert.equal(formatRecommendedPackageOptionCountMarkdown({ title: "" }).status, "invalid");
+});
+
 test("pinned package Markdown table lists original, recommended, and pinned labels without recording a vote", () => {
   const input = proposal({
     clauses: [{ id: "one", title: "Hours", options: [
@@ -1825,7 +1897,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
@@ -1833,6 +1905,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(exported.hideGroupsAtFloor, true);
   assert.equal(exported.hideGroupsWithoutFloors, true);
   assert.equal(exported.noCheaperRemainingClausesOnly, true);
+  assert.equal(exported.hideUnlockedClauses, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
@@ -1841,12 +1914,14 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parsed.hideGroupsAtFloor, true);
   assert.equal(parsed.hideGroupsWithoutFloors, true);
   assert.equal(parsed.noCheaperRemainingClausesOnly, true);
+  assert.equal(parsed.hideUnlockedClauses, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideGroupsAtFloor"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideGroupsWithoutFloors"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "noCheaperRemainingClausesOnly"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideUnlockedClauses"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
@@ -1855,6 +1930,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(omitted.hideGroupsAtFloor, false);
   assert.equal(omitted.hideGroupsWithoutFloors, false);
   assert.equal(omitted.noCheaperRemainingClausesOnly, false);
+  assert.equal(omitted.hideUnlockedClauses, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
@@ -1862,6 +1938,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(bare.hideGroupsAtFloor, null);
   assert.equal(bare.hideGroupsWithoutFloors, null);
   assert.equal(bare.noCheaperRemainingClausesOnly, null);
+  assert.equal(bare.hideUnlockedClauses, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
@@ -1870,6 +1947,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(formatWorkspaceJson(input, { hideGroupsAtFloor: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { hideGroupsWithoutFloors: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { noCheaperRemainingClausesOnly: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideUnlockedClauses: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -2089,6 +2167,41 @@ test("formatCurrentLocksMarkdown lists locked option labels or Unlocked", () => 
   assert.match(listed.text, /- Two: Unlocked/u);
   assert.doesNotMatch(listed.text, /legal right/u);
   assert.equal(formatCurrentLocksMarkdown({ title: "" }).status, "invalid");
+});
+
+test("current lock count Markdown is one line and is not a legal hold", () => {
+  const input = proposal({
+    clauses: [
+      { id: "one", title: "One", lockedOptionId: "one-change", options: [
+        option("one-original", true, { g: 50 }), option("one-change", false, { g: 80 }, 1), option("one-other", false, { g: 70 }, 2),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 50 }), option("two-change", false, { g: 80 }, 1), option("two-other", false, { g: 70 }, 2),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatCurrentLockCountMarkdown(input);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.count, 1);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Current lock count: 1. Locks are draft choices, not a legal hold.\n");
+  assert.doesNotMatch(copied.text, /one-change|Unlocked/u);
+  assert.doesNotMatch(copied.text, /# Current clause locks/u);
+  assert.doesNotMatch(copied.text, /Recommended package option count/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const none = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const empty = formatCurrentLockCountMarkdown(none);
+  assert.equal(empty.status, "ok");
+  assert.equal(empty.count, 0);
+  assert.equal(empty.text, "Current lock count: 0. Locks are draft choices, not a legal hold.\n");
+  assert.equal(formatCurrentLockCountMarkdown({ title: "" }).status, "invalid");
 });
 
 test("formatRecommendedChangeCostCsv writes formula-safe original vs recommended costs", () => {

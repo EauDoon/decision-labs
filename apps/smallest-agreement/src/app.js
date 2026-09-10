@@ -37,6 +37,7 @@ import {
   formatVetoBlockersMarkdown,
   formatPinnedPackagesMarkdown,
   formatCurrentLocksMarkdown,
+  formatCurrentLockCountMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -46,6 +47,7 @@ import {
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,
   formatApprovalThresholdMarkdown,
+  formatRecommendedPackageOptionCountMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -451,6 +453,39 @@ const presets = {
       },
     ],
   },
+  "community-garden-watering": {
+    title: "Community garden watering: watering hours, hose noise, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "plot-holders", name: "Plot-holders", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "committee", name: "Garden committee", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "watering", title: "Watering hours", options: [
+          { id: "watering-original", original: true, label: "Lock the standpipe from 20:00 to 07:00", changeCost: 0, support: { "plot-holders": 42, neighbours: 86, committee: 74 } },
+          { id: "watering-evening", original: false, label: "Allow watering until 21:00 with a posted rota", changeCost: 2, support: { "plot-holders": 86, neighbours: 64, committee: 72 } },
+          { id: "watering-dawn", original: false, label: "Allow dawn watering from 06:00 with a shared timer", changeCost: 3, support: { "plot-holders": 80, neighbours: 70, committee: 76 } },
+        ],
+      },
+      {
+        id: "hose", title: "Hose noise", options: [
+          { id: "hose-original", original: true, label: "No posted hose quiet hours", changeCost: 0, support: { "plot-holders": 84, neighbours: 28, committee: 48 } },
+          { id: "hose-quiet", original: false, label: "Ban hose use after 20:00 and use watering cans after that", changeCost: 2, support: { "plot-holders": 70, neighbours: 82, committee: 80 } },
+          { id: "hose-drip", original: false, label: "Switch to drip lines and retire the shared hose", changeCost: 4, support: { "plot-holders": 48, neighbours: 88, committee: 68 } },
+        ],
+      },
+      {
+        id: "lockup", title: "Garden lock-up", options: [
+          { id: "lockup-original", original: true, label: "Keep the shared padlock and a paper key list", changeCost: 0, support: { "plot-holders": 40, neighbours: 58, committee: 64 } },
+          { id: "lockup-fob", original: false, label: "Issue plot fobs and retire the padlock", changeCost: 2, support: { "plot-holders": 84, neighbours: 76, committee: 80 } },
+          { id: "lockup-timer", original: false, label: "Add a timed lock on the standpipe cupboard", changeCost: 3, support: { "plot-holders": 72, neighbours: 70, committee: 74 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -463,6 +498,7 @@ let clauseFilter = "";
 let clauseDensity = "comfortable";
 let vetoGroupsOnly = false;
 let lockedClausesOnly = false;
+let hideUnlockedClauses = false;
 let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
 let hideGroupsAtFloor = false;
@@ -493,8 +529,8 @@ function renderPrintKicker() {
   const kicker = $(".facilitator-pack-kicker");
   if (!kicker) return;
   kicker.textContent = printRedacted
-    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, remaining change-budget, and the numeric approval threshold stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote."
-    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, and the numeric approval threshold on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote.";
+    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote."
+    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.";
 }
 
 function renderCopyFallbacks(result) {
@@ -503,10 +539,20 @@ function renderCopyFallbacks(result) {
     const packaged = formatRecommendedPackageMarkdown(state.proposal, result ?? currentResult());
     packageBox.value = packaged.status === "ok" ? packaged.text : packaged.status === "unavailable" ? packaged.text : "";
   }
+  const optionCountBox = $("#option-count-fallback");
+  if (optionCountBox) {
+    const counted = formatRecommendedPackageOptionCountMarkdown(state.proposal, result ?? currentResult());
+    optionCountBox.value = counted.status === "ok" || counted.status === "unavailable" ? counted.text : "";
+  }
   const locksBox = $("#locks-markdown-fallback");
   if (locksBox) {
     const listed = formatCurrentLocksMarkdown(state.proposal);
     locksBox.value = listed.status === "ok" ? listed.text : "";
+  }
+  const lockCountBox = $("#lock-count-fallback");
+  if (lockCountBox) {
+    const counted = formatCurrentLockCountMarkdown(state.proposal);
+    lockCountBox.value = counted.status === "ok" ? counted.text : "";
   }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
@@ -547,6 +593,7 @@ function loadWorkspacePrefs() {
     if (parsed?.clauseDensity === "compact" || parsed?.clauseDensity === "comfortable") clauseDensity = parsed.clauseDensity;
     vetoGroupsOnly = parsed?.vetoGroupsOnly === true;
     lockedClausesOnly = parsed?.lockedClausesOnly === true;
+    hideUnlockedClauses = parsed?.hideUnlockedClauses === true;
     changedClausesOnly = parsed?.changedClausesOnly === true;
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
     overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
@@ -560,7 +607,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -856,6 +903,8 @@ function renderClauses() {
   const query = clauseFilter.trim().toLowerCase();
   const checkbox = $("#locked-clauses-only");
   if (checkbox) checkbox.checked = lockedClausesOnly;
+  const hideUnlockedCheckbox = $("#hide-unlocked-clauses");
+  if (hideUnlockedCheckbox) hideUnlockedCheckbox.checked = hideUnlockedClauses;
   const changedCheckbox = $("#changed-clauses-only");
   if (changedCheckbox) changedCheckbox.checked = changedClausesOnly;
   const overBudgetCheckbox = $("#over-budget-clauses-only");
@@ -871,13 +920,14 @@ function renderClauses() {
   const recommendedIds = new Set((currentResult().agreement?.options ?? []).map((option) => option.id));
   const visible = state.proposal.clauses.filter((clause) => {
     if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
+    if (hideUnlockedClauses && clause.lockedOptionId === undefined) return false;
     if (changedClausesOnly && !changedIds.has(clause.id)) return false;
     if (overBudgetClausesOnly && !overBudgetIds.has(clause.id)) return false;
     if (noCheaperRemainingClausesOnly && !noCheaperIds.has(clause.id)) return false;
     return clauseMatchesFilter(clause, query);
   });
   const status = $("#clause-filter-status");
-  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
+  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !hideUnlockedClauses && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
   if (!visible.length) {
     const message = noCheaperRemainingClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly
       ? "No clauses lack a remaining cheaper option than the recommendation. Hidden cards still count in the model."
@@ -885,6 +935,8 @@ function renderClauses() {
       ? "No clauses have a cheapest remaining change that exceeds the remaining budget. Hidden cards still count in the model."
       : changedClausesOnly && query === "" && !lockedClausesOnly
       ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
+      : hideUnlockedClauses && query === ""
+        ? "No clauses remain after hiding unlocked clauses. Hidden cards still count in the model."
       : lockedClausesOnly && query === ""
         ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
         : "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
@@ -947,8 +999,12 @@ function renderBallot(vetoBlocks = blockingVetoIds(currentResult())) {
   const thresholdLine = threshold.status === "ok"
     ? `<p>${escapeHtml(threshold.text.trim())}</p>`
     : "";
+  const lockCount = formatCurrentLockCountMarkdown(proposal);
+  const lockCountLine = lockCount.status === "ok"
+    ? `<p>${escapeHtml(lockCount.text.trim())}</p>`
+    : "";
   const groupList = proposal.groups.map((group) => escapeHtml(groupDisplayName(group))).join(", ");
-  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${remainingLine}${thresholdLine}${vetoNote}${proposal.clauses.map((clause) => {
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${remainingLine}${thresholdLine}${lockCountLine}${vetoNote}${proposal.clauses.map((clause) => {
     const recommended = clause.options.find((option) => recommendedIds.has(option.id));
     const recommendedLine = recommended ? `<p>Recommended: ${escapeHtml(recommended.label)}</p>` : "";
     return `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}${recommendedLine}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${recommendedIds.has(option.id) ? " (recommended)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`;
@@ -972,12 +1028,14 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-option-count-button").disabled = result.status === "invalid";
   $("#copy-original-versus-recommended-button").disabled = result.status === "invalid";
   $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#copy-remaining-budget-button").disabled = result.status === "invalid";
   $("#copy-approval-threshold-button").disabled = result.status === "invalid";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
+  $("#copy-lock-count-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -1582,6 +1640,17 @@ $("#locked-clauses-only").addEventListener("change", (event) => {
   renderClauses();
   applyClauseDensity();
 });
+function setHideUnlockedClauses(next) {
+  hideUnlockedClauses = next === true;
+  const checkbox = $("#hide-unlocked-clauses");
+  if (checkbox) checkbox.checked = hideUnlockedClauses;
+  persistWorkspacePrefs();
+  renderClauses();
+  applyClauseDensity();
+}
+$("#hide-unlocked-clauses").addEventListener("change", (event) => {
+  setHideUnlockedClauses(event.target.checked === true);
+});
 $("#changed-clauses-only").addEventListener("change", (event) => {
   changedClausesOnly = event.target.checked === true;
   persistWorkspacePrefs();
@@ -2006,7 +2075,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -2193,6 +2262,20 @@ $("#copy-package-button").addEventListener("click", async () => {
     notifyDraft("Clipboard is blocked. Copy the recommended package from the Markdown box. It is not a recorded vote.");
   }
 });
+async function copyRecommendedOptionCount() {
+  const listed = formatRecommendedPackageOptionCountMarkdown(state.proposal, currentResult());
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the recommended package option count.");
+  const fallback = $("#option-count-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft("Recommended package option count copied as Markdown. It is a decision aid, not a recorded vote.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the recommended package option count from the Markdown box. It is not a recorded vote.");
+  }
+}
+$("#copy-option-count-button").addEventListener("click", copyRecommendedOptionCount);
 async function copyOriginalVersusRecommended() {
   const listed = formatOriginalVersusRecommendedMarkdown(state.proposal, currentResult());
   if (listed.status === "invalid") return notifyDraft("Fix the draft before copying original versus recommended labels and costs.");
@@ -2290,6 +2373,20 @@ $("#copy-locks-button").addEventListener("click", async () => {
     notifyDraft("Clipboard is blocked. Copy the current locks from the Markdown box. It is not a legal hold.");
   }
 });
+async function copyLockCount() {
+  const listed = formatCurrentLockCountMarkdown(state.proposal);
+  if (listed.status !== "ok") return notifyDraft("Fix the draft before copying the current lock count.");
+  const fallback = $("#lock-count-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Current lock count copied as Markdown. Locks are draft choices, not a legal hold.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the current lock count from the Markdown box. Locks are draft choices, not a legal hold.");
+  }
+}
+$("#copy-lock-count-button").addEventListener("click", copyLockCount);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -2342,6 +2439,7 @@ $("#import-file").addEventListener("change", async (event) => {
       if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") clauseDensity = workspace.clauseDensity;
       vetoGroupsOnly = workspace.vetoGroupsOnly === true;
       lockedClausesOnly = workspace.lockedClausesOnly === true;
+      hideUnlockedClauses = workspace.hideUnlockedClauses === true;
       changedClausesOnly = workspace.changedClausesOnly === true;
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
@@ -2508,6 +2606,53 @@ function jumpToLocks() {
   }
   $("#clear-locks")?.focus?.();
 }
+
+function jumpToLockedClauseCard() {
+  const firstLocked = state.proposal.clauses.find((clause) => clause.lockedOptionId !== undefined);
+  if (!firstLocked) {
+    $("#clauses-heading")?.focus?.();
+    return;
+  }
+  const query = clauseFilter.trim().toLowerCase();
+  const changed = changedClauseIds(state.proposal, currentResult());
+  const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
+  const overBudget = overBudgetClauseIds(state.proposal, currentResult());
+  const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, currentResult());
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
+  let needsRender = false;
+  if (!clauseMatchesFilter(firstLocked, query)) {
+    clauseFilter = "";
+    const filter = $("#clause-filter");
+    if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (changedClausesOnly && !changedIds.has(firstLocked.id)) {
+    changedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (overBudgetClausesOnly && !overBudgetIds.has(firstLocked.id)) {
+    overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (noCheaperRemainingClausesOnly && !noCheaperIds.has(firstLocked.id)) {
+    noCheaperRemainingClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) {
+    renderClauses();
+    applyClauseDensity();
+  }
+  const target = $(`[data-field="clause-title"][data-clause-id="${firstLocked.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#clauses-heading")?.focus?.();
+}
 function jumpToGroups() {
   const inspected = inspectedPackage(currentResult());
   const below = inspected
@@ -2559,6 +2704,11 @@ function jumpToUnlocked() {
   }
   if (lockedClausesOnly) {
     lockedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (hideUnlockedClauses) {
+    hideUnlockedClauses = false;
     persistWorkspacePrefs();
     needsRender = true;
   }
@@ -2734,6 +2884,11 @@ function jumpToChangedClause() {
     persistWorkspacePrefs();
     needsRender = true;
   }
+  if (hideUnlockedClauses && first.lockedOptionId === undefined) {
+    hideUnlockedClauses = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
   if (overBudgetClausesOnly && !overBudgetIds.has(first.id)) {
     overBudgetClausesOnly = false;
     persistWorkspacePrefs();
@@ -2758,6 +2913,15 @@ function jumpToChangedClause() {
 
 function jumpToMethod() {
   $("#method-heading")?.focus?.();
+}
+
+function jumpToNumericThreshold() {
+  const field = $("#threshold-number");
+  if (field?.focus) {
+    field.focus();
+    return;
+  }
+  jumpToMethod();
 }
 
 function jumpToRecommendedOption() {
@@ -2785,6 +2949,11 @@ function jumpToRecommendedOption() {
   }
   if (clause && lockedClausesOnly && clause.lockedOptionId === undefined) {
     lockedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (clause && hideUnlockedClauses && clause.lockedOptionId === undefined) {
+    hideUnlockedClauses = false;
     persistWorkspacePrefs();
     needsRender = true;
   }
@@ -2917,6 +3086,15 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "y" || event.key === "Y") {
     event.preventDefault();
     jumpToVetoGroup();
+  } else if (event.key === "z" || event.key === "Z") {
+    event.preventDefault();
+    jumpToNumericThreshold();
+  } else if (event.key === "," && !event.shiftKey) {
+    event.preventDefault();
+    copyRecommendedOptionCount();
+  } else if (event.key === "." && !event.shiftKey) {
+    event.preventDefault();
+    jumpToLockedClauseCard();
   }
 });
 

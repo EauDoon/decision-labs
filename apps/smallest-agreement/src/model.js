@@ -1905,6 +1905,23 @@ export function formatCurrentLocksMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the current clause lock count for clipboard handoff.
+ * Locks are draft choices, not a legal hold.
+ * Distinct from current-locks copy and recommended-package option count.
+ */
+export function formatCurrentLockCountMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const count = p.clauses.filter((clause) => clause.lockedOptionId !== undefined).length;
+  return {
+    status: "ok",
+    count,
+    text: `Current lock count: ${count}. Locks are draft choices, not a legal hold.\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2000,6 +2017,31 @@ export function formatApprovalThresholdMarkdown(proposal) {
   return {
     status: "ok",
     text: `Approval threshold: ${formatPercent(p.threshold)}. This is a number you entered, not a legal quorum.\n`,
+  };
+}
+
+/**
+ * One-line Markdown of the recommended package option count for clipboard handoff.
+ * Count only. It is a decision aid, not a recorded vote.
+ * Distinct from recommended-package copy and remaining change-budget copy.
+ */
+export function formatRecommendedPackageOptionCountMarkdown(proposal, result = findSmallestAgreement(proposal)) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || result.status === "invalid") {
+    return { status: "invalid", errors: result?.errors ?? ["No result was available."] };
+  }
+  const disclaimer = "This is a decision aid, not a recorded vote.";
+  if (result.status === "too_large") {
+    return { status: "unavailable", text: `The search is over the safety bound, so the recommended package option count cannot be copied. ${disclaimer}\n` };
+  }
+  if (!result.agreement || !Array.isArray(result.agreement.options)) {
+    return { status: "unavailable", text: `No recommended package is available, so the option count cannot be copied. ${disclaimer}\n` };
+  }
+  return {
+    status: "ok",
+    count: result.agreement.options.length,
+    text: `Recommended package option count: ${result.agreement.options.length}. ${disclaimer}\n`,
   };
 }
 
@@ -2156,6 +2198,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideGroupsAtFloor",
   "hideGroupsWithoutFloors",
   "noCheaperRemainingClausesOnly",
+  "hideUnlockedClauses",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2168,6 +2211,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideGroupsAtFloor",
   "hideGroupsWithoutFloors",
   "noCheaperRemainingClausesOnly",
+  "hideUnlockedClauses",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2215,6 +2259,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideGroupsWithoutFloors.error) return { status: "invalid", errors: [hideGroupsWithoutFloors.error] };
   const noCheaperRemainingClausesOnly = readWorkspaceBoolean(prefs, "noCheaperRemainingClausesOnly");
   if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
+  const hideUnlockedClauses = readWorkspaceBoolean(prefs, "hideUnlockedClauses");
+  if (hideUnlockedClauses.error) return { status: "invalid", errors: [hideUnlockedClauses.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2226,6 +2272,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideGroupsAtFloor: hideGroupsAtFloor.value,
     hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
+    hideUnlockedClauses: hideUnlockedClauses.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2238,6 +2285,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideGroupsAtFloor: hideGroupsAtFloor.value,
       hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
       noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
+      hideUnlockedClauses: hideUnlockedClauses.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2263,6 +2311,7 @@ export function parseWorkspaceJson(text) {
       hideGroupsAtFloor: null,
       hideGroupsWithoutFloors: null,
       noCheaperRemainingClausesOnly: null,
+      hideUnlockedClauses: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2295,6 +2344,8 @@ export function parseWorkspaceJson(text) {
   if (hideGroupsWithoutFloors.error) return { status: "invalid", errors: [hideGroupsWithoutFloors.error] };
   const noCheaperRemainingClausesOnly = readWorkspaceBoolean(raw, "noCheaperRemainingClausesOnly");
   if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
+  const hideUnlockedClauses = readWorkspaceBoolean(raw, "hideUnlockedClauses");
+  if (hideUnlockedClauses.error) return { status: "invalid", errors: [hideUnlockedClauses.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2308,6 +2359,7 @@ export function parseWorkspaceJson(text) {
     hideGroupsAtFloor: hideGroupsAtFloor.value,
     hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
+    hideUnlockedClauses: hideUnlockedClauses.value,
   };
 }
 
