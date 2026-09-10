@@ -708,6 +708,22 @@ test("keyboard slash jumps to remaining-reserve copy and shift-slash stays help"
   assert.match(ui.nodes.get("remaining-reserve-copy-fallback").value, /Remaining reserve:/);
 });
 
+test("copy hours-to-clear button uses the one-line helper with an honest empty", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.nodes.get("copy-hours-to-clear").click();
+  assert.equal(ui.nodes.get("hours-to-clear-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("hours-to-clear-copy-fallback").value, /Hours to clear queue:/);
+  assert.match(ui.nodes.get("hours-to-clear-copy-fallback").value, /Synthetic educational snapshot/);
+  ui.nodes.get("redemptionDemandAud").value = "0";
+  await ui.nodes.get("scenario-form").emit("change");
+  ui.nodes.get("hours-to-clear-copy-fallback").hidden = true;
+  ui.nodes.get("hours-to-clear-copy-fallback").value = "";
+  await ui.nodes.get("copy-hours-to-clear").click();
+  assert.equal(ui.nodes.get("hours-to-clear-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("hours-to-clear-copy-fallback").value, /No queue in 72h/);
+  assert.doesNotMatch(ui.nodes.get("hours-to-clear-copy-fallback").value, /Hours to clear queue: \./);
+});
+
 test("keyboard h jumps to the selected Gantt hour table and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("h");
