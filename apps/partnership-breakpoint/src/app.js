@@ -472,8 +472,9 @@ function inputPanel(result) {
   const firstVisibleIndex = state.participants.findIndex((participant) => !(hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)));
   const participantForms = state.participants.map((participant, index) => {
     if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return '';
+    const leastHeadroom = result?.weakestParticipant?.id === participant.id;
     return `
-    <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}" aria-labelledby="participant-${index}-title">
+    <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}"${leastHeadroom ? ' id="least-headroom-participant" tabindex="-1"' : ''} aria-labelledby="participant-${index}-title">
       <div class="participant-toolbar">
         <div class="button-row participant-roster">
           <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
@@ -540,7 +541,7 @@ function inputPanel(result) {
           </div>
         </section>
         <section class="input-section" aria-labelledby="participant-inputs-title">
-          <h2 id="participant-inputs-title">Participants</h2>
+          <h2 id="participant-inputs-title" tabindex="-1">Participants</h2>
           <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
           ${duplicateNameWarning()}
           <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
@@ -1638,6 +1639,11 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === 'k' || event.key === 'K') {
     const target = document.querySelector('#compound-title') ?? document.querySelector('#inspect-cases-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'h' || event.key === 'H') {
+    const target = document.querySelector('#least-headroom-participant') ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -2802,6 +2808,7 @@ function helpDialog() {
         <li><kbd>t</kbd> Jump to the tornado chart heading</li>
         <li><kbd>d</kbd> Jump to the Shared deal heading</li>
         <li><kbd>k</kbd> Jump to the Compound stress heading</li>
+        <li><kbd>h</kbd> Jump to the least-headroom participant card, or the Participants heading if none</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

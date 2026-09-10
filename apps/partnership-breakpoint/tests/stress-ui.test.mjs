@@ -57,6 +57,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'viability-copy-text', 'viability-heading', 'utilization-copy-text', 'participant-ledger-title',
         'tornado-title', 'tornado-copy-text', 'deal-inputs-title', 'operating-copy-text',
         'compound-title', 'inspect-cases-title', 'split-copy-text',
+        'least-headroom-participant', 'participant-inputs-title',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1169,6 +1170,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>t<\/kbd> Jump to the tornado chart heading/);
   assert.match(app.markup(), /<kbd>d<\/kbd> Jump to the Shared deal heading/);
   assert.match(app.markup(), /<kbd>k<\/kbd> Jump to the Compound stress heading/);
+  assert.match(app.markup(), /<kbd>h<\/kbd> Jump to the least-headroom participant card, or the Participants heading if none/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1403,6 +1405,26 @@ test('keyboard t jumps to the tornado chart heading unless a field is focused', 
   app.keydown('t');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="tornado-title"/);
+});
+
+test('keyboard h jumps to the least-headroom participant card unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="least-headroom-participant" tabindex="-1"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('h');
+  assert.ok(app.focused().includes('#least-headroom-participant'));
+  assert.ok(app.focused().includes('scroll:#least-headroom-participant'));
+  const before = app.focused().length;
+  app.keydown('h', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('h', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('h');
+  assert.ok(app.focused().includes('#participant-inputs-title'));
+  assert.ok(app.focused().includes('scroll:#participant-inputs-title'));
+  assert.doesNotMatch(app.markup(), /id="least-headroom-participant"/);
 });
 
 test('keyboard w jumps to the Contribution waterfall heading unless a field is focused', async () => {
