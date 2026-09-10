@@ -128,6 +128,16 @@ export const PRESETS = Object.freeze({
     reserveCashAud: 5750000,
     redemptionDemandAud: 3400000,
     weekendFxMultiplier: 2.9
+  }),
+  thinSaturdayFx: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Thin Saturday FX (synthetic)",
+    demandProfile: "saturdayBurst",
+    fxDepthAudPerHour: 260000,
+    fxSpreadBps: 32,
+    weekendFxMultiplier: 5.4,
+    reserveCashAud: 5550000,
+    redemptionDemandAud: 3050000
   })
 });
 
