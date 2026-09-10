@@ -244,6 +244,23 @@ export const presets = Object.freeze({
       offer("O02", "Tenor Folder Cart", "Choir folder pack", "Tenor folder", 16, 8, 6, 24, 3),
       { ...offer("O03", "Hall Folder Pickup", "Choir folder pack", "Alto folder", 14, 8, 2, 30, 6), fulfillment: "pickup" }
     ]
+  },
+  scoutCamp: {
+    title: "Scout camp kit",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Patrol crate", "Scout camp pack", 8, 28, 8, ["Synthetic compass", "Mess-tin"]),
+      buyer("B02", "Troop store", "Scout camp pack", 12, 22, 6, ["Mess-tin"]),
+      buyer("B03", "Camp kitchen", "Scout camp pack", 6, 32, 10, ["Mess-tin", "Groundsheet"]),
+      buyer("B04", "Hike pack", "Scout camp pack", 5, 20, 4, ["Synthetic compass"]),
+      buyer("B05", "Overnight rail", "Scout camp pack", 9, 26, 7, ["Groundsheet", "Synthetic compass"]),
+      buyer("B06", "Hall cupboard", "Scout camp pack", 7, 24, 5, ["Mess-tin", "Groundsheet"])
+    ],
+    offers: [
+      offer("O01", "Campsite Kit Delivery", "Scout camp pack", "Synthetic compass", 18, 10, 5, 40, 4),
+      offer("O02", "Groundsheet Run", "Scout camp pack", "Groundsheet", 16, 8, 6, 24, 3),
+      { ...offer("O03", "Scout-hall Kit Pickup", "Scout camp pack", "Mess-tin", 14, 8, 2, 30, 6), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -285,7 +302,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideFullyFilledBuyers", "hideBuyersWithLeftover"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -342,6 +359,14 @@ export function validateWorkspace(candidate) {
     }
     hideZeroRemaining = hideZeroRemainingCapacityOffers;
   }
+  const hideOffersWithRemainingCapacity = own(candidate, "hideOffersWithRemainingCapacity");
+  let hideRemainingCapacity = false;
+  if (hideOffersWithRemainingCapacity !== undefined) {
+    if (hideOffersWithRemainingCapacity !== true && hideOffersWithRemainingCapacity !== false) {
+      throw new ScenarioError("Hide offers with remaining capacity must be true or false.");
+    }
+    hideRemainingCapacity = hideOffersWithRemainingCapacity;
+  }
   const hideFullyFilledBuyers = own(candidate, "hideFullyFilledBuyers");
   let hideFullyFilled = false;
   if (hideFullyFilledBuyers !== undefined) {
@@ -358,7 +383,7 @@ export function validateWorkspace(candidate) {
     }
     hideLeftoverBuyers = hideBuyersWithLeftover;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers };
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -445,6 +470,25 @@ export function filterOfferIdsHidingZeroRemainingCapacity(rawScenario, hideZeroR
         if (remaining === 0) return false;
         if (!result.qualifies && market.winner) return false;
         return true;
+      })
+      .map((result) => result.offer.id)
+  );
+  return scenario.offers.filter((offer) => remainingIds.has(offer.id)).map((offer) => offer.id);
+}
+
+/** Display-only. Matching is unchanged. Inverse of hide zero remaining capacity: hides offers whose remaining capacity after the winner is greater than zero. */
+export function filterOfferIdsHidingOffersWithRemainingCapacity(rawScenario, hideRemaining) {
+  if (hideRemaining !== true && hideRemaining !== false) {
+    throw new ScenarioError("Hide offers with remaining capacity must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideRemaining) return scenario.offers.map((offer) => offer.id);
+  const market = evaluateMarket(scenario);
+  const remainingIds = new Set(
+    market.results
+      .filter((result) => {
+        const remaining = Math.max(0, result.offer.capacity - result.fulfilledUnits);
+        return remaining === 0;
       })
       .map((result) => result.offer.id)
   );
@@ -1421,6 +1465,13 @@ export function createLeftoverFillUnitCountMarkdown(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   const amount = coverage.secondary ? String(coverage.secondary.fulfilledUnits) : "none";
   return `Common Cart leftover fill units (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover fill merchant label. Merchant label only. Not a merchant export. */
+export function createLeftoverFillMerchantLabelMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const merchant = coverage.secondary?.merchant ?? "none";
+  return `Common Cart leftover fill merchant (organizer private): ${merchant}. Not a merchant export.\n`;
 }
 
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */

@@ -114,6 +114,33 @@ test("print leftover one-pager includes leftover-fill merchant label when leftov
   assert.equal(merchantPanel.includes("leftover-print-fill"), false);
 });
 
+test("print leftover one-pager includes leftover-fill merchant label as a merchant-safe line", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="leftover-print-fill-merchant"/u);
+  assert.match(html, /Leftover fill merchant label: None/u);
+  assert.match(html, /id="leftover-print-fill"/u);
+  assert.match(html, /id="leftover-print-winner"/u);
+  assert.match(html, /Winner merchant:/u);
+  assert.match(css, /body\.print-leftover #leftover-print-fill-merchant/u);
+  const leftover = html.slice(html.indexOf('id="leftover-print-fill-merchant"'), html.indexOf('id="copy-winning-merchant"'));
+  assert.match(leftover, /print-leftover-keep/u);
+  assert.equal(leftover.includes("maxUnitPrice"), false);
+  assert.equal(leftover.includes("selectedBuyerIds"), false);
+  assert.equal(leftover.includes("leftoverBuyerIds"), false);
+  assert.match(app, /leftover-print-fill-merchant/u);
+  assert.match(app, /Leftover fill merchant label:/u);
+  assert.match(app, /Leftover fill merchant label: \$\{coverage\.secondary\.merchant\}/u);
+  assert.doesNotMatch(app, /Leftover fill merchant label: \$\{coverage\.secondary\.merchant\}, \$\{coverage\.secondary\.fulfilledUnits\}/u);
+  assert.match(app, /Winner merchant:/u);
+  const leftoverPrint = app.slice(app.indexOf("function printLeftoverOnePager"), app.indexOf("function focusVariantOverlap"));
+  assert.doesNotMatch(leftoverPrint, /leftoverBuyerIds/u);
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.equal(merchantPanel.includes("leftover-print-fill-merchant"), false);
+});
+
+
 test("print leftover one-pager includes requested units as a count", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
