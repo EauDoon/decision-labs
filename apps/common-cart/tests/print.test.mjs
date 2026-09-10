@@ -2,6 +2,24 @@ import test from "node:test";
 import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 
+test("print leftover one-pager keeps leftover table and winner merchant label only", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(css, /body\.print-leftover/u);
+  assert.match(css, /body\.print-leftover \.print-private/u);
+  assert.match(css, /body\.print-leftover \.print-leftover-keep/u);
+  assert.match(html, /id="leftover-coverage-rows"/u);
+  assert.match(html, /id="leftover-print-winner"/u);
+  assert.match(html, /Winner merchant:/u);
+  assert.match(html, /print-leftover-keep/u);
+  assert.match(app, /function printLeftoverOnePager\(/u);
+  assert.match(app, /print-leftover/u);
+  assert.match(app, /Winner merchant:/u);
+  const leftoverPrint = app.slice(app.indexOf("function printLeftoverOnePager"), app.indexOf("function focusVariantOverlap"));
+  assert.doesNotMatch(leftoverPrint, /leftoverBuyerIds/u);
+});
+
 test("print one-pager hides coach, help, and private buyer rows", async () => {
   const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

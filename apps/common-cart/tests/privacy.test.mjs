@@ -22,7 +22,10 @@ import {
   createOfferCsv,
   createOrganizerBuyerCsv,
   createCartReviewPacket,
-  analyzeCartReview
+  analyzeCartReview,
+  leftoverCoverageRows,
+  createLeftoverCoverageMarkdown,
+  createWinnerInspectorSummaryMarkdown
 } from "../src/model.js";
 
 const PRIVATE_BUYER_MARKERS = ["SECRET_LABEL", "SECRET_ID", "SECRET_STUDIO", "987654.32", "maxUnitPrice", "leftoverBuyerIds", '"selectedBuyerIds":', '"allocations":'];
@@ -121,6 +124,8 @@ test("variant overlap Markdown omits buyer labels, ids, budgets, and allocations
   assert.equal(markdown.includes("leftoverBuyerIds"), false);
   assert.equal(markdown.includes('"selectedBuyerIds":'), false);
   assert.equal(markdown.includes('"allocations":'), false);
+  assert.match(markdown, /Labels, IDs, budgets, and allocations are omitted/);
+  assert.doesNotMatch(markdown, /North block|Garden row|Library crew|Station flats|West court/u);
 });
 
 test("exclusion counts markdown omits buyer labels, ids, budgets, and allocations", () => {
@@ -128,6 +133,39 @@ test("exclusion counts markdown omits buyer labels, ids, budgets, and allocation
   const markdown = createExclusionCountsMarkdown(scenario, scenario.offers[1].id);
   assertOmitsPrivateBuyers(markdown, ["SECRET_TITLE"]);
   assert.match(markdown, /omit private buyer labels, IDs, budgets, and allocations/);
+});
+
+test("winner inspector summary Markdown omits buyer labels, ids, budgets, and allocations", () => {
+  const scenario = secretNeighbourhood();
+  const markdown = createWinnerInspectorSummaryMarkdown(scenario);
+  assertOmitsPrivateBuyers(markdown, ["SECRET_TITLE"]);
+  assert.match(markdown, /organizer private/);
+  assert.match(markdown, /not a merchant export/);
+});
+
+test("leftover coverage Markdown omits buyer labels, ids, budgets, and allocations", () => {
+  const scenario = secretNeighbourhood();
+  const markdown = createLeftoverCoverageMarkdown(scenario);
+  assertOmitsPrivateBuyers(markdown, ["SECRET_TITLE"]);
+  assert.match(markdown, /organizer private/);
+  assert.match(markdown, /not a merchant export/);
+  const json = JSON.stringify(leftoverCoverageRows(scenario));
+  assertOmitsPrivateBuyers(json, ["SECRET_TITLE"]);
+});
+
+test("leftover print one-pager uses merchant labels and omits private buyer rows", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const leftover = html.slice(html.indexOf('id="leftover-print-winner"'), html.indexOf('id="copy-leftover-coverage"'));
+  assert.match(leftover, /Winner merchant:/u);
+  assert.match(leftover, /Merchant labels only/u);
+  assert.match(leftover, /print-private/u);
+  assert.equal(leftover.includes("maxUnitPrice"), false);
+  assert.match(css, /body\.print-leftover \.print-private/u);
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.equal(merchantPanel.includes("leftover-coverage-rows"), false);
+  assert.equal(merchantPanel.includes("leftover-print-winner"), false);
+  assert.equal(merchantPanel.includes("leftover-buyer-rows"), false);
 });
 
 test("merchant-facing 1.4.1 surfaces omit buyer labels, ids, budgets, and allocations", () => {

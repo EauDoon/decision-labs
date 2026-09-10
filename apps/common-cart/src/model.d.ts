@@ -138,6 +138,7 @@ export const presets: Readonly<{
   officePantry: Scenario;
   hardware: Scenario;
   garden: Scenario;
+  schoolFete: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -260,7 +261,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -292,6 +293,8 @@ export function duplicateEntry(rawScenario: unknown, kind: "buyers" | "offers", 
 export function copyOfferAsNewTierSet(rawScenario: unknown, offerId: string): Scenario;
 export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenario;
 export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "all" | "shipping" | "pickup"): string[];
+/** Display-only. Matching is unchanged. When hideUnwinnable is false, every offer id is returned. */
+export function filterOfferIdsHidingUnwinnable(rawScenario: unknown, hideUnwinnable: boolean): string[];
 export function acceptedVariantFilterOptions(rawScenario: unknown): string[];
 export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: string): string[];
 export function filterBuyerIdsHidingExcluded(rawScenario: unknown, offerId: string, hideExcluded: boolean): string[];
@@ -379,6 +382,29 @@ export function createOfferCsv(rawScenario: unknown): string;
 export function redactBuyerLabels(rawScenario: unknown): Scenario;
 export function createOrganizerBriefing(rawScenario: unknown): string;
 export function createWinnerAggregatesMarkdown(rawScenario: unknown): string;
+export interface LeftoverCoverageRow {
+  id: "leftover-after-winner" | "leftover-fill" | "tertiary-fill" | "uncovered-leftover";
+  stage: string;
+  /** Winner or leftover-fill merchant label only. Never a buyer label. */
+  merchant: string;
+  buyerCount: number;
+  units: number;
+  uncovered: boolean;
+}
+/** Organizer leftover table. Counts and merchant labels only. */
+export function leftoverCoverageRows(rawScenario: unknown): LeftoverCoverageRow[];
+/** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
+export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
+export interface OrganizerLeftoverRow {
+  label: string;
+  quantity: number;
+  status: "Leftover fill" | "Tertiary fill" | "Uncovered leftover";
+  uncovered: boolean;
+}
+/** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
+export function organizerLeftoverRows(rawScenario: unknown): OrganizerLeftoverRow[];
+/** Organizer-private winner inspector Markdown. Winning offer label, leftover counts, and residual coverage. */
+export function createWinnerInspectorSummaryMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];
