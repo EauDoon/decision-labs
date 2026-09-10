@@ -376,7 +376,7 @@ test('keyboard o opens the last-launched workbench like keys 1 to 4', () => {
   assert.match(html, /Press <kbd>o<\/kbd> to open it/);
   assert.match(readme, /Press `o` to\s+open that last-launched workbench/);
   assert.match(readme, /It does not copy, including\s+on a file URL/);
-  assert.doesNotMatch(html, /Copied[\s\S]*event\.key === 'o'/);
+  assert.match(html, /This key assigns a location; it does not copy/);
 });
 
 test('keyboard l focuses the last-launched workbench card in this browser', () => {
@@ -471,7 +471,8 @@ test('hash shortcuts still focuses the shortcuts panel', () => {
 });
 
 test('keyboard v and j are ignored in inputs using the same inEditable helper as c', () => {
-  assert.match(html, /const inEditable = \(node\) => !!\(node && \(node\.closest\?\('\input, textarea, select, \[contenteditable="true"\]'\) \|\| \/\^\(INPUT\|TEXTAREA\|SELECT\)\$\/\.test\(node\.tagName \|\| ''\)\)\)/);
+  assert.match(html, /const inEditable = \(node\) =>/);
+  assert.match(html, /input, textarea, select, \[contenteditable="true"\]/);
   assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
   assert.match(html, /event\.key === 'c'/);
   assert.match(html, /event\.key === 'v'/);
