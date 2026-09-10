@@ -56,12 +56,12 @@ npm run check
 
 - A deterministic 72-hour Friday-to-Monday simulation.
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
-- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), Payday Friday burst (synthetic), and Public-holiday Monday (synthetic) presets.
+- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), Payday Friday burst (synthetic), Public-holiday Monday (synthetic), and Saturday market burst (synthetic) presets.
 - Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, hours to first settlement, and hours to clear the queue.
-- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains). Copy dashboard numbers as Markdown or export a one-row dashboard CSV.
-- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, peak queue, selected Gantt hour copy, timing review, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
+- An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains). Copy dashboard numbers as Markdown, copy hours to clear as one line, or export a one-row dashboard CSV.
+- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, selected Gantt hour, Bank Gantt row, compare Gantt, peak queue, selected Gantt hour copy, closed-hours copy, timing review, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
 - Canvas chart with a printable SVG queue path that can be downloaded as a file, a formula-safe hourly queue CSV, and a text-equivalent data table.
-- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, a single-gate display filter, copy of the selected hour, copy of the peak-queue hour, copy of closed hours, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
+- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, an every-gate-closed display filter, a single-gate display filter, copy of the selected hour, copy of the peak-queue hour, copy of closed hours, copy of FX hours, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
 ## Scenario comparison and reserve planner
@@ -123,6 +123,21 @@ scripts/dev-server.mjs Dependency-free local development server
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## New in v1.5.3: hours-to-clear copy, Saturday market and hour persist
+
+1. Copy hours to clear the queue as one-line Markdown, with a synthetic-not-live notice. Clipboard write has a textarea fallback.
+2. Press `H` to jump to the selected Gantt hour table. The key is ignored while typing in an input, textarea or select.
+3. Use the Saturday market burst (synthetic) preset. It keeps the same 72-hour calendar as Normal Friday and uses a Saturday redemption burst. It is distinct from Payday Friday burst, Public-holiday Monday, Long-weekend Friday start, and Compressed Friday close.
+4. Press `X` to copy the closed-hours Markdown, the same text as the copy control. The key is ignored while typing.
+5. Workspace JSON stores the selected Gantt hour index as an integer in range. Unknown keys are rejected. Older files that omit the field restore hour zero or the selected hour.
+6. Press `B` to jump to the Bank gate row on the Gantt. If that row is filtered away, the Gantt heading is used. The key is ignored while typing.
+7. Copy FX open and closed hours as Markdown. This is a local drawing, not a bank feed.
+8. Press `M` to jump to the paired compare Gantt heading if present, otherwise the gate Gantt. The key is ignored while typing.
+9. Print and print redacted include the hours-to-clear line. The saved scenario is unchanged.
+10. Filter the Gantt to hours where every gate is closed. Display only. Uncheck to restore all hours. Workspace JSON stores the optional boolean. Older files restore all hours.
+
+v1.5.2 peak-hour copy, holiday Monday and gate filter remain below.
 
 ## New in v1.5.2: peak-hour copy, holiday Monday and gate filter
 
