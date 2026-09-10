@@ -54,7 +54,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
         'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
-        'viability-copy-text', 'viability-heading',
+        'viability-copy-text', 'viability-heading', 'utilization-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1291,6 +1291,49 @@ test('keyboard w jumps to the Contribution waterfall heading unless a field is f
   app.keydown('w');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="waterfall-title"/);
+});
+
+test('copy capacity utilization uses volume over capacity Markdown or Unbounded', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-utilization"/);
+  fallback.click('copy-utilization');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="utilization-copy-text"/);
+  assert.match(fallback.markup(), /Participant \| Capacity use/);
+  assert.match(fallback.markup(), /Platform \| 100,000 \/ 130,000 \(76\.9% of capacity\)/);
+  assert.match(fallback.markup(), /Distributor \| 100,000 \/ 120,000 \(83\.3% of capacity\)/);
+  assert.match(fallback.markup(), /Liquidity Partner \| 100,000 \/ 115,000 \(87\.0% of capacity\)/);
+  assert.match(fallback.markup(), /not a probability/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-utilization-copy');
+  assert.doesNotMatch(fallback.markup(), /id="utilization-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-utilization');
+  assert.doesNotMatch(fallback.markup(), /id="utilization-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying capacity utilization/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-utilization');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Capacity utilization/);
+  assert.match(withClipboard.copied()[0], /Platform \| 100,000 \/ 130,000 \(76\.9% of capacity\)/);
+  assert.match(withClipboard.copied()[0], /not a probability/);
+  assert.doesNotMatch(withClipboard.copied()[0], /forecast of/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.doesNotMatch(withClipboard.markup(), /id="utilization-copy-text"/);
+
+  const unbounded = await workbench('file:', { clipboard: 'ok' });
+  unbounded.click('preset', { preset: 'talentAgentPlatform' });
+  unbounded.click('copy-utilization');
+  assert.match(unbounded.copied()[1] ?? unbounded.copied()[0], /Talent \| Unbounded/);
+  assert.match(unbounded.copied().at(-1), /Booking agent \| 7,500 \/ 10,000/);
+  assert.match(unbounded.copied().at(-1), /Platform \| 7,500 \/ 12,000/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-utilization');
+  assert.match(denied.markup(), /id="utilization-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('copy viability card uses participant, headroom, and binding limit Markdown', async () => {
