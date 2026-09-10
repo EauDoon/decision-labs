@@ -118,6 +118,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /sports-day-hours/u);
   assert.match(html, /netball-training-hours/u);
   assert.match(html, /swimming-club-hours/u);
+  assert.match(html, /athletics-club-hours/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -1283,6 +1284,9 @@ test("sports day hours preset loads a distinct synthetic sports-day workshop", a
   assert.doesNotMatch(app.clauses(), /Pool open/u);
   assert.doesNotMatch(app.clauses(), /Lane lights/u);
   assert.doesNotMatch(app.clauses(), /Pool lock-up/u);
+  assert.doesNotMatch(app.title(), /Athletics club hours/u);
+  assert.doesNotMatch(app.clauses(), /Track open/u);
+  assert.doesNotMatch(app.clauses(), /Track lock-up/u);
 });
 
 test("netball training hours preset loads a distinct synthetic netball workshop", async () => {
@@ -1340,6 +1344,9 @@ test("netball training hours preset loads a distinct synthetic netball workshop"
   assert.doesNotMatch(app.clauses(), /Pool open/u);
   assert.doesNotMatch(app.clauses(), /Lane lights/u);
   assert.doesNotMatch(app.clauses(), /Pool lock-up/u);
+  assert.doesNotMatch(app.title(), /Athletics club hours/u);
+  assert.doesNotMatch(app.clauses(), /Track open/u);
+  assert.doesNotMatch(app.clauses(), /Track lock-up/u);
 });
 
 test("swimming club hours preset loads a distinct synthetic swimming workshop", async () => {
@@ -1373,6 +1380,69 @@ test("swimming club hours preset loads a distinct synthetic swimming workshop", 
   assert.doesNotMatch(app.clauses(), /Court lock-up/u);
   assert.doesNotMatch(app.clauses(), /Race start/u);
   assert.doesNotMatch(app.clauses(), /PA volume/u);
+  assert.doesNotMatch(app.clauses(), /Field lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Finish time/u);
+  assert.doesNotMatch(app.clauses(), /Bass/u);
+  assert.doesNotMatch(app.clauses(), /Hall lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Cook hours/u);
+  assert.doesNotMatch(app.clauses(), /Smoke/u);
+  assert.doesNotMatch(app.clauses(), /Rooftop lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Wash hours/u);
+  assert.doesNotMatch(app.clauses(), /Dryer noise/u);
+  assert.doesNotMatch(app.clauses(), /Laundry lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Watering hours/u);
+  assert.doesNotMatch(app.clauses(), /Close time/u);
+  assert.doesNotMatch(app.clauses(), /Lighting hours/u);
+  assert.doesNotMatch(app.clauses(), /Access hours/u);
+  assert.doesNotMatch(app.clauses(), /Stall open hours/u);
+  assert.doesNotMatch(app.clauses(), /Match end-time/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Evening hours/u);
+  assert.doesNotMatch(app.groups(), /Residents/u);
+  assert.doesNotMatch(app.groups(), /Building committee/u);
+  assert.doesNotMatch(app.groups(), /Tenants/u);
+  assert.doesNotMatch(app.groups(), /Building managers/u);
+  assert.doesNotMatch(app.groups(), /Hirers/u);
+  assert.doesNotMatch(app.groups(), /Hall committee/u);
+  assert.doesNotMatch(app.title(), /Athletics club hours/u);
+  assert.doesNotMatch(app.clauses(), /Track open/u);
+  assert.doesNotMatch(app.clauses(), /Track lock-up/u);
+});
+
+test("athletics club hours preset loads a distinct synthetic athletics workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "athletics-club-hours");
+  app.click("#load-preset");
+  assert.match(app.title(), /Athletics club hours: track open, PA volume, and lock-up/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Track open/u);
+  assert.match(app.clauses(), /PA volume/u);
+  assert.match(app.clauses(), /Track lock-up/u);
+  assert.match(app.groups(), /Students/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /P&amp;C/u);
+  assert.doesNotMatch(app.title(), /Swimming club hours/u);
+  assert.doesNotMatch(app.title(), /Netball training hours/u);
+  assert.doesNotMatch(app.title(), /Sports day hours/u);
+  assert.doesNotMatch(app.title(), /School disco hours/u);
+  assert.doesNotMatch(app.title(), /Rooftop BBQ hours/u);
+  assert.doesNotMatch(app.title(), /Shared laundry hours/u);
+  assert.doesNotMatch(app.title(), /Community garden watering/u);
+  assert.doesNotMatch(app.title(), /Hall hire hours/u);
+  assert.doesNotMatch(app.title(), /Street stall lighting/u);
+  assert.doesNotMatch(app.title(), /Market stall hours/u);
+  assert.doesNotMatch(app.title(), /Shared bike shed/u);
+  assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.clauses(), /Pool open/u);
+  assert.doesNotMatch(app.clauses(), /Lane lights/u);
+  assert.doesNotMatch(app.clauses(), /Pool lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Start time/u);
+  assert.doesNotMatch(app.clauses(), /Court lights/u);
+  assert.doesNotMatch(app.clauses(), /Court lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Race start/u);
   assert.doesNotMatch(app.clauses(), /Field lock-up/u);
   assert.doesNotMatch(app.clauses(), /Finish time/u);
   assert.doesNotMatch(app.clauses(), /Bass/u);
