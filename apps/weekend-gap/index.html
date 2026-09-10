@@ -91,6 +91,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="compressedFridayClose">Compressed Friday close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="paydayFridayBurst">Payday Friday burst (synthetic)</button>
               <button type="button" class="preset-button" data-preset="publicHolidayMonday">Public-holiday Monday (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="saturdayMarketBurst">Saturday market burst (synthetic)</button>
             </div>
           </fieldset>
 
@@ -204,6 +205,7 @@ SOFTWARE.
               <select id="demandProfile" name="demandProfile" data-field="demandProfile">
                 <option value="flat">Even across 72 hours</option>
                 <option value="fridayBurst">Friday burst (8x weight before midnight)</option>
+                <option value="saturdayBurst">Saturday burst (8x weight on Saturday)</option>
                 <option value="mondayRush">Monday rush (8x weight from midnight)</option>
               </select>
               <p>Total demand stays fixed. Timing changes when it joins the queue.</p>
