@@ -2397,6 +2397,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "t" || event.key === "T") {
     event.preventDefault();
     $("#threshold-number")?.focus?.();
+  } else if (event.key === "a" || event.key === "A") {
+    event.preventDefault();
+    $("#add-clause")?.focus?.();
   }
 });
 
