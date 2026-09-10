@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.13 - 2026-09-10
+
+A workshop follow-up on 1.5.12. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.12 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `~` copies first open payout hour through the existing copy control, using the same Markdown. Ignored while typing. Distinct from `}` first-closed-FX copy and `"` first-closed-payout copy.
+- Keyboard `!` jumps to the first-open-payout-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from `+` first-closed-FX jump.
+- Keyboard `@` jumps to the hide-FX-closed Gantt filter, or the Gantt heading if that control is missing. Ignored while typing. Distinct from `|` hide-payout-closed.
+- Friday early payout open (synthetic) preset: same 72-hour calendar as Normal Friday, payout gate opens Friday evening from 18:00 to 20:00, earlier than Saturday early payout open. Distinct from Saturday early payout open, Sunday late payout close, Sunday late bank close, Saturday early FX open, Friday late FX close, Monday late issuer open, Early Monday bank open, Thin Saturday FX, Payday Friday, Public-holiday Monday, Saturday market burst, Sunday stall close, Long-weekend, and Compressed Friday. Synthetic. Not a bank feed.
+- Filter that hides Gantt hours where the payout gate is open. Display only; the model still contains 72 hours. Workspace JSON stores optional `hidePayoutOpenGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hidePayoutClosedGanttHours`, `hideFxClosedGanttHours`, `hideIssuerClosedGanttHours`, `hideBankClosedGanttHours`, `hideClosedGanttHours`, and `hideOpenGanttHours`. The selected hour stays visible if it would otherwise hide.
+- Print and print redacted include the first open payout hour as one line, with an honest empty when none. Counts of modeled hours, not a bank calendar. Redacted print stays redacted. The saved scenario is unchanged. Analysis JSON still has no timestamps.
+- Copy first open FX hour label as one-line Markdown with an honest empty when none exists. Clipboard write has a textarea fallback. Distinct from first-open-payout copy, first-closed-FX copy, and first-closed-payout copy. Local drawing, not a live FX feed.
+
 ## 1.5.12 - 2026-09-10
 
 A workshop follow-up on 1.5.11. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.11 review UI stay in place. Analysis JSON still has no timestamps.
