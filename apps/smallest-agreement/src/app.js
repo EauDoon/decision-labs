@@ -41,6 +41,7 @@ import {
   formatFirstLockedClauseOptionLabelMarkdown,
   formatGroupsBelowSupportFloorCountMarkdown,
   formatFirstBelowSupportFloorGroupLabelMarkdown,
+  formatGroupsMeetingApprovalThresholdCountMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -711,6 +712,11 @@ function renderCopyFallbacks(result) {
     const listed = formatFirstBelowSupportFloorGroupLabelMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     firstBelowFloorBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
+  const thresholdGroupCountBox = $("#threshold-group-count-fallback");
+  if (thresholdGroupCountBox) {
+    const listed = formatGroupsMeetingApprovalThresholdCountMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    thresholdGroupCountBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
@@ -1276,6 +1282,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-first-locked-option-button").disabled = result.status === "invalid";
   $("#copy-below-floor-count-button").disabled = result.status === "invalid";
   $("#copy-first-below-floor-group-button").disabled = result.status === "invalid";
+  $("#copy-threshold-group-count-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -2723,6 +2730,24 @@ async function copyFirstBelowFloorGroup() {
   }
 }
 $("#copy-first-below-floor-group-button").addEventListener("click", copyFirstBelowFloorGroup);
+async function copyThresholdGroupCount() {
+  const listed = formatGroupsMeetingApprovalThresholdCountMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the groups-meeting-threshold count.");
+  const fallback = $("#threshold-group-count-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty groups-meeting-threshold count. A threshold is a number you entered, not a legal quorum."
+    : listed.empty
+    ? "No groups currently meet the approval threshold. Copied an honest zero. A threshold is a number you entered, not a legal quorum."
+    : "Groups-meeting-threshold count copied as Markdown. A threshold is a number you entered, not a legal quorum.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the groups-meeting-threshold count from the Markdown box. A threshold is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-threshold-group-count-button").addEventListener("click", copyThresholdGroupCount);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
