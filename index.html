@@ -154,6 +154,10 @@
     #whats-new-title:focus-visible,
     #whats-new h3:focus,
     #whats-new h3:focus-visible,
+    #how-title:focus,
+    #how-title:focus-visible,
+    #how-it-works li:focus,
+    #how-it-works li:focus-visible,
     .workbench:focus,
     .workbench:focus-visible,
     .review-path:focus,
@@ -683,22 +687,22 @@
       </article>
     </section>
     <section class="guide" id="how-it-works" tabindex="-1" aria-labelledby="how-title">
-      <h2 id="how-title">How it works</h2>
+      <h2 id="how-title" tabindex="-1">How it works</h2>
       <p><strong>Review one question at a time.</strong> Inside a workbench, open its optional review panel, choose a question, and run it on the current inputs. Each table explains its assumptions and bounds. Editing inputs clears the review.</p>
       <p><strong>Replay without replacing your draft.</strong> Export review packet saves the inputs and calculated table. Inspect review packet recomputes them and rejects a mismatch while keeping your working case. Use the same workbench to inspect its packet. Packets may contain private names, constraints and notes; they are unsigned consistency records, not authenticated evidence.</p>
       <p>This page is a catalog. Each Open workbench link loads one generated file from this repository. You can also open that file from disk. Node.js is only required if you want the loopback launcher or to run tests.</p>
       <ul>
-        <li><strong>Standalone files.</strong> Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</li>
-        <li><strong>Loopback catalog address.</strong> When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</li>
-        <li><strong>Catalog print.</strong> Print this catalog prints the page in the browser. It is not a live product sheet.</li>
-        <li><strong>Skip-link targets.</strong> Copy skip links copies the six skip-link labels and hash hrefs already printed in the skip navigation as Markdown. It is in-page navigation copy, not a sitemap API.</li>
-        <li><strong>Catalog intro.</strong> Copy catalog intro copies the catalog heading and lede paragraph already printed on this page as Markdown. It reads this catalog page. It is not a live product feed. If those nodes are missing, it copies an empty string.</li>
-        <li><strong>Catalog versions.</strong> Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</li>
-        <li><strong>Catalog jobs.</strong> Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</li>
-        <li><strong>Catalog trust.</strong> Copy Trust and limits copies the heading and list items already printed in Trust and limits as Markdown. It reads this catalog page. It is not a live policy feed.</li>
-        <li><strong>JSON export.</strong> Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</li>
-        <li><strong>Independent workbenches.</strong> The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository. Keys 1 to 4 can leave a Last launched in this browser note on that card. The note is storage in this browser, not a cloud recency. Last-launched storage that is missing or unreadable is silent: the catalog shows no recency note. Press x to clear that marker in this browser and hide the notes. That clear is this-browser storage, not a cloud recency.</li>
-        <li><strong>Last launched job.</strong> Copy last launched copies the stored workbench name and one-sentence job from this browser as Markdown. If none is stored, it copies an empty line. This is this-browser storage, not a cloud recency.</li>
+        <li tabindex="-1"><strong>Standalone files.</strong> Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</li>
+        <li tabindex="-1"><strong>Loopback catalog address.</strong> When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</li>
+        <li tabindex="-1"><strong>Catalog print.</strong> Print this catalog prints the page in the browser. It is not a live product sheet.</li>
+        <li tabindex="-1"><strong>Skip-link targets.</strong> Copy skip links copies the six skip-link labels and hash hrefs already printed in the skip navigation as Markdown. It is in-page navigation copy, not a sitemap API.</li>
+        <li tabindex="-1"><strong>Catalog intro.</strong> Copy catalog intro copies the catalog heading and lede paragraph already printed on this page as Markdown. It reads this catalog page. It is not a live product feed. If those nodes are missing, it copies an empty string.</li>
+        <li tabindex="-1"><strong>Catalog versions.</strong> Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</li>
+        <li tabindex="-1"><strong>Catalog jobs.</strong> Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</li>
+        <li tabindex="-1"><strong>Catalog trust.</strong> Copy Trust and limits copies the heading and list items already printed in Trust and limits as Markdown. It reads this catalog page. It is not a live policy feed.</li>
+        <li tabindex="-1"><strong>JSON export.</strong> Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</li>
+        <li tabindex="-1"><strong>Independent workbenches.</strong> The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository. Keys 1 to 4 can leave a Last launched in this browser note on that card. The note is storage in this browser, not a cloud recency. Last-launched storage that is missing or unreadable is silent: the catalog shows no recency note. Press x to clear that marker in this browser and hide the notes. That clear is this-browser storage, not a cloud recency.</li>
+        <li tabindex="-1"><strong>Last launched job.</strong> Copy last launched copies the stored workbench name and one-sentence job from this browser as Markdown. If none is stored, it copies an empty line. This is this-browser storage, not a cloud recency.</li>
       </ul>
       <p class="copy-how-tools" id="copy-how-tools">
         <button type="button" class="copy-how" id="copy-how" aria-keyshortcuts="u">Copy How it works</button>
