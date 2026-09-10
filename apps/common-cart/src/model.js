@@ -346,6 +346,23 @@ export const presets = Object.freeze({
       offer("O02", "Pitch Salad Run", "Cricket lunch pack", "Pitch salad", 9, 9, 4, 26, 2),
       { ...offer("O03", "Hall Cricket Pickup", "Cricket lunch pack", "Pitch water", 7, 8, 1, 32, 5), fulfillment: "pickup" }
     ]
+  },
+  tennisCarnivalLunch: {
+    title: "Tennis carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Court crate", "Tennis lunch pack", 10, 18, 4, ["Tennis pie", "Court salad"]),
+      buyer("B02", "Baseline bench", "Tennis lunch pack", 14, 14, 3, ["Tennis pie"]),
+      buyer("B03", "Line-judge hamper", "Tennis lunch pack", 8, 16, 5, ["Court salad", "Court water"]),
+      buyer("B04", "Baseline cooler", "Tennis lunch pack", 5, 12, 2, ["Court water"]),
+      buyer("B05", "Clubhouse trolley", "Tennis lunch pack", 11, 17, 4, ["Tennis pie", "Court water"]),
+      buyer("B06", "Umpire table", "Tennis lunch pack", 9, 15, 3, ["Court salad", "Tennis pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Tennis Delivery", "Tennis lunch pack", "Tennis pie", 12, 12, 3, 44, 3),
+      offer("O02", "Court Salad Run", "Tennis lunch pack", "Court salad", 10, 10, 4, 28, 2),
+      { ...offer("O03", "Hall Tennis Pickup", "Tennis lunch pack", "Court water", 8, 8, 1, 34, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -387,7 +404,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByLeftoverFill"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -508,7 +525,15 @@ export function validateWorkspace(candidate) {
     }
     hideLastLeftoverFillBuyer = hideLastBuyerFilledByLeftoverFill;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer };
+  const hideFirstBuyerFilledByLeftoverFill = own(candidate, "hideFirstBuyerFilledByLeftoverFill");
+  let hideFirstLeftoverFillBuyer = false;
+  if (hideFirstBuyerFilledByLeftoverFill !== undefined) {
+    if (hideFirstBuyerFilledByLeftoverFill !== true && hideFirstBuyerFilledByLeftoverFill !== false) {
+      throw new ScenarioError("Hide first leftover-fill buyer must be true or false.");
+    }
+    hideFirstLeftoverFillBuyer = hideFirstBuyerFilledByLeftoverFill;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer, hideFirstBuyerFilledByLeftoverFill: hideFirstLeftoverFillBuyer };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -763,6 +788,25 @@ export function filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(rawScenario, h
   return scenario.buyers.filter((buyer) => {
     if (winnerIds.has(buyer.id)) return true;
     if (lastId && buyer.id === lastId) return false;
+    return true;
+  }).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides only the first leftover-fill selectedBuyerIds entry. Winner-allocated, unserved, and other leftover-fill buyers stay visible. */
+export function filterBuyerIdsHidingFirstBuyerFilledByLeftoverFill(rawScenario, hideFirstBuyerFilledByLeftoverFill) {
+  if (hideFirstBuyerFilledByLeftoverFill !== true && hideFirstBuyerFilledByLeftoverFill !== false) {
+    throw new ScenarioError("Hide first leftover-fill buyer must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideFirstBuyerFilledByLeftoverFill) return scenario.buyers.map((buyer) => buyer.id);
+  const market = evaluateMarket(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  const leftoverFillIds = coverage.secondary?.selectedBuyerIds ?? [];
+  const firstId = leftoverFillIds.length > 0 ? leftoverFillIds[0] : null;
+  const winnerIds = new Set(market.winner?.selectedBuyerIds ?? []);
+  return scenario.buyers.filter((buyer) => {
+    if (winnerIds.has(buyer.id)) return true;
+    if (firstId && buyer.id === firstId) return false;
     return true;
   }).map((buyer) => buyer.id);
 }

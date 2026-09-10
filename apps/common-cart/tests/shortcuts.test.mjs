@@ -936,6 +936,78 @@ test("keyboard handler jumps to hide leftover-fill buyers when not typing", asyn
   assert.match(app, /if \(key === "#"\) \{\s*event\.preventDefault\(\);\s*focusHideWinnerAllocatedBuyers\(\);/u);
 });
 
+test("shortcut help documents leftover fill label copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>\$<\/kbd> Copy leftover fill label \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-fill-label"/u);
+  assert.match(html, /id="copy-leftover-fill-label"[^>]*aria-keyshortcuts="\$"/u);
+});
+
+test("keyboard handler copies leftover fill label with dollar when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /if \(key === "\$"\)/u);
+  assert.match(app, /function copyLeftoverFillLabel\(/u);
+  assert.match(app, /createLeftoverFillLabelMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-leftover-fill-label/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.doesNotMatch(app, /if \(key === "\$"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillPickup/u);
+  assert.match(app, /if \(key === "\*"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillPickup\(\);/u);
+});
+
+test("dollar leftover fill label copy uses the existing leftover-fill label control", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "\$"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillLabel\(\);/u);
+  assert.match(app, /function copyLeftoverFillLabel\(/u);
+  assert.match(app, /createLeftoverFillLabelMarkdown\(scenario\)/u);
+  assert.match(html, /id="copy-leftover-fill-label"/u);
+  assert.match(html, /aria-keyshortcuts="\$"/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "\$"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+  assert.match(app, /if \(key === "y" \|\| key === ";"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+});
+
+test("shortcut help documents leftover fill label copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>\^<\/kbd> Focus the leftover-fill label copy control, or leftover heading if missing/u);
+  assert.match(html, /id="copy-leftover-fill-label"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to leftover fill label copy when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "\^"\)/u);
+  assert.match(app, /function focusLeftoverFillLabelCopy\(/u);
+  assert.match(app, /#copy-leftover-fill-label/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "\^"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillLabel/u);
+  assert.doesNotMatch(app, /if \(key === "\^"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillPickupCopy/u);
+  assert.match(app, /if \(key === "\$"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillLabel\(\);/u);
+});
+
+test("shortcut help documents hide last leftover-fill buyer jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>&#96;<\/kbd> Focus hide last leftover-fill buyer, or the buyer list if missing/u);
+  assert.match(html, /id="hide-last-buyer-filled-by-leftover-fill"/u);
+  assert.match(html, /id="buyers-list"/u);
+});
+
+test("keyboard handler jumps to hide last leftover-fill buyer when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "`"\)/u);
+  assert.match(app, /function focusHideLastBuyerFilledByLeftoverFill\(/u);
+  assert.match(app, /#hide-last-buyer-filled-by-leftover-fill/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "`"\) \{\s*event\.preventDefault\(\);\s*focusHideBuyersFilledByLeftoverFill/u);
+  assert.match(app, /if \(key === "%"\) \{\s*event\.preventDefault\(\);\s*focusHideBuyersFilledByLeftoverFill\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

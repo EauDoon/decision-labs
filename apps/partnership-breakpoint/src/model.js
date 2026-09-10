@@ -46,6 +46,7 @@
  * @property {boolean} [hideFirstOverCapacityParticipant] Optional roster display preference. Omitted files default to showing the first over-capacity roster row.
  * @property {boolean} [hideLastOverCapacityParticipant] Optional roster display preference. Omitted files default to showing the last over-capacity roster row.
  * @property {boolean} [hideLastBreakpointParticipant] Optional roster display preference. Omitted files default to showing the last first-breakpoint roster row.
+ * @property {boolean} [hideLastWithinCapacityParticipant] Optional roster display preference. Omitted files default to showing the last within-capacity roster row.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -59,7 +60,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -262,6 +263,15 @@ export const PRESETS = Object.freeze({
       { id: 'cricket-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 0.71, fixedMonthlyCost: 880, minimumAcceptableProfit: 360, capacity: 3000, minimumCommitment: 0, riskCost: 155 },
     ],
   },
+  tennisCarnivalSplit: {
+    name: 'Tennis carnival split',
+    deal: { monthlyVolume: 2900, feePerTransaction: 11, addressableVolume: 4100, volumeShockPct: 0 },
+    participants: [
+      { id: 'tennis-committee', name: 'Carnival committee', revenueShare: 0.39, variableCostPerTransaction: 1.22, fixedMonthlyCost: 3050, minimumAcceptableProfit: 1200, capacity: 3500, minimumCommitment: 0, riskCost: 440 },
+      { id: 'court-hire', name: 'Court hire', revenueShare: 0.36, variableCostPerTransaction: 2.55, fixedMonthlyCost: 1750, minimumAcceptableProfit: 820, capacity: 4700, minimumCommitment: 260, riskCost: 290 },
+      { id: 'tennis-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 0.68, fixedMonthlyCost: 920, minimumAcceptableProfit: 380, capacity: 3100, minimumCommitment: 0, riskCost: 170 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -395,6 +405,12 @@ export function validateConfiguration(config) {
     const hideLastBreakpoint = own(config, 'hideLastBreakpointParticipant');
     if (hideLastBreakpoint !== true && hideLastBreakpoint !== false) {
       errors.push('Hide last first-breakpoint participant must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideLastWithinCapacityParticipant')) {
+    const hideLastWithin = own(config, 'hideLastWithinCapacityParticipant');
+    if (hideLastWithin !== true && hideLastWithin !== false) {
+      errors.push('Hide last within-capacity participant must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
