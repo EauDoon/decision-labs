@@ -54,6 +54,10 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>c<\/kbd> Jump to the change-budget field/u);
   assert.match(html, /<kbd>p<\/kbd> Print the facilitator pack/u);
   assert.match(html, /<kbd>k<\/kbd> Jump to the first unlocked clause card, or the lock controls/u);
+  assert.match(html, /<kbd>t<\/kbd> Jump to the approval threshold field/u);
+  assert.match(html, /<kbd>a<\/kbd> Focus Add clause/u);
+  assert.match(html, /<kbd>w<\/kbd> Jump to group weights or renormalize controls/u);
+  assert.match(html, /<kbd>m<\/kbd> Jump to remaining change-budget or cost margin/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -69,6 +73,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /library-quiet-hours/u);
   assert.match(html, /sports-fixture-night/u);
   assert.match(html, /market-stall-hours/u);
+  assert.match(html, /shared-bike-shed/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -77,6 +82,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Show locked clauses only/u);
   assert.match(html, /id="changed-clauses-only"/u);
   assert.match(html, /Show clauses that differ from the recommendation/u);
+  assert.match(html, /id="over-budget-clauses-only"/u);
+  assert.match(html, /Show clauses whose cheapest remaining change exceeds remaining budget/u);
   assert.match(html, /id="below-floor-groups-only"/u);
   assert.match(html, /Show groups below their support floor/u);
   assert.match(html, /id="veto-groups-status"/u);
@@ -107,6 +114,10 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Copy veto blockers/u);
   assert.match(html, /id="copy-packages-table-button"/u);
   assert.match(html, /Copy package table/u);
+  assert.match(html, /id="copy-group-support-button"/u);
+  assert.match(html, /Copy group support/u);
+  assert.match(html, /id="group-support-fallback"/u);
+  assert.match(html, /id="package-markdown-fallback"/u);
   assert.match(html, /id="copy-locks-button"/u);
   assert.match(html, /Copy current locks/u);
   assert.match(html, /id="locks-markdown-fallback"/u);
@@ -271,6 +282,11 @@ async function savedWorkbench(storage, hash = "") {
       target.checked = checked;
       target.events.get("change")({ target: { checked } });
     },
+    filterOverBudgetClauses: (checked) => {
+      const target = element("#over-budget-clauses-only");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
     filterBelowFloorGroups: (checked) => {
       const target = element("#below-floor-groups-only");
       target.checked = checked;
@@ -308,6 +324,8 @@ async function savedWorkbench(storage, hash = "") {
     blockClipboard: () => { clipboard.blocked = true; },
     printCalls: () => printCalls,
     packageTable: () => element("#package-table-fallback").value,
+    packageMarkdown: () => element("#package-markdown-fallback").value,
+    groupSupport: () => element("#group-support-fallback").value,
     locksMarkdown: () => element("#locks-markdown-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
@@ -736,6 +754,30 @@ test("market stall hours preset loads a distinct synthetic stall workshop", asyn
   assert.doesNotMatch(app.clauses(), /Weekend market use/u);
 });
 
+test("shared bike shed preset loads a distinct synthetic neighbour workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "shared-bike-shed");
+  app.click("#load-preset");
+  assert.match(app.title(), /Shared bike shed: access hours, lighting, and lock-up/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Access hours/u);
+  assert.match(app.clauses(), /Shed lighting/u);
+  assert.match(app.clauses(), /Lock-up/u);
+  assert.match(app.groups(), /Bike users/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /Building managers/u);
+  assert.doesNotMatch(app.title(), /Market stall hours/u);
+  assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.clauses(), /Stall open hours/u);
+  assert.doesNotMatch(app.clauses(), /Match end-time/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Evening hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+});
+
 test("keyboard f focuses the clause filter unless an input is active", async () => {
   const app = await savedWorkbench(new Map());
   app.keydown("f");
@@ -828,8 +870,8 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note \{ display: none !important; \}/u);
-  assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note/u);
+  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
   const storage = new Map();
@@ -839,6 +881,40 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(app.sideBySide(), /Facilitator note: Ask about lighting\./u);
   assert.match(app.ballot(), /Facilitator note: Ask about lighting\./u);
   assert.equal(app.coachHidden(), false);
+});
+
+test("print facilitator pack includes recommended package option labels", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /recommended package option labels/u);
+  const draft = {
+    title: "Print labels workshop",
+    threshold: 70,
+    groups: [{ id: "g", name: "Residents", weight: 1 }],
+    clauses: [
+      { id: "one", title: "Hours", options: [
+        { id: "one-original", label: "Keep original hours", original: true, changeCost: 0, support: { g: 40 } },
+        { id: "one-alt", label: "Extend hours", original: false, changeCost: 1, support: { g: 90 } },
+        { id: "one-other", label: "Cut hours", original: false, changeCost: 2, support: { g: 20 } },
+      ] },
+    ],
+  };
+  const storage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]);
+  const app = await savedWorkbench(storage);
+  assert.match(app.ballot(), /Recommended: Extend hours/u);
+  assert.match(app.ballot(), /Extend hours \(recommended\)/u);
+  assert.match(app.ballot(), /Keep original hours \(original\)/u);
+  assert.doesNotMatch(app.ballot(), /Keep original hours \(original\) \(recommended\)/u);
+  assert.match(app.ballot(), /Participant groups: Residents/u);
+  app.click("#print-button");
+  assert.equal(app.printCalls(), 1);
+  assert.match(app.ballot(), /Recommended: Extend hours/u);
+  assert.match(app.ballot(), /Participant groups: Residents/u);
+  app.click("#print-redacted-button");
+  assert.equal(app.printCalls(), 2);
+  assert.match(app.ballot(), /Participant groups: Group 1/u);
+  assert.match(app.ballot(), /Recommended: Extend hours/u);
+  assert.doesNotMatch(app.ballot(), /Residents/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
 });
 
 test("print redacted replaces group display names without changing the saved draft", async () => {
@@ -931,6 +1007,12 @@ test("duplicate group copies weight and support scores with a unique id and supp
   assert.equal(copy.weight, source.weight);
   assert.equal(after.clauses[0].options[0].support[copy.id], before.clauses[0].options[0].support[source.id]);
   assert.match(app.groups(), /Duplicate group/u);
+  app.clickAction("duplicate-group", { groupId: source.id });
+  const names = JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.map((group) => group.name);
+  assert.equal(names.includes(`${source.name} (copy)`), true);
+  assert.equal(names.includes(`${source.name} (copy 2)`), true);
+  assert.equal(new Set(names).size, names.length);
+  app.click("#undo-button");
   app.click("#undo-button");
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.length, before.groups.length);
 });
@@ -1045,6 +1127,68 @@ test("changed-clause filter hides unchanged cards without changing the stored dr
   assert.doesNotMatch(filtered.clauses(), /Keep this/u);
   assert.match(filtered.filterStatus(), /Showing 1 of 2 clauses/u);
   assert.match(filtered.ballot(), /Keep this/u);
+});
+
+test("over-budget clause filter hides affordable remaining changes without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="over-budget-clauses-only"/u);
+  assert.match(html, /Show clauses whose cheapest remaining change exceeds remaining budget/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterOverBudgetClauses(true);
+  assert.match(app.clauses(), /No clauses have a cheapest remaining change that exceeds the remaining budget/u);
+  assert.match(app.filterStatus(), /No clauses have a cheapest remaining change that exceeds the remaining budget/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  const draft = {
+    title: "Over budget filter workshop",
+    threshold: 70,
+    maxChangeCost: 3,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [
+      { id: "keep", title: "Keep this", options: [
+        { id: "keep-original", label: "Original keep", original: true, changeCost: 0, support: { g: 90 } },
+        { id: "keep-alt", label: "Costly keep", original: false, changeCost: 5, support: { g: 40 } },
+        { id: "keep-other", label: "Other keep", original: false, changeCost: 8, support: { g: 20 } },
+      ] },
+      { id: "spend", title: "Spend this", options: [
+        { id: "spend-original", label: "Original spend", original: true, changeCost: 0, support: { g: 40 } },
+        { id: "spend-alt", label: "Alt spend", original: false, changeCost: 2, support: { g: 90 } },
+        { id: "spend-other", label: "Other spend", original: false, changeCost: 8, support: { g: 20 } },
+      ] },
+    ],
+  };
+  const filtered = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  filtered.filterOverBudgetClauses(true);
+  assert.match(filtered.clauses(), /Keep this/u);
+  assert.doesNotMatch(filtered.clauses(), /Spend this/u);
+  assert.match(filtered.filterStatus(), /Showing 1 of 2 clauses/u);
+  assert.match(filtered.ballot(), /Spend this/u);
+  assert.doesNotMatch(filtered.alert(), /Fix the proposal/u);
+  const exhausted = {
+    title: "Exhausted budget filter workshop",
+    threshold: 70,
+    maxChangeCost: 2,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [
+      { id: "one", title: "First clause", options: [
+        { id: "one-original", label: "Original one", original: true, changeCost: 0, support: { g: 40 } },
+        { id: "one-alt", label: "Alt one", original: false, changeCost: 2, support: { g: 90 } },
+        { id: "one-other", label: "Other one", original: false, changeCost: 8, support: { g: 20 } },
+      ] },
+      { id: "two", title: "Second clause", options: [
+        { id: "two-original", label: "Original two", original: true, changeCost: 0, support: { g: 90 } },
+        { id: "two-alt", label: "Alt two", original: false, changeCost: 1, support: { g: 40 } },
+        { id: "two-other", label: "Other two", original: false, changeCost: 8, support: { g: 20 } },
+      ] },
+    ],
+  };
+  const spent = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(exhausted)]]));
+  spent.filterOverBudgetClauses(true);
+  assert.match(spent.clauses(), /First clause/u);
+  assert.match(spent.clauses(), /Second clause/u);
+  assert.match(spent.filterStatus(), /Showing 2 of 2 clauses/u);
 });
 
 test("below-floor group filter hides groups that meet their floor or threshold", async () => {
@@ -1209,6 +1353,75 @@ test("keyboard k jumps to the first unlocked clause unless an input is active", 
   assert.equal(app.focused(), "#clear-locks");
 });
 
+test("keyboard t jumps to the approval threshold field unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>t<\/kbd> Jump to the approval threshold field/u);
+  assert.match(html, /id="threshold-number"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("t");
+  assert.equal(app.focused(), "#threshold-number");
+  app.clearFocus();
+  app.keydown("t", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("t", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("t", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("T");
+  assert.equal(app.focused(), "#threshold-number");
+});
+
+test("keyboard a focuses Add clause unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>a<\/kbd> Focus Add clause/u);
+  assert.match(html, /id="add-clause"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("a");
+  assert.equal(app.focused(), "#add-clause");
+  app.clearFocus();
+  app.keydown("a", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("a", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("a", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("A");
+  assert.equal(app.focused(), "#add-clause");
+});
+
+test("keyboard w jumps to group weights or renormalize controls unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>w<\/kbd> Jump to group weights or renormalize controls/u);
+  assert.match(html, /id="weight-renorm"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("w");
+  assert.equal(app.focused(), '[data-action="preview-renorm"]');
+  app.clearFocus();
+  app.keydown("w", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("w", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("W");
+  assert.equal(app.focused(), '[data-action="preview-renorm"]');
+});
+
+test("keyboard m jumps to remaining change-budget unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>m<\/kbd> Jump to remaining change-budget or cost margin/u);
+  assert.match(html, /id="budget-remaining"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("m");
+  assert.equal(app.focused(), "#budget-remaining");
+  assert.match(app.summary(), /id="budget-remaining"/u);
+  app.clearFocus();
+  app.keydown("m", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("m", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("M");
+  assert.equal(app.focused(), "#budget-remaining");
+});
+
 test("side-by-side pins original, solver, and custom package columns", async () => {
   const app = await savedWorkbench(new Map());
   assert.match(app.sideBySide(), /Current original/u);
@@ -1321,12 +1534,53 @@ test("veto-blocking groups are highlighted as a numerical constraint, not a legi
 });
 
 test("copy recommended package writes Markdown to the clipboard", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-package-button"/u);
+  assert.match(html, /id="copy-group-support-button"/u);
+  assert.match(html, /Copy group support/u);
+  assert.match(html, /id="package-markdown-fallback"/u);
   const app = await savedWorkbench(new Map());
+  assert.match(app.packageMarkdown(), /^# Recommended package\n/u);
+  assert.match(app.packageMarkdown(), /Park access hours/u);
+  assert.match(app.packageMarkdown(), /not a recorded vote or a claim of legitimacy/u);
   await app.click("#copy-package-button");
+  assert.equal(app.clipboardText(), app.packageMarkdown());
   assert.match(app.clipboardText(), /^# Recommended package\n/u);
   assert.match(app.clipboardText(), /Neighbourhood Plan: the shared green/u);
   assert.match(app.clipboardText(), /not a recorded vote or a claim of legitimacy/u);
   assert.match(app.message(), /Recommended package copied as Markdown/u);
+  assert.match(app.message(), /not a recorded vote/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-package-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#package-markdown-fallback");
+  assert.match(blocked.packageMarkdown(), /Park access hours/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a recorded vote/u);
+});
+
+test("copy group support writes a Markdown table and is not a legal right", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-group-support-button"/u);
+  assert.match(html, /id="group-support-fallback"/u);
+  assert.match(html, /not a legal right/u);
+  const app = await savedWorkbench(new Map());
+  assert.match(app.groupSupport(), /^# Group support\n/u);
+  assert.match(app.groupSupport(), /\| Group \| Weight \| Average support \|/u);
+  assert.match(app.groupSupport(), /Residents/u);
+  assert.match(app.groupSupport(), /not a legal right/u);
+  await app.click("#copy-group-support-button");
+  assert.equal(app.clipboardText(), app.groupSupport());
+  assert.match(app.message(), /not a legal right/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-group-support-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#group-support-fallback");
+  assert.match(blocked.groupSupport(), /\| Group \| Weight \| Average support \|/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a legal right/u);
 });
 
 test("copy package table writes a Markdown comparison and keeps a textarea fallback", async () => {
@@ -1631,15 +1885,18 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(Object.hasOwn(proposal, "lockedClausesOnly"), false);
   assert.equal(Object.hasOwn(proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(proposal, "belowFloorGroupsOnly"), false);
+  assert.equal(Object.hasOwn(proposal, "overBudgetClausesOnly"), false);
   assert.equal(proposal.clauses.length, 3);
   assert.match(app.groups(), /No veto groups match this filter/u);
   assert.match(app.clauses(), /No locked clauses match this filter/u);
   assert.match(app.ballot(), /Park access hours/u);
   app.filterChangedClauses(true);
   app.filterBelowFloorGroups(true);
+  app.filterOverBudgetClauses(true);
   const nextPrefs = JSON.parse(storage.get("smallest-agreement:workspace:v1"));
   assert.equal(nextPrefs.changedClausesOnly, true);
   assert.equal(nextPrefs.belowFloorGroupsOnly, true);
+  assert.equal(nextPrefs.overBudgetClausesOnly, true);
   app.filterVetoGroups(false);
   app.filterLockedClauses(false);
   await app.importJson(JSON.stringify({

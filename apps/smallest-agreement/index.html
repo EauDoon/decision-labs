@@ -50,6 +50,7 @@ SOFTWARE.
             <option value="library-quiet-hours">Library Quiet Hours</option>
             <option value="sports-fixture-night">Sports Fixture Night</option>
             <option value="market-stall-hours">Market stall hours</option>
+            <option value="shared-bike-shed">Shared bike shed</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -71,6 +72,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="clauses-import-button">Import clauses CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
+        <button class="button button-secondary" type="button" id="copy-group-support-button">Copy group support</button>
         <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
@@ -145,7 +147,7 @@ SOFTWARE.
           <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
           <p id="veto-note" class="field-note">A veto group must reach the overall threshold (or its higher support floor, if one is set). Old drafts without this mark stay valid. A veto is a numerical constraint, not a legal right.</p>
           <div id="weight-shares"></div>
-          <div id="weight-renorm"></div>
+          <div id="weight-renorm" tabindex="-1"></div>
         </section>
       </aside>
 
@@ -161,7 +163,7 @@ SOFTWARE.
             <div><p class="eyebrow">Clause cards</p><h2 id="clauses-heading" tabindex="-1">What can change?</h2></div>
             <div class="clause-tools">
               <button class="text-button" type="button" id="clear-locks" data-action="clear-locks">Clear all locks</button>
-              <button class="button button-brick" type="button" data-action="add-clause">Add clause</button>
+              <button class="button button-brick" type="button" id="add-clause" data-action="add-clause">Add clause</button>
             </div>
           </div>
           <label class="clause-filter-label" for="clause-filter">Filter clauses by title or option label</label>
@@ -170,13 +172,15 @@ SOFTWARE.
           <p id="locked-clauses-filter-note" class="field-note">The filter hides unlocked clause cards. Every clause still participates in search and export. A lock is a draft choice, not a recorded vote.</p>
           <label class="changed-clauses-filter" for="changed-clauses-only"><input id="changed-clauses-only" type="checkbox"> Show clauses that differ from the recommendation</label>
           <p id="changed-clauses-filter-note" class="field-note">Shows clause cards whose original option is not the recommended option. Hidden cards still count in the model. The solver is unchanged.</p>
+          <label class="over-budget-clauses-filter" for="over-budget-clauses-only"><input id="over-budget-clauses-only" type="checkbox"> Show clauses whose cheapest remaining change exceeds remaining budget</label>
+          <p id="over-budget-clauses-filter-note" class="field-note">Shows clause cards whose cheapest remaining change costs more than leftover budget. When the budget is exhausted, every clause card is shown. Hidden cards still count in the model. The solver is unchanged.</p>
           <label class="clause-density-label" for="clause-density">Clause card density
             <select id="clause-density">
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
           </label>
-          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, or that match the original when Show clauses that differ from the recommendation is on. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that match the original when Show clauses that differ from the recommendation is on, or whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on. When the budget is exhausted, that last filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
           <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
@@ -190,13 +194,19 @@ SOFTWARE.
             <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading" tabindex="-1">The smallest agreement</h2></div>
             <p id="search-meta" class="search-meta"></p>
           </div>
-          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes and veto highlights. This is a decision aid, not a recorded vote.</p>
+          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, and recommended package option labels on the worksheet. This is a decision aid, not a recorded vote.</p>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
           <section class="result-card" aria-labelledby="side-by-side-heading">
             <h3 id="side-by-side-heading">Side-by-side package</h3>
             <p>Pin the current original selections, the solver recommendation, and your custom package in three columns. Each row is one clause. Group scores and overall approval use the same formula as the rest of the workshop. This comparison is a readout, not a vote.</p>
             <div id="side-by-side"></div>
+            <label class="package-markdown-fallback-label" for="package-markdown-fallback">Recommended package Markdown</label>
+            <textarea id="package-markdown-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-markdown-fallback-note"></textarea>
+            <p id="package-markdown-fallback-note" class="field-note">Each clause title is followed by the recommended option label. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
+            <label class="group-support-fallback-label" for="group-support-fallback">Group support Markdown</label>
+            <textarea id="group-support-fallback" readonly rows="8" spellcheck="false" aria-describedby="group-support-fallback-note"></textarea>
+            <p id="group-support-fallback-note" class="field-note">The table lists group name, mixing weight, and average support on the inspected package. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
             <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
             <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
@@ -293,7 +303,7 @@ SOFTWARE.
         </section>
         <section id="printable-ballot" class="print-only" aria-labelledby="ballot-heading">
           <h2 id="ballot-heading">Discussion worksheet</h2>
-          <p>Use this printed sheet to mark preferred options during conversation. It is a worksheet, not a recorded vote, legal ballot, or collective decision. Facilitator notes and veto highlights from the inspected package are included when present.</p>
+          <p>Use this printed sheet to mark preferred options during conversation. It is a worksheet, not a recorded vote, legal ballot, or collective decision. Facilitator notes, veto highlights, and recommended package option labels from the inspected package are included when present.</p>
           <div id="ballot-body"></div>
         </section>
 
@@ -346,6 +356,10 @@ SOFTWARE.
           <li><kbd>c</kbd> Jump to the change-budget field</li>
           <li><kbd>p</kbd> Print the facilitator pack</li>
           <li><kbd>k</kbd> Jump to the first unlocked clause card, or the lock controls</li>
+          <li><kbd>t</kbd> Jump to the approval threshold field</li>
+          <li><kbd>a</kbd> Focus Add clause</li>
+          <li><kbd>w</kbd> Jump to group weights or renormalize controls</li>
+          <li><kbd>m</kbd> Jump to remaining change-budget or cost margin</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>

@@ -148,6 +148,8 @@
     #shortcuts:focus-visible,
     #trust:focus,
     #trust:focus-visible,
+    #main:focus,
+    #main:focus-visible,
     .workbench:focus,
     .workbench:focus-visible {
       outline: 3px solid var(--focus);
@@ -232,7 +234,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -246,19 +248,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status, .copy-jobs-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-trust-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools { margin: 12px 0 0; }
-    .copy-versions-fallback, .copy-jobs-fallback {
+    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback, .copy-trust-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -271,7 +273,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-trust-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -313,7 +315,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -341,7 +343,7 @@
     @media print {
       body { background: white; color: #000; border-top-width: 2px; }
       .skip, .skips, .keys-note, .how, .site-nav, .shortcuts, .shortcuts-open { display: none !important; }
-      .catalog-url-tools, .copy-versions-tools, .copy-versions-fallback, .copy-jobs-tools, .copy-jobs-fallback { display: none !important; }
+      .catalog-url-tools, .copy-versions-tools, .copy-versions-fallback, .copy-jobs-tools, .copy-jobs-fallback, .copy-trust-tools, .copy-trust-fallback { display: none !important; }
       .whats-new, .workbench .version, .version-line, .trust { display: block !important; }
       #how-it-works, .guide { display: block !important; }
       #how-it-works, #how-it-works h2, #how-it-works h3, #how-it-works p { color: #000; }
@@ -396,7 +398,7 @@
     <a href="#how-it-works">How it works</a>
     <a href="#trust">Trust and limits</a>
   </nav>
-  <main class="shell" id="main">
+  <main class="shell" id="main" tabindex="-1">
     <section class="whats-new" id="whats-new" tabindex="-1" aria-labelledby="whats-new-title">
       <h2 id="whats-new-title">What's new</h2>
       <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank. Catalog cards list each workbench version next to its job.</p>
@@ -424,6 +426,10 @@
         <li>
           <h3>Waterfall copy, agency preset, and ledger filter in Partnership Breakpoint 1.5.2</h3>
           <p>Copy the contribution waterfall as Markdown, jump with keyboard f w l and b, hide all-hold ledger rows on screen, and start from a Talent, agent, and platform case. Counts remain counts. The ranking is not a forecast of who will exit.</p>
+        </li>
+        <li>
+          <h3>Tornado copy, JV preset, and stress jump in Partnership Breakpoint 1.5.3</h3>
+          <p>Copy tornado as Markdown, jump with keyboard t d and k, hide unbounded tornado shocks on screen, and start from a Three-party joint venture case. Counts remain counts. The ranking is not a forecast of who will exit.</p>
         </li>
         <li>
           <h3>Residual coverage in Common Cart</h3>
@@ -474,6 +480,10 @@
           <p>Filter clauses that differ from the recommendation, copy current locks, paste group TSV, and start from a Market stall hours preset. A veto here is a number you entered, not a legal right or a recorded vote.</p>
         </li>
         <li>
+          <h3>Bike-shed preset, package copy, and budget filter in The Smallest Agreement 1.5.3</h3>
+          <p>Copy the recommended package as Markdown, jump with keyboard t a w and m, hide clauses that exceed leftover budget on screen, and start from a Shared bike shed case. A veto here is a number you entered, not a legal right or a recorded vote.</p>
+        </li>
+        <li>
           <h3>Gate Gantt in Weekend Gap</h3>
           <p>Scrub 72 hours of issuer, bank, payout, and FX windows on the synthetic calendar, with a table fallback. The drawing does not connect to a bank or a live redemption queue.</p>
         </li>
@@ -497,17 +507,21 @@
           <h3>Peak-hour copy, holiday Monday, and gate filter in Weekend Gap 1.5.2</h3>
           <p>Copy the peak-queue hour as Markdown, filter the Gantt to one gate, and start from a Public-holiday Monday. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue.</p>
         </li>
+        <li>
+          <h3>Hours-to-clear copy, Saturday market, and hour persist in Weekend Gap 1.5.3</h3>
+          <p>Copy hours to clear as Markdown, jump with keyboard H X B and M, persist the selected Gantt hour, and start from a Saturday market burst. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue.</p>
+        </li>
       </ul>
     </section>
     <section id="workbenches" tabindex="-1" aria-labelledby="workbenches-title">
       <h2 id="workbenches-title">The workbenches</h2>
       <ul id="workbench-versions" hidden>
-        <li data-app="partnership-breakpoint">1.5.2</li>
+        <li data-app="partnership-breakpoint">1.5.3</li>
         <li data-app="common-cart">1.4.2</li>
-        <li data-app="smallest-agreement">1.5.2</li>
-        <li data-app="weekend-gap">1.5.2</li>
+        <li data-app="smallest-agreement">1.5.3</li>
+        <li data-app="weekend-gap">1.5.3</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>j</kbd> to copy catalog jobs. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>i</kbd> to copy Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -516,15 +530,19 @@
           <dt><kbd>3</kbd></dt><dd>Open The Smallest Agreement</dd>
           <dt><kbd>4</kbd></dt><dd>Open Weekend Gap</dd>
           <dt><kbd>h</kbd></dt><dd>Focus the catalog heading</dd>
+          <dt><kbd>m</kbd></dt><dd>Focus the main catalog content. This key does not open a workbench.</dd>
           <dt><kbd>n</kbd></dt><dd>Focus What's new</dd>
           <dt><kbd>w</kbd></dt><dd>Focus the workbenches</dd>
           <dt><kbd>k</kbd></dt><dd>Focus How it works</dd>
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
+          <dt><kbd>s</kbd></dt><dd>Focus the first Open workbench link. This key moves focus; it does not open the workbench.</dd>
           <dt><kbd>c</kbd></dt><dd>Copy catalog address when this page is served over http</dd>
           <dt><kbd>v</kbd></dt><dd>Copy workbench names and versions as Markdown from this catalog page, not a live product version</dd>
           <dt><kbd>j</kbd></dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed</dd>
+          <dt><kbd>i</kbd></dt><dd>Copy Trust and limits as Markdown from this catalog page, not a live policy feed. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
           <dt><kbd>l</kbd></dt><dd>Focus the last-launched workbench card, or the workbenches heading if none is stored. This is storage in this browser, not a cloud recency.</dd>
           <dt><kbd>o</kbd></dt><dd>Open the last-launched workbench, the same as keys 1 to 4. If none is stored, focus the workbenches. This key assigns a location; it does not copy. It does not claim a copy succeeded on a file URL.</dd>
+          <dt><kbd>x</kbd></dt><dd>Clear last-launched storage in this browser and hide the recency notes. This is this-browser storage, not a cloud recency. A storage write failure stays silent and does not clear drafts.</dd>
           <dt><kbd>?</kbd></dt><dd>Show or hide this list</dd>
           <dt><kbd>Esc</kbd></dt><dd>Hide this list</dd>
         </dl>
@@ -535,7 +553,7 @@
         <span class="index" aria-hidden="true">1</span>
         <div>
           <h3>Partnership Breakpoint</h3>
-          <p class="version">Version <span data-app-version="partnership-breakpoint">1.5.2</span></p>
+          <p class="version">Version <span data-app-version="partnership-breakpoint">1.5.3</span></p>
           <p class="last-launched" data-last-workbench="1" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p class="review-path"><strong>Review constraints and negotiation room.</strong> Check cost allowances, feasible volume and operational conflicts before exporting a review packet.</p>
           <p class="job">Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move.</p>
@@ -565,7 +583,7 @@
         <span class="index" aria-hidden="true">3</span>
         <div>
           <h3>The Smallest Agreement</h3>
-          <p class="version">Version <span data-app-version="smallest-agreement">1.5.2</span></p>
+          <p class="version">Version <span data-app-version="smallest-agreement">1.5.3</span></p>
           <p class="last-launched" data-last-workbench="3" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p class="review-path"><strong>Review the package before discussion.</strong> Inspect approval margins, alternatives and bounded rule changes before facilitation.</p>
           <p class="job">Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget.</p>
@@ -580,7 +598,7 @@
         <span class="index" aria-hidden="true">4</span>
         <div>
           <h3>Weekend Gap</h3>
-          <p class="version">Version <span data-app-version="weekend-gap">1.5.2</span></p>
+          <p class="version">Version <span data-app-version="weekend-gap">1.5.3</span></p>
           <p class="last-launched" data-last-workbench="4" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p class="review-path"><strong>Review the timing behind the queue.</strong> Inspect arrival cohorts, closed intervals and reserve or throughput scenarios.</p>
           <p class="job">Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed.</p>
@@ -605,10 +623,12 @@
       <p>Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</p>
       <h3>Catalog jobs</h3>
       <p>Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</p>
+      <h3>Catalog trust</h3>
+      <p>Copy Trust and limits copies the heading and list items already printed in Trust and limits as Markdown. It reads this catalog page. It is not a live policy feed.</p>
       <h3>JSON export</h3>
       <p>Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</p>
       <h3>Independent workbenches</h3>
-      <p>The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository. Keys 1 to 4 can leave a Last launched in this browser note on that card. The note is storage in this browser, not a cloud recency. Last-launched storage that is missing or unreadable is silent: the catalog shows no recency note.</p>
+      <p>The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository. Keys 1 to 4 can leave a Last launched in this browser note on that card. The note is storage in this browser, not a cloud recency. Last-launched storage that is missing or unreadable is silent: the catalog shows no recency note. Press x to clear that marker in this browser and hide the notes. That clear is this-browser storage, not a cloud recency.</p>
     </section>
     <section class="trust" id="trust" tabindex="-1" aria-labelledby="trust-title">
       <h2 id="trust-title">Trust and limits</h2>
@@ -620,10 +640,15 @@
         <li><strong>Not a decision maker.</strong> A ranked shock, a pooled offer, a clause package, or a weekend queue is evidence for a conversation. People keep judgment, governing rules, and accountability.</li>
         <li><strong>Model notes live in each workbench.</strong> Formulas, units, and non-goals are documented beside the tool that uses them. This launcher does not serve those files; open the workbench when you need the exact conventions.</li>
       </ul>
+      <p class="copy-trust-tools" id="copy-trust-tools">
+        <button type="button" class="copy-trust" id="copy-trust" aria-keyshortcuts="i">Copy Trust and limits</button>
+        <span class="copy-trust-status" id="copy-trust-status" role="status"></span>
+      </p>
+      <textarea id="copy-trust-fallback" class="copy-trust-fallback" hidden readonly rows="8" aria-label="Trust and limits as Markdown"></textarea>
     </section>
   </main>
   <footer class="shell site-footer">
-    <p class="version-line">Partnership Breakpoint 1.5.2, Common Cart 1.4.2, The Smallest Agreement 1.5.2, Weekend Gap 1.5.2. Each workbench versions itself.</p>
+    <p class="version-line">Partnership Breakpoint 1.5.3, Common Cart 1.4.2, The Smallest Agreement 1.5.3, Weekend Gap 1.5.3. Each workbench versions itself.</p>
     <p class="copy-versions-tools" id="copy-versions-tools">
       <button type="button" class="copy-versions" id="copy-versions" aria-keyshortcuts="v">Copy versions</button>
       <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
@@ -743,6 +768,32 @@
           if (jobsStatus) jobsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product feed.';
         }
       });
+      const trustBtn = document.getElementById('copy-trust');
+      const trustStatus = document.getElementById('copy-trust-status');
+      const trustFallback = document.getElementById('copy-trust-fallback');
+      const trustMarkdown = () => {
+        const section = document.getElementById('trust');
+        const heading = section?.querySelector('h2')?.textContent.trim() ?? '';
+        const items = [...(section?.querySelectorAll('ul li') ?? [])].map((item) => `- ${item.textContent.trim()}`).filter((line) => line !== '- ');
+        return [`## ${heading}`, ...items].join('\n');
+      };
+      trustBtn?.addEventListener('click', async () => {
+        const markdown = trustMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (trustFallback) trustFallback.hidden = true;
+          if (trustStatus) trustStatus.textContent = 'Copied Trust and limits from this catalog page as Markdown. Not a live policy feed.';
+        } catch {
+          if (trustFallback) {
+            trustFallback.hidden = false;
+            trustFallback.value = markdown;
+            trustFallback.focus();
+            trustFallback.select();
+          }
+          if (trustStatus) trustStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog Trust and limits list, not a live policy feed.';
+        }
+      });
       const setOpen = (open, options = {}) => {
         if (!shortcuts) return;
         shortcuts.hidden = !open;
@@ -776,6 +827,11 @@
           document.getElementById('catalog-heading')?.focus();
           return;
         }
+        if (event.key === 'm') {
+          event.preventDefault();
+          document.getElementById('main')?.focus();
+          return;
+        }
         if (event.key === 'n') {
           event.preventDefault();
           document.getElementById('whats-new')?.focus();
@@ -796,6 +852,11 @@
           document.getElementById('trust')?.focus();
           return;
         }
+        if (event.key === 's') {
+          event.preventDefault();
+          document.querySelector('#workbenches a.open')?.focus();
+          return;
+        }
         if (event.key === 'c') {
           event.preventDefault();
           if (catalogIsHttp()) copyBtn?.click();
@@ -809,6 +870,11 @@
         if (event.key === 'j') {
           event.preventDefault();
           jobsBtn?.click();
+          return;
+        }
+        if (event.key === 'i') {
+          event.preventDefault();
+          trustBtn?.click();
           return;
         }
         if (event.key === 'l') {
@@ -854,6 +920,18 @@
             /* Storage may be unavailable. Opening the workbench still proceeds. */
           }
           window.location.assign(link.href);
+          return;
+        }
+        if (event.key === 'x') {
+          event.preventDefault();
+          try {
+            localStorage.removeItem(LAST_WORKBENCH_KEY);
+          } catch {
+            /* Recency is this-browser storage. A write failure stays silent. */
+          }
+          document.querySelectorAll('.last-launched').forEach((note) => {
+            note.hidden = true;
+          });
           return;
         }
         if (event.key === 'Escape' && shortcuts && !shortcuts.hidden) {

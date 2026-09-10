@@ -409,6 +409,36 @@ test('four-party marketplace preset is distinct from two- and three-party starti
   assert.ok(result.participants.every((item) => item.viable));
 });
 
+test('three-party joint venture preset is a distinct synthetic operator starting point', () => {
+  const venture = clonePreset('threePartyJointVenture');
+  assert.equal(PRESETS.threePartyJointVenture.name, 'Three-party joint venture');
+  assert.equal(venture.participants.length, 3);
+  assert.deepEqual(venture.participants.map((item) => item.id), ['synthetic-operator', 'capital-partner', 'operator-talent']);
+  assert.deepEqual(venture.participants.map((item) => item.name), ['Synthetic operator', 'Capital partner', 'Operator-talent']);
+  assert.deepEqual(venture.participants.map((item) => item.revenueShare), [0.4, 0.38, 0.22]);
+  assert.equal(venture.deal.monthlyVolume, 8000);
+  assert.equal(venture.deal.feePerTransaction, 55);
+  assert.equal(venture.participants[1].capacity, null);
+  assert.notEqual(venture.participants[0].variableCostPerTransaction, venture.participants[1].variableCostPerTransaction);
+  assert.notEqual(venture.participants[1].variableCostPerTransaction, venture.participants[2].variableCostPerTransaction);
+  assert.notEqual(venture.participants.map((item) => item.id).join(','), clonePreset('balanced').participants.map((item) => item.id).join(','));
+  assert.notEqual(venture.participants.map((item) => item.id).join(','), clonePreset('threePartyJv').participants.map((item) => item.id).join(','));
+  assert.notEqual(venture.participants.map((item) => item.id).join(','), clonePreset('talentAgentPlatform').participants.map((item) => item.id).join(','));
+  assert.notEqual(venture.participants.length, clonePreset('twoPartyStudio').participants.length);
+  assert.notEqual(venture.participants.length, clonePreset('fourPartyMarketplace').participants.length);
+  assert.notEqual(venture.participants.length, clonePreset('licensorDistributor').participants.length);
+  assert.notEqual(venture.deal.feePerTransaction, clonePreset('balanced').deal.feePerTransaction);
+  assert.notEqual(venture.deal.feePerTransaction, clonePreset('twoPartyStudio').deal.feePerTransaction);
+  assert.notEqual(venture.deal.feePerTransaction, clonePreset('fourPartyMarketplace').deal.feePerTransaction);
+  assert.notEqual(venture.deal.feePerTransaction, clonePreset('licensorDistributor').deal.feePerTransaction);
+  assert.notEqual(venture.deal.feePerTransaction, clonePreset('talentAgentPlatform').deal.feePerTransaction);
+  assert.notEqual(venture.deal.feePerTransaction, clonePreset('threePartyJv').deal.feePerTransaction);
+  const result = calculatePartnership(venture);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.viable));
+  assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
+});
+
 test('talent, agent, and platform preset is a distinct three-party starting point', () => {
   const agency = clonePreset('talentAgentPlatform');
   assert.equal(PRESETS.talentAgentPlatform.name, 'Talent, agent, and platform');
@@ -533,6 +563,39 @@ test('optional deal notes persist when valid and reject unknown abuse', () => {
   const unknown = clonePreset('balanced');
   unknown.deal.memo = 'secret';
   assert.match(validateConfiguration(unknown).errors.join(' '), /unknown field: memo/);
+});
+
+test('optional hideAllHoldLedger is a boolean and older files omit it', () => {
+  const omitted = clonePreset('balanced');
+  assert.equal(Object.hasOwn(omitted, 'hideAllHoldLedger'), false);
+  assert.equal(validateConfiguration(omitted).valid, true);
+
+  const hidden = clonePreset('balanced');
+  hidden.hideAllHoldLedger = true;
+  assert.equal(validateConfiguration(hidden).valid, true);
+
+  const shown = clonePreset('balanced');
+  shown.hideAllHoldLedger = false;
+  assert.equal(validateConfiguration(shown).valid, true);
+
+  for (const value of ['true', 1, 0, null, 'yes', {}]) {
+    const config = clonePreset('balanced');
+    config.hideAllHoldLedger = value;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(value));
+    assert.match(validation.errors.join(' '), /boolean/);
+  }
+
+  const extra = clonePreset('balanced');
+  extra.hideAllHoldLedger = true;
+  extra.unexpected = true;
+  assert.match(validateConfiguration(extra).errors.join(' '), /unknown field: unexpected/);
+
+  const both = clonePreset('balanced');
+  both.collapseAllHoldCases = true;
+  both.hideHoldingParticipants = true;
+  both.hideAllHoldLedger = true;
+  assert.equal(validateConfiguration(both).valid, true);
 });
 
 test('optional hideHoldingParticipants is a boolean and older files omit it', () => {

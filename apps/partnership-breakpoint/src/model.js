@@ -34,6 +34,7 @@
  * @property {StressSettings} [stress] Optional. Legacy cases omit this object.
  * @property {boolean} [collapseAllHoldCases] Optional display preference. Omitted files default to expanded.
  * @property {boolean} [hideHoldingParticipants] Optional roster display preference. Omitted files default to showing holders.
+ * @property {boolean} [hideAllHoldLedger] Optional ledger display preference. Omitted files default to showing all-hold rows.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -47,7 +48,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -143,6 +144,15 @@ export const PRESETS = Object.freeze({
       { id: 'booking-platform', name: 'Platform', revenueShare: 0.2, variableCostPerTransaction: 0.9, fixedMonthlyCost: 5000, minimumAcceptableProfit: 3000, capacity: 12000, minimumCommitment: 0, riskCost: 700 },
     ],
   },
+  threePartyJointVenture: {
+    name: 'Three-party joint venture',
+    deal: { monthlyVolume: 8000, feePerTransaction: 55, addressableVolume: 12000, volumeShockPct: 0 },
+    participants: [
+      { id: 'synthetic-operator', name: 'Synthetic operator', revenueShare: 0.4, variableCostPerTransaction: 6, fixedMonthlyCost: 18000, minimumAcceptableProfit: 12000, capacity: 10000, minimumCommitment: 0, riskCost: 3000 },
+      { id: 'capital-partner', name: 'Capital partner', revenueShare: 0.38, variableCostPerTransaction: 0.5, fixedMonthlyCost: 2000, minimumAcceptableProfit: 50000, capacity: null, minimumCommitment: 0, riskCost: 8000 },
+      { id: 'operator-talent', name: 'Operator-talent', revenueShare: 0.22, variableCostPerTransaction: 3, fixedMonthlyCost: 9000, minimumAcceptableProfit: 15000, capacity: 15000, minimumCommitment: 2000, riskCost: 1500 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -204,6 +214,12 @@ export function validateConfiguration(config) {
     const hideHolders = own(config, 'hideHoldingParticipants');
     if (hideHolders !== true && hideHolders !== false) {
       errors.push('Hide holding participants must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideAllHoldLedger')) {
+    const hideLedger = own(config, 'hideAllHoldLedger');
+    if (hideLedger !== true && hideLedger !== false) {
+      errors.push('Hide all-hold ledger must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {

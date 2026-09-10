@@ -42,6 +42,10 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, /id="copy-versions"/);
   assert.match(page, />Copy versions</);
   assert.match(page, /querySelector\('\.version-line'\)/);
+  assert.match(page, /id="copy-trust"/);
+  assert.match(page, />Copy Trust and limits</);
+  assert.match(page, /id="trust"/);
+  assert.match(page, /Not a live policy feed/);
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(page, /XMLHttpRequest/);
 });

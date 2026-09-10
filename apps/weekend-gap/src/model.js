@@ -111,6 +111,14 @@ export const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Public-holiday Monday (synthetic)",
     mondayHoliday: true
+  }),
+  saturdayMarketBurst: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Saturday market burst (synthetic)",
+    demandProfile: "saturdayBurst",
+    reserveCashAud: 5900000,
+    redemptionDemandAud: 3600000,
+    weekendFxMultiplier: 3.1
   })
 });
 
@@ -120,7 +128,7 @@ const FIELD_RULES = Object.freeze({
   bankLabel: { type: "text", maxLength: 40 },
   payoutLabel: { type: "text", maxLength: 40 },
   fxLabel: { type: "text", maxLength: 40 },
-  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush"] },
+  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush", "saturdayBurst"] },
   nominalLiquidityAud: { min: 10000, max: 5000000000 },
   reserveCashAud: { min: 0, max: 5000000000 },
   issuerThroughputAudPerHour: { min: 0, max: 1000000000 },
@@ -287,9 +295,12 @@ export function getOperationalStatus(scenarioInput, hourOffset) {
 export function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS, profile = "flat") {
   const total = Math.max(0, finiteNumber(totalDemandAud, 0));
   if (!Number.isInteger(hours) || hours < 1 || hours > 720) throw new RangeError("Demand schedule requires 1 to 720 whole hours.");
-  if (!["flat", "fridayBurst", "mondayRush"].includes(profile)) throw new RangeError("Unknown demand profile.");
+  if (!["flat", "fridayBurst", "mondayRush", "saturdayBurst"].includes(profile)) throw new RangeError("Unknown demand profile.");
   const weights = Array.from({ length: hours }, (_, hour) =>
-    profile === "fridayBurst" && hour < 9 ? 8 : profile === "mondayRush" && hour >= 57 ? 8 : 1);
+    profile === "fridayBurst" && hour < 9 ? 8
+      : profile === "saturdayBurst" && hour >= 9 && hour < 33 ? 8
+      : profile === "mondayRush" && hour >= 57 ? 8
+      : 1);
   const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
   return weights.map(weight => total * (weight / weightTotal));
 }
@@ -697,36 +708,77 @@ export function libraryFromJSON(text) {
 
 export const CHART_VIEWS = Object.freeze(["queue", "gantt"]);
 
+const WORKSPACE_KEYS = Object.freeze([
+  "format",
+  "version",
+  "current",
+  "baseline",
+  "targetPercent",
+  "deadlineHour",
+  "selectedHour",
+  "notes",
+  "ganttDensity",
+  "selectedChart",
+  "ganttClosedOnly",
+  "ganttGateFilter",
+  "queueBacklogOnly",
+  "ganttHourIndex",
+  "ganttEveryGateClosed"
+]);
+
+function assertWorkspaceKeys(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Unsupported workspace format.");
+  for (const key of ["__proto__", "constructor", "prototype"]) {
+    if (Object.prototype.hasOwnProperty.call(raw, key)) throw new Error("Workspace contains a reserved key.");
+  }
+  for (const key of Object.keys(raw)) {
+    if (!WORKSPACE_KEYS.includes(key)) throw new Error("Unknown workspace field.");
+  }
+}
+
 /** Portable editing state; computed results are always regenerated on restore. */
 export function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false } = options;
+  const ganttHourIndex = options.ganttHourIndex === undefined ? selectedHour : options.ganttHourIndex;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
+  if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > 72) throw new RangeError("Workspace Gantt hour index is invalid.");
+  if (ganttHourIndex !== selectedHour) throw new RangeError("Workspace Gantt hour index is invalid.");
   if (typeof notes !== "string" || notes.length > 4000) throw new RangeError("Workspace notes must be 4000 characters or fewer.");
   if (!["snapshots", "all", "open"].includes(ganttDensity)) throw new RangeError("Workspace Gantt density is invalid.");
   if (!CHART_VIEWS.includes(selectedChart)) throw new RangeError("Workspace selected chart is invalid.");
   if (ganttClosedOnly !== true && ganttClosedOnly !== false) throw new RangeError("Workspace Gantt closed-hours filter is invalid.");
   if (!GANTT_GATE_FILTERS.includes(ganttGateFilter)) throw new RangeError("Workspace Gantt gate filter is invalid.");
   if (queueBacklogOnly !== true && queueBacklogOnly !== false) throw new RangeError("Workspace queue backlog filter is invalid.");
+  if (ganttEveryGateClosed !== true && ganttEveryGateClosed !== false) throw new RangeError("Workspace Gantt every-gate-closed filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed }, null, 2);
 }
 export function workspaceFromJSON(text) {
   try {
     if (typeof text !== "string" || text.length > 250000) throw new Error("Workspace must be 250 KB or smaller.");
     const raw = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
     if (raw?.format !== "weekend-gap-workspace" || raw.version !== 1) throw new Error("Unsupported workspace format.");
+    assertWorkspaceKeys(raw);
     for (const field of ["current", "baseline"]) if (!raw[field] || typeof raw[field] !== "object" || Array.isArray(raw[field])) throw new Error("Workspace requires current and baseline scenario objects.");
+    if (raw.ganttHourIndex !== undefined && raw.selectedHour !== undefined && raw.ganttHourIndex !== raw.selectedHour) {
+      throw new RangeError("Workspace Gantt hour index is invalid.");
+    }
     const current = sanitizeScenario(raw.current), baseline = sanitizeScenario(raw.baseline);
+    const restoredHour = raw.ganttHourIndex === undefined
+      ? (raw.selectedHour === undefined ? 0 : raw.selectedHour)
+      : raw.ganttHourIndex;
     const options = {
       targetPercent: raw.targetPercent,
       deadlineHour: raw.deadlineHour,
-      selectedHour: raw.selectedHour === undefined ? 0 : raw.selectedHour,
+      selectedHour: restoredHour,
       notes: raw.notes,
       ganttDensity: raw.ganttDensity === undefined ? "snapshots" : raw.ganttDensity,
       selectedChart: raw.selectedChart === undefined ? "queue" : raw.selectedChart,
       ganttClosedOnly: raw.ganttClosedOnly === undefined ? false : raw.ganttClosedOnly,
       ganttGateFilter: raw.ganttGateFilter === undefined ? "all" : raw.ganttGateFilter,
-      queueBacklogOnly: raw.queueBacklogOnly === undefined ? false : raw.queueBacklogOnly
+      queueBacklogOnly: raw.queueBacklogOnly === undefined ? false : raw.queueBacklogOnly,
+      ganttHourIndex: restoredHour,
+      ganttEveryGateClosed: raw.ganttEveryGateClosed === undefined ? false : raw.ganttEveryGateClosed
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -875,6 +927,13 @@ export function dashboardToMarkdown(input) {
   ].join("\n");
 }
 
+/** One-line Markdown for hours to clear the queue. Synthetic, not live. */
+export function hoursToClearQueueToMarkdown(input) {
+  const result = runSimulation(input);
+  const label = hoursToClearLabel(result.summary.hoursToClearQueue, result.summary.peakQueuedAud);
+  return "Hours to clear queue: " + label + ". Synthetic educational snapshot, not live market data.";
+}
+
 /** One-row formula-safe dashboard CSV. Empty cells mean the queue never cleared or never settled. */
 export function dashboardToCSV(input) {
   const result = runSimulation(input);
@@ -1012,8 +1071,9 @@ const DEMAND_PROFILE_LABELS = Object.freeze({
 
 /** Adjacent arrival profile with no randomness. Stays put at either end. */
 export function stepDemandProfile(profile, direction) {
-  if (!DEMAND_PROFILES.includes(profile)) throw new RangeError("Unknown demand profile.");
   if (direction !== "earlier" && direction !== "later") throw new RangeError("Demand timing steps must be earlier or later.");
+  if (profile === "saturdayBurst") return direction === "earlier" ? "fridayBurst" : "flat";
+  if (!DEMAND_PROFILES.includes(profile)) throw new RangeError("Unknown demand profile.");
   const index = DEMAND_PROFILE_STEP_ORDER.indexOf(profile);
   const nextIndex = direction === "earlier" ? Math.max(0, index - 1) : Math.min(DEMAND_PROFILE_STEP_ORDER.length - 1, index + 1);
   return DEMAND_PROFILE_STEP_ORDER[nextIndex];
@@ -1160,6 +1220,12 @@ export function ganttHourClosedOnAnyGate(point) {
   return !point.issuerOpen || !point.bankOpen || !point.payoutOpen || !point.fxWeekday;
 }
 
+/** True when issuer, bank and payout are closed, and FX is weekend-thinned. */
+export function ganttHourClosedOnEveryGate(point) {
+  if (!point || typeof point !== "object") return false;
+  return !point.issuerOpen && !point.bankOpen && !point.payoutOpen && !point.fxWeekday;
+}
+
 export const GANTT_GATE_FILTERS = Object.freeze(["all", "issuer", "bank", "payout", "fx"]);
 
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
@@ -1167,6 +1233,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const schedule = buildGateSchedule(input);
   const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
   const closedOnly = options.closedOnly === true;
+  const everyClosedOnly = options.everyClosedOnly === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -1188,6 +1255,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   rows.forEach((row, rowIndex) => {
     const y = top + rowIndex * rowHeight;
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+      if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[2](hour);
       const x = labelWidth + hour * hourWidth;
@@ -1317,6 +1385,26 @@ export function closedGanttHoursToMarkdown(input) {
     "Local drawing of modeled gate hours. Not a bank feed.",
     "",
     "| Hour | Closed gates |",
+    "| --- | --- |",
+    ...rows,
+    ""
+  ].join("\n");
+}
+
+/** Markdown of FX weekday versus weekend hours. Local drawing, not a bank feed. */
+export function fxGanttHoursToMarkdown(input) {
+  const schedule = buildGateSchedule(input);
+  const rows = [];
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    rows.push("| " + point.timeLabel + " (hour " + point.hour + ") | " + ganttGateStateLabel(point.fxWeekday, true) + " |");
+  }
+  return [
+    "# Weekend Gap FX hours",
+    "",
+    "Local drawing of modeled FX hours. Not a bank feed.",
+    "",
+    "| Hour | FX |",
     "| --- | --- |",
     ...rows,
     ""

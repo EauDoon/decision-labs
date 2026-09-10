@@ -29,9 +29,11 @@ import {
   selectedGanttHourToMarkdown,
   peakQueueHourToMarkdown,
   closedGanttHoursToMarkdown,
+  fxGanttHoursToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   ganttHourClosedOnAnyGate,
+  ganttHourClosedOnEveryGate,
   GANTT_GATE_FILTERS,
   gateDisplayLabels,
   GENERIC_GATE_LABELS,
@@ -51,13 +53,14 @@ import {
   reportToHTML,
   reportToMarkdown,
   dashboardToMarkdown,
+  hoursToClearQueueToMarkdown,
   dashboardToCSV,
   compareScenarioFiles,
   compareThreeScenarioFiles
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -392,18 +395,23 @@ function renderTable() {
 
 function renderGantt() {
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
+  const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, gateFilter });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, gateFilter });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([selectedHour]);
-  if (!closedOnly) {
+  if (!closedOnly && !everyClosedOnly) {
     rowIndexes.add(0);
     rowIndexes.add(SIMULATION_HOURS);
   }
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
     const point = schedule.hours[hour];
+    if (everyClosedOnly) {
+      if (ganttHourClosedOnEveryGate(point)) rowIndexes.add(hour);
+      continue;
+    }
     if (closedOnly) {
       if (ganttHourClosedOnAnyGate(point)) rowIndexes.add(hour);
       continue;
@@ -438,9 +446,14 @@ function renderGantt() {
   const filterNote = document.querySelector("#gantt-filter-note");
   if (filterNote) {
     const closedCount = schedule.hours.filter((point) => point.hour < SIMULATION_HOURS && ganttHourClosedOnAnyGate(point)).length;
-    filterNote.textContent = closedOnly
-      ? `Showing hours closed on at least one gate (${closedCount} of ${SIMULATION_HOURS} chart hours). The model still contains ${SIMULATION_HOURS} hours. This table and chart are a local drawing.`
-      : `All ${SIMULATION_HOURS} model hours remain available. Use the closed-hours filter to hide fully open hours in this local drawing.`;
+    const everyClosedCount = schedule.hours.filter((point) => point.hour < SIMULATION_HOURS && ganttHourClosedOnEveryGate(point)).length;
+    if (everyClosedOnly) {
+      filterNote.textContent = `Showing hours where every gate is closed (${everyClosedCount} of ${SIMULATION_HOURS} chart hours). Uncheck to restore all hours. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
+    } else if (closedOnly) {
+      filterNote.textContent = `Showing hours closed on at least one gate (${closedCount} of ${SIMULATION_HOURS} chart hours). The model still contains ${SIMULATION_HOURS} hours. This table and chart are a local drawing.`;
+    } else {
+      filterNote.textContent = `All ${SIMULATION_HOURS} model hours remain available. Use the closed-hours filter to hide fully open hours in this local drawing.`;
+    }
     if (gateFilter !== "all") {
       const gateName = GENERIC_GATE_LABELS[gateFilter] || gateFilter;
       filterNote.textContent += ` Chart shows ${gateName} only. Simulation is unchanged.`;
@@ -1181,12 +1194,13 @@ renderLibrary();
 
 function currentWorkspace() {
   return workspaceToJSON(scenario,baselineScenario,{ targetPercent:document.querySelector("#reserve-target").valueAsNumber,
-    deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value,
+    deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, ganttHourIndex: selectedHour, notes:document.querySelector("#workspace-notes").value,
     ganttDensity: document.querySelector("#gantt-density").value,
     selectedChart: document.querySelector("#selected-chart").value,
     ganttClosedOnly: Boolean(document.querySelector("#gantt-closed-only")?.checked),
     ganttGateFilter: GANTT_GATE_FILTERS.includes(document.querySelector("#gantt-gate-filter")?.value) ? document.querySelector("#gantt-gate-filter").value : "all",
-    queueBacklogOnly: Boolean(document.querySelector("#queue-backlog-only")?.checked) });
+    queueBacklogOnly: Boolean(document.querySelector("#queue-backlog-only")?.checked),
+    ganttEveryGateClosed: Boolean(document.querySelector("#gantt-every-closed")?.checked) });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -1196,10 +1210,10 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true };
     } catch {
       controlsValid = false;
-      serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
+      serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, ganttHourIndex: selectedHour, notes: document.querySelector("#workspace-notes").value });
     }
     localStorage.setItem(WORKSPACE_KEY, serialized);
     document.querySelector("#workspace-status").textContent = controlsValid
@@ -1208,8 +1222,8 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true };
-  baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour ?? 0;setPlaying(false);
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true };
+  baselineScenario={...saved.baseline}; selectedHour=saved.ganttHourIndex ?? saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
   document.querySelector("#workspace-notes").value=saved.notes;
@@ -1218,6 +1232,7 @@ function applyWorkspace(saved) {
   document.querySelector("#gantt-closed-only").checked = saved.ganttClosedOnly === true;
   document.querySelector("#gantt-gate-filter").value = GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all";
   document.querySelector("#queue-backlog-only").checked = saved.queueBacklogOnly === true;
+  document.querySelector("#gantt-every-closed").checked = saved.ganttEveryGateClosed === true;
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -1278,6 +1293,10 @@ document.querySelector("#gantt-closed-only").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
+document.querySelector("#gantt-every-closed").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
 document.querySelector("#gantt-gate-filter").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
@@ -1330,8 +1349,10 @@ document.querySelector("#copy-peak-hour").addEventListener("click", async () => 
   await copyTextWithFallback(text, "#peak-hour-copy-fallback", "Peak-queue hour copied as Markdown. This is a synthetic snapshot, not a live bank or payout queue.");
 });
 document.querySelector("#copy-closed-hours").addEventListener("click", async () => {
-  const text = closedGanttHoursToMarkdown(scenario);
-  await copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
+  await copyClosedHoursMarkdown();
+});
+document.querySelector("#copy-fx-hours").addEventListener("click", async () => {
+  await copyFxHoursMarkdown();
 });
 document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
   const text = arrivalCohortsToMarkdown(scenario);
@@ -1425,6 +1446,36 @@ function jumpToGantt() {
   rememberChart("gantt");
   return true;
 }
+function jumpToSelectedGanttHour() {
+  const row = document.querySelector("#gantt-hour-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
+function jumpToGanttBankRow() {
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  if (gateFilter !== "all" && gateFilter !== "bank") return jumpToGantt();
+  const row = document.querySelector("#gantt-bank-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
+function jumpToCompareGantt() {
+  const heading = document.querySelector("#compare-gantt-title");
+  if (!heading) return jumpToGantt();
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
 function jumpToTimingReview() {
   const panel = document.querySelector("#weekend-review");
   const heading = document.querySelector("#weekend-review-title");
@@ -1438,6 +1489,14 @@ function jumpToTimingReview() {
 function copySelectedGanttHourMarkdown() {
   const text = selectedGanttHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
+}
+function copyClosedHoursMarkdown() {
+  const text = closedGanttHoursToMarkdown(scenario);
+  return copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
+}
+function copyFxHoursMarkdown() {
+  const text = fxGanttHoursToMarkdown(scenario);
+  return copyTextWithFallback(text, "#fx-hours-copy-fallback", "FX hours copied as Markdown. This list is a local drawing, not a bank feed.");
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
@@ -1458,15 +1517,23 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.add("print-redacted");
   applyGateDisplayLabels(true);
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
+  const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, gateFilter, redacted: true });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, gateFilter, redacted: true });
   window.print();
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief. The saved scenario was not changed.";
 });
+document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
+  await copyHoursToClearMarkdown();
+});
+function copyHoursToClearMarkdown() {
+  const text = hoursToClearQueueToMarkdown(scenario);
+  return copyTextWithFallback(text, "#hours-to-clear-copy-fallback", "Hours to clear copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
+}
 document.querySelector("#copy-dashboard-markdown").addEventListener("click", async () => {
   try {
     const text = dashboardToMarkdown(scenario);
@@ -1606,6 +1673,21 @@ document.addEventListener("keydown", (event) => {
     jumpToGantt();
     return;
   }
+  if (event.key === "h" || event.key === "H") {
+    event.preventDefault();
+    jumpToSelectedGanttHour();
+    return;
+  }
+  if (event.key === "b" || event.key === "B") {
+    event.preventDefault();
+    jumpToGanttBankRow();
+    return;
+  }
+  if (event.key === "m" || event.key === "M") {
+    event.preventDefault();
+    jumpToCompareGantt();
+    return;
+  }
   if (event.key === "p" || event.key === "P") {
     event.preventDefault();
     jumpToPeakQueue();
@@ -1614,6 +1696,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "c" || event.key === "C") {
     event.preventDefault();
     copySelectedGanttHourMarkdown();
+    return;
+  }
+  if (event.key === "x" || event.key === "X") {
+    event.preventDefault();
+    copyClosedHoursMarkdown();
     return;
   }
   if (event.key === "t" || event.key === "T") {

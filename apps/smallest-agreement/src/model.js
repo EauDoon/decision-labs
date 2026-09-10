@@ -831,7 +831,8 @@ export function applyRenormalizedWeights(proposal) {
 
 /**
  * Copy a participant group, including weight, optional floor, veto, and every option's support score.
- * The copy receives a unique id. The solver still treats it as a separate supplied group.
+ * The copy receives a unique id and a unique copy name. Invalid at the group cap.
+ * The solver still treats it as a separate supplied group.
  */
 export function duplicateParticipantGroup(proposal, groupId) {
   const validation = validateProposal(proposal);
@@ -854,9 +855,10 @@ export function duplicateParticipantGroup(proposal, groupId) {
     serial += 1;
     copyId = `group-copy-${serial}`;
   }
+  const usedNames = new Set(next.groups.map((group) => group.name));
   const copy = {
     id: copyId,
-    name: source.name.length + 7 > 80 ? `${source.name.slice(0, 73)} (copy)` : `${source.name} (copy)`,
+    name: uniqueCopyLabel(source.name, usedNames, 80),
     weight: source.weight,
     ...(source.minSupport !== undefined ? { minSupport: source.minSupport } : {}),
     ...(source.veto === true ? { veto: true } : {}),
@@ -970,6 +972,45 @@ export function groupsBelowSupportRequirement(proposal, options) {
     }
   });
   return { status: "ok", groups };
+}
+
+/**
+ * Clause ids whose cheapest remaining change exceeds leftover change budget.
+ * Remaining change is the lowest changeCost among options other than the inspected selection.
+ * When leftover budget is 0 or negative, every clause is listed.
+ * Unlimited budget (omitted maxChangeCost) yields an empty list.
+ * Display-only. The solver ignores this list.
+ */
+export function overBudgetClauseIds(proposal, result) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Object.hasOwn(proposal, "maxChangeCost")) {
+    return { status: "ok", clauseIds: [], remaining: null, exhausted: false };
+  }
+  if (!isFiniteNumber(proposal.maxChangeCost)) {
+    return { status: "invalid", errors: [`maxChangeCost must be from 0 through ${MAX_CHANGE_COST * MAX_CLAUSES}, or omitted.`] };
+  }
+  const selected = result?.agreement?.options ?? result?.baseline?.options;
+  if (!Array.isArray(selected) || selected.length !== proposal.clauses.length) {
+    return { status: "ok", clauseIds: [], remaining: proposal.maxChangeCost, exhausted: proposal.maxChangeCost <= EPSILON };
+  }
+  const used = result?.agreement?.changeCost ?? result?.baseline?.changeCost ?? 0;
+  const remaining = proposal.maxChangeCost - used;
+  if (remaining <= EPSILON) {
+    return { status: "ok", clauseIds: proposal.clauses.map((clause) => clause.id), remaining, exhausted: true };
+  }
+  const clauseIds = [];
+  for (let index = 0; index < proposal.clauses.length; index += 1) {
+    const clause = proposal.clauses[index];
+    const selectedId = selected[index]?.id;
+    let cheapest = Infinity;
+    for (const option of clause.options) {
+      if (option.id === selectedId) continue;
+      if (option.changeCost < cheapest) cheapest = option.changeCost;
+    }
+    if (cheapest - remaining > EPSILON) clauseIds.push(clause.id);
+  }
+  return { status: "ok", clauseIds, remaining, exhausted: false };
 }
 
 /** A deterministic downside scenario, not a probability estimate or a new optimization. */
@@ -1768,6 +1809,39 @@ export function formatCurrentLocksMarkdown(proposal) {
 }
 
 /**
+ * Markdown table of group name, mixing weight, and average support on the inspected package.
+ * Mixing weights are not a legal right.
+ */
+export function formatGroupSupportMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "unavailable", text: "No inspected package is available, so there is no group support table to copy.\n" };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const p = canonicalProposal(proposal);
+  const byGroup = approvalByGroup(p.groups, selected);
+  const lines = [
+    "# Group support",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This table lists group names, mixing weights, and average support on the inspected package. Mixing weights are not a legal right.",
+    "",
+    "| Group | Weight | Average support |",
+    "| --- | --- | --- |",
+  ];
+  for (const group of byGroup) {
+    lines.push(`| ${briefText(group.name)} | ${group.weight} | ${formatPercent(group.approval)} |`);
+  }
+  lines.push("", "Scores and weights remain human inputs. A veto is a number, not a legal right.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
+/**
  * Compact formula-safe CSV of recommended versus original option labels and cost delta.
  * Unavailable when there is no recommended package.
  */
@@ -1916,6 +1990,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "lockedClausesOnly",
   "changedClausesOnly",
   "belowFloorGroupsOnly",
+  "overBudgetClausesOnly",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -1924,6 +1999,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "lockedClausesOnly",
   "changedClausesOnly",
   "belowFloorGroupsOnly",
+  "overBudgetClausesOnly",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -1963,6 +2039,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (changedClausesOnly.error) return { status: "invalid", errors: [changedClausesOnly.error] };
   const belowFloorGroupsOnly = readWorkspaceBoolean(prefs, "belowFloorGroupsOnly");
   if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
+  const overBudgetClausesOnly = readWorkspaceBoolean(prefs, "overBudgetClausesOnly");
+  if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -1970,6 +2048,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     lockedClausesOnly: lockedClausesOnly.value,
     changedClausesOnly: changedClausesOnly.value,
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
+    overBudgetClausesOnly: overBudgetClausesOnly.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -1978,6 +2057,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       lockedClausesOnly: lockedClausesOnly.value,
       changedClausesOnly: changedClausesOnly.value,
       belowFloorGroupsOnly: belowFloorGroupsOnly.value,
+      overBudgetClausesOnly: overBudgetClausesOnly.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -1999,6 +2079,7 @@ export function parseWorkspaceJson(text) {
       lockedClausesOnly: null,
       changedClausesOnly: null,
       belowFloorGroupsOnly: null,
+      overBudgetClausesOnly: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2023,6 +2104,8 @@ export function parseWorkspaceJson(text) {
   if (changedClausesOnly.error) return { status: "invalid", errors: [changedClausesOnly.error] };
   const belowFloorGroupsOnly = readWorkspaceBoolean(raw, "belowFloorGroupsOnly");
   if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
+  const overBudgetClausesOnly = readWorkspaceBoolean(raw, "overBudgetClausesOnly");
+  if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2032,6 +2115,7 @@ export function parseWorkspaceJson(text) {
     lockedClausesOnly: lockedClausesOnly.value,
     changedClausesOnly: changedClausesOnly.value,
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
+    overBudgetClausesOnly: overBudgetClausesOnly.value,
   };
 }
 
