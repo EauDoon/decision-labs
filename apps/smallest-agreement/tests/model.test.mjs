@@ -29,6 +29,7 @@ import {
   clausesWithoutCheaperRemainingOption,
   formatCurrentLocksMarkdown,
   formatCurrentLockCountMarkdown,
+  formatFirstLockedClauseOptionLabelMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -1897,7 +1898,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
@@ -1906,6 +1907,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(exported.hideGroupsWithoutFloors, true);
   assert.equal(exported.noCheaperRemainingClausesOnly, true);
   assert.equal(exported.hideUnlockedClauses, true);
+  assert.equal(exported.hideLockedClauses, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
@@ -1915,6 +1917,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parsed.hideGroupsWithoutFloors, true);
   assert.equal(parsed.noCheaperRemainingClausesOnly, true);
   assert.equal(parsed.hideUnlockedClauses, true);
+  assert.equal(parsed.hideLockedClauses, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
@@ -1922,6 +1925,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(Object.hasOwn(parsed.proposal, "hideGroupsWithoutFloors"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "noCheaperRemainingClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideUnlockedClauses"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideLockedClauses"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
@@ -1931,6 +1935,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(omitted.hideGroupsWithoutFloors, false);
   assert.equal(omitted.noCheaperRemainingClausesOnly, false);
   assert.equal(omitted.hideUnlockedClauses, false);
+  assert.equal(omitted.hideLockedClauses, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
@@ -1939,6 +1944,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(bare.hideGroupsWithoutFloors, null);
   assert.equal(bare.noCheaperRemainingClausesOnly, null);
   assert.equal(bare.hideUnlockedClauses, null);
+  assert.equal(bare.hideLockedClauses, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
@@ -1948,6 +1954,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(formatWorkspaceJson(input, { hideGroupsWithoutFloors: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { noCheaperRemainingClausesOnly: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { hideUnlockedClauses: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideLockedClauses: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -2202,6 +2209,42 @@ test("current lock count Markdown is one line and is not a legal hold", () => {
   assert.equal(empty.count, 0);
   assert.equal(empty.text, "Current lock count: 0. Locks are draft choices, not a legal hold.\n");
   assert.equal(formatCurrentLockCountMarkdown({ title: "" }).status, "invalid");
+});
+
+test("first locked clause option label Markdown is one line and honest when none", () => {
+  const input = proposal({
+    clauses: [
+      { id: "one", title: "One", lockedOptionId: "one-change", options: [
+        option("one-original", true, { g: 50 }), option("one-change", false, { g: 80 }, 1), option("one-other", false, { g: 70 }, 2),
+      ] },
+      { id: "two", title: "Two", lockedOptionId: "two-original", options: [
+        option("two-original", true, { g: 50 }), option("two-change", false, { g: 80 }, 1), option("two-other", false, { g: 70 }, 2),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatFirstLockedClauseOptionLabelMarkdown(input);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "First locked clause option: one-change. Locks are draft choices, not a legal hold.\n");
+  assert.doesNotMatch(copied.text, /Current lock count/u);
+  assert.doesNotMatch(copied.text, /# Current clause locks/u);
+  assert.doesNotMatch(copied.text, /Unlocked/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const none = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const empty = formatFirstLockedClauseOptionLabelMarkdown(none);
+  assert.equal(empty.status, "ok");
+  assert.equal(empty.empty, true);
+  assert.equal(empty.text, "No clause is locked, so there is no first locked option label to copy. Locks are draft choices, not a legal hold.\n");
+  assert.equal(empty.text.trim().includes("\n"), false);
+  assert.equal(formatFirstLockedClauseOptionLabelMarkdown({ title: "" }).status, "invalid");
 });
 
 test("formatRecommendedChangeCostCsv writes formula-safe original vs recommended costs", () => {

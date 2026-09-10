@@ -69,6 +69,11 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>z<\/kbd> Jump to the numeric approval threshold field, or the method heading/u);
   assert.match(html, /<kbd>,<\/kbd> Copy the recommended package option count as one-line Markdown/u);
   assert.match(html, /<kbd>\.<\/kbd> Jump to the first locked clause card, or the clauses heading/u);
+  assert.match(html, /<kbd>;<\/kbd> Copy the current lock count as one-line Markdown/u);
+  assert.match(html, /<kbd>\[<\/kbd> Jump to the lock-count copy control, or the locks heading/u);
+  assert.match(html, /<kbd>\]<\/kbd> Jump to Print facilitator pack, or the facilitator pack heading/u);
+  assert.match(html, /id="locks-heading"/u);
+  assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
@@ -89,6 +94,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /street-stall-lighting/u);
   assert.match(html, /hall-hire-hours/u);
   assert.match(html, /community-garden-watering/u);
+  assert.match(html, /shared-laundry-hours/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -97,6 +103,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Show locked clauses only/u);
   assert.match(html, /id="hide-unlocked-clauses"/u);
   assert.match(html, /Hide unlocked clauses/u);
+  assert.match(html, /id="hide-locked-clauses"/u);
+  assert.match(html, /Hide locked clauses/u);
   assert.match(html, /id="changed-clauses-only"/u);
   assert.match(html, /Show clauses that differ from the recommendation/u);
   assert.match(html, /id="over-budget-clauses-only"/u);
@@ -160,6 +168,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="copy-lock-count-button"/u);
   assert.match(html, /Copy lock count/u);
   assert.match(html, /id="lock-count-fallback"/u);
+  assert.match(html, /id="copy-first-locked-option-button"/u);
+  assert.match(html, /Copy first locked option/u);
+  assert.match(html, /id="first-locked-option-fallback"/u);
   assert.match(html, /id="copy-change-cost-button"/u);
   assert.match(html, /Copy change-cost table/u);
   assert.match(html, /id="change-cost-csv-fallback"/u);
@@ -321,6 +332,11 @@ async function savedWorkbench(storage, hash = "") {
       target.checked = checked;
       target.events.get("change")({ target: { checked } });
     },
+    filterHideLockedClauses: (checked) => {
+      const target = element("#hide-locked-clauses");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
     filterChangedClauses: (checked) => {
       const target = element("#changed-clauses-only");
       target.checked = checked;
@@ -391,6 +407,7 @@ async function savedWorkbench(storage, hash = "") {
     originalVersusRecommended: () => element("#original-versus-recommended-fallback").value,
     locksMarkdown: () => element("#locks-markdown-fallback").value,
     lockCount: () => element("#lock-count-fallback").value,
+    firstLockedOption: () => element("#first-locked-option-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
     compareFiles: async (left, right) => {
@@ -836,11 +853,15 @@ test("shared bike shed preset loads a distinct synthetic neighbour workshop", as
   assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
   assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
   assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.title(), /Shared laundry hours/u);
   assert.doesNotMatch(app.clauses(), /Stall open hours/u);
   assert.doesNotMatch(app.clauses(), /Match end-time/u);
   assert.doesNotMatch(app.clauses(), /Park access hours/u);
   assert.doesNotMatch(app.clauses(), /Evening hours/u);
   assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.doesNotMatch(app.clauses(), /Wash hours/u);
+  assert.doesNotMatch(app.clauses(), /Dryer noise/u);
+  assert.doesNotMatch(app.groups(), /Tenants/u);
 });
 
 test("street stall lighting preset loads a distinct synthetic lighting workshop", async () => {
@@ -901,6 +922,7 @@ test("hall hire hours preset loads a distinct synthetic hall workshop", async ()
   assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
   assert.doesNotMatch(app.title(), /Club Constitution/u);
   assert.doesNotMatch(app.title(), /Community garden watering/u);
+  assert.doesNotMatch(app.title(), /Shared laundry hours/u);
   assert.doesNotMatch(app.clauses(), /Lighting hours/u);
   assert.doesNotMatch(app.clauses(), /Stall open hours/u);
   assert.doesNotMatch(app.clauses(), /Access hours/u);
@@ -917,6 +939,9 @@ test("hall hire hours preset loads a distinct synthetic hall workshop", async ()
   assert.doesNotMatch(app.groups(), /Garden committee/u);
   assert.doesNotMatch(app.clauses(), /Watering hours/u);
   assert.doesNotMatch(app.clauses(), /Hose noise/u);
+  assert.doesNotMatch(app.clauses(), /Wash hours/u);
+  assert.doesNotMatch(app.clauses(), /Dryer noise/u);
+  assert.doesNotMatch(app.groups(), /Tenants/u);
 });
 
 test("community garden watering preset loads a distinct synthetic watering workshop", async () => {
@@ -961,6 +986,56 @@ test("community garden watering preset loads a distinct synthetic watering works
   assert.doesNotMatch(app.groups(), /Market officers/u);
   assert.doesNotMatch(app.groups(), /Building managers/u);
   assert.doesNotMatch(app.groups(), /Council officers/u);
+  assert.doesNotMatch(app.title(), /Shared laundry hours/u);
+  assert.doesNotMatch(app.clauses(), /Wash hours/u);
+  assert.doesNotMatch(app.clauses(), /Dryer noise/u);
+  assert.doesNotMatch(app.groups(), /Tenants/u);
+});
+
+test("shared laundry hours preset loads a distinct synthetic laundry workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "shared-laundry-hours");
+  app.click("#load-preset");
+  assert.match(app.title(), /Shared laundry hours: wash hours, dryer noise, and lock-up/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Wash hours/u);
+  assert.match(app.clauses(), /Dryer noise/u);
+  assert.match(app.clauses(), /Laundry lock-up/u);
+  assert.match(app.groups(), /Tenants/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /Building managers/u);
+  assert.doesNotMatch(app.title(), /Community garden watering/u);
+  assert.doesNotMatch(app.title(), /Hall hire hours/u);
+  assert.doesNotMatch(app.title(), /Street stall lighting/u);
+  assert.doesNotMatch(app.title(), /Market stall hours/u);
+  assert.doesNotMatch(app.title(), /Shared bike shed/u);
+  assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.title(), /Open Source Policy/u);
+  assert.doesNotMatch(app.title(), /Association Budget/u);
+  assert.doesNotMatch(app.title(), /Protected Access/u);
+  assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
+  assert.doesNotMatch(app.title(), /Club Constitution/u);
+  assert.doesNotMatch(app.clauses(), /Watering hours/u);
+  assert.doesNotMatch(app.clauses(), /Hose noise/u);
+  assert.doesNotMatch(app.clauses(), /Garden lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Close time/u);
+  assert.doesNotMatch(app.clauses(), /PA volume/u);
+  assert.doesNotMatch(app.clauses(), /Clean-up/u);
+  assert.doesNotMatch(app.clauses(), /Lighting hours/u);
+  assert.doesNotMatch(app.clauses(), /Access hours/u);
+  assert.doesNotMatch(app.clauses(), /Stall open hours/u);
+  assert.doesNotMatch(app.clauses(), /Match end-time/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Evening hours/u);
+  assert.doesNotMatch(app.groups(), /Plot-holders/u);
+  assert.doesNotMatch(app.groups(), /Garden committee/u);
+  assert.doesNotMatch(app.groups(), /Hirers/u);
+  assert.doesNotMatch(app.groups(), /Hall committee/u);
+  assert.doesNotMatch(app.groups(), /Stallholders/u);
+  assert.doesNotMatch(app.groups(), /Bike users/u);
 });
 
 test("keyboard f focuses the clause filter unless an input is active", async () => {
@@ -1055,8 +1130,8 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
-  assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
+  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, \.first-locked-option-fallback-label, #first-locked-option-fallback, #first-locked-option-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, \.hide-locked-clauses-filter, #hide-locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /\.hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note/u);
   assert.match(html, /\.hide-groups-without-floors-filter, #hide-groups-without-floors-filter-note/u);
@@ -1104,9 +1179,9 @@ test("print facilitator pack includes recommended package option labels", async 
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
 });
 
-test("print facilitator pack includes remaining change-budget without changing the saved draft", async () => {
+test("print facilitator pack includes remaining change-budget as one line without changing the saved draft", async () => {
   const html = await standaloneBytes();
-  assert.match(html, /remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count/u);
+  assert.match(html, /a one-line remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count/u);
   assert.match(html, /not a legal appropriation/u);
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -1144,7 +1219,7 @@ test("print facilitator pack includes remaining change-budget without changing t
   };
   const leftoverStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(leftover)]]);
   const leftoverApp = await savedWorkbench(leftoverStorage);
-  assert.match(leftoverApp.ballot(), /Remaining change-budget: 1\.0/u);
+  assert.match(leftoverApp.ballot(), /<p>Remaining change-budget: 1\.0\. This leftover is a draft accounting line, not a legal appropriation\.<\/p>/u);
   leftoverApp.click("#print-redacted-button");
   assert.match(leftoverApp.ballot(), /Participant groups: Group 1/u);
   assert.match(leftoverApp.ballot(), /Remaining change-budget: 1\.0/u);
@@ -1442,6 +1517,42 @@ test("hide-unlocked-clauses hides unlocked cards without changing the stored dra
   assert.equal(app.focused(), '[data-field="clause-title"][data-clause-id="market"]');
   assert.match(app.clauses(), /Weekend market use/u);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideUnlockedClauses, false);
+});
+
+test("hide-locked-clauses hides locked cards without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="hide-locked-clauses"/u);
+  assert.match(html, /Hide locked clauses/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterHideLockedClauses(true);
+  assert.match(app.clauses(), /Park access hours/u);
+  assert.match(app.clauses(), /Weekend market use/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  app.filterHideLockedClauses(true);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.match(app.clauses(), /Weekend market use/u);
+  assert.match(app.clauses(), /Path lighting/u);
+  assert.match(app.filterStatus(), /Showing 2 of 3 clauses/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideLockedClauses, true);
+  assert.equal(Object.hasOwn(JSON.parse(storage.get("smallest-agreement:proposal:v1")), "hideLockedClauses"), false);
+  const saved = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(saved.clauses.length, 3);
+  app.filterLockedClauses(true);
+  assert.match(app.clauses(), /No clauses remain after hiding locked clauses/u);
+  app.filterLockedClauses(false);
+  app.filterHideUnlockedClauses(true);
+  assert.match(app.clauses(), /No clauses remain after hiding unlocked clauses/u);
+  app.filterHideUnlockedClauses(false);
+  app.clearFocus();
+  app.keydown(".");
+  assert.equal(app.focused(), '[data-field="clause-title"][data-clause-id="hours"]');
+  assert.match(app.clauses(), /Park access hours/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideLockedClauses, false);
 });
 
 test("locked-clause filter hides unlocked cards without changing the stored draft", async () => {
@@ -2185,6 +2296,77 @@ test("keyboard period jumps to the first locked clause card unless an input is a
   assert.equal(app.focused(), '[data-field="clause-title"][data-clause-id="hours"]');
 });
 
+test("keyboard semicolon copies the current lock count unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>;<\/kbd> Copy the current lock count as one-line Markdown/u);
+  assert.match(html, /id="copy-lock-count-button"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown(";");
+  assert.equal(app.clipboardText(), "Current lock count: 0. Locks are draft choices, not a legal hold.\n");
+  assert.equal(app.clipboardText(), app.lockCount());
+  assert.doesNotMatch(app.clipboardText(), /# Current clause locks/u);
+  assert.doesNotMatch(app.clipboardText(), /Unlocked/u);
+  assert.match(app.clipboardText(), /not a legal hold/u);
+  app.clearFocus();
+  app.keydown(";", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown(";", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const shifted = await savedWorkbench(new Map());
+  shifted.keydown(":");
+  assert.equal(shifted.clipboardText(), "");
+  const locked = await savedWorkbench(new Map());
+  locked.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  locked.clearFocus();
+  locked.keydown(";");
+  assert.equal(locked.clipboardText(), "Current lock count: 1. Locks are draft choices, not a legal hold.\n");
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-lock-count-button");
+  assert.equal(blocked.focused(), "#lock-count-fallback");
+  blocked.clearFocus();
+  blocked.keydown(";", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(blocked.focused(), "");
+});
+
+test("keyboard [ jumps to the lock-count copy control unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>\[<\/kbd> Jump to the lock-count copy control, or the locks heading/u);
+  assert.match(html, /id="copy-lock-count-button"/u);
+  assert.match(html, /id="locks-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("[");
+  assert.equal(app.focused(), "#copy-lock-count-button");
+  app.clearFocus();
+  app.keydown("[", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("[", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("[", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("{");
+  assert.equal(app.focused(), "");
+});
+
+test("keyboard ] jumps to Print facilitator pack unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>\]<\/kbd> Jump to Print facilitator pack, or the facilitator pack heading/u);
+  assert.match(html, /id="print-button"/u);
+  assert.match(html, /id="print-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("]");
+  assert.equal(app.focused(), "#print-button");
+  app.clearFocus();
+  app.keydown("]", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("]", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("]", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("}");
+  assert.equal(app.focused(), "");
+});
+
 test("keyboard comma copies the recommended package option count unless an input is active", async () => {
   const html = await standaloneBytes();
   assert.match(html, /<kbd>,<\/kbd> Copy the recommended package option count as one-line Markdown/u);
@@ -2619,6 +2801,38 @@ test("copy current lock count writes one-line Markdown with a clipboard fallback
   assert.match(locked.message(), /not a legal hold/u);
 });
 
+test("copy first locked option writes one-line Markdown with a clipboard fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-first-locked-option-button"/u);
+  assert.match(html, /Copy first locked option/u);
+  assert.match(html, /id="first-locked-option-fallback"/u);
+  assert.match(html, /not a legal hold/u);
+  const app = await savedWorkbench(new Map());
+  assert.equal(app.firstLockedOption(), "No clause is locked, so there is no first locked option label to copy. Locks are draft choices, not a legal hold.\n");
+  assert.doesNotMatch(app.firstLockedOption(), /Current lock count/u);
+  assert.doesNotMatch(app.firstLockedOption(), /# Current clause locks/u);
+  await app.click("#copy-first-locked-option-button");
+  assert.equal(app.clipboardText(), app.firstLockedOption());
+  assert.match(app.message(), /honest empty/u);
+  assert.match(app.message(), /not a legal hold/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-first-locked-option-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#first-locked-option-fallback");
+  assert.match(blocked.firstLockedOption(), /No clause is locked/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a legal hold/u);
+  const locked = await savedWorkbench(new Map());
+  locked.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  assert.equal(locked.firstLockedOption(), "First locked clause option: Trial a 21:00 Friday close for three months. Locks are draft choices, not a legal hold.\n");
+  await locked.click("#copy-first-locked-option-button");
+  assert.equal(locked.clipboardText(), "First locked clause option: Trial a 21:00 Friday close for three months. Locks are draft choices, not a legal hold.\n");
+  assert.doesNotMatch(locked.clipboardText(), /Current lock count/u);
+  assert.doesNotMatch(locked.clipboardText(), /# Current clause locks/u);
+  assert.match(locked.message(), /not a legal hold/u);
+});
+
 test("copy current locks writes Markdown with a textarea fallback and is not a legal hold", async () => {
   const html = await standaloneBytes();
   assert.match(html, /id="copy-locks-button"/u);
@@ -2902,6 +3116,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(Object.hasOwn(proposal, "hideGroupsAtFloor"), false);
   assert.equal(Object.hasOwn(proposal, "hideGroupsWithoutFloors"), false);
   assert.equal(Object.hasOwn(proposal, "hideUnlockedClauses"), false);
+  assert.equal(Object.hasOwn(proposal, "hideLockedClauses"), false);
   assert.equal(Object.hasOwn(proposal, "noCheaperRemainingClausesOnly"), false);
   assert.equal(proposal.clauses.length, 3);
   assert.match(app.groups(), /No veto groups match this filter/u);
@@ -2914,6 +3129,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   app.filterHideGroupsWithoutFloors(true);
   app.filterNoCheaperRemainingClauses(true);
   app.filterHideUnlockedClauses(true);
+  app.filterHideLockedClauses(true);
   const nextPrefs = JSON.parse(storage.get("smallest-agreement:workspace:v1"));
   assert.equal(nextPrefs.changedClausesOnly, true);
   assert.equal(nextPrefs.belowFloorGroupsOnly, true);
@@ -2922,6 +3138,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(nextPrefs.hideGroupsWithoutFloors, true);
   assert.equal(nextPrefs.noCheaperRemainingClausesOnly, true);
   assert.equal(nextPrefs.hideUnlockedClauses, true);
+  assert.equal(nextPrefs.hideLockedClauses, true);
   app.filterVetoGroups(false);
   app.filterLockedClauses(false);
   await app.importJson(JSON.stringify({
@@ -2946,6 +3163,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).lockedClausesOnly, false);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideGroupsWithoutFloors, false);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideUnlockedClauses, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideLockedClauses, false);
   await app.importJson(JSON.stringify({
     format: "smallest-agreement-workspace",
     version: 1,

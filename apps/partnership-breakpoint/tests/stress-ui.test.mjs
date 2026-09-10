@@ -62,7 +62,8 @@ async function workbench(protocol = 'file:', options = {}) {
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
         'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
         'title-copy-text', 'over-capacity-participant', 'copy-deal-title',
-        'breakpoint-label-copy-text',
+        'breakpoint-label-copy-text', 'copy-first-breakpoint-label',
+        'viability-label-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -676,7 +677,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, and currency code', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, and first-breakpoint participant', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -690,6 +691,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /<h2>Currency code<\/h2><p>No currency code was entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Deal notes<\/h2>/);
   assert.match(app.markup(), /<h2>Least headroom<\/h2><p>Liquidity Partner has the least volume headroom to its minimum acceptable profit limit\.<\/p>/);
+  assert.match(app.markup(), /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   const before = JSON.stringify(app.saved());
   app.click('print-report');
@@ -697,6 +699,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.equal(JSON.stringify(app.saved()), before);
   assert.match(app.lastPrint(), /<h2>Deal title<\/h2><p>No deal title was entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Currency code<\/h2><p>No currency code was entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   app.edit('deal.title', 'Harbor JV', { type: 'text' });
   app.edit('deal.currency', 'USD', { type: 'text' });
@@ -724,8 +727,10 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /class="participant-redacted-name">Participant 1</);
   assert.doesNotMatch(snapshot, /class="participant-live-name">Platform</);
   assert.match(snapshot, /Participant 3 has the least volume headroom to its minimum acceptable profit limit/);
+  assert.match(snapshot, /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Participant 3\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
+  assert.doesNotMatch(snapshot, /First-breakpoint participant: Liquidity Partner/);
   assert.match(html, /\.print-redacted \.participant-live-name/);
   assert.match(html, /\.print-redacted \.participant-redacted-name/);
   assert.match(app.markup(), /class="participant-live-name">Platform</);
@@ -1136,6 +1141,7 @@ test('community hall split preset loads from the starting-point buttons', async 
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'stallholder,site-manager,ticket-office');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cinema-venue,projectionist,ticket-desk');
 });
 
 test('festival stall split preset loads from the starting-point buttons', async () => {
@@ -1160,6 +1166,34 @@ test('festival stall split preset loads from the starting-point buttons', async 
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'synthetic-operator,capital-partner,operator-talent');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'podcast-host,podcast-network');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'venue,promoter,sound');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cinema-venue,projectionist,ticket-desk');
+});
+
+test('pop-up cinema split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="popupCinemaSplit"/);
+  assert.match(app.markup(), /Pop-up cinema split/);
+  app.click('preset', { preset: 'popupCinemaSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['cinema-venue', 'projectionist', 'ticket-desk']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Cinema venue', 'Projectionist', 'Ticket desk']);
+  assert.equal(app.saved().deal.feePerTransaction, 24);
+  assert.equal(app.saved().deal.monthlyVolume, 1600);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.match(app.notice(), /Pop-up cinema split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'platform,distributor,liquidity-partner');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'production-studio,distribution-studio');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'marketplace,seller,logistics,payments');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'ip-licensor,territory-distributor');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'talent,booking-agent,booking-platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'synthetic-operator,capital-partner,operator-talent');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'podcast-host,podcast-network');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'venue,promoter,sound');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'stallholder,site-manager,ticket-office');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
@@ -1272,6 +1306,9 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>x<\/kbd> Jump to the first roster row over listed capacity, or the Participants heading if none/);
   assert.match(app.markup(), /<kbd>y<\/kbd> Copy deal notes as one-line Markdown/);
   assert.match(app.markup(), /<kbd>z<\/kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing/);
+  assert.match(app.markup(), /<kbd>,<\/kbd> Copy the first-breakpoint participant label as Markdown/);
+  assert.match(app.markup(), /<kbd>\.<\/kbd> Jump to Copy first-breakpoint participant label, or the First breakpoint heading if missing/);
+  assert.match(app.markup(), /<kbd>\/<\/kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1722,6 +1759,92 @@ test('keyboard y copies deal notes as one-line Markdown and ignores focused inpu
   assert.match(denied.markup(), /id="notes-copy-text"/);
   assert.match(denied.markup(), /Deal notes: Keep the fee floor in view\./);
   assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('keyboard comma copies the first-breakpoint participant label through the same control', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  fallback.keydown(',');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.match(fallback.markup(), /First-breakpoint participant: Liquidity Partner\. Synthetic ranking, not a forecast\./);
+  assert.match(fallback.markup(), /id="breakpoint-label-copy-title">First-breakpoint participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="utilization-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="allocation-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-breakpoint-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown(',', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown(',', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown(',');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the first-breakpoint participant label/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown(',');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'First-breakpoint participant: Liquidity Partner. Synthetic ranking, not a forecast.');
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown(',', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.keydown(',');
+  assert.match(denied.markup(), /id="breakpoint-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('keyboard period jumps to Copy first-breakpoint participant label unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-first-breakpoint-label"/);
+  assert.match(app.markup(), /id="first-breakpoint-title" tabindex="-1"/);
+  app.keydown('.');
+  assert.ok(app.focused().includes('#copy-first-breakpoint-label'));
+  assert.ok(app.focused().includes('scroll:#copy-first-breakpoint-label'));
+  const before = app.focused().length;
+  app.keydown('.', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('.', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('.');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="copy-first-breakpoint-label"/);
+  assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+});
+
+test('keyboard slash jumps to Copy deal title and currency while Shift+/ stays help', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-deal-title"/);
+  assert.match(app.markup(), /id="deal-inputs-title" tabindex="-1"/);
+  app.keydown('/');
+  assert.ok(app.focused().includes('#copy-deal-title'));
+  assert.ok(app.focused().includes('scroll:#copy-deal-title'));
+  const before = app.focused().length;
+  app.keydown('/', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('/', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('/');
+  assert.ok(app.focused().includes('#copy-deal-title'));
+  assert.ok(app.focused().includes('scroll:#copy-deal-title'));
+  app.keydown('/', { shiftKey: true });
+  assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
+  app.keydown('Escape');
+  assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
+  app.keydown('?');
+  assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
 });
 
 test('keyboard z jumps to Copy deal title and currency unless a field is focused', async () => {
@@ -2206,6 +2329,47 @@ test('copy first-breakpoint participant label is one Markdown line and not a for
   already.import(failing);
   already.click('copy-first-breakpoint-label');
   assert.equal(already.copied().at(-1), 'First-breakpoint participant: Liquidity Partner. Synthetic ranking, not a forecast.');
+});
+
+test('copy least-headroom participant label is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-viability-label"/);
+  fallback.click('copy-viability-label');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.markup(), /Least-headroom participant: Liquidity Partner\. Volume-headroom ranking, not a forecast\./);
+  assert.match(fallback.markup(), /id="viability-label-copy-title">Least-headroom participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /# Viability and binding limit/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-viability-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="viability-label-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-viability-label');
+  assert.match(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.markup(), />Least-headroom participant: none entered\.</);
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-viability-label');
+  assert.equal(withClipboard.copied().length, 1);
+  const text = withClipboard.copied()[0];
+  assert.equal(text.split('\n').length, 1);
+  assert.equal(text, 'Least-headroom participant: Liquidity Partner. Volume-headroom ranking, not a forecast.');
+  assert.doesNotMatch(text, /First-breakpoint participant/);
+  assert.doesNotMatch(text, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="viability-label-copy-text"/);
+  withClipboard.edit('deal.monthlyVolume', '');
+  withClipboard.click('copy-viability-label');
+  assert.equal(withClipboard.copied()[1], 'Least-headroom participant: none entered.');
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-viability-label');
+  assert.match(denied.markup(), /id="viability-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
@@ -2947,6 +3111,120 @@ test('hide-at-hold preference round-trips on saved JSON and defaults to shown', 
 
   const unknown = clonePreset('balanced');
   unknown.hideParticipantsAtHold = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
+test('hiding participants without listed capacity is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-without-capacity-participants"/);
+  assert.match(app.markup(), /data-action="hide-at-hold-participants"/);
+  assert.match(app.markup(), /data-action="hide-over-capacity-participants"/);
+  assert.match(app.markup(), /data-action="hide-zero-share-participants"/);
+  app.click('hide-without-capacity-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /0 participants whose capacity is unbounded or omitted are hidden from this roster display/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsAtHold'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(app.saved().hideParticipantsWithoutCapacity, true);
+  app.click('show-without-capacity-participants');
+  assert.equal(forms(), 3);
+  app.edit('participants.0.capacity', '', { optional: 'true' });
+  assert.equal(forms(), 3);
+  const beforeHide = holdCount();
+  assert.ok(beforeHide);
+  app.click('hide-without-capacity-participants');
+  assert.equal(forms(), 2);
+  assert.match(app.markup(), /1 participant whose capacity is unbounded or omitted is hidden from this roster display/);
+  assert.match(app.markup(), /Tested-case and model counts are unchanged/);
+  assert.doesNotMatch(app.markup(), /Participant 1: Platform/);
+  assert.match(app.markup(), /participant-live-name">Platform/);
+  assert.equal(holdCount(), beforeHide);
+  app.click('export');
+  const exported = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(exported.participants.length, 3);
+  assert.equal(exported.participants[0].capacity, null);
+  assert.equal(exported.hideParticipantsWithoutCapacity, true);
+  assert.equal(Object.hasOwn(exported, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(exported, 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(exported, 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(exported, 'hideParticipantsOverCapacity'), false);
+  assert.equal(Object.hasOwn(exported, 'hideParticipantsAtHold'), false);
+  app.click('show-without-capacity-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /Platform/);
+  assert.equal(holdCount(), beforeHide);
+  app.click('preset', { preset: 'podcastHostNetwork' });
+  app.click('hide-without-capacity-participants');
+  assert.equal(forms(), 1);
+  assert.match(app.markup(), /1 participant whose capacity is unbounded or omitted is hidden from this roster display/);
+  assert.doesNotMatch(app.markup(), /Participant 1: Podcast host/);
+  assert.match(app.markup(), /Participant 2: Podcast network/);
+});
+
+test('hide-without-capacity preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsWithoutCapacity'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsAtHold'), false);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  app.click('hide-without-capacity-participants');
+  assert.equal(app.saved().hideParticipantsWithoutCapacity, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsAtHold'), false);
+  assert.equal(forms(), 3);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideParticipantsWithoutCapacity, true);
+  assert.equal(hidden.participants.length, 3);
+  assert.equal(Object.hasOwn(hidden, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideParticipantsOverCapacity'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideParticipantsAtHold'), false);
+  app.click('show-without-capacity-participants');
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsWithoutCapacity'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideParticipantsWithoutCapacity'), false);
+  assert.equal(forms(), 3);
+
+  const imported = clonePreset('balanced');
+  imported.hideParticipantsWithoutCapacity = true;
+  app.import(imported);
+  assert.equal(app.saved().hideParticipantsWithoutCapacity, true);
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsWithoutCapacity'), false);
+  assert.equal(forms(), 3);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideParticipantsWithoutCapacity = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+  assert.equal(forms(), 3);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideParticipantsWithoutCapacity = true;
   unknown.unexpected = true;
   app.import(unknown);
   assert.match(app.notice(), /unknown field: unexpected/);
