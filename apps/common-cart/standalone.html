@@ -472,6 +472,7 @@ footer {
         <li><kbd>p</kbd> Print an organizer leftover one-pager</li>
         <li><kbd>v</kbd> Focus the variant overlap region</li>
         <li><kbd>j</kbd> Focus the first uncovered leftover row</li>
+        <li><kbd>d</kbd> Focus the first uncovered leftover coverage row, or leftover heading if none</li>
         <li><kbd>s</kbd> Focus the buyer CSV or TSV paste control</li>
         <li><kbd>c</kbd> Copy leftover residual coverage (organizer private)</li>
         <li><kbd>t</kbd> Focus tertiary leftover fill</li>
@@ -3906,6 +3907,11 @@ function handleShortcut(event) {
     focusUncoveredLeftover();
     return;
   }
+  if (key === "d") {
+    event.preventDefault();
+    focusUncoveredLeftoverCoverageRow();
+    return;
+  }
   if (key === "s") {
     event.preventDefault();
     focusBuyerPaste();
@@ -4001,6 +4007,17 @@ function focusUncoveredLeftover() {
   const leftoverExists = document.querySelector("#leftover-buyer-rows tr") || document.querySelector("#uncovered-leftover.leftover-uncovered");
   if (leftoverExists) {
     document.querySelector("#uncovered-leftover")?.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusUncoveredLeftoverCoverageRow() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const uncovered = [...document.querySelectorAll("#leftover-coverage-rows .leftover-uncovered")].find((row) => !row.hidden);
+  if (uncovered) {
+    uncovered.focus();
     return;
   }
   document.querySelector("#residual-title")?.focus();

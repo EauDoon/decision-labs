@@ -80,6 +80,23 @@ test("keyboard handler jumps to uncovered leftover when not typing", async () =>
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
 
+test("shortcut help documents the uncovered leftover coverage jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>d<\/kbd> Focus the first uncovered leftover coverage row, or leftover heading if none/u);
+  assert.match(html, /id="leftover-coverage-rows"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to the first uncovered leftover coverage row when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "d"\)/u);
+  assert.match(app, /function focusUncoveredLeftoverCoverageRow\(/u);
+  assert.match(app, /#leftover-coverage-rows \.leftover-uncovered/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
 test("shortcut help documents the buyer paste jump", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /<kbd>s<\/kbd> Focus the buyer CSV or TSV paste control/u);

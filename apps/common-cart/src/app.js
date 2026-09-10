@@ -810,6 +810,11 @@ function handleShortcut(event) {
     focusUncoveredLeftover();
     return;
   }
+  if (key === "d") {
+    event.preventDefault();
+    focusUncoveredLeftoverCoverageRow();
+    return;
+  }
   if (key === "s") {
     event.preventDefault();
     focusBuyerPaste();
@@ -905,6 +910,17 @@ function focusUncoveredLeftover() {
   const leftoverExists = document.querySelector("#leftover-buyer-rows tr") || document.querySelector("#uncovered-leftover.leftover-uncovered");
   if (leftoverExists) {
     document.querySelector("#uncovered-leftover")?.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusUncoveredLeftoverCoverageRow() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const uncovered = [...document.querySelectorAll("#leftover-coverage-rows .leftover-uncovered")].find((row) => !row.hidden);
+  if (uncovered) {
+    uncovered.focus();
     return;
   }
   document.querySelector("#residual-title")?.focus();
