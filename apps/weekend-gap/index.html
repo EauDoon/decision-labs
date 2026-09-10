@@ -46,12 +46,17 @@ SOFTWARE.
     </header>
 
     <details class="weekend-review" id="weekend-review">
-      <summary>Review the timing behind the queue</summary>
+      <summary id="weekend-review-title" tabindex="-1">Review the timing behind the queue</summary>
       <p>Choose a question about the current 72-hour scenario. These analytical reviews do not change assumptions or move funds.</p>
       <label for="weekend-review-tool">Review question</label>
       <div class="review-controls"><select id="weekend-review-tool"></select><button id="weekend-review-run" type="button">Run review</button></div>
       <div class="review-controls"><button id="weekend-review-export" type="button" disabled>Export review packet</button><button id="weekend-review-import" type="button">Inspect review packet</button><input id="weekend-review-file" type="file" accept="application/json,.json" hidden></div>
       <p>Packets contain scenario assumptions and the exact calculated table. They are unsigned consistency records.</p><p id="weekend-review-origin"></p>
+      <div class="planning-actions">
+        <button id="copy-cohort-markdown" type="button">Copy arrival-cohort table</button>
+      </div>
+      <label class="sr-only" for="cohort-copy-fallback">Arrival-cohort Markdown fallback</label>
+      <textarea id="cohort-copy-fallback" rows="10" hidden readonly></textarea>
       <div id="weekend-review-output" aria-live="polite"></div>
     </details>
     <main id="dashboard" class="page-shell">
@@ -85,6 +90,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="longWeekendFridayStart">Long-weekend Friday start (synthetic)</button>
               <button type="button" class="preset-button" data-preset="compressedFridayClose">Compressed Friday close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="paydayFridayBurst">Payday Friday burst (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="publicHolidayMonday">Public-holiday Monday (synthetic)</button>
             </div>
           </fieldset>
 
@@ -286,13 +292,17 @@ SOFTWARE.
               <div class="planning-actions">
                 <p id="outcome-summary" class="gate-summary">Calculating</p>
                 <button id="copy-dashboard-markdown" type="button">Copy dashboard numbers</button>
+                <button id="copy-peak-hour" type="button">Copy peak-queue hour</button>
                 <button id="export-dashboard-csv" type="button">Export dashboard CSV</button>
               </div>
             </div>
+            <label class="sr-only" for="peak-hour-copy-fallback">Peak-queue hour Markdown fallback</label>
+            <textarea id="peak-hour-copy-fallback" rows="8" hidden readonly></textarea>
             <dl class="outcome-grid">
               <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
               <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
               <div><dt>Peak queue</dt><dd id="peak-queue-value">A$0</dd></div>
+              <div><dt>Peak queue hour</dt><dd id="peak-queue-hour-value">Calculating</dd></div>
               <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
               <div><dt>Hours to first settlement</dt><dd id="first-settlement-value">Calculating</dd></div>
               <div><dt>Hours to clear queue</dt><dd id="queue-clear-value">Calculating</dd></div>
@@ -541,6 +551,14 @@ SOFTWARE.
                 <option value="all">Every hour</option>
                 <option value="open">Hours with any gate open</option>
               </select>
+              <label for="gantt-gate-filter">Show gates</label>
+              <select id="gantt-gate-filter">
+                <option value="all">All gates</option>
+                <option value="issuer">Issuer only</option>
+                <option value="bank">Bank only</option>
+                <option value="payout">Payout only</option>
+                <option value="fx">FX only</option>
+              </select>
               <label class="checkbox-label" for="gantt-closed-only">
                 <input id="gantt-closed-only" type="checkbox">
                 Show only hours closed on at least one gate
@@ -548,9 +566,12 @@ SOFTWARE.
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
+              <button id="copy-closed-hours" type="button">Copy closed hours</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
+            <label class="sr-only" for="closed-hours-copy-fallback">Closed hours Markdown fallback</label>
+            <textarea id="closed-hours-copy-fallback" rows="8" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -580,8 +601,9 @@ SOFTWARE.
               </div>
               <p>Checkpoint balances, preceding interval flows and next-hour capacity</p>
             </div>
-            <div class="planning-actions"><label for="table-density">Show checkpoints</label><select id="table-density"><option value="snapshots">Every six hours</option><option value="all">Every hour</option><option value="backlog">Hours ending with backlog</option></select><button id="jump-peak" type="button">Jump to peak queue</button><button id="jump-first-settlement" type="button">Jump to first settlement</button><button id="jump-monday" type="button">Jump to Monday 08:00</button><button id="export-timeline" type="button">Export hourly CSV</button></div>
+            <div class="planning-actions"><label for="table-density">Show checkpoints</label><select id="table-density"><option value="snapshots">Every six hours</option><option value="all">Every hour</option><option value="backlog">Hours ending with backlog</option></select><label class="checkbox-label" for="queue-backlog-only"><input id="queue-backlog-only" type="checkbox"> Show only hours with backlog</label><button id="jump-peak" type="button">Jump to peak queue</button><button id="jump-first-settlement" type="button">Jump to first settlement</button><button id="jump-monday" type="button">Jump to Monday 08:00</button><button id="export-timeline" type="button">Export hourly CSV</button></div>
             <p id="peak-queue-row-note" role="status"></p>
+            <p id="queue-backlog-filter-note" role="status"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly simulation data">
               <table><caption>The selected hour is always included. Arrived and settled refer to the hour ending at this checkpoint; immediate capacity is available for the following hour. Displayed AUD is rounded.</caption>
                 <thead><tr><th scope="col">Time</th><th scope="col">Immediate AUD</th><th scope="col">Queued AUD</th><th scope="col">Liquidity</th><th scope="col">Discount</th><th scope="col">Payout chain</th><th scope="col">Baseline queue</th><th scope="col">Arrived in prior hour</th><th scope="col">Settled in prior hour</th></tr></thead>
@@ -631,6 +653,8 @@ SOFTWARE.
           <li><kbd>Q</kbd> Jump to the queue chart</li>
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
+          <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>
+          <li><kbd>T</kbd> Jump to the timing review</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>
           <li><kbd>R</kbd> Redo a scenario edit</li>
           <li><kbd>E</kbd> Export the current scenario JSON</li>

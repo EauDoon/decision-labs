@@ -106,6 +106,11 @@ export const PRESETS = Object.freeze({
     reserveCashAud: 6100000,
     redemptionDemandAud: 4500000,
     weekendFxMultiplier: 2.8
+  }),
+  publicHolidayMonday: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Public-holiday Monday (synthetic)",
+    mondayHoliday: true
   })
 });
 
@@ -694,14 +699,16 @@ export const CHART_VIEWS = Object.freeze(["queue", "gantt"]);
 
 /** Portable editing state; computed results are always regenerated on restore. */
 export function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false } = options;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
   if (typeof notes !== "string" || notes.length > 4000) throw new RangeError("Workspace notes must be 4000 characters or fewer.");
   if (!["snapshots", "all", "open"].includes(ganttDensity)) throw new RangeError("Workspace Gantt density is invalid.");
   if (!CHART_VIEWS.includes(selectedChart)) throw new RangeError("Workspace selected chart is invalid.");
   if (ganttClosedOnly !== true && ganttClosedOnly !== false) throw new RangeError("Workspace Gantt closed-hours filter is invalid.");
+  if (!GANTT_GATE_FILTERS.includes(ganttGateFilter)) throw new RangeError("Workspace Gantt gate filter is invalid.");
+  if (queueBacklogOnly !== true && queueBacklogOnly !== false) throw new RangeError("Workspace queue backlog filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly }, null, 2);
 }
 export function workspaceFromJSON(text) {
   try {
@@ -717,7 +724,9 @@ export function workspaceFromJSON(text) {
       notes: raw.notes,
       ganttDensity: raw.ganttDensity === undefined ? "snapshots" : raw.ganttDensity,
       selectedChart: raw.selectedChart === undefined ? "queue" : raw.selectedChart,
-      ganttClosedOnly: raw.ganttClosedOnly === undefined ? false : raw.ganttClosedOnly
+      ganttClosedOnly: raw.ganttClosedOnly === undefined ? false : raw.ganttClosedOnly,
+      ganttGateFilter: raw.ganttGateFilter === undefined ? "all" : raw.ganttGateFilter,
+      queueBacklogOnly: raw.queueBacklogOnly === undefined ? false : raw.queueBacklogOnly
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -1151,23 +1160,27 @@ export function ganttHourClosedOnAnyGate(point) {
   return !point.issuerOpen || !point.bankOpen || !point.payoutOpen || !point.fxWeekday;
 }
 
+export const GANTT_GATE_FILTERS = Object.freeze(["all", "issuer", "bank", "payout", "fx"]);
+
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
 export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const schedule = buildGateSchedule(input);
   const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
   const closedOnly = options.closedOnly === true;
+  const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
   const rowHeight = 28;
   const labelWidth = 88;
   const top = 20;
   const plotWidth = width - labelWidth - 16;
-  const rows = [
-    [labelsForChart.issuer, (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", false],
-    [labelsForChart.bank, (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", false],
-    [labelsForChart.payout, (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", false],
-    [labelsForChart.fx, (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", true]
+  const allRows = [
+    ["issuer", labelsForChart.issuer, (hour) => schedule.hours[hour].issuerOpen, "#2f9e6b", false],
+    ["bank", labelsForChart.bank, (hour) => schedule.hours[hour].bankOpen, "#2f9e6b", false],
+    ["payout", labelsForChart.payout, (hour) => schedule.hours[hour].payoutOpen, "#2f9e6b", false],
+    ["fx", labelsForChart.fx, (hour) => schedule.hours[hour].fxWeekday, "#3d7ea6", true]
   ];
+  const rows = gateFilter === "all" ? allRows : allRows.filter((row) => row[0] === gateFilter);
   const height = top + rows.length * rowHeight + 32;
   const hourWidth = plotWidth / SIMULATION_HOURS;
   const firstPayout = nextPayoutTime(schedule.scenario, 0);
@@ -1176,13 +1189,13 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
     const y = top + rowIndex * rowHeight;
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
-      const open = row[1](hour);
+      const open = row[2](hour);
       const x = labelWidth + hour * hourWidth;
-      cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${ganttCellFill(open, row[2], "wg-gantt", row[3])}" />`;
+      cells += `<rect x="${x.toFixed(2)}" y="${y + 5}" width="${Math.max(0.4, hourWidth).toFixed(2)}" height="${rowHeight - 10}" fill="${ganttCellFill(open, row[3], "wg-gantt", row[4])}" />`;
     }
   });
   const markerX = labelWidth + (markerHour / SIMULATION_HOURS) * plotWidth;
-  const labels = rows.map((row, index) => `<text x="8" y="${top + index * rowHeight + 18}" font-size="12" fill="#17324a">${svgEscape(row[0])}</text>`).join("");
+  const labels = rows.map((row, index) => `<text x="8" y="${top + index * rowHeight + 18}" font-size="12" fill="#17324a">${svgEscape(row[1])}</text>`).join("");
   const ticks = [0, 9, 33, 57, 72].map((hour) => {
     const x = labelWidth + (hour / SIMULATION_HOURS) * plotWidth;
     return `<text x="${x.toFixed(1)}" y="${height - 8}" font-size="10" text-anchor="middle" fill="#3e5360">${svgEscape(formatTime(hour))}</text>`;
@@ -1244,6 +1257,101 @@ export function selectedGanttHourToMarkdown(input, selectedHour = 0) {
     "| Bank | " + ganttGateStateLabel(point.bankOpen) + " |",
     "| Payout | " + ganttGateStateLabel(point.payoutOpen) + " |",
     "| FX | " + ganttGateStateLabel(point.fxWeekday, true) + " |",
+    ""
+  ].join("\n");
+}
+
+/** Markdown for the peak-queue checkpoint. Synthetic snapshot, not a live queue. */
+export function peakQueueHourToMarkdown(input) {
+  const result = runSimulation(input);
+  const queuedAud = result.summary.peakQueuedAud;
+  if (!(queuedAud > 0)) {
+    return [
+      "# Weekend Gap peak queue hour",
+      "",
+      "Synthetic educational snapshot. Not a live bank or payout queue.",
+      "",
+      "No queue in 72h",
+      ""
+    ].join("\n");
+  }
+  const hour = result.summary.peakQueueHour;
+  const schedule = buildGateSchedule(result.scenario);
+  const point = schedule.hours[hour];
+  const queued = result.timeline[hour].queuedAud;
+  return [
+    "# Weekend Gap peak queue hour",
+    "",
+    "Synthetic educational snapshot. Not a live bank or payout queue.",
+    "",
+    "Hour: " + point.timeLabel + " (hour " + point.hour + ")",
+    "Queued AUD: " + queued,
+    "",
+    "| Gate | State |",
+    "| --- | --- |",
+    "| Issuer | " + ganttGateStateLabel(point.issuerOpen) + " |",
+    "| Bank | " + ganttGateStateLabel(point.bankOpen) + " |",
+    "| Payout | " + ganttGateStateLabel(point.payoutOpen) + " |",
+    "| FX | " + ganttGateStateLabel(point.fxWeekday, true) + " |",
+    ""
+  ].join("\n");
+}
+
+/** Markdown list of hours with closed gates. Local drawing, not a bank feed. */
+export function closedGanttHoursToMarkdown(input) {
+  const schedule = buildGateSchedule(input);
+  const rows = [];
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    const closed = [];
+    if (!point.issuerOpen) closed.push("Issuer");
+    if (!point.bankOpen) closed.push("Bank");
+    if (!point.payoutOpen) closed.push("Payout");
+    if (!point.fxWeekday) closed.push("FX");
+    if (closed.length === 0) continue;
+    rows.push("| " + point.timeLabel + " (hour " + point.hour + ") | " + closed.join(", ") + " |");
+  }
+  return [
+    "# Weekend Gap closed hours",
+    "",
+    "Local drawing of modeled gate hours. Not a bank feed.",
+    "",
+    "| Hour | Closed gates |",
+    "| --- | --- |",
+    ...rows,
+    ""
+  ].join("\n");
+}
+
+/** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
+export function arrivalCohortsToMarkdown(input) {
+  const result = runSimulation(input);
+  const cohorts = [];
+  let front = 0;
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = result.timeline[hour + 1];
+    cohorts.push({ hour, arrived: point.demandThisHour, remaining: point.demandThisHour });
+    let available = point.settledThisHour;
+    while (available > 0 && front < cohorts.length) {
+      const cohort = cohorts[front];
+      const amount = Math.min(available, cohort.remaining);
+      cohort.remaining = Math.max(0, cohort.remaining - amount);
+      available = Math.max(0, available - amount);
+      if (cohort.remaining === 0) front += 1;
+      else break;
+    }
+  }
+  const rows = cohorts.map((cohort) =>
+    "| " + formatTime(cohort.hour) + " (hour " + cohort.hour + ") | " + cohort.arrived + " | " + cohort.remaining + " |"
+  );
+  return [
+    "# Weekend Gap arrival cohorts",
+    "",
+    "Synthetic educational ledger. Not a forecast.",
+    "",
+    "| Cohort window | Arrivals AUD | Remaining AUD |",
+    "| --- | --- | --- |",
+    ...rows,
     ""
   ].join("\n");
 }
