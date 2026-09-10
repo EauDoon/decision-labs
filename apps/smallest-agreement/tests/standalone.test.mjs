@@ -967,6 +967,69 @@ test("print facilitator pack includes recommended package option labels", async 
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
 });
 
+test("print facilitator pack includes remaining change-budget without changing the saved draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /remaining change-budget on the worksheet/u);
+  assert.match(html, /not a legal appropriation/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for remaining-budget print");
+  assert.match(app.ballot(), /leftover change-budget is unlimited/u);
+  assert.match(app.ballot(), /not a legal appropriation/u);
+  assert.match(app.ballot(), /Participant groups: Residents, Shopkeepers, Park stewards/u);
+  app.click("#print-button");
+  assert.equal(app.printCalls(), 1);
+  assert.match(app.ballot(), /leftover change-budget is unlimited/u);
+  app.click("#print-redacted-button");
+  assert.equal(app.printCalls(), 2);
+  assert.match(app.ballot(), /Participant groups: Group 1, Group 2, Group 3/u);
+  assert.match(app.ballot(), /leftover change-budget is unlimited/u);
+  assert.doesNotMatch(app.ballot(), /Residents/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+
+  const leftover = {
+    title: "Print leftover workshop",
+    threshold: 70,
+    maxChangeCost: 3,
+    groups: [{ id: "g", name: "Residents", weight: 1 }],
+    clauses: [
+      { id: "keep", title: "Keep", options: [
+        { id: "keep-original", label: "Keep original keep", original: true, changeCost: 0, support: { g: 90 } },
+        { id: "keep-alt", label: "Alt keep", original: false, changeCost: 5, support: { g: 40 } },
+        { id: "keep-other", label: "Other keep", original: false, changeCost: 8, support: { g: 20 } },
+      ] },
+      { id: "spend", title: "Spend", options: [
+        { id: "spend-original", label: "Keep original spend", original: true, changeCost: 0, support: { g: 40 } },
+        { id: "spend-alt", label: "Alt spend", original: false, changeCost: 2, support: { g: 90 } },
+        { id: "spend-other", label: "Other spend", original: false, changeCost: 8, support: { g: 20 } },
+      ] },
+    ],
+  };
+  const leftoverStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(leftover)]]);
+  const leftoverApp = await savedWorkbench(leftoverStorage);
+  assert.match(leftoverApp.ballot(), /Remaining change-budget: 1\.0/u);
+  leftoverApp.click("#print-redacted-button");
+  assert.match(leftoverApp.ballot(), /Participant groups: Group 1/u);
+  assert.match(leftoverApp.ballot(), /Remaining change-budget: 1\.0/u);
+  assert.doesNotMatch(leftoverApp.ballot(), /Residents/u);
+  assert.equal(JSON.parse(leftoverStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+
+  const exhausted = {
+    title: "Print exhausted workshop",
+    threshold: 70,
+    maxChangeCost: 2,
+    groups: [{ id: "g", name: "Residents", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { g: 40 } },
+      { id: "alt", label: "Alt", original: false, changeCost: 2, support: { g: 90 } },
+      { id: "other", label: "Other", original: false, changeCost: 8, support: { g: 20 } },
+    ] }],
+  };
+  const spent = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(exhausted)]]));
+  assert.match(spent.ballot(), /Remaining change-budget is exhausted \(0\.0 leftover\)/u);
+  assert.match(spent.ballot(), /not a legal appropriation/u);
+});
+
 test("print redacted replaces group display names without changing the saved draft", async () => {
   const storage = new Map();
   const app = await savedWorkbench(storage);
