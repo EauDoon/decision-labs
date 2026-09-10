@@ -283,6 +283,8 @@ test('404 copy-versions script parses as classic browser JavaScript', () => {
   assert.equal(result.status, 0, result.stderr || result.error?.message);
   assert.doesNotMatch(source, /\bfetch\s*\(/);
   assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /trustMarkdown/);
+  assert.match(source, /Not a live policy feed/);
 });
 
 test('404 copy versions uses the printed catalog line without extra public paths', () => {
