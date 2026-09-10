@@ -150,6 +150,7 @@ export const presets: Readonly<{
   netballCanteen: Scenario;
   swimmingCarnivalLunch: Scenario;
   athleticsCarnivalLunch: Scenario;
+  cricketCarnivalLunch: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
