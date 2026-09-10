@@ -106,6 +106,11 @@ export const PRESETS = Object.freeze({
     reserveCashAud: 6100000,
     redemptionDemandAud: 4500000,
     weekendFxMultiplier: 2.8
+  }),
+  publicHolidayMonday: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Public-holiday Monday (synthetic)",
+    mondayHoliday: true
   })
 });
 
