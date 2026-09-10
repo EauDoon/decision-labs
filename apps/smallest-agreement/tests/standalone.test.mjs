@@ -86,6 +86,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>\|<\/kbd> Jump to the hide-veto-groups control, or the groups heading/u);
   assert.match(html, /<kbd>~<\/kbd> Copy the first veto group label as one-line Markdown/u);
   assert.match(html, /<kbd>!<\/kbd> Jump to the first veto group copy control, or the groups heading/u);
+  assert.match(html, /<kbd>@<\/kbd> Jump to the hide-non-veto-groups control, or the groups heading/u);
   assert.match(html, /id="locks-heading"/u);
   assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
@@ -3451,6 +3452,29 @@ test("keyboard pipe jumps to hide-veto-groups unless an input is active", async 
   assert.equal(app.focused(), "");
   app.keydown("{");
   assert.equal(app.focused(), "#hide-groups-below-threshold");
+});
+
+test("keyboard at-sign jumps to hide-non-veto-groups unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>@<\/kbd> Jump to the hide-non-veto-groups control, or the groups heading/u);
+  assert.match(html, /id="hide-non-veto-groups"/u);
+  assert.match(html, /id="hide-non-veto-groups"[^>]*aria-keyshortcuts="@"/u);
+  assert.match(html, /id="groups-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("@");
+  assert.equal(app.focused(), "#hide-non-veto-groups");
+  app.clearFocus();
+  app.keydown("@", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("@", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("@", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("|");
+  assert.equal(app.focused(), "#hide-veto-groups");
+  app.clearFocus();
+  app.keydown("@");
+  assert.equal(app.focused(), "#hide-non-veto-groups");
 });
 
 test("keyboard comma copies the recommended package option count unless an input is active", async () => {
