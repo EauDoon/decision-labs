@@ -1518,6 +1518,18 @@ function jumpToGanttBankRow() {
   rememberChart("gantt");
   return true;
 }
+function jumpToGanttIssuerRow() {
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  if (gateFilter !== "all" && gateFilter !== "issuer") return jumpToGantt();
+  const row = document.querySelector("#gantt-issuer-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
 function jumpToGanttFxRow() {
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
@@ -1768,6 +1780,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "b" || event.key === "B") {
     event.preventDefault();
     jumpToGanttBankRow();
+    return;
+  }
+  if (event.key === "i" || event.key === "I") {
+    event.preventDefault();
+    jumpToGanttIssuerRow();
     return;
   }
   if (event.key === "w" || event.key === "W") {
