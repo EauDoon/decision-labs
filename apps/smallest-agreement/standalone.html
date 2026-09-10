@@ -616,6 +616,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>z</kbd> Jump to the numeric approval threshold field, or the method heading</li>
           <li><kbd>,</kbd> Copy the recommended package option count as one-line Markdown</li>
           <li><kbd>.</kbd> Jump to the first locked clause card, or the clauses heading</li>
+          <li><kbd>;</kbd> Copy the current lock count as one-line Markdown</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -6470,6 +6471,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "." && !event.shiftKey) {
     event.preventDefault();
     jumpToLockedClauseCard();
+  } else if (event.key === ";") {
+    event.preventDefault();
+    copyLockCount();
   }
 });
 

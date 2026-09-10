@@ -69,6 +69,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>z<\/kbd> Jump to the numeric approval threshold field, or the method heading/u);
   assert.match(html, /<kbd>,<\/kbd> Copy the recommended package option count as one-line Markdown/u);
   assert.match(html, /<kbd>\.<\/kbd> Jump to the first locked clause card, or the clauses heading/u);
+  assert.match(html, /<kbd>;<\/kbd> Copy the current lock count as one-line Markdown/u);
   assert.match(html, /id="method-heading"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
@@ -2183,6 +2184,39 @@ test("keyboard period jumps to the first locked clause card unless an input is a
   app.clearFocus();
   app.keydown(".");
   assert.equal(app.focused(), '[data-field="clause-title"][data-clause-id="hours"]');
+});
+
+test("keyboard semicolon copies the current lock count unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>;<\/kbd> Copy the current lock count as one-line Markdown/u);
+  assert.match(html, /id="copy-lock-count-button"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown(";");
+  assert.equal(app.clipboardText(), "Current lock count: 0. Locks are draft choices, not a legal hold.\n");
+  assert.equal(app.clipboardText(), app.lockCount());
+  assert.doesNotMatch(app.clipboardText(), /# Current clause locks/u);
+  assert.doesNotMatch(app.clipboardText(), /Unlocked/u);
+  assert.match(app.message(), /not a legal hold/u);
+  app.clearFocus();
+  app.keydown(";", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown(";", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const shifted = await savedWorkbench(new Map());
+  shifted.keydown(":");
+  assert.equal(shifted.clipboardText(), "");
+  const locked = await savedWorkbench(new Map());
+  locked.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  locked.clearFocus();
+  locked.keydown(";");
+  assert.equal(locked.clipboardText(), "Current lock count: 1. Locks are draft choices, not a legal hold.\n");
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-lock-count-button");
+  assert.equal(blocked.focused(), "#lock-count-fallback");
+  blocked.clearFocus();
+  blocked.keydown(";", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(blocked.focused(), "");
 });
 
 test("keyboard comma copies the recommended package option count unless an input is active", async () => {

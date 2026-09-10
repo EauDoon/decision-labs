@@ -3095,6 +3095,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "." && !event.shiftKey) {
     event.preventDefault();
     jumpToLockedClauseCard();
+  } else if (event.key === ";") {
+    event.preventDefault();
+    copyLockCount();
   }
 });
 
