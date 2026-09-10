@@ -1193,6 +1193,11 @@ function handleShortcut(event) {
     copyLeftoverFillPickup();
     return;
   }
+  if (key === "&") {
+    event.preventDefault();
+    focusLeftoverFillPickupCopy();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1413,6 +1418,17 @@ function focusLeftoverFillDeliveryCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const copy = document.querySelector("#copy-leftover-fill-delivery");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverFillPickupCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-fill-pickup");
   if (copy) {
     copy.focus();
     return;
