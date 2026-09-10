@@ -118,6 +118,7 @@ tests/*.test.mjs     Node built-in model and browser-state tests
 standalone.html      Generated single-file GUI for direct opening
 scripts/build-standalone.mjs Deterministic standalone builder
 scripts/dev-server.mjs Dependency-free local development server
+CHANGELOG.md        Version history
 ```
 
 ## License
