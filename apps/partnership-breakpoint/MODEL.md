@@ -202,6 +202,8 @@ The tornado chart plots each participant's smallest bounded adverse percentage s
 
 Hiding a participant row in the stress ledger is a display filter. Case counts, hold counts, worst profit gaps, operational failures, and any tested proposal still include that participant. Showing the row again does not recalculate the grid.
 
+Hiding participants who hold in every tested compound case filters the participant ledger table only. Expand restores the rows. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking.
+
 Collapsing cases every participant holds hides those case-evidence rows from the inspect table only. Expand restores them. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking. Optional `collapseAllHoldCases` on a saved case is a boolean. Older files omit it and default to expanded. Present non-boolean values are rejected. Unknown sibling fields are still rejected.
 
 Optional `hideHoldingParticipants` on a saved case is a boolean roster display preference. Older files omit it and default to showing holders. Present non-boolean values are rejected. Hiding holders filters the roster cards only. Tested-case and model counts stay unchanged.

@@ -78,6 +78,7 @@ let dialogNeedsInitialFocus = coachVisible;
 const mutedStressIds = new Set();
 let collapseAllHoldCases = false;
 let hideHoldingParticipants = false;
+let hideAllCompoundHolders = false;
 let printRedacted = false;
 const undoHistory = [];
 const redoHistory = [];
@@ -687,6 +688,11 @@ function stressSection() {
     <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
 }
 
+function participantHoldsEveryCompoundCase(stress, participantId) {
+  const row = stress.participants.find((item) => item.id === participantId);
+  return Boolean(row && row.passCount === stress.caseCount);
+}
+
 function capacityUtilizationLabel(participant) {
   if (participant.capacity == null || participant.capacityUtilization == null) {
     return 'Unbounded';
@@ -713,7 +719,16 @@ function capacityUtilizationCell(participant) {
 }
 
 function participantTable(result) {
-  const rows = result.participants.map((participant, index) => `
+  const stress = evaluateStressGrid(state);
+  const hiddenHoldCount = hideAllCompoundHolders
+    ? result.participants.filter((participant) => participantHoldsEveryCompoundCase(stress, participant.id)).length
+    : 0;
+  const visibleParticipants = hideAllCompoundHolders
+    ? result.participants.filter((participant) => !participantHoldsEveryCompoundCase(stress, participant.id))
+    : result.participants;
+  const rows = visibleParticipants.map((participant) => {
+    const index = result.participants.findIndex((item) => item.id === participant.id);
+    return `
     <tr>
       <td><strong>${printSafeName(index, participant.name)}</strong></td>
       <td>${formatMoney(participant.revenue)}</td>
@@ -729,8 +744,15 @@ function participantTable(result) {
       ${capacityUtilizationCell(participant)}
       <td>${escapeAttribute(participant.bindingConstraint.label)}</td>
       <td class="${participant.viable ? 'pass-text' : 'failure-text'}">${participant.viable ? 'Holds' : escapeAttribute(participant.failureReasons.join('; '))}</td>
-    </tr>`).join('');
-  return `<section class="panel print-keep" id="participant-ledger"><div class="panel-heading"><h2>Participant ledger</h2><span class="optional">display values</span></div><div class="panel-body"><div class="button-row"><button type="button" data-action="copy-utilization">Copy capacity utilization</button></div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Capacity use</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary. Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied.</p></section>`;
+    </tr>`;
+  }).join('');
+  const emptyRow = hideAllCompoundHolders && !visibleParticipants.length
+    ? `<tr><td colspan="14">Every displayed participant holds in every tested compound case. Expand to see the hidden ledger rows. ${stress.passCount} of ${stress.caseCount} tested cases hold. Counts are unchanged.</td></tr>`
+    : '';
+  const filterNote = hideAllCompoundHolders
+    ? `${hiddenHoldCount} participant${hiddenHoldCount === 1 ? '' : 's'} who hold in every tested compound case ${hiddenHoldCount === 1 ? 'is' : 'are'} hidden from this ledger display. Expand restores them. Grid counts are unchanged.`
+    : 'Hide participants who hold in every tested compound case to filter this ledger display only. Expand restores them. Counts stay the same.';
+  return `<section class="panel print-keep" id="participant-ledger"><div class="panel-heading"><h2 id="participant-ledger-title" tabindex="-1">Participant ledger</h2><span class="optional">display values</span></div><div class="panel-body"><div class="button-row"><button type="button" data-action="copy-utilization">Copy capacity utilization</button><button type="button" data-action="hide-all-hold-ledger" aria-pressed="${hideAllCompoundHolders}">Hide participants who hold in every tested compound case</button><button type="button" data-action="show-all-hold-ledger" ${hideAllCompoundHolders ? '' : 'disabled'}>Show all-hold ledger rows</button></div><p class="notice">${filterNote}</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Capacity use</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows || emptyRow}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary. Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied. Hiding all-hold participants is a display filter. Tested-case counts stay unchanged.</p></section>`;
 }
 
 function shockCard(label, shock, units) {
@@ -1107,6 +1129,20 @@ function attachEvents() {
       hideHoldingParticipants = false;
       writeCollapsePreference();
       saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-all-hold-ledger') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding participants who hold in every tested compound case.');
+        return;
+      }
+      hideAllCompoundHolders = true;
+      render();
+      return;
+    }
+    if (action === 'show-all-hold-ledger') {
+      hideAllCompoundHolders = false;
       render();
       return;
     }

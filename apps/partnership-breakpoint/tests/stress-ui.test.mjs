@@ -54,7 +54,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
         'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
-        'viability-copy-text', 'viability-heading', 'utilization-copy-text',
+        'viability-copy-text', 'viability-heading', 'utilization-copy-text', 'participant-ledger-title',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1654,6 +1654,52 @@ test('stress grid hide-in-table is display-only and does not change case counts'
   app.click('unmute-stress-row', { participantId: 'platform' });
   assert.doesNotMatch(app.markup(), /Hidden from this table only/);
   assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
+});
+
+test('hiding ledger participants who hold every compound case is display-only', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /data-action="hide-all-hold-ledger"/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /participant-live-name">Platform/);
+  assert.match(app.markup(), /participant-live-name">Distributor/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  app.click('hide-all-hold-ledger');
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /0 participants who hold in every tested compound case are hidden from this ledger display/);
+  assert.match(app.markup(), /Grid counts are unchanged/);
+  assert.match(app.markup(), /participant-live-name">Platform/);
+  assert.match(app.markup(), /participant-live-name">Distributor/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  app.edit('stress.volumeDropPct', '0');
+  app.edit('stress.volumeGrowthPct', '20');
+  app.edit('stress.feeDropPct', '0');
+  app.edit('stress.variableCostRisePct', '0');
+  assert.match(app.markup(), /1 of 2 tested cases hold/);
+  app.click('hide-all-hold-ledger');
+  assert.match(app.markup(), /1 of 2 tested cases hold/);
+  assert.match(app.markup(), /2 participants who hold in every tested compound case are hidden from this ledger display/);
+  const ledger = app.markup().slice(app.markup().indexOf('id="participant-ledger"'));
+  assert.doesNotMatch(ledger.slice(0, ledger.indexOf('</table>')), /participant-live-name">Platform/);
+  assert.doesNotMatch(ledger.slice(0, ledger.indexOf('</table>')), /participant-live-name">Distributor/);
+  assert.match(ledger.slice(0, ledger.indexOf('</table>')), /participant-live-name">Liquidity Partner/);
+  assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
+  assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="distributor"/);
+  app.click('show-all-hold-ledger');
+  assert.match(app.markup(), /1 of 2 tested cases hold/);
+  assert.match(app.markup(), /participant-live-name">Platform/);
+  assert.match(app.markup(), /participant-live-name">Distributor/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  app.edit('stress.volumeGrowthPct', '0');
+  app.click('hide-all-hold-ledger');
+  assert.match(app.markup(), /1 of 1 tested cases hold/);
+  assert.match(app.markup(), /Every displayed participant holds in every tested compound case/);
+  assert.match(app.markup(), /Counts are unchanged/);
+  app.click('show-all-hold-ledger');
+  assert.match(app.markup(), /1 of 1 tested cases hold/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('hide-all-hold-ledger');
+  assert.match(app.notice(), /Resolve invalid inputs before hiding participants who hold in every tested compound case/);
 });
 
 test('hiding participants who currently hold is display-only and expand restores the roster', async () => {
