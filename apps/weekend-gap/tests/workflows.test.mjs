@@ -139,7 +139,7 @@ test("workspace restore without selectedHour keeps hour zero", async () => {
   assert.equal(JSON.parse(reloaded.storage.get("weekend-gap:workspace:v1")).ganttHourIndex, 9);
 });
 
-test("selected Gantt hour index persists in workspace JSON and older files restore hour zero", async () => {
+test("selected Gantt hour index persists in workspace JSON and older files keep the selected hour", async () => {
   const ui = await boot();
   await ui.edit("timeline-range", 21);
   assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).ganttHourIndex, 21);
@@ -477,6 +477,26 @@ test("keyboard h jumps to the selected Gantt hour table and ignores the key whil
   assert.equal(ui.nodes.get("gantt-hour-row").focused, false);
   await ui.keydown("h", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("gantt-hour-row").focused, false);
+});
+
+test("keyboard b jumps to the Bank Gantt row and to the Gantt heading when filtered away", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("b");
+  assert.equal(ui.nodes.get("gantt-bank-row").focused, true);
+  assert.equal(ui.nodes.get("gantt-bank-row").attributes.tabindex, "-1");
+  ui.nodes.get("gantt-bank-row").focused = false;
+  await ui.edit("gantt-gate-filter", "issuer", "change");
+  await ui.keydown("b");
+  assert.equal(ui.nodes.get("gantt-title").focused, true);
+  ui.nodes.get("gantt-title").focused = false;
+  ui.nodes.get("gantt-bank-row").focused = false;
+  await ui.keydown("B", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-bank-row").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("b", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-bank-row").focused, false);
+  await ui.keydown("b", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-bank-row").focused, false);
 });
 
 test("comparing two scenario JSON files shows queue diffs and honest null settlement hours", async () => {

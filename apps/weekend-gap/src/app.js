@@ -1434,6 +1434,18 @@ function jumpToSelectedGanttHour() {
   rememberChart("gantt");
   return true;
 }
+function jumpToGanttBankRow() {
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  if (gateFilter !== "all" && gateFilter !== "bank") return jumpToGantt();
+  const row = document.querySelector("#gantt-bank-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
 function jumpToTimingReview() {
   const panel = document.querySelector("#weekend-review");
   const heading = document.querySelector("#weekend-review-title");
@@ -1629,6 +1641,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "h" || event.key === "H") {
     event.preventDefault();
     jumpToSelectedGanttHour();
+    return;
+  }
+  if (event.key === "b" || event.key === "B") {
+    event.preventDefault();
+    jumpToGanttBankRow();
     return;
   }
   if (event.key === "p" || event.key === "P") {
