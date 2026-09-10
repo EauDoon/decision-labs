@@ -271,6 +271,8 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.match(leftover, /leftover-print-overlap/u);
   assert.match(leftover, /leftover-print-uncovered/u);
   assert.match(leftover, /Uncovered leftover: 0 buyers, 0 units/u);
+  assert.match(leftover, /leftover-print-uncovered-units/u);
+  assert.match(leftover, /Uncovered leftover units: none/u);
   assert.match(leftover, /leftover-print-requested/u);
   assert.match(leftover, /Requested units: 0/u);
   assert.match(leftover, /leftover-print-fill/u);
@@ -283,6 +285,7 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.equal(merchantPanel.includes("leftover-buyer-rows"), false);
   assert.equal(merchantPanel.includes("leftover-print-overlap"), false);
   assert.equal(merchantPanel.includes("leftover-print-uncovered"), false);
+  assert.equal(merchantPanel.includes("leftover-print-uncovered-units"), false);
   assert.equal(merchantPanel.includes("leftover-print-requested"), false);
   assert.equal(merchantPanel.includes("leftover-print-fill"), false);
 });

@@ -2013,6 +2013,13 @@ function renderLeftoverCoverageTable(rawScenario) {
     const coverage = computeResidualCoverage(rawScenario);
     uncoveredPrint.textContent = `Uncovered leftover: ${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`;
   }
+  const uncoveredUnitsPrint = document.querySelector("#leftover-print-uncovered-units");
+  if (uncoveredUnitsPrint) {
+    const coverage = computeResidualCoverage(rawScenario);
+    uncoveredUnitsPrint.textContent = coverage.leftoverBuyerCount > 0
+      ? `Uncovered leftover units: ${coverage.unfilledUnits}`
+      : "Uncovered leftover units: none";
+  }
   const requestedPrint = document.querySelector("#leftover-print-requested");
   if (requestedPrint) {
     const market = evaluateMarket(rawScenario);
