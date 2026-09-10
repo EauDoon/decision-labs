@@ -1352,6 +1352,12 @@ export function createWinningRemainingCapacityMarkdown(rawScenario) {
   return `Winning remaining capacity: ${remaining} units\n`;
 }
 
+/** Organizer-private one-line requested units. Count only. Not a merchant export. */
+export function createRequestedUnitsMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  return `Common Cart requested units (organizer private): ${market.totalRequestedUnits}. Not a merchant export.\n`;
+}
+
 /** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
 export function organizerLeftoverRows(rawScenario) {
   const scenario = validateScenario(rawScenario);

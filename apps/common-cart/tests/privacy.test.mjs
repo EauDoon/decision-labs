@@ -31,7 +31,8 @@ import {
   createLeftoverHeadroomMarkdown,
   createWinningFulfillmentMarkdown,
   createLeftoverFillMarkdown,
-  createWinningRemainingCapacityMarkdown
+  createWinningRemainingCapacityMarkdown,
+  createRequestedUnitsMarkdown
 } from "../src/model.js";
 
 const PRIVATE_BUYER_MARKERS = ["SECRET_LABEL", "SECRET_ID", "SECRET_STUDIO", "987654.32", "maxUnitPrice", "leftoverBuyerIds", '"selectedBuyerIds":', '"allocations":'];
@@ -186,6 +187,16 @@ test("winning remaining capacity Markdown omits buyer identities", () => {
   assertOmitsPrivateBuyers(remaining, ["SECRET_TITLE"]);
   assert.match(remaining, /Winning remaining capacity: (\d+ units|None unlocked)/);
   assert.equal(remaining.includes("Harbour Roasters"), false);
+});
+
+test("requested units Markdown omits buyer identities", () => {
+  const scenario = secretNeighbourhood();
+  const requested = createRequestedUnitsMarkdown(scenario);
+  assertOmitsPrivateBuyers(requested, ["SECRET_TITLE"]);
+  assert.match(requested, /organizer private/);
+  assert.match(requested, /Not a merchant export/);
+  assert.match(requested, /requested units/);
+  assert.equal(requested.includes("Harbour Roasters"), false);
 });
 
 test("winning fulfillment Markdown omits buyer identities", () => {

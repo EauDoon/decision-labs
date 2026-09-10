@@ -13,7 +13,8 @@ import {
   createLeftoverHeadroomMarkdown,
   createWinningFulfillmentMarkdown,
   createLeftoverFillMarkdown,
-  createWinningRemainingCapacityMarkdown
+  createWinningRemainingCapacityMarkdown,
+  createRequestedUnitsMarkdown
 } from "../src/model.js";
 
 function leftoverFixture() {
@@ -372,6 +373,27 @@ test("winning remaining capacity copy sits next to leftover print and stays off 
   assert.match(app, /if \(key === ","\)/u);
   assert.doesNotMatch(app, /if \(key === "y"\) \{\s*event\.preventDefault\(\);\s*copyWinningRemainingCapacity/u);
   assert.doesNotMatch(app, /if \(key === "z"\) \{\s*event\.preventDefault\(\);\s*copyWinningRemainingCapacity/u);
+});
+
+test("requested units Markdown is organizer-private count only", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createRequestedUnitsMarkdown(scenario);
+  const market = evaluateMarket(scenario);
+  assert.equal(markdown.trim().includes("\n"), false);
+  assert.match(markdown, /organizer private/);
+  assert.match(markdown, /Not a merchant export/);
+  assert.match(markdown, new RegExp(`: ${market.totalRequestedUnits}\\.`));
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes("Tea room"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
 });
 
 test("winning fulfillment copy sits next to leftover print and stays off the merchant table", async () => {

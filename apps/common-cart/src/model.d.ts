@@ -419,6 +419,8 @@ export function createWinningFulfillmentMarkdown(rawScenario: unknown): string;
 export function createLeftoverFillMarkdown(rawScenario: unknown): string;
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
 export function createWinningRemainingCapacityMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line requested units. Count only. Not a merchant export. */
+export function createRequestedUnitsMarkdown(rawScenario: unknown): string;
 export interface OrganizerLeftoverRow {
   label: string;
   quantity: number;
