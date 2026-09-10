@@ -27,8 +27,8 @@ Every workbench:
 
 | Workbench | Version | Job to be done | Built-in synthetic example |
 | --- | --- | --- | --- |
-| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.16 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
-| [Common Cart](apps/common-cart/) | 1.4.16 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
+| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.17 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
+| [Common Cart](apps/common-cart/) | 1.4.17 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.16 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
 | [Weekend Gap](apps/weekend-gap/) | 1.5.16 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
@@ -50,7 +50,7 @@ moves focus; it does not open a workbench. Key `/` focuses the first Trust and
 limits list item, or the Trust and limits heading if none. That key moves
 focus; it does not open a workbench. Shift+/ still opens the shortcut list. Key `r` focuses the
 first review path on the first workbench card. That key moves focus; it does
-not open the workbench. Key `{` copies the last review path from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that path is missing, it copies an empty string. That key is distinct from `$`, which copies the last workbench heading, from `r`, which focuses the first review path, and from `5`, which focuses Copy last review path. Key `5` focuses the Copy last review path control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `{`, which copies the last review path, from `r`, which focuses the first review path, and from `6`, which focuses the last review path. Key `6` focuses the last review path on the last workbench card, or the workbenches heading if that path is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `r`, which focuses the first review path, and from `5`, which focuses Copy last review path. Key `p` prints this catalog page. It is not a live product
+not open the workbench. Key `{` copies the last review path from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that path is missing, it copies an empty string. That key is distinct from `$`, which copies the last workbench heading, from `r`, which focuses the first review path, and from `5`, which focuses Copy last review path. Key `5` focuses the Copy last review path control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `{`, which copies the last review path, from `r`, which focuses the first review path, and from `6`, which focuses the last review path. Key `6` focuses the last review path on the last workbench card, or the workbenches heading if that path is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `r`, which focuses the first review path, and from `5`, which focuses Copy last review path. Key `7` copies the first review path from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that path is missing, it copies an empty string. That key is distinct from `{`, which copies the last review path, from `r`, which focuses the first review path, and from `8`, which focuses Copy first review path. Key `8` focuses the Copy first review path control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `7`, which copies the first review path, from `5`, which focuses Copy last review path, and from `9`, which focuses the first review path. Key `9` focuses the first review path on the first workbench card, or the workbenches heading if that path is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `6`, which focuses the last review path, from `r`, which also focuses the first review path, and from `8`, which focuses Copy first review path. Key `p` prints this catalog page. It is not a live product
 sheet. Key `e` copies the catalog heading and lede from this page as Markdown.
 That copy is catalog copy, not a live product feed. If those nodes are
 missing, it copies an empty string. Keys `v` and `j` copy the printed version list and one-sentence jobs.
@@ -136,7 +136,7 @@ Common Cart 1.4.1 also names organizer buyer
 CSV, leftover jump, and the community garden start. Common Cart 1.4.2 also names
 organizer leftover copy, school fete catering, and overlap Markdown. Common Cart 1.4.3 also names
 uncovered leftover counts, the Office fruit box start, and leftover review jumps. Common Cart 1.4.4 also names
-leftover headroom copy, the Library photocopy paper start, and uncovered leftover jumps. Common Cart 1.4.5 also names leftover fill copy, the Sports club match-day kit start, and remaining-capacity copy. Common Cart 1.4.6 also names remaining-capacity jump, the Surf club first-aid kit start, and leftover-fill copy jump. Common Cart 1.4.7 also names leftover-fill unit-count copy, the Theatre wardrobe kit start, and leftover print jump. Common Cart 1.4.8 also names leftover-fill unit-count copy shortcut, the Community choir folders start, and the leftover-buyer hide filter. Common Cart 1.4.9 also names uncovered leftover unit-count copy shortcut, the Scout camp kit start, and the remaining-capacity offer hide filter. Common Cart 1.4.10 also names leftover-fill merchant copy shortcut, the School excursion lunch start, and the unserved-buyer hide filter. Common Cart 1.4.11 also names leftover-fill remaining copy shortcut, the Netball canteen start, and the leftover-only-buyer hide filter. Common Cart 1.4.12 also names leftover-fill fulfillment copy shortcut, the Swimming carnival lunch start, and the winner-allocated-buyer hide filter. Common Cart 1.4.13 also names leftover-fill delivery copy shortcut, the Athletics carnival lunch start, and the leftover-fill-buyer hide filter. Common Cart 1.4.14 also names leftover-fill pickup copy shortcut, the Cricket carnival lunch start, and the last leftover-fill-buyer hide filter. Common Cart 1.4.15 also names leftover-fill label copy shortcut, the Tennis carnival lunch start, and the first leftover-fill-buyer hide filter. Common Cart 1.4.16 also names leftover-fill minimum copy shortcut, the Basketball carnival lunch start, and the first tertiary-fill-buyer hide filter. Partnership Breakpoint 1.5.1
+leftover headroom copy, the Library photocopy paper start, and uncovered leftover jumps. Common Cart 1.4.5 also names leftover fill copy, the Sports club match-day kit start, and remaining-capacity copy. Common Cart 1.4.6 also names remaining-capacity jump, the Surf club first-aid kit start, and leftover-fill copy jump. Common Cart 1.4.7 also names leftover-fill unit-count copy, the Theatre wardrobe kit start, and leftover print jump. Common Cart 1.4.8 also names leftover-fill unit-count copy shortcut, the Community choir folders start, and the leftover-buyer hide filter. Common Cart 1.4.9 also names uncovered leftover unit-count copy shortcut, the Scout camp kit start, and the remaining-capacity offer hide filter. Common Cart 1.4.10 also names leftover-fill merchant copy shortcut, the School excursion lunch start, and the unserved-buyer hide filter. Common Cart 1.4.11 also names leftover-fill remaining copy shortcut, the Netball canteen start, and the leftover-only-buyer hide filter. Common Cart 1.4.12 also names leftover-fill fulfillment copy shortcut, the Swimming carnival lunch start, and the winner-allocated-buyer hide filter. Common Cart 1.4.13 also names leftover-fill delivery copy shortcut, the Athletics carnival lunch start, and the leftover-fill-buyer hide filter. Common Cart 1.4.14 also names leftover-fill pickup copy shortcut, the Cricket carnival lunch start, and the last leftover-fill-buyer hide filter. Common Cart 1.4.15 also names leftover-fill label copy shortcut, the Tennis carnival lunch start, and the first leftover-fill-buyer hide filter. Common Cart 1.4.16 also names leftover-fill minimum copy shortcut, the Basketball carnival lunch start, and the first tertiary-fill-buyer hide filter. Common Cart 1.4.17 also names leftover-fill maximum copy shortcut, the Volleyball carnival lunch start, and the last tertiary-fill-buyer hide filter. Partnership Breakpoint 1.5.1
 also names waterfall SVG download, compare and print keys, and the Licensor
 and distributor start. Partnership Breakpoint 1.5.2 also names waterfall
 Markdown copy, the Talent, agent, and platform start, and the all-hold ledger
@@ -144,7 +144,7 @@ filter. Partnership Breakpoint 1.5.3 also names tornado Markdown copy, the
 Three-party joint venture start, and the all-hold ledger persist / unbounded
 tornado filter. Partnership Breakpoint 1.5.4 also names allocation-balance
 Markdown copy, the Podcast host and network start, and the zero-share roster
-filter. Partnership Breakpoint 1.5.5 also names capacity-utilization Markdown copy, the Community hall split start, and the over-capacity roster filter. Partnership Breakpoint 1.5.6 also names first-breakpoint participant copy, the Festival stall split start, and the at-hold roster filter. Partnership Breakpoint 1.5.7 also names least-headroom participant copy, the Pop-up cinema split start, and the unbounded-capacity roster filter. Partnership Breakpoint 1.5.8 also names least-headroom copy shortcut, the Community radio split start, and the spare-capacity roster filter. Partnership Breakpoint 1.5.9 also names remaining-to-hold copy shortcut, the School concert split start, and the least-headroom roster filter. Partnership Breakpoint 1.5.10 also names volume-to-hold copy shortcut, the Sports carnival split start, and the within-capacity roster filter. Partnership Breakpoint 1.5.11 also names over-capacity count copy shortcut, the Netball carnival split start, and the first-breakpoint roster filter. Partnership Breakpoint 1.5.12 also names over-capacity label copy shortcut, the Swimming carnival split start, and the first-over-capacity roster filter. Partnership Breakpoint 1.5.13 also names remaining-capacity copy shortcut, the Athletics carnival split start, and the last-over-capacity roster filter. Partnership Breakpoint 1.5.14 also names last-over-capacity copy shortcut, the Cricket carnival split start, and the last-breakpoint roster filter. Partnership Breakpoint 1.5.15 also names last-over-capacity remaining copy shortcut, the Tennis carnival split start, and the last-within-capacity roster filter. Partnership Breakpoint 1.5.16 also names first-within-capacity remaining copy shortcut, the Basketball carnival split start, and the first-within-capacity roster filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
+filter. Partnership Breakpoint 1.5.5 also names capacity-utilization Markdown copy, the Community hall split start, and the over-capacity roster filter. Partnership Breakpoint 1.5.6 also names first-breakpoint participant copy, the Festival stall split start, and the at-hold roster filter. Partnership Breakpoint 1.5.7 also names least-headroom participant copy, the Pop-up cinema split start, and the unbounded-capacity roster filter. Partnership Breakpoint 1.5.8 also names least-headroom copy shortcut, the Community radio split start, and the spare-capacity roster filter. Partnership Breakpoint 1.5.9 also names remaining-to-hold copy shortcut, the School concert split start, and the least-headroom roster filter. Partnership Breakpoint 1.5.10 also names volume-to-hold copy shortcut, the Sports carnival split start, and the within-capacity roster filter. Partnership Breakpoint 1.5.11 also names over-capacity count copy shortcut, the Netball carnival split start, and the first-breakpoint roster filter. Partnership Breakpoint 1.5.12 also names over-capacity label copy shortcut, the Swimming carnival split start, and the first-over-capacity roster filter. Partnership Breakpoint 1.5.13 also names remaining-capacity copy shortcut, the Athletics carnival split start, and the last-over-capacity roster filter. Partnership Breakpoint 1.5.14 also names last-over-capacity copy shortcut, the Cricket carnival split start, and the last-breakpoint roster filter. Partnership Breakpoint 1.5.15 also names last-over-capacity remaining copy shortcut, the Tennis carnival split start, and the last-within-capacity roster filter. Partnership Breakpoint 1.5.16 also names first-within-capacity remaining copy shortcut, the Basketball carnival split start, and the first-within-capacity roster filter. Partnership Breakpoint 1.5.17 also names last-within-capacity remaining copy shortcut, the Volleyball carnival split start, and the last-spare-capacity roster filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
 Payday Friday burst, and one-row dashboard CSV. Weekend Gap 1.5.2 also names
 peak-queue hour copy, Public-holiday Monday, and the single-gate Gantt filter.
 Weekend Gap 1.5.3 also names hours-to-clear Markdown copy, Saturday market
@@ -173,6 +173,8 @@ That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-workbench copy, last-card jump, and last-trust jump.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-review copy, last-review jump, and last-path jump.
+That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names first-review copy, first-review jump, and first-path jump.
 That What's new entry is hub-only. It does not change workbench versions.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
@@ -244,6 +246,21 @@ Press `6` to focus the last review path on the last workbench card, or the
 workbenches heading if that path is missing. That key moves focus; it does not
 open a workbench. It does not copy. That key is distinct from `r`, which focuses
 the first review path, and from `5`.
+Press `7` to copy the first review path from this page as one Markdown
+line. That key uses the same Copy first review path control, including
+the visible text box when the clipboard API is unavailable. If that path is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `{`, which copies the last review path, from
+`r`, which focuses the first review path, and from `8`.
+Press `8` to focus the Copy first review path control, or the workbenches
+heading if that control is missing. That key moves focus; it does not open a
+workbench. It does not copy. That key is distinct from `7`, which copies the
+first review path, from `5`, which focuses Copy last review path, and from `9`.
+Press `9` to focus the first review path on the first workbench card, or the
+workbenches heading if that path is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `6`, which focuses
+the last review path, from `r`, which also focuses the first review path, and
+from `8`.
 Press `f` to focus the footer version line. That key does
 not open a workbench. Press `p` to print this catalog. That key prints this
 page in the browser. It is not a live product sheet. Press `c` to copy the catalog address
@@ -305,6 +322,8 @@ fetch a product feed or add another public path. Copy last workbench heading on
 that 404 page copies the printed last workbench heading as one Markdown line. It does not
 fetch a product feed or add another public path. Copy last review path on
 that 404 page copies the printed last review path as one Markdown line. It does not
+fetch a product feed or add another public path. Copy first review path on
+that 404 page copies the printed first review path as one Markdown line. It does not
 fetch a product feed or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
@@ -357,6 +376,12 @@ catalog page as one Markdown line, with the same clipboard and visible text
 box fallback. If that path is missing, it copies an empty string. That copy is
 catalog copy, not a live product feed. It is distinct from Copy last workbench
 heading, which copies the last workbench heading, and from key `r`, which
+focuses the first review path.
+Copy first review path copies the first workbench card review path from this
+catalog page as one Markdown line, with the same clipboard and visible text
+box fallback. If that path is missing, it copies an empty string. That copy is
+catalog copy, not a live product feed. It is distinct from Copy last review
+path, which copies the last review path, and from key `r`, which
 focuses the first review path.
 Press `j` to copy catalog jobs through that same control.
 Press `q` to copy catalog jobs through that same Copy jobs control. It does not fork that Markdown.

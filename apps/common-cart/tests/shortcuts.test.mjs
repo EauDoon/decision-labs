@@ -1066,6 +1066,62 @@ test("keyboard handler jumps to hide first tertiary-fill buyer when not typing",
   assert.match(app, /if \(key === "`"\) \{\s*event\.preventDefault\(\);\s*focusHideLastBuyerFilledByLeftoverFill\(\);/u);
 });
 
+test("shortcut help documents leftover fill maximum copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>8<\/kbd> Copy leftover fill maximum \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-fill-maximum"/u);
+  assert.match(html, /id="copy-leftover-fill-maximum"[^>]*aria-keyshortcuts="8"/u);
+});
+
+test("keyboard handler copies leftover fill maximum with 8 when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /if \(key === "8"\)/u);
+  assert.match(app, /function copyLeftoverFillMaximum\(/u);
+  assert.match(app, /createLeftoverFillMaximumMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-leftover-fill-maximum/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "8"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMinimum/u);
+  assert.match(app, /if \(key === "5"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMinimum\(\);/u);
+});
+
+test("shortcut help documents leftover fill maximum copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>9<\/kbd> Focus the leftover-fill maximum copy control, or leftover heading if missing/u);
+  assert.match(html, /id="copy-leftover-fill-maximum"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to leftover fill maximum copy when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "9"\)/u);
+  assert.match(app, /function focusLeftoverFillMaximumCopy\(/u);
+  assert.match(app, /#copy-leftover-fill-maximum/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "9"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMaximum/u);
+  assert.match(app, /if \(key === "8"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMaximum\(\);/u);
+});
+
+test("shortcut help documents hide last tertiary-fill buyer jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>0<\/kbd> Focus hide last tertiary-fill buyer, or the buyer list if missing/u);
+  assert.match(html, /id="hide-last-buyer-filled-by-tertiary-fill"/u);
+  assert.match(html, /id="buyers-list"/u);
+});
+
+test("keyboard handler jumps to hide last tertiary-fill buyer when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "0"\)/u);
+  assert.match(app, /function focusHideLastBuyerFilledByTertiaryFill\(/u);
+  assert.match(app, /#hide-last-buyer-filled-by-tertiary-fill/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "0"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstBuyerFilledByTertiaryFill/u);
+  assert.match(app, /if \(key === "7"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstBuyerFilledByTertiaryFill\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
