@@ -714,7 +714,7 @@ function inputPanel(result) {
           <p class="notice">${withoutCapacityFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-spare-capacity-participants" aria-pressed="${hideParticipantsWithSpareCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants with unused listed capacity</button><button type="button" data-action="show-spare-capacity-participants" ${hideParticipantsWithSpareCapacity ? '' : 'disabled'}>Show participants with spare capacity</button></div>
           <p class="notice">${spareCapacityFilterNote}</p>
-          <div class="button-row"><button type="button" data-action="hide-least-headroom-participants" aria-pressed="${hideParticipantsAtLeastHeadroom}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the least-headroom participant</button><button type="button" data-action="show-least-headroom-participants" ${hideParticipantsAtLeastHeadroom ? '' : 'disabled'}>Show the least-headroom participant</button></div>
+          <div class="button-row"><button type="button" data-action="hide-least-headroom-participants" aria-keyshortcuts="=" aria-pressed="${hideParticipantsAtLeastHeadroom}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the least-headroom participant</button><button type="button" data-action="show-least-headroom-participants" ${hideParticipantsAtLeastHeadroom ? '' : 'disabled'}>Show the least-headroom participant</button></div>
           <p class="notice">${leastHeadroomFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
@@ -2005,6 +2005,17 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === '>') {
     const target = document.querySelector('[data-action="hide-spare-capacity-participants"]')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === '-') {
+    const target = document.querySelector('#copy-first-breakpoint-volume') ?? document.querySelector('#first-breakpoint-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === '=') {
+    const target = document.querySelector('[data-action="hide-least-headroom-participants"]')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -3621,6 +3632,8 @@ function helpDialog() {
         <li><kbd>]</kbd> Jump to Print one-pager, or the print / one-pager heading if missing</li>
         <li><kbd>'</kbd> Copy first-breakpoint remaining-to-hold as Markdown</li>
         <li><kbd>:</kbd> Copy first-breakpoint volume-to-hold as Markdown</li>
+        <li><kbd>-</kbd> Jump to Copy first-breakpoint volume-to-hold, or the First breakpoint heading if missing</li>
+        <li><kbd>=</kbd> Jump to Hide the least-headroom participant, or the Participants heading if missing</li>
         <li><kbd>&lt;</kbd> Jump to Copy first-breakpoint remaining-to-hold, or the First breakpoint heading if missing</li>
         <li><kbd>&gt;</kbd> Jump to Hide participants with unused listed capacity, or the Participants heading if missing</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
