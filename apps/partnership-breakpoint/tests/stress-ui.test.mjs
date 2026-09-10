@@ -669,15 +669,22 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, and notes and hides chrome', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, and least headroom', async () => {
   const app = await workbench();
   const html = await buildStandalone();
+  app.click('dismiss-coach');
+  app.click('reset');
   assert.match(app.markup(), /class="panel print-keep"[^>]*id="participant-ledger"|id="participant-ledger"[^>]*class="panel print-keep"/);
   assert.match(app.markup(), /class="panel print-keep"/);
   assert.match(app.markup(), /Adverse-shock tornado/);
   assert.match(app.markup(), /Contribution waterfall/);
   assert.match(app.markup(), /class="print-only print-keep"/);
   assert.match(app.markup(), /<h2>Deal notes<\/h2>/);
+  assert.match(app.markup(), /<h2>Least headroom<\/h2><p>Liquidity Partner has the least volume headroom to its minimum acceptable profit limit\.<\/p>/);
+  const before = JSON.stringify(app.saved());
+  app.click('print-report');
+  assert.equal(app.prints(), 1);
+  assert.equal(JSON.stringify(app.saved()), before);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
   assert.match(html, /\.panel:not\(\.print-keep\)/);
@@ -695,6 +702,8 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /Participant 1/);
   assert.match(snapshot, /class="participant-redacted-name">Participant 1</);
   assert.doesNotMatch(snapshot, /class="participant-live-name">Platform</);
+  assert.match(snapshot, /Participant 3 has the least volume headroom to its minimum acceptable profit limit/);
+  assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
   assert.match(html, /\.print-redacted \.participant-live-name/);
   assert.match(html, /\.print-redacted \.participant-redacted-name/);
   assert.match(app.markup(), /class="participant-live-name">Platform</);
