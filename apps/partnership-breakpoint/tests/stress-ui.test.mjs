@@ -58,6 +58,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'tornado-title', 'tornado-copy-text', 'deal-inputs-title', 'operating-copy-text',
         'compound-title', 'inspect-cases-title', 'split-copy-text',
         'least-headroom-participant', 'participant-inputs-title',
+        'field-deal-notes',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1172,6 +1173,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>k<\/kbd> Jump to the Compound stress heading/);
   assert.match(app.markup(), /<kbd>h<\/kbd> Jump to the least-headroom participant card, or the Participants heading if none/);
   assert.match(app.markup(), /<kbd>a<\/kbd> Jump to Add participant/);
+  assert.match(app.markup(), /<kbd>m<\/kbd> Jump to deal notes/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1388,6 +1390,20 @@ test('keyboard k jumps to Compound stress unless a field is focused', async () =
   app.keydown('k');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="compound-title"/);
+});
+
+test('keyboard m jumps to deal notes unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="field-deal-notes"/);
+  app.keydown('m');
+  assert.ok(app.focused().includes('#field-deal-notes'));
+  assert.ok(app.focused().includes('scroll:#field-deal-notes'));
+  const before = app.focused().length;
+  app.keydown('m', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('m', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
 });
 
 test('keyboard d jumps to the Shared deal heading unless a field is focused', async () => {

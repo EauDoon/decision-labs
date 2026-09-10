@@ -1652,6 +1652,11 @@ window.addEventListener('keydown', (event) => {
     add?.focus?.({ preventScroll: false });
     add?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'm' || event.key === 'M') {
+    const notes = document.querySelector('#field-deal-notes');
+    notes?.focus?.({ preventScroll: false });
+    notes?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -2815,6 +2820,7 @@ function helpDialog() {
         <li><kbd>k</kbd> Jump to the Compound stress heading</li>
         <li><kbd>h</kbd> Jump to the least-headroom participant card, or the Participants heading if none</li>
         <li><kbd>a</kbd> Jump to Add participant</li>
+        <li><kbd>m</kbd> Jump to deal notes</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
