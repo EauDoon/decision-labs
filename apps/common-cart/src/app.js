@@ -17,6 +17,7 @@ import {
   acceptedVariantFilterOptions,
   filterBuyerIdsByAcceptedVariant,
   filterBuyerIdsHidingExcluded,
+  filterBuyerIdsHidingFullyFilled,
   organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
@@ -125,6 +126,7 @@ let hideCoveredLeftoverRows = false;
 let hideTertiaryLeftoverRow = false;
 let hideLeftoverFillRow = false;
 let hideZeroRemainingCapacityOffers = false;
+let hideFullyFilledBuyers = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -145,6 +147,7 @@ function loadWorkspace() {
     hideTertiaryLeftoverRow = workspace.hideTertiaryLeftoverRow;
     hideLeftoverFillRow = workspace.hideLeftoverFillRow;
     hideZeroRemainingCapacityOffers = workspace.hideZeroRemainingCapacityOffers;
+    hideFullyFilledBuyers = workspace.hideFullyFilledBuyers;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -187,7 +190,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideFullyFilledBuyers });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -665,6 +668,18 @@ function bindStaticEvents() {
       setStatus(hideExcludedBuyers
         ? "Hiding buyers excluded from the inspected offer. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
         : "Showing excluded buyers again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#hide-fully-filled-buyers").addEventListener("change", (event) => {
+    hideFullyFilledBuyers = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideFullyFilledBuyers
+        ? "Hiding buyers with no leftover after the winner. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing fully filled buyers again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -1249,6 +1264,8 @@ function renderEditor() {
   applyBuyerDisplayFilters();
   const hideExcluded = document.querySelector("#hide-excluded-buyers");
   if (hideExcluded) hideExcluded.checked = hideExcludedBuyers;
+  const hideFullyFilled = document.querySelector("#hide-fully-filled-buyers");
+  if (hideFullyFilled) hideFullyFilled.checked = hideFullyFilledBuyers;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -1373,6 +1390,14 @@ function applyBuyerDisplayFilters() {
     try {
       const included = new Set(filterBuyerIdsHidingExcluded(scenario, inspectedOfferId, true));
       visibleIds = new Set([...visibleIds].filter((id) => included.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
+  if (hideFullyFilledBuyers) {
+    try {
+      const leftover = new Set(filterBuyerIdsHidingFullyFilled(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => leftover.has(id)));
     } catch {
       visibleIds = new Set();
     }
