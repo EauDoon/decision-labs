@@ -486,6 +486,39 @@ const presets = {
       },
     ],
   },
+  "shared-laundry-hours": {
+    title: "Shared laundry hours: wash hours, dryer noise, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "tenants", name: "Tenants", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "managers", name: "Building managers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "wash", title: "Wash hours", options: [
+          { id: "wash-original", original: true, label: "Keep the laundry room locked from 21:00 to 07:00", changeCost: 0, support: { tenants: 38, neighbours: 88, managers: 76 } },
+          { id: "wash-late", original: false, label: "Allow washing until 22:00 with a posted rota", changeCost: 2, support: { tenants: 86, neighbours: 62, managers: 72 } },
+          { id: "wash-dawn", original: false, label: "Allow dawn washing from 06:00 with a shared booking card", changeCost: 3, support: { tenants: 78, neighbours: 70, managers: 74 } },
+        ],
+      },
+      {
+        id: "dryer", title: "Dryer noise", options: [
+          { id: "dryer-original", original: true, label: "No posted dryer quiet hours", changeCost: 0, support: { tenants: 84, neighbours: 26, managers: 46 } },
+          { id: "dryer-quiet", original: false, label: "Switch dryers off at 20:00 and finish loads by air-dry", changeCost: 2, support: { tenants: 68, neighbours: 84, managers: 78 } },
+          { id: "dryer-cover", original: false, label: "Fit a noise cover on each dryer and keep evening hours", changeCost: 4, support: { tenants: 80, neighbours: 72, managers: 70 } },
+        ],
+      },
+      {
+        id: "laundry-lockup", title: "Laundry lock-up", options: [
+          { id: "laundry-lockup-original", original: true, label: "Leave the laundry door on a shared key hook", changeCost: 0, support: { tenants: 36, neighbours: 56, managers: 62 } },
+          { id: "laundry-lockup-fob", original: false, label: "Issue tenant fobs for the laundry door", changeCost: 2, support: { tenants: 86, neighbours: 74, managers: 82 } },
+          { id: "laundry-lockup-timer", original: false, label: "Add a timed lock on the laundry door", changeCost: 3, support: { tenants: 74, neighbours: 70, managers: 76 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;

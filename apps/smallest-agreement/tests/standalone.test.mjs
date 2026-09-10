@@ -94,6 +94,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /street-stall-lighting/u);
   assert.match(html, /hall-hire-hours/u);
   assert.match(html, /community-garden-watering/u);
+  assert.match(html, /shared-laundry-hours/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -841,11 +842,15 @@ test("shared bike shed preset loads a distinct synthetic neighbour workshop", as
   assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
   assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
   assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.title(), /Shared laundry hours/u);
   assert.doesNotMatch(app.clauses(), /Stall open hours/u);
   assert.doesNotMatch(app.clauses(), /Match end-time/u);
   assert.doesNotMatch(app.clauses(), /Park access hours/u);
   assert.doesNotMatch(app.clauses(), /Evening hours/u);
   assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.doesNotMatch(app.clauses(), /Wash hours/u);
+  assert.doesNotMatch(app.clauses(), /Dryer noise/u);
+  assert.doesNotMatch(app.groups(), /Tenants/u);
 });
 
 test("street stall lighting preset loads a distinct synthetic lighting workshop", async () => {
@@ -906,6 +911,7 @@ test("hall hire hours preset loads a distinct synthetic hall workshop", async ()
   assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
   assert.doesNotMatch(app.title(), /Club Constitution/u);
   assert.doesNotMatch(app.title(), /Community garden watering/u);
+  assert.doesNotMatch(app.title(), /Shared laundry hours/u);
   assert.doesNotMatch(app.clauses(), /Lighting hours/u);
   assert.doesNotMatch(app.clauses(), /Stall open hours/u);
   assert.doesNotMatch(app.clauses(), /Access hours/u);
@@ -922,6 +928,9 @@ test("hall hire hours preset loads a distinct synthetic hall workshop", async ()
   assert.doesNotMatch(app.groups(), /Garden committee/u);
   assert.doesNotMatch(app.clauses(), /Watering hours/u);
   assert.doesNotMatch(app.clauses(), /Hose noise/u);
+  assert.doesNotMatch(app.clauses(), /Wash hours/u);
+  assert.doesNotMatch(app.clauses(), /Dryer noise/u);
+  assert.doesNotMatch(app.groups(), /Tenants/u);
 });
 
 test("community garden watering preset loads a distinct synthetic watering workshop", async () => {
@@ -966,6 +975,56 @@ test("community garden watering preset loads a distinct synthetic watering works
   assert.doesNotMatch(app.groups(), /Market officers/u);
   assert.doesNotMatch(app.groups(), /Building managers/u);
   assert.doesNotMatch(app.groups(), /Council officers/u);
+  assert.doesNotMatch(app.title(), /Shared laundry hours/u);
+  assert.doesNotMatch(app.clauses(), /Wash hours/u);
+  assert.doesNotMatch(app.clauses(), /Dryer noise/u);
+  assert.doesNotMatch(app.groups(), /Tenants/u);
+});
+
+test("shared laundry hours preset loads a distinct synthetic laundry workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "shared-laundry-hours");
+  app.click("#load-preset");
+  assert.match(app.title(), /Shared laundry hours: wash hours, dryer noise, and lock-up/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Wash hours/u);
+  assert.match(app.clauses(), /Dryer noise/u);
+  assert.match(app.clauses(), /Laundry lock-up/u);
+  assert.match(app.groups(), /Tenants/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /Building managers/u);
+  assert.doesNotMatch(app.title(), /Community garden watering/u);
+  assert.doesNotMatch(app.title(), /Hall hire hours/u);
+  assert.doesNotMatch(app.title(), /Street stall lighting/u);
+  assert.doesNotMatch(app.title(), /Market stall hours/u);
+  assert.doesNotMatch(app.title(), /Shared bike shed/u);
+  assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.title(), /Open Source Policy/u);
+  assert.doesNotMatch(app.title(), /Association Budget/u);
+  assert.doesNotMatch(app.title(), /Protected Access/u);
+  assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
+  assert.doesNotMatch(app.title(), /Club Constitution/u);
+  assert.doesNotMatch(app.clauses(), /Watering hours/u);
+  assert.doesNotMatch(app.clauses(), /Hose noise/u);
+  assert.doesNotMatch(app.clauses(), /Garden lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Close time/u);
+  assert.doesNotMatch(app.clauses(), /PA volume/u);
+  assert.doesNotMatch(app.clauses(), /Clean-up/u);
+  assert.doesNotMatch(app.clauses(), /Lighting hours/u);
+  assert.doesNotMatch(app.clauses(), /Access hours/u);
+  assert.doesNotMatch(app.clauses(), /Stall open hours/u);
+  assert.doesNotMatch(app.clauses(), /Match end-time/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Evening hours/u);
+  assert.doesNotMatch(app.groups(), /Plot-holders/u);
+  assert.doesNotMatch(app.groups(), /Garden committee/u);
+  assert.doesNotMatch(app.groups(), /Hirers/u);
+  assert.doesNotMatch(app.groups(), /Hall committee/u);
+  assert.doesNotMatch(app.groups(), /Stallholders/u);
+  assert.doesNotMatch(app.groups(), /Bike users/u);
 });
 
 test("keyboard f focuses the clause filter unless an input is active", async () => {
