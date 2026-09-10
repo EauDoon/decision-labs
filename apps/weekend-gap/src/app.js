@@ -1883,6 +1883,11 @@ document.addEventListener("keydown", (event) => {
     copySelectedGanttHourMarkdown();
     return;
   }
+  if (event.key === "z" || event.key === "Z") {
+    event.preventDefault();
+    copyRemainingReserveMarkdown();
+    return;
+  }
   if (event.key === "v" || event.key === "V") {
     event.preventDefault();
     copySelectedVersusPeakHourMarkdown();
