@@ -1247,6 +1247,13 @@ export function createWinningMerchantLabelMarkdown(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Merchant-safe winning fulfillment mode. Honest empty when none unlocked. No buyer data. */
+export function createWinningFulfillmentMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const mode = market.winner ? market.winner.offer.fulfillment : "None unlocked";
+  return `Winning fulfillment: ${mode}\n`;
+}
+
 /** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
 export function organizerLeftoverRows(rawScenario) {
   const scenario = validateScenario(rawScenario);

@@ -47,6 +47,7 @@ import {
   filterLeftoverCoverageRowsHidingTertiary,
   createLeftoverCoverageMarkdown,
   createWinningMerchantLabelMarkdown,
+  createWinningFulfillmentMarkdown,
   organizerLeftoverRows,
   createWinnerInspectorSummaryMarkdown,
   createUncoveredLeftoverCountsMarkdown,
@@ -305,6 +306,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
   document.querySelector("#copy-winning-merchant").addEventListener("click", copyWinningMerchantLabel);
+  document.querySelector("#copy-winning-fulfillment").addEventListener("click", copyWinningFulfillment);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
       copyTextWithFallback(
@@ -2348,6 +2350,16 @@ function copyWinningMerchantLabel() {
       "Clipboard was blocked. Winning merchant label is in the textarea. Merchant name only. Buyer identities omitted."
     );
   } catch (error) { setStatus(`Winning merchant copy failed: ${messageOf(error)}`); }
+}
+
+function copyWinningFulfillment() {
+  try {
+    copyTextWithFallback(
+      createWinningFulfillmentMarkdown(scenario),
+      "Winning fulfillment copied. Pickup or shipping only. Honest empty when none unlocked. Buyer identities omitted.",
+      "Clipboard was blocked. Winning fulfillment is in the textarea. Pickup or shipping only. Buyer identities omitted."
+    );
+  } catch (error) { setStatus(`Winning fulfillment copy failed: ${messageOf(error)}`); }
 }
 
 function copyTextWithFallback(text, successMessage, fallbackMessage) {

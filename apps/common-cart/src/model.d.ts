@@ -407,6 +407,8 @@ export function filterLeftoverCoverageRowsHidingTertiary(rawScenario: unknown, h
 export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
 /** Merchant label only. Honest empty when none unlocked. No buyer data. */
 export function createWinningMerchantLabelMarkdown(rawScenario: unknown): string;
+/** Merchant-safe one-liner. Pickup or shipping, or None unlocked. No buyer data. */
+export function createWinningFulfillmentMarkdown(rawScenario: unknown): string;
 export interface OrganizerLeftoverRow {
   label: string;
   quantity: number;

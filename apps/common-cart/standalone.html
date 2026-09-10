@@ -776,6 +776,8 @@ footer {
             <p id="leftover-print-uncovered" class="canvas-note leftover-print-uncovered print-leftover-keep">Uncovered leftover: 0 buyers, 0 units</p>
             <button id="copy-winning-merchant" class="print-chrome" type="button">Copy winning merchant label</button>
             <p class="canvas-note print-chrome">Copies the winning merchant name only. Honest empty when none unlocked. Buyer identities stay out.</p>
+            <button id="copy-winning-fulfillment" class="print-chrome" type="button">Copy winning fulfillment mode</button>
+            <p class="canvas-note print-chrome">Copies pickup or shipping only. Honest empty when none unlocked. Buyer identities stay out.</p>
             <div id="leftover-print-overlap" class="table-shell compact print-leftover-keep">
               <table>
                 <caption>Merchant-safe variant overlap counts. Buyer counts only. Labels, IDs, budgets, and allocations are omitted.</caption>
@@ -2276,6 +2278,13 @@ function createWinningMerchantLabelMarkdown(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Merchant-safe winning fulfillment mode. Honest empty when none unlocked. No buyer data. */
+function createWinningFulfillmentMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const mode = market.winner ? market.winner.offer.fulfillment : "None unlocked";
+  return `Winning fulfillment: ${mode}\n`;
+}
+
 /** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
 function organizerLeftoverRows(rawScenario) {
   const scenario = validateScenario(rawScenario);
@@ -3459,6 +3468,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
   document.querySelector("#copy-winning-merchant").addEventListener("click", copyWinningMerchantLabel);
+  document.querySelector("#copy-winning-fulfillment").addEventListener("click", copyWinningFulfillment);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
       copyTextWithFallback(
@@ -5502,6 +5512,16 @@ function copyWinningMerchantLabel() {
       "Clipboard was blocked. Winning merchant label is in the textarea. Merchant name only. Buyer identities omitted."
     );
   } catch (error) { setStatus(`Winning merchant copy failed: ${messageOf(error)}`); }
+}
+
+function copyWinningFulfillment() {
+  try {
+    copyTextWithFallback(
+      createWinningFulfillmentMarkdown(scenario),
+      "Winning fulfillment copied. Pickup or shipping only. Honest empty when none unlocked. Buyer identities omitted.",
+      "Clipboard was blocked. Winning fulfillment is in the textarea. Pickup or shipping only. Buyer identities omitted."
+    );
+  } catch (error) { setStatus(`Winning fulfillment copy failed: ${messageOf(error)}`); }
 }
 
 function copyTextWithFallback(text, successMessage, fallbackMessage) {
