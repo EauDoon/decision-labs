@@ -125,6 +125,20 @@ CHANGELOG.md        Version history
 
 MIT. See [LICENSE](LICENSE).
 
+## New in v1.5.10: Sunday late bank, issuer-closed Gantt hide and first-closed-issuer print
+
+1. Press `:` to copy the first closed issuer hour through the existing copy control, using the same Markdown. The key is ignored while typing. Distinct from `'` first-closed-bank copy.
+2. Press `-` to jump to the first-closed-issuer-hour copy control. If that control is missing, the Gantt heading is used. The key is ignored while typing.
+3. Press `=` to jump to the hide-bank-closed Gantt filter. If that control is missing, the Gantt heading is used. The key is ignored while typing. Distinct from `>` hide-zero-queue.
+4. Use the Sunday late bank close (synthetic) preset. It keeps the same 72-hour calendar as Normal Friday and treats the bank gate as open on Sunday from 16:00 to 18:00 even though Sunday is not a business day. It is distinct from Sunday stall close, Saturday early FX open, Friday late FX close, Monday late issuer open, Early Monday bank open, Thin Saturday FX, Payday Friday burst, Public-holiday Monday, Saturday market burst, Long-weekend Friday start, and Compressed Friday close. It is synthetic, not a bank feed.
+5. Hide Gantt hours where the issuer gate is closed. Display only. The model still contains 72 hours. Workspace JSON stores the optional boolean `hideIssuerClosedGanttHours`. Older files restore all hours. Unknown keys are rejected. Distinct from hide-weekday, hide-weekend, hide-open, hide-closed, hide-zero-queue, hide-bank-closed, every-gate-closed, and closed-on-at-least-one-gate filters. The selected hour stays visible if it would otherwise hide.
+6. Print and print redacted include the first closed issuer hour as one line, with an honest empty when none exists. Redacted print stays redacted. These are counts of modeled hours, not a bank calendar. The saved scenario is unchanged. Analysis JSON still has no timestamps.
+7. Copy the first closed payout hour label as one-line Markdown, with an honest empty when none exists. Clipboard write has a textarea fallback. Distinct from first-closed-FX copy, first-closed-bank copy, and first-closed-issuer copy. Synthetic, not live.
+8. Analysis JSON still has no timestamps. Hatched Gantt cells remain a local drawing.
+9. Timing review packets from 1.5.0 stay in place.
+
+v1.5.9 Saturday early FX, bank-closed Gantt hide and first-closed-bank print remain below.
+
 ## New in v1.5.9: Saturday early FX, bank-closed Gantt hide and first-closed-bank print
 
 1. Press `'` to copy the first closed bank hour through the existing copy control, using the same Markdown. The key is ignored while typing.
