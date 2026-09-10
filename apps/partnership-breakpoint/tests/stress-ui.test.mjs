@@ -70,6 +70,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'over-capacity-count-copy-text', 'copy-over-capacity-count',
         'hide-within-capacity-participants',
         'copy-first-over-capacity-label', 'first-over-capacity-label-copy-text',
+        'hide-first-breakpoint-participant',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1491,6 +1492,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>"<\/kbd> Copy over-capacity participant count as Markdown/);
   assert.match(app.markup(), /<kbd>\}<\/kbd> Copy the first over-capacity participant label as Markdown/u);
   assert.match(app.markup(), /<kbd>\+<\/kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>\|<\/kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>_<\/kbd> Jump to Copy over-capacity participant count, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>-<\/kbd> Jump to Copy first-breakpoint volume-to-hold, or the First breakpoint heading if missing/);
   assert.match(app.markup(), /<kbd>=<\/kbd> Jump to Hide the least-headroom participant, or the Participants heading if missing/);
@@ -2459,6 +2461,31 @@ test('keyboard + jumps to Copy first over-capacity participant label unless a fi
   withClipboard.keydown('+');
   assert.equal(withClipboard.copied().length, 0);
   assert.ok(withClipboard.focused().includes('#copy-first-over-capacity-label'));
+});
+
+test('keyboard | jumps to Hide the first-breakpoint participant unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="hide-first-breakpoint-participant"/);
+  assert.match(app.markup(), /id="hide-first-breakpoint-participant"[^>]*aria-keyshortcuts="\|"/);
+  assert.match(app.markup(), /id="hide-first-breakpoint-participant"[^>]*data-action="hide-first-breakpoint-participant"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('|');
+  assert.ok(app.focused().includes('#hide-first-breakpoint-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-first-breakpoint-participant'));
+  assert.ok(!app.focused().includes('#hide-within-capacity-participants'));
+  const before = app.focused().length;
+  app.keydown('|', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('|', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('{');
+  assert.ok(app.focused().includes('#hide-within-capacity-participants'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('|');
+  assert.ok(app.focused().includes('#hide-first-breakpoint-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-first-breakpoint-participant'));
+  assert.match(app.markup(), /id="hide-first-breakpoint-participant"/);
 });
 
 test('keyboard { jumps to Hide participants within listed capacity unless a field is focused', async () => {
