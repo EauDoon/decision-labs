@@ -85,7 +85,7 @@ async function workbench(protocol = 'file:', options = {}) {
   }
   const context = vm.createContext(sandbox);
   // Windows Node 22 can spend more than 2s compiling the inlined standalone.
-  new vm.Script(script).runInContext(context, { timeout: 10000 });
+  new vm.Script(script).runInContext(context, { timeout: 15000 });
   return {
     markup: () => app.innerHTML,
     downloads: () => downloads,
