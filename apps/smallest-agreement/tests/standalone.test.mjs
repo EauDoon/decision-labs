@@ -157,6 +157,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="copy-locks-button"/u);
   assert.match(html, /Copy current locks/u);
   assert.match(html, /id="locks-markdown-fallback"/u);
+  assert.match(html, /id="copy-lock-count-button"/u);
+  assert.match(html, /Copy lock count/u);
+  assert.match(html, /id="lock-count-fallback"/u);
   assert.match(html, /id="copy-change-cost-button"/u);
   assert.match(html, /Copy change-cost table/u);
   assert.match(html, /id="change-cost-csv-fallback"/u);
@@ -387,6 +390,7 @@ async function savedWorkbench(storage, hash = "") {
     optionCount: () => element("#option-count-fallback").value,
     originalVersusRecommended: () => element("#original-versus-recommended-fallback").value,
     locksMarkdown: () => element("#locks-markdown-fallback").value,
+    lockCount: () => element("#lock-count-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
     compareFiles: async (left, right) => {
@@ -1050,7 +1054,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /\.hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note/u);
@@ -2583,6 +2587,35 @@ test("copy package table writes a Markdown comparison and keeps a textarea fallb
   assert.match(blocked.packageTable(), /\| Clause \| Original \| Recommended \| Pinned \|/u);
   assert.match(blocked.message(), /Clipboard is blocked/u);
   assert.match(blocked.message(), /not a recorded vote/u);
+});
+
+test("copy current lock count writes one-line Markdown with a clipboard fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-lock-count-button"/u);
+  assert.match(html, /Copy lock count/u);
+  assert.match(html, /id="lock-count-fallback"/u);
+  assert.match(html, /not a legal hold/u);
+  const app = await savedWorkbench(new Map());
+  assert.equal(app.lockCount(), "Current lock count: 0. Locks are draft choices, not a legal hold.\n");
+  assert.doesNotMatch(app.lockCount(), /# Current clause locks/u);
+  assert.doesNotMatch(app.lockCount(), /Unlocked/u);
+  await app.click("#copy-lock-count-button");
+  assert.equal(app.clipboardText(), app.lockCount());
+  assert.match(app.message(), /not a legal hold/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-lock-count-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#lock-count-fallback");
+  assert.match(blocked.lockCount(), /Current lock count: 0/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a legal hold/u);
+  const locked = await savedWorkbench(new Map());
+  locked.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  assert.equal(locked.lockCount(), "Current lock count: 1. Locks are draft choices, not a legal hold.\n");
+  await locked.click("#copy-lock-count-button");
+  assert.equal(locked.clipboardText(), "Current lock count: 1. Locks are draft choices, not a legal hold.\n");
+  assert.match(locked.message(), /not a legal hold/u);
 });
 
 test("copy current locks writes Markdown with a textarea fallback and is not a legal hold", async () => {

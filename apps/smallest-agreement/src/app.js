@@ -549,6 +549,11 @@ function renderCopyFallbacks(result) {
     const listed = formatCurrentLocksMarkdown(state.proposal);
     locksBox.value = listed.status === "ok" ? listed.text : "";
   }
+  const lockCountBox = $("#lock-count-fallback");
+  if (lockCountBox) {
+    const counted = formatCurrentLockCountMarkdown(state.proposal);
+    lockCountBox.value = counted.status === "ok" ? counted.text : "";
+  }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
@@ -1030,6 +1035,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-approval-threshold-button").disabled = result.status === "invalid";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
+  $("#copy-lock-count-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -2367,6 +2373,20 @@ $("#copy-locks-button").addEventListener("click", async () => {
     notifyDraft("Clipboard is blocked. Copy the current locks from the Markdown box. It is not a legal hold.");
   }
 });
+async function copyLockCount() {
+  const listed = formatCurrentLockCountMarkdown(state.proposal);
+  if (listed.status !== "ok") return notifyDraft("Fix the draft before copying the current lock count.");
+  const fallback = $("#lock-count-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Current lock count copied as Markdown. Locks are draft choices, not a legal hold.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the current lock count from the Markdown box. Locks are draft choices, not a legal hold.");
+  }
+}
+$("#copy-lock-count-button").addEventListener("click", copyLockCount);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
