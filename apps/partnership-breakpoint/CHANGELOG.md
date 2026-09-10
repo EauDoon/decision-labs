@@ -3,6 +3,7 @@
 ## 1.5.2
 
 - Press `f` to jump to the First breakpoint heading when no field is focused. Shortcuts stay ignored while a field is focused.
+- Copy contribution waterfall copies each participant, contribution per transaction, and revenue share as Markdown. Clipboard falls back to a textarea. It is a comparison aid, not a forecast.
 
 ## 1.5.1
 

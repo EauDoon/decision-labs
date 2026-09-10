@@ -53,7 +53,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
-        'notes-copy-text', 'first-breakpoint-title',
+        'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1256,6 +1256,43 @@ test('keyboard f jumps to the First breakpoint heading unless a field is focused
   app.keydown('f');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+});
+
+test('copy contribution waterfall uses Markdown and a clipboard fallback', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-waterfall"/);
+  fallback.click('copy-waterfall');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="waterfall-copy-text"/);
+  assert.match(fallback.markup(), /Participant \| Contribution \| Share/);
+  assert.match(fallback.markup(), /Platform \| 0\.0400 units \/ txn \| 40\.0%/);
+  assert.match(fallback.markup(), /Distributor \| 0\.0150 units \/ txn \| 35\.0%/);
+  assert.match(fallback.markup(), /Liquidity Partner \| 0\.0200 units \/ txn \| 25\.0%/);
+  assert.match(fallback.markup(), /not a forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-waterfall-copy');
+  assert.doesNotMatch(fallback.markup(), /id="waterfall-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-waterfall');
+  assert.doesNotMatch(fallback.markup(), /id="waterfall-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the contribution waterfall/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-waterfall');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Contribution waterfall/);
+  assert.match(withClipboard.copied()[0], /Platform \| 0\.0400 units \/ txn \| 40\.0%/);
+  assert.match(withClipboard.copied()[0], /not a forecast/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="waterfall-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-waterfall');
+  assert.match(denied.markup(), /id="waterfall-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('copy first breakpoint uses displayed labels and a clipboard fallback', async () => {
