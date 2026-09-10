@@ -91,6 +91,20 @@ test("uncovered leftover coverage jump stays on the organizer leftover table", a
   assert.match(app, /#buyer-tab/u);
 });
 
+test("leftover fill jump stays on the organizer leftover table", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="leftover-coverage-rows"/u);
+  assert.match(buyerPanel, /id="residual-title"/u);
+  assert.equal(merchantPanel.includes("focusLeftoverFill"), false);
+  assert.equal(merchantPanel.includes("leftover fill jump"), false);
+  assert.match(app, /function focusLeftoverFill\(/u);
+  assert.match(app, /#leftover-fill/u);
+  assert.match(app, /#residual-title/u);
+});
+
 test("leftover item headroom has a stable organizer focus target", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");

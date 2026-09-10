@@ -33,6 +33,7 @@ import {
   formatDiscussionWorksheet,
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
+  formatOriginalVersusRecommendedMarkdown,
   formatVetoBlockersMarkdown,
   formatPinnedPackagesMarkdown,
   formatCurrentLocksMarkdown,
@@ -44,6 +45,7 @@ import {
   clausesWithoutCheaperRemainingOption,
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,
+  formatApprovalThresholdMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -416,6 +418,39 @@ const presets = {
       },
     ],
   },
+  "hall-hire-hours": {
+    title: "Hall hire hours: close time, PA volume, and clean-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "hirers", name: "Hirers", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "committee", name: "Hall committee", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "closetime", title: "Close time", options: [
+          { id: "closetime-original", original: true, label: "End hires at 22:00", changeCost: 0, support: { hirers: 40, neighbours: 86, committee: 72 } },
+          { id: "closetime-23", original: false, label: "Allow hires until 23:00 with a steward", changeCost: 2, support: { hirers: 86, neighbours: 64, committee: 74 } },
+          { id: "closetime-midnight", original: false, label: "Allow midnight close on Fridays only", changeCost: 4, support: { hirers: 90, neighbours: 42, committee: 50 } },
+        ],
+      },
+      {
+        id: "pvolume", title: "PA volume", options: [
+          { id: "pvolume-original", original: true, label: "No posted PA volume cap", changeCost: 0, support: { hirers: 84, neighbours: 28, committee: 48 } },
+          { id: "pvolume-cap", original: false, label: "Cap PA at 90 dB and face speakers inward", changeCost: 2, support: { hirers: 70, neighbours: 82, committee: 80 } },
+          { id: "pvolume-off", original: false, label: "Switch the PA off at 21:00", changeCost: 3, support: { hirers: 46, neighbours: 88, committee: 68 } },
+        ],
+      },
+      {
+        id: "cleanup", title: "Clean-up", options: [
+          { id: "cleanup-original", original: true, label: "Hirers leave by 22:15 without a clean-up check", changeCost: 0, support: { hirers: 80, neighbours: 34, committee: 40 } },
+          { id: "cleanup-check", original: false, label: "Require a 30-minute clean-up with a committee check", changeCost: 2, support: { hirers: 68, neighbours: 78, committee: 84 } },
+          { id: "cleanup-deposit", original: false, label: "Take a clean-up deposit and inspect next morning", changeCost: 3, support: { hirers: 62, neighbours: 74, committee: 76 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -431,6 +466,7 @@ let lockedClausesOnly = false;
 let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
 let hideGroupsAtFloor = false;
+let hideGroupsWithoutFloors = false;
 let overBudgetClausesOnly = false;
 let noCheaperRemainingClausesOnly = false;
 let printRedacted = false;
@@ -457,8 +493,8 @@ function renderPrintKicker() {
   const kicker = $(".facilitator-pack-kicker");
   if (!kicker) return;
   kicker.textContent = printRedacted
-    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels and remaining change-budget stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. This is a decision aid, not a recorded vote."
-    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, and remaining change-budget on the worksheet. This leftover is a draft accounting line, not a legal appropriation. This is a decision aid, not a recorded vote.";
+    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, remaining change-budget, and the numeric approval threshold stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote."
+    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, and the numeric approval threshold on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote.";
 }
 
 function renderCopyFallbacks(result) {
@@ -487,6 +523,16 @@ function renderCopyFallbacks(result) {
     const remaining = formatRemainingChangeBudgetMarkdown(state.proposal, result ?? currentResult());
     remainingBox.value = remaining.status === "ok" || remaining.status === "unavailable" ? remaining.text : "";
   }
+  const thresholdBox = $("#approval-threshold-fallback");
+  if (thresholdBox) {
+    const threshold = formatApprovalThresholdMarkdown(state.proposal);
+    thresholdBox.value = threshold.status === "ok" ? threshold.text : "";
+  }
+  const versusBox = $("#original-versus-recommended-fallback");
+  if (versusBox) {
+    const versus = formatOriginalVersusRecommendedMarkdown(state.proposal, result ?? currentResult());
+    versusBox.value = versus.status === "ok" || versus.status === "unavailable" ? versus.text : "";
+  }
 }
 
 function firstProposalError(proposal) {
@@ -505,6 +551,7 @@ function loadWorkspacePrefs() {
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
     overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
     hideGroupsAtFloor = parsed?.hideGroupsAtFloor === true;
+    hideGroupsWithoutFloors = parsed?.hideGroupsWithoutFloors === true;
     noCheaperRemainingClausesOnly = parsed?.noCheaperRemainingClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
@@ -513,7 +560,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -718,6 +765,8 @@ function renderGroups(vetoBlocks = new Set()) {
   if (belowCheckbox) belowCheckbox.checked = belowFloorGroupsOnly;
   const hideAtFloorCheckbox = $("#hide-groups-at-floor");
   if (hideAtFloorCheckbox) hideAtFloorCheckbox.checked = hideGroupsAtFloor;
+  const hideWithoutFloorsCheckbox = $("#hide-groups-without-floors");
+  if (hideWithoutFloorsCheckbox) hideWithoutFloorsCheckbox.checked = hideGroupsWithoutFloors;
   const inspected = inspectedPackage(currentResult());
   const below = inspected
     ? groupsBelowSupportRequirement(state.proposal, inspected)
@@ -731,12 +780,17 @@ function renderGroups(vetoBlocks = new Set()) {
     if (vetoGroupsOnly && group.veto !== true) return false;
     if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
     if (hideGroupsAtFloor && meetingIds.has(group.id)) return false;
+    if (hideGroupsWithoutFloors && !Object.hasOwn(group, "minSupport")) return false;
     return true;
   });
   const status = $("#veto-groups-status");
-  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor;
+  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors;
   if (!visible.length) {
-    const message = hideGroupsAtFloor && !vetoGroupsOnly && !belowFloorGroupsOnly
+    const message = hideGroupsWithoutFloors && hideGroupsAtFloor && !vetoGroupsOnly && !belowFloorGroupsOnly
+      ? "No groups remain after hiding groups that currently meet their support floor or have no support floor. Hidden groups still count in the model."
+      : hideGroupsWithoutFloors && !vetoGroupsOnly && !belowFloorGroupsOnly && !hideGroupsAtFloor
+      ? "No groups remain after hiding groups that have no support floor. Hidden groups still count in the model."
+      : hideGroupsAtFloor && !vetoGroupsOnly && !belowFloorGroupsOnly
       ? "No groups remain after hiding groups that currently meet their support floor. Hidden groups still count in the model."
       : belowFloorGroupsOnly && vetoGroupsOnly
       ? "No groups match the veto and below-floor filters. Hidden groups still count in the model."
@@ -889,8 +943,12 @@ function renderBallot(vetoBlocks = blockingVetoIds(currentResult())) {
   const remainingLine = remaining.status === "ok" || remaining.status === "unavailable"
     ? `<p>${escapeHtml(remaining.text.trim())}</p>`
     : "";
+  const threshold = formatApprovalThresholdMarkdown(proposal);
+  const thresholdLine = threshold.status === "ok"
+    ? `<p>${escapeHtml(threshold.text.trim())}</p>`
+    : "";
   const groupList = proposal.groups.map((group) => escapeHtml(groupDisplayName(group))).join(", ");
-  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${remainingLine}${vetoNote}${proposal.clauses.map((clause) => {
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${remainingLine}${thresholdLine}${vetoNote}${proposal.clauses.map((clause) => {
     const recommended = clause.options.find((option) => recommendedIds.has(option.id));
     const recommendedLine = recommended ? `<p>Recommended: ${escapeHtml(recommended.label)}</p>` : "";
     return `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}${recommendedLine}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${recommendedIds.has(option.id) ? " (recommended)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`;
@@ -914,8 +972,10 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-original-versus-recommended-button").disabled = result.status === "invalid";
   $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#copy-remaining-budget-button").disabled = result.status === "invalid";
+  $("#copy-approval-threshold-button").disabled = result.status === "invalid";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
@@ -1569,6 +1629,14 @@ function setHideGroupsAtFloor(next) {
   renderGroups(blockingVetoIds(currentResult()));
 }
 
+function setHideGroupsWithoutFloors(next) {
+  hideGroupsWithoutFloors = next === true;
+  const checkbox = $("#hide-groups-without-floors");
+  if (checkbox) checkbox.checked = hideGroupsWithoutFloors;
+  persistWorkspacePrefs();
+  renderGroups(blockingVetoIds(currentResult()));
+}
+
 $("#veto-groups-only").addEventListener("change", (event) => {
   setVetoGroupsOnly(event.target.checked === true);
 });
@@ -1577,6 +1645,9 @@ $("#below-floor-groups-only").addEventListener("change", (event) => {
 });
 $("#hide-groups-at-floor").addEventListener("change", (event) => {
   setHideGroupsAtFloor(event.target.checked === true);
+});
+$("#hide-groups-without-floors").addEventListener("change", (event) => {
+  setHideGroupsWithoutFloors(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -1935,7 +2006,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -2122,6 +2193,20 @@ $("#copy-package-button").addEventListener("click", async () => {
     notifyDraft("Clipboard is blocked. Copy the recommended package from the Markdown box. It is not a recorded vote.");
   }
 });
+async function copyOriginalVersusRecommended() {
+  const listed = formatOriginalVersusRecommendedMarkdown(state.proposal, currentResult());
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying original versus recommended labels and costs.");
+  const fallback = $("#original-versus-recommended-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Original versus recommended labels and costs copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy original versus recommended labels and costs from the Markdown box. It is not a recorded vote.");
+  }
+}
+$("#copy-original-versus-recommended-button").addEventListener("click", copyOriginalVersusRecommended);
 $("#copy-group-support-button").addEventListener("click", async () => {
   const listed = formatGroupSupportMarkdown(state.proposal, inspectedPackage(currentResult()));
   if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the group support table.");
@@ -2150,6 +2235,20 @@ async function copyRemainingBudget() {
   }
 }
 $("#copy-remaining-budget-button").addEventListener("click", copyRemainingBudget);
+async function copyApprovalThreshold() {
+  const listed = formatApprovalThresholdMarkdown(state.proposal);
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the approval threshold.");
+  const fallback = $("#approval-threshold-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Approval threshold copied as Markdown. It is a number you entered, not a legal quorum.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the approval threshold from the Markdown box. It is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-approval-threshold-button").addEventListener("click", copyApprovalThreshold);
 $("#copy-packages-table-button").addEventListener("click", async () => {
   const result = currentResult();
   if (result.status === "invalid") return notifyDraft("Fix the draft before copying the package table.");
@@ -2247,6 +2346,7 @@ $("#import-file").addEventListener("change", async (event) => {
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
       hideGroupsAtFloor = workspace.hideGroupsAtFloor === true;
+      hideGroupsWithoutFloors = workspace.hideGroupsWithoutFloors === true;
       noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
@@ -2422,6 +2522,7 @@ function jumpToGroups() {
     if (vetoGroupsOnly && group.veto !== true) return false;
     if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
     if (hideGroupsAtFloor && meetingIds.has(group.id)) return false;
+    if (hideGroupsWithoutFloors && !Object.hasOwn(group, "minSupport")) return false;
     return true;
   });
   if (visible.length) {
@@ -2543,6 +2644,11 @@ function jumpToBelowFloor() {
       needsRender = true;
     }
   }
+  if (hideGroupsWithoutFloors && !Object.hasOwn(first, "minSupport")) {
+    hideGroupsWithoutFloors = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
   if (needsRender) renderGroups(blockingVetoIds(currentResult()));
   const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
   if (target?.focus) {
@@ -2550,6 +2656,108 @@ function jumpToBelowFloor() {
     return;
   }
   $("#groups-heading")?.focus?.();
+}
+
+function jumpToVetoGroup() {
+  const first = state.proposal.groups.find((group) => group.veto === true);
+  if (!first) {
+    $("#groups-heading")?.focus?.();
+    return;
+  }
+  let needsRender = false;
+  if (belowFloorGroupsOnly) {
+    const inspected = inspectedPackage(currentResult());
+    const below = inspected
+      ? groupsBelowSupportRequirement(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const belowIds = new Set(below.status === "ok" ? below.groups.map((group) => group.id) : []);
+    if (!belowIds.has(first.id)) {
+      belowFloorGroupsOnly = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
+  if (hideGroupsAtFloor) {
+    const inspected = inspectedPackage(currentResult());
+    const meeting = inspected
+      ? groupsMeetingDeclaredSupportFloor(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const meetingIds = new Set(meeting.status === "ok" ? meeting.groups.map((group) => group.id) : []);
+    if (meetingIds.has(first.id)) {
+      hideGroupsAtFloor = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
+  if (hideGroupsWithoutFloors && !Object.hasOwn(first, "minSupport")) {
+    hideGroupsWithoutFloors = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) renderGroups(blockingVetoIds(currentResult()));
+  const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
+function jumpToChangedClause() {
+  const result = currentResult();
+  const changed = changedClauseIds(state.proposal, result);
+  const changedIds = changed.status === "ok" ? changed.clauseIds : [];
+  const firstId = changedIds[0];
+  if (!firstId) {
+    $("#clauses-heading")?.focus?.();
+    return;
+  }
+  const first = state.proposal.clauses.find((clause) => clause.id === firstId);
+  if (!first) {
+    $("#clauses-heading")?.focus?.();
+    return;
+  }
+  const query = clauseFilter.trim().toLowerCase();
+  const overBudget = overBudgetClauseIds(state.proposal, result);
+  const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, result);
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
+  let needsRender = false;
+  if (!clauseMatchesFilter(first, query)) {
+    clauseFilter = "";
+    const filter = $("#clause-filter");
+    if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (lockedClausesOnly && first.lockedOptionId === undefined) {
+    lockedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (overBudgetClausesOnly && !overBudgetIds.has(first.id)) {
+    overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (noCheaperRemainingClausesOnly && !noCheaperIds.has(first.id)) {
+    noCheaperRemainingClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) {
+    renderClauses();
+    applyClauseDensity();
+  }
+  const target = $(`[data-field="clause-title"][data-clause-id="${first.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#clauses-heading")?.focus?.();
+}
+
+function jumpToMethod() {
+  $("#method-heading")?.focus?.();
 }
 
 function jumpToRecommendedOption() {
@@ -2697,6 +2905,18 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "x" || event.key === "X") {
     event.preventDefault();
     $("#export-button")?.focus?.();
+  } else if (event.key === "h" || event.key === "H") {
+    event.preventDefault();
+    jumpToMethod();
+  } else if (event.key === "i" || event.key === "I") {
+    event.preventDefault();
+    copyOriginalVersusRecommended();
+  } else if (event.key === "q" || event.key === "Q") {
+    event.preventDefault();
+    jumpToChangedClause();
+  } else if (event.key === "y" || event.key === "Y") {
+    event.preventDefault();
+    jumpToVetoGroup();
   }
 });
 

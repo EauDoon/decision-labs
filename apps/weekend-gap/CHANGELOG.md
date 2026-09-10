@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.5 - 2026-09-10
+
+A workshop follow-up on 1.5.4. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.4 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `i` jumps to the Issuer Gantt row, or the Gantt heading if that row is filtered away. Distinct from Bank `B` and FX `W`. Ignored while typing.
+- Keyboard `l` copies hours-to-first-settlement as one-line Markdown. Synthetic educational snapshot, not live. Distinct from hours-to-clear copy. Clipboard write has a textarea fallback.
+- Keyboard `o` jumps to the Payout Gantt row, or the Gantt heading if that row is filtered away. Ignored while typing.
+- Keyboard `v` copies selected Gantt hour versus peak-queue hour as two-line Markdown. Clipboard write has a textarea fallback. Not a forecast.
+- Thin Saturday FX (synthetic) preset: same 72-hour calendar as Normal Friday, Saturday burst arrivals, tighter Saturday FX hours. Distinct from Saturday market burst, Sunday stall close, Payday Friday burst, Public-holiday Monday, and Thin FX, Tight Windows. Not a live queue.
+- Filter that hides Gantt hours open on every gate. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideOpenGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Saturday-and-Sunday and every-gate-closed filters still compose.
+- Print and print redacted include remaining reserve at the selected hour. The saved scenario is unchanged.
+- Copy next-payout hour label as one-line Markdown with an honest empty when none exists. Clipboard write has a textarea fallback.
+
 ## 1.5.4 - 2026-09-10
 
 A workshop follow-up on 1.5.3. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.3 review UI stay in place. Analysis JSON still has no timestamps.

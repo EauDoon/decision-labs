@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.5 - 2026-09-10
+
+A workshop follow-up on 1.5.4. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `h` jumps to the workshop method / How it works heading. Ignored while typing.
+- Keyboard `i` copies original versus recommended package as compact Markdown (option labels and costs only), with a clipboard fallback. It is not a recorded vote.
+- Keyboard `q` jumps to the first clause that differs from the recommendation, or the clauses heading if none. Ignored while typing.
+- Keyboard `y` jumps to the first veto group card, or the groups heading if none. Ignored while typing. A veto is a number, not a legal right.
+- Hall hire hours preset: synthetic hirers, neighbours (a veto group), and hall committee scoring close time, PA volume, and clean-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, and Street stall lighting. Not a recorded vote.
+- Hide groups that have no support floor. Hidden groups still count in the model. The solver is unchanged. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all.
+- Print facilitator pack includes the numeric approval threshold. Print redacted still uses Group 1 through Group N. A threshold is a number you entered, not a legal quorum. The saved draft is unchanged.
+- Copy approval threshold as one-line Markdown, with a clipboard fallback. A threshold is a number you entered, not a legal quorum.
+
 ## 1.5.4 - 2026-09-10
 
 A workshop follow-up on 1.5.3. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.

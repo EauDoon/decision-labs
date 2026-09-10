@@ -93,6 +93,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="publicHolidayMonday">Public-holiday Monday (synthetic)</button>
               <button type="button" class="preset-button" data-preset="saturdayMarketBurst">Saturday market burst (synthetic)</button>
               <button type="button" class="preset-button" data-preset="sundayStallClose">Sunday stall close (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="thinSaturdayFx">Thin Saturday FX (synthetic)</button>
             </div>
           </fieldset>
 
@@ -297,14 +298,20 @@ SOFTWARE.
                 <p id="outcome-summary" class="gate-summary">Calculating</p>
                 <button id="copy-dashboard-markdown" type="button">Copy dashboard numbers</button>
                 <button id="copy-hours-to-clear" type="button">Copy hours to clear</button>
+                <button id="copy-hours-to-first-settlement" type="button">Copy hours to first settlement</button>
                 <button id="copy-peak-hour" type="button">Copy peak-queue hour</button>
+                <button id="copy-selected-versus-peak" type="button">Copy selected versus peak hour</button>
                 <button id="export-dashboard-csv" type="button">Export dashboard CSV</button>
               </div>
             </div>
             <label class="sr-only" for="hours-to-clear-copy-fallback">Hours-to-clear Markdown fallback</label>
             <textarea id="hours-to-clear-copy-fallback" rows="2" hidden readonly></textarea>
+            <label class="sr-only" for="hours-to-first-settlement-copy-fallback">Hours-to-first-settlement Markdown fallback</label>
+            <textarea id="hours-to-first-settlement-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="peak-hour-copy-fallback">Peak-queue hour Markdown fallback</label>
             <textarea id="peak-hour-copy-fallback" rows="8" hidden readonly></textarea>
+            <label class="sr-only" for="selected-versus-peak-copy-fallback">Selected versus peak hour Markdown fallback</label>
+            <textarea id="selected-versus-peak-copy-fallback" rows="3" hidden readonly></textarea>
             <dl class="outcome-grid">
               <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
               <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
@@ -314,6 +321,7 @@ SOFTWARE.
               <div><dt>Hours to first settlement</dt><dd id="first-settlement-value">Calculating</dd></div>
               <div id="hours-to-clear-line"><dt>Hours to clear queue</dt><dd id="queue-clear-value">Calculating</dd></div>
               <div id="selected-gantt-hour-line"><dt>Selected Gantt hour</dt><dd id="selected-gantt-hour-value">Calculating</dd></div>
+              <div id="remaining-reserve-line"><dt>Remaining reserve at selected hour</dt><dd id="remaining-reserve-value">Calculating</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -533,6 +541,11 @@ SOFTWARE.
               <h2 id="payout-title">Next AUD payout window</h2>
               <strong id="next-payout">Calculating</strong>
               <p id="payout-explanation">The simulator checks issuer, bank and payout operating windows together.</p>
+              <div class="planning-actions">
+                <button id="copy-next-payout" type="button">Copy next-payout hour</button>
+              </div>
+              <label class="sr-only" for="next-payout-copy-fallback">Next-payout hour Markdown fallback</label>
+              <textarea id="next-payout-copy-fallback" rows="2" hidden readonly></textarea>
             </article>
             <article class="status-card card" aria-labelledby="chain-title">
               <p class="eyebrow">Settlement chain</p>
@@ -581,6 +594,10 @@ SOFTWARE.
                 <input id="gantt-hide-weekdays" type="checkbox">
                 Show only Saturday and Sunday hours
               </label>
+              <label class="checkbox-label" for="gantt-hide-open">
+                <input id="gantt-hide-open" type="checkbox">
+                Hide hours that are open on every gate
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
@@ -603,7 +620,7 @@ SOFTWARE.
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
                 <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
-                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col" id="gantt-bank-row"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col" id="gantt-fx-row"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
+                <thead><tr><th scope="col">Time</th><th scope="col" id="gantt-issuer-row"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col" id="gantt-bank-row"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col" id="gantt-payout-row"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col" id="gantt-fx-row"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
                 <tbody id="gantt-table"></tbody>
               </table>
             </div>
@@ -681,13 +698,17 @@ SOFTWARE.
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
           <li><kbd>H</kbd> Jump to the selected Gantt hour</li>
           <li><kbd>K</kbd> Jump to the hours-to-clear line</li>
+          <li><kbd>L</kbd> Copy hours to first settlement as Markdown</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
+          <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>
           <li><kbd>B</kbd> Jump to the Bank Gantt row</li>
+          <li><kbd>I</kbd> Jump to the Issuer Gantt row</li>
           <li><kbd>W</kbd> Jump to the FX Gantt row</li>
           <li><kbd>M</kbd> Jump to the compare Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>
+          <li><kbd>V</kbd> Copy selected versus peak-queue hour as Markdown</li>
           <li><kbd>X</kbd> Copy closed hours as Markdown</li>
           <li><kbd>T</kbd> Jump to the timing review</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>

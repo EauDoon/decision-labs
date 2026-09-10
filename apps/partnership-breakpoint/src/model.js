@@ -36,6 +36,7 @@
  * @property {boolean} [hideHoldingParticipants] Optional roster display preference. Omitted files default to showing holders.
  * @property {boolean} [hideAllHoldLedger] Optional ledger display preference. Omitted files default to showing all-hold rows.
  * @property {boolean} [hideZeroShareParticipants] Optional roster display preference. Omitted files default to showing zero-share rows.
+ * @property {boolean} [hideParticipantsOverCapacity] Optional roster display preference. Omitted files default to showing rows whose volume is above listed capacity.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -49,7 +50,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -162,6 +163,15 @@ export const PRESETS = Object.freeze({
       { id: 'podcast-network', name: 'Podcast network', revenueShare: 0.42, variableCostPerTransaction: 0.9, fixedMonthlyCost: 8000, minimumAcceptableProfit: 4500, capacity: 5000, minimumCommitment: 1000, riskCost: 1100 },
     ],
   },
+  communityHallSplit: {
+    name: 'Community hall split',
+    deal: { monthlyVolume: 2000, feePerTransaction: 28, addressableVolume: 3500, volumeShockPct: 0 },
+    participants: [
+      { id: 'venue', name: 'Venue', revenueShare: 0.45, variableCostPerTransaction: 1.5, fixedMonthlyCost: 8000, minimumAcceptableProfit: 5000, capacity: 3000, minimumCommitment: 0, riskCost: 1200 },
+      { id: 'promoter', name: 'Promoter', revenueShare: 0.35, variableCostPerTransaction: 4, fixedMonthlyCost: 2500, minimumAcceptableProfit: 3500, capacity: 4500, minimumCommitment: 400, riskCost: 800 },
+      { id: 'sound', name: 'Sound', revenueShare: 0.2, variableCostPerTransaction: 2.8, fixedMonthlyCost: 1800, minimumAcceptableProfit: 2000, capacity: 2800, minimumCommitment: 0, riskCost: 400 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -235,6 +245,12 @@ export function validateConfiguration(config) {
     const hideZero = own(config, 'hideZeroShareParticipants');
     if (hideZero !== true && hideZero !== false) {
       errors.push('Hide zero-share participants must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideParticipantsOverCapacity')) {
+    const hideOver = own(config, 'hideParticipantsOverCapacity');
+    if (hideOver !== true && hideOver !== false) {
+      errors.push('Hide participants over capacity must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {

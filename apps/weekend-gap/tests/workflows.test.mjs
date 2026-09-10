@@ -32,7 +32,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -395,6 +395,20 @@ test("every-gate-closed Gantt filter persists in workspace JSON and older files 
   assert.equal(legacy.nodes.get("gantt-every-closed").checked, false);
 });
 
+test("hide-open Gantt filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("gantt-hide-open").checked = true;
+  await ui.nodes.get("gantt-hide-open").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).hideOpenGanttHours, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-hide-open").checked, true);
+  assert.match(restored.nodes.get("gantt-filter-note").textContent, /open on every gate/);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.hideOpenGanttHours;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-hide-open").checked, false);
+});
+
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);
@@ -445,6 +459,23 @@ test("keyboard c copies the selected Gantt hour Markdown and ignores the key whi
   assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, true);
   await ui.keydown("c", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, true);
+});
+
+test("keyboard v copies selected versus peak-queue hour Markdown and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("v");
+  assert.equal(ui.nodes.get("selected-versus-peak-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("selected-versus-peak-copy-fallback").value, /Selected Gantt hour:/);
+  assert.match(ui.nodes.get("selected-versus-peak-copy-fallback").value, /Peak-queue hour:/);
+  assert.match(ui.nodes.get("selected-versus-peak-copy-fallback").value, /Not a forecast/);
+  ui.nodes.get("selected-versus-peak-copy-fallback").hidden = true;
+  ui.nodes.get("selected-versus-peak-copy-fallback").value = "";
+  await ui.keydown("V", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("selected-versus-peak-copy-fallback").hidden, true);
+  await ui.keydown("v", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("selected-versus-peak-copy-fallback").hidden, true);
+  await ui.keydown("v", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("selected-versus-peak-copy-fallback").hidden, true);
 });
 
 test("keyboard x copies closed-hours Markdown and ignores the key while typing", async () => {
@@ -507,6 +538,26 @@ test("keyboard n jumps to the first-payout marker and ignores the key while typi
   assert.equal(ui.nodes.get("gantt-first-payout-marker").focused, false);
 });
 
+test("keyboard o jumps to the Payout Gantt row and to the Gantt heading when filtered away", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("o");
+  assert.equal(ui.nodes.get("gantt-payout-row").focused, true);
+  assert.equal(ui.nodes.get("gantt-payout-row").attributes.tabindex, "-1");
+  ui.nodes.get("gantt-payout-row").focused = false;
+  await ui.edit("gantt-gate-filter", "issuer", "change");
+  await ui.keydown("o");
+  assert.equal(ui.nodes.get("gantt-title").focused, true);
+  ui.nodes.get("gantt-title").focused = false;
+  ui.nodes.get("gantt-payout-row").focused = false;
+  await ui.keydown("O", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-payout-row").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("o", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-payout-row").focused, false);
+  await ui.keydown("o", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-payout-row").focused, false);
+});
+
 test("keyboard k jumps to the hours-to-clear line and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("k");
@@ -519,6 +570,23 @@ test("keyboard k jumps to the hours-to-clear line and ignores the key while typi
   assert.equal(ui.nodes.get("hours-to-clear-line").focused, false);
   await ui.keydown("k", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("hours-to-clear-line").focused, false);
+});
+
+test("keyboard l copies hours-to-first-settlement Markdown and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("l");
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("hours-to-first-settlement-copy-fallback").value, /Hours to first settlement:/);
+  assert.match(ui.nodes.get("hours-to-first-settlement-copy-fallback").value, /Synthetic educational snapshot/);
+  assert.doesNotMatch(ui.nodes.get("hours-to-first-settlement-copy-fallback").value, /Hours to clear queue/);
+  ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden = true;
+  ui.nodes.get("hours-to-first-settlement-copy-fallback").value = "";
+  await ui.keydown("L", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
+  await ui.keydown("l", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
+  await ui.keydown("l", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
 });
 
 test("keyboard h jumps to the selected Gantt hour table and ignores the key while typing", async () => {
@@ -554,6 +622,26 @@ test("keyboard w jumps to the FX Gantt row and to the Gantt heading when filtere
   assert.equal(ui.nodes.get("gantt-fx-row").focused, false);
   await ui.keydown("w", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("gantt-fx-row").focused, false);
+});
+
+test("keyboard i jumps to the Issuer Gantt row and to the Gantt heading when filtered away", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("i");
+  assert.equal(ui.nodes.get("gantt-issuer-row").focused, true);
+  assert.equal(ui.nodes.get("gantt-issuer-row").attributes.tabindex, "-1");
+  ui.nodes.get("gantt-issuer-row").focused = false;
+  await ui.edit("gantt-gate-filter", "bank", "change");
+  await ui.keydown("i");
+  assert.equal(ui.nodes.get("gantt-title").focused, true);
+  ui.nodes.get("gantt-title").focused = false;
+  ui.nodes.get("gantt-issuer-row").focused = false;
+  await ui.keydown("I", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-issuer-row").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("i", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-issuer-row").focused, false);
+  await ui.keydown("i", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-issuer-row").focused, false);
 });
 
 test("keyboard b jumps to the Bank Gantt row and to the Gantt heading when filtered away", async () => {
