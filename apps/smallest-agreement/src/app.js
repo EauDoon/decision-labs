@@ -19,6 +19,7 @@ import {
   previewRenormalizedWeights,
   applyRenormalizedWeights,
   duplicateParticipantGroup,
+  duplicateClauseOption,
   moveClause,
   sortPackageGapRows,
   formatSupportMatrixCsv,
@@ -34,6 +35,10 @@ import {
   formatRecommendedPackageMarkdown,
   formatVetoBlockersMarkdown,
   formatPinnedPackagesMarkdown,
+  formatCurrentLocksMarkdown,
+  formatRecommendedChangeCostCsv,
+  changedClauseIds,
+  groupsBelowSupportRequirement,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -309,6 +314,38 @@ const presets = {
       },
     ],
   },
+  "market-stall-hours": {
+    title: "Market stall hours: open hours, packing, and neighbour noise",
+    threshold: 70,
+    groups: [
+      { id: "stallholders", name: "Stallholders", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "officers", name: "Market officers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "openhours", title: "Stall open hours", options: [
+          { id: "openhours-original", original: true, label: "Close stalls at 16:00", changeCost: 0, support: { stallholders: 42, neighbours: 86, officers: 70 } },
+          { id: "openhours-eighteen", original: false, label: "Stay open until 18:00 on market days", changeCost: 2, support: { stallholders: 88, neighbours: 58, officers: 72 } },
+          { id: "openhours-friday", original: false, label: "Open until 19:00 on Fridays only", changeCost: 3, support: { stallholders: 80, neighbours: 64, officers: 68 } },
+        ],
+      },
+      {
+        id: "packing", title: "Packing and pack-down", options: [
+          { id: "packing-original", original: true, label: "Pack down in the street after close", changeCost: 0, support: { stallholders: 78, neighbours: 34, officers: 48 } },
+          { id: "packing-yard", original: false, label: "Pack in the yard before 17:30", changeCost: 2, support: { stallholders: 70, neighbours: 76, officers: 82 } },
+          { id: "packing-bay", original: false, label: "Use a shared packing bay with a steward", changeCost: 3, support: { stallholders: 74, neighbours: 80, officers: 86 } },
+        ],
+      },
+      {
+        id: "noise", title: "Neighbour noise", options: [
+          { id: "noise-original", original: true, label: "No posted quiet hours", changeCost: 0, support: { stallholders: 82, neighbours: 28, officers: 50 } },
+          { id: "noise-posted", original: false, label: "Post quiet hours after 18:00", changeCost: 2, support: { stallholders: 72, neighbours: 78, officers: 76 } },
+          { id: "noise-generators", original: false, label: "Switch generators off by 17:00 and pack by hand", changeCost: 4, support: { stallholders: 54, neighbours: 88, officers: 70 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -321,6 +358,8 @@ let clauseFilter = "";
 let clauseDensity = "comfortable";
 let vetoGroupsOnly = false;
 let lockedClausesOnly = false;
+let changedClausesOnly = false;
+let belowFloorGroupsOnly = false;
 let printRedacted = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
@@ -349,6 +388,19 @@ function renderPrintKicker() {
     : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes and veto highlights. This is a decision aid, not a recorded vote.";
 }
 
+function renderCopyFallbacks(result) {
+  const locksBox = $("#locks-markdown-fallback");
+  if (locksBox) {
+    const listed = formatCurrentLocksMarkdown(state.proposal);
+    locksBox.value = listed.status === "ok" ? listed.text : "";
+  }
+  const costBox = $("#change-cost-csv-fallback");
+  if (costBox) {
+    const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
+    costBox.value = exported.status === "ok" ? exported.csv : exported.status === "unavailable" ? exported.text : "";
+  }
+}
+
 function firstProposalError(proposal) {
   return validateProposal(proposal).errors[0];
 }
@@ -361,6 +413,8 @@ function loadWorkspacePrefs() {
     if (parsed?.clauseDensity === "compact" || parsed?.clauseDensity === "comfortable") clauseDensity = parsed.clauseDensity;
     vetoGroupsOnly = parsed?.vetoGroupsOnly === true;
     lockedClausesOnly = parsed?.lockedClausesOnly === true;
+    changedClausesOnly = parsed?.changedClausesOnly === true;
+    belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
   }
@@ -368,7 +422,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -550,6 +604,7 @@ function render() {
   applyClauseDensity();
   renderBallot(vetoBlocks);
   renderResults(result, vetoBlocks);
+  renderCopyFallbacks(result);
   renderPrintKicker();
 }
 
@@ -568,18 +623,31 @@ function blockingVetoIds(result) {
 function renderGroups(vetoBlocks = new Set()) {
   const checkbox = $("#veto-groups-only");
   if (checkbox) checkbox.checked = vetoGroupsOnly;
-  const visible = vetoGroupsOnly
-    ? state.proposal.groups.filter((group) => group.veto === true)
-    : state.proposal.groups;
+  const belowCheckbox = $("#below-floor-groups-only");
+  if (belowCheckbox) belowCheckbox.checked = belowFloorGroupsOnly;
+  const inspected = inspectedPackage(currentResult());
+  const below = inspected
+    ? groupsBelowSupportRequirement(state.proposal, inspected)
+    : { status: "ok", groups: [] };
+  const belowIds = new Set(below.status === "ok" ? below.groups.map((group) => group.id) : []);
+  const visible = state.proposal.groups.filter((group) => {
+    if (vetoGroupsOnly && group.veto !== true) return false;
+    if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
+    return true;
+  });
   const status = $("#veto-groups-status");
   if (!visible.length) {
-    const message = vetoGroupsOnly
-      ? "No veto groups match this filter. Clear it to see every group. Hidden groups still count in the model."
-      : "Add a participant group to begin.";
-    if (status) status.textContent = vetoGroupsOnly ? message : "";
+    const message = belowFloorGroupsOnly && vetoGroupsOnly
+      ? "No groups match the veto and below-floor filters. Hidden groups still count in the model."
+      : belowFloorGroupsOnly
+        ? "No groups are below their support floor or the approval threshold on the inspected package. Hidden groups still count in the model."
+        : vetoGroupsOnly
+          ? "No veto groups match this filter. Clear it to see every group. Hidden groups still count in the model."
+          : "Add a participant group to begin.";
+    if (status) status.textContent = vetoGroupsOnly || belowFloorGroupsOnly ? message : "";
     $("#groups-editor").innerHTML = `<p class="empty-state">${message}</p>`;
   } else {
-    if (status) status.textContent = vetoGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
+    if (status) status.textContent = vetoGroupsOnly || belowFloorGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
     $("#groups-editor").innerHTML = visible.map((group) => `
     <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}"${vetoBlocks.has(group.id) ? ` data-veto-block="${escapeHtml(group.id)}" tabindex="-1"` : ""}>
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
@@ -633,22 +701,29 @@ function renderClauses() {
   const query = clauseFilter.trim().toLowerCase();
   const checkbox = $("#locked-clauses-only");
   if (checkbox) checkbox.checked = lockedClausesOnly;
+  const changedCheckbox = $("#changed-clauses-only");
+  if (changedCheckbox) changedCheckbox.checked = changedClausesOnly;
+  const changed = changedClauseIds(state.proposal, currentResult());
+  const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
   const visible = state.proposal.clauses.filter((clause) => {
     if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
+    if (changedClausesOnly && !changedIds.has(clause.id)) return false;
     return clauseMatchesFilter(clause, query);
   });
   const status = $("#clause-filter-status");
   if (!visible.length) {
-    const message = lockedClausesOnly && query === ""
-      ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
-      : "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
+    const message = changedClausesOnly && query === "" && !lockedClausesOnly
+      ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
+      : lockedClausesOnly && query === ""
+        ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
+        : "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
     if (status) status.textContent = message;
     $("#clauses-editor").innerHTML = `<p class="empty-state">${message}</p>`;
     return;
   }
-  if (status) status.textContent = query === "" && !lockedClausesOnly ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
+  if (status) status.textContent = query === "" && !lockedClausesOnly && !changedClausesOnly ? "" : `Showing ${visible.length} of ${state.proposal.clauses.length} clauses. Hidden cards still count in the model.`;
   $("#clauses-editor").innerHTML = visible.map((clause, clauseIndex) => `
-    <article class="clause-card" aria-label="${escapeHtml(clause.title)}">
+    <article class="clause-card" data-clause-id="${escapeHtml(clause.id)}" aria-label="${escapeHtml(clause.title)}">
       <div class="clause-top">
         <label><span class="visually-hidden">Clause title</span><input class="clause-title-input" data-field="clause-title" data-clause-id="${escapeHtml(clause.id)}" value="${escapeHtml(clause.title)}" maxlength="120" aria-label="Clause ${clauseIndex + 1} title"></label>
         <div class="clause-tools">
@@ -675,7 +750,7 @@ function renderClauses() {
             <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="${escapeHtml(clause.title)}, ${escapeHtml(option.label)} label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
             <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" max="1000000000" step="any" required value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
             ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" required value="${Number.isFinite(option.support[group.id]) ? option.support[group.id] : ""}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
-            <td><div class="option-tools">${option.original ? "" : `<button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`}<button class="text-button" type="button" data-action="toggle-clause-lock" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">${clause.lockedOptionId === option.id ? "Unlock option" : "Lock this option"}</button>${option.original ? "" : `<button class="text-button" type="button" data-action="duplicate-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Duplicate option</button>`}${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
+            <td><div class="option-tools">${option.original ? "" : `<button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`}<button class="text-button" type="button" data-action="toggle-clause-lock" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">${clause.lockedOptionId === option.id ? "Unlock option" : "Lock this option"}</button><button class="text-button" type="button" data-action="duplicate-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Duplicate option</button>${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
           </tr>`).join("")}</tbody>
       </table></div>
       <button class="text-button add-alternative" type="button" data-action="add-option" data-clause-id="${escapeHtml(clause.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Add alternative</button>
@@ -710,6 +785,8 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
+  $("#copy-locks-button").disabled = result.status === "invalid";
+  $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
   $("#constraint-checks").textContent = "Constraints have not been evaluated.";
@@ -1307,6 +1384,12 @@ $("#locked-clauses-only").addEventListener("change", (event) => {
   renderClauses();
   applyClauseDensity();
 });
+$("#changed-clauses-only").addEventListener("change", (event) => {
+  changedClausesOnly = event.target.checked === true;
+  persistWorkspacePrefs();
+  renderClauses();
+  applyClauseDensity();
+});
 $("#clause-density").addEventListener("change", (event) => {
   clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
   persistWorkspacePrefs();
@@ -1320,8 +1403,19 @@ function setVetoGroupsOnly(next) {
   renderGroups(blockingVetoIds(currentResult()));
 }
 
+function setBelowFloorGroupsOnly(next) {
+  belowFloorGroupsOnly = next === true;
+  const checkbox = $("#below-floor-groups-only");
+  if (checkbox) checkbox.checked = belowFloorGroupsOnly;
+  persistWorkspacePrefs();
+  renderGroups(blockingVetoIds(currentResult()));
+}
+
 $("#veto-groups-only").addEventListener("change", (event) => {
   setVetoGroupsOnly(event.target.checked === true);
+});
+$("#below-floor-groups-only").addEventListener("change", (event) => {
+  setBelowFloorGroupsOnly(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -1551,19 +1645,15 @@ document.addEventListener("click", (event) => {
     const clause = clauseById(button.dataset.clauseId);
     clause.options.push({ id: makeId("alternative"), original: false, label: "New alternative", changeCost: 1, support: { ...defaultSupport(state.proposal.groups) } });
   });
-  if (action === "duplicate-option") changeAndRender(() => {
-    const clause = clauseById(button.dataset.clauseId);
-    if (!clause || clause.options.length >= MAX_OPTIONS_PER_CLAUSE) return;
-    const source = optionById(clause, button.dataset.optionId);
-    if (!source || source.original === true) return;
-    clause.options.push({
-      id: makeId("alternative"),
-      original: false,
-      label: source.label.length + 7 > 240 ? `${source.label.slice(0, 233)} (copy)` : `${source.label} (copy)`,
-      changeCost: source.changeCost,
-      support: { ...source.support },
-    });
-  });
+  if (action === "duplicate-option") {
+    const duplicated = duplicateClauseOption(state.proposal, button.dataset.clauseId, button.dataset.optionId);
+    if (duplicated.status !== "ok") {
+      notifyDraft(`Could not duplicate that option: ${duplicated.errors[0]}`);
+      return;
+    }
+    changeAndRender(() => { state.proposal = duplicated.proposal; });
+    return;
+  }
   if (action === "remove-option") changeAndRender(() => {
     const clause = clauseById(button.dataset.clauseId);
     if (clause.lockedOptionId === button.dataset.optionId) return;
@@ -1684,7 +1774,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -1896,6 +1986,43 @@ $("#copy-veto-button").addEventListener("click", async () => {
     notifyDraft("Could not copy to the clipboard. Export the brief instead.");
   }
 });
+$("#copy-locks-button").addEventListener("click", async () => {
+  const listed = formatCurrentLocksMarkdown(state.proposal);
+  if (listed.status !== "ok") return notifyDraft("Fix the draft before copying the current locks.");
+  const fallback = $("#locks-markdown-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Current locks copied as Markdown. It is a draft choice list, not a legal hold.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the current locks from the Markdown box. It is not a legal hold.");
+  }
+});
+$("#copy-change-cost-button").addEventListener("click", async () => {
+  const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
+  if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
+  if (exported.status !== "ok") return notifyDraft(exported.text.trim());
+  const fallback = $("#change-cost-csv-fallback");
+  if (fallback) fallback.value = exported.csv;
+  try {
+    await navigator.clipboard.writeText(exported.csv);
+    notifyDraft("Recommended versus original change-cost table copied as CSV.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the change-cost table from the CSV box.");
+  }
+});
+$("#groups-paste-button").addEventListener("click", () => {
+  const pasted = $("#groups-paste")?.value ?? "";
+  const parsed = parseParticipantGroupsCsv(pasted, state.proposal);
+  if (parsed.status !== "ok") {
+    const first = parsed.errors[0];
+    return notifyDraft(`Pasted groups failed (${first.code}): ${first.message}`);
+  }
+  changeAndRender(() => { state.proposal = parsed.proposal; });
+  notifyDraft(`Imported ${parsed.importedGroups} participant groups from the pasted table. Undo restores the previous draft.`);
+});
 $("#import-button").addEventListener("click", () => $("#import-file").click());
 $("#import-file").addEventListener("change", async (event) => {
   const sequence = ++importSequence;
@@ -1924,6 +2051,8 @@ $("#import-file").addEventListener("change", async (event) => {
       if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") clauseDensity = workspace.clauseDensity;
       vetoGroupsOnly = workspace.vetoGroupsOnly === true;
       lockedClausesOnly = workspace.lockedClausesOnly === true;
+      changedClausesOnly = workspace.changedClausesOnly === true;
+      belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
@@ -1936,7 +2065,7 @@ $("#import-file").addEventListener("change", async (event) => {
     render();
     return;
   }
-  if (workspace.errors?.[0]?.code === "invalid_density" || workspace.errors?.[0]?.code === "invalid_format" || workspace.errors?.[0]?.code === "invalid_filter") {
+  if (workspace.errors?.[0]?.code === "invalid_density" || workspace.errors?.[0]?.code === "invalid_format" || workspace.errors?.[0]?.code === "invalid_filter" || workspace.errors?.[0]?.code === "unknown_key") {
     state.saveMessage = `Import failed (${workspace.errors[0].code}): ${workspace.errors[0].message}`;
     $("#autosave-status").textContent = state.saveMessage;
     return;
@@ -2085,9 +2214,16 @@ function jumpToLocks() {
   $("#clear-locks")?.focus?.();
 }
 function jumpToGroups() {
-  const visible = vetoGroupsOnly
-    ? state.proposal.groups.filter((group) => group.veto === true)
-    : state.proposal.groups;
+  const inspected = inspectedPackage(currentResult());
+  const below = inspected
+    ? groupsBelowSupportRequirement(state.proposal, inspected)
+    : { status: "ok", groups: [] };
+  const belowIds = new Set(below.status === "ok" ? below.groups.map((group) => group.id) : []);
+  const visible = state.proposal.groups.filter((group) => {
+    if (vetoGroupsOnly && group.veto !== true) return false;
+    if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
+    return true;
+  });
   if (visible.length) {
     const first = visible[0];
     const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
@@ -2097,6 +2233,45 @@ function jumpToGroups() {
     }
   }
   $("#groups-heading")?.focus?.();
+}
+
+function jumpToUnlocked() {
+  const firstUnlocked = state.proposal.clauses.find((clause) => clause.lockedOptionId === undefined);
+  if (!firstUnlocked) {
+    $("#clear-locks")?.focus?.();
+    notifyDraft("Every clause is locked. Use the lock controls to unlock an option.");
+    return;
+  }
+  const query = clauseFilter.trim().toLowerCase();
+  const changed = changedClauseIds(state.proposal, currentResult());
+  const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
+  let needsRender = false;
+  if (!clauseMatchesFilter(firstUnlocked, query)) {
+    clauseFilter = "";
+    const filter = $("#clause-filter");
+    if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (lockedClausesOnly) {
+    lockedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (changedClausesOnly && !changedIds.has(firstUnlocked.id)) {
+    changedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) {
+    renderClauses();
+    applyClauseDensity();
+  }
+  const target = $(`[data-field="clause-title"][data-clause-id="${firstUnlocked.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#clear-locks")?.focus?.();
 }
 
 function jumpToVetoBlockers() {
@@ -2170,6 +2345,15 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "g" || event.key === "G") {
     event.preventDefault();
     jumpToGroups();
+  } else if (event.key === "c" || event.key === "C") {
+    event.preventDefault();
+    $("#max-change-cost")?.focus?.();
+  } else if (event.key === "p" || event.key === "P") {
+    event.preventDefault();
+    printFacilitatorPack(false);
+  } else if (event.key === "k" || event.key === "K") {
+    event.preventDefault();
+    jumpToUnlocked();
   }
 });
 

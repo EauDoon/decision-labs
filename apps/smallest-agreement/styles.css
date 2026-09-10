@@ -16,7 +16,7 @@ html { background: var(--paper); color: var(--ink); font-family: Georgia, "Times
 body { margin: 0; min-width: 320px; }
 button, input, select { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible, select:focus-visible, canvas:focus-visible { outline: 3px solid var(--pencil); outline-offset: 3px; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, canvas:focus-visible { outline: 3px solid var(--pencil); outline-offset: 3px; }
 .skip-link { position: absolute; left: -9999px; top: 0; background: var(--ink); color: white; padding: .7rem 1rem; z-index: 5; }
 .skip-link:focus { left: .75rem; top: .75rem; }
 
@@ -59,12 +59,18 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .group-veto input { width: auto; }
 .veto-groups-filter { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 0; font-size: .82rem; }
 .veto-groups-filter input { width: auto; }
+.below-floor-groups-filter { display: flex; align-items: center; gap: .5rem; margin: .5rem 0 0; font-size: .82rem; }
+.below-floor-groups-filter input { width: auto; }
+.groups-paste-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
+#groups-paste { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .veto-blocking { background: #faeee9; outline: 2px solid var(--brick); outline-offset: 2px; }
 .veto-blocking-note { grid-column: 1 / -1; margin: 0 0 .5rem; color: var(--brick); font-size: .78rem; line-height: 1.35; }
 .clause-lock { display: grid; gap: .4rem; margin: .75rem 0; font-size: .82rem; }
 .clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
 .package-table-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #package-table-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
+.locks-markdown-fallback-label, .change-cost-csv-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
+#locks-markdown-fallback, #change-cost-csv-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .clause-paste-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #clause-paste { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .constraint-card { margin-bottom: 1rem; }
@@ -78,6 +84,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 #clause-filter { max-width: 28rem; margin-bottom: .35rem; }
 .locked-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
 .locked-clauses-filter input { width: auto; }
+.changed-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
+.changed-clauses-filter input { width: auto; }
 .clause-density-label { display: grid; gap: .35rem; max-width: 16rem; margin: 0 0 .75rem; font-size: .88rem; font-weight: 700; }
 #clauses-editor.clause-density-compact { gap: .45rem; }
 #clauses-editor.clause-density-compact .clause-card { padding: .55rem .7rem; }
@@ -162,7 +170,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }

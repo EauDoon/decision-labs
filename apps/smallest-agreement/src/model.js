@@ -870,6 +870,107 @@ export function duplicateParticipantGroup(proposal, groupId) {
   return { status: "ok", proposal: next, groupId: copyId };
 }
 
+function uniqueCopyLabel(source, used, maxLength) {
+  let serial = 1;
+  while (true) {
+    const suffix = serial === 1 ? " (copy)" : ` (copy ${serial})`;
+    const label = suffix.length >= maxLength
+      ? String(serial).slice(0, maxLength)
+      : source.length + suffix.length > maxLength
+        ? `${source.slice(0, maxLength - suffix.length)}${suffix}`
+        : `${source}${suffix}`;
+    if (!used.has(label)) return label;
+    serial += 1;
+  }
+}
+
+/**
+ * Copy one clause option with a new id, a unique copy name, and the same cost and support.
+ * The copy is never an original. Invalid when the clause is already at the option cap.
+ * Does not mutate the input.
+ */
+export function duplicateClauseOption(proposal, clauseId, optionId) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (typeof clauseId !== "string" || typeof optionId !== "string") {
+    return { status: "invalid", errors: ["Unknown option."] };
+  }
+  const next = canonicalProposal(proposal);
+  const clause = next.clauses.find((item) => item.id === clauseId);
+  if (!clause) return { status: "invalid", errors: ["Unknown clause."] };
+  if (clause.options.length >= MAX_OPTIONS_PER_CLAUSE) {
+    return { status: "invalid", errors: [`clauses need 3 to ${MAX_OPTIONS_PER_CLAUSE} options, including one original.`] };
+  }
+  const source = clause.options.find((item) => item.id === optionId);
+  if (!source) return { status: "invalid", errors: ["Unknown option."] };
+  const usedIds = new Set([
+    ...next.groups.map((group) => group.id),
+    ...next.clauses.flatMap((item) => [item.id, ...item.options.map((option) => option.id)]),
+  ]);
+  let serial = 1;
+  let copyId = `option-copy-${serial}`;
+  while (usedIds.has(copyId)) {
+    serial += 1;
+    copyId = `option-copy-${serial}`;
+  }
+  const usedLabels = new Set(clause.options.map((option) => option.label));
+  clause.options.push({
+    id: copyId,
+    label: uniqueCopyLabel(source.label, usedLabels, 240),
+    original: false,
+    changeCost: source.changeCost,
+    support: { ...source.support },
+  });
+  return { status: "ok", proposal: next, clauseId, optionId: copyId };
+}
+
+/**
+ * Clause ids whose recommended option differs from the original option.
+ * Display-only. The solver ignores this list.
+ */
+export function changedClauseIds(proposal, result) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || typeof result !== "object" || Array.isArray(result) || !result.agreement || !Array.isArray(result.agreement.options)) {
+    return { status: "ok", clauseIds: [] };
+  }
+  if (result.agreement.options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const originals = getOriginalOptions(proposal);
+  const clauseIds = [];
+  for (let index = 0; index < proposal.clauses.length; index += 1) {
+    if (result.agreement.options[index]?.id !== originals[index].id) clauseIds.push(proposal.clauses[index].id);
+  }
+  return { status: "ok", clauseIds };
+}
+
+/**
+ * Groups whose average on the inspected package is below their support floor,
+ * or the approval threshold when no floor is set.
+ * Display-only. Solver counts stay the same.
+ */
+export function groupsBelowSupportRequirement(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const byGroup = approvalByGroup(proposal.groups, selected);
+  const groups = [];
+  proposal.groups.forEach((group, index) => {
+    const required = group.minSupport === undefined ? proposal.threshold : group.minSupport;
+    const actual = byGroup[index].approval;
+    if (required - actual > EPSILON) {
+      groups.push({ id: group.id, name: group.name, required, actual });
+    }
+  });
+  return { status: "ok", groups };
+}
 
 /** A deterministic downside scenario, not a probability estimate or a new optimization. */
 export function stressPackage(proposal, optionIds, supportDrop) {
@@ -999,6 +1100,21 @@ function parseCsvRecords(text) {
   const records = rows.filter((entry) => entry.some((value) => value !== ""));
   if (records.length === 0) return { status: "invalid", errors: [namedCsvError("empty_csv", "CSV is empty.")] };
   return { status: "ok", records };
+}
+
+/** Treat a first line that contains tabs as TSV and convert it to CSV. */
+function tableTextToCsv(text) {
+  const source = String(text ?? "").replace(/^\uFEFF/u, "");
+  const newline = source.search(/\r\n|\n|\r/u);
+  const firstLine = newline === -1 ? source : source.slice(0, newline);
+  if (!firstLine.includes("\t")) return source;
+  const rows = [];
+  for (const line of source.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n").split("\n")) {
+    if (line === "") continue;
+    rows.push(line.split("\t"));
+  }
+  if (rows.length === 0) return source;
+  return serializeCsv(rows);
 }
 
 function parseSupportScore(raw, path) {
@@ -1175,12 +1291,13 @@ function groupIdFromName(name, used) {
 /**
  * Replace participant groups from a CSV of name, weight, optional min_support and veto,
  * and one support column per existing clause option (`clauseId:optionId`).
- * Unknown columns are rejected. Does not mutate the supplied proposal.
+ * Unknown columns are rejected. A first line that contains tabs is treated as TSV
+ * and converted to CSV before the same validation. Does not mutate the supplied proposal.
  */
 export function parseParticipantGroupsCsv(csvText, proposal) {
   const validation = validateProposal(proposal);
   if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
-  const parsed = parseCsvRecords(csvText);
+  const parsed = parseCsvRecords(tableTextToCsv(csvText));
   if (parsed.status !== "ok") return parsed;
   const [header, ...body] = parsed.records;
   if (!header || header.length < 2) {
@@ -1624,6 +1741,61 @@ export function formatVetoBlockersMarkdown(proposal, options) {
   return { status: "ok", text: `${lines.join("\n")}\n`, groups: blocking.groups };
 }
 
+/**
+ * Markdown list of each clause title with the locked option label, or Unlocked.
+ * This is a draft choice list, not a legal hold or a recorded vote.
+ */
+export function formatCurrentLocksMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const lines = [
+    "# Current clause locks",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This list names each clause title and the locked option label, or Unlocked. It is a draft choice list, not a legal hold or a recorded vote.",
+    "",
+  ];
+  for (const clause of p.clauses) {
+    const locked = clause.lockedOptionId === undefined
+      ? null
+      : clause.options.find((option) => option.id === clause.lockedOptionId);
+    lines.push(`- ${briefText(clause.title)}: ${locked ? briefText(locked.label) : "Unlocked"}`);
+  }
+  lines.push("", "Locks remain draft choices. They are not a legal hold.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
+/**
+ * Compact formula-safe CSV of recommended versus original option labels and cost delta.
+ * Unavailable when there is no recommended package.
+ */
+export function formatRecommendedChangeCostCsv(proposal, result) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || typeof result !== "object" || Array.isArray(result) || !result.agreement || !Array.isArray(result.agreement.options)) {
+    return { status: "unavailable", text: "No recommended package is available, so there is no change-cost table to copy.\n" };
+  }
+  if (result.agreement.options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const p = canonicalProposal(proposal);
+  const originals = getOriginalOptions(p);
+  const rows = [["clause", "original_option", "recommended_option", "cost_delta"]];
+  for (let index = 0; index < p.clauses.length; index += 1) {
+    const original = originals[index];
+    const recommended = result.agreement.options[index];
+    rows.push([
+      p.clauses[index].title,
+      original.label,
+      recommended.label,
+      recommended.changeCost - original.changeCost,
+    ]);
+  }
+  return { status: "ok", csv: serializeCsv(rows) };
+}
+
 function namedFileError(code, message, extra = {}) {
   return { code, message, ...extra };
 }
@@ -1736,37 +1908,76 @@ export function compareWorkshopFiles(leftText, rightText) {
   };
 }
 
+const WORKSPACE_DOCUMENT_KEYS = new Set([
+  "format",
+  "version",
+  "clauseDensity",
+  "vetoGroupsOnly",
+  "lockedClausesOnly",
+  "changedClausesOnly",
+  "belowFloorGroupsOnly",
+  "proposal",
+]);
+const WORKSPACE_PREF_KEYS = new Set([
+  "clauseDensity",
+  "vetoGroupsOnly",
+  "lockedClausesOnly",
+  "changedClausesOnly",
+  "belowFloorGroupsOnly",
+]);
+
+function readWorkspaceBoolean(raw, key) {
+  if (!Object.hasOwn(raw, key)) return { value: false };
+  if (raw[key] !== true && raw[key] !== false) {
+    return { error: namedFileError("invalid_filter", `${key} must be a boolean.`) };
+  }
+  return { value: raw[key] };
+}
+
 /**
  * Workspace JSON carries the canonical proposal plus display prefs.
  * Older proposal-only files remain valid and do not change prefs.
  * Filter flags are display-only. The solver ignores them.
+ * Unknown wrapper keys are rejected.
  */
 export function formatWorkspaceJson(proposal, prefs = {}) {
   const validation = validateProposal(proposal);
   if (!validation.valid) return { status: "invalid", errors: [namedFileError("invalid_proposal", validation.errors[0])] };
+  if (!isPlainObject(prefs)) {
+    return { status: "invalid", errors: [namedFileError("invalid_filter", "Workspace prefs must be an object.")] };
+  }
+  for (const key of Object.keys(prefs)) {
+    if (!WORKSPACE_PREF_KEYS.has(key)) {
+      return { status: "invalid", errors: [namedFileError("unknown_key", `Unknown workspace key: ${key}.`)] };
+    }
+  }
   const clauseDensity = Object.hasOwn(prefs, "clauseDensity") ? prefs.clauseDensity : "comfortable";
   if (clauseDensity !== "compact" && clauseDensity !== "comfortable") {
     return { status: "invalid", errors: [namedFileError("invalid_density", "clauseDensity must be compact or comfortable.")] };
   }
-  const vetoGroupsOnly = Object.hasOwn(prefs, "vetoGroupsOnly") ? prefs.vetoGroupsOnly : false;
-  const lockedClausesOnly = Object.hasOwn(prefs, "lockedClausesOnly") ? prefs.lockedClausesOnly : false;
-  if (vetoGroupsOnly !== true && vetoGroupsOnly !== false) {
-    return { status: "invalid", errors: [namedFileError("invalid_filter", "vetoGroupsOnly must be a boolean.")] };
-  }
-  if (lockedClausesOnly !== true && lockedClausesOnly !== false) {
-    return { status: "invalid", errors: [namedFileError("invalid_filter", "lockedClausesOnly must be a boolean.")] };
-  }
+  const vetoGroupsOnly = readWorkspaceBoolean(prefs, "vetoGroupsOnly");
+  if (vetoGroupsOnly.error) return { status: "invalid", errors: [vetoGroupsOnly.error] };
+  const lockedClausesOnly = readWorkspaceBoolean(prefs, "lockedClausesOnly");
+  if (lockedClausesOnly.error) return { status: "invalid", errors: [lockedClausesOnly.error] };
+  const changedClausesOnly = readWorkspaceBoolean(prefs, "changedClausesOnly");
+  if (changedClausesOnly.error) return { status: "invalid", errors: [changedClausesOnly.error] };
+  const belowFloorGroupsOnly = readWorkspaceBoolean(prefs, "belowFloorGroupsOnly");
+  if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
   return {
     status: "ok",
     clauseDensity,
-    vetoGroupsOnly,
-    lockedClausesOnly,
+    vetoGroupsOnly: vetoGroupsOnly.value,
+    lockedClausesOnly: lockedClausesOnly.value,
+    changedClausesOnly: changedClausesOnly.value,
+    belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
       clauseDensity,
-      vetoGroupsOnly,
-      lockedClausesOnly,
+      vetoGroupsOnly: vetoGroupsOnly.value,
+      lockedClausesOnly: lockedClausesOnly.value,
+      changedClausesOnly: changedClausesOnly.value,
+      belowFloorGroupsOnly: belowFloorGroupsOnly.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -1779,7 +1990,21 @@ export function parseWorkspaceJson(text) {
   if (!Object.hasOwn(raw, "format")) {
     const proposal = proposalFromWorkshopDocument(raw);
     if (proposal.status !== "ok") return proposal;
-    return { status: "ok", kind: "proposal", proposal: proposal.proposal, clauseDensity: null, vetoGroupsOnly: null, lockedClausesOnly: null };
+    return {
+      status: "ok",
+      kind: "proposal",
+      proposal: proposal.proposal,
+      clauseDensity: null,
+      vetoGroupsOnly: null,
+      lockedClausesOnly: null,
+      changedClausesOnly: null,
+      belowFloorGroupsOnly: null,
+    };
+  }
+  for (const key of Object.keys(raw)) {
+    if (!WORKSPACE_DOCUMENT_KEYS.has(key)) {
+      return { status: "invalid", errors: [namedFileError("unknown_key", `Unknown workspace key: ${key}.`)] };
+    }
   }
   const proposal = proposalFromWorkshopDocument(raw);
   if (proposal.status !== "ok") return proposal;
@@ -1790,21 +2015,24 @@ export function parseWorkspaceJson(text) {
     }
     clauseDensity = raw.clauseDensity;
   }
-  let vetoGroupsOnly = false;
-  if (Object.hasOwn(raw, "vetoGroupsOnly")) {
-    if (raw.vetoGroupsOnly !== true && raw.vetoGroupsOnly !== false) {
-      return { status: "invalid", errors: [namedFileError("invalid_filter", "vetoGroupsOnly must be a boolean.")] };
-    }
-    vetoGroupsOnly = raw.vetoGroupsOnly;
-  }
-  let lockedClausesOnly = false;
-  if (Object.hasOwn(raw, "lockedClausesOnly")) {
-    if (raw.lockedClausesOnly !== true && raw.lockedClausesOnly !== false) {
-      return { status: "invalid", errors: [namedFileError("invalid_filter", "lockedClausesOnly must be a boolean.")] };
-    }
-    lockedClausesOnly = raw.lockedClausesOnly;
-  }
-  return { status: "ok", kind: "workspace", proposal: proposal.proposal, clauseDensity, vetoGroupsOnly, lockedClausesOnly };
+  const vetoGroupsOnly = readWorkspaceBoolean(raw, "vetoGroupsOnly");
+  if (vetoGroupsOnly.error) return { status: "invalid", errors: [vetoGroupsOnly.error] };
+  const lockedClausesOnly = readWorkspaceBoolean(raw, "lockedClausesOnly");
+  if (lockedClausesOnly.error) return { status: "invalid", errors: [lockedClausesOnly.error] };
+  const changedClausesOnly = readWorkspaceBoolean(raw, "changedClausesOnly");
+  if (changedClausesOnly.error) return { status: "invalid", errors: [changedClausesOnly.error] };
+  const belowFloorGroupsOnly = readWorkspaceBoolean(raw, "belowFloorGroupsOnly");
+  if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
+  return {
+    status: "ok",
+    kind: "workspace",
+    proposal: proposal.proposal,
+    clauseDensity,
+    vetoGroupsOnly: vetoGroupsOnly.value,
+    lockedClausesOnly: lockedClausesOnly.value,
+    changedClausesOnly: changedClausesOnly.value,
+    belowFloorGroupsOnly: belowFloorGroupsOnly.value,
+  };
 }
 
 /**
@@ -1970,24 +2198,10 @@ export function formatClauseOptionsCsv(proposal) {
  * A first line that contains tabs is treated as TSV and converted to CSV before
  * the same validation. Does not mutate the supplied proposal.
  */
-function clauseTableTextToCsv(text) {
-  const source = String(text ?? "").replace(/^\uFEFF/u, "");
-  const newline = source.search(/\r\n|\n|\r/u);
-  const firstLine = newline === -1 ? source : source.slice(0, newline);
-  if (!firstLine.includes("\t")) return source;
-  const rows = [];
-  for (const line of source.replace(/\r\n/gu, "\n").replace(/\r/gu, "\n").split("\n")) {
-    if (line === "") continue;
-    rows.push(line.split("\t"));
-  }
-  if (rows.length === 0) return source;
-  return serializeCsv(rows);
-}
-
 export function parseClauseOptionsCsv(csvText, proposal) {
   const validation = validateProposal(proposal);
   if (!validation.valid) return { status: "invalid", errors: [namedCsvError("invalid_proposal", validation.errors[0])] };
-  const parsed = parseCsvRecords(clauseTableTextToCsv(csvText));
+  const parsed = parseCsvRecords(tableTextToCsv(csvText));
   if (parsed.status !== "ok") return parsed;
   const [header, ...body] = parsed.records;
   if (!header || header.length < 6) {
