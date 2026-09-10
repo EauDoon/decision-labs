@@ -1313,8 +1313,7 @@ async function copyTextWithFallback(text, fallbackId, successMessage) {
   }
 }
 document.querySelector("#copy-gantt-hour").addEventListener("click", async () => {
-  const text = selectedGanttHourToMarkdown(scenario, selectedHour);
-  await copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
+  await copySelectedGanttHourMarkdown();
 });
 document.querySelector("#copy-peak-hour").addEventListener("click", async () => {
   const text = peakQueueHourToMarkdown(scenario);
@@ -1411,6 +1410,20 @@ function jumpToGantt() {
   heading.scrollIntoView?.({ block: "start" });
   rememberChart("gantt");
   return true;
+}
+function jumpToTimingReview() {
+  const panel = document.querySelector("#weekend-review");
+  const heading = document.querySelector("#weekend-review-title");
+  if (!heading) return false;
+  if (panel) panel.open = true;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  return true;
+}
+function copySelectedGanttHourMarkdown() {
+  const text = selectedGanttHourToMarkdown(scenario, selectedHour);
+  return copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
@@ -1582,6 +1595,16 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "p" || event.key === "P") {
     event.preventDefault();
     jumpToPeakQueue();
+    return;
+  }
+  if (event.key === "c" || event.key === "C") {
+    event.preventDefault();
+    copySelectedGanttHourMarkdown();
+    return;
+  }
+  if (event.key === "t" || event.key === "T") {
+    event.preventDefault();
+    jumpToTimingReview();
     return;
   }
   if (event.key === "u" || event.key === "U") {

@@ -46,7 +46,7 @@ SOFTWARE.
     </header>
 
     <details class="weekend-review" id="weekend-review">
-      <summary>Review the timing behind the queue</summary>
+      <summary id="weekend-review-title" tabindex="-1">Review the timing behind the queue</summary>
       <p>Choose a question about the current 72-hour scenario. These analytical reviews do not change assumptions or move funds.</p>
       <label for="weekend-review-tool">Review question</label>
       <div class="review-controls"><select id="weekend-review-tool"></select><button id="weekend-review-run" type="button">Run review</button></div>
@@ -647,6 +647,8 @@ SOFTWARE.
           <li><kbd>Q</kbd> Jump to the queue chart</li>
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
+          <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>
+          <li><kbd>T</kbd> Jump to the timing review</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>
           <li><kbd>R</kbd> Redo a scenario edit</li>
           <li><kbd>E</kbd> Export the current scenario JSON</li>

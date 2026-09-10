@@ -92,6 +92,13 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   assert.ok(peakRow);
   assert.match(peakRow.children[0].textContent, /Peak queue/);
   assert.match(ui.nodes.get("peak-queue-row-note").textContent, /peak queue checkpoint/);
+  ui.nodes.get("queue-backlog-only").checked = true;
+  await ui.nodes.get("queue-backlog-only").emit("change");
+  assert.ok(ui.nodes.get("timeline-table").children.length < 73);
+  assert.match(ui.nodes.get("queue-backlog-filter-note").textContent, /Dashboard counts are unchanged/);
+  ui.nodes.get("queue-backlog-only").checked = false;
+  await ui.nodes.get("queue-backlog-only").emit("change");
+  assert.equal(ui.nodes.get("timeline-table").children.length, 73);
   await ui.edit("gantt-density", "all", "change");
   assert.equal(ui.nodes.get("gantt-table").children.length, 73);
   ui.nodes.get("gantt-closed-only").checked = true;
@@ -380,6 +387,37 @@ test("keyboard f jumps to the first closed bank hour and ignores the key while t
   assert.equal(ui.nodes.get("timeline-range").value, "40");
   await ui.keydown("f", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("timeline-range").value, "40");
+});
+
+test("keyboard c copies the selected Gantt hour Markdown and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("c");
+  assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("gantt-hour-copy-fallback").value, /Weekend Gap selected hour/);
+  assert.match(ui.nodes.get("gantt-hour-copy-fallback").value, /Synthetic educational calendar/);
+  ui.nodes.get("gantt-hour-copy-fallback").hidden = true;
+  ui.nodes.get("gantt-hour-copy-fallback").value = "";
+  await ui.keydown("C", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, true);
+  await ui.keydown("c", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, true);
+  await ui.keydown("c", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, true);
+});
+
+test("keyboard t jumps to the timing review and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("t");
+  assert.equal(ui.nodes.get("weekend-review-title").focused, true);
+  assert.equal(ui.nodes.get("weekend-review-title").attributes.tabindex, "-1");
+  assert.equal(ui.nodes.get("weekend-review").open, true);
+  ui.nodes.get("weekend-review-title").focused = false;
+  await ui.keydown("T", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("weekend-review-title").focused, false);
+  await ui.keydown("t", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("weekend-review-title").focused, false);
+  await ui.keydown("t", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("weekend-review-title").focused, false);
 });
 
 test("comparing two scenario JSON files shows queue diffs and honest null settlement hours", async () => {
