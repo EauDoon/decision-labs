@@ -52,6 +52,7 @@ import {
   createWinningFulfillmentMarkdown,
   createLeftoverFillMarkdown,
   createWinningRemainingCapacityMarkdown,
+  createRequestedUnitsMarkdown,
   organizerLeftoverRows,
   createWinnerInspectorSummaryMarkdown,
   createUncoveredLeftoverCountsMarkdown,
@@ -317,6 +318,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-winning-merchant").addEventListener("click", copyWinningMerchantLabel);
   document.querySelector("#copy-winning-fulfillment").addEventListener("click", copyWinningFulfillment);
   document.querySelector("#copy-winning-remaining-capacity").addEventListener("click", copyWinningRemainingCapacity);
+  document.querySelector("#copy-requested-units").addEventListener("click", copyRequestedUnits);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
       copyTextWithFallback(
@@ -2517,6 +2519,16 @@ function copyWinningRemainingCapacity() {
       "Clipboard was blocked. Winning remaining capacity is in the textarea. Remaining units only. Buyer identities omitted."
     );
   } catch (error) { setStatus(`Winning remaining capacity copy failed: ${messageOf(error)}`); }
+}
+
+function copyRequestedUnits() {
+  try {
+    copyTextWithFallback(
+      createRequestedUnitsMarkdown(scenario),
+      "Requested units copied as organizer-private Markdown. Count only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private requested units Markdown is in the textarea. Count only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Requested units copy failed: ${messageOf(error)}`); }
 }
 
 function copyTextWithFallback(text, successMessage, fallbackMessage) {

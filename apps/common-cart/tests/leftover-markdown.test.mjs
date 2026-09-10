@@ -396,6 +396,23 @@ test("requested units Markdown is organizer-private count only", () => {
   assert.equal(markdown.includes("Harbour Roasters"), false);
 });
 
+test("the buyer room copies requested units with a textarea fallback", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-requested-units"/u);
+  assert.match(buyerPanel, /Copy requested units \(organizer private\)/u);
+  assert.match(buyerPanel, /Organizer-private one-line Markdown of requested units/u);
+  assert.equal(merchantPanel.includes("copy-requested-units"), false);
+  assert.match(app, /createRequestedUnitsMarkdown\(/u);
+  assert.match(app, /function copyRequestedUnits\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.match(app, /This is not a merchant export/u);
+  assert.doesNotMatch(app, /if \(key === "q"\) \{\s*event\.preventDefault\(\);\s*copyRequestedUnits/u);
+});
+
 test("winning fulfillment copy sits next to leftover print and stays off the merchant table", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
