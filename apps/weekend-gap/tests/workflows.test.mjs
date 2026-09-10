@@ -131,10 +131,24 @@ test("workspace restore without selectedHour keeps hour zero", async () => {
   await ui.edit("timeline-range", 21);
   const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
   delete raw.selectedHour;
+  delete raw.ganttHourIndex;
   const reloaded = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
   assert.equal(reloaded.nodes.get("timeline-range").value, "0");
   await reloaded.edit("timeline-range", 9);
   assert.equal(JSON.parse(reloaded.storage.get("weekend-gap:workspace:v1")).selectedHour, 9);
+  assert.equal(JSON.parse(reloaded.storage.get("weekend-gap:workspace:v1")).ganttHourIndex, 9);
+});
+
+test("selected Gantt hour index persists in workspace JSON and older files restore hour zero", async () => {
+  const ui = await boot();
+  await ui.edit("timeline-range", 21);
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).ganttHourIndex, 21);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("timeline-range").value, "21");
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.ganttHourIndex;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("timeline-range").value, "21");
 });
 
 test("workspace import replaces both scenarios and survives reload; invalid import preserves state", async () => {

@@ -708,10 +708,40 @@ export function libraryFromJSON(text) {
 
 export const CHART_VIEWS = Object.freeze(["queue", "gantt"]);
 
+const WORKSPACE_KEYS = Object.freeze([
+  "format",
+  "version",
+  "current",
+  "baseline",
+  "targetPercent",
+  "deadlineHour",
+  "selectedHour",
+  "notes",
+  "ganttDensity",
+  "selectedChart",
+  "ganttClosedOnly",
+  "ganttGateFilter",
+  "queueBacklogOnly",
+  "ganttHourIndex"
+]);
+
+function assertWorkspaceKeys(raw) {
+  if (!raw || typeof raw !== "object" || Array.isArray(raw)) throw new Error("Unsupported workspace format.");
+  for (const key of ["__proto__", "constructor", "prototype"]) {
+    if (Object.prototype.hasOwnProperty.call(raw, key)) throw new Error("Workspace contains a reserved key.");
+  }
+  for (const key of Object.keys(raw)) {
+    if (!WORKSPACE_KEYS.includes(key)) throw new Error("Unknown workspace field.");
+  }
+}
+
 /** Portable editing state; computed results are always regenerated on restore. */
 export function workspaceToJSON(current, baseline, options = {}) {
   const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false } = options;
+  const ganttHourIndex = options.ganttHourIndex === undefined ? selectedHour : options.ganttHourIndex;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
+  if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > 72) throw new RangeError("Workspace Gantt hour index is invalid.");
+  if (ganttHourIndex !== selectedHour) throw new RangeError("Workspace Gantt hour index is invalid.");
   if (typeof notes !== "string" || notes.length > 4000) throw new RangeError("Workspace notes must be 4000 characters or fewer.");
   if (!["snapshots", "all", "open"].includes(ganttDensity)) throw new RangeError("Workspace Gantt density is invalid.");
   if (!CHART_VIEWS.includes(selectedChart)) throw new RangeError("Workspace selected chart is invalid.");
@@ -719,25 +749,33 @@ export function workspaceToJSON(current, baseline, options = {}) {
   if (!GANTT_GATE_FILTERS.includes(ganttGateFilter)) throw new RangeError("Workspace Gantt gate filter is invalid.");
   if (queueBacklogOnly !== true && queueBacklogOnly !== false) throw new RangeError("Workspace queue backlog filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex }, null, 2);
 }
 export function workspaceFromJSON(text) {
   try {
     if (typeof text !== "string" || text.length > 250000) throw new Error("Workspace must be 250 KB or smaller.");
     const raw = JSON.parse(text.charCodeAt(0) === 0xfeff ? text.slice(1) : text);
     if (raw?.format !== "weekend-gap-workspace" || raw.version !== 1) throw new Error("Unsupported workspace format.");
+    assertWorkspaceKeys(raw);
     for (const field of ["current", "baseline"]) if (!raw[field] || typeof raw[field] !== "object" || Array.isArray(raw[field])) throw new Error("Workspace requires current and baseline scenario objects.");
+    if (raw.ganttHourIndex !== undefined && raw.selectedHour !== undefined && raw.ganttHourIndex !== raw.selectedHour) {
+      throw new RangeError("Workspace Gantt hour index is invalid.");
+    }
     const current = sanitizeScenario(raw.current), baseline = sanitizeScenario(raw.baseline);
+    const restoredHour = raw.ganttHourIndex === undefined
+      ? (raw.selectedHour === undefined ? 0 : raw.selectedHour)
+      : raw.ganttHourIndex;
     const options = {
       targetPercent: raw.targetPercent,
       deadlineHour: raw.deadlineHour,
-      selectedHour: raw.selectedHour === undefined ? 0 : raw.selectedHour,
+      selectedHour: restoredHour,
       notes: raw.notes,
       ganttDensity: raw.ganttDensity === undefined ? "snapshots" : raw.ganttDensity,
       selectedChart: raw.selectedChart === undefined ? "queue" : raw.selectedChart,
       ganttClosedOnly: raw.ganttClosedOnly === undefined ? false : raw.ganttClosedOnly,
       ganttGateFilter: raw.ganttGateFilter === undefined ? "all" : raw.ganttGateFilter,
-      queueBacklogOnly: raw.queueBacklogOnly === undefined ? false : raw.queueBacklogOnly
+      queueBacklogOnly: raw.queueBacklogOnly === undefined ? false : raw.queueBacklogOnly,
+      ganttHourIndex: restoredHour
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };

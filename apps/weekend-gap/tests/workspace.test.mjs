@@ -4,7 +4,7 @@ import { DEFAULT_SCENARIO, PRESETS, workspaceToJSON, workspaceFromJSON, scenario
 test("workspace round trip preserves detached baseline, notes and analysis controls",()=>{
  const text=workspaceToJSON(PRESETS.marketStress,DEFAULT_SCENARIO,{notes:"<b>test</b>",selectedHour:65,targetPercent:75,deadlineHour:70,ganttDensity:"all"});
  const result=workspaceFromJSON(text);assert.deepEqual(result.errors,[]);assert.equal(result.workspace.baseline.name,"Normal Friday");
- assert.equal(result.workspace.current.name,"Market Stress");assert.equal(result.workspace.selectedHour,65);assert.equal(result.workspace.notes,"<b>test</b>");
+ assert.equal(result.workspace.current.name,"Market Stress");assert.equal(result.workspace.selectedHour,65);assert.equal(result.workspace.ganttHourIndex,65);assert.equal(result.workspace.notes,"<b>test</b>");
  assert.equal(result.workspace.ganttDensity,"all");
  assert.equal(result.workspace.selectedChart,"queue");
  assert.equal(result.workspace.ganttClosedOnly,false);
@@ -29,9 +29,11 @@ test("older workspace files omit selectedHour and restore hour zero",()=>{
  const raw=JSON.parse(text);
  assert.equal(raw.selectedHour,21);
  delete raw.selectedHour;
+ delete raw.ganttHourIndex;
  const legacy=workspaceFromJSON(JSON.stringify(raw));
  assert.ok(legacy.workspace);
  assert.equal(legacy.workspace.selectedHour,0);
+ assert.equal(legacy.workspace.ganttHourIndex,0);
  assert.deepEqual(legacy.errors,[]);
  assert.equal(workspaceFromJSON(JSON.stringify({...raw,selectedHour:65})).workspace.selectedHour,65);
 });
@@ -79,8 +81,24 @@ test("older workspace files omit queueBacklogOnly and restore all hours",()=>{
  assert.deepEqual(legacy.errors,[]);
  assert.equal(workspaceFromJSON(JSON.stringify({...raw,queueBacklogOnly:true})).workspace.queueBacklogOnly,true);
 });
+test("older workspace files omit ganttHourIndex and restore the selected hour default",()=>{
+ const text=workspaceToJSON(PRESETS.weekendRush,DEFAULT_SCENARIO,{selectedHour:21,ganttHourIndex:21,notes:"legacy gantt hour"});
+ const raw=JSON.parse(text);
+ assert.equal(raw.ganttHourIndex,21);
+ delete raw.ganttHourIndex;
+ const legacy=workspaceFromJSON(JSON.stringify(raw));
+ assert.ok(legacy.workspace);
+ assert.equal(legacy.workspace.ganttHourIndex,21);
+ assert.equal(legacy.workspace.selectedHour,21);
+ assert.deepEqual(legacy.errors,[]);
+ const neither=JSON.parse(text);
+ delete neither.ganttHourIndex;
+ delete neither.selectedHour;
+ assert.equal(workspaceFromJSON(JSON.stringify(neither)).workspace.ganttHourIndex,0);
+ assert.equal(workspaceFromJSON(JSON.stringify({...raw,ganttHourIndex:65,selectedHour:65})).workspace.ganttHourIndex,65);
+});
 test("invalid workspace controls and format cannot replace an active workspace",()=>{
  const valid=JSON.parse(workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO));
- for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"},{ganttGateFilter:"issuer-only"},{queueBacklogOnly:"yes"}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
+ for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{ganttHourIndex:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"},{ganttGateFilter:"issuer-only"},{queueBacklogOnly:"yes"},{extraField:true},{constructor:{}}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
  assert.equal(workspaceFromJSON("x".repeat(250001)).workspace,null);
 });
