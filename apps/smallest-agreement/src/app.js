@@ -417,6 +417,39 @@ const presets = {
       },
     ],
   },
+  "hall-hire-hours": {
+    title: "Hall hire hours: close time, PA volume, and clean-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "hirers", name: "Hirers", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "committee", name: "Hall committee", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "closetime", title: "Close time", options: [
+          { id: "closetime-original", original: true, label: "End hires at 22:00", changeCost: 0, support: { hirers: 40, neighbours: 86, committee: 72 } },
+          { id: "closetime-23", original: false, label: "Allow hires until 23:00 with a steward", changeCost: 2, support: { hirers: 86, neighbours: 64, committee: 74 } },
+          { id: "closetime-midnight", original: false, label: "Allow midnight close on Fridays only", changeCost: 4, support: { hirers: 90, neighbours: 42, committee: 50 } },
+        ],
+      },
+      {
+        id: "pvolume", title: "PA volume", options: [
+          { id: "pvolume-original", original: true, label: "No posted PA volume cap", changeCost: 0, support: { hirers: 84, neighbours: 28, committee: 48 } },
+          { id: "pvolume-cap", original: false, label: "Cap PA at 90 dB and face speakers inward", changeCost: 2, support: { hirers: 70, neighbours: 82, committee: 80 } },
+          { id: "pvolume-off", original: false, label: "Switch the PA off at 21:00", changeCost: 3, support: { hirers: 46, neighbours: 88, committee: 68 } },
+        ],
+      },
+      {
+        id: "cleanup", title: "Clean-up", options: [
+          { id: "cleanup-original", original: true, label: "Hirers leave by 22:15 without a clean-up check", changeCost: 0, support: { hirers: 80, neighbours: 34, committee: 40 } },
+          { id: "cleanup-check", original: false, label: "Require a 30-minute clean-up with a committee check", changeCost: 2, support: { hirers: 68, neighbours: 78, committee: 84 } },
+          { id: "cleanup-deposit", original: false, label: "Take a clean-up deposit and inspect next morning", changeCost: 3, support: { hirers: 62, neighbours: 74, committee: 76 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;

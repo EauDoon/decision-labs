@@ -84,6 +84,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /market-stall-hours/u);
   assert.match(html, /shared-bike-shed/u);
   assert.match(html, /street-stall-lighting/u);
+  assert.match(html, /hall-hire-hours/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -841,6 +842,44 @@ test("street stall lighting preset loads a distinct synthetic lighting workshop"
   assert.doesNotMatch(app.clauses(), /Weekend market use/u);
   assert.doesNotMatch(app.groups(), /Market officers/u);
   assert.doesNotMatch(app.groups(), /Building managers/u);
+});
+
+test("hall hire hours preset loads a distinct synthetic hall workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "hall-hire-hours");
+  app.click("#load-preset");
+  assert.match(app.title(), /Hall hire hours: close time, PA volume, and clean-up/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Close time/u);
+  assert.match(app.clauses(), /PA volume/u);
+  assert.match(app.clauses(), /Clean-up/u);
+  assert.match(app.groups(), /Hirers/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /Hall committee/u);
+  assert.doesNotMatch(app.title(), /Street stall lighting/u);
+  assert.doesNotMatch(app.title(), /Market stall hours/u);
+  assert.doesNotMatch(app.title(), /Shared bike shed/u);
+  assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.title(), /Open Source Policy/u);
+  assert.doesNotMatch(app.title(), /Association Budget/u);
+  assert.doesNotMatch(app.title(), /Protected Access/u);
+  assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
+  assert.doesNotMatch(app.title(), /Club Constitution/u);
+  assert.doesNotMatch(app.clauses(), /Lighting hours/u);
+  assert.doesNotMatch(app.clauses(), /Stall open hours/u);
+  assert.doesNotMatch(app.clauses(), /Access hours/u);
+  assert.doesNotMatch(app.clauses(), /Match end-time/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Evening hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.doesNotMatch(app.groups(), /Stallholders/u);
+  assert.doesNotMatch(app.groups(), /Nearby residents/u);
+  assert.doesNotMatch(app.groups(), /Market officers/u);
+  assert.doesNotMatch(app.groups(), /Building managers/u);
+  assert.doesNotMatch(app.groups(), /Council officers/u);
 });
 
 test("keyboard f focuses the clause filter unless an input is active", async () => {
