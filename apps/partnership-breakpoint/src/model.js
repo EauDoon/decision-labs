@@ -143,6 +143,15 @@ export const PRESETS = Object.freeze({
       { id: 'booking-platform', name: 'Platform', revenueShare: 0.2, variableCostPerTransaction: 0.9, fixedMonthlyCost: 5000, minimumAcceptableProfit: 3000, capacity: 12000, minimumCommitment: 0, riskCost: 700 },
     ],
   },
+  threePartyJointVenture: {
+    name: 'Three-party joint venture',
+    deal: { monthlyVolume: 8000, feePerTransaction: 55, addressableVolume: 12000, volumeShockPct: 0 },
+    participants: [
+      { id: 'synthetic-operator', name: 'Synthetic operator', revenueShare: 0.4, variableCostPerTransaction: 6, fixedMonthlyCost: 18000, minimumAcceptableProfit: 12000, capacity: 10000, minimumCommitment: 0, riskCost: 3000 },
+      { id: 'capital-partner', name: 'Capital partner', revenueShare: 0.38, variableCostPerTransaction: 0.5, fixedMonthlyCost: 2000, minimumAcceptableProfit: 50000, capacity: null, minimumCommitment: 0, riskCost: 8000 },
+      { id: 'operator-talent', name: 'Operator-talent', revenueShare: 0.22, variableCostPerTransaction: 3, fixedMonthlyCost: 9000, minimumAcceptableProfit: 15000, capacity: 15000, minimumCommitment: 2000, riskCost: 1500 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {

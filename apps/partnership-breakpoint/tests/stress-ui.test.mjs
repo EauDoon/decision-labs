@@ -1044,6 +1044,23 @@ test('four-party marketplace preset loads from the starting-point buttons', asyn
   assert.match(app.notice(), /Four-party marketplace loaded/);
 });
 
+test('three-party joint venture preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="threePartyJointVenture"/);
+  assert.match(app.markup(), /Three-party joint venture/);
+  app.click('preset', { preset: 'threePartyJointVenture' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['synthetic-operator', 'capital-partner', 'operator-talent']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Synthetic operator', 'Capital partner', 'Operator-talent']);
+  assert.equal(app.saved().deal.feePerTransaction, 55);
+  assert.equal(app.saved().deal.monthlyVolume, 8000);
+  assert.equal(app.saved().participants[1].capacity, null);
+  assert.match(app.notice(), /Three-party joint venture loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'talent,booking-agent,booking-platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
+});
+
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
   const app = await workbench();
   assert.match(app.markup(), /data-preset="talentAgentPlatform"/);
