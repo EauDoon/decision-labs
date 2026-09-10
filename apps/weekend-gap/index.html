@@ -576,7 +576,7 @@ SOFTWARE.
             <label class="sr-only" for="closed-hours-copy-fallback">Closed hours Markdown fallback</label>
             <textarea id="closed-hours-copy-fallback" rows="8" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
-            <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
+            <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
                 <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
                 <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
@@ -655,6 +655,7 @@ SOFTWARE.
           <li><kbd>D</kbd> Jump to the dashboard outcome summary</li>
           <li><kbd>Q</kbd> Jump to the queue chart</li>
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
+          <li><kbd>H</kbd> Jump to the selected Gantt hour</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>
           <li><kbd>T</kbd> Jump to the timing review</li>

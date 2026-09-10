@@ -1426,6 +1426,15 @@ function jumpToGantt() {
   rememberChart("gantt");
   return true;
 }
+function jumpToSelectedGanttHour() {
+  const row = document.querySelector("#gantt-hour-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
 function jumpToTimingReview() {
   const panel = document.querySelector("#weekend-review");
   const heading = document.querySelector("#weekend-review-title");
@@ -1612,6 +1621,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "g" || event.key === "G") {
     event.preventDefault();
     jumpToGantt();
+    return;
+  }
+  if (event.key === "h" || event.key === "H") {
+    event.preventDefault();
+    jumpToSelectedGanttHour();
     return;
   }
   if (event.key === "p" || event.key === "P") {
