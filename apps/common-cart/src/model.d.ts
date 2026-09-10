@@ -304,6 +304,8 @@ export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "
 export function filterOfferIdsHidingUnwinnable(rawScenario: unknown, hideUnwinnable: boolean): string[];
 /** Display-only. Matching is unchanged. When hideZeroRemaining is false, every offer id is returned. */
 export function filterOfferIdsHidingZeroRemainingCapacity(rawScenario: unknown, hideZeroRemaining: boolean): string[];
+/** Display-only. Matching is unchanged. Inverse of hide zero remaining capacity. When hideRemaining is false, every offer id is returned. */
+export function filterOfferIdsHidingOffersWithRemainingCapacity(rawScenario: unknown, hideRemaining: boolean): string[];
 export function acceptedVariantFilterOptions(rawScenario: unknown): string[];
 export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: string): string[];
 export function filterBuyerIdsHidingExcluded(rawScenario: unknown, offerId: string, hideExcluded: boolean): string[];

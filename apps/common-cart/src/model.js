@@ -468,6 +468,25 @@ export function filterOfferIdsHidingZeroRemainingCapacity(rawScenario, hideZeroR
   return scenario.offers.filter((offer) => remainingIds.has(offer.id)).map((offer) => offer.id);
 }
 
+/** Display-only. Matching is unchanged. Inverse of hide zero remaining capacity: hides offers whose remaining capacity after the winner is greater than zero. */
+export function filterOfferIdsHidingOffersWithRemainingCapacity(rawScenario, hideRemaining) {
+  if (hideRemaining !== true && hideRemaining !== false) {
+    throw new ScenarioError("Hide offers with remaining capacity must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideRemaining) return scenario.offers.map((offer) => offer.id);
+  const market = evaluateMarket(scenario);
+  const remainingIds = new Set(
+    market.results
+      .filter((result) => {
+        const remaining = Math.max(0, result.offer.capacity - result.fulfilledUnits);
+        return remaining === 0;
+      })
+      .map((result) => result.offer.id)
+  );
+  return scenario.offers.filter((offer) => remainingIds.has(offer.id)).map((offer) => offer.id);
+}
+
 export function acceptedVariantFilterOptions(rawScenario) {
   const scenario = validateScenario(rawScenario);
   const seen = new Map();
