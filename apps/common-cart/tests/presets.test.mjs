@@ -1,6 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { clonePreset, evaluateMarket, validateScenario } from "../src/model.js";
+import { clonePreset, computeResidualCoverage, evaluateMarket, validateScenario } from "../src/model.js";
 
 test("office pantry and hardware presets evaluate with distinct categories", () => {
   const office = evaluateMarket(clonePreset("officePantry"));
@@ -740,9 +740,10 @@ test("cricket carnival lunch is distinct synthetic mixed carnival lunch", () => 
   assert.equal(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Mixed sandwich")), false);
   assert.ok(carnival.results.some((result) => result.offer.merchant === "Pitch-side Cricket Delivery" && result.offer.fulfillment === "shipping"));
   assert.ok(carnival.results.some((result) => result.offer.merchant === "Hall Cricket Pickup" && result.offer.fulfillment === "pickup"));
-  const leftoverFill = carnival.results.find((result) => result.offer.merchant === "Hall Cricket Pickup");
+  const leftoverFill = computeResidualCoverage(carnival.scenario).secondary;
   assert.ok(leftoverFill);
-  assert.equal(leftoverFill.offer.fulfillment, "pickup");
+  assert.equal(leftoverFill.merchant, "Hall Cricket Pickup");
+  assert.equal(carnival.scenario.offers.find((offer) => offer.id === leftoverFill.offerId).fulfillment, "pickup");
   const quantities = carnival.scenario.buyers.map((buyer) => buyer.quantity);
   assert.equal(new Set(quantities).size > 1, true);
   const first = evaluateMarket(clonePreset("cricketCarnivalLunch"));
