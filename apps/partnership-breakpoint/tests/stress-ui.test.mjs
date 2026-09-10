@@ -1655,6 +1655,20 @@ test('volleyball carnival split preset loads from the starting-point buttons', a
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
 
+test('volleyball carnival last-within remaining listed capacity copies First-aid remaining', async () => {
+  const app = await workbench('file:', { clipboard: 'ok' });
+  app.click('dismiss-coach');
+  app.click('preset', { preset: 'volleyballCarnivalSplit' });
+  app.click('copy-last-within-capacity-remaining');
+  assert.equal(app.copied().at(-1), 'Last within-capacity remaining listed capacity: 250 txn remaining for First-aid. Remaining listed capacity. Not a forecast.');
+  assert.doesNotMatch(app.copied().at(-1), /First within-capacity remaining listed capacity/);
+  assert.doesNotMatch(app.copied().at(-1), /probab/i);
+  app.click('copy-first-within-capacity-remaining');
+  assert.equal(app.copied().at(-1), 'First within-capacity remaining listed capacity: 600 txn remaining for Carnival committee. Remaining listed capacity. Not a forecast.');
+  app.click('copy-last-within-capacity-remaining');
+  assert.equal(app.copied().at(-1), 'Last within-capacity remaining listed capacity: 250 txn remaining for First-aid. Remaining listed capacity. Not a forecast.');
+});
+
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
   const app = await workbench();
   assert.match(app.markup(), /data-preset="talentAgentPlatform"/);
