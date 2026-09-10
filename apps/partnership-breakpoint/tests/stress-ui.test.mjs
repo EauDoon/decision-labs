@@ -1201,6 +1201,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>v<\/kbd> Jump to the viability card/);
   assert.match(app.markup(), /<kbd>i<\/kbd> Jump to the inspect or compare cases heading/);
   assert.match(app.markup(), /<kbd>o<\/kbd> Jump to the Operating region heading/);
+  assert.match(app.markup(), /<kbd>j<\/kbd> Copy capacity utilization as Markdown/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1506,6 +1507,43 @@ test('keyboard h jumps to the least-headroom participant card unless a field is 
   assert.ok(app.focused().includes('#participant-inputs-title'));
   assert.ok(app.focused().includes('scroll:#participant-inputs-title'));
   assert.doesNotMatch(app.markup(), /id="least-headroom-participant"/);
+});
+
+test('keyboard j copies capacity utilization as Markdown and ignores focused inputs', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  fallback.keydown('j');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="utilization-copy-text"/);
+  assert.match(fallback.markup(), /# Capacity utilization/);
+  assert.match(fallback.markup(), /Platform \| 100,000 \/ 130,000 \(76\.9% of capacity\)/);
+  assert.match(fallback.markup(), /not a probability/);
+  assert.match(fallback.markup(), /not a forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-utilization-copy');
+  assert.doesNotMatch(fallback.markup(), /id="utilization-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown('j', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('j', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown('j');
+  assert.doesNotMatch(fallback.markup(), /id="utilization-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying capacity utilization/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown('j');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Capacity utilization/);
+  assert.match(withClipboard.copied()[0], /not a probability/);
+  assert.match(withClipboard.copied()[0], /not a forecast/);
+  assert.doesNotMatch(withClipboard.copied()[0], /forecast of/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown('j', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
 });
 
 test('keyboard o jumps to the Operating region heading unless a field is focused', async () => {

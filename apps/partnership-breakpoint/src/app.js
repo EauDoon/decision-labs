@@ -1733,6 +1733,7 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'j' || event.key === 'J') copyCapacityUtilization();
 });
 
 window.addEventListener('resize', () => {
@@ -2387,7 +2388,7 @@ function capacityUtilizationMarkdown(result) {
     lines.push('| ' + reportText(participant.name) + ' | ' + capacityUtilizationLabel(participant) + ' |');
   }
   lines.push('');
-  lines.push('Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied. This is a display, not a probability.');
+  lines.push('Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied. This is a display, not a probability. It is not a forecast.');
   lines.push('');
   return lines.join('\n');
 }
@@ -2412,7 +2413,7 @@ function copyCapacityUtilization() {
   }
   const text = capacityUtilizationMarkdown(calculatePartnership(state));
   const clipboard = globalThis.navigator?.clipboard;
-  const copiedNote = 'Capacity utilization copied as Markdown. It is a display, not a probability.';
+  const copiedNote = 'Capacity utilization copied as Markdown. It is a display, not a probability. It is not a forecast.';
   const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
   if (clipboard && typeof clipboard.writeText === 'function') {
     try {
@@ -3017,6 +3018,7 @@ function helpDialog() {
         <li><kbd>v</kbd> Jump to the viability card</li>
         <li><kbd>i</kbd> Jump to the inspect or compare cases heading</li>
         <li><kbd>o</kbd> Jump to the Operating region heading</li>
+        <li><kbd>j</kbd> Copy capacity utilization as Markdown</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
