@@ -27,7 +27,7 @@ Every workbench:
 
 | Workbench | Version | Job to be done | Built-in synthetic example |
 | --- | --- | --- | --- |
-| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.11 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
+| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.12 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.11 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.11 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
 | [Weekend Gap](apps/weekend-gap/) | 1.5.11 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
@@ -59,7 +59,7 @@ That copy is catalog copy, not a live product version.
 Key `[` focuses the Copy version line control, or the footer version line if
 that control is missing. That key moves focus; it does not open a workbench.
 It does not copy.
-Key `q` copies those same catalog jobs through the Copy jobs control. It does not fork that Markdown. Key `;` copies the first workbench name and one-sentence job from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that card is missing, it copies an empty string. That key is distinct from `j` and `q`, which copy all four jobs, and from `y`, which copies the last-launched job. Key `}` copies the last workbench name and one-sentence job from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that card is missing, it copies an empty string. That key is distinct from `;`, which copies the first workbench job, and from `j` and `q`, which copy all four jobs. Key `+` focuses the Copy last job control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `s`, which focuses the first Open workbench link, from `]`, which focuses the last Open workbench link, and from `=`, which focuses Copy How it works. Key `|` focuses the Copy first job control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `;`, which copies the first workbench job, and from `}`, which copies the last workbench job. Key `:` copies the first Trust and limits list item from this page as one Markdown line. That copy is catalog copy, not a live policy feed. If that item is missing, it copies an empty string. That key is distinct from `i`, which copies the full Trust and limits list, and from `;`, which copies the first workbench job. Key `"` copies the last Trust and limits list item from this page as one Markdown line. That copy is catalog copy, not a live policy feed. If that item is missing, it copies an empty string. That key is distinct from `:`, which copies the first Trust and limits list item, and from `i`, which copies the full Trust and limits list. Key `i` copies Trust and limits from this page as Markdown. That list is not a
+Key `q` copies those same catalog jobs through the Copy jobs control. It does not fork that Markdown. Key `;` copies the first workbench name and one-sentence job from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that card is missing, it copies an empty string. That key is distinct from `j` and `q`, which copy all four jobs, and from `y`, which copies the last-launched job. Key `}` copies the last workbench name and one-sentence job from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that card is missing, it copies an empty string. That key is distinct from `;`, which copies the first workbench job, and from `j` and `q`, which copy all four jobs. Key `~` copies the last What's new heading from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that heading is missing, it copies an empty string. That key is distinct from `g`, which focuses the first What's new heading, and from `n`, which focuses What's new. Key `!` focuses the Copy last What's new heading control, or the What's new heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `g`, which focuses the first What's new heading, and from `n`, which focuses What's new. Key `(` focuses the Copy first What's new heading control, or the What's new heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `g`, which focuses the first What's new heading itself, and from `~`, which copies the last What's new heading. Key `+` focuses the Copy last job control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `s`, which focuses the first Open workbench link, from `]`, which focuses the last Open workbench link, and from `=`, which focuses Copy How it works. Key `|` focuses the Copy first job control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `;`, which copies the first workbench job, and from `}`, which copies the last workbench job. Key `:` copies the first Trust and limits list item from this page as one Markdown line. That copy is catalog copy, not a live policy feed. If that item is missing, it copies an empty string. That key is distinct from `i`, which copies the full Trust and limits list, and from `;`, which copies the first workbench job. Key `"` copies the last Trust and limits list item from this page as one Markdown line. That copy is catalog copy, not a live policy feed. If that item is missing, it copies an empty string. That key is distinct from `:`, which copies the first Trust and limits list item, and from `i`, which copies the full Trust and limits list. Key `i` copies Trust and limits from this page as Markdown. That list is not a
 live policy feed. Key `u` copies How it works from this page as Markdown. That
 list is not a live policy feed. Key `-` copies the first How it works list
 item from this page as one Markdown line. That copy is catalog copy, not a
@@ -139,7 +139,7 @@ filter. Partnership Breakpoint 1.5.3 also names tornado Markdown copy, the
 Three-party joint venture start, and the all-hold ledger persist / unbounded
 tornado filter. Partnership Breakpoint 1.5.4 also names allocation-balance
 Markdown copy, the Podcast host and network start, and the zero-share roster
-filter. Partnership Breakpoint 1.5.5 also names capacity-utilization Markdown copy, the Community hall split start, and the over-capacity roster filter. Partnership Breakpoint 1.5.6 also names first-breakpoint participant copy, the Festival stall split start, and the at-hold roster filter. Partnership Breakpoint 1.5.7 also names least-headroom participant copy, the Pop-up cinema split start, and the unbounded-capacity roster filter. Partnership Breakpoint 1.5.8 also names least-headroom copy shortcut, the Community radio split start, and the spare-capacity roster filter. Partnership Breakpoint 1.5.9 also names remaining-to-hold copy shortcut, the School concert split start, and the least-headroom roster filter. Partnership Breakpoint 1.5.10 also names volume-to-hold copy shortcut, the Sports carnival split start, and the within-capacity roster filter. Partnership Breakpoint 1.5.11 also names over-capacity count copy shortcut, the Netball carnival split start, and the first-breakpoint roster filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
+filter. Partnership Breakpoint 1.5.5 also names capacity-utilization Markdown copy, the Community hall split start, and the over-capacity roster filter. Partnership Breakpoint 1.5.6 also names first-breakpoint participant copy, the Festival stall split start, and the at-hold roster filter. Partnership Breakpoint 1.5.7 also names least-headroom participant copy, the Pop-up cinema split start, and the unbounded-capacity roster filter. Partnership Breakpoint 1.5.8 also names least-headroom copy shortcut, the Community radio split start, and the spare-capacity roster filter. Partnership Breakpoint 1.5.9 also names remaining-to-hold copy shortcut, the School concert split start, and the least-headroom roster filter. Partnership Breakpoint 1.5.10 also names volume-to-hold copy shortcut, the Sports carnival split start, and the within-capacity roster filter. Partnership Breakpoint 1.5.11 also names over-capacity count copy shortcut, the Netball carnival split start, and the first-breakpoint roster filter. Partnership Breakpoint 1.5.12 also names over-capacity label copy shortcut, the Swimming carnival split start, and the first-over-capacity roster filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
 Payday Friday burst, and one-row dashboard CSV. Weekend Gap 1.5.2 also names
 peak-queue hour copy, Public-holiday Monday, and the single-gate Gantt filter.
 Weekend Gap 1.5.3 also names hours-to-clear Markdown copy, Saturday market
@@ -158,6 +158,8 @@ That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last How-it-works copy, last-How jump, and first-How jump.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-job copy, last-job jump, and first-job jump.
+That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names last What's new copy, last-news jump, and first-news jump.
 That What's new entry is hub-only. It does not change workbench versions.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
@@ -262,6 +264,8 @@ line. It does not fetch a policy file or add another public path. Copy last How 
 that 404 page copies the printed last How it works list item as one Markdown
 line. It does not fetch a policy file or add another public path. Copy last job on
 that 404 page copies the printed last workbench job as one Markdown line. It does not
+fetch a product feed or add another public path. Copy last What's new heading on
+that 404 page copies the printed last What's new heading as one Markdown line. It does not
 fetch a product feed or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
@@ -286,6 +290,17 @@ catalog cards as one Markdown line, with the same clipboard and visible text
 box fallback. If that card is missing, it copies an empty string. That copy is
 catalog copy, not a live product feed. It is distinct from Copy first job, which
 copies the first card, and from Copy jobs, which copies all four jobs.
+Copy last What's new heading copies the last What's new heading from this
+catalog page as one Markdown line, with the same clipboard and visible text
+box fallback. If that heading is missing, it copies an empty string. That copy is
+catalog copy, not a live product feed. It is distinct from Copy last job, which
+copies the last workbench job, and from Copy last How it works item.
+Copy first What's new heading copies the first What's new heading from this
+catalog page as one Markdown line, with the same clipboard and visible text
+box fallback. If that heading is missing, it copies an empty string. That copy is
+catalog copy, not a live product feed. It is distinct from Copy last What's new
+heading, which copies the last heading, and from key `g`, which focuses the
+first heading itself.
 Press `j` to copy catalog jobs through that same control.
 Press `q` to copy catalog jobs through that same Copy jobs control. It does not fork that Markdown.
 Press `;` to copy the first workbench name and one-sentence job from this page
@@ -299,6 +314,20 @@ the visible text box when the clipboard API is unavailable. If that card is
 missing, it copies an empty string. This is catalog copy, not a live product
 feed. It is distinct from `;`, which copies the first workbench job, and from
 `j` and `q`, which copy all four jobs.
+Press `~` to copy the last What's new heading from this page as one Markdown
+line. That key uses the same Copy last What's new heading control, including
+the visible text box when the clipboard API is unavailable. If that heading is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `g`, which focuses the first What's new heading, and
+from `n`, which focuses What's new.
+Press `!` to focus the Copy last What's new heading control, or the What's new
+heading if that control is missing. That key moves focus; it does not open a
+workbench. It does not copy. That key is distinct from `g`, which focuses the
+first What's new heading, and from `n`.
+Press `(` to focus the Copy first What's new heading control, or the What's new
+heading if that control is missing. That key moves focus; it does not open a
+workbench. It does not copy. That key is distinct from `g`, which focuses the
+first What's new heading itself, and from `~`.
 Press `+` to focus the Copy last job control, or the workbenches heading if
 that control is missing. That key moves focus; it does not open a workbench.
 It does not copy. That key is distinct from `s`, which focuses the first Open

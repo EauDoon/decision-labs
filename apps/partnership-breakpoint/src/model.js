@@ -43,6 +43,7 @@
  * @property {boolean} [hideParticipantsAtLeastHeadroom] Optional roster display preference. Omitted files default to showing the least-headroom roster row.
  * @property {boolean} [hideParticipantsWithinCapacity] Optional roster display preference. Omitted files default to showing roster rows that are within listed capacity.
  * @property {boolean} [hideFirstBreakpointParticipant] Optional roster display preference. Omitted files default to showing the first-breakpoint roster row.
+ * @property {boolean} [hideFirstOverCapacityParticipant] Optional roster display preference. Omitted files default to showing the first over-capacity roster row.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -56,7 +57,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -232,6 +233,15 @@ export const PRESETS = Object.freeze({
       { id: 'first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 0.55, fixedMonthlyCost: 900, minimumAcceptableProfit: 350, capacity: 2800, minimumCommitment: 0, riskCost: 160 },
     ],
   },
+  swimmingCarnivalSplit: {
+    name: 'Swimming carnival split',
+    deal: { monthlyVolume: 2300, feePerTransaction: 15, addressableVolume: 3400, volumeShockPct: 0 },
+    participants: [
+      { id: 'swimming-committee', name: 'Carnival committee', revenueShare: 0.4, variableCostPerTransaction: 1.05, fixedMonthlyCost: 2700, minimumAcceptableProfit: 1000, capacity: 3100, minimumCommitment: 0, riskCost: 380 },
+      { id: 'pool-operations', name: 'Pool operations', revenueShare: 0.36, variableCostPerTransaction: 2.7, fixedMonthlyCost: 2100, minimumAcceptableProfit: 850, capacity: 4000, minimumCommitment: 300, riskCost: 450 },
+      { id: 'swim-canteen', name: 'Canteen', revenueShare: 0.24, variableCostPerTransaction: 1.8, fixedMonthlyCost: 1200, minimumAcceptableProfit: 500, capacity: 2600, minimumCommitment: 0, riskCost: 190 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -347,6 +357,12 @@ export function validateConfiguration(config) {
     const hideFirst = own(config, 'hideFirstBreakpointParticipant');
     if (hideFirst !== true && hideFirst !== false) {
       errors.push('Hide first-breakpoint participant must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideFirstOverCapacityParticipant')) {
+    const hideFirstOver = own(config, 'hideFirstOverCapacityParticipant');
+    if (hideFirstOver !== true && hideFirstOver !== false) {
+      errors.push('Hide first over-capacity participant must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
