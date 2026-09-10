@@ -1853,7 +1853,7 @@ document.addEventListener("keydown", (event) => {
     jumpToHoursToFirstSettlementLine();
     return;
   }
-  if (event.key === "l" || event.key === "L") {
+  if (event.key === "l" || event.key === "L" || event.key === ",") {
     event.preventDefault();
     copyHoursToFirstSettlementMarkdown();
     return;
