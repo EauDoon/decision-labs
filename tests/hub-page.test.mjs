@@ -5864,3 +5864,121 @@ test('keyboard tilde copies the last What\'s new heading through its own control
   assert.equal(clicks.lastNews, 1);
   assert.deepEqual(assigned, []);
 });
+
+test('exclamation focuses Copy last What\'s new heading when focus is not in an input', () => {
+  assert.match(html, /event\.key === '!'/);
+  assert.match(html, /getElementById\('copy-last-whats-new'\) \|\| document\.getElementById\('whats-new-title'\) \|\| document\.getElementById\('whats-new'\)/);
+  assert.match(html, /id="copy-last-whats-new"/);
+  assert.match(html, /id="whats-new-title"/);
+  assert.match(html, /<kbd>!<\/kbd><\/dt><dd>Focus the Copy last What's new heading control, or the What's new heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Press <kbd>!<\/kbd> to focus Copy last What's new heading/);
+  assert.match(html, /This key moves focus; it does not open a workbench/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  const focused = [];
+  const clicks = { lastNews: 0 };
+  const assigned = [];
+  let keydown = null;
+  const copyLastNews = { focus() { focused.push('copy-last-whats-new'); }, click() { clicks.lastNews += 1; }, addEventListener() {} };
+  const heading = { focus() { focused.push('whats-new-title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-whats-new') return copyLastNews;
+      if (id === 'whats-new-title') return heading;
+      if (id === 'whats-new') return { focus() { focused.push('whats-new'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? { focus() { focused.push('first-news-h3'); } } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('!', input, true);
+  fire('!', textarea, true);
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.lastNews, 0);
+  assert.deepEqual(assigned, []);
+  fire('!', body, true);
+  assert.deepEqual(focused, ['copy-last-whats-new']);
+  assert.equal(clicks.lastNews, 0);
+  assert.deepEqual(assigned, []);
+  fire('g', body, false);
+  assert.deepEqual(focused, ['copy-last-whats-new', 'first-news-h3']);
+  fire('n', body, false);
+  assert.deepEqual(focused, ['copy-last-whats-new', 'first-news-h3', 'whats-new']);
+  fire('~', body, true);
+  assert.equal(clicks.lastNews, 1);
+  assert.deepEqual(focused, ['copy-last-whats-new', 'first-news-h3', 'whats-new']);
+  assert.deepEqual(assigned, []);
+});
+
+test('exclamation focuses the What\'s new heading when Copy last What\'s new heading is missing', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('whats-new-title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-whats-new') return null;
+      if (id === 'whats-new-title') return heading;
+      if (id === 'whats-new') return { focus() { focused.push('whats-new'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '!',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: true,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['whats-new-title']);
+  assert.deepEqual(assigned, []);
+});
