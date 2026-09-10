@@ -1639,3 +1639,210 @@ test('404 copy last How it works item stays GET HEAD only with connect-src none'
   assert.equal(head.status, 404);
   assert.equal(head.body, '');
 });
+
+test('404 copy last job markdown is the last printed catalog job', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  let items = [
+    { textContent: 'Partnership Breakpoint: Find which participant in a revenue split.' },
+    { textContent: 'Common Cart: Pool buyer constraints.' },
+    { textContent: 'Weekend Gap: Follow synthetic AUD redemption demand.' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-job') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-last-job-status') return { textContent: '' };
+      if (id === 'copy-last-job-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#catalog-jobs li' ? items : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '- Weekend Gap: Follow synthetic AUD redemption demand.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Partnership Breakpoint/);
+  assert.doesNotMatch(copied, /live product feed/);
+  items = [];
+  copied = 'stale';
+  await click();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last job is distinct from Copy jobs', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let lastCopied = '';
+  let clickJobs = null;
+  let clickLast = null;
+  const items = [
+    { textContent: 'Partnership Breakpoint: Find which participant in a revenue split.' },
+    { textContent: 'Weekend Gap: Follow synthetic AUD redemption demand.' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-jobs') return { addEventListener(name, handler) { if (name === 'click') clickJobs = handler; } };
+      if (id === 'copy-jobs-status') return { textContent: '' };
+      if (id === 'copy-jobs-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-last-job') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-job-status') return { textContent: '' };
+      if (id === 'copy-last-job-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#catalog-jobs li' ? items : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { lastCopied = text; } } },
+  });
+  await clickJobs();
+  const list = lastCopied;
+  await clickLast();
+  const last = lastCopied;
+  assert.match(list, /Partnership Breakpoint/);
+  assert.match(list, /\n/);
+  assert.equal(last, '- Weekend Gap: Follow synthetic AUD redemption demand.');
+  assert.notEqual(last, list);
+  assert.doesNotMatch(page, /id="copy-first-job"/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last job uses the printed list without extra public paths', () => {
+  const page = notFoundPage();
+  assert.match(page, /id="copy-last-job"/);
+  assert.match(page, />Copy last job</);
+  assert.match(page, /id="copy-last-job-fallback"/);
+  assert.match(page, /textarea id="copy-last-job-fallback"/);
+  assert.match(page, /lastJobMarkdown/);
+  assert.match(page, /querySelectorAll\('#catalog-jobs li'\)/);
+  assert.match(page, /id="catalog-jobs"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-jobs"/);
+  assert.match(page, />Copy jobs</);
+  assert.doesNotMatch(page, /id="copy-first-job"/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy-last-job script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /lastJobMarkdown/);
+  assert.match(source, /Not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last job shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-job') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-last-job-status') return status;
+      if (id === 'copy-last-job-fallback') return fallback;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#catalog-jobs li' ? [{ textContent: 'Weekend Gap: Follow synthetic AUD redemption demand.' }] : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Weekend Gap: Follow synthetic AUD redemption demand.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last job stays GET HEAD only with connect-src none', async (t) => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-last-job-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /id="copy-last-job"/);
+  assert.match(missing.body, />Copy last job</);
+  assert.match(missing.body, /id="catalog-jobs"/);
+  assert.match(missing.body, /Not a live product feed/);
+  assert.match(missing.body, /id="copy-jobs"/);
+  assert.doesNotMatch(missing.body, /id="copy-first-job"/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+  const head = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-last-job-path',
+      method: 'HEAD',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(head.status, 404);
+  assert.equal(head.body, '');
+});
