@@ -97,10 +97,17 @@ export function notFoundPage() {
   const firstWhatsNew = catalogFirstWhatsNewHeading();
   const lastWhatsNew = catalogLastWhatsNewHeading();
   const firstWorkbench = catalogFirstWorkbenchHeading();
+  const lastWorkbench = catalogLastWorkbenchHeading();
   const newsHeadings = [];
   if (firstWhatsNew) newsHeadings.push(firstWhatsNew);
   if (lastWhatsNew && lastWhatsNew !== firstWhatsNew) newsHeadings.push(lastWhatsNew);
   const newsList = newsHeadings.map((heading) => `<li><h3>${escapeHtml(heading)}</h3></li>`).join('\n        ');
+  const workbenchHeadings = [];
+  if (firstWorkbench) workbenchHeadings.push(firstWorkbench);
+  if (lastWorkbench && lastWorkbench !== firstWorkbench) workbenchHeadings.push(lastWorkbench);
+  const workbenchList = workbenchHeadings.map((heading) => `<article class="workbench">
+        <h3>${escapeHtml(heading)}</h3>
+      </article>`).join('\n      ');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -222,9 +229,7 @@ export function notFoundPage() {
     <textarea id="copy-last-whats-new-fallback" class="copy-last-whats-new-fallback" hidden readonly rows="2" aria-label="Last What's new heading as Markdown"></textarea>
     <section id="workbenches">
       <h2 id="workbenches-title">The workbenches</h2>
-      <article class="workbench">
-        <h3>${escapeHtml(firstWorkbench)}</h3>
-      </article>
+      ${workbenchList}
     </section>
     <p class="copy-first-workbench-tools">
       <button type="button" class="copy-first-workbench" id="copy-first-workbench">Copy first workbench heading</button>
