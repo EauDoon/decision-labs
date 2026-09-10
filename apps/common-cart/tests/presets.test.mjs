@@ -105,7 +105,7 @@ test("office fruit box is distinct synthetic weekly fruit for an office", () => 
 });
 
 test("new presets survive validation and keep a deterministic winner", () => {
-  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit", "libraryPaper", "sportsKit", "surfFirstAid", "theatreWardrobe"]) {
+  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit", "libraryPaper", "sportsKit", "surfFirstAid", "theatreWardrobe", "choirFolders"]) {
     const first = evaluateMarket(clonePreset(name));
     const second = evaluateMarket(validateScenario(clonePreset(name)));
     assert.equal(first.winner.offer.id, second.winner.offer.id);
@@ -316,4 +316,56 @@ test("the example bar includes the theatre wardrobe kit preset", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /data-preset="theatreWardrobe"/u);
   assert.match(html, /Theatre wardrobe/u);
+});
+
+test("community choir folders is distinct synthetic mixed SATB folders", () => {
+  const kit = evaluateMarket(clonePreset("choirFolders"));
+  const coffee = evaluateMarket(clonePreset("neighbourhood"));
+  const studio = evaluateMarket(clonePreset("studio"));
+  const pantry = evaluateMarket(clonePreset("pantry"));
+  const office = evaluateMarket(clonePreset("officePantry"));
+  const hardware = evaluateMarket(clonePreset("hardware"));
+  const garden = evaluateMarket(clonePreset("garden"));
+  const fete = evaluateMarket(clonePreset("schoolFete"));
+  const fruit = evaluateMarket(clonePreset("officeFruit"));
+  const paper = evaluateMarket(clonePreset("libraryPaper"));
+  const sports = evaluateMarket(clonePreset("sportsKit"));
+  const surf = evaluateMarket(clonePreset("surfFirstAid"));
+  const theatre = evaluateMarket(clonePreset("theatreWardrobe"));
+  const ladder = evaluateMarket(clonePreset("tiers"));
+  assert.ok(kit.winner);
+  assert.equal(kit.scenario.title, "Community choir folders");
+  assert.equal(kit.scenario.buyers[0].category, "Choir folder pack");
+  assert.notEqual(kit.scenario.buyers[0].category, coffee.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, studio.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, pantry.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, office.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, hardware.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, garden.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, fete.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, fruit.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, paper.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, sports.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, surf.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, theatre.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.title, ladder.scenario.title);
+  assert.ok(kit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Soprano folder")));
+  assert.ok(kit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Alto folder")));
+  assert.ok(kit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Tenor folder")));
+  assert.ok(kit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Bass folder")));
+  assert.ok(kit.results.some((result) => result.offer.merchant === "Rehearsal-room Folder Delivery" && result.offer.fulfillment === "shipping"));
+  assert.ok(kit.results.some((result) => result.offer.merchant === "Hall Folder Pickup" && result.offer.fulfillment === "pickup"));
+  const quantities = kit.scenario.buyers.map((buyer) => buyer.quantity);
+  assert.equal(new Set(quantities).size > 1, true);
+  const first = evaluateMarket(clonePreset("choirFolders"));
+  const second = evaluateMarket(validateScenario(clonePreset("choirFolders")));
+  assert.equal(first.winner.offer.id, second.winner.offer.id);
+  assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
+});
+
+test("the example bar includes the community choir folders preset", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /data-preset="choirFolders"/u);
+  assert.match(html, /Choir folders/u);
 });

@@ -227,6 +227,23 @@ export const presets = Object.freeze({
       offer("O02", "Blacks Run Co", "Costume wardrobe pack", "Rehearsal blacks", 22, 8, 6, 30, 3),
       { ...offer("O03", "Green-room Wardrobe Pickup", "Costume wardrobe pack", "Quick-change cloak", 18, 6, 2, 20, 8), fulfillment: "pickup" }
     ]
+  },
+  choirFolders: {
+    title: "Community choir folders",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Soprano row", "Choir folder pack", 8, 28, 8, ["Soprano folder", "Alto folder"]),
+      buyer("B02", "Alto desks", "Choir folder pack", 12, 22, 6, ["Alto folder"]),
+      buyer("B03", "Tenor stand", "Choir folder pack", 6, 32, 10, ["Tenor folder", "Soprano folder"]),
+      buyer("B04", "Bass crates", "Choir folder pack", 5, 20, 4, ["Bass folder"]),
+      buyer("B05", "Library rail", "Choir folder pack", 9, 26, 7, ["Tenor folder", "Bass folder"]),
+      buyer("B06", "Tour stack", "Choir folder pack", 7, 24, 5, ["Alto folder", "Bass folder"])
+    ],
+    offers: [
+      offer("O01", "Rehearsal-room Folder Delivery", "Choir folder pack", "Soprano folder", 18, 10, 5, 40, 4),
+      offer("O02", "Tenor Folder Cart", "Choir folder pack", "Tenor folder", 16, 8, 6, 24, 3),
+      { ...offer("O03", "Hall Folder Pickup", "Choir folder pack", "Alto folder", 14, 8, 2, 30, 6), fulfillment: "pickup" }
+    ]
   }
 });
 
