@@ -186,6 +186,9 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /id="copy-version-line"/);
   assert.match(missing.body, />Copy version line</);
   assert.match(missing.body, /versionLineMarkdown/);
+  assert.match(missing.body, /id="copy-first-trust"/);
+  assert.match(missing.body, />Copy first Trust item</);
+  assert.match(missing.body, /firstTrustMarkdown/);
   assert.doesNotMatch(missing.body, /\bfetch\s*\(/);
   assert.doesNotMatch(missing.body, /XMLHttpRequest/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
@@ -966,6 +969,212 @@ test('404 copy version line stays GET HEAD only with connect-src none', async (t
       hostname: '127.0.0.1',
       port,
       path: '/no-copy-version-line-path',
+      method: 'HEAD',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(head.status, 404);
+  assert.equal(head.body, '');
+});
+
+test('404 copy first Trust item markdown is the first printed Trust list item', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  const item = { textContent: 'Local-first. Pages run in your browser. The optional launcher binds loopback only.' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-trust') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-trust-status') return { textContent: '' };
+      if (id === 'copy-first-trust-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#trust li' ? item : null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '- Local-first. Pages run in your browser. The optional launcher binds loopback only.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /## Trust and limits/);
+  assert.doesNotMatch(copied, /live policy feed/);
+  item.textContent = '   ';
+  copied = 'stale';
+  await click();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first Trust item is distinct from Copy Trust', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let lastCopied = '';
+  let clickTrust = null;
+  let clickFirst = null;
+  const heading = { textContent: 'Trust and limits' };
+  const items = [
+    { textContent: 'Local-first. Pages run in your browser.' },
+    { textContent: 'No account. There is no sign-in.' },
+  ];
+  const section = {
+    querySelector(selector) {
+      return selector === 'h2' ? heading : null;
+    },
+    querySelectorAll(selector) {
+      return selector === 'ul li' ? items : [];
+    },
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-trust') return { addEventListener(name, handler) { if (name === 'click') clickTrust = handler; } };
+      if (id === 'copy-trust-status') return { textContent: '' };
+      if (id === 'copy-trust-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-first-trust') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-trust-status') return { textContent: '' };
+      if (id === 'copy-first-trust-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'trust') return section;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#trust li' ? items[0] : null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { lastCopied = text; } } },
+  });
+  await clickTrust();
+  const list = lastCopied;
+  await clickFirst();
+  const line = lastCopied;
+  assert.match(list, /## Trust and limits/);
+  assert.match(list, /\n/);
+  assert.equal(line, '- Local-first. Pages run in your browser.');
+  assert.notEqual(line, list);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first Trust item uses the printed list without extra public paths', () => {
+  const page = notFoundPage();
+  assert.match(page, /id="copy-first-trust"/);
+  assert.match(page, />Copy first Trust item</);
+  assert.match(page, /id="copy-first-trust-fallback"/);
+  assert.match(page, /textarea id="copy-first-trust-fallback"/);
+  assert.match(page, /firstTrustMarkdown/);
+  assert.match(page, /querySelector\('#trust li'\)/);
+  assert.match(page, /id="trust"/);
+  assert.match(page, /Local-first/);
+  assert.match(page, /Not a live policy feed/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy-first-trust script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /firstTrustMarkdown/);
+  assert.match(source, /Not a live policy feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first Trust item shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-trust') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-trust-status') return status;
+      if (id === 'copy-first-trust-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#trust li' ? { textContent: 'Local-first. Pages run in your browser.' } : null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Local-first. Pages run in your browser.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live policy feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first Trust item stays GET HEAD only with connect-src none', async (t) => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-trust-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /id="copy-first-trust"/);
+  assert.match(missing.body, />Copy first Trust item</);
+  assert.match(missing.body, /id="trust"/);
+  assert.match(missing.body, /Local-first/);
+  assert.match(missing.body, /Not a live policy feed/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+  const head = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-trust-path',
       method: 'HEAD',
       headers: { host: `127.0.0.1:${port}` },
     }, (res) => {
