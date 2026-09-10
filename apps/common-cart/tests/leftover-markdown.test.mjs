@@ -13,6 +13,7 @@ import {
   createLeftoverHeadroomMarkdown,
   createWinningFulfillmentMarkdown,
   createLeftoverFillMarkdown,
+  createLeftoverFillUnitCountMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown
 } from "../src/model.js";
@@ -304,6 +305,40 @@ test("leftover fill Markdown is honest when leftover fill is missing", () => {
   const scenario = leftoverFixture();
   scenario.offers[1].minimumUnits = 5000;
   const markdown = createLeftoverFillMarkdown(scenario);
+  assert.match(markdown, /: none\. Not a merchant export\./);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("Leaf Collective"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+});
+
+test("leftover fill unit-count Markdown is organizer-private count only", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createLeftoverFillUnitCountMarkdown(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  assert.equal(markdown.trim().includes("\n"), false);
+  assert.match(markdown, /organizer private/);
+  assert.match(markdown, /Not a merchant export/);
+  assert.match(markdown, new RegExp(`: ${coverage.secondary.fulfilledUnits}\\.`));
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes("Tea room"), false);
+  assert.equal(markdown.includes("Leaf Collective"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+  assert.equal(markdown.includes("Tertiary"), false);
+  assert.equal(markdown.includes("tertiary"), false);
+});
+
+test("leftover fill unit-count Markdown is honest when leftover fill is missing", () => {
+  const scenario = leftoverFixture();
+  scenario.offers[1].minimumUnits = 5000;
+  const markdown = createLeftoverFillUnitCountMarkdown(scenario);
   assert.match(markdown, /: none\. Not a merchant export\./);
   assert.equal(markdown.includes("SECRET_LABEL"), false);
   assert.equal(markdown.includes("Leaf Collective"), false);

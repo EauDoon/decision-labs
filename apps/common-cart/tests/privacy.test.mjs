@@ -31,6 +31,7 @@ import {
   createLeftoverHeadroomMarkdown,
   createWinningFulfillmentMarkdown,
   createLeftoverFillMarkdown,
+  createLeftoverFillUnitCountMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown
 } from "../src/model.js";
@@ -213,6 +214,15 @@ test("leftover fill Markdown omits buyer identities", () => {
   assertOmitsPrivateBuyers(leftoverFill, ["SECRET_TITLE"]);
   assert.match(leftoverFill, /organizer private/);
   assert.match(leftoverFill, /Not a merchant export/);
+});
+
+test("leftover fill unit-count Markdown omits buyer identities", () => {
+  const scenario = secretNeighbourhood();
+  const leftoverFillUnits = createLeftoverFillUnitCountMarkdown(scenario);
+  assertOmitsPrivateBuyers(leftoverFillUnits, ["SECRET_TITLE"]);
+  assert.match(leftoverFillUnits, /organizer private/);
+  assert.match(leftoverFillUnits, /Not a merchant export/);
+  assert.equal(leftoverFillUnits.includes("Harbour Roasters"), false);
 });
 
 test("leftover print one-pager uses merchant labels and omits private buyer rows", async () => {
