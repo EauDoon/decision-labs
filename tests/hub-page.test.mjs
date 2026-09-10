@@ -309,11 +309,20 @@ test('copy catalog address control exists and stays hidden off http', () => {
 
 test('print CSS hides copy jobs tools and keeps How it works and versions', () => {
   const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
-  assert.match(print, /\.copy-jobs-tools, \.copy-jobs-fallback \{ display: none !important; \}/);
-  assert.match(print, /\.copy-versions-tools, \.copy-versions-fallback, \.copy-jobs-tools, \.copy-jobs-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-jobs-tools, \.copy-jobs-fallback, \.copy-trust-tools, \.copy-trust-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-versions-tools, \.copy-versions-fallback, \.copy-jobs-tools, \.copy-jobs-fallback, \.copy-trust-tools, \.copy-trust-fallback \{ display: none !important; \}/);
   assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
   assert.match(print, /\.version-line/);
   assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
+test('print CSS hides copy trust tools like copy versions and copy jobs', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-trust-tools, \.copy-trust-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-versions-tools, \.copy-versions-fallback, \.copy-jobs-tools, \.copy-jobs-fallback, \.copy-trust-tools, \.copy-trust-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.trust \{ display: block !important; \}/);
+  assert.match(html, /id="copy-trust"/);
+  assert.match(html, /id="copy-trust-fallback"/);
 });
 
 test('print CSS keeps How it works and hides skip links', () => {
