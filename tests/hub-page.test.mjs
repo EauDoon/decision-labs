@@ -123,6 +123,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Hall hire preset, threshold copy, and veto jump in The Smallest Agreement 1\.5\.5/);
   assert.match(html, /Garden watering, lock-count copy, and threshold jump in The Smallest Agreement 1\.5\.6/);
   assert.match(html, /Laundry hours, lock-count jump, and locked-clause hide in The Smallest Agreement 1\.5\.7/);
+  assert.match(html, /BBQ hours, first-lock copy, and threshold-group hide in The Smallest Agreement 1\.5\.8/);
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /Dashboard copy, file compare, and compressed Friday in Weekend Gap 1\.4\.3/);
@@ -178,6 +179,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Hall hire hours start,\s+numeric approval-threshold copy/);
   assert.match(readme, /Community garden watering start,\s+lock-count copy/);
   assert.match(readme, /Shared laundry hours start,\s+first-locked-option copy/);
+  assert.match(readme, /Rooftop BBQ hours start,\s+first-locked-option copy shortcut/);
   assert.match(readme, /queue-clear hours and Gantt compare/);
   assert.match(readme, /queue CSV export, peak-queue jump/);
   assert.match(readme, /dashboard Markdown copy, two-file compare/);
