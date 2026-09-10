@@ -383,6 +383,7 @@ footer {
   body.print-leftover #leftover-coverage,
   body.print-leftover #leftover-print-overlap,
   body.print-leftover #leftover-print-uncovered,
+  body.print-leftover #leftover-print-uncovered-units,
   body.print-leftover #leftover-print-requested,
   body.print-leftover #leftover-print-fill,
   body.print-leftover .scoreboard .metric.feature {

@@ -144,6 +144,7 @@ export const presets: Readonly<{
   sportsKit: Scenario;
   surfFirstAid: Scenario;
   theatreWardrobe: Scenario;
+  choirFolders: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -266,7 +267,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideFullyFilledBuyers: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -307,6 +308,8 @@ export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: s
 export function filterBuyerIdsHidingExcluded(rawScenario: unknown, offerId: string, hideExcluded: boolean): string[];
 /** Display-only. Matching is unchanged. When hideFullyFilled is false, every buyer id is returned. */
 export function filterBuyerIdsHidingFullyFilled(rawScenario: unknown, hideFullyFilled: boolean): string[];
+/** Display-only. Matching is unchanged. Inverse of hide fully filled. When hideBuyersWithLeftover is false, every buyer id is returned. */
+export function filterBuyerIdsHidingBuyersWithLeftover(rawScenario: unknown, hideBuyersWithLeftover: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
@@ -438,6 +441,8 @@ export function organizerLeftoverRows(rawScenario: unknown): OrganizerLeftoverRo
 export function createWinnerInspectorSummaryMarkdown(rawScenario: unknown): string;
 /** Organizer-private uncovered leftover Markdown. Counts and units only. */
 export function createUncoveredLeftoverCountsMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line uncovered leftover unit-count. Count only. Not a merchant export. */
+export function createUncoveredLeftoverUnitCountMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];

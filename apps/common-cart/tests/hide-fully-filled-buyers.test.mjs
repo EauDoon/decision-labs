@@ -65,5 +65,9 @@ test("the organizer hide-fully-filled filter is not on the merchant table", asyn
   assert.match(app, /filterBuyerIdsHidingFullyFilled\(/u);
   assert.match(app, /hideFullyFilledBuyers/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
+  assert.match(app, /function focusHideFullyFilledBuyers\(/u);
+  assert.match(app, /#hide-fully-filled-buyers/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /if \(key === ">"\)/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
 });
