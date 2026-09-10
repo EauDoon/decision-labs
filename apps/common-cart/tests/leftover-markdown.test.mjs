@@ -487,6 +487,9 @@ test("the buyer room copies leftover fill merchant with a textarea fallback", as
   assert.match(buyerPanel, /id="copy-leftover-fill-units"/u);
   assert.match(buyerPanel, /id="copy-uncovered-leftover-units"/u);
   assert.match(buyerPanel, /id="copy-winning-merchant"/u);
+  assert.match(app, /if \(key === '"'\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMerchantLabel\(\);/u);
+  assert.match(app, /if \(key === ":"\) \{\s*event\.preventDefault\(\);\s*copyUncoveredLeftoverUnitCount\(\);/u);
+  assert.match(app, /if \(key === "'"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount\(\);/u);
 });
 
 test("the buyer room copies uncovered leftover unit-count with a textarea fallback", async () => {

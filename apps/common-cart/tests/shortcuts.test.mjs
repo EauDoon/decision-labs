@@ -566,6 +566,39 @@ test("keyboard handler jumps to hide buyers with leftover when not typing", asyn
   assert.match(app, /if \(key === "-"\) \{\s*event\.preventDefault\(\);\s*focusUncoveredLeftoverUnitCountCopy\(\);/u);
 });
 
+test("shortcut help documents leftover fill merchant copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>"<\/kbd> Copy leftover fill merchant \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-fill-merchant"/u);
+});
+
+test("keyboard handler copies leftover fill merchant with quote when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /if \(key === '"'\)/u);
+  assert.match(app, /function copyLeftoverFillMerchantLabel\(/u);
+  assert.match(app, /createLeftoverFillMerchantLabelMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-leftover-fill-merchant/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.doesNotMatch(app, /if \(key === '"'\) \{\s*event\.preventDefault\(\);\s*copyUncoveredLeftoverUnitCount/u);
+  assert.doesNotMatch(app, /if \(key === '"'\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount/u);
+  assert.match(app, /if \(key === ":"\) \{\s*event\.preventDefault\(\);\s*copyUncoveredLeftoverUnitCount\(\);/u);
+  assert.match(app, /if \(key === "'"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount\(\);/u);
+});
+
+test("quote leftover fill merchant copy uses the existing leftover-fill merchant control", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(app, /if \(key === '"'\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMerchantLabel\(\);/u);
+  assert.match(app, /function copyLeftoverFillMerchantLabel\(/u);
+  assert.match(app, /createLeftoverFillMerchantLabelMarkdown\(scenario\)/u);
+  assert.match(html, /id="copy-leftover-fill-merchant"/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === '"'\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+  assert.match(app, /if \(key === "y" \|\| key === ";"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

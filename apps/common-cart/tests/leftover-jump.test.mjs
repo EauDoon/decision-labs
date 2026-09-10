@@ -206,6 +206,7 @@ test("leftover fill merchant copy stays on the organizer leftover control", asyn
   assert.match(app, /#copy-leftover-fill-merchant/u);
   assert.match(app, /function copyLeftoverFill\(/u);
   assert.match(app, /function copyLeftoverFillUnitCount\(/u);
+  assert.match(app, /if \(key === '"'\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMerchantLabel\(\);/u);
 });
 
 test("leftover print jump stays on the leftover print control", async () => {
