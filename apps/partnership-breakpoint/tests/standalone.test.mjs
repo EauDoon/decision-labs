@@ -61,7 +61,7 @@ test('standalone renderer refuses missing markers and external CSS resources', (
   assert.throws(() => renderStandalone({ html, css: 'body { background: url(image.png); }', model: '', app: appImport }), /URL resource/);
 });
 
-test('standalone retains 1.5.12 review tools and 1.5.13 copy controls', async () => {
+test('standalone retains 1.5.13 review tools and 1.5.14 copy controls', async () => {
   const html = await buildStandalone();
   assert.match(html, /createPartnershipReviewPacket/);
   assert.match(html, /replayPartnershipReviewPacket/);
@@ -89,15 +89,23 @@ test('standalone retains 1.5.12 review tools and 1.5.13 copy controls', async ()
   assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
   assert.match(html, /id="copy-last-over-capacity-label"/);
   assert.match(html, /data-action="copy-last-over-capacity-label"/);
+  assert.match(html, /id="copy-last-over-capacity-label"[^>]*aria-keyshortcuts="\("/);
+  assert.match(html, /id="copy-last-over-capacity-remaining"/);
+  assert.match(html, /data-action="copy-last-over-capacity-remaining"/);
+  assert.match(html, /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="#"/);
+  assert.match(html, /id="hide-last-breakpoint-participant"/);
+  assert.match(html, /data-action="hide-last-breakpoint-participant"/);
   assert.match(html, /School concert split/);
   assert.match(html, /Sports carnival split/);
   assert.match(html, /Netball carnival/);
   assert.match(html, /Swimming carnival split/);
   assert.match(html, /Athletics carnival split/);
+  assert.match(html, /Cricket carnival split/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
   assert.match(html, /hideFirstOverCapacityParticipant/);
   assert.match(html, /hideLastOverCapacityParticipant/);
+  assert.match(html, /hideLastBreakpointParticipant/);
   assert.match(html, /id="hide-last-over-capacity-participant"/);
 });

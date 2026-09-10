@@ -45,6 +45,7 @@
  * @property {boolean} [hideFirstBreakpointParticipant] Optional roster display preference. Omitted files default to showing the first-breakpoint roster row.
  * @property {boolean} [hideFirstOverCapacityParticipant] Optional roster display preference. Omitted files default to showing the first over-capacity roster row.
  * @property {boolean} [hideLastOverCapacityParticipant] Optional roster display preference. Omitted files default to showing the last over-capacity roster row.
+ * @property {boolean} [hideLastBreakpointParticipant] Optional roster display preference. Omitted files default to showing the last first-breakpoint roster row.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -58,7 +59,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -252,6 +253,15 @@ export const PRESETS = Object.freeze({
       { id: 'athletics-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 0.62, fixedMonthlyCost: 1000, minimumAcceptableProfit: 400, capacity: 2700, minimumCommitment: 0, riskCost: 180 },
     ],
   },
+  cricketCarnivalSplit: {
+    name: 'Cricket carnival split',
+    deal: { monthlyVolume: 2700, feePerTransaction: 12, addressableVolume: 3900, volumeShockPct: 0 },
+    participants: [
+      { id: 'cricket-committee', name: 'Carnival committee', revenueShare: 0.38, variableCostPerTransaction: 1.32, fixedMonthlyCost: 3150, minimumAcceptableProfit: 1150, capacity: 3450, minimumCommitment: 0, riskCost: 460 },
+      { id: 'pitch-hire', name: 'Pitch hire', revenueShare: 0.37, variableCostPerTransaction: 2.35, fixedMonthlyCost: 1650, minimumAcceptableProfit: 780, capacity: 4600, minimumCommitment: 240, riskCost: 275 },
+      { id: 'cricket-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 0.71, fixedMonthlyCost: 880, minimumAcceptableProfit: 360, capacity: 3000, minimumCommitment: 0, riskCost: 155 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -379,6 +389,12 @@ export function validateConfiguration(config) {
     const hideLastOver = own(config, 'hideLastOverCapacityParticipant');
     if (hideLastOver !== true && hideLastOver !== false) {
       errors.push('Hide last over-capacity participant must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideLastBreakpointParticipant')) {
+    const hideLastBreakpoint = own(config, 'hideLastBreakpointParticipant');
+    if (hideLastBreakpoint !== true && hideLastBreakpoint !== false) {
+      errors.push('Hide last first-breakpoint participant must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {

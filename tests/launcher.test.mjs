@@ -4,7 +4,7 @@ import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -2254,6 +2254,210 @@ test('404 copy first What\'s new heading stays GET HEAD only with connect-src no
       hostname: '127.0.0.1',
       port,
       path: '/no-copy-first-whats-new-path',
+      method: 'HEAD',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(head.status, 404);
+  assert.equal(head.body, '');
+});
+
+test('404 copy first workbench heading markdown is the first printed workbench heading', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  let firstHeading = { textContent: 'Partnership Breakpoint' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-workbench') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-workbench-status') return { textContent: '' };
+      if (id === 'copy-first-workbench-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches article.workbench h3' ? firstHeading : null;
+    },
+    querySelectorAll: () => [],
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '- Partnership Breakpoint');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Common Cart/);
+  assert.doesNotMatch(copied, /live product feed/);
+  firstHeading = null;
+  copied = 'stale';
+  await click();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first workbench heading is distinct from Copy first What\'s new heading', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let lastCopied = '';
+  let clickWorkbench = null;
+  let clickNews = null;
+  const workbenchHeading = { textContent: 'Partnership Breakpoint' };
+  const newsHeading = { textContent: 'Last What\'s new copy, last-news jump, and first-news jump' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-workbench') return { addEventListener(name, handler) { if (name === 'click') clickWorkbench = handler; } };
+      if (id === 'copy-first-workbench-status') return { textContent: '' };
+      if (id === 'copy-first-workbench-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-first-whats-new') return { addEventListener(name, handler) { if (name === 'click') clickNews = handler; } };
+      if (id === 'copy-first-whats-new-status') return { textContent: '' };
+      if (id === 'copy-first-whats-new-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === '#workbenches article.workbench h3') return workbenchHeading;
+      if (selector === '#whats-new h3') return newsHeading;
+      return null;
+    },
+    querySelectorAll: () => [],
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { lastCopied = text; } } },
+  });
+  await clickWorkbench();
+  const workbench = lastCopied;
+  await clickNews();
+  const news = lastCopied;
+  assert.equal(workbench, '- Partnership Breakpoint');
+  assert.equal(news, '- Last What\'s new copy, last-news jump, and first-news jump');
+  assert.notEqual(workbench, news);
+  assert.match(page, /id="copy-first-workbench"/);
+  assert.match(page, /id="copy-first-whats-new"/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first workbench heading uses the printed heading without extra public paths', () => {
+  const page = notFoundPage();
+  const heading = catalogFirstWorkbenchHeading();
+  assert.equal(heading, 'Partnership Breakpoint');
+  assert.equal(page.includes(heading), true, '404 page should print the first workbench heading');
+  assert.match(page, /id="copy-first-workbench"/);
+  assert.match(page, />Copy first workbench heading</);
+  assert.match(page, /id="copy-first-workbench-fallback"/);
+  assert.match(page, /textarea id="copy-first-workbench-fallback"/);
+  assert.match(page, /firstWorkbenchMarkdown/);
+  assert.match(page, /querySelector\('#workbenches article\.workbench h3'\)/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-first-whats-new"/);
+  assert.match(page, />Copy first What's new heading</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy-first-workbench script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /firstWorkbenchMarkdown/);
+  assert.match(source, /Not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first workbench heading shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-workbench') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-workbench-status') return status;
+      if (id === 'copy-first-workbench-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches article.workbench h3' ? { textContent: 'Partnership Breakpoint' } : null;
+    },
+    querySelectorAll: () => [],
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Partnership Breakpoint');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first workbench heading stays GET HEAD only with connect-src none', async (t) => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-workbench-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /id="copy-first-workbench"/);
+  assert.match(missing.body, />Copy first workbench heading</);
+  assert.match(missing.body, /id="workbenches"/);
+  assert.match(missing.body, /Not a live product feed/);
+  assert.match(missing.body, /id="copy-first-whats-new"/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+  const head = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-workbench-path',
       method: 'HEAD',
       headers: { host: `127.0.0.1:${port}` },
     }, (res) => {
