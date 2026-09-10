@@ -1730,6 +1730,15 @@ export function createLeftoverFillPickupMarkdown(rawScenario) {
   return `Common Cart leftover fill pickup (organizer private): ${leftoverOffer.deliveryDays}. Not a merchant export.\n`;
 }
 
+/** Organizer-private one-line leftover fill offer label. Merchant and variant only. Not a merchant export. */
+export function createLeftoverFillLabelMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  if (!coverage.secondary) {
+    return "Common Cart leftover fill label (organizer private): none. Not a merchant export.\n";
+  }
+  return `Common Cart leftover fill label (organizer private): ${coverage.secondary.merchant} / ${coverage.secondary.variant}. Not a merchant export.\n`;
+}
+
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
 export function createWinningRemainingCapacityMarkdown(rawScenario) {
   const market = evaluateMarket(rawScenario);
