@@ -2354,6 +2354,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "k" || event.key === "K") {
     event.preventDefault();
     jumpToUnlocked();
+  } else if (event.key === "t" || event.key === "T") {
+    event.preventDefault();
+    $("#threshold-number")?.focus?.();
   }
 });
 

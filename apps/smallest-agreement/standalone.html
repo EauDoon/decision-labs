@@ -555,6 +555,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>c</kbd> Jump to the change-budget field</li>
           <li><kbd>p</kbd> Print the facilitator pack</li>
           <li><kbd>k</kbd> Jump to the first unlocked clause card, or the lock controls</li>
+          <li><kbd>t</kbd> Jump to the approval threshold field</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -5349,6 +5350,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "k" || event.key === "K") {
     event.preventDefault();
     jumpToUnlocked();
+  } else if (event.key === "t" || event.key === "T") {
+    event.preventDefault();
+    $("#threshold-number")?.focus?.();
   }
 });
 
