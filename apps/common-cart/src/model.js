@@ -251,7 +251,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -300,7 +300,15 @@ export function validateWorkspace(candidate) {
     }
     hideLeftoverFill = hideLeftoverFillRow;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill };
+  const hideZeroRemainingCapacityOffers = own(candidate, "hideZeroRemainingCapacityOffers");
+  let hideZeroRemaining = false;
+  if (hideZeroRemainingCapacityOffers !== undefined) {
+    if (hideZeroRemainingCapacityOffers !== true && hideZeroRemainingCapacityOffers !== false) {
+      throw new ScenarioError("Hide zero remaining capacity offers must be true or false.");
+    }
+    hideZeroRemaining = hideZeroRemainingCapacityOffers;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -370,6 +378,27 @@ export function filterOfferIdsHidingUnwinnable(rawScenario, hideUnwinnable) {
   const market = evaluateMarket(scenario);
   const unlocked = new Set(market.results.filter((result) => result.qualifies).map((result) => result.offer.id));
   return scenario.offers.filter((offer) => unlocked.has(offer.id)).map((offer) => offer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides offers whose remaining capacity after the winner is zero, or unwinnable offers once a winner has allocated buyers. */
+export function filterOfferIdsHidingZeroRemainingCapacity(rawScenario, hideZeroRemaining) {
+  if (hideZeroRemaining !== true && hideZeroRemaining !== false) {
+    throw new ScenarioError("Hide zero remaining capacity offers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideZeroRemaining) return scenario.offers.map((offer) => offer.id);
+  const market = evaluateMarket(scenario);
+  const remainingIds = new Set(
+    market.results
+      .filter((result) => {
+        const remaining = Math.max(0, result.offer.capacity - result.fulfilledUnits);
+        if (remaining === 0) return false;
+        if (!result.qualifies && market.winner) return false;
+        return true;
+      })
+      .map((result) => result.offer.id)
+  );
+  return scenario.offers.filter((offer) => remainingIds.has(offer.id)).map((offer) => offer.id);
 }
 
 export function acceptedVariantFilterOptions(rawScenario) {

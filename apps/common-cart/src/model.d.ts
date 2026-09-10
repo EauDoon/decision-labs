@@ -265,7 +265,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -299,6 +299,8 @@ export function copyOfferAsPickup(rawScenario: unknown, offerId: string): Scenar
 export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "all" | "shipping" | "pickup"): string[];
 /** Display-only. Matching is unchanged. When hideUnwinnable is false, every offer id is returned. */
 export function filterOfferIdsHidingUnwinnable(rawScenario: unknown, hideUnwinnable: boolean): string[];
+/** Display-only. Matching is unchanged. When hideZeroRemaining is false, every offer id is returned. */
+export function filterOfferIdsHidingZeroRemainingCapacity(rawScenario: unknown, hideZeroRemaining: boolean): string[];
 export function acceptedVariantFilterOptions(rawScenario: unknown): string[];
 export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: string): string[];
 export function filterBuyerIdsHidingExcluded(rawScenario: unknown, offerId: string, hideExcluded: boolean): string[];
