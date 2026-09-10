@@ -57,6 +57,7 @@ import {
   createLeftoverFillMarkdown,
   createLeftoverFillUnitCountMarkdown,
   createLeftoverFillMerchantLabelMarkdown,
+  createLeftoverFillRemainingCapacityMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   organizerLeftoverRows,
@@ -330,6 +331,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-leftover-fill").addEventListener("click", copyLeftoverFill);
   document.querySelector("#copy-leftover-fill-units").addEventListener("click", copyLeftoverFillUnitCount);
   document.querySelector("#copy-leftover-fill-merchant").addEventListener("click", copyLeftoverFillMerchantLabel);
+  document.querySelector("#copy-leftover-fill-remaining").addEventListener("click", copyLeftoverFillRemainingCapacity);
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-uncovered-leftover-units").addEventListener("click", copyUncoveredLeftoverUnitCount);
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
@@ -2793,6 +2795,16 @@ function copyLeftoverFillMerchantLabel() {
       "Clipboard was blocked. Organizer-private leftover fill merchant Markdown is in the textarea. Merchant label only. This is not a merchant export."
     );
   } catch (error) { setStatus(`Leftover fill merchant copy failed: ${messageOf(error)}`); }
+}
+
+function copyLeftoverFillRemainingCapacity() {
+  try {
+    copyTextWithFallback(
+      createLeftoverFillRemainingCapacityMarkdown(scenario),
+      "Leftover fill remaining capacity copied as organizer-private Markdown. Remaining capacity only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover fill remaining-capacity Markdown is in the textarea. Remaining capacity only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover fill remaining capacity copy failed: ${messageOf(error)}`); }
 }
 
 function copyUncoveredLeftoverCounts() {
