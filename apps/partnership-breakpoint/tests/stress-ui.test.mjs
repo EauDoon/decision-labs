@@ -1074,6 +1074,25 @@ test('three-party joint venture preset loads from the starting-point buttons', a
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
 
+test('podcast host and network preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="podcastHostNetwork"/);
+  assert.match(app.markup(), /Podcast host and network/);
+  app.click('preset', { preset: 'podcastHostNetwork' });
+  assert.equal(app.saved().participants.length, 2);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['podcast-host', 'podcast-network']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Podcast host', 'Podcast network']);
+  assert.equal(app.saved().deal.feePerTransaction, 14);
+  assert.equal(app.saved().deal.monthlyVolume, 3500);
+  assert.equal(app.saved().participants[0].capacity, null);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.match(app.notice(), /Podcast host and network loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'production-studio,distribution-studio');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'ip-licensor,territory-distributor');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+});
+
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
   const app = await workbench();
   assert.match(app.markup(), /data-preset="talentAgentPlatform"/);

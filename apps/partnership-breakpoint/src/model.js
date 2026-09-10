@@ -153,6 +153,14 @@ export const PRESETS = Object.freeze({
       { id: 'operator-talent', name: 'Operator-talent', revenueShare: 0.22, variableCostPerTransaction: 3, fixedMonthlyCost: 9000, minimumAcceptableProfit: 15000, capacity: 15000, minimumCommitment: 2000, riskCost: 1500 },
     ],
   },
+  podcastHostNetwork: {
+    name: 'Podcast host and network',
+    deal: { monthlyVolume: 3500, feePerTransaction: 14, addressableVolume: 6000, volumeShockPct: 0 },
+    participants: [
+      { id: 'podcast-host', name: 'Podcast host', revenueShare: 0.58, variableCostPerTransaction: 2.2, fixedMonthlyCost: 3500, minimumAcceptableProfit: 7000, capacity: null, minimumCommitment: 0, riskCost: 800 },
+      { id: 'podcast-network', name: 'Podcast network', revenueShare: 0.42, variableCostPerTransaction: 0.9, fixedMonthlyCost: 8000, minimumAcceptableProfit: 4500, capacity: 5000, minimumCommitment: 1000, riskCost: 1100 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
