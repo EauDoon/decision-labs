@@ -161,6 +161,7 @@ already printed on this catalog page as Markdown. It uses the browser
 clipboard when that API is available, and shows a visible text box if it is
 not. That list is not a live policy feed.
 Press `i` to copy Trust and limits through that same control.
+Press `u` to copy How it works through that same control.
 Copy How it works copies the How it works heading and list items already
 printed on this catalog page as Markdown. It uses the browser clipboard when
 that API is available, and shows a visible text box if it is not. That list

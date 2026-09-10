@@ -808,6 +808,18 @@ test('keyboard j copies catalog jobs through the same control', () => {
   assert.match(html, /jobsFallback\.hidden = false/);
 });
 
+test('keyboard u copies How it works through the same control', () => {
+  assert.match(html, /event\.key === 'u'/);
+  assert.match(html, /howBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="u"/);
+  assert.match(html, /<kbd>u<\/kbd><\/dt><dd>Copy How it works as Markdown from this catalog page, not a live policy feed/);
+  assert.match(html, /Press <kbd>u<\/kbd> to copy How it works/);
+  assert.match(readme, /Press `u` to copy How it works/);
+  assert.match(html, /howMarkdown/);
+  assert.match(html, /howFallback\.hidden = false/);
+});
+
 test('keyboard i copies Trust and limits through the same control', () => {
   assert.match(html, /event\.key === 'i'/);
   assert.match(html, /trustBtn\?\.click\(\)/);
