@@ -748,6 +748,26 @@ test("tilde leftover fill fulfillment copy uses the existing leftover-fill fulfi
   assert.match(app, /if \(key === "y" \|\| key === ";"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
 });
 
+test("shortcut help documents leftover fill fulfillment copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>!<\/kbd> Focus the leftover-fill fulfillment copy control, or leftover heading if missing/u);
+  assert.match(html, /id="copy-leftover-fill-fulfillment"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to leftover fill fulfillment copy when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "!"\)/u);
+  assert.match(app, /function focusLeftoverFillFulfillmentCopy\(/u);
+  assert.match(app, /#copy-leftover-fill-fulfillment/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "!"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment/u);
+  assert.doesNotMatch(app, /if \(key === "!"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillRemainingCopy/u);
+  assert.match(app, /if \(key === "~"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
