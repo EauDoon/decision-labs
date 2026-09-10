@@ -87,6 +87,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>~<\/kbd> Copy the first veto group label as one-line Markdown/u);
   assert.match(html, /<kbd>!<\/kbd> Jump to the first veto group copy control, or the groups heading/u);
   assert.match(html, /<kbd>@<\/kbd> Jump to the hide-non-veto-groups control, or the groups heading/u);
+  assert.match(html, /<kbd>\(<\/kbd> Copy the veto-group count as one-line Markdown/u);
   assert.match(html, /id="locks-heading"/u);
   assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
@@ -3700,6 +3701,46 @@ test("keyboard at-sign jumps to hide-non-veto-groups unless an input is active",
   app.clearFocus();
   app.keydown("@");
   assert.equal(app.focused(), "#hide-non-veto-groups");
+});
+
+test("keyboard open-paren copies the veto-group count unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>\(<\/kbd> Copy the veto-group count as one-line Markdown/u);
+  assert.match(html, /id="copy-veto-group-count-button"/u);
+  assert.match(html, /id="copy-veto-group-count-button"[^>]*aria-keyshortcuts="\("/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("(");
+  assert.equal(app.clipboardText(), app.vetoGroupCount());
+  assert.match(app.clipboardText(), /Veto groups: 0/u);
+  assert.doesNotMatch(app.clipboardText(), /First veto group/u);
+  assert.doesNotMatch(app.clipboardText(), /Groups meeting the approval threshold/u);
+  assert.match(app.message(), /not a legal right/u);
+  app.clearFocus();
+  app.keydown("(", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("(", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const labelled = await savedWorkbench(new Map());
+  labelled.field("#preset-select", "club-constitution");
+  labelled.click("#load-preset");
+  labelled.keydown("(");
+  assert.equal(labelled.clipboardText(), "Veto groups: 1. A veto is a number you entered, not a legal right.\n");
+  assert.doesNotMatch(labelled.clipboardText(), /First veto group/u);
+  assert.doesNotMatch(labelled.clipboardText(), /Groups meeting the approval threshold/u);
+  labelled.clearFocus();
+  labelled.keydown("~");
+  assert.equal(labelled.clipboardText(), labelled.firstVetoGroup());
+  assert.match(labelled.clipboardText(), /First veto group: Officers/u);
+  labelled.clearFocus();
+  labelled.keydown("(");
+  assert.equal(labelled.clipboardText(), "Veto groups: 1. A veto is a number you entered, not a legal right.\n");
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-veto-group-count-button");
+  assert.equal(blocked.focused(), "#veto-group-count-fallback");
+  blocked.clearFocus();
+  blocked.keydown("(", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(blocked.focused(), "");
 });
 
 test("keyboard comma copies the recommended package option count unless an input is active", async () => {
