@@ -93,6 +93,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Last-job copy, last-job jump, and first-job jump/);
   assert.match(html, /Last What's new copy, last-news jump, and first-news jump/);
   assert.match(html, /First What's new copy, intro jump, and skip-link jump/);
+  assert.match(html, /First-workbench copy, first-card jump, and first-trust jump/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -5403,7 +5404,7 @@ test('What\'s new and README name last What\'s new copy and jumps without changi
 test('What\'s new and README name first What\'s new copy, intro jump, and skip-link jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], "First What's new copy, intro jump, and skip-link jump");
+  assert.equal(headings.includes("First What's new copy, intro jump, and skip-link jump"), true);
   assert.equal(headings[headings.length - 1], 'Friday early payout, open-payout copy, and payout-open hide in Weekend Gap 1.5.13');
   assert.equal(headings.includes('Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12'), true);
   assert.equal(headings.includes('Friday early payout, open-payout copy, and payout-open hide in Weekend Gap 1.5.13'), true);
@@ -5431,6 +5432,39 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.match(readme, /Key `\)` copies the first What's new heading/);
   assert.match(readme, /Key `@` focuses the Copy catalog intro control/);
   assert.match(readme, /Key `#` focuses the Copy skip links control/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+});
+
+test('What\'s new and README name first-workbench copy, first-card jump, and first-trust jump without changing workbench versions', () => {
+  const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
+  const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
+  assert.equal(headings[0], 'First-workbench copy, first-card jump, and first-trust jump');
+  assert.equal(headings[headings.length - 1], 'Friday early payout, open-payout copy, and payout-open hide in Weekend Gap 1.5.13');
+  assert.equal(headings.includes("First What's new copy, intro jump, and skip-link jump"), true);
+  assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
+  assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
+  assert.equal(headings.includes('Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12'), true);
+  assert.equal(headings.includes('Friday early payout, open-payout copy, and payout-open hide in Weekend Gap 1.5.13'), true);
+  assert.equal(headings.includes('Athletics carnival, remaining-capacity copy, and last-over-capacity hide in Partnership Breakpoint 1.5.13'), true);
+  assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
+  assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
+  assert.match(html, /Copy first workbench heading through asterisk as Markdown/);
+  assert.match(html, /jump to that control with keyboard ampersand/);
+  assert.match(html, /jump to Copy first Trust item with keyboard percent/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /without adding a public path/);
+  assert.match(html, /These are in-page catalog tools/);
+  assert.match(readme, /first-workbench copy, first-card jump, and first-trust jump/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy first workbench heading on\s+that 404 page copies/);
+  assert.match(readme, /Copy first workbench heading copies the first workbench card heading/);
+  assert.match(readme, /Press `\*` to copy the first workbench heading/);
+  assert.match(readme, /Press `&` to focus the Copy first workbench heading control/);
+  assert.match(readme, /Press `%` to focus the Copy first Trust item control/);
+  assert.match(readme, /Key `\*` copies the first workbench heading/);
+  assert.match(readme, /Key `&` focuses the Copy first workbench heading control/);
+  assert.match(readme, /Key `%` focuses the Copy first Trust item control/);
   assert.doesNotMatch(html, /hosted API/i);
   assert.doesNotMatch(html, /live service/i);
 });
@@ -7206,6 +7240,90 @@ test('percent focuses the Trust heading when Copy first Trust item is missing', 
     preventDefault() {},
   });
   assert.deepEqual(focused, ['trust-title']);
+  assert.deepEqual(assigned, []);
+});
+
+test('asterisk ampersand and percent stay distinct from close-paren tilde e a colon and slash', () => {
+  assert.match(html, /event\.key === '\*'/);
+  assert.match(html, /event\.key === '&'/);
+  assert.match(html, /event\.key === '%'/);
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /event\.key === '~'/);
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /event\.key === 'a'/);
+  assert.match(html, /event\.key === ':'/);
+  assert.match(html, /event\.key === '\/'/);
+  assert.match(html, /firstWorkbenchBtn\?\.click\(\)/);
+  assert.match(html, /firstWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /lastWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /ledeBtn\?\.click\(\)/);
+  assert.match(html, /firstTrustBtn\?\.click\(\)/);
+  assert.match(readme, /Press `\*` to copy the first workbench heading/);
+  assert.match(readme, /Press `&` to focus the Copy first workbench heading control/);
+  assert.match(readme, /Press `%` to focus the Copy first Trust item control/);
+  const clicks = { firstWorkbench: 0, firstNews: 0, lastNews: 0, lede: 0, firstTrust: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const firstTrustItem = { focus() { focused.push('first-trust-li'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-workbench') return { click() { clicks.firstWorkbench += 1; }, addEventListener() {}, focus() { focused.push('copy-first-workbench'); } };
+      if (id === 'copy-first-whats-new') return { click() { clicks.firstNews += 1; }, addEventListener() {}, focus() { focused.push('copy-first-whats-new'); } };
+      if (id === 'copy-last-whats-new') return { click() { clicks.lastNews += 1; }, addEventListener() {}, focus() { focused.push('copy-last-whats-new'); } };
+      if (id === 'copy-lede') return { click() { clicks.lede += 1; }, addEventListener() {}, focus() { focused.push('copy-lede'); } };
+      if (id === 'copy-first-trust') return { click() { clicks.firstTrust += 1; }, addEventListener() {}, focus() { focused.push('copy-first-trust'); } };
+      if (id === 'workbench-1') return { focus() { focused.push('workbench-1'); } };
+      if (id === 'trust-title') return { focus() { focused.push('trust-title'); } };
+      if (id === 'trust') return { focus() { focused.push('trust'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#trust li' ? firstTrustItem : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, shiftKey = false) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  fire('*', true);
+  fire('&', true);
+  fire('%', true);
+  fire(')', true);
+  fire('~', true);
+  fire('e');
+  fire('a');
+  fire(':', true);
+  fire('/');
+  assert.equal(clicks.firstWorkbench, 1);
+  assert.equal(clicks.firstNews, 1);
+  assert.equal(clicks.lastNews, 1);
+  assert.equal(clicks.lede, 1);
+  assert.equal(clicks.firstTrust, 1);
+  assert.deepEqual(focused, ['copy-first-workbench', 'copy-first-trust', 'workbench-1', 'first-trust-li']);
   assert.deepEqual(assigned, []);
 });
 
