@@ -68,6 +68,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>y<\/kbd> Jump to the first veto group card, or the groups heading/u);
   assert.match(html, /<kbd>z<\/kbd> Jump to the numeric approval threshold field, or the method heading/u);
   assert.match(html, /<kbd>,<\/kbd> Copy the recommended package option count as one-line Markdown/u);
+  assert.match(html, /<kbd>\.<\/kbd> Jump to the first locked clause card, or the clauses heading/u);
   assert.match(html, /id="method-heading"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
@@ -2011,6 +2012,26 @@ test("keyboard h jumps to the workshop method heading unless an input is active"
   assert.equal(app.focused(), "");
   app.keydown("H");
   assert.equal(app.focused(), "#method-heading");
+});
+
+test("keyboard period jumps to the first locked clause card unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>\.<\/kbd> Jump to the first locked clause card, or the clauses heading/u);
+  assert.match(html, /id="clauses-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown(".");
+  assert.equal(app.focused(), "#clauses-heading");
+  app.clearFocus();
+  app.keydown(".", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown(".", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown(">");
+  assert.equal(app.focused(), "");
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  app.clearFocus();
+  app.keydown(".");
+  assert.equal(app.focused(), '[data-field="clause-title"][data-clause-id="hours"]');
 });
 
 test("keyboard comma copies the recommended package option count unless an input is active", async () => {

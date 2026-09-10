@@ -2529,6 +2529,53 @@ function jumpToLocks() {
   }
   $("#clear-locks")?.focus?.();
 }
+
+function jumpToLockedClauseCard() {
+  const firstLocked = state.proposal.clauses.find((clause) => clause.lockedOptionId !== undefined);
+  if (!firstLocked) {
+    $("#clauses-heading")?.focus?.();
+    return;
+  }
+  const query = clauseFilter.trim().toLowerCase();
+  const changed = changedClauseIds(state.proposal, currentResult());
+  const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
+  const overBudget = overBudgetClauseIds(state.proposal, currentResult());
+  const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, currentResult());
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
+  let needsRender = false;
+  if (!clauseMatchesFilter(firstLocked, query)) {
+    clauseFilter = "";
+    const filter = $("#clause-filter");
+    if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (changedClausesOnly && !changedIds.has(firstLocked.id)) {
+    changedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (overBudgetClausesOnly && !overBudgetIds.has(firstLocked.id)) {
+    overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (noCheaperRemainingClausesOnly && !noCheaperIds.has(firstLocked.id)) {
+    noCheaperRemainingClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) {
+    renderClauses();
+    applyClauseDensity();
+  }
+  const target = $(`[data-field="clause-title"][data-clause-id="${firstLocked.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#clauses-heading")?.focus?.();
+}
 function jumpToGroups() {
   const inspected = inspectedPackage(currentResult());
   const below = inspected
@@ -2953,6 +3000,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "," && !event.shiftKey) {
     event.preventDefault();
     copyRecommendedOptionCount();
+  } else if (event.key === "." && !event.shiftKey) {
+    event.preventDefault();
+    jumpToLockedClauseCard();
   }
 });
 
