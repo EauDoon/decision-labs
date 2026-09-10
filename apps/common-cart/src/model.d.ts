@@ -145,6 +145,7 @@ export const presets: Readonly<{
   surfFirstAid: Scenario;
   theatreWardrobe: Scenario;
   choirFolders: Scenario;
+  scoutCamp: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;

@@ -244,6 +244,23 @@ export const presets = Object.freeze({
       offer("O02", "Tenor Folder Cart", "Choir folder pack", "Tenor folder", 16, 8, 6, 24, 3),
       { ...offer("O03", "Hall Folder Pickup", "Choir folder pack", "Alto folder", 14, 8, 2, 30, 6), fulfillment: "pickup" }
     ]
+  },
+  scoutCamp: {
+    title: "Scout camp kit",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Patrol crate", "Scout camp pack", 8, 28, 8, ["Synthetic compass", "Mess-tin"]),
+      buyer("B02", "Troop store", "Scout camp pack", 12, 22, 6, ["Mess-tin"]),
+      buyer("B03", "Camp kitchen", "Scout camp pack", 6, 32, 10, ["Mess-tin", "Groundsheet"]),
+      buyer("B04", "Hike pack", "Scout camp pack", 5, 20, 4, ["Synthetic compass"]),
+      buyer("B05", "Overnight rail", "Scout camp pack", 9, 26, 7, ["Groundsheet", "Synthetic compass"]),
+      buyer("B06", "Hall cupboard", "Scout camp pack", 7, 24, 5, ["Mess-tin", "Groundsheet"])
+    ],
+    offers: [
+      offer("O01", "Campsite Kit Delivery", "Scout camp pack", "Synthetic compass", 18, 10, 5, 40, 4),
+      offer("O02", "Groundsheet Run", "Scout camp pack", "Groundsheet", 16, 8, 6, 24, 3),
+      { ...offer("O03", "Scout-hall Kit Pickup", "Scout camp pack", "Mess-tin", 14, 8, 2, 30, 6), fulfillment: "pickup" }
+    ]
   }
 });
 
