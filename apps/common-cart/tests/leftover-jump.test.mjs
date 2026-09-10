@@ -275,6 +275,8 @@ test("leftover fill delivery copy stays on the organizer leftover control", asyn
   assert.match(app, /function copyLeftoverFillFulfillment\(/u);
   assert.match(app, /function copyLeftoverFillRemainingCapacity\(/u);
   assert.match(app, /function copyLeftoverFillUnitCount\(/u);
+  assert.match(app, /if \(key === "\("\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillDelivery\(\);/u);
+  assert.match(html, /aria-keyshortcuts="\("/u);
 });
 
 test("leftover fill remaining capacity copy jump stays on the organizer leftover remaining control", async () => {
@@ -308,6 +310,39 @@ test("leftover fill fulfillment copy jump stays on the organizer leftover fulfil
   assert.match(app, /if \(key === "!"\)/u);
   assert.doesNotMatch(app, /if \(key === "!"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment/u);
   assert.doesNotMatch(app, /if \(key === "!"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillRemainingCopy/u);
+});
+
+test("leftover fill delivery copy jump stays on the organizer leftover delivery control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-delivery"/u);
+  assert.match(buyerPanel, /id="residual-title"/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-delivery"), false);
+  assert.equal(merchantPanel.includes("focusLeftoverFillDeliveryCopy"), false);
+  assert.match(app, /function focusLeftoverFillDeliveryCopy\(/u);
+  assert.match(app, /#copy-leftover-fill-delivery/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /if \(key === "\)"\)/u);
+  assert.doesNotMatch(app, /if \(key === "\)"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillDelivery/u);
+  assert.doesNotMatch(app, /if \(key === "\)"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillFulfillmentCopy/u);
+});
+
+test("leftover fill pickup copy stays on the organizer leftover control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-pickup"/u);
+  assert.match(buyerPanel, /Copy leftover fill pickup \(organizer private\)/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-pickup"), false);
+  assert.equal(merchantPanel.includes("copyLeftoverFillPickup"), false);
+  assert.match(app, /function copyLeftoverFillPickup\(/u);
+  assert.match(app, /#copy-leftover-fill-pickup/u);
+  assert.match(app, /function copyLeftoverFillDelivery\(/u);
+  assert.match(app, /function copyLeftoverFillFulfillment\(/u);
+  assert.match(app, /function copyLeftoverFillUnitCount\(/u);
 });
 
 test("leftover print jump stays on the leftover print control", async () => {

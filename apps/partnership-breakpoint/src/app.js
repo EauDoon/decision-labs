@@ -82,6 +82,7 @@ let viabilityLabelCopyText = '';
 let overCapacityCountCopyText = '';
 let firstOverCapacityLabelCopyText = '';
 let firstOverCapacityRemainingCopyText = '';
+let lastOverCapacityLabelCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -101,6 +102,7 @@ let hideParticipantsAtLeastHeadroom = false;
 let hideParticipantsWithinCapacity = false;
 let hideFirstBreakpointParticipant = false;
 let hideFirstOverCapacityParticipant = false;
+let hideLastOverCapacityParticipant = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -132,6 +134,7 @@ function checkpoint() {
   overCapacityCountCopyText = '';
   firstOverCapacityLabelCopyText = '';
   firstOverCapacityRemainingCopyText = '';
+  lastOverCapacityLabelCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -169,6 +172,8 @@ function travelHistory(direction) {
   viabilityLabelCopyText = '';
   overCapacityCountCopyText = '';
   firstOverCapacityLabelCopyText = '';
+  firstOverCapacityRemainingCopyText = '';
+  lastOverCapacityLabelCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -282,6 +287,7 @@ function readCollapsePreference() {
   hideParticipantsWithinCapacity = state.hideParticipantsWithinCapacity === true;
   hideFirstBreakpointParticipant = state.hideFirstBreakpointParticipant === true;
   hideFirstOverCapacityParticipant = state.hideFirstOverCapacityParticipant === true;
+  hideLastOverCapacityParticipant = state.hideLastOverCapacityParticipant === true;
 }
 
 function writeCollapsePreference() {
@@ -309,6 +315,8 @@ function writeCollapsePreference() {
   else delete state.hideFirstBreakpointParticipant;
   if (hideFirstOverCapacityParticipant) state.hideFirstOverCapacityParticipant = true;
   else delete state.hideFirstOverCapacityParticipant;
+  if (hideLastOverCapacityParticipant) state.hideLastOverCapacityParticipant = true;
+  else delete state.hideLastOverCapacityParticipant;
 }
 
 function compactErrorMessage(error) {
@@ -590,6 +598,15 @@ function participantIsFirstOverCapacity(result, participant) {
   return Boolean(first) && first.id === participant.id;
 }
 
+function participantIsLastOverCapacity(result, participant) {
+  if (!result) return false;
+  let last = null;
+  for (const item of state.participants) {
+    if (participantOverListedCapacity(result, item)) last = item;
+  }
+  return Boolean(last) && last.id === participant.id;
+}
+
 function participantHiddenFromRoster(result, participant) {
   if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
   if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
@@ -601,6 +618,7 @@ function participantHiddenFromRoster(result, participant) {
   if (hideParticipantsWithinCapacity && participantWithinListedCapacity(result, participant)) return true;
   if (hideFirstBreakpointParticipant && participantIsFirstBreakpoint(result, participant)) return true;
   if (hideFirstOverCapacityParticipant && participantIsFirstOverCapacity(result, participant)) return true;
+  if (hideLastOverCapacityParticipant && participantIsLastOverCapacity(result, participant)) return true;
   return false;
 }
 
@@ -635,6 +653,9 @@ function inputPanel(result) {
     : 0;
   const hiddenFirstOverCapacityCount = hideFirstOverCapacityParticipant && result
     ? state.participants.filter((participant) => participantIsFirstOverCapacity(result, participant)).length
+    : 0;
+  const hiddenLastOverCapacityCount = hideLastOverCapacityParticipant && result
+    ? state.participants.filter((participant) => participantIsLastOverCapacity(result, participant)).length
     : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
   const firstOverCapacityId = result
@@ -702,7 +723,10 @@ function inputPanel(result) {
   const firstOverCapacityFilterNote = hideFirstOverCapacityParticipant
     ? `${hiddenFirstOverCapacityCount} first over-capacity participant${hiddenFirstOverCapacityCount === 1 ? '' : 's'} ${hiddenFirstOverCapacityCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores ${hiddenFirstOverCapacityCount === 1 ? 'it' : 'them'}. Tested-case and model counts are unchanged.`
     : 'Hide the first over-capacity roster row to filter this roster display only. Expand restores it. Counts stay the same.';
-  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom, hideParticipantsWithinCapacity, hideFirstBreakpointParticipant, hideFirstOverCapacityParticipant].filter(Boolean).length;
+  const lastOverCapacityFilterNote = hideLastOverCapacityParticipant
+    ? `${hiddenLastOverCapacityCount} last over-capacity participant${hiddenLastOverCapacityCount === 1 ? '' : 's'} ${hiddenLastOverCapacityCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores ${hiddenLastOverCapacityCount === 1 ? 'it' : 'them'}. Tested-case and model counts are unchanged.`
+    : 'Hide the last over-capacity roster row to filter this roster display only. Expand restores it. Counts stay the same.';
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom, hideParticipantsWithinCapacity, hideFirstBreakpointParticipant, hideFirstOverCapacityParticipant, hideLastOverCapacityParticipant].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
     ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
@@ -724,6 +748,8 @@ function inputPanel(result) {
                       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the first-breakpoint roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
                       : rosterFilterCount === 1 && hideFirstOverCapacityParticipant
                         ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the first over-capacity roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+                        : rosterFilterCount === 1 && hideLastOverCapacityParticipant
+                          ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the last over-capacity roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : rosterFilterCount > 0
               ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : ''
@@ -773,7 +799,7 @@ function inputPanel(result) {
           <p class="notice">${rosterFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-zero-share-participants" aria-pressed="${hideZeroShareParticipants}">Hide participants with zero revenue share</button><button type="button" data-action="show-zero-share-participants" ${hideZeroShareParticipants ? '' : 'disabled'}>Show zero-share participants</button></div>
           <p class="notice">${zeroShareFilterNote}</p>
-          <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button><button type="button" id="copy-over-capacity-count" data-action="copy-over-capacity-count" aria-keyshortcuts='"'>Copy over-capacity participant count</button><button type="button" id="copy-first-over-capacity-label" data-action="copy-first-over-capacity-label" aria-keyshortcuts="}">Copy first over-capacity participant label</button><button type="button" id="copy-first-over-capacity-remaining" data-action="copy-first-over-capacity-remaining">Copy first over-capacity remaining listed capacity</button></div>
+          <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button><button type="button" id="copy-over-capacity-count" data-action="copy-over-capacity-count" aria-keyshortcuts='"'>Copy over-capacity participant count</button><button type="button" id="copy-first-over-capacity-label" data-action="copy-first-over-capacity-label" aria-keyshortcuts="}">Copy first over-capacity participant label</button><button type="button" id="copy-first-over-capacity-remaining" data-action="copy-first-over-capacity-remaining" aria-keyshortcuts="~">Copy first over-capacity remaining listed capacity</button><button type="button" id="copy-last-over-capacity-label" data-action="copy-last-over-capacity-label">Copy last over-capacity participant label</button></div>
           <p class="notice">${overCapacityFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-at-hold-participants" aria-pressed="${hideParticipantsAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants at hold with no listed capacity breach</button><button type="button" data-action="show-at-hold-participants" ${hideParticipantsAtHold ? '' : 'disabled'}>Show at-hold participants</button></div>
           <p class="notice">${atHoldFilterNote}</p>
@@ -787,8 +813,10 @@ function inputPanel(result) {
           <p class="notice">${withinCapacityFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-first-breakpoint-participant" data-action="hide-first-breakpoint-participant" aria-keyshortcuts="|" aria-pressed="${hideFirstBreakpointParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first-breakpoint participant</button><button type="button" data-action="show-first-breakpoint-participant" ${hideFirstBreakpointParticipant ? '' : 'disabled'}>Show the first-breakpoint participant</button></div>
           <p class="notice">${firstBreakpointFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-first-over-capacity-participant" data-action="hide-first-over-capacity-participant" aria-pressed="${hideFirstOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first over-capacity participant</button><button type="button" data-action="show-first-over-capacity-participant" ${hideFirstOverCapacityParticipant ? '' : 'disabled'}>Show the first over-capacity participant</button></div>
+          <div class="button-row"><button type="button" id="hide-first-over-capacity-participant" data-action="hide-first-over-capacity-participant" aria-keyshortcuts="@" aria-pressed="${hideFirstOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first over-capacity participant</button><button type="button" data-action="show-first-over-capacity-participant" ${hideFirstOverCapacityParticipant ? '' : 'disabled'}>Show the first over-capacity participant</button></div>
           <p class="notice">${firstOverCapacityFilterNote}</p>
+          <div class="button-row"><button type="button" id="hide-last-over-capacity-participant" data-action="hide-last-over-capacity-participant" aria-pressed="${hideLastOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last over-capacity participant</button><button type="button" data-action="show-last-over-capacity-participant" ${hideLastOverCapacityParticipant ? '' : 'disabled'}>Show the last over-capacity participant</button></div>
+          <p class="notice">${lastOverCapacityFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
@@ -831,7 +859,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}${lastOverCapacityLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -862,6 +890,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>First-breakpoint volume-to-hold</h2><p>${escapeAttribute(firstBreakpointVolumeToHoldMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Over-capacity participant count</h2><p>${escapeAttribute(overCapacityCountMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First over-capacity participant</h2><p>${escapeAttribute(firstOverCapacityLabelMarkdown(result))}</p></section>
+    <section class="print-only print-keep"><h2>First over-capacity remaining listed capacity</h2><p>${escapeAttribute(firstOverCapacityRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
     <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
@@ -903,6 +932,7 @@ function resultsPanel(result) {
     ${overCapacityCountCopySection()}
     ${firstOverCapacityLabelCopySection()}
     ${firstOverCapacityRemainingCopySection()}
+    ${lastOverCapacityLabelCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -1394,6 +1424,7 @@ function attachEvents() {
     if (action === 'close-over-capacity-count-copy') { overCapacityCountCopyText = ''; render(); return; }
     if (action === 'close-first-over-capacity-label-copy') { firstOverCapacityLabelCopyText = ''; render(); return; }
     if (action === 'close-first-over-capacity-remaining-copy') { firstOverCapacityRemainingCopyText = ''; render(); return; }
+    if (action === 'close-last-over-capacity-label-copy') { lastOverCapacityLabelCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1594,6 +1625,24 @@ function attachEvents() {
       render();
       return;
     }
+    if (action === 'hide-last-over-capacity-participant') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding the last over-capacity participant.');
+        return;
+      }
+      hideLastOverCapacityParticipant = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-last-over-capacity-participant') {
+      hideLastOverCapacityParticipant = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
     if (action === 'hide-all-hold-ledger') {
       if (!validateConfiguration(state).valid) {
         setNotice('Resolve invalid inputs before hiding participants who hold in every tested compound case.');
@@ -1719,6 +1768,7 @@ function attachEvents() {
     if (action === 'copy-over-capacity-count') copyOverCapacityCount();
     if (action === 'copy-first-over-capacity-label') copyFirstOverCapacityLabel();
     if (action === 'copy-first-over-capacity-remaining') copyFirstOverCapacityRemaining();
+    if (action === 'copy-last-over-capacity-label') copyLastOverCapacityLabel();
     if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-waterfall') copyContributionWaterfall();
@@ -2134,6 +2184,7 @@ window.addEventListener('keydown', (event) => {
   if (event.key === ':') copyFirstBreakpointVolumeToHold();
   if (event.key === '"') copyOverCapacityCount();
   if (event.key === '}') copyFirstOverCapacityLabel();
+  if (event.key === '~') copyFirstOverCapacityRemaining();
   if (event.key === '.') {
     const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
     target?.focus?.({ preventScroll: false });
@@ -2179,8 +2230,21 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === '!') {
+    const target = document.querySelector('#copy-first-over-capacity-remaining')
+      ?? document.querySelector('#first-breakpoint-title')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
   if (event.key === '|') {
     const target = document.querySelector('#hide-first-breakpoint-participant')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === '@') {
+    const target = document.querySelector('#hide-first-over-capacity-participant')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -2938,6 +3002,61 @@ function copyFirstOverCapacityRemaining() {
     }
   }
   showFirstOverCapacityRemainingCopyFallback(text, fallbackNote);
+}
+
+function lastOverCapacityLabelMarkdown(result) {
+  if (!result) return 'Last over-capacity participant: none entered.';
+  let participant = null;
+  for (const item of state.participants) {
+    if (participantOverListedCapacity(result, item)) participant = item;
+  }
+  if (!participant) return 'Last over-capacity participant: none entered.';
+  const named = result.participants.find((item) => item.id === participant.id);
+  return 'Last over-capacity participant: ' + reportText(named?.name ?? participant.name) + '. Roster row currently over listed capacity. Not a forecast.';
+}
+
+function showLastOverCapacityLabelCopyFallback(text, message) {
+  lastOverCapacityLabelCopyText = text;
+  render();
+  document.querySelector('#last-over-capacity-label-copy-text')?.focus();
+  setNotice(message);
+}
+
+function lastOverCapacityLabelCopySection() {
+  if (!lastOverCapacityLabelCopyText) return '';
+  return `<section class="panel" aria-labelledby="last-over-capacity-label-copy-title"><div class="panel-heading"><h2 id="last-over-capacity-label-copy-title">Last over-capacity participant label Markdown</h2><button type="button" data-action="close-last-over-capacity-label-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This names the last roster row currently over listed capacity. It is distinct from first over-capacity label copy and remaining listed capacity copy. It is not a forecast.</p><label class="brief-copy-label" for="last-over-capacity-label-copy-text">Last over-capacity participant label Markdown</label><textarea id="last-over-capacity-label-copy-text" readonly rows="4">${escapeAttribute(lastOverCapacityLabelCopyText)}</textarea></div></section>`;
+}
+
+function copyLastOverCapacityLabel() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = lastOverCapacityLabelMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Last over-capacity participant label copied as Markdown. Roster row currently over listed capacity. It is not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          lastOverCapacityLabelCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showLastOverCapacityLabelCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      lastOverCapacityLabelCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showLastOverCapacityLabelCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showLastOverCapacityLabelCopyFallback(text, fallbackNote);
 }
 
 function leastHeadroomLabelMarkdown(result) {
@@ -3956,8 +4075,11 @@ function helpDialog() {
         <li><kbd>:</kbd> Copy first-breakpoint volume-to-hold as Markdown</li>
         <li><kbd>"</kbd> Copy over-capacity participant count as Markdown</li>
         <li><kbd>}</kbd> Copy the first over-capacity participant label as Markdown</li>
+        <li><kbd>~</kbd> Copy first over-capacity remaining listed capacity as Markdown</li>
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
+        <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>|</kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing</li>
+        <li><kbd>@</kbd> Jump to Hide the first over-capacity participant, or the Participants heading if missing</li>
         <li><kbd>_</kbd> Jump to Copy over-capacity participant count, or the Participants heading if missing</li>
         <li><kbd>-</kbd> Jump to Copy first-breakpoint volume-to-hold, or the First breakpoint heading if missing</li>
         <li><kbd>=</kbd> Jump to Hide the least-headroom participant, or the Participants heading if missing</li>
