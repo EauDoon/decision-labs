@@ -1450,6 +1450,15 @@ function jumpToGanttBankRow() {
   rememberChart("gantt");
   return true;
 }
+function jumpToCompareGantt() {
+  const heading = document.querySelector("#compare-gantt-title");
+  if (!heading) return jumpToGantt();
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
 function jumpToTimingReview() {
   const panel = document.querySelector("#weekend-review");
   const heading = document.querySelector("#weekend-review-title");
@@ -1654,6 +1663,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "b" || event.key === "B") {
     event.preventDefault();
     jumpToGanttBankRow();
+    return;
+  }
+  if (event.key === "m" || event.key === "M") {
+    event.preventDefault();
+    jumpToCompareGantt();
     return;
   }
   if (event.key === "p" || event.key === "P") {

@@ -499,6 +499,21 @@ test("keyboard b jumps to the Bank Gantt row and to the Gantt heading when filte
   assert.equal(ui.nodes.get("gantt-bank-row").focused, false);
 });
 
+test("keyboard m jumps to the compare Gantt heading and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("m");
+  assert.equal(ui.nodes.get("compare-gantt-title").focused, true);
+  assert.equal(ui.nodes.get("compare-gantt-title").attributes.tabindex, "-1");
+  assert.equal(ui.nodes.get("selected-chart").value, "gantt");
+  ui.nodes.get("compare-gantt-title").focused = false;
+  await ui.keydown("M", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("compare-gantt-title").focused, false);
+  await ui.keydown("m", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("compare-gantt-title").focused, false);
+  await ui.keydown("m", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("compare-gantt-title").focused, false);
+});
+
 test("comparing two scenario JSON files shows queue diffs and honest null settlement hours", async () => {
   const { scenarioToJSON, DEFAULT_SCENARIO, PRESETS } = await import(new URL("../src/model.js", import.meta.url));
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
