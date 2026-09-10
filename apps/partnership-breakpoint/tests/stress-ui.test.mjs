@@ -72,8 +72,11 @@ async function workbench(protocol = 'file:', options = {}) {
         'copy-first-over-capacity-label', 'first-over-capacity-label-copy-text',
         'copy-first-over-capacity-remaining', 'first-over-capacity-remaining-copy-text',
         'copy-last-over-capacity-label', 'last-over-capacity-label-copy-text',
+        'copy-last-over-capacity-remaining', 'last-over-capacity-remaining-copy-text',
         'hide-first-breakpoint-participant',
+        'hide-last-breakpoint-participant',
         'hide-first-over-capacity-participant',
+        'hide-last-over-capacity-participant',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -699,7 +702,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, and first over-capacity remaining listed capacity', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, first over-capacity remaining listed capacity, and last over-capacity participant', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -720,6 +723,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>First over-capacity participant<\/h2><p>First over-capacity participant: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: none entered\.<\/p>/);
+  assert.match(app.markup(), /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   const before = JSON.stringify(app.saved());
   app.click('print-report');
@@ -734,6 +738,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First over-capacity participant<\/h2><p>First over-capacity participant: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   app.edit('deal.title', 'Harbor JV', { type: 'text' });
   app.edit('deal.currency', 'USD', { type: 'text' });
@@ -746,6 +751,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First over-capacity participant<\/h2><p>First over-capacity participant: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: none entered\.<\/p>/);
   app.edit('deal.monthlyVolume', '116000');
   const over = JSON.stringify(app.saved());
   app.click('print-report');
@@ -754,6 +760,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 1\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First over-capacity participant<\/h2><p>First over-capacity participant: Liquidity Partner\. Roster row currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner\. How far over listed capacity\. Not a forecast\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: Liquidity Partner\. Roster row currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
   assert.match(html, /\.panel:not\(\.print-keep\)/);
@@ -779,6 +786,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>First over-capacity participant<\/h2><p>First over-capacity participant: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: none entered\.<\/p>/);
+  assert.match(snapshot, /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
   assert.doesNotMatch(snapshot, /Least-headroom participant: Liquidity Partner/);
@@ -786,7 +794,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.doesNotMatch(snapshot, /First-breakpoint remaining-to-hold: 0\.0% share for Liquidity Partner/);
   assert.doesNotMatch(snapshot, /First-breakpoint volume-to-hold: 90,000 txn for Liquidity Partner/);
   assert.doesNotMatch(snapshot, /First over-capacity participant: Liquidity Partner/);
-  assert.doesNotMatch(snapshot, /First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner/);
+  assert.doesNotMatch(snapshot, /Last over-capacity participant: Liquidity Partner/);
   assert.match(html, /\.print-redacted \.participant-live-name/);
   assert.match(html, /\.print-redacted \.participant-redacted-name/);
   assert.match(app.markup(), /class="participant-live-name">Platform</);
@@ -1323,6 +1331,7 @@ test('school concert split preset loads from the starting-point buttons', async 
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'netball-committee,canteen,first-aid');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'swimming-committee,pool-operations,swim-canteen');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'athletics-committee,track-hire,athletics-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cricket-committee,pitch-hire,cricket-first-aid');
 });
 
 test('sports carnival split preset loads from the starting-point buttons', async () => {
@@ -1356,6 +1365,7 @@ test('sports carnival split preset loads from the starting-point buttons', async
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'netball-committee,canteen,first-aid');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'swimming-committee,pool-operations,swim-canteen');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'athletics-committee,track-hire,athletics-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cricket-committee,pitch-hire,cricket-first-aid');
 });
 
 test('netball carnival split preset loads from the starting-point buttons', async () => {
@@ -1392,6 +1402,7 @@ test('netball carnival split preset loads from the starting-point buttons', asyn
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'swimming-committee,pool-operations,swim-canteen');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'athletics-committee,track-hire,athletics-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cricket-committee,pitch-hire,cricket-first-aid');
 });
 
 test('swimming carnival split preset loads from the starting-point buttons', async () => {
@@ -1427,6 +1438,7 @@ test('swimming carnival split preset loads from the starting-point buttons', asy
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'athletics-committee,track-hire,athletics-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cricket-committee,pitch-hire,cricket-first-aid');
 });
 
 test('athletics carnival split preset loads from the starting-point buttons', async () => {
@@ -1460,6 +1472,43 @@ test('athletics carnival split preset loads from the starting-point buttons', as
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'carnival-committee,ride-operator,ticket-booth');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'netball-committee,canteen,first-aid');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'swimming-committee,pool-operations,swim-canteen');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cricket-committee,pitch-hire,cricket-first-aid');
+});
+
+test('cricket carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="cricketCarnivalSplit"/);
+  assert.match(app.markup(), /Cricket carnival split/);
+  app.click('preset', { preset: 'cricketCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['cricket-committee', 'pitch-hire', 'cricket-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Pitch hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 12);
+  assert.equal(app.saved().deal.monthlyVolume, 2700);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[0].fixedMonthlyCost, app.saved().participants[1].fixedMonthlyCost);
+  assert.notEqual(app.saved().participants[1].fixedMonthlyCost, app.saved().participants[2].fixedMonthlyCost);
+  assert.match(app.notice(), /Cricket carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'platform,distributor,liquidity-partner');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'production-studio,distribution-studio');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'marketplace,seller,logistics,payments');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'ip-licensor,territory-distributor');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'talent,booking-agent,booking-platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'synthetic-operator,capital-partner,operator-talent');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'podcast-host,podcast-network');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'venue,promoter,sound');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'stallholder,site-manager,ticket-office');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cinema-venue,projectionist,ticket-desk');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'presenter,station,underwriter');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'concert-venue,pta,ticketing');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'carnival-committee,ride-operator,ticket-booth');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'netball-committee,canteen,first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'swimming-committee,pool-operations,swim-canteen');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'athletics-committee,track-hire,athletics-first-aid');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
@@ -1583,6 +1632,9 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>"<\/kbd> Copy over-capacity participant count as Markdown/);
   assert.match(app.markup(), /<kbd>\}<\/kbd> Copy the first over-capacity participant label as Markdown/u);
   assert.match(app.markup(), /<kbd>~<\/kbd> Copy first over-capacity remaining listed capacity as Markdown/);
+  assert.match(app.markup(), /<kbd>\(<\/kbd> Copy the last over-capacity participant label as Markdown/);
+  assert.match(app.markup(), /<kbd>\)<\/kbd> Jump to Copy last over-capacity participant label, or the First breakpoint or Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>#<\/kbd> Jump to Hide the last over-capacity participant, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\+<\/kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>!<\/kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\|<\/kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing/);
@@ -2587,6 +2639,70 @@ test('keyboard tilde copies first over-capacity remaining listed capacity throug
   assert.equal(firstOfTwo.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Distributor. How far over listed capacity. Not a forecast.');
 });
 
+test('keyboard ( copies last over-capacity participant label through the same control', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-last-over-capacity-label"/);
+  assert.match(fallback.markup(), /id="copy-last-over-capacity-label"[^>]*aria-keyshortcuts="\("/);
+  fallback.keydown('(');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="last-over-capacity-label-copy-text"/);
+  assert.match(fallback.markup(), /Last over-capacity participant: none entered\./);
+  assert.match(fallback.markup(), /id="last-over-capacity-label-copy-title">Last over-capacity participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-last-over-capacity-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-label-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown('(', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('(', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown('(');
+  assert.match(fallback.markup(), /id="last-over-capacity-label-copy-text"/);
+  assert.match(fallback.markup(), />Last over-capacity participant: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown('(');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'Last over-capacity participant: none entered.');
+  assert.doesNotMatch(withClipboard.copied()[0], /First over-capacity participant/);
+  assert.doesNotMatch(withClipboard.copied()[0], /First over-capacity remaining listed capacity/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown('(', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+  withClipboard.keydown('}');
+  assert.notEqual(withClipboard.copied().at(-1), withClipboard.copied()[0]);
+  assert.match(withClipboard.copied().at(-1), /First over-capacity participant/);
+  withClipboard.keydown('~');
+  assert.match(withClipboard.copied().at(-1), /First over-capacity remaining listed capacity/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.keydown('(');
+  assert.match(denied.markup(), /id="last-over-capacity-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const over = await workbench('file:', { clipboard: 'ok' });
+  over.edit('deal.monthlyVolume', '116000');
+  over.keydown('(');
+  assert.equal(over.copied().at(-1), 'Last over-capacity participant: Liquidity Partner. Roster row currently over listed capacity. Not a forecast.');
+  over.keydown('}');
+  assert.equal(over.copied().at(-1), 'First over-capacity participant: Liquidity Partner. Roster row currently over listed capacity. Not a forecast.');
+
+  const lastOfTwo = await workbench('file:', { clipboard: 'ok' });
+  lastOfTwo.edit('deal.monthlyVolume', '121000');
+  lastOfTwo.keydown('(');
+  assert.equal(lastOfTwo.copied().at(-1), 'Last over-capacity participant: Liquidity Partner. Roster row currently over listed capacity. Not a forecast.');
+  lastOfTwo.keydown('}');
+  assert.equal(lastOfTwo.copied().at(-1), 'First over-capacity participant: Distributor. Roster row currently over listed capacity. Not a forecast.');
+});
+
 test('keyboard + jumps to Copy first over-capacity participant label unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
@@ -2657,6 +2773,41 @@ test('keyboard ! jumps to Copy first over-capacity remaining listed capacity unl
   assert.ok(withClipboard.focused().includes('#copy-first-over-capacity-remaining'));
 });
 
+test('keyboard ) jumps to Copy last over-capacity participant label unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-last-over-capacity-label"/);
+  assert.match(app.markup(), /id="first-breakpoint-title" tabindex="-1"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown(')');
+  assert.ok(app.focused().includes('#copy-last-over-capacity-label'));
+  assert.ok(app.focused().includes('scroll:#copy-last-over-capacity-label'));
+  assert.ok(!app.focused().includes('#copy-first-over-capacity-remaining'));
+  assert.doesNotMatch(app.markup(), /id="last-over-capacity-label-copy-text"/);
+  const before = app.focused().length;
+  app.keydown(')', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown(')', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('!');
+  assert.ok(app.focused().includes('#copy-first-over-capacity-remaining'));
+  assert.ok(!app.focused().at(-1)?.includes('copy-last-over-capacity-label'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown(')');
+  assert.ok(app.focused().includes('#copy-last-over-capacity-label'));
+  assert.ok(app.focused().includes('scroll:#copy-last-over-capacity-label'));
+  assert.match(app.markup(), /id="copy-last-over-capacity-label"/);
+  assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  assert.doesNotMatch(app.markup(), /id="last-over-capacity-label-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('dismiss-coach');
+  withClipboard.keydown(')');
+  assert.equal(withClipboard.copied().length, 0);
+  assert.ok(withClipboard.focused().includes('#copy-last-over-capacity-label'));
+});
+
 test('keyboard | jumps to Hide the first-breakpoint participant unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
@@ -2708,6 +2859,32 @@ test('keyboard @ jumps to Hide the first over-capacity participant unless a fiel
   assert.ok(app.focused().includes('#hide-first-over-capacity-participant'));
   assert.ok(app.focused().includes('scroll:#hide-first-over-capacity-participant'));
   assert.match(app.markup(), /id="hide-first-over-capacity-participant"/);
+});
+
+test('keyboard # jumps to Hide the last over-capacity participant unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="hide-last-over-capacity-participant"/);
+  assert.match(app.markup(), /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="#"/);
+  assert.match(app.markup(), /id="hide-last-over-capacity-participant"[^>]*data-action="hide-last-over-capacity-participant"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('#');
+  assert.ok(app.focused().includes('#hide-last-over-capacity-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-last-over-capacity-participant'));
+  assert.ok(!app.focused().includes('#hide-first-over-capacity-participant'));
+  assert.ok(!app.focused().includes('#hide-first-breakpoint-participant'));
+  const before = app.focused().length;
+  app.keydown('#', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('#', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('@');
+  assert.ok(app.focused().includes('#hide-first-over-capacity-participant'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('#');
+  assert.ok(app.focused().includes('#hide-last-over-capacity-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-last-over-capacity-participant'));
+  assert.match(app.markup(), /id="hide-last-over-capacity-participant"/);
 });
 
 test('keyboard { jumps to Hide participants within listed capacity unless a field is focused', async () => {
@@ -3593,6 +3770,65 @@ test('copy last over-capacity participant label is one Markdown line with an hon
   assert.equal(lastOfTwo.copied().at(-1), 'Last over-capacity participant: Liquidity Partner. Roster row currently over listed capacity. Not a forecast.');
   lastOfTwo.click('copy-first-over-capacity-label');
   assert.equal(lastOfTwo.copied().at(-1), 'First over-capacity participant: Distributor. Roster row currently over listed capacity. Not a forecast.');
+});
+
+test('copy last over-capacity remaining listed capacity is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-last-over-capacity-remaining"/);
+  assert.match(fallback.markup(), /data-action="copy-last-over-capacity-remaining"/);
+  fallback.click('copy-last-over-capacity-remaining');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="last-over-capacity-remaining-copy-text"/);
+  assert.match(fallback.markup(), /Last over-capacity remaining listed capacity: none entered\./);
+  assert.match(fallback.markup(), /id="last-over-capacity-remaining-copy-title">Last over-capacity remaining listed capacity Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="over-capacity-count-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-last-over-capacity-remaining-copy');
+  assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-remaining-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-last-over-capacity-remaining');
+  assert.match(fallback.markup(), /id="last-over-capacity-remaining-copy-text"/);
+  assert.match(fallback.markup(), />Last over-capacity remaining listed capacity: none entered\.</);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-label-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-last-over-capacity-remaining');
+  assert.equal(withClipboard.copied().length, 1);
+  const empty = withClipboard.copied()[0];
+  assert.equal(empty.split('\n').length, 1);
+  assert.equal(empty, 'Last over-capacity remaining listed capacity: none entered.');
+  assert.doesNotMatch(empty, /First over-capacity remaining listed capacity/);
+  assert.doesNotMatch(empty, /Last over-capacity participant: none entered/);
+  assert.doesNotMatch(empty, /Over-capacity participant count/);
+  assert.doesNotMatch(empty, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="last-over-capacity-remaining-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-last-over-capacity-remaining');
+  assert.match(denied.markup(), /id="last-over-capacity-remaining-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const over = await workbench('file:', { clipboard: 'ok' });
+  over.edit('deal.monthlyVolume', '116000');
+  over.click('copy-last-over-capacity-remaining');
+  assert.equal(over.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
+  over.click('copy-last-over-capacity-label');
+  assert.equal(over.copied().at(-1), 'Last over-capacity participant: Liquidity Partner. Roster row currently over listed capacity. Not a forecast.');
+  over.click('copy-first-over-capacity-remaining');
+  assert.equal(over.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
+
+  const lastOfTwoRemaining = await workbench('file:', { clipboard: 'ok' });
+  lastOfTwoRemaining.edit('deal.monthlyVolume', '121000');
+  lastOfTwoRemaining.click('copy-last-over-capacity-remaining');
+  assert.equal(lastOfTwoRemaining.copied().at(-1), 'Last over-capacity remaining listed capacity: 6,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
+  lastOfTwoRemaining.click('copy-first-over-capacity-remaining');
+  assert.equal(lastOfTwoRemaining.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Distributor. How far over listed capacity. Not a forecast.');
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
@@ -5213,6 +5449,104 @@ test('hide-last-over-capacity preference round-trips on saved JSON and defaults 
 
   const unknown = clonePreset('balanced');
   unknown.hideLastOverCapacityParticipant = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
+test('hiding the last first-breakpoint participant is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-last-breakpoint-participant"/);
+  assert.match(app.markup(), /data-action="show-last-breakpoint-participant"/);
+  assert.match(app.markup(), /id="hide-last-breakpoint-participant"/);
+  assert.match(app.markup(), /data-action="hide-first-breakpoint-participant"/);
+  const beforeHide = holdCount();
+  assert.ok(beforeHide);
+  app.click('hide-last-breakpoint-participant');
+  assert.equal(forms(), 2);
+  assert.match(app.markup(), /1 last first-breakpoint participant is hidden from this roster display/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.equal(holdCount(), beforeHide);
+  assert.match(app.markup(), /Participant 1: Platform/);
+  assert.match(app.markup(), /Participant 2: Distributor/);
+  assert.doesNotMatch(app.markup(), /Participant 3: Liquidity Partner/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  assert.equal(Object.hasOwn(app.saved(), 'hideFirstBreakpointParticipant'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastOverCapacityParticipant'), false);
+  assert.equal(app.saved().hideLastBreakpointParticipant, true);
+  app.click('show-last-breakpoint-participant');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /Participant 3: Liquidity Partner/);
+  app.click('hide-last-breakpoint-participant');
+  app.click('export');
+  const exported = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(exported.participants.length, 3);
+  assert.equal(exported.hideLastBreakpointParticipant, true);
+  assert.equal(Object.hasOwn(exported, 'hideFirstBreakpointParticipant'), false);
+  app.click('show-last-breakpoint-participant');
+  assert.equal(forms(), 3);
+  app.click('hide-first-breakpoint-participant');
+  assert.equal(forms(), 2);
+  assert.doesNotMatch(app.markup(), /Participant 3: Liquidity Partner/);
+  assert.equal(app.saved().hideFirstBreakpointParticipant, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastBreakpointParticipant'), false);
+  app.click('show-first-breakpoint-participant');
+  app.edit('deal.monthlyVolume', '');
+  app.click('hide-last-breakpoint-participant');
+  assert.match(app.notice(), /Resolve invalid inputs before hiding the last first-breakpoint participant/);
+});
+
+test('hide-last-breakpoint preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastBreakpointParticipant'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideFirstBreakpointParticipant'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastOverCapacityParticipant'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideFirstOverCapacityParticipant'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  app.click('hide-last-breakpoint-participant');
+  assert.equal(app.saved().hideLastBreakpointParticipant, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideFirstBreakpointParticipant'), false);
+  assert.equal(forms(), 2);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideLastBreakpointParticipant, true);
+  assert.equal(hidden.participants.length, 3);
+  assert.equal(Object.hasOwn(hidden, 'hideFirstBreakpointParticipant'), false);
+  app.click('show-last-breakpoint-participant');
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastBreakpointParticipant'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideLastBreakpointParticipant'), false);
+  assert.equal(forms(), 3);
+
+  const imported = clonePreset('balanced');
+  imported.hideLastBreakpointParticipant = true;
+  app.import(imported);
+  assert.equal(app.saved().hideLastBreakpointParticipant, true);
+  assert.equal(forms(), 2);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastBreakpointParticipant'), false);
+  assert.equal(forms(), 3);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideLastBreakpointParticipant = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+  assert.equal(forms(), 3);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideLastBreakpointParticipant = true;
   unknown.unexpected = true;
   app.import(unknown);
   assert.match(app.notice(), /unknown field: unexpected/);
