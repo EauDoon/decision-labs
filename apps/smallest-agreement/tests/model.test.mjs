@@ -26,6 +26,7 @@ import {
   groupsBelowSupportRequirement,
   overBudgetClauseIds,
   formatCurrentLocksMarkdown,
+  formatGroupSupportMarkdown,
   formatRecommendedChangeCostCsv,
   parseClauseOptionsCsv,
   formatClauseOptionsCsv,
@@ -1480,6 +1481,34 @@ test("recommended package Markdown copies selected options without claiming legi
     ] }],
   });
   assert.equal(formatRecommendedPackageMarkdown(infeasible).status, "unavailable");
+});
+
+test("group support Markdown table lists name, weight, and average without claiming a legal right", () => {
+  const input = proposal({
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("one-original", true, { majority: 80, minority: 20 }),
+      option("one-change", false, { majority: 90, minority: 30 }, 2),
+      option("one-other", false, { majority: 60, minority: 40 }, 4),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const markdown = formatGroupSupportMarkdown(input, originals);
+  assert.equal(markdown.status, "ok");
+  assert.match(markdown.text, /^# Group support\n/u);
+  assert.match(markdown.text, /\| Group \| Weight \| Average support \|/u);
+  assert.match(markdown.text, /\| Majority \| 9 \| 80\.0% \|/u);
+  assert.match(markdown.text, /\| Minority \| 1 \| 20\.0% \|/u);
+  assert.match(markdown.text, /not a legal right/u);
+  assert.doesNotMatch(markdown.text, /[\u2014\u2013]/u);
+  assert.equal(markdown.text, formatGroupSupportMarkdown(input, originals).text);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(formatGroupSupportMarkdown({ title: "" }, originals).status, "invalid");
+  assert.equal(formatGroupSupportMarkdown(input, null).status, "unavailable");
 });
 
 test("pinned package Markdown table lists original, recommended, and pinned labels without recording a vote", () => {

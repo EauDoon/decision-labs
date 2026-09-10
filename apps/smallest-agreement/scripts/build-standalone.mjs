@@ -54,6 +54,7 @@ const appImport = `import {
   changedClauseIds,
   groupsBelowSupportRequirement,
   overBudgetClauseIds,
+  formatGroupSupportMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,

@@ -1807,6 +1807,39 @@ export function formatCurrentLocksMarkdown(proposal) {
 }
 
 /**
+ * Markdown table of group name, mixing weight, and average support on the inspected package.
+ * Mixing weights are not a legal right.
+ */
+export function formatGroupSupportMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "unavailable", text: "No inspected package is available, so there is no group support table to copy.\n" };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const p = canonicalProposal(proposal);
+  const byGroup = approvalByGroup(p.groups, selected);
+  const lines = [
+    "# Group support",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This table lists group names, mixing weights, and average support on the inspected package. Mixing weights are not a legal right.",
+    "",
+    "| Group | Weight | Average support |",
+    "| --- | --- | --- |",
+  ];
+  for (const group of byGroup) {
+    lines.push(`| ${briefText(group.name)} | ${group.weight} | ${formatPercent(group.approval)} |`);
+  }
+  lines.push("", "Scores and weights remain human inputs. A veto is a number, not a legal right.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
+/**
  * Compact formula-safe CSV of recommended versus original option labels and cost delta.
  * Unavailable when there is no recommended package.
  */

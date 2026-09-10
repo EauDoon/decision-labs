@@ -40,6 +40,7 @@ import {
   changedClauseIds,
   groupsBelowSupportRequirement,
   overBudgetClauseIds,
+  formatGroupSupportMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -438,6 +439,11 @@ function renderCopyFallbacks(result) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
     costBox.value = exported.status === "ok" ? exported.csv : exported.status === "unavailable" ? exported.text : "";
   }
+  const supportBox = $("#group-support-fallback");
+  if (supportBox) {
+    const listed = formatGroupSupportMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    supportBox.value = listed.status === "ok" ? listed.text : listed.status === "unavailable" ? listed.text : "";
+  }
 }
 
 function firstProposalError(proposal) {
@@ -832,6 +838,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
@@ -2013,6 +2020,20 @@ $("#copy-package-button").addEventListener("click", async () => {
   } catch {
     fallback?.focus?.();
     notifyDraft("Clipboard is blocked. Copy the recommended package from the Markdown box. It is not a recorded vote.");
+  }
+});
+$("#copy-group-support-button").addEventListener("click", async () => {
+  const listed = formatGroupSupportMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the group support table.");
+  if (listed.status !== "ok") return notifyDraft(listed.text.trim());
+  const fallback = $("#group-support-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Group support copied as Markdown. Mixing weights are not a legal right.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the group support table from the Markdown box. Mixing weights are not a legal right.");
   }
 });
 $("#copy-packages-table-button").addEventListener("click", async () => {

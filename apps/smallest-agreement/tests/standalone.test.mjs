@@ -112,6 +112,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Copy veto blockers/u);
   assert.match(html, /id="copy-packages-table-button"/u);
   assert.match(html, /Copy package table/u);
+  assert.match(html, /id="copy-group-support-button"/u);
+  assert.match(html, /Copy group support/u);
+  assert.match(html, /id="group-support-fallback"/u);
   assert.match(html, /id="package-markdown-fallback"/u);
   assert.match(html, /id="copy-locks-button"/u);
   assert.match(html, /Copy current locks/u);
@@ -320,6 +323,7 @@ async function savedWorkbench(storage, hash = "") {
     printCalls: () => printCalls,
     packageTable: () => element("#package-table-fallback").value,
     packageMarkdown: () => element("#package-markdown-fallback").value,
+    groupSupport: () => element("#group-support-fallback").value,
     locksMarkdown: () => element("#locks-markdown-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
@@ -864,7 +868,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
@@ -1457,6 +1461,8 @@ test("veto-blocking groups are highlighted as a numerical constraint, not a legi
 test("copy recommended package writes Markdown to the clipboard", async () => {
   const html = await standaloneBytes();
   assert.match(html, /id="copy-package-button"/u);
+  assert.match(html, /id="copy-group-support-button"/u);
+  assert.match(html, /Copy group support/u);
   assert.match(html, /id="package-markdown-fallback"/u);
   const app = await savedWorkbench(new Map());
   assert.match(app.packageMarkdown(), /^# Recommended package\n/u);
@@ -1477,6 +1483,29 @@ test("copy recommended package writes Markdown to the clipboard", async () => {
   assert.match(blocked.packageMarkdown(), /Park access hours/u);
   assert.match(blocked.message(), /Clipboard is blocked/u);
   assert.match(blocked.message(), /not a recorded vote/u);
+});
+
+test("copy group support writes a Markdown table and is not a legal right", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-group-support-button"/u);
+  assert.match(html, /id="group-support-fallback"/u);
+  assert.match(html, /not a legal right/u);
+  const app = await savedWorkbench(new Map());
+  assert.match(app.groupSupport(), /^# Group support\n/u);
+  assert.match(app.groupSupport(), /\| Group \| Weight \| Average support \|/u);
+  assert.match(app.groupSupport(), /Residents/u);
+  assert.match(app.groupSupport(), /not a legal right/u);
+  await app.click("#copy-group-support-button");
+  assert.equal(app.clipboardText(), app.groupSupport());
+  assert.match(app.message(), /not a legal right/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-group-support-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#group-support-fallback");
+  assert.match(blocked.groupSupport(), /\| Group \| Weight \| Average support \|/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a legal right/u);
 });
 
 test("copy package table writes a Markdown comparison and keeps a textarea fallback", async () => {

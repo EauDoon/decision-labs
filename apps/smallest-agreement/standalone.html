@@ -101,8 +101,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
 .package-table-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #package-table-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
-.locks-markdown-fallback-label, .change-cost-csv-fallback-label, .package-markdown-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
-#locks-markdown-fallback, #change-cost-csv-fallback, #package-markdown-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
+.locks-markdown-fallback-label, .change-cost-csv-fallback-label, .package-markdown-fallback-label, .group-support-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
+#locks-markdown-fallback, #change-cost-csv-fallback, #package-markdown-fallback, #group-support-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .clause-paste-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #clause-paste { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .constraint-card { margin-bottom: 1rem; }
@@ -204,7 +204,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, .group-support-fallback-label, #group-support-fallback, #group-support-fallback-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -283,6 +283,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="clauses-import-button">Import clauses CSV</button>
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
+        <button class="button button-secondary" type="button" id="copy-group-support-button">Copy group support</button>
         <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
@@ -414,6 +415,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <label class="package-markdown-fallback-label" for="package-markdown-fallback">Recommended package Markdown</label>
             <textarea id="package-markdown-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-markdown-fallback-note"></textarea>
             <p id="package-markdown-fallback-note" class="field-note">Each clause title is followed by the recommended option label. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
+            <label class="group-support-fallback-label" for="group-support-fallback">Group support Markdown</label>
+            <textarea id="group-support-fallback" readonly rows="8" spellcheck="false" aria-describedby="group-support-fallback-note"></textarea>
+            <p id="group-support-fallback-note" class="field-note">The table lists group name, mixing weight, and average support on the inspected package. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
             <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
             <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
@@ -2380,6 +2384,39 @@ function formatCurrentLocksMarkdown(proposal) {
 }
 
 /**
+ * Markdown table of group name, mixing weight, and average support on the inspected package.
+ * Mixing weights are not a legal right.
+ */
+function formatGroupSupportMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "unavailable", text: "No inspected package is available, so there is no group support table to copy.\n" };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const p = canonicalProposal(proposal);
+  const byGroup = approvalByGroup(p.groups, selected);
+  const lines = [
+    "# Group support",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This table lists group names, mixing weights, and average support on the inspected package. Mixing weights are not a legal right.",
+    "",
+    "| Group | Weight | Average support |",
+    "| --- | --- | --- |",
+  ];
+  for (const group of byGroup) {
+    lines.push(`| ${briefText(group.name)} | ${group.weight} | ${formatPercent(group.approval)} |`);
+  }
+  lines.push("", "Scores and weights remain human inputs. A veto is a number, not a legal right.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
+/**
  * Compact formula-safe CSV of recommended versus original option labels and cost delta.
  * Unavailable when there is no recommended package.
  */
@@ -3491,6 +3528,11 @@ function renderCopyFallbacks(result) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
     costBox.value = exported.status === "ok" ? exported.csv : exported.status === "unavailable" ? exported.text : "";
   }
+  const supportBox = $("#group-support-fallback");
+  if (supportBox) {
+    const listed = formatGroupSupportMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    supportBox.value = listed.status === "ok" ? listed.text : listed.status === "unavailable" ? listed.text : "";
+  }
 }
 
 function firstProposalError(proposal) {
@@ -3885,6 +3927,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
@@ -5066,6 +5109,20 @@ $("#copy-package-button").addEventListener("click", async () => {
   } catch {
     fallback?.focus?.();
     notifyDraft("Clipboard is blocked. Copy the recommended package from the Markdown box. It is not a recorded vote.");
+  }
+});
+$("#copy-group-support-button").addEventListener("click", async () => {
+  const listed = formatGroupSupportMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the group support table.");
+  if (listed.status !== "ok") return notifyDraft(listed.text.trim());
+  const fallback = $("#group-support-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Group support copied as Markdown. Mixing weights are not a legal right.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the group support table from the Markdown box. Mixing weights are not a legal right.");
   }
 });
 $("#copy-packages-table-button").addEventListener("click", async () => {
