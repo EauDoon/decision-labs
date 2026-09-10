@@ -10,6 +10,7 @@
 - Added the Talent, agent, and platform starting point, a three-party talent plus booking agent plus platform with different cost bases, distinct from Balanced, Two-party 50/50 studio, Four-party marketplace, and Licensor and distributor. It is a synthetic starting point, not a live roster.
 - Copy capacity utilization copies volume over capacity, or Unbounded, as Markdown. Clipboard falls back to a textarea. Display only. It is not a probability.
 - Hide participants who hold in every tested compound case filters the participant ledger display only. Expand restores them. Grid counts stay unchanged. Model math is unchanged.
+- Press `l` to jump to the Participant ledger heading when no field is focused.
 
 ## 1.5.1
 

@@ -1560,6 +1560,11 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'l' || event.key === 'L') {
+    const target = document.querySelector('#participant-ledger-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -2503,6 +2508,7 @@ function helpDialog() {
         <li><kbd>p</kbd> Print the one-pager when the case is valid</li>
         <li><kbd>f</kbd> Jump to the First breakpoint heading</li>
         <li><kbd>w</kbd> Jump to the Contribution waterfall heading</li>
+        <li><kbd>l</kbd> Jump to the Participant ledger heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
