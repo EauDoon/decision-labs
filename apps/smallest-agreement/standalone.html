@@ -204,7 +204,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, .group-support-fallback-label, #group-support-fallback, #group-support-fallback-note { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, .group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, .remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -284,6 +284,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
         <button class="button button-secondary" type="button" id="copy-group-support-button">Copy group support</button>
+        <button class="button button-secondary" type="button" id="copy-remaining-budget-button">Copy remaining budget</button>
         <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
@@ -418,6 +419,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <label class="group-support-fallback-label" for="group-support-fallback">Group support Markdown</label>
             <textarea id="group-support-fallback" readonly rows="8" spellcheck="false" aria-describedby="group-support-fallback-note"></textarea>
             <p id="group-support-fallback-note" class="field-note">The table lists group name, mixing weight, and average support on the inspected package. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <label class="remaining-budget-fallback-label" for="remaining-budget-fallback">Remaining change-budget Markdown</label>
+            <textarea id="remaining-budget-fallback" readonly rows="3" spellcheck="false" aria-describedby="remaining-budget-fallback-note"></textarea>
+            <p id="remaining-budget-fallback-note" class="field-note">One line of leftover change-budget. It is a draft accounting line, not a legal appropriation. If the clipboard is blocked, copy from this box.</p>
             <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
             <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
             <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
@@ -2423,6 +2427,57 @@ function formatGroupSupportMarkdown(proposal, options) {
 }
 
 /**
+ * Leftover change-budget on the recommended package.
+ * Display-only accounting. It is not a legal appropriation.
+ */
+function remainingChangeBudget(proposal, result = findSmallestAgreement(proposal)) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || result.status === "invalid") {
+    return { status: "invalid", errors: result?.errors ?? ["No result was available."] };
+  }
+  if (!Object.hasOwn(proposal, "maxChangeCost")) {
+    return { status: "ok", unlimited: true, exhausted: false, remaining: null, used: result.agreement?.changeCost ?? null };
+  }
+  if (!isFiniteNumber(proposal.maxChangeCost)) {
+    return { status: "invalid", errors: [`maxChangeCost must be from 0 through ${MAX_CHANGE_COST * MAX_CLAUSES}, or omitted.`] };
+  }
+  if (!result.agreement) {
+    return { status: "unavailable", unlimited: false, exhausted: false, remaining: null, used: null, budget: proposal.maxChangeCost };
+  }
+  const remaining = proposal.maxChangeCost - result.agreement.changeCost;
+  return {
+    status: "ok",
+    unlimited: false,
+    exhausted: remaining <= EPSILON,
+    remaining,
+    used: result.agreement.changeCost,
+    budget: proposal.maxChangeCost,
+  };
+}
+
+/**
+ * One-line Markdown of leftover change-budget for clipboard handoff.
+ * Honest when the budget is exhausted. Not a legal appropriation.
+ * Distinct from recommended-package copy and the group-support table.
+ */
+function formatRemainingChangeBudgetMarkdown(proposal, result = findSmallestAgreement(proposal)) {
+  const listed = remainingChangeBudget(proposal, result);
+  if (listed.status === "invalid") return listed;
+  const disclaimer = "This leftover is a draft accounting line, not a legal appropriation.";
+  if (listed.status === "unavailable") {
+    return { status: "unavailable", text: `No recommended package is available, so leftover change-budget cannot be copied. ${disclaimer}\n` };
+  }
+  if (listed.unlimited) {
+    return { status: "ok", text: `No change-budget is set, so leftover change-budget is unlimited. ${disclaimer}\n` };
+  }
+  if (listed.exhausted) {
+    return { status: "ok", text: `Remaining change-budget is exhausted (${listed.remaining.toFixed(1)} leftover). ${disclaimer}\n` };
+  }
+  return { status: "ok", text: `Remaining change-budget: ${listed.remaining.toFixed(1)}. ${disclaimer}\n` };
+}
+
+/**
  * Compact formula-safe CSV of recommended versus original option labels and cost delta.
  * Unavailable when there is no recommended package.
  */
@@ -3539,6 +3594,11 @@ function renderCopyFallbacks(result) {
     const listed = formatGroupSupportMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     supportBox.value = listed.status === "ok" ? listed.text : listed.status === "unavailable" ? listed.text : "";
   }
+  const remainingBox = $("#remaining-budget-fallback");
+  if (remainingBox) {
+    const remaining = formatRemainingChangeBudgetMarkdown(state.proposal, result ?? currentResult());
+    remainingBox.value = remaining.status === "ok" || remaining.status === "unavailable" ? remaining.text : "";
+  }
 }
 
 function firstProposalError(proposal) {
@@ -3943,6 +4003,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
   $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
+  $("#copy-remaining-budget-button").disabled = result.status === "invalid";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
@@ -5146,6 +5207,20 @@ $("#copy-group-support-button").addEventListener("click", async () => {
     notifyDraft("Clipboard is blocked. Copy the group support table from the Markdown box. Mixing weights are not a legal right.");
   }
 });
+async function copyRemainingBudget() {
+  const listed = formatRemainingChangeBudgetMarkdown(state.proposal, currentResult());
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying remaining change-budget.");
+  const fallback = $("#remaining-budget-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Remaining change-budget copied as Markdown. It is a draft accounting line, not a legal appropriation.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy remaining change-budget from the Markdown box. It is not a legal appropriation.");
+  }
+}
+$("#copy-remaining-budget-button").addEventListener("click", copyRemainingBudget);
 $("#copy-packages-table-button").addEventListener("click", async () => {
   const result = currentResult();
   if (result.status === "invalid") return notifyDraft("Fix the draft before copying the package table.");

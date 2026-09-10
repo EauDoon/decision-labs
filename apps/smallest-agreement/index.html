@@ -73,6 +73,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
         <button class="button button-secondary" type="button" id="copy-group-support-button">Copy group support</button>
+        <button class="button button-secondary" type="button" id="copy-remaining-budget-button">Copy remaining budget</button>
         <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
@@ -207,6 +208,9 @@ SOFTWARE.
             <label class="group-support-fallback-label" for="group-support-fallback">Group support Markdown</label>
             <textarea id="group-support-fallback" readonly rows="8" spellcheck="false" aria-describedby="group-support-fallback-note"></textarea>
             <p id="group-support-fallback-note" class="field-note">The table lists group name, mixing weight, and average support on the inspected package. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <label class="remaining-budget-fallback-label" for="remaining-budget-fallback">Remaining change-budget Markdown</label>
+            <textarea id="remaining-budget-fallback" readonly rows="3" spellcheck="false" aria-describedby="remaining-budget-fallback-note"></textarea>
+            <p id="remaining-budget-fallback-note" class="field-note">One line of leftover change-budget. It is a draft accounting line, not a legal appropriation. If the clipboard is blocked, copy from this box.</p>
             <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
             <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
             <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>

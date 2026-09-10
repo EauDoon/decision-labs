@@ -41,6 +41,7 @@ import {
   groupsBelowSupportRequirement,
   overBudgetClauseIds,
   formatGroupSupportMarkdown,
+  formatRemainingChangeBudgetMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -443,6 +444,11 @@ function renderCopyFallbacks(result) {
   if (supportBox) {
     const listed = formatGroupSupportMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     supportBox.value = listed.status === "ok" ? listed.text : listed.status === "unavailable" ? listed.text : "";
+  }
+  const remainingBox = $("#remaining-budget-fallback");
+  if (remainingBox) {
+    const remaining = formatRemainingChangeBudgetMarkdown(state.proposal, result ?? currentResult());
+    remainingBox.value = remaining.status === "ok" || remaining.status === "unavailable" ? remaining.text : "";
   }
 }
 
@@ -848,6 +854,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
   $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
+  $("#copy-remaining-budget-button").disabled = result.status === "invalid";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
@@ -2051,6 +2058,20 @@ $("#copy-group-support-button").addEventListener("click", async () => {
     notifyDraft("Clipboard is blocked. Copy the group support table from the Markdown box. Mixing weights are not a legal right.");
   }
 });
+async function copyRemainingBudget() {
+  const listed = formatRemainingChangeBudgetMarkdown(state.proposal, currentResult());
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying remaining change-budget.");
+  const fallback = $("#remaining-budget-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Remaining change-budget copied as Markdown. It is a draft accounting line, not a legal appropriation.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy remaining change-budget from the Markdown box. It is not a legal appropriation.");
+  }
+}
+$("#copy-remaining-budget-button").addEventListener("click", copyRemainingBudget);
 $("#copy-packages-table-button").addEventListener("click", async () => {
   const result = currentResult();
   if (result.status === "invalid") return notifyDraft("Fix the draft before copying the package table.");
