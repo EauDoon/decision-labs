@@ -4,7 +4,7 @@ import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -195,6 +195,12 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /id="copy-last-how"/);
   assert.match(missing.body, />Copy last How it works item</);
   assert.match(missing.body, /lastHowMarkdown/);
+  assert.match(missing.body, /id="copy-last-review"/);
+  assert.match(missing.body, />Copy last review path</);
+  assert.match(missing.body, /lastReviewMarkdown/);
+  assert.match(missing.body, /id="copy-first-review"/);
+  assert.match(missing.body, />Copy first review path</);
+  assert.match(missing.body, /firstReviewMarkdown/);
   assert.doesNotMatch(missing.body, /\bfetch\s*\(/);
   assert.doesNotMatch(missing.body, /XMLHttpRequest/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
@@ -2884,6 +2890,215 @@ test('404 copy last review path stays GET HEAD only with connect-src none', asyn
       hostname: '127.0.0.1',
       port,
       path: '/no-copy-last-review-path',
+      method: 'HEAD',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(head.status, 404);
+  assert.equal(head.body, '');
+});
+
+test('404 copy first review path markdown is the first printed review path', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  let firstPath = { textContent: 'Review constraints and negotiation room. Check cost allowances, feasible volume and operational conflicts before exporting a review packet.' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-review') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-review-status') return { textContent: '' };
+      if (id === 'copy-first-review-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches article.workbench .review-path' ? firstPath : null;
+    },
+    querySelectorAll: () => [],
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '- Review constraints and negotiation room. Check cost allowances, feasible volume and operational conflicts before exporting a review packet.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Review the timing behind the queue/);
+  assert.doesNotMatch(copied, /live product feed/);
+  firstPath = null;
+  copied = 'stale';
+  await click();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first review path is distinct from Copy last review path', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let lastCopied = '';
+  let clickFirst = null;
+  let clickLast = null;
+  const firstPath = { textContent: 'Review constraints and negotiation room. Check cost allowances, feasible volume and operational conflicts before exporting a review packet.' };
+  const paths = [
+    firstPath,
+    { textContent: 'Review the timing behind the queue. Inspect arrival cohorts, closed intervals and reserve or throughput scenarios.' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-review') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-review-status') return { textContent: '' };
+      if (id === 'copy-first-review-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-last-review') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-review-status') return { textContent: '' };
+      if (id === 'copy-last-review-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches article.workbench .review-path' ? firstPath : null;
+    },
+    querySelectorAll(selector) {
+      return selector === '#workbenches article.workbench .review-path' ? paths : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { lastCopied = text; } } },
+  });
+  await clickFirst();
+  const first = lastCopied;
+  await clickLast();
+  const last = lastCopied;
+  assert.equal(first, '- Review constraints and negotiation room. Check cost allowances, feasible volume and operational conflicts before exporting a review packet.');
+  assert.equal(last, '- Review the timing behind the queue. Inspect arrival cohorts, closed intervals and reserve or throughput scenarios.');
+  assert.notEqual(first, last);
+  assert.match(page, /id="copy-first-review"/);
+  assert.match(page, /id="copy-last-review"/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first review path uses the printed path without extra public paths', () => {
+  const page = notFoundPage();
+  const path = catalogFirstReviewPath();
+  assert.match(path, /Review constraints and negotiation room/);
+  assert.equal(page.includes(path), true, '404 page should print the first review path');
+  assert.equal(page.includes(catalogFirstWorkbenchHeading()), true, '404 page should print the first workbench heading');
+  assert.match(page, /id="copy-first-review"/);
+  assert.match(page, />Copy first review path</);
+  assert.match(page, /id="copy-first-review-fallback"/);
+  assert.match(page, /textarea id="copy-first-review-fallback"/);
+  assert.match(page, /firstReviewMarkdown/);
+  assert.match(page, /querySelector\('#workbenches article\.workbench \.review-path'\)/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-last-review"/);
+  assert.match(page, />Copy last review path</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy-first-review script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /firstReviewMarkdown/);
+  assert.match(source, /Not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first review path shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-review') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-review-status') return status;
+      if (id === 'copy-first-review-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbenches article.workbench .review-path' ? { textContent: 'Review constraints and negotiation room. Check cost allowances, feasible volume and operational conflicts before exporting a review packet.' } : null;
+    },
+    querySelectorAll: () => [],
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Review constraints and negotiation room. Check cost allowances, feasible volume and operational conflicts before exporting a review packet.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first review path stays GET HEAD only with connect-src none', async (t) => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-review-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /id="copy-first-review"/);
+  assert.match(missing.body, />Copy first review path</);
+  assert.match(missing.body, /Review constraints and negotiation room/);
+  assert.match(missing.body, /id="workbenches"/);
+  assert.match(missing.body, /Not a live product feed/);
+  assert.match(missing.body, /id="copy-last-review"/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+  const head = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-review-path',
       method: 'HEAD',
       headers: { host: `127.0.0.1:${port}` },
     }, (res) => {

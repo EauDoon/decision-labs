@@ -476,6 +476,66 @@ test('print CSS hides copy last review path tools like other copy tools', () => 
   assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
 });
 
+test('catalog keys 7 8 and 9 stay distinct from open-brace 5 6 r and the 1-4 opener map', () => {
+  assert.match(html, /event\.key === '7'/);
+  assert.match(html, /event\.key === '8'/);
+  assert.match(html, /event\.key === '9'/);
+  assert.match(html, /event\.key === '\{'/);
+  assert.match(html, /event\.key === '5'/);
+  assert.match(html, /event\.key === '6'/);
+  assert.match(html, /event\.key === 'r'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="7"/);
+  assert.match(html, /id="copy-first-review"/);
+  assert.match(html, />Copy first review path</);
+  assert.notEqual(html.match(/event\.key === '7'/)?.[0], html.match(/event\.key === '\{'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '8'/)?.[0], html.match(/event\.key === '5'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '9'/)?.[0], html.match(/event\.key === '6'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '9'/)?.[0], html.match(/event\.key === 'r'/)?.[0]);
+  assert.match(html, /firstReviewBtn\?\.click\(\)/);
+  assert.match(html, /lastReviewBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-first-review'\) \|\| document\.getElementById\('workbenches-title'\)/);
+  assert.match(html, /querySelector\('#workbenches article\.workbench:first-of-type \.review-path'\)/);
+  assert.match(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.match(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 5:/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 7:/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 8:/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 9:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 7:/);
+});
+
+test('print CSS hides copy first review path tools like other copy tools', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-first-review-tools, \.copy-first-review-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-last-review-tools, \.copy-last-review-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+});
+
+test('404 Copy first review path does not expand PUBLIC_PATHS or connect-src', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  assert.match(serve, /request\.method !== 'GET' && request\.method !== 'HEAD'/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-first-review"/);
+  assert.match(page, />Copy first review path</);
+  assert.match(page, /firstReviewMarkdown/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /Review constraints and negotiation room/);
+  assert.match(page, /id="copy-last-review"/);
+  assert.match(page, />Copy last review path</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(serve, /hosted API/i);
+});
+
 test('404 Copy last review path does not expand PUBLIC_PATHS or connect-src', () => {
   assert.equal(PUBLIC_PATHS.length, 6);
   assert.deepEqual([...PUBLIC_PATHS], [

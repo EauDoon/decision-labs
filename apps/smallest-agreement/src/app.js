@@ -47,6 +47,7 @@ import {
   formatFirstNonVetoGroupLabelMarkdown,
   formatLastVetoGroupLabelMarkdown,
   formatLastNonVetoGroupLabelMarkdown,
+  formatLastBelowThresholdGroupLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -828,6 +829,39 @@ const presets = {
       },
     ],
   },
+  "volleyball-club-hours": {
+    title: "Volleyball club hours: hall/court booking, net posts, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "hall-court-booking", title: "Hall/court booking", options: [
+          { id: "hall-court-booking-original", original: true, label: "Keep weekday hall/court booking from 15:45 with no posted net rota", changeCost: 0, support: { students: 22, neighbours: 84, pandc: 64 } },
+          { id: "hall-court-booking-late", original: false, label: "Open weekday volleyball at 17:15 with a posted net rota", changeCost: 2, support: { students: 76, neighbours: 50, pandc: 60 } },
+          { id: "hall-court-booking-weekend", original: false, label: "Hold Saturday morning hall/court at 09:15 with a booking card", changeCost: 3, support: { students: 70, neighbours: 56, pandc: 58 } },
+        ],
+      },
+      {
+        id: "net-posts", title: "Net posts", options: [
+          { id: "net-posts-original", original: true, label: "No posted net-post hours", changeCost: 0, support: { students: 74, neighbours: 18, pandc: 32 } },
+          { id: "net-posts-cap", original: false, label: "Store net posts at 18:45 and keep them off the hall floor", changeCost: 2, support: { students: 58, neighbours: 72, pandc: 68 } },
+          { id: "net-posts-cut", original: false, label: "Use handheld nets after 17:45 and retire the net posts", changeCost: 4, support: { students: 40, neighbours: 78, pandc: 56 } },
+        ],
+      },
+      {
+        id: "sports-hall-lockup", title: "Sports hall lock-up", options: [
+          { id: "sports-hall-lockup-original", original: true, label: "Leave the sports hall door on a shared padlock after club hours", changeCost: 0, support: { students: 26, neighbours: 42, pandc: 46 } },
+          { id: "sports-hall-lockup-steward", original: false, label: "Require a P&C steward to lock the sports hall before 20:00", changeCost: 2, support: { students: 72, neighbours: 64, pandc: 74 } },
+          { id: "sports-hall-lockup-timer", original: false, label: "Add a timed lock on the sports hall door after the last session", changeCost: 3, support: { students: 62, neighbours: 60, pandc: 66 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -855,6 +889,7 @@ let hideLastVetoGroup = false;
 let hideFirstNonVetoGroup = false;
 let hideLastNonVetoGroup = false;
 let hideLastGroupBelowThreshold = false;
+let hideFirstGroupBelowThreshold = false;
 let overBudgetClausesOnly = false;
 let noCheaperRemainingClausesOnly = false;
 let printRedacted = false;
@@ -951,6 +986,11 @@ function renderCopyFallbacks(result) {
     const listed = formatLastNonVetoGroupLabelMarkdown(state.proposal);
     lastNonVetoGroupBox.value = listed.status === "ok" ? listed.text : "";
   }
+  const lastBelowThresholdGroupBox = $("#last-below-threshold-group-fallback");
+  if (lastBelowThresholdGroupBox) {
+    const listed = formatLastBelowThresholdGroupLabelMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    lastBelowThresholdGroupBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
@@ -1006,6 +1046,7 @@ function loadWorkspacePrefs() {
     hideFirstNonVetoGroup = parsed?.hideFirstNonVetoGroup === true;
     hideLastNonVetoGroup = parsed?.hideLastNonVetoGroup === true;
     hideLastGroupBelowThreshold = parsed?.hideLastGroupBelowThreshold === true;
+    hideFirstGroupBelowThreshold = parsed?.hideFirstGroupBelowThreshold === true;
     noCheaperRemainingClausesOnly = parsed?.noCheaperRemainingClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
@@ -1014,7 +1055,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, noCheaperRemainingClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -1228,6 +1269,7 @@ function hiddenGroupsEmptyState() {
     if (hideFirstNonVetoGroup) reasons.push("are the first non-veto group");
     if (hideLastNonVetoGroup) reasons.push("are the last non-veto group");
     if (hideLastGroupBelowThreshold) reasons.push("are the last group below the numeric approval threshold");
+    if (hideFirstGroupBelowThreshold) reasons.push("are the first group below the numeric approval threshold");
     if (hideGroupsAtFloor) reasons.push("currently meet their support floor");
     if (hideGroupsWithoutFloors) reasons.push("have no support floor");
     if (reasons.length === 1 && hideGroupsBelowThreshold) {
@@ -1254,6 +1296,9 @@ function hiddenGroupsEmptyState() {
     if (reasons.length === 1 && hideLastGroupBelowThreshold) {
       return "No groups remain after hiding the last group whose average is below the numeric approval threshold. Hidden groups still count in the model.";
     }
+    if (reasons.length === 1 && hideFirstGroupBelowThreshold) {
+      return "No groups remain after hiding the first group whose average is below the numeric approval threshold. Hidden groups still count in the model.";
+    }
     if (reasons.length === 2 && hideVetoGroups && hideFirstVetoGroup) {
       return "No groups remain after hiding veto groups and the first veto group. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
     }
@@ -1271,6 +1316,12 @@ function hiddenGroupsEmptyState() {
     }
     if (reasons.length === 2 && hideGroupsBelowThreshold && hideLastGroupBelowThreshold) {
       return "No groups remain after hiding groups whose average is below the numeric approval threshold and the last group below the numeric approval threshold. Hidden groups still count in the model.";
+    }
+    if (reasons.length === 2 && hideGroupsBelowThreshold && hideFirstGroupBelowThreshold) {
+      return "No groups remain after hiding groups whose average is below the numeric approval threshold and the first group below the numeric approval threshold. Hidden groups still count in the model.";
+    }
+    if (reasons.length === 2 && hideLastGroupBelowThreshold && hideFirstGroupBelowThreshold) {
+      return "No groups remain after hiding the last group below the numeric approval threshold and the first group below the numeric approval threshold. Hidden groups still count in the model.";
     }
     if (reasons.length === 1) {
       return `No groups remain after hiding groups that ${reasons[0]}. Hidden groups still count in the model.`;
@@ -1346,6 +1397,10 @@ function visibleParticipantGroups() {
       const lastBelow = belowThreshold.status === "ok" ? belowThreshold.groups[belowThreshold.groups.length - 1] : null;
       if (lastBelow && group.id === lastBelow.id) return false;
     }
+    if (hideFirstGroupBelowThreshold) {
+      const firstBelow = belowThreshold.status === "ok" ? belowThreshold.groups[0] : null;
+      if (firstBelow && group.id === firstBelow.id) return false;
+    }
     return true;
   });
   return { visible, belowIds };
@@ -1378,9 +1433,11 @@ function renderGroups(vetoBlocks = new Set()) {
   if (hideLastNonVetoGroupCheckbox) hideLastNonVetoGroupCheckbox.checked = hideLastNonVetoGroup;
   const hideLastGroupBelowThresholdCheckbox = $("#hide-last-group-below-threshold");
   if (hideLastGroupBelowThresholdCheckbox) hideLastGroupBelowThresholdCheckbox.checked = hideLastGroupBelowThreshold;
+  const hideFirstGroupBelowThresholdCheckbox = $("#hide-first-group-below-threshold");
+  if (hideFirstGroupBelowThresholdCheckbox) hideFirstGroupBelowThresholdCheckbox.checked = hideFirstGroupBelowThreshold;
   const { visible, belowIds } = visibleParticipantGroups();
   const status = $("#veto-groups-status");
-  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors || hideGroupsMeetingThreshold || hideGroupsBelowThreshold || hideVetoGroups || hideNonVetoGroups || hideFirstVetoGroup || hideLastVetoGroup || hideFirstNonVetoGroup || hideLastNonVetoGroup || hideLastGroupBelowThreshold;
+  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors || hideGroupsMeetingThreshold || hideGroupsBelowThreshold || hideVetoGroups || hideNonVetoGroups || hideFirstVetoGroup || hideLastVetoGroup || hideFirstNonVetoGroup || hideLastNonVetoGroup || hideLastGroupBelowThreshold || hideFirstGroupBelowThreshold;
   if (!visible.length) {
     const message = hiddenGroupsEmptyState();
     if (status) status.textContent = groupFiltersOn ? message : "";
@@ -1650,6 +1707,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-first-non-veto-group-button").disabled = result.status === "invalid";
   $("#copy-last-veto-group-button").disabled = result.status === "invalid";
   $("#copy-last-non-veto-group-button").disabled = result.status === "invalid";
+  $("#copy-last-below-threshold-group-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -2403,6 +2461,14 @@ function setHideLastGroupBelowThreshold(next) {
   renderGroups(blockingVetoIds(currentResult()));
 }
 
+function setHideFirstGroupBelowThreshold(next) {
+  hideFirstGroupBelowThreshold = next === true;
+  const checkbox = $("#hide-first-group-below-threshold");
+  if (checkbox) checkbox.checked = hideFirstGroupBelowThreshold;
+  persistWorkspacePrefs();
+  renderGroups(blockingVetoIds(currentResult()));
+}
+
 $("#veto-groups-only").addEventListener("change", (event) => {
   setVetoGroupsOnly(event.target.checked === true);
 });
@@ -2441,6 +2507,9 @@ $("#hide-last-non-veto-group").addEventListener("change", (event) => {
 });
 $("#hide-last-group-below-threshold").addEventListener("change", (event) => {
   setHideLastGroupBelowThreshold(event.target.checked === true);
+});
+$("#hide-first-group-below-threshold").addEventListener("change", (event) => {
+  setHideFirstGroupBelowThreshold(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -2799,7 +2868,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, hideLastNonVetoGroup, hideLastGroupBelowThreshold, hideFirstGroupBelowThreshold, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -3261,6 +3330,24 @@ async function copyLastNonVetoGroup() {
   }
 }
 $("#copy-last-non-veto-group-button").addEventListener("click", copyLastNonVetoGroup);
+async function copyLastBelowThresholdGroup() {
+  const listed = formatLastBelowThresholdGroupLabelMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the last below-threshold group label.");
+  const fallback = $("#last-below-threshold-group-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty last below-threshold group label. A threshold is a number you entered, not a legal quorum. The label is not a legal identity."
+    : listed.empty
+    ? "No group is below the approval threshold. Copied an honest empty last below-threshold group label. A threshold is a number you entered, not a legal quorum. The label is not a legal identity."
+    : "Last below-threshold group label copied as Markdown. A threshold is a number you entered, not a legal quorum. The label is not a legal identity.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the last below-threshold group label from the Markdown box. A threshold is a number you entered, not a legal quorum. The label is not a legal identity.");
+  }
+}
+$("#copy-last-below-threshold-group-button").addEventListener("click", copyLastBelowThresholdGroup);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -3329,6 +3416,7 @@ $("#import-file").addEventListener("change", async (event) => {
       hideFirstNonVetoGroup = workspace.hideFirstNonVetoGroup === true;
       hideLastNonVetoGroup = workspace.hideLastNonVetoGroup === true;
       hideLastGroupBelowThreshold = workspace.hideLastGroupBelowThreshold === true;
+      hideFirstGroupBelowThreshold = workspace.hideFirstGroupBelowThreshold === true;
       noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
@@ -3763,6 +3851,18 @@ function jumpToBelowFloor() {
       needsRender = true;
     }
   }
+  if (hideFirstGroupBelowThreshold) {
+    const inspected = inspectedPackage(currentResult());
+    const belowThreshold = inspected
+      ? groupsBelowApprovalThreshold(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const firstBelow = belowThreshold.status === "ok" ? belowThreshold.groups[0] : null;
+    if (firstBelow && first.id === firstBelow.id) {
+      hideFirstGroupBelowThreshold = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
   if (needsRender) renderGroups(blockingVetoIds(currentResult()));
   const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
   if (target?.focus) {
@@ -3859,6 +3959,18 @@ function jumpToVetoGroup() {
     const lastBelow = belowThreshold.status === "ok" ? belowThreshold.groups[belowThreshold.groups.length - 1] : null;
     if (lastBelow && first.id === lastBelow.id) {
       hideLastGroupBelowThreshold = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
+  if (hideFirstGroupBelowThreshold) {
+    const inspected = inspectedPackage(currentResult());
+    const belowThreshold = inspected
+      ? groupsBelowApprovalThreshold(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const firstBelow = belowThreshold.status === "ok" ? belowThreshold.groups[0] : null;
+    if (firstBelow && first.id === firstBelow.id) {
+      hideFirstGroupBelowThreshold = false;
       persistWorkspacePrefs();
       needsRender = true;
     }
@@ -4113,6 +4225,24 @@ function jumpToLastNonVetoGroupCopy() {
 
 function jumpToHideLastGroupBelowThreshold() {
   const control = $("#hide-last-group-below-threshold");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
+function jumpToLastBelowThresholdGroupCopy() {
+  const control = $("#copy-last-below-threshold-group-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
+function jumpToHideFirstGroupBelowThreshold() {
+  const control = $("#hide-first-group-below-threshold");
   if (control?.focus) {
     control.focus();
     return;
@@ -4395,6 +4525,15 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "7") {
     event.preventDefault();
     jumpToHideLastGroupBelowThreshold();
+  } else if (event.key === "8") {
+    event.preventDefault();
+    copyLastBelowThresholdGroup();
+  } else if (event.key === "9") {
+    event.preventDefault();
+    jumpToLastBelowThresholdGroupCopy();
+  } else if (event.key === "0") {
+    event.preventDefault();
+    jumpToHideFirstGroupBelowThreshold();
   }
 });
 

@@ -94,6 +94,16 @@ A score can be incomplete, a weight can be contested, and a low numerical change
 
 Support floors and veto marks protect only the numerical averages you enter. They do not establish consent, a legal veto, or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority. Optional clause notes are facilitator reminders only.
 
+## v1.5.17, 10-09-2026
+
+- Added keyboard `8`, `9`, and `0` for last below-threshold group copy, the last below-threshold group copy control, and the hide-first-group-below-threshold control. Shortcut help lists them. Shortcuts are ignored while typing. The label is not a legal identity.
+- Added copy of the last group below the numeric approval threshold as one-line Markdown, with a clipboard fallback. Honest when none. Distinct from last non-veto group copy and first-below-floor group copy. A threshold is a number you entered, not a legal quorum. Do not treat the label as a legal identity.
+- Added a display filter that hides only the first group whose average support is below the numeric approval threshold. Hidden groups still count in the model. Workspace JSON persists that optional boolean and rejects unknown keys. Older files omit the key and default to show-all. The solver ignores it. Distinct from hideGroupsBelowThreshold, hideLastGroupBelowThreshold, and hideLastNonVetoGroup. If composed with other hides, the empty-groups notice is honest and model counts stay the same.
+- Added the Volleyball club hours preset: students, neighbours, and P&C scoring hall/court booking, net posts, and lock-up. Not a recorded vote.
+- Kept the 1.5.0 package review tools, `createAgreementReviewPacket`, replay, and AGREEMENT_REVIEW_TOOLS.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
 ## v1.5.16, 10-09-2026
 
 - Added keyboard `5`, `6`, and `7` for last non-veto group copy, the last non-veto group copy control, and the hide-last-group-below-threshold control. Shortcut help lists them. Shortcuts are ignored while typing. A veto is a number you entered, not a legal right.
