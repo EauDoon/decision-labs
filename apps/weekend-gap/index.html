@@ -100,6 +100,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="saturdayEarlyFxOpen">Saturday early FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="sundayLateBankClose">Sunday late bank close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="sundayLatePayoutClose">Sunday late payout close (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="saturdayEarlyPayoutOpen">Saturday early payout open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -262,6 +263,13 @@ SOFTWARE.
                 Keep Sunday payout open 16:00 to 18:00
               </label>
               <p>When selected, Sunday 16:00 to 18:00 treats the payout gate as open even though Sunday is not a business day. Issuer, bank and FX stay on their Sunday rules those hours. Older scenario files omit this field and keep Sunday payout closed. This is a synthetic calendar, not a bank feed.</p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="saturdayEarlyPayoutOpen">
+                <input id="saturdayEarlyPayoutOpen" name="saturdayEarlyPayoutOpen" data-field="saturdayEarlyPayoutOpen" type="checkbox">
+                Open Saturday payout Saturday morning
+              </label>
+              <p>When selected, Saturday 07:00 to 09:00 treats the payout gate as open even though Saturday is not a business day. Issuer, bank and FX stay on their Saturday rules those hours. Older scenario files omit this field and keep Saturday payout closed. This is a synthetic calendar, not a bank feed.</p>
             </div>
           </form>
 
