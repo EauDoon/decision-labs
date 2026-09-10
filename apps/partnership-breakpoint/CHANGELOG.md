@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.1
+
+- Keeps the 1.5.0 constraint review: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, exact recompute, stale-read cancel, and no replacement of the working case.
+- Download contribution waterfall SVG writes every participant chart as one namespaced SVG file with the same XML declaration as tornado. Invalid cases are refused.
+- Press `c` to jump to the snapshot or imported JSON compare heading. Shortcuts stay ignored while a field is focused.
+- Copy first breakpoint copies the displayed participant, shock axis, and magnitude as Markdown. Clipboard falls back to a textarea. It is a comparison aid, not a forecast.
+- Hide participants who currently hold filters the roster display only. Expand restores them. Tested-case and model counts stay unchanged.
+- Press `p` to print the one-pager when the case is valid, the same as the print control. Ignored in inputs.
+- Swap with next exchanges two adjacent participants. Identifiers and shares stay with each person. The last row is disabled. Undo restores the previous order.
+- Added the Licensor and distributor starting point, a two-party IP licensor plus territory distributor with different cost bases, distinct from Balanced, Creator take-rate, Three-party JV, Two-party 50/50 studio, and Four-party marketplace.
+- Copy share-to-hold preview copies an open preview as Markdown. Clipboard falls back to a textarea. It is a solvability result, not a probability.
+- Collapse cases every participant holds now travels on saved case JSON as optional `collapseAllHoldCases`. Older files omit it and default to expanded. Unknown sibling fields are still rejected.
+- Copy deal notes copies entered notes, or an honest empty line, as Markdown. Clipboard falls back to a textarea. Notes are user-entered text, not a forecast.
+
 ## 1.5.0
 
 - Optional constraint review covers effective-volume intervals, independent slack, fixed and variable cost allowances, funding shares, fee and volume scenarios, operational conflicts, and zero-volume obligations.
