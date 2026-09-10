@@ -634,6 +634,8 @@ test("the buyer room copies leftover fill fulfillment with a textarea fallback",
   assert.match(buyerPanel, /id="copy-leftover-fill-remaining"/u);
   assert.match(buyerPanel, /id="copy-leftover-fill-units"/u);
   assert.match(buyerPanel, /id="copy-winning-fulfillment"/u);
+  assert.match(app, /if \(key === "~"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment\(\);/u);
+  assert.match(html, /aria-keyshortcuts="~"/u);
 });
 
 test("the buyer room copies uncovered leftover unit-count with a textarea fallback", async () => {

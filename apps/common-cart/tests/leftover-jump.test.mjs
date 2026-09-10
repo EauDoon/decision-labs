@@ -257,6 +257,8 @@ test("leftover fill fulfillment copy stays on the organizer leftover control", a
   assert.match(app, /function copyLeftoverFillRemainingCapacity\(/u);
   assert.match(app, /function copyLeftoverFillUnitCount\(/u);
   assert.match(app, /function copyWinningFulfillment\(/u);
+  assert.match(app, /if \(key === "~"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment\(\);/u);
+  assert.match(html, /aria-keyshortcuts="~"/u);
 });
 
 test("leftover fill remaining capacity copy jump stays on the organizer leftover remaining control", async () => {

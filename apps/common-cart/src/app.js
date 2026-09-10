@@ -1124,6 +1124,11 @@ function handleShortcut(event) {
     focusHideUnservedBuyers();
     return;
   }
+  if (key === "~") {
+    event.preventDefault();
+    copyLeftoverFillFulfillment();
+    return;
+  }
 }
 
 function focusBuyersList() {
