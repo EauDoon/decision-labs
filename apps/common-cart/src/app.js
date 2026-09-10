@@ -923,6 +923,11 @@ function handleShortcut(event) {
     focusWinningRemainingCapacityCopy();
     return;
   }
+  if (key === "/" && !event.shiftKey) {
+    event.preventDefault();
+    focusLeftoverFillCopy();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1060,6 +1065,12 @@ function focusLeftoverFill() {
     return;
   }
   document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverFillCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#copy-leftover-fill")?.focus();
 }
 
 function focusBuyerPaste() {
