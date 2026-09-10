@@ -86,6 +86,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /What's new/);
   assert.match(html, /How-it-works jump, version-line copy, and skip-link focus/);
   assert.match(html, /Skip-link copy, last-card focus, and 404 Copy jobs/);
+  assert.match(html, /Trust-item jump, first-job copy, and 404 Copy version line/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -99,6 +100,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Least-headroom jump, podcast preset, and allocation copy in Partnership Breakpoint 1\.5\.4/);
   assert.match(html, /Hall split preset, capacity copy, and inspect jump in Partnership Breakpoint 1\.5\.5/);
   assert.match(html, /Festival stall, notes copy, and over-capacity jump in Partnership Breakpoint 1\.5\.6/);
+  assert.match(html, /Cinema split, headroom copy, and breakpoint jump in Partnership Breakpoint 1\.5\.7/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -117,6 +119,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Stall lighting, remaining-budget copy, and floor jump in The Smallest Agreement 1\.5\.4/);
   assert.match(html, /Hall hire preset, threshold copy, and veto jump in The Smallest Agreement 1\.5\.5/);
   assert.match(html, /Garden watering, lock-count copy, and threshold jump in The Smallest Agreement 1\.5\.6/);
+  assert.match(html, /Laundry hours, lock-count jump, and locked-clause hide in The Smallest Agreement 1\.5\.7/);
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /Dashboard copy, file compare, and compressed Friday in Weekend Gap 1\.4\.3/);
@@ -126,6 +129,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Sunday stall close, reserve copy, and weekend Gantt filter in Weekend Gap 1\.5\.4/);
   assert.match(html, /Thin Saturday FX, settlement copy, and issuer jump in Weekend Gap 1\.5\.5/);
   assert.match(html, /Early Monday bank, settlement jump, and weekend Gantt hide in Weekend Gap 1\.5\.6/);
+  assert.match(html, /Late FX close, settlement copy, and closed Gantt hide in Weekend Gap 1\.5\.7/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
   assert.match(html, /Catalog cards list each workbench version next to its job/);
   assert.match(html, /not checkout, inventory, or a second live order/);
@@ -157,6 +161,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /allocation-balance\s+Markdown copy, the Podcast host and network start/);
   assert.match(readme, /capacity-utilization Markdown copy, the Community hall split start/);
   assert.match(readme, /first-breakpoint participant copy, the Festival stall split start/);
+  assert.match(readme, /least-headroom participant copy, the Pop-up cinema split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -166,6 +171,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Street stall lighting start,\s+remaining change-budget copy/);
   assert.match(readme, /Hall hire hours start,\s+numeric approval-threshold copy/);
   assert.match(readme, /Community garden watering start,\s+lock-count copy/);
+  assert.match(readme, /Shared laundry hours start,\s+first-locked-option copy/);
   assert.match(readme, /queue-clear hours and Gantt compare/);
   assert.match(readme, /queue CSV export, peak-queue jump/);
   assert.match(readme, /dashboard Markdown copy, two-file compare/);
@@ -175,8 +181,10 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /remaining\s+reserve copy, Sunday stall close/);
   assert.match(readme, /hours-to-first-settlement Markdown copy, Thin Saturday FX/);
   assert.match(readme, /first-settlement jump, Early Monday bank open/);
+  assert.match(readme, /first-settlement copy shortcut, Friday late FX close/);
   assert.match(readme, /how-it-works jump, version-line copy, and skip-link focus/);
   assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
+  assert.match(readme, /trust-item jump, first-job copy, and 404 Copy version line/);
   assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
@@ -186,6 +194,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy How it works on that 404 page copies/);
   assert.match(readme, /Copy jobs on that 404 page copies/);
   assert.match(readme, /Copy catalog intro on that 404 page copies/);
+  assert.match(readme, /Copy version line on that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -194,8 +203,11 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Key `g` focuses the first What's new heading/);
   assert.match(readme, /Key `d` focuses the/);
   assert.match(readme, /first How it works list item/);
+  assert.match(readme, /Key `\/` focuses the first Trust and/);
+  assert.match(readme, /Key `;` copies the first workbench name/);
   assert.match(readme, /Key `,` copies the footer version line/);
   assert.match(readme, /Key `.` focuses Skip to catalog versions/);
+  assert.match(readme, /Key `'` focuses Skip to Trust and limits/);
   assert.match(readme, /Key `p` prints this catalog page/);
   assert.match(readme, /not a live product\s+sheet/);
   assert.match(readme, /Key `i` copies Trust and limits from this page as Markdown/);
@@ -215,6 +227,9 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Press `c` to copy the catalog address/);
   assert.match(readme, /Press `,` to copy the footer version line/);
   assert.match(readme, /Press `.` to focus Skip to catalog versions/);
+  assert.match(readme, /Press `\/` to focus the first Trust and limits list item/);
+  assert.match(readme, /Press `;` to copy the first workbench name/);
+  assert.match(readme, /Press `'` to focus Skip to Trust and limits/);
   assert.match(readme, /Copy versions copies the four/);
   assert.match(readme, /not a live product version/);
   assert.match(html, /Copy versions/);
@@ -303,6 +318,66 @@ test('period focuses Skip to catalog versions when focus is not in an input', ()
   assert.deepEqual(assigned, []);
   fire('.', body);
   assert.deepEqual(focused, ['skip-versions']);
+  assert.deepEqual(assigned, []);
+});
+
+test('apostrophe focuses Skip to Trust and limits when focus is not in an input', () => {
+  assert.match(html, /event\.key === "'"/);
+  assert.match(html, /querySelector\('a\.skip\[href="#trust"\]'\)\?\.focus\(\)/);
+  assert.match(html, /class="skip" href="#trust">Skip to Trust and limits/);
+  assert.match(html, /<kbd>'<\/kbd><\/dt><dd>Focus Skip to Trust and limits/);
+  assert.match(html, /Press <kbd>'<\/kbd> to focus Skip to Trust and limits/);
+  assert.match(html, /This key moves focus; it does not open a workbench/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `'` to focus Skip to Trust and limits/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const skipTrust = { focus() { focused.push('skip-trust'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === 'a.skip[href="#trust"]' ? skipTrust : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire("'", input);
+  fire("'", textarea);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire("'", body);
+  assert.deepEqual(focused, ['skip-trust']);
   assert.deepEqual(assigned, []);
 });
 
@@ -450,6 +525,116 @@ test('d focuses the How it works heading when no list item exists', () => {
   });
   keydown({
     key: 'd',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['title']);
+  assert.deepEqual(assigned, []);
+});
+
+test('slash focuses the first Trust list item when focus is not in an input', () => {
+  assert.match(html, /event\.key === '\/'/);
+  assert.match(html, /querySelector\('#trust li'\)/);
+  assert.match(html, /getElementById\('trust-title'\)/);
+  assert.match(html, /id="trust-title" tabindex="-1"/);
+  assert.match(html, /<li tabindex="-1"><strong>Local-first/);
+  assert.match(html, /#trust li:focus-visible/);
+  assert.match(html, /<kbd>\/<\/kbd><\/dt><dd>Focus the first Trust and limits list item/);
+  assert.match(html, /Press <kbd>\/<\/kbd> to focus the first Trust and limits list item/);
+  assert.match(html, /This key moves focus; it does not open a workbench/);
+  assert.match(html, /Shift\+\/ stays <kbd>\?<\/kbd>/);
+  assert.match(html, /event\.key === '\?'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `\/` to focus the first Trust and limits list item/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const firstTrust = { focus() { focused.push('li'); } };
+  const title = { focus() { focused.push('title'); } };
+  const section = { focus() { focused.push('trust'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'trust-title') return title;
+      if (id === 'trust') return section;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#trust li' ? firstTrust : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, extra = {}) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+      ...extra,
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('/', input);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('/', body);
+  assert.deepEqual(focused, ['li']);
+  assert.deepEqual(assigned, []);
+});
+
+test('slash focuses the Trust heading when no list item exists', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const title = { focus() { focused.push('title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'trust-title') return title;
+      if (id === 'trust') return { focus() { focused.push('trust'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector() { return null; },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '/',
     target: { tagName: 'BODY', closest() { return null; } },
     defaultPrevented: false,
     altKey: false,
@@ -1403,6 +1588,30 @@ test('copy jobs copies catalog names and jobs as Markdown with a visible fallbac
   assert.match(readme, /not a live product feed/);
 });
 
+test('copy first job copies the first card as one Markdown line with a visible fallback', () => {
+  assert.match(html, /id="copy-first-job"/);
+  assert.match(html, />Copy first job</);
+  assert.match(html, /aria-keyshortcuts=";"/);
+  assert.match(html, /id="copy-first-job-fallback"/);
+  assert.match(html, /class="copy-first-job-fallback"/);
+  assert.match(html, /textarea id="copy-first-job-fallback"/);
+  assert.match(html, /firstJobMarkdown/);
+  assert.match(html, /querySelector\('article\.workbench'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /firstJobFallback\.hidden = false/);
+  assert.match(html, /firstJobFallback\.select\(\)/);
+  assert.match(html, /Not a live product feed/);
+  assert.match(html, /This is the first catalog job, not a live product feed/);
+  assert.match(html, /Copied an empty string/);
+  assert.match(html, /This is distinct from <kbd>j<\/kbd> and <kbd>q<\/kbd>/);
+  assert.match(html, /from <kbd>y<\/kbd>, which copies the last-launched job/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-job-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-job-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy first job copies the first workbench name/);
+  assert.match(readme, /Press `;` to copy the first workbench name/);
+});
+
 test('copy How it works copies the printed heading and list as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-how"/);
   assert.match(html, />Copy How it works</);
@@ -1611,6 +1820,13 @@ test('print CSS hides copy version line tools like other copy tools', () => {
   assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
 });
 
+test('print CSS hides copy first job tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-first-job-tools, \.copy-first-job-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
 test('shortcuts panel lists d comma period with honest limits', () => {
   assert.match(html, /<kbd>d<\/kbd><\/dt><dd>Focus the first How it works list item, or the How it works heading if none. This key moves focus; it does not open a workbench./);
   assert.match(html, /<kbd>,<\/kbd><\/dt><dd>Copy the footer version line as one Markdown line from this catalog page, not a live product version. Clipboard write uses the visible text box when the clipboard API is unavailable./);
@@ -1623,6 +1839,20 @@ test('shortcuts panel lists d comma period with honest limits', () => {
   assert.match(readme, /Press `d` to focus the first How it works list item/);
   assert.match(readme, /Press `,` to copy the footer version line/);
   assert.match(readme, /Press `.` to focus Skip to catalog versions/);
+});
+
+test('shortcuts panel lists slash semicolon apostrophe with honest limits', () => {
+  assert.match(html, /<kbd>\/<\/kbd><\/dt><dd>Focus the first Trust and limits list item, or the Trust and limits heading if none. This key moves focus; it does not open a workbench. Shift\+\/ stays <kbd>\?<\/kbd>./);
+  assert.match(html, /<kbd>;<\/kbd><\/dt><dd>Copy the first workbench name and one-sentence job as one Markdown line from this catalog page, not a live product feed/);
+  assert.match(html, /<kbd>'<\/kbd><\/dt><dd>Focus Skip to Trust and limits. This key moves focus; it does not open a workbench./);
+  assert.match(html, /Shortcuts are ignored while focus is in an input, textarea, or select/);
+  assert.match(html, /not a live product feed/);
+  assert.match(html, /id="copy-first-job"/);
+  assert.match(html, /id="trust-title" tabindex="-1"/);
+  assert.match(html, /class="skip" href="#trust">Skip to Trust and limits/);
+  assert.match(readme, /Press `\/` to focus the first Trust and limits list item/);
+  assert.match(readme, /Press `;` to copy the first workbench name/);
+  assert.match(readme, /Press `'` to focus Skip to Trust and limits/);
 });
 
 test('shortcuts panel lists b e g q r z with honest limits', () => {
@@ -1828,6 +2058,68 @@ test('keyboard j copies catalog jobs through the same control', () => {
   assert.match(readme, /Press `j` to copy catalog jobs/);
   assert.match(html, /jobsMarkdown/);
   assert.match(html, /jobsFallback\.hidden = false/);
+});
+
+test('keyboard semicolon copies the first workbench job through its own control', () => {
+  assert.match(html, /event\.key === ';'/);
+  assert.match(html, /firstJobBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts=";"/);
+  assert.match(html, /<kbd>;<\/kbd><\/dt><dd>Copy the first workbench name and one-sentence job as one Markdown line from this catalog page, not a live product feed/);
+  assert.match(html, /Press <kbd>;<\/kbd> to copy the first workbench job/);
+  assert.match(html, /If that card is missing, this copies an empty string/);
+  assert.match(html, /This is distinct from <kbd>j<\/kbd> and <kbd>q<\/kbd>/);
+  assert.match(html, /from <kbd>y<\/kbd>, which copies the last-launched job/);
+  assert.match(readme, /Press `;` to copy the first workbench name/);
+  const clicks = { firstJob: 0, jobs: 0, last: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-job') return { click() { clicks.firstJob += 1; }, addEventListener() {} };
+      if (id === 'copy-jobs') return { click() { clicks.jobs += 1; }, addEventListener() {} };
+      if (id === 'copy-last') return { click() { clicks.last += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire(';', input);
+  fire(';', textarea);
+  assert.equal(clicks.firstJob, 0);
+  assert.equal(clicks.jobs, 0);
+  assert.equal(clicks.last, 0);
+  fire(';', body);
+  assert.equal(clicks.firstJob, 1);
+  assert.equal(clicks.jobs, 0);
+  assert.equal(clicks.last, 0);
 });
 
 test('keyboard y copies the last-launched job from this-browser storage', () => {
@@ -2252,6 +2544,79 @@ test('keyboard d comma period are ignored in inputs using the same inEditable he
   assert.deepEqual(assigned, []);
 });
 
+test('keyboard slash semicolon apostrophe are ignored in inputs using the same inEditable helper as c', () => {
+  assert.match(html, /const inEditable = \(node\) =>/);
+  assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /event\.key === '\/'/);
+  assert.match(html, /event\.key === ';'/);
+  assert.match(html, /event\.key === "'"/);
+  const clicks = { firstJob: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const firstTrust = { focus() { focused.push('trust-li'); } };
+  const skipTrust = { focus() { focused.push('skip-trust'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-job') return { click() { clicks.firstJob += 1; }, addEventListener() {} };
+      if (id === 'trust-title') return { focus() { focused.push('title'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === '#trust li') return firstTrust;
+      if (selector === 'a.skip[href="#trust"]') return skipTrust;
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  for (const target of [input, textarea, select]) {
+    fire('/', target);
+    fire(';', target);
+    fire("'", target);
+    fire('c', target);
+  }
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.firstJob, 0);
+  assert.deepEqual(assigned, []);
+  fire('/', body);
+  fire(';', body);
+  fire("'", body);
+  assert.deepEqual(focused, ['trust-li', 'skip-trust']);
+  assert.equal(clicks.firstJob, 1);
+  assert.deepEqual(assigned, []);
+});
+
 test('keyboard v and j are ignored in inputs using the same inEditable helper as c', () => {
   assert.match(html, /const inEditable = \(node\) =>/);
   assert.match(html, /input, textarea, select, \[contenteditable="true"\]/);
@@ -2595,6 +2960,90 @@ test('copy jobs markdown is the four catalog card names and jobs', async () => {
     copied,
     '- Partnership Breakpoint: Find which participant in a revenue split.\n- Common Cart: Pool buyer constraints.\n- The Smallest Agreement: Find the lowest-cost set of clause changes.\n- Weekend Gap: Follow synthetic AUD redemption demand.',
   );
+});
+
+test('copy first job markdown is the first catalog card, or empty if missing', async () => {
+  let copied = '';
+  let clickFirst = null;
+  const firstCard = {
+    querySelector(sel) {
+      if (sel === 'h3') return { textContent: 'Partnership Breakpoint' };
+      if (sel === 'p.job') return { textContent: 'Find which participant in a revenue split.' };
+      return null;
+    },
+  };
+  let card = firstCard;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-job') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-job-status') return { textContent: '' };
+      if (id === 'copy-first-job-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === 'article.workbench' ? card : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickFirst();
+  assert.equal(copied, '- Partnership Breakpoint: Find which participant in a revenue split.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Common Cart/);
+  assert.doesNotMatch(copied, /live product feed/);
+  card = null;
+  copied = 'stale';
+  await clickFirst();
+  assert.equal(copied, '');
+});
+
+test('copy first job shows a visible textarea when clipboard is unavailable', async () => {
+  let clickFirst = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-job') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-job-status') return status;
+      if (id === 'copy-first-job-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === 'article.workbench') {
+        return {
+          querySelector(sel) {
+            if (sel === 'h3') return { textContent: 'Partnership Breakpoint' };
+            if (sel === 'p.job') return { textContent: 'Find which participant in a revenue split.' };
+            return null;
+          },
+        };
+      }
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickFirst();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Partnership Breakpoint: Find which participant in a revenue split.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
 });
 
 test('copy jobs shows a visible textarea when clipboard is unavailable', async () => {

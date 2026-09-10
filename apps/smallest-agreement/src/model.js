@@ -1922,6 +1922,33 @@ export function formatCurrentLockCountMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the first locked clause option label for clipboard handoff.
+ * Honest when no clause is locked. Distinct from lock-count copy and current-locks copy.
+ * Locks are draft choices, not a legal hold.
+ */
+export function formatFirstLockedClauseOptionLabelMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const disclaimer = "Locks are draft choices, not a legal hold.";
+  const first = p.clauses.find((clause) => clause.lockedOptionId !== undefined);
+  if (!first) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No clause is locked, so there is no first locked option label to copy. ${disclaimer}\n`,
+    };
+  }
+  const locked = first.options.find((option) => option.id === first.lockedOptionId);
+  return {
+    status: "ok",
+    empty: false,
+    label: locked.label,
+    text: `First locked clause option: ${briefText(locked.label)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2199,6 +2226,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideGroupsWithoutFloors",
   "noCheaperRemainingClausesOnly",
   "hideUnlockedClauses",
+  "hideLockedClauses",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2212,6 +2240,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideGroupsWithoutFloors",
   "noCheaperRemainingClausesOnly",
   "hideUnlockedClauses",
+  "hideLockedClauses",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2261,6 +2290,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   const hideUnlockedClauses = readWorkspaceBoolean(prefs, "hideUnlockedClauses");
   if (hideUnlockedClauses.error) return { status: "invalid", errors: [hideUnlockedClauses.error] };
+  const hideLockedClauses = readWorkspaceBoolean(prefs, "hideLockedClauses");
+  if (hideLockedClauses.error) return { status: "invalid", errors: [hideLockedClauses.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2273,6 +2304,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     hideUnlockedClauses: hideUnlockedClauses.value,
+    hideLockedClauses: hideLockedClauses.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2286,6 +2318,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
       noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
       hideUnlockedClauses: hideUnlockedClauses.value,
+      hideLockedClauses: hideLockedClauses.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2312,6 +2345,7 @@ export function parseWorkspaceJson(text) {
       hideGroupsWithoutFloors: null,
       noCheaperRemainingClausesOnly: null,
       hideUnlockedClauses: null,
+      hideLockedClauses: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2346,6 +2380,8 @@ export function parseWorkspaceJson(text) {
   if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   const hideUnlockedClauses = readWorkspaceBoolean(raw, "hideUnlockedClauses");
   if (hideUnlockedClauses.error) return { status: "invalid", errors: [hideUnlockedClauses.error] };
+  const hideLockedClauses = readWorkspaceBoolean(raw, "hideLockedClauses");
+  if (hideLockedClauses.error) return { status: "invalid", errors: [hideLockedClauses.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2360,6 +2396,7 @@ export function parseWorkspaceJson(text) {
     hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     hideUnlockedClauses: hideUnlockedClauses.value,
+    hideLockedClauses: hideLockedClauses.value,
   };
 }
 
