@@ -67,6 +67,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>q<\/kbd> Jump to the first clause that differs from the recommendation, or the clauses heading/u);
   assert.match(html, /<kbd>y<\/kbd> Jump to the first veto group card, or the groups heading/u);
   assert.match(html, /<kbd>z<\/kbd> Jump to the numeric approval threshold field, or the method heading/u);
+  assert.match(html, /<kbd>,<\/kbd> Copy the recommended package option count as one-line Markdown/u);
   assert.match(html, /id="method-heading"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
@@ -2010,6 +2011,31 @@ test("keyboard h jumps to the workshop method heading unless an input is active"
   assert.equal(app.focused(), "");
   app.keydown("H");
   assert.equal(app.focused(), "#method-heading");
+});
+
+test("keyboard comma copies the recommended package option count unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>,<\/kbd> Copy the recommended package option count as one-line Markdown/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown(",");
+  assert.equal(app.clipboardText(), "Recommended package option count: 3. This is a decision aid, not a recorded vote.\n");
+  assert.doesNotMatch(app.clipboardText(), /^# Recommended package/u);
+  assert.match(app.message(), /not a recorded vote/u);
+  app.clearFocus();
+  app.keydown(",", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown(",", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const shifted = await savedWorkbench(new Map());
+  shifted.keydown("<");
+  assert.equal(shifted.clipboardText(), "");
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-option-count-button");
+  assert.equal(blocked.focused(), "#option-count-fallback");
+  blocked.clearFocus();
+  blocked.keydown(",", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(blocked.focused(), "");
 });
 
 test("keyboard z jumps to the numeric approval threshold unless an input is active", async () => {

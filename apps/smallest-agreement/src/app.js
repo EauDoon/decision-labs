@@ -2950,6 +2950,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "z" || event.key === "Z") {
     event.preventDefault();
     jumpToNumericThreshold();
+  } else if (event.key === "," && !event.shiftKey) {
+    event.preventDefault();
+    copyRecommendedOptionCount();
   }
 });
 
