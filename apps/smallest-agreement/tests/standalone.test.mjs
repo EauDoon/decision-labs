@@ -85,6 +85,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>\+<\/kbd> Jump to the threshold-group count copy control, or the groups or results heading/u);
   assert.match(html, /<kbd>\|<\/kbd> Jump to the hide-veto-groups control, or the groups heading/u);
   assert.match(html, /<kbd>~<\/kbd> Copy the first veto group label as one-line Markdown/u);
+  assert.match(html, /<kbd>!<\/kbd> Jump to the first veto group copy control, or the groups heading/u);
   assert.match(html, /id="locks-heading"/u);
   assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
@@ -3407,6 +3408,29 @@ test("keyboard tilde copies the first veto group label unless an input is active
   blocked.clearFocus();
   blocked.keydown("~", { tagName: "INPUT", isContentEditable: false });
   assert.equal(blocked.focused(), "");
+});
+
+test("keyboard bang jumps to the first veto group copy control unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>!<\/kbd> Jump to the first veto group copy control, or the groups heading/u);
+  assert.match(html, /id="copy-first-veto-group-button"/u);
+  assert.match(html, /id="groups-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("!");
+  assert.equal(app.focused(), "#copy-first-veto-group-button");
+  assert.equal(app.clipboardText(), "");
+  app.clearFocus();
+  app.keydown("!", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("!", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("!", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("~");
+  assert.equal(app.clipboardText(), app.firstVetoGroup());
+  app.clearFocus();
+  app.keydown("!");
+  assert.equal(app.focused(), "#copy-first-veto-group-button");
 });
 
 test("keyboard pipe jumps to hide-veto-groups unless an input is active", async () => {
