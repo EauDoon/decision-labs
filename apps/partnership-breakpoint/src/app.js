@@ -2064,6 +2064,11 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === '_') {
+    const target = document.querySelector('#copy-over-capacity-count') ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
   if (event.key === '=') {
     const target = document.querySelector('[data-action="hide-least-headroom-participants"]')
       ?? document.querySelector('#participant-inputs-title');
@@ -3733,6 +3738,7 @@ function helpDialog() {
         <li><kbd>'</kbd> Copy first-breakpoint remaining-to-hold as Markdown</li>
         <li><kbd>:</kbd> Copy first-breakpoint volume-to-hold as Markdown</li>
         <li><kbd>"</kbd> Copy over-capacity participant count as Markdown</li>
+        <li><kbd>_</kbd> Jump to Copy over-capacity participant count, or the Participants heading if missing</li>
         <li><kbd>-</kbd> Jump to Copy first-breakpoint volume-to-hold, or the First breakpoint heading if missing</li>
         <li><kbd>=</kbd> Jump to Hide the least-headroom participant, or the Participants heading if missing</li>
         <li><kbd>&lt;</kbd> Jump to Copy first-breakpoint remaining-to-hold, or the First breakpoint heading if missing</li>
