@@ -3532,6 +3532,15 @@ function jumpToFirstVetoGroupCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToHideNonVetoGroups() {
+  const control = $("#hide-non-veto-groups");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -3768,6 +3777,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "!") {
     event.preventDefault();
     jumpToFirstVetoGroupCopy();
+  } else if (event.key === "@") {
+    event.preventDefault();
+    jumpToHideNonVetoGroups();
   }
 });
 
