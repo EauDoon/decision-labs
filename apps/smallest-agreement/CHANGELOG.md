@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.10 - 2026-09-10
+
+A workshop follow-up on 1.5.9. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `"` (straight double quote) copies the first below-floor group label through the existing `#copy-first-below-floor-group-button` (same one-line Markdown). Ignored while typing. Distinct from `:` below-floor count copy.
+- Keyboard `_` jumps to that first below-floor group copy control, or the groups heading if missing. Ignored while typing.
+- Keyboard `{` jumps to the hide-groups-below-threshold control, or the groups heading if missing. Ignored while typing. Distinct from `=` hide-groups-meeting-threshold.
+- Sports day hours preset: synthetic students, neighbours (a veto group), and P&C scoring race start, PA volume, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, Rooftop BBQ hours, and School disco hours. Not a recorded vote.
+- Hide veto groups on screen. Hidden groups still count in the model. The solver is unchanged. Distinct from vetoGroupsOnly (show-only), hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, leftover-budget, and locked-clause filters. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all. A veto is a number you entered, not a legal right.
+- Print facilitator pack includes the first below-floor group label as one line. Print redacted still uses Group 1 through Group N. Honest when none. A floor is a number you entered, not a legal quorum. The saved draft is unchanged.
+- Copy the count of groups currently meeting the numeric approval threshold as one-line Markdown, with a clipboard fallback. Honest zero. Distinct from below-floor count copy and first-below-floor group copy. A threshold is a number you entered, not a legal quorum.
+
 ## 1.5.9 - 2026-09-10
 
 A workshop follow-up on 1.5.8. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
