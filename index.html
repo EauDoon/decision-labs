@@ -1987,6 +1987,11 @@
           lastWorkbenchBtn?.click();
           return;
         }
+        if (event.key === '{') {
+          event.preventDefault();
+          lastReviewBtn?.click();
+          return;
+        }
         if (event.key === '&') {
           event.preventDefault();
           (document.getElementById('copy-first-workbench') || document.getElementById('workbenches-title') || document.getElementById('workbenches'))?.focus();
