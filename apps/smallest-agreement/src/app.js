@@ -679,6 +679,7 @@ let hideGroupsWithoutFloors = false;
 let hideGroupsMeetingThreshold = false;
 let hideGroupsBelowThreshold = false;
 let hideVetoGroups = false;
+let hideNonVetoGroups = false;
 let overBudgetClausesOnly = false;
 let noCheaperRemainingClausesOnly = false;
 let printRedacted = false;
@@ -799,6 +800,7 @@ function loadWorkspacePrefs() {
     hideGroupsMeetingThreshold = parsed?.hideGroupsMeetingThreshold === true;
     hideGroupsBelowThreshold = parsed?.hideGroupsBelowThreshold === true;
     hideVetoGroups = parsed?.hideVetoGroups === true;
+    hideNonVetoGroups = parsed?.hideNonVetoGroups === true;
     noCheaperRemainingClausesOnly = parsed?.noCheaperRemainingClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
@@ -807,7 +809,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, noCheaperRemainingClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -1006,12 +1008,16 @@ function blockingVetoIds(result) {
 }
 
 function hiddenGroupsEmptyState() {
+  if (hideVetoGroups && hideNonVetoGroups) {
+    return "No groups remain after hiding veto groups and non-veto groups. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
+  }
   const hideOnly = !vetoGroupsOnly && !belowFloorGroupsOnly;
   if (hideOnly) {
     const reasons = [];
     if (hideGroupsMeetingThreshold) reasons.push("currently meet the numeric approval threshold");
     if (hideGroupsBelowThreshold) reasons.push("are below the numeric approval threshold");
     if (hideVetoGroups) reasons.push("are marked as a veto group");
+    if (hideNonVetoGroups) reasons.push("are not marked as a veto group");
     if (hideGroupsAtFloor) reasons.push("currently meet their support floor");
     if (hideGroupsWithoutFloors) reasons.push("have no support floor");
     if (reasons.length === 1 && hideGroupsBelowThreshold) {
@@ -1019,6 +1025,9 @@ function hiddenGroupsEmptyState() {
     }
     if (reasons.length === 1 && hideVetoGroups) {
       return "No groups remain after hiding veto groups. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
+    }
+    if (reasons.length === 1 && hideNonVetoGroups) {
+      return "No groups remain after hiding groups that are not marked as a veto group. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
     }
     if (reasons.length === 1) {
       return `No groups remain after hiding groups that ${reasons[0]}. Hidden groups still count in the model.`;
@@ -1071,6 +1080,7 @@ function visibleParticipantGroups() {
     if (hideGroupsMeetingThreshold && meetingThresholdIds.has(group.id)) return false;
     if (hideGroupsBelowThreshold && belowThresholdIds.has(group.id)) return false;
     if (hideVetoGroups && group.veto === true) return false;
+    if (hideNonVetoGroups && group.veto !== true) return false;
     return true;
   });
   return { visible, belowIds };
@@ -1091,9 +1101,11 @@ function renderGroups(vetoBlocks = new Set()) {
   if (hideBelowThresholdCheckbox) hideBelowThresholdCheckbox.checked = hideGroupsBelowThreshold;
   const hideVetoGroupsCheckbox = $("#hide-veto-groups");
   if (hideVetoGroupsCheckbox) hideVetoGroupsCheckbox.checked = hideVetoGroups;
+  const hideNonVetoGroupsCheckbox = $("#hide-non-veto-groups");
+  if (hideNonVetoGroupsCheckbox) hideNonVetoGroupsCheckbox.checked = hideNonVetoGroups;
   const { visible, belowIds } = visibleParticipantGroups();
   const status = $("#veto-groups-status");
-  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors || hideGroupsMeetingThreshold || hideGroupsBelowThreshold || hideVetoGroups;
+  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors || hideGroupsMeetingThreshold || hideGroupsBelowThreshold || hideVetoGroups || hideNonVetoGroups;
   if (!visible.length) {
     const message = hiddenGroupsEmptyState();
     if (status) status.textContent = groupFiltersOn ? message : "";
@@ -2021,6 +2033,14 @@ function setHideVetoGroups(next) {
   renderGroups(blockingVetoIds(currentResult()));
 }
 
+function setHideNonVetoGroups(next) {
+  hideNonVetoGroups = next === true;
+  const checkbox = $("#hide-non-veto-groups");
+  if (checkbox) checkbox.checked = hideNonVetoGroups;
+  persistWorkspacePrefs();
+  renderGroups(blockingVetoIds(currentResult()));
+}
+
 $("#veto-groups-only").addEventListener("change", (event) => {
   setVetoGroupsOnly(event.target.checked === true);
 });
@@ -2041,6 +2061,9 @@ $("#hide-groups-below-threshold").addEventListener("change", (event) => {
 });
 $("#hide-veto-groups").addEventListener("change", (event) => {
   setHideVetoGroups(event.target.checked === true);
+});
+$("#hide-non-veto-groups").addEventListener("change", (event) => {
+  setHideNonVetoGroups(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -2399,7 +2422,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -2843,6 +2866,7 @@ $("#import-file").addEventListener("change", async (event) => {
       hideGroupsMeetingThreshold = workspace.hideGroupsMeetingThreshold === true;
       hideGroupsBelowThreshold = workspace.hideGroupsBelowThreshold === true;
       hideVetoGroups = workspace.hideVetoGroups === true;
+      hideNonVetoGroups = workspace.hideNonVetoGroups === true;
       noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
@@ -3223,6 +3247,11 @@ function jumpToBelowFloor() {
   }
   if (hideVetoGroups && first.veto === true) {
     hideVetoGroups = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (hideNonVetoGroups && first.veto !== true) {
+    hideNonVetoGroups = false;
     persistWorkspacePrefs();
     needsRender = true;
   }
