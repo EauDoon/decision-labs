@@ -3291,6 +3291,24 @@ function jumpToHideGroupsMeetingThreshold() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToFirstBelowFloorGroupCopy() {
+  const control = $("#copy-first-below-floor-group-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
+function jumpToHideGroupsBelowThreshold() {
+  const control = $("#hide-groups-below-threshold");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -3503,9 +3521,15 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "-") {
     event.preventDefault();
     jumpToBelowFloorCountCopy();
+  } else if (event.key === "_") {
+    event.preventDefault();
+    jumpToFirstBelowFloorGroupCopy();
   } else if (event.key === "=") {
     event.preventDefault();
     jumpToHideGroupsMeetingThreshold();
+  } else if (event.key === "{") {
+    event.preventDefault();
+    jumpToHideGroupsBelowThreshold();
   }
 });
 

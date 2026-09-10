@@ -79,6 +79,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>-<\/kbd> Jump to the below-floor group count copy control, or the groups heading/u);
   assert.match(html, /<kbd>=<\/kbd> Jump to the hide-groups-meeting-threshold control, or the groups heading/u);
   assert.match(html, /<kbd>"<\/kbd> Copy the first below-floor group label as one-line Markdown/u);
+  assert.match(html, /<kbd>_<\/kbd> Jump to the first below-floor group copy control, or the groups heading/u);
+  assert.match(html, /<kbd>\{<\/kbd> Jump to the hide-groups-below-threshold control, or the groups heading/u);
   assert.match(html, /id="locks-heading"/u);
   assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
@@ -2702,8 +2704,6 @@ test("keyboard [ jumps to the lock-count copy control unless an input is active"
   assert.equal(app.focused(), "");
   app.keydown("[", { tagName: "SELECT", isContentEditable: false });
   assert.equal(app.focused(), "");
-  app.keydown("{");
-  assert.equal(app.focused(), "");
 });
 
 test("keyboard ] jumps to Print facilitator pack unless an input is active", async () => {
@@ -2929,8 +2929,6 @@ test("keyboard hyphen jumps to the below-floor count copy control unless an inpu
   app.keydown("-", { tagName: "TEXTAREA", isContentEditable: false });
   assert.equal(app.focused(), "");
   app.keydown("-", { tagName: "SELECT", isContentEditable: false });
-  assert.equal(app.focused(), "");
-  app.keydown("_");
   assert.equal(app.focused(), "");
 });
 
