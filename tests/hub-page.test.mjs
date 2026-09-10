@@ -3989,7 +3989,7 @@ test('equals focuses Copy How it works when focus is not in an input', () => {
   assert.match(html, /Press <kbd>=<\/kbd> to focus Copy How it works/);
   assert.match(html, /This key moves focus; it does not open a workbench/);
   assert.match(html, /inEditable\(event\.target\)/);
-  assert.match(readme, /Key `=` focuses the Copy How it works control/);
+  assert.match(readme, /Key `=` focuses the Copy\s+How it works control/);
   assert.match(readme, /Press `=` to focus the Copy How it works control/);
   const focused = [];
   const clicks = { how: 0 };
