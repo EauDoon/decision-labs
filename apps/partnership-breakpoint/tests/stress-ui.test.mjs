@@ -55,7 +55,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
         'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
         'viability-copy-text', 'viability-heading', 'utilization-copy-text', 'participant-ledger-title',
-        'tornado-title', 'tornado-copy-text', 'deal-inputs-title',
+        'tornado-title', 'tornado-copy-text', 'deal-inputs-title', 'operating-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1453,6 +1453,46 @@ test('copy viability card uses participant, headroom, and binding limit Markdown
   const denied = await workbench('file:', { clipboard: 'fail' });
   denied.click('copy-viability');
   assert.match(denied.markup(), /id="viability-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('copy operating region copies the fee and volume sensitivity grid as Markdown', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-operating-region"/);
+  fallback.click('copy-operating-region');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="operating-copy-text"/);
+  assert.match(fallback.markup(), /# Operating region/);
+  assert.match(fallback.markup(), /Fee and volume sensitivity\. Display only\./);
+  assert.match(fallback.markup(), /Holds cells: [0-9]+ of 49/);
+  assert.match(fallback.markup(), /Exit cells: [0-9]+ of 49/);
+  assert.match(fallback.markup(), /Fee \/ volume/);
+  assert.match(fallback.markup(), /Holds/);
+  assert.match(fallback.markup(), /Exit/);
+  assert.match(fallback.markup(), /not a forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-operating-copy');
+  assert.doesNotMatch(fallback.markup(), /id="operating-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-operating-region');
+  assert.doesNotMatch(fallback.markup(), /id="operating-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the operating region/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-operating-region');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Operating region/);
+  assert.match(withClipboard.copied()[0], /Display only/);
+  assert.match(withClipboard.copied()[0], /Holds cells:/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /Display only/);
+  assert.doesNotMatch(withClipboard.markup(), /id="operating-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-operating-region');
+  assert.match(denied.markup(), /id="operating-copy-text"/);
   assert.match(denied.notice(), /Clipboard unavailable/);
 });
 

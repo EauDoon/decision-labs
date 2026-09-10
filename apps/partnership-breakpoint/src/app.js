@@ -70,6 +70,7 @@ let waterfallCopyText = '';
 let viabilityCopyText = '';
 let utilizationCopyText = '';
 let tornadoCopyText = '';
+let operatingCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -98,6 +99,7 @@ function checkpoint() {
   viabilityCopyText = '';
   utilizationCopyText = '';
   tornadoCopyText = '';
+  operatingCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -124,6 +126,7 @@ function travelHistory(direction) {
   viabilityCopyText = '';
   utilizationCopyText = '';
   tornadoCopyText = '';
+  operatingCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -577,7 +580,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -627,6 +630,7 @@ function resultsPanel(result) {
     ${viabilityCopySection()}
     ${utilizationCopySection()}
     ${tornadoCopySection()}
+    ${operatingCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -942,7 +946,7 @@ function sensitivityGrid() {
 function sensitivitySection() {
   const grid = sensitivityGrid();
   const tableRows = grid.fees.map((fee, row) => `<tr><th scope="row">${formatNumber(fee, 3)}</th>${grid.volumes.map((volume, column) => `<td class="${grid.cells[row][column] ? 'cell-viable' : 'cell-fail'}" aria-label="Fee ${formatNumber(fee, 3)}, volume ${formatNumber(volume)}: ${grid.cells[row][column] ? 'viable' : 'not viable'}">${grid.cells[row][column] ? 'Holds' : 'Exit'}</td>`).join('')}</tr>`).join('');
-  return `<section class="panel"><div class="panel-heading"><h2>Operating region</h2><span class="optional">fee and volume sensitivity</span></div><div class="sensitivity-layout"><div><canvas id="sensitivity-canvas" width="560" height="400" role="img" aria-label="Canvas chart of viable and non-viable fee and monthly-volume combinations. The visible table provides the same values.">Canvas chart unavailable. Use the operating region table.</canvas><div class="legend"><span><i class="swatch viable"></i>Every participant holds</span><span><i class="swatch fail"></i>At least one participant exits</span></div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Operating region values, scroll horizontally"><table class="sensitivity-table"><caption>Operating region table. Rows are fee per transaction. Columns are monthly volume.</caption><thead><tr><th>Fee / volume</th>${grid.volumes.map((volume) => `<th>${formatNumber(volume)}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table></div></div></section>`;
+  return `<section class="panel"><div class="panel-heading"><h2 id="operating-region-title" tabindex="-1">Operating region</h2><span class="optional">fee and volume sensitivity</span></div><div class="panel-body"><p>Fee and volume combinations where every participant holds, or at least one participant exits. Display only. Model math is unchanged.</p><div class="button-row"><button type="button" data-action="copy-operating-region">Copy operating region</button></div></div><div class="sensitivity-layout"><div><canvas id="sensitivity-canvas" width="560" height="400" role="img" aria-label="Canvas chart of viable and non-viable fee and monthly-volume combinations. The visible table provides the same values.">Canvas chart unavailable. Use the operating region table.</canvas><div class="legend"><span><i class="swatch viable"></i>Every participant holds</span><span><i class="swatch fail"></i>At least one participant exits</span></div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Operating region values, scroll horizontally"><table class="sensitivity-table"><caption>Operating region table. Rows are fee per transaction. Columns are monthly volume.</caption><thead><tr><th>Fee / volume</th>${grid.volumes.map((volume) => `<th>${formatNumber(volume)}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table></div></div></section>`;
 }
 
 function methodAndLimits() {
@@ -1095,6 +1099,7 @@ function attachEvents() {
     if (action === 'close-viability-copy') { viabilityCopyText = ''; render(); return; }
     if (action === 'close-utilization-copy') { utilizationCopyText = ''; render(); return; }
     if (action === 'close-tornado-copy') { tornadoCopyText = ''; render(); return; }
+    if (action === 'close-operating-copy') { operatingCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1247,6 +1252,7 @@ function attachEvents() {
     if (action === 'copy-viability') copyViabilityCard();
     if (action === 'copy-utilization') copyCapacityUtilization();
     if (action === 'copy-tornado') copyTornadoChart();
+    if (action === 'copy-operating-region') copyOperatingRegion();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -2296,6 +2302,82 @@ function copyTornadoChart() {
     }
   }
   showTornadoCopyFallback(text, fallbackNote);
+}
+
+function operatingRegionMarkdown() {
+  const grid = sensitivityGrid();
+  const total = grid.fees.length * grid.volumes.length;
+  let holdCount = 0;
+  for (const row of grid.cells) {
+    for (const holds of row) {
+      if (holds) holdCount += 1;
+    }
+  }
+  const lines = [
+    '# Operating region',
+    '',
+    'Fee and volume sensitivity. Display only.',
+    '',
+    'Holds cells: ' + holdCount + ' of ' + total + '. Exit cells: ' + (total - holdCount) + ' of ' + total + '.',
+    '',
+    '| Fee / volume | ' + grid.volumes.map((volume) => formatNumber(volume)).join(' | ') + ' |',
+    '| --- | ' + grid.volumes.map(() => '---').join(' | ') + ' |',
+  ];
+  for (let row = 0; row < grid.fees.length; row += 1) {
+    const cells = grid.cells[row].map((holds) => holds ? 'Holds' : 'Exit');
+    lines.push('| ' + formatNumber(grid.fees[row], 3) + ' | ' + cells.join(' | ') + ' |');
+  }
+  lines.push('');
+  lines.push('This table is the displayed fee and volume grid. It is a display, not a forecast.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showOperatingCopyFallback(text, message) {
+  operatingCopyText = text;
+  render();
+  document.querySelector('#operating-copy-text')?.focus();
+  setNotice(message);
+}
+
+function operatingCopySection() {
+  if (!operatingCopyText) return '';
+  return `<section class="panel" aria-labelledby="operating-copy-title"><div class="panel-heading"><h2 id="operating-copy-title">Operating region Markdown</h2><button type="button" data-action="close-operating-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is the displayed fee and volume sensitivity grid. Display only.</p><label class="brief-copy-label" for="operating-copy-text">Operating region Markdown</label><textarea id="operating-copy-text" readonly rows="14">${escapeAttribute(operatingCopyText)}</textarea></div></section>`;
+}
+
+function copyOperatingRegion() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the operating region. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = operatingRegionMarkdown();
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Operating region copied as Markdown. Display only.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          operatingCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showOperatingCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      operatingCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showOperatingCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showOperatingCopyFallback(text, fallbackNote);
 }
 
 function exportTornadoSvg() {
