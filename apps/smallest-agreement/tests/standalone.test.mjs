@@ -66,6 +66,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>i<\/kbd> Copy original versus recommended labels and costs as compact Markdown/u);
   assert.match(html, /<kbd>q<\/kbd> Jump to the first clause that differs from the recommendation, or the clauses heading/u);
   assert.match(html, /<kbd>y<\/kbd> Jump to the first veto group card, or the groups heading/u);
+  assert.match(html, /<kbd>z<\/kbd> Jump to the numeric approval threshold field, or the method heading/u);
   assert.match(html, /id="method-heading"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
@@ -2005,6 +2006,25 @@ test("keyboard h jumps to the workshop method heading unless an input is active"
   assert.equal(app.focused(), "");
   app.keydown("H");
   assert.equal(app.focused(), "#method-heading");
+});
+
+test("keyboard z jumps to the numeric approval threshold unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>z<\/kbd> Jump to the numeric approval threshold field, or the method heading/u);
+  assert.match(html, /id="threshold-number"/u);
+  assert.match(html, /id="method-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("z");
+  assert.equal(app.focused(), "#threshold-number");
+  app.clearFocus();
+  app.keydown("z", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("z", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("z", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("Z");
+  assert.equal(app.focused(), "#threshold-number");
 });
 
 test("keyboard x focuses JSON export unless an input is active", async () => {
