@@ -6973,3 +6973,121 @@ test('keyboard asterisk copies the first workbench heading through its own contr
   assert.deepEqual(assigned, []);
 });
 
+test('ampersand focuses Copy first workbench heading when focus is not in an input', () => {
+  assert.match(html, /event\.key === '&'/);
+  assert.match(html, /getElementById\('copy-first-workbench'\) \|\| document\.getElementById\('workbenches-title'\) \|\| document\.getElementById\('workbenches'\)/);
+  assert.match(html, /id="copy-first-workbench"/);
+  assert.match(html, /id="workbenches-title"/);
+  assert.match(html, /<kbd>&amp;<\/kbd><\/dt><dd>Focus the Copy first workbench heading control, or the workbenches heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Press <kbd>&amp;<\/kbd> to focus Copy first workbench heading/);
+  assert.match(html, /This is distinct from <kbd>\*<\/kbd>, which copies the first workbench heading/);
+  assert.match(html, /from <kbd>e<\/kbd>, which copies the catalog heading and lede/);
+  assert.match(html, /from <kbd>a<\/kbd>, which focuses the first workbench article/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  const focused = [];
+  const clicks = { firstWorkbench: 0, lede: 0 };
+  const assigned = [];
+  let keydown = null;
+  const copyFirstWorkbench = { focus() { focused.push('copy-first-workbench'); }, click() { clicks.firstWorkbench += 1; }, addEventListener() {} };
+  const heading = { focus() { focused.push('workbenches-title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-workbench') return copyFirstWorkbench;
+      if (id === 'workbenches-title') return heading;
+      if (id === 'workbenches') return { focus() { focused.push('workbenches'); } };
+      if (id === 'copy-lede') return { click() { clicks.lede += 1; }, addEventListener() {}, focus() { focused.push('copy-lede'); } };
+      if (id === 'workbench-1') return { focus() { focused.push('workbench-1'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('&', input, true);
+  fire('&', textarea, true);
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.firstWorkbench, 0);
+  assert.deepEqual(assigned, []);
+  fire('&', body, true);
+  assert.deepEqual(focused, ['copy-first-workbench']);
+  assert.equal(clicks.firstWorkbench, 0);
+  assert.deepEqual(assigned, []);
+  fire('e', body, false);
+  assert.equal(clicks.lede, 1);
+  fire('a', body, false);
+  assert.deepEqual(focused, ['copy-first-workbench', 'workbench-1']);
+  assert.equal(clicks.firstWorkbench, 0);
+  assert.deepEqual(assigned, []);
+});
+
+test('ampersand focuses the workbenches heading when Copy first workbench heading is missing', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('workbenches-title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-workbench') return null;
+      if (id === 'workbenches-title') return heading;
+      if (id === 'workbenches') return { focus() { focused.push('workbenches'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '&',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: true,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['workbenches-title']);
+  assert.deepEqual(assigned, []);
+});
+
