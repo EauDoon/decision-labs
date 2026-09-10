@@ -2008,6 +2008,15 @@ function jumpToFirstOpenIssuerCopy() {
   }
   return jumpToGantt();
 }
+function jumpToLastOpenIssuerCopy() {
+  const control = document.querySelector("#copy-last-open-issuer");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 function jumpToHideZeroQueueFilter() {
   const control = document.querySelector("#gantt-hide-zero-queue");
   if (control) {
@@ -2407,6 +2416,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "^") {
     event.preventDefault();
     jumpToFirstOpenIssuerCopy();
+    return;
+  }
+  if (event.key === "6") {
+    event.preventDefault();
+    jumpToLastOpenIssuerCopy();
     return;
   }
   if (event.key === ">") {
