@@ -196,6 +196,8 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.match(leftover, /leftover-print-overlap/u);
   assert.match(leftover, /leftover-print-uncovered/u);
   assert.match(leftover, /Uncovered leftover: 0 buyers, 0 units/u);
+  assert.match(leftover, /leftover-print-requested/u);
+  assert.match(leftover, /Requested units: 0/u);
   assert.equal(leftover.includes("maxUnitPrice"), false);
   assert.match(css, /body\.print-leftover \.print-private/u);
   const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
@@ -204,6 +206,7 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.equal(merchantPanel.includes("leftover-buyer-rows"), false);
   assert.equal(merchantPanel.includes("leftover-print-overlap"), false);
   assert.equal(merchantPanel.includes("leftover-print-uncovered"), false);
+  assert.equal(merchantPanel.includes("leftover-print-requested"), false);
 });
 
 test("merchant-facing 1.4.1 surfaces omit buyer labels, ids, budgets, and allocations", () => {

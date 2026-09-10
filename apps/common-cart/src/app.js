@@ -1479,6 +1479,8 @@ function refresh() {
     if (leftoverOverlap) leftoverOverlap.replaceChildren();
     const leftoverPrintUncovered = document.querySelector("#leftover-print-uncovered");
     if (leftoverPrintUncovered) leftoverPrintUncovered.textContent = "Uncovered leftover: 0 buyers, 0 units";
+    const leftoverPrintRequested = document.querySelector("#leftover-print-requested");
+    if (leftoverPrintRequested) leftoverPrintRequested.textContent = "Requested units: 0";
     const leftoverPrintWinner = document.querySelector("#leftover-print-winner");
     if (leftoverPrintWinner) leftoverPrintWinner.textContent = "Winner merchant: None unlocked";
     const leftoverFallback = document.querySelector("#clipboard-fallback");
@@ -1800,6 +1802,11 @@ function renderLeftoverCoverageTable(rawScenario) {
   if (uncoveredPrint) {
     const coverage = computeResidualCoverage(rawScenario);
     uncoveredPrint.textContent = `Uncovered leftover: ${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units`;
+  }
+  const requestedPrint = document.querySelector("#leftover-print-requested");
+  if (requestedPrint) {
+    const market = evaluateMarket(rawScenario);
+    requestedPrint.textContent = `Requested units: ${market.totalRequestedUnits}`;
   }
   renderLeftoverPrintOverlap(rawScenario);
   renderOrganizerLeftoverRows(rawScenario);
