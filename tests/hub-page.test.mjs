@@ -1734,6 +1734,95 @@ test('hash shortcuts still focuses the shortcuts panel', () => {
   assert.deepEqual(focused, ['shortcuts']);
 });
 
+test('keyboard b e g q r z are ignored in inputs using the same inEditable helper as c', () => {
+  assert.match(html, /const inEditable = \(node\) =>/);
+  assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /event\.key === 'b'/);
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /event\.key === 'q'/);
+  assert.match(html, /event\.key === 'r'/);
+  assert.match(html, /event\.key === 'z'/);
+  const clicks = { lede: 0, jobs: 0, skips: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const lastCard = { focus() { focused.push('workbench-4'); } };
+  const firstNews = { focus() { focused.push('h3'); } };
+  const review = { focus() { focused.push('review-path'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'workbench-4') return lastCard;
+      if (id === 'copy-lede') return { click() { clicks.lede += 1; }, addEventListener() {} };
+      if (id === 'copy-jobs') return { click() { clicks.jobs += 1; }, addEventListener() {} };
+      if (id === 'copy-skips') return { click() { clicks.skips += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === '#whats-new h3') return firstNews;
+      if (selector === '#workbench-1 .review-path') return review;
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  for (const target of [input, textarea, select]) {
+    fire('b', target);
+    fire('e', target);
+    fire('g', target);
+    fire('q', target);
+    fire('r', target);
+    fire('z', target);
+    fire('c', target);
+  }
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.lede, 0);
+  assert.equal(clicks.jobs, 0);
+  assert.equal(clicks.skips, 0);
+  assert.deepEqual(assigned, []);
+  fire('b', body);
+  fire('g', body);
+  fire('r', body);
+  fire('e', body);
+  fire('q', body);
+  fire('z', body);
+  assert.deepEqual(focused, ['workbench-4', 'h3', 'review-path']);
+  assert.equal(clicks.lede, 1);
+  assert.equal(clicks.jobs, 1);
+  assert.equal(clicks.skips, 1);
+  assert.deepEqual(assigned, []);
+});
+
 test('keyboard v and j are ignored in inputs using the same inEditable helper as c', () => {
   assert.match(html, /const inEditable = \(node\) =>/);
   assert.match(html, /input, textarea, select, \[contenteditable="true"\]/);
