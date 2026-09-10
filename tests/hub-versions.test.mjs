@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -84,6 +84,9 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, /id="copy-last-workbench"/);
   assert.match(page, />Copy last workbench heading</);
   assert.match(page, /lastWorkbenchMarkdown/);
+  assert.match(page, /id="copy-last-review"/);
+  assert.match(page, />Copy last review path</);
+  assert.match(page, /lastReviewMarkdown/);
 });
 
 test('404 catalog jobs match the four catalog cards', () => {
@@ -155,6 +158,21 @@ test('404 last workbench heading matches the last catalog workbench card heading
   assert.match(page, /id="workbenches"/);
   assert.match(page, /id="copy-first-workbench"/);
   assert.match(page, />Copy first workbench heading</);
+});
+
+test('404 last review path matches the last catalog workbench review path', () => {
+  const path = catalogLastReviewPath();
+  assert.match(path, /Review the timing behind the queue/);
+  assert.equal(html.includes('Review the timing behind the queue'), true, 'last review path missing from catalog');
+  assert.notEqual(path, catalogLastWorkbenchHeading());
+  const page = notFoundPage();
+  assert.equal(page.includes(path), true, 'last review path missing from 404 page');
+  assert.match(page, /id="copy-last-review"/);
+  assert.match(page, />Copy last review path</);
+  assert.match(page, /querySelectorAll\('#workbenches article\.workbench \.review-path'\)/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /id="copy-last-workbench"/);
+  assert.match(page, />Copy last workbench heading</);
 });
 
 
