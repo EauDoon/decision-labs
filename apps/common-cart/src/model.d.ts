@@ -438,6 +438,8 @@ export function createLeftoverFillUnitCountMarkdown(rawScenario: unknown): strin
 export function createLeftoverFillMerchantLabelMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill remaining capacity. Count only. Not a merchant export. */
 export function createLeftoverFillRemainingCapacityMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover fill fulfillment. Pickup or shipping. Not a merchant export. */
+export function createLeftoverFillFulfillmentMarkdown(rawScenario: unknown): string;
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
 export function createWinningRemainingCapacityMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line requested units. Count only. Not a merchant export. */

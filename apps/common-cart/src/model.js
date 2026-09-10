@@ -1569,6 +1569,18 @@ export function createLeftoverFillRemainingCapacityMarkdown(rawScenario) {
   return `Common Cart leftover fill remaining capacity (organizer private): ${remaining}. Not a merchant export.\n`;
 }
 
+/** Organizer-private one-line leftover fill fulfillment. Pickup or shipping. Not a merchant export. */
+export function createLeftoverFillFulfillmentMarkdown(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const coverage = computeResidualCoverage(scenario);
+  if (!coverage.secondary) {
+    return "Common Cart leftover fill fulfillment (organizer private): none. Not a merchant export.\n";
+  }
+  const leftoverOffer = scenario.offers.find((offer) => offer.id === coverage.secondary.offerId);
+  const mode = leftoverOffer?.fulfillment === "pickup" ? "pickup" : "shipping";
+  return `Common Cart leftover fill fulfillment (organizer private): ${mode}. Not a merchant export.\n`;
+}
+
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
 export function createWinningRemainingCapacityMarkdown(rawScenario) {
   const market = evaluateMarket(rawScenario);

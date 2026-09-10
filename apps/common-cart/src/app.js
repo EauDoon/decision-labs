@@ -59,6 +59,7 @@ import {
   createLeftoverFillUnitCountMarkdown,
   createLeftoverFillMerchantLabelMarkdown,
   createLeftoverFillRemainingCapacityMarkdown,
+  createLeftoverFillFulfillmentMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   organizerLeftoverRows,
@@ -335,6 +336,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-leftover-fill-units").addEventListener("click", copyLeftoverFillUnitCount);
   document.querySelector("#copy-leftover-fill-merchant").addEventListener("click", copyLeftoverFillMerchantLabel);
   document.querySelector("#copy-leftover-fill-remaining").addEventListener("click", copyLeftoverFillRemainingCapacity);
+  document.querySelector("#copy-leftover-fill-fulfillment").addEventListener("click", copyLeftoverFillFulfillment);
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-uncovered-leftover-units").addEventListener("click", copyUncoveredLeftoverUnitCount);
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
@@ -2257,7 +2259,7 @@ function renderLeftoverCoverageTable(rawScenario) {
       ? rawScenario.offers.find((offer) => offer.id === coverage.secondary.offerId)
       : null;
     leftoverFillFulfillmentPrint.textContent = coverage.secondary && leftoverOffer
-      ? `Leftover fill fulfillment: ${leftoverOffer.fulfillment}`
+      ? `Leftover fill fulfillment: ${leftoverOffer.fulfillment === "pickup" ? "pickup" : "shipping"}`
       : "Leftover fill fulfillment: none";
   }
   const uncoveredPrint = document.querySelector("#leftover-print-uncovered");
@@ -2884,6 +2886,16 @@ function copyLeftoverFillRemainingCapacity() {
       "Clipboard was blocked. Organizer-private leftover fill remaining-capacity Markdown is in the textarea. Remaining capacity only. This is not a merchant export."
     );
   } catch (error) { setStatus(`Leftover fill remaining capacity copy failed: ${messageOf(error)}`); }
+}
+
+function copyLeftoverFillFulfillment() {
+  try {
+    copyTextWithFallback(
+      createLeftoverFillFulfillmentMarkdown(scenario),
+      "Leftover fill fulfillment copied as organizer-private Markdown. Pickup or shipping only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover fill fulfillment Markdown is in the textarea. Pickup or shipping only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover fill fulfillment copy failed: ${messageOf(error)}`); }
 }
 
 function copyUncoveredLeftoverCounts() {

@@ -242,6 +242,23 @@ test("leftover fill remaining capacity copy stays on the organizer leftover cont
   assert.match(html, /aria-keyshortcuts="}"/u);
 });
 
+test("leftover fill fulfillment copy stays on the organizer leftover control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-fulfillment"/u);
+  assert.match(buyerPanel, /Copy leftover fill fulfillment \(organizer private\)/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-fulfillment"), false);
+  assert.equal(merchantPanel.includes("copyLeftoverFillFulfillment"), false);
+  assert.match(app, /function copyLeftoverFillFulfillment\(/u);
+  assert.match(app, /#copy-leftover-fill-fulfillment/u);
+  assert.match(app, /function copyLeftoverFillMerchantLabel\(/u);
+  assert.match(app, /function copyLeftoverFillRemainingCapacity\(/u);
+  assert.match(app, /function copyLeftoverFillUnitCount\(/u);
+  assert.match(app, /function copyWinningFulfillment\(/u);
+});
+
 test("leftover fill remaining capacity copy jump stays on the organizer leftover remaining control", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
