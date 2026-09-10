@@ -414,6 +414,8 @@ export function createWinningMerchantLabelMarkdown(rawScenario: unknown): string
 export function createWinningFulfillmentMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill. Secondary leftover merchant and counts only. Not tertiary. */
 export function createLeftoverFillMarkdown(rawScenario: unknown): string;
+/** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
+export function createWinningRemainingCapacityMarkdown(rawScenario: unknown): string;
 export interface OrganizerLeftoverRow {
   label: string;
   quantity: number;

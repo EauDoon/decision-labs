@@ -50,6 +50,7 @@ import {
   createWinningMerchantLabelMarkdown,
   createWinningFulfillmentMarkdown,
   createLeftoverFillMarkdown,
+  createWinningRemainingCapacityMarkdown,
   organizerLeftoverRows,
   createWinnerInspectorSummaryMarkdown,
   createUncoveredLeftoverCountsMarkdown,
@@ -312,6 +313,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
   document.querySelector("#copy-winning-merchant").addEventListener("click", copyWinningMerchantLabel);
   document.querySelector("#copy-winning-fulfillment").addEventListener("click", copyWinningFulfillment);
+  document.querySelector("#copy-winning-remaining-capacity").addEventListener("click", copyWinningRemainingCapacity);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
       copyTextWithFallback(
@@ -2425,6 +2427,16 @@ function copyWinningFulfillment() {
       "Clipboard was blocked. Winning fulfillment is in the textarea. Pickup or shipping only. Buyer identities omitted."
     );
   } catch (error) { setStatus(`Winning fulfillment copy failed: ${messageOf(error)}`); }
+}
+
+function copyWinningRemainingCapacity() {
+  try {
+    copyTextWithFallback(
+      createWinningRemainingCapacityMarkdown(scenario),
+      "Winning remaining capacity copied. Remaining units only. Honest empty when none unlocked. Buyer identities omitted.",
+      "Clipboard was blocked. Winning remaining capacity is in the textarea. Remaining units only. Buyer identities omitted."
+    );
+  } catch (error) { setStatus(`Winning remaining capacity copy failed: ${messageOf(error)}`); }
 }
 
 function copyTextWithFallback(text, successMessage, fallbackMessage) {

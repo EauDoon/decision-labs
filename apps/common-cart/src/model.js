@@ -1298,6 +1298,14 @@ export function createLeftoverFillMarkdown(rawScenario) {
   return `Common Cart leftover fill (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
+/** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
+export function createWinningRemainingCapacityMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  if (!market.winner) return "Winning remaining capacity: None unlocked\n";
+  const remaining = capacityBar(rawScenario, market.winner.offer.id).leftoverUnits;
+  return `Winning remaining capacity: ${remaining} units\n`;
+}
+
 /** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
 export function organizerLeftoverRows(rawScenario) {
   const scenario = validateScenario(rawScenario);
