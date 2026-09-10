@@ -2482,7 +2482,7 @@ test("groups-meeting-threshold count Markdown is one line, honest at zero, and n
     clauses: [{ id: "one", title: "One", options: [
       { id: "original", original: true, label: "Keep", changeCost: 0, support: { cleared: 90, short: 20 } },
       { id: "mid", original: false, label: "Mid", changeCost: 1, support: { cleared: 80, short: 30 } },
-      { id: "high", original: false, label: "High", changeCost: 2, support: { cleared: 40, short: 80 } },
+      { id: "high", original: false, label: "High", changeCost: 2, support: { cleared: 40, short: 50 } },
     ] }],
   });
   const before = JSON.stringify(input);
