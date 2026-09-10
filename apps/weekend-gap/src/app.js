@@ -1543,6 +1543,18 @@ function jumpToGanttFxRow() {
   rememberChart("gantt");
   return true;
 }
+function jumpToGanttPayoutRow() {
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  if (gateFilter !== "all" && gateFilter !== "payout") return jumpToGantt();
+  const row = document.querySelector("#gantt-payout-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
 function jumpToCompareGantt() {
   const heading = document.querySelector("#compare-gantt-title");
   if (!heading) return jumpToGantt();
@@ -1783,6 +1795,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "n" || event.key === "N") {
     event.preventDefault();
     jumpToFirstPayoutMarker();
+    return;
+  }
+  if (event.key === "o" || event.key === "O") {
+    event.preventDefault();
+    jumpToGanttPayoutRow();
     return;
   }
   if (event.key === "a" || event.key === "A") {
