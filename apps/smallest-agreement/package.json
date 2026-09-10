@@ -1,6 +1,6 @@
 {
   "name": "smallest-agreement",
-  "version": "1.5.4",
+  "version": "1.5.5",
   "private": true,
   "type": "module",
   "description": "A local deliberation workshop for finding the lowest-cost structured agreement that crosses an approval threshold.",

@@ -1776,6 +1776,45 @@ export function formatRecommendedPackageMarkdown(proposal, result = findSmallest
 }
 
 /**
+ * Compact Markdown of original versus recommended option labels and costs.
+ * Labels and costs only. It is a decision aid, not a recorded vote.
+ */
+export function formatOriginalVersusRecommendedMarkdown(proposal, result = findSmallestAgreement(proposal)) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || result.status === "invalid") {
+    return { status: "invalid", errors: result?.errors ?? ["No result was available."] };
+  }
+  if (result.status === "too_large") {
+    return { status: "unavailable", text: "The search is over the safety bound, so original versus recommended labels and costs cannot be copied. This is a decision aid, not a recorded vote.\n" };
+  }
+  if (!result.agreement) {
+    return { status: "unavailable", text: "No recommended package is available, so original versus recommended labels and costs cannot be copied. This is a decision aid, not a recorded vote.\n" };
+  }
+  if (!Array.isArray(result.agreement.options) || result.agreement.options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const p = canonicalProposal(proposal);
+  const originals = getOriginalOptions(p);
+  const lines = [
+    "# Original versus recommended package",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This comparison lists option labels and costs only. It is a decision aid, not a recorded vote.",
+    "",
+  ];
+  for (let index = 0; index < p.clauses.length; index += 1) {
+    const clause = p.clauses[index];
+    const original = originals[index];
+    const recommended = result.agreement.options[index];
+    lines.push(`- ${briefText(clause.title)}: ${briefOption(original.label)} (cost ${original.changeCost.toFixed(1)}) versus ${briefOption(recommended.label)} (cost ${recommended.changeCost.toFixed(1)})`);
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
+/**
  * Markdown table of original, recommended, and pinned option labels.
  * This is a decision aid, not a recorded vote or a legitimacy claim.
  */
@@ -1950,6 +1989,21 @@ export function formatRemainingChangeBudgetMarkdown(proposal, result = findSmall
 }
 
 /**
+ * One-line Markdown of the approval threshold for clipboard handoff.
+ * A threshold is a number you entered, not a legal quorum.
+ * Distinct from remaining change-budget copy and recommended-package copy.
+ */
+export function formatApprovalThresholdMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  return {
+    status: "ok",
+    text: `Approval threshold: ${formatPercent(p.threshold)}. This is a number you entered, not a legal quorum.\n`,
+  };
+}
+
+/**
  * Compact formula-safe CSV of recommended versus original option labels and cost delta.
  * Unavailable when there is no recommended package.
  */
@@ -2100,6 +2154,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
   "hideGroupsAtFloor",
+  "hideGroupsWithoutFloors",
   "noCheaperRemainingClausesOnly",
   "proposal",
 ]);
@@ -2111,6 +2166,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
   "hideGroupsAtFloor",
+  "hideGroupsWithoutFloors",
   "noCheaperRemainingClausesOnly",
 ]);
 
@@ -2155,6 +2211,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   const hideGroupsAtFloor = readWorkspaceBoolean(prefs, "hideGroupsAtFloor");
   if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
+  const hideGroupsWithoutFloors = readWorkspaceBoolean(prefs, "hideGroupsWithoutFloors");
+  if (hideGroupsWithoutFloors.error) return { status: "invalid", errors: [hideGroupsWithoutFloors.error] };
   const noCheaperRemainingClausesOnly = readWorkspaceBoolean(prefs, "noCheaperRemainingClausesOnly");
   if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   return {
@@ -2166,6 +2224,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
     hideGroupsAtFloor: hideGroupsAtFloor.value,
+    hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
@@ -2177,6 +2236,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       belowFloorGroupsOnly: belowFloorGroupsOnly.value,
       overBudgetClausesOnly: overBudgetClausesOnly.value,
       hideGroupsAtFloor: hideGroupsAtFloor.value,
+      hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
       noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
@@ -2201,6 +2261,7 @@ export function parseWorkspaceJson(text) {
       belowFloorGroupsOnly: null,
       overBudgetClausesOnly: null,
       hideGroupsAtFloor: null,
+      hideGroupsWithoutFloors: null,
       noCheaperRemainingClausesOnly: null,
     };
   }
@@ -2230,6 +2291,8 @@ export function parseWorkspaceJson(text) {
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   const hideGroupsAtFloor = readWorkspaceBoolean(raw, "hideGroupsAtFloor");
   if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
+  const hideGroupsWithoutFloors = readWorkspaceBoolean(raw, "hideGroupsWithoutFloors");
+  if (hideGroupsWithoutFloors.error) return { status: "invalid", errors: [hideGroupsWithoutFloors.error] };
   const noCheaperRemainingClausesOnly = readWorkspaceBoolean(raw, "noCheaperRemainingClausesOnly");
   if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   return {
@@ -2243,6 +2306,7 @@ export function parseWorkspaceJson(text) {
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
     hideGroupsAtFloor: hideGroupsAtFloor.value,
+    hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
   };
 }

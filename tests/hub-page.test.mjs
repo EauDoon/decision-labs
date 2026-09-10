@@ -110,6 +110,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Stall-hours preset, lock copy, and clause filters in The Smallest Agreement 1\.5\.2/);
   assert.match(html, /Bike-shed preset, package copy, and budget filter in The Smallest Agreement 1\.5\.3/);
   assert.match(html, /Stall lighting, remaining-budget copy, and floor jump in The Smallest Agreement 1\.5\.4/);
+  assert.match(html, /Hall hire preset, threshold copy, and veto jump in The Smallest Agreement 1\.5\.5/);
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /Dashboard copy, file compare, and compressed Friday in Weekend Gap 1\.4\.3/);
@@ -153,6 +154,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Market stall hours start, lock Markdown copy/);
   assert.match(readme, /Shared bike shed start,\s+recommended-package Markdown copy/);
   assert.match(readme, /Street stall lighting start,\s+remaining change-budget copy/);
+  assert.match(readme, /Hall hire hours start,\s+numeric approval-threshold copy/);
   assert.match(readme, /queue-clear hours and Gantt compare/);
   assert.match(readme, /queue CSV export, peak-queue jump/);
   assert.match(readme, /dashboard Markdown copy, two-file compare/);
