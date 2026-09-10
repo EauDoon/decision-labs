@@ -259,6 +259,54 @@ test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(readme, /Skip links jump to What's new, workbenches, How it works,\s+keyboard shortcuts, and Trust and limits/);
 });
 
+test('f focuses the footer version line when focus is not in an input', () => {
+  assert.match(html, /event\.key === 'f'/);
+  assert.match(html, /querySelector\('\.version-line'\)\?\.focus\(\)/);
+  assert.match(html, /id="version-line" tabindex="-1" class="version-line"/);
+  assert.match(html, /<kbd>f<\/kbd><\/dt><dd>Focus the footer version line/);
+  assert.match(html, /Press <kbd>f<\/kbd> to focus the footer version line/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /\.version-line:focus-visible/);
+  assert.match(readme, /Press `f` to focus the footer version line/);
+  const focused = [];
+  let keydown = null;
+  const versionLine = { focus() { focused.push('version-line'); } };
+  const document = {
+    getElementById: () => null,
+    querySelector(selector) {
+      return selector === '.version-line' ? versionLine : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('f', input);
+  assert.deepEqual(focused, []);
+  fire('f', body);
+  assert.deepEqual(focused, ['version-line']);
+});
+
 test('s focuses the first Open workbench link when focus is not in an input', () => {
   assert.match(html, /event\.key === 's'/);
   assert.match(html, /querySelector\('#workbenches a\.open'\)\?\.focus\(\)/);

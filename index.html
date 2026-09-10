@@ -151,7 +151,9 @@
     #main:focus,
     #main:focus-visible,
     .workbench:focus,
-    .workbench:focus-visible {
+    .workbench:focus-visible,
+    .version-line:focus,
+    .version-line:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 6px;
     }
@@ -521,7 +523,7 @@
         <li data-app="smallest-agreement">1.5.3</li>
         <li data-app="weekend-gap">1.5.3</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>i</kbd> to copy Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>i</kbd> to copy Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -536,6 +538,7 @@
           <dt><kbd>k</kbd></dt><dd>Focus How it works</dd>
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
           <dt><kbd>s</kbd></dt><dd>Focus the first Open workbench link. This key moves focus; it does not open the workbench.</dd>
+          <dt><kbd>f</kbd></dt><dd>Focus the footer version line. This key does not open a workbench.</dd>
           <dt><kbd>c</kbd></dt><dd>Copy catalog address when this page is served over http</dd>
           <dt><kbd>v</kbd></dt><dd>Copy workbench names and versions as Markdown from this catalog page, not a live product version</dd>
           <dt><kbd>j</kbd></dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed</dd>
@@ -648,7 +651,7 @@
     </section>
   </main>
   <footer class="shell site-footer">
-    <p class="version-line">Partnership Breakpoint 1.5.3, Common Cart 1.4.2, The Smallest Agreement 1.5.3, Weekend Gap 1.5.3. Each workbench versions itself.</p>
+    <p id="version-line" tabindex="-1" class="version-line">Partnership Breakpoint 1.5.3, Common Cart 1.4.2, The Smallest Agreement 1.5.3, Weekend Gap 1.5.3. Each workbench versions itself.</p>
     <p class="copy-versions-tools" id="copy-versions-tools">
       <button type="button" class="copy-versions" id="copy-versions" aria-keyshortcuts="v">Copy versions</button>
       <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
@@ -855,6 +858,11 @@
         if (event.key === 's') {
           event.preventDefault();
           document.querySelector('#workbenches a.open')?.focus();
+          return;
+        }
+        if (event.key === 'f') {
+          event.preventDefault();
+          document.querySelector('.version-line')?.focus();
           return;
         }
         if (event.key === 'c') {

@@ -123,7 +123,8 @@ an input. Press `h` to focus the catalog heading. Press `m` to focus the
 main catalog content. Press `n` to focus What's
 new. Press `w` to focus the workbenches. Press `k` to focus How it works.
 Press `t` to focus Trust and limits. Press `s` to focus the first Open
-workbench link. Press `c` to copy the catalog address
+workbench link. Press `f` to focus the footer version line. That key does
+not open a workbench. Press `c` to copy the catalog address
 when this page is served over http. On a file URL that key does not claim a
 copy succeeded. Press `v` to copy catalog versions from this page. That key
 uses the same Copy versions control, including the visible text box when the
