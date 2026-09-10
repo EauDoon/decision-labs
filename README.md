@@ -37,9 +37,12 @@ workbench / How it works actions, in-page trust notes, card versions, and a
 What's new section. Skip links jump to What's new, workbenches, How it works,
 keyboard shortcuts, and Trust and limits. Catalog keys `w`, `k`, `n`, and `c`
 focus the workbenches, How it works, What's new, or copy the catalog address on
-http. Keys `v` and `j` copy the printed version list and one-sentence jobs.
-Keys `l` and `o` focus or open the last-launched workbench stored in this
-browser. Key `o` assigns a location like keys 1 to 4. It does not claim a
+http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
+workbench link without opening it. Keys `v` and `j` copy the printed version list and one-sentence jobs.
+Key `i` copies Trust and limits from this page as Markdown. That list is not a
+live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
+browser. Key `x` clears that last-launched marker in this browser. That recency
+is this-browser storage, not a cloud recency. Key `o` assigns a location like keys 1 to 4. It does not claim a
 copy succeeded on a file URL. Copy versions copies the four names and versions printed on this page as
 Markdown. That list is not a live product version and it does not call a
 registry. What's new names current in-workbench tools (share-to-hold,

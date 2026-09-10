@@ -141,6 +141,12 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
   assert.match(readme, /Catalog keys `w`, `k`, `n`, and `c`/);
+  assert.match(readme, /Key `m` focuses the main catalog content/);
+  assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
+  assert.match(readme, /Key `i` copies Trust and limits from this page as Markdown/);
+  assert.match(readme, /not a\s+live policy feed/);
+  assert.match(readme, /Key `x` clears that last-launched marker in this browser/);
+  assert.match(readme, /this-browser storage, not a cloud recency/);
   assert.match(readme, /Keys `v` and `j` copy the printed version list/);
   assert.match(readme, /Keys `l` and `o` focus or open the last-launched workbench/);
   assert.match(readme, /Key `o` assigns a location like keys 1 to 4/);
