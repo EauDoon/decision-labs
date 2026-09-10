@@ -327,10 +327,10 @@ function render() {
   applyGateState(elements.bankGate, point.bankOpen);
   applyGateState(elements.payoutGate, point.payoutOpen);
   applyGateDisplayLabels(false);
-  elements.fxGate.textContent = point.weekend
+  elements.fxGate.textContent = !point.fxWeekday
     ? `${scenario.mondayHoliday && point.timeLabel.startsWith("Mon") ? "Holiday Monday" : scenario.saturdayHoliday && point.timeLabel.startsWith("Sat") ? "Holiday Saturday" : "Weekend"}: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
     : `${Math.round(point.fxSpreadBps)} bps weekday spread`;
-  elements.fxGate.className = point.weekend ? "state-watch" : "state-open";
+  elements.fxGate.className = !point.fxWeekday ? "state-watch" : "state-open";
   const overlapNotice = weekendCloseOverlapNotice(scenario);
   const overlapNode = document.querySelector("#weekend-overlap-notice");
   if (overlapNode) {

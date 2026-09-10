@@ -33,7 +33,8 @@ export const DEFAULT_SCENARIO = Object.freeze({
   payoutOpenEndHour: 17,
   redemptionDemandAud: 1200000,
   mondayHoliday: false,
-  saturdayHoliday: false
+  saturdayHoliday: false,
+  fridayFxLateClose: false
 });
 
 export const PRESETS = Object.freeze({
@@ -143,6 +144,11 @@ export const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Early Monday bank open (synthetic)",
     bankOpenStartHour: 7
+  }),
+  fridayLateFxClose: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Friday late FX close (synthetic)",
+    fridayFxLateClose: true
   })
 });
 
@@ -168,7 +174,8 @@ const FIELD_RULES = Object.freeze({
   payoutOpenEndHour: { min: 1, max: 24, integer: true },
   redemptionDemandAud: { min: 0, max: 5000000000 },
   mondayHoliday: { type: "boolean" },
-  saturdayHoliday: { type: "boolean" }
+  saturdayHoliday: { type: "boolean" },
+  fridayFxLateClose: { type: "boolean" }
 });
 
 export function finiteNumber(value, fallback) {
@@ -298,18 +305,27 @@ export function isOperational(hourOffset, startHour, endHour, mondayHoliday = fa
   return isBusinessDay(hourOffset, mondayHoliday, saturdayHoliday) && isWithinHours(hourOffset, startHour, endHour);
 }
 
+/** Saturday 00:00 is the hour after Friday when Friday FX close is delayed by one hour. */
+function isFridayLateFxHour(hourOffset, scenario) {
+  if (scenario.fridayFxLateClose !== true) return false;
+  const { dayIndex, localHour } = dayAndHourAt(hourOffset);
+  return dayIndex === 6 && localHour === 0;
+}
+
 export function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
+  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario);
   const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
   const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
   const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
-  const fxMultiplier = weekend ? scenario.weekendFxMultiplier : 1;
+  const fxMultiplier = fxWeekday ? 1 : scenario.weekendFxMultiplier;
   return {
     issuerOpen,
     bankOpen,
     payoutOpen,
     weekend,
+    fxWeekday,
     fxDepthAudPerHour: scenario.fxDepthAudPerHour / fxMultiplier,
     fxSpreadBps: scenario.fxSpreadBps * fxMultiplier
   };
@@ -1240,7 +1256,7 @@ export function buildGateSchedule(input) {
       issuerOpen: status.issuerOpen,
       bankOpen: status.bankOpen,
       payoutOpen: status.payoutOpen,
-      fxWeekday: !status.weekend
+      fxWeekday: status.fxWeekday
     }));
   }
   return Object.freeze({ scenario: Object.freeze({ ...scenario }), hours: Object.freeze(hours) });

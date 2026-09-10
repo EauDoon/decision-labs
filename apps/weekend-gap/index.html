@@ -95,6 +95,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="sundayStallClose">Sunday stall close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="thinSaturdayFx">Thin Saturday FX (synthetic)</button>
               <button type="button" class="preset-button" data-preset="earlyMondayBankOpen">Early Monday bank open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="fridayLateFxClose">Friday late FX close (synthetic)</button>
             </div>
           </fieldset>
 
@@ -229,6 +230,13 @@ SOFTWARE.
               <p>When selected, Saturday is a non-business day like Sunday. Issuer, bank and payout windows stay closed, and weekend FX thinning applies. Older scenario files omit this field and keep the existing weekend Saturday.</p>
               <p id="weekend-overlap-notice" role="status" hidden></p>
               <p id="monday-saturday-holiday-notice" role="status" hidden></p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="fridayFxLateClose">
+                <input id="fridayFxLateClose" name="fridayFxLateClose" data-field="fridayFxLateClose" type="checkbox">
+                Close Friday FX one hour later
+              </label>
+              <p>When selected, Saturday 00:00 keeps weekday FX depth. Issuer, bank and payout windows stay closed that hour. Older scenario files omit this field and start weekend FX thinning at Saturday 00:00.</p>
             </div>
           </form>
 
