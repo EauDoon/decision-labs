@@ -513,11 +513,15 @@ function inputPanel(result) {
     ? state.participants.filter((participant) => participantOverListedCapacity(result, participant)).length
     : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
+  const firstOverCapacityId = result
+    ? (state.participants.find((participant) => participantOverListedCapacity(result, participant))?.id ?? null)
+    : null;
   const participantForms = state.participants.map((participant, index) => {
     if (participantHiddenFromRoster(result, participant)) return '';
     const leastHeadroom = result?.weakestParticipant?.id === participant.id;
+    const firstOverCapacity = firstOverCapacityId === participant.id;
     return `
-    <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}"${leastHeadroom ? ' id="least-headroom-participant" tabindex="-1"' : ''} aria-labelledby="participant-${index}-title">
+    <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}"${leastHeadroom ? ' id="least-headroom-participant" tabindex="-1"' : ''} aria-labelledby="participant-${index}-title">${firstOverCapacity ? '<span id="over-capacity-participant" tabindex="-1"></span>' : ''}
       <div class="participant-toolbar">
         <div class="button-row participant-roster">
           <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
@@ -1786,6 +1790,11 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'j' || event.key === 'J') copyCapacityUtilization();
   if (event.key === 'q' || event.key === 'Q') {
     const target = document.querySelector('#equal-split') ?? document.querySelector('#normalize-shares');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'x' || event.key === 'X') {
+    const target = document.querySelector('#over-capacity-participant') ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -3126,6 +3135,7 @@ function helpDialog() {
         <li><kbd>o</kbd> Jump to the Operating region heading</li>
         <li><kbd>j</kbd> Copy capacity utilization as Markdown</li>
         <li><kbd>q</kbd> Jump to Equal split or Normalize current shares</li>
+        <li><kbd>x</kbd> Jump to the first roster row over listed capacity, or the Participants heading if none</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

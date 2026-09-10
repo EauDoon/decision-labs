@@ -61,7 +61,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'least-headroom-participant', 'participant-inputs-title',
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
         'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
-        'title-copy-text',
+        'title-copy-text', 'over-capacity-participant',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1237,6 +1237,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>o<\/kbd> Jump to the Operating region heading/);
   assert.match(app.markup(), /<kbd>j<\/kbd> Copy capacity utilization as Markdown/);
   assert.match(app.markup(), /<kbd>q<\/kbd> Jump to Equal split or Normalize current shares/);
+  assert.match(app.markup(), /<kbd>x<\/kbd> Jump to the first roster row over listed capacity, or the Participants heading if none/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1616,6 +1617,31 @@ test('keyboard o jumps to the Operating region heading unless a field is focused
   app.keydown('o');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="operating-region-title"/);
+});
+
+test('keyboard x jumps to the first over-capacity roster row unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  assert.doesNotMatch(app.markup(), /id="over-capacity-participant"/);
+  app.keydown('x');
+  assert.ok(app.focused().includes('#participant-inputs-title'));
+  assert.ok(app.focused().includes('scroll:#participant-inputs-title'));
+  const before = app.focused().length;
+  app.keydown('x', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('x', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '116000');
+  assert.match(app.markup(), /id="over-capacity-participant" tabindex="-1"/);
+  assert.match(app.markup(), /Participant 3: Liquidity Partner/);
+  app.keydown('x');
+  assert.ok(app.focused().includes('#over-capacity-participant'));
+  assert.ok(app.focused().includes('scroll:#over-capacity-participant'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('x');
+  assert.ok(app.focused().includes('#participant-inputs-title'));
+  assert.doesNotMatch(app.markup(), /id="over-capacity-participant"/);
 });
 
 test('keyboard i jumps to inspect or compare cases unless a field is focused', async () => {
