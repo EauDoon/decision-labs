@@ -862,6 +862,40 @@ test("keyboard handler jumps to hide winner-allocated buyers when not typing", a
   assert.match(app, /if \(key === "@"\) \{\s*event\.preventDefault\(\);\s*focusHideLeftoverOnlyBuyers\(\);/u);
 });
 
+test("shortcut help documents leftover fill pickup copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>\*<\/kbd> Copy leftover fill pickup \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-fill-pickup"/u);
+  assert.match(html, /id="copy-leftover-fill-pickup"[^>]*aria-keyshortcuts="\*"/u);
+});
+
+test("keyboard handler copies leftover fill pickup with asterisk when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /if \(key === "\*"\)/u);
+  assert.match(app, /function copyLeftoverFillPickup\(/u);
+  assert.match(app, /createLeftoverFillPickupMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-leftover-fill-pickup/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.doesNotMatch(app, /if \(key === "\*"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillDelivery/u);
+  assert.doesNotMatch(app, /if \(key === "\*"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment/u);
+  assert.match(app, /if \(key === "\("\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillDelivery\(\);/u);
+});
+
+test("asterisk leftover fill pickup copy uses the existing leftover-fill pickup control", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "\*"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillPickup\(\);/u);
+  assert.match(app, /function copyLeftoverFillPickup\(/u);
+  assert.match(app, /createLeftoverFillPickupMarkdown\(scenario\)/u);
+  assert.match(html, /id="copy-leftover-fill-pickup"/u);
+  assert.match(html, /aria-keyshortcuts="\*"/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "\*"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+  assert.match(app, /if \(key === "y" \|\| key === ";"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

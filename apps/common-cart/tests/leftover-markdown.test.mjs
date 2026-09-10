@@ -777,6 +777,8 @@ test("the buyer room copies leftover fill pickup with a textarea fallback", asyn
   assert.match(buyerPanel, /id="copy-leftover-fill-delivery"/u);
   assert.match(buyerPanel, /id="copy-leftover-fill-fulfillment"/u);
   assert.match(buyerPanel, /id="copy-leftover-fill-remaining"/u);
+  assert.match(app, /if \(key === "\*"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillPickup\(\);/u);
+  assert.match(html, /aria-keyshortcuts="\*"/u);
   assert.match(buyerPanel, /id="copy-leftover-fill-units"/u);
   assert.match(app, /function copyLeftoverFillDelivery\(/u);
   assert.match(app, /function copyLeftoverFillFulfillment\(/u);

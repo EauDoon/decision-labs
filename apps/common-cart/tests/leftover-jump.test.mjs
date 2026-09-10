@@ -343,6 +343,8 @@ test("leftover fill pickup copy stays on the organizer leftover control", async 
   assert.match(app, /function copyLeftoverFillDelivery\(/u);
   assert.match(app, /function copyLeftoverFillFulfillment\(/u);
   assert.match(app, /function copyLeftoverFillUnitCount\(/u);
+  assert.match(app, /if \(key === "\*"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillPickup\(\);/u);
+  assert.match(html, /aria-keyshortcuts="\*"/u);
 });
 
 test("leftover print jump stays on the leftover print control", async () => {

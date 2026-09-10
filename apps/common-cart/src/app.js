@@ -1188,6 +1188,11 @@ function handleShortcut(event) {
     focusHideWinnerAllocatedBuyers();
     return;
   }
+  if (key === "*") {
+    event.preventDefault();
+    copyLeftoverFillPickup();
+    return;
+  }
 }
 
 function focusBuyersList() {
