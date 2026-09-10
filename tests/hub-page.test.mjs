@@ -441,3 +441,91 @@ test('mouse launch records the selected workbench and storage failure does not p
  handlers.get('invalid')({defaultPrevented:false});assert.equal(values.get('decision-labs.last-workbench'),'4');
  blocked=true;assert.doesNotThrow(()=>handlers.get('1')({defaultPrevented:false}));
 });
+
+test('hash shortcuts still focuses the shortcuts panel', () => {
+  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'\]/);
+  assert.match(html, /if \(id === 'shortcuts'\) setOpen\(true, \{ focus: false \}\)/);
+  const focused = [];
+  const shortcuts = { hidden: true, tabindex: '-1', focus() { focused.push('shortcuts'); } };
+  const openBtn = { setAttribute() {}, addEventListener() {}, focus() {} };
+  const document = {
+    getElementById(id) {
+      if (id === 'shortcuts') return shortcuts;
+      if (id === 'shortcuts-open') return openBtn;
+      if (id === 'shortcuts-close') return { addEventListener() {}, focus() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '#shortcuts' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  assert.equal(shortcuts.hidden, false);
+  assert.deepEqual(focused, ['shortcuts']);
+});
+
+test('keyboard v and j are ignored in inputs using the same inEditable helper as c', () => {
+  assert.match(html, /const inEditable = \(node\) => !!\(node && \(node\.closest\?\('\input, textarea, select, \[contenteditable="true"\]'\) \|\| \/\^\(INPUT\|TEXTAREA\|SELECT\)\$\/\.test\(node\.tagName \|\| ''\)\)\)/);
+  assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /event\.key === 'v'/);
+  assert.match(html, /event\.key === 'j'/);
+  const clicks = { versions: 0, jobs: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-versions') return { click() { clicks.versions += 1; }, addEventListener() {} };
+      if (id === 'copy-jobs') return { click() { clicks.jobs += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'http:', hash: '', href: 'http://127.0.0.1:4170/' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async () => {} } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('v', input);
+  fire('j', input);
+  fire('v', textarea);
+  fire('j', textarea);
+  fire('c', input);
+  assert.equal(clicks.versions, 0);
+  assert.equal(clicks.jobs, 0);
+  fire('v', body);
+  fire('j', body);
+  assert.equal(clicks.versions, 1);
+  assert.equal(clicks.jobs, 1);
+});
+
