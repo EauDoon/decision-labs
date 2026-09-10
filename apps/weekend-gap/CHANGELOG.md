@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.16 - 2026-09-10
+
+A workshop follow-up on 1.5.15. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.15 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `$` copies first open issuer hour through the existing copy control, using the same Markdown. Ignored while typing. Distinct from `*` first-open-bank copy.
+- Keyboard `^` jumps to the first-open-issuer-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from `&` first-open-bank jump.
+- Keyboard backtick jumps to the hide-issuer-open Gantt filter, or the Gantt heading if that control is missing. Ignored while typing. Distinct from `%` hide-FX-open.
+- Sunday late issuer close (synthetic) preset: same 72-hour calendar as Normal Friday, Sunday 16:00 to 18:00 treats the issuer gate as open even though Sunday is not a business day. Distinct from Sunday late bank close, Sunday late payout close, Sunday early payout open, Saturday late payout open, Friday early payout open, Saturday early payout open, Saturday early FX open, Friday late FX close, Monday late issuer open, Early Monday bank open, Thin Saturday FX, Payday Friday, Public-holiday Monday, Saturday market burst, Sunday stall close, Long-weekend, and Compressed Friday. Synthetic. Not a bank feed.
+- Filter that hides Gantt hours where the issuer gate is open. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideIssuerOpenGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hideIssuerClosedGanttHours` and `hideBankOpenGanttHours`. The selected hour stays visible if it would otherwise hide.
+
 ## 1.5.15 - 2026-09-10
 
 A workshop follow-up on 1.5.14. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.14 review UI stay in place. Analysis JSON still has no timestamps.
