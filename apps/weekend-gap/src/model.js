@@ -149,6 +149,11 @@ export const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Friday late FX close (synthetic)",
     fridayFxLateClose: true
+  }),
+  mondayLateIssuerOpen: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Monday late issuer open (synthetic)",
+    issuerOpenStartHour: 9
   })
 });
 
