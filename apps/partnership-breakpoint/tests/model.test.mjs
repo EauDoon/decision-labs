@@ -509,6 +509,32 @@ test('podcast host and network preset is a distinct two-party starting point', (
   assert.equal(new Set(result.participants.map((item) => item.id)).size, 2);
 });
 
+test('community hall split preset is a distinct venue promoter sound starting point', () => {
+  const hall = clonePreset('communityHallSplit');
+  assert.equal(PRESETS.communityHallSplit.name, 'Community hall split');
+  assert.equal(hall.participants.length, 3);
+  assert.deepEqual(hall.participants.map((item) => item.id), ['venue', 'promoter', 'sound']);
+  assert.deepEqual(hall.participants.map((item) => item.name), ['Venue', 'Promoter', 'Sound']);
+  assert.deepEqual(hall.participants.map((item) => item.revenueShare), [0.45, 0.35, 0.2]);
+  assert.equal(hall.deal.monthlyVolume, 2000);
+  assert.equal(hall.deal.feePerTransaction, 28);
+  assert.notEqual(hall.participants[0].variableCostPerTransaction, hall.participants[1].variableCostPerTransaction);
+  assert.notEqual(hall.participants[1].variableCostPerTransaction, hall.participants[2].variableCostPerTransaction);
+  assert.notEqual(hall.participants[0].fixedMonthlyCost, hall.participants[1].fixedMonthlyCost);
+  assert.notEqual(hall.participants[1].fixedMonthlyCost, hall.participants[2].fixedMonthlyCost);
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork'];
+  for (const key of others) {
+    const other = clonePreset(key);
+    assert.notEqual(hall.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
+    assert.notEqual(JSON.stringify(hall.deal), JSON.stringify(other.deal), key);
+    assert.notEqual(JSON.stringify(hall.participants.map((item) => item.variableCostPerTransaction)), JSON.stringify(other.participants.map((item) => item.variableCostPerTransaction)), key);
+  }
+  const result = calculatePartnership(hall);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.viable));
+  assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
+});
+
 test('creator take-rate and three-party JV presets calculate interesting first breakpoints', () => {
   const creator = calculatePartnership(clonePreset('creatorTakeRate'));
   assert.equal(creator.participants.length, 2);

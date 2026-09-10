@@ -61,9 +61,6 @@ async function workbench(protocol = 'file:', options = {}) {
         'least-headroom-participant', 'participant-inputs-title',
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
         'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
-        'least-headroom-participant', 'participant-inputs-title',
-        'field-deal-notes', 'viability-card', 'allocation-copy-text',
-        'breakpoint-snapshot-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1099,6 +1096,31 @@ test('podcast host and network preset loads from the starting-point buttons', as
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'production-studio,distribution-studio');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'ip-licensor,territory-distributor');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+});
+
+test('community hall split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="communityHallSplit"/);
+  assert.match(app.markup(), /Community hall split/);
+  app.click('preset', { preset: 'communityHallSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['venue', 'promoter', 'sound']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Venue', 'Promoter', 'Sound']);
+  assert.equal(app.saved().deal.feePerTransaction, 28);
+  assert.equal(app.saved().deal.monthlyVolume, 2000);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.match(app.notice(), /Community hall split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'platform,distributor,liquidity-partner');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'production-studio,distribution-studio');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'marketplace,seller,logistics,payments');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'ip-licensor,territory-distributor');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'talent,booking-agent,booking-platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'synthetic-operator,capital-partner,operator-talent');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'podcast-host,podcast-network');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
 
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
