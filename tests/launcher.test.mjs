@@ -2,6 +2,8 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
+import vm from 'node:vm';
 import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
@@ -163,6 +165,10 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /href="\/"/);
   assert.match(missing.body, /Current catalog:/);
   assert.equal(missing.body.includes(catalogVersionLine()), true);
+  assert.match(missing.body, /id="copy-versions"/);
+  assert.match(missing.body, />Copy versions</);
+  assert.match(missing.body, /querySelector\('\.version-line'\)/);
+  assert.doesNotMatch(missing.body, /\bfetch\s*\(/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
   assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
 
@@ -188,6 +194,73 @@ test('launcher port rejects ambiguous, empty and out-of-range values', () => {
   for (const raw of ['', '0', '65536', '-1', '1.5', '0x1000', ' 4170', 'NaN']) {
     assert.throws(() => parsePort(raw), /PORT/);
   }
+});
+
+test('404 copy versions markdown comes from the printed catalog line', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  const versionLine = { textContent: `Current catalog: ${catalogVersionLine()}.` };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-versions') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-versions-status') return { textContent: '' };
+      if (id === 'copy-versions-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '.version-line' ? versionLine : null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  const expected = catalogVersionLine().split(', ').map((part) => `- ${part}`).join('\n');
+  assert.equal(copied, expected);
+  assert.doesNotMatch(copied, /Current catalog/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy-versions script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+});
+
+test('404 copy versions uses the printed catalog line without extra public paths', () => {
+  const page = notFoundPage();
+  assert.match(page, /id="copy-versions"/);
+  assert.match(page, />Copy versions</);
+  assert.match(page, /id="copy-versions-fallback"/);
+  assert.match(page, /textarea id="copy-versions-fallback"/);
+  assert.match(page, /versionsMarkdown/);
+  assert.match(page, /querySelector\('\.version-line'\)/);
+  assert.match(page, /Current catalog:/);
+  assert.match(page, /Not a live product version/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
 });
 
 test('404 version listing does not expand PUBLIC_PATHS or change CSP', () => {
