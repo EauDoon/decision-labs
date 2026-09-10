@@ -252,7 +252,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-first-trust, .copy-first-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -266,19 +266,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-first-job:hover, .copy-first-trust:hover, .copy-first-how:hover, .copy-last-trust:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .copy-version-line:hover, .print-catalog:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-first-job:focus-visible, .copy-first-trust:focus-visible, .copy-first-how:focus-visible, .copy-last-trust:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .copy-version-line:focus-visible, .print-catalog:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-first-job:hover, .copy-first-trust:hover, .copy-first-how:hover, .copy-last-how:hover, .copy-last-trust:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .copy-version-line:hover, .print-catalog:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-first-job:focus-visible, .copy-first-trust:focus-visible, .copy-first-how:focus-visible, .copy-last-how:focus-visible, .copy-last-trust:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .copy-version-line:focus-visible, .print-catalog:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-first-job-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-trust-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status, .copy-version-line-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-first-job-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-trust-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status, .copy-version-line-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools, .copy-first-job-tools, .copy-first-trust-tools, .copy-first-how-tools, .copy-last-trust-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .copy-version-line-tools, .print-catalog-tools { margin: 12px 0 0; }
-    .copy-versions-fallback, .copy-jobs-fallback, .copy-first-job-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-trust-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback, .copy-version-line-fallback {
+    .copy-versions-tools, .copy-jobs-tools, .copy-first-job-tools, .copy-first-trust-tools, .copy-first-how-tools, .copy-last-how-tools, .copy-last-trust-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .copy-version-line-tools, .print-catalog-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback, .copy-first-job-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-trust-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback, .copy-version-line-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -291,7 +291,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-first-job-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-trust-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-first-job-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-trust-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -333,7 +333,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-first-trust, .copy-first-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -370,6 +370,7 @@
       .copy-first-job-tools, .copy-first-job-fallback { display: none !important; }
       .copy-first-trust-tools, .copy-first-trust-fallback { display: none !important; }
       .copy-first-how-tools, .copy-first-how-fallback { display: none !important; }
+      .copy-last-how-tools, .copy-last-how-fallback { display: none !important; }
       .copy-last-trust-tools, .copy-last-trust-fallback { display: none !important; }
       .whats-new, .workbench .version, .version-line, .trust { display: block !important; }
       #how-it-works, .guide { display: block !important; }
@@ -827,6 +828,11 @@
         <span class="copy-first-how-status" id="copy-first-how-status" role="status"></span>
       </p>
       <textarea id="copy-first-how-fallback" class="copy-first-how-fallback" hidden readonly rows="2" aria-label="First How it works item as Markdown"></textarea>
+      <p class="copy-last-how-tools" id="copy-last-how-tools">
+        <button type="button" class="copy-last-how" id="copy-last-how" aria-keyshortcuts="<">Copy last How it works item</button>
+        <span class="copy-last-how-status" id="copy-last-how-status" role="status"></span>
+      </p>
+      <textarea id="copy-last-how-fallback" class="copy-last-how-fallback" hidden readonly rows="2" aria-label="Last How it works item as Markdown"></textarea>
     </section>
     <section class="trust" id="trust" tabindex="-1" aria-labelledby="trust-title">
       <h2 id="trust-title" tabindex="-1">Trust and limits</h2>
