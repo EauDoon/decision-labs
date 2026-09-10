@@ -1585,6 +1585,41 @@ test('copy operating region copies the fee and volume sensitivity grid as Markdo
   assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
+test('hiding unbounded tornado shocks is display-only and restore shows all', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /data-action="hide-unbounded-tornado"/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  app.click('preset', { preset: 'talentAgentPlatform' });
+  const before = app.markup();
+  assert.match(before, /Talent \/ Volume up/);
+  assert.match(before, /No bounded shock/);
+  assert.match(before, /27 of 27 tested cases hold/);
+  const shockSection = before.slice(before.indexOf('Smallest adverse shock by participant'));
+  assert.match(shockSection, /Volume increase/);
+  app.click('hide-unbounded-tornado');
+  const filtered = app.markup();
+  const tornadoAt = filtered.indexOf('id="tornado-title"');
+  const tornadoEnd = filtered.indexOf('Smallest adverse shock by participant');
+  const tornado = filtered.slice(tornadoAt, tornadoEnd);
+  assert.doesNotMatch(tornado, /Talent \/ Volume up/);
+  assert.doesNotMatch(tornado, /No bounded shock/);
+  assert.match(filtered, /unbounded or impossible shocks are hidden from this tornado display/);
+  assert.match(filtered, /Model math is unchanged/);
+  assert.match(filtered, /27 of 27 tested cases hold/);
+  const shockAfter = filtered.slice(filtered.indexOf('Smallest adverse shock by participant'));
+  assert.match(shockAfter, /Volume increase/);
+  app.click('copy-tornado');
+  assert.doesNotMatch(app.markup(), /Talent \| volume increase \| Unbounded/);
+  app.click('close-tornado-copy');
+  app.click('show-unbounded-tornado');
+  assert.match(app.markup(), /Talent \/ Volume up/);
+  assert.match(app.markup(), /No bounded shock/);
+  app.edit('deal.monthlyVolume', '');
+  app.click('hide-unbounded-tornado');
+  assert.match(app.notice(), /Resolve invalid inputs before hiding unbounded tornado shocks/);
+});
+
 test('copy tornado uses participant, shock axis, and bounded percentage Markdown', async () => {
   const fallback = await workbench();
   fallback.click('dismiss-coach');

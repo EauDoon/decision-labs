@@ -82,6 +82,7 @@ const mutedStressIds = new Set();
 let collapseAllHoldCases = false;
 let hideHoldingParticipants = false;
 let hideAllCompoundHolders = false;
+let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
 const redoHistory = [];
@@ -795,7 +796,7 @@ function tornadoChart(result) {
     ['fee', 'Fee down'],
     ['variableCost', 'Cost up'],
   ];
-  const rows = [];
+  let rows = [];
   for (const participant of result.participants) {
     for (const [kind, label] of kinds) {
       const shock = participant.shocks[kind];
@@ -813,12 +814,15 @@ function tornadoChart(result) {
       });
     }
   }
+  if (hideUnboundedTornado) {
+    rows = rows.filter((row) => row.status !== 'unbounded' && row.display !== 'No bounded shock');
+  }
   const finite = rows.map((row) => row.changePct).filter((value) => value != null);
   const maxPct = Math.max(1, ...finite);
   const rowHeight = 22;
   const left = 190;
   const width = 720;
-  const height = 28 + rows.length * rowHeight;
+  const height = 28 + Math.max(rows.length, 1) * rowHeight;
   const barMax = width - left - 90;
   const bars = rows.map((row, index) => {
     const y = 8 + index * rowHeight;
@@ -827,7 +831,9 @@ function tornadoChart(result) {
       <rect x="${left}" y="${y}" width="${Math.max(0, barWidth)}" height="14" fill="${row.changePct == null ? '#eae7de' : '#1558d6'}"></rect>
       <text x="${left + Math.max(0, barWidth) + 6}" y="${y + 13}" font-size="11" fill="#1f2328">${escapeAttribute(row.display)}</text>`;
   }).join('');
-  const tableRows = rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('');
+  const tableRows = rows.length
+    ? rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('')
+    : '<tr><td colspan="3">Every displayed tornado shock is unbounded or impossible. Expand to show all shocks. Model math is unchanged.</td></tr>';
   return { width, height, bars, tableRows, rows };
 }
 
@@ -844,7 +850,13 @@ function tornadoSvgFile(result) {
 
 function tornadoSection(result) {
   const chart = tornadoChart(result);
-  return `<section class="panel print-keep"><div class="panel-heading"><h2 id="tornado-title" tabindex="-1">Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button><button type="button" data-action="copy-tornado">Copy tornado</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
+  const hiddenCount = hideUnboundedTornado
+    ? result.participants.length * 4 - chart.rows.length
+    : 0;
+  const filterNote = hideUnboundedTornado
+    ? `${hiddenCount} unbounded or impossible ${hiddenCount === 1 ? 'shock is' : 'shocks are'} hidden from this tornado display. Expand restores them. Model math is unchanged.`
+    : 'Hide unbounded or impossible shocks to filter this tornado display only. Expand restores them. Model math is unchanged.';
+  return `<section class="panel print-keep"><div class="panel-heading"><h2 id="tornado-title" tabindex="-1">Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button><button type="button" data-action="copy-tornado">Copy tornado</button><button type="button" data-action="hide-unbounded-tornado" aria-pressed="${hideUnboundedTornado}">Hide unbounded shocks</button><button type="button" data-action="show-unbounded-tornado" ${hideUnboundedTornado ? '' : 'disabled'}>Show all tornado shocks</button></div><p class="notice">${filterNote}</p><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
 }
 
 function waterfallChart(participant) {
@@ -1169,6 +1181,20 @@ function attachEvents() {
       hideAllCompoundHolders = false;
       writeCollapsePreference();
       saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-unbounded-tornado') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding unbounded tornado shocks.');
+        return;
+      }
+      hideUnboundedTornado = true;
+      render();
+      return;
+    }
+    if (action === 'show-unbounded-tornado') {
+      hideUnboundedTornado = false;
       render();
       return;
     }
@@ -2266,8 +2292,12 @@ function tornadoBoundedPercentage(row) {
 function tornadoMarkdown(result) {
   const chart = tornadoChart(result);
   const lines = ['# Adverse-shock tornado', '', '| Participant | Shock axis | Bounded percentage |', '| --- | --- | --- |'];
-  for (const row of chart.rows) {
-    lines.push('| ' + reportText(row.name) + ' | ' + shockLabel(row.kind) + ' | ' + tornadoBoundedPercentage(row) + ' |');
+  if (!chart.rows.length) {
+    lines.push('| _none_ | _none_ | Unbounded |');
+  } else {
+    for (const row of chart.rows) {
+      lines.push('| ' + reportText(row.name) + ' | ' + shockLabel(row.kind) + ' | ' + tornadoBoundedPercentage(row) + ' |');
+    }
   }
   lines.push('');
   lines.push('Bounded percentage is the displayed adverse movement from the current scenario. Unbounded shocks have no invented number. This is a comparison aid, not a forecast.');
