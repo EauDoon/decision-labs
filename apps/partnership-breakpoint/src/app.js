@@ -219,11 +219,14 @@ function withStress(config) {
 
 function readCollapsePreference() {
   collapseAllHoldCases = state.collapseAllHoldCases === true;
+  hideHoldingParticipants = state.hideHoldingParticipants === true;
 }
 
 function writeCollapsePreference() {
   if (collapseAllHoldCases) state.collapseAllHoldCases = true;
   else delete state.collapseAllHoldCases;
+  if (hideHoldingParticipants) state.hideHoldingParticipants = true;
+  else delete state.hideHoldingParticipants;
 }
 
 function compactErrorMessage(error) {
@@ -1079,11 +1082,15 @@ function attachEvents() {
         return;
       }
       hideHoldingParticipants = true;
+      writeCollapsePreference();
+      saveState();
       render();
       return;
     }
     if (action === 'show-holding-participants') {
       hideHoldingParticipants = false;
+      writeCollapsePreference();
+      saveState();
       render();
       return;
     }

@@ -1657,6 +1657,51 @@ test('collapsing all-hold stress cases is display-only and expand restores the r
   assert.match(app.markup(), /27 of 27 rows are visible/);
 });
 
+test('hide-holding preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  app.click('hide-holding-participants');
+  assert.equal(app.saved().hideHoldingParticipants, true);
+  assert.equal(forms(), 0);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideHoldingParticipants, true);
+  assert.equal(hidden.participants.length, 3);
+  app.click('show-holding-participants');
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideHoldingParticipants'), false);
+  assert.equal(forms(), 3);
+
+  const imported = clonePreset('balanced');
+  imported.hideHoldingParticipants = true;
+  app.import(imported);
+  assert.equal(app.saved().hideHoldingParticipants, true);
+  assert.equal(forms(), 0);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(forms(), 3);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideHoldingParticipants = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+  assert.equal(forms(), 3);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideHoldingParticipants = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
 test('collapse all-hold preference round-trips on saved JSON and defaults to expanded', async () => {
   const app = await workbench();
   app.click('dismiss-coach');

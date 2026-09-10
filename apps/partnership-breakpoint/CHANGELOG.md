@@ -6,6 +6,7 @@
 - Copy contribution waterfall copies each participant, contribution per transaction, and revenue share as Markdown. Clipboard falls back to a textarea. It is a comparison aid, not a forecast.
 - Press `w` to jump to the Contribution waterfall heading when no field is focused.
 - Copy the viability card copies the least-headroom participant, headroom, and binding limit as Markdown. Clipboard falls back to a textarea. Counts are counts. It is not a probability.
+- Hide participants who currently hold now travels on saved case JSON as optional `hideHoldingParticipants`. Older files omit it and default to showing holders. Unknown sibling fields are still rejected. Display only; counts stay unchanged.
 
 ## 1.5.1
 

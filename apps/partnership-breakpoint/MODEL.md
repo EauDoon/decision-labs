@@ -204,6 +204,8 @@ Hiding a participant row in the stress ledger is a display filter. Case counts, 
 
 Collapsing cases every participant holds hides those case-evidence rows from the inspect table only. Expand restores them. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking. Optional `collapseAllHoldCases` on a saved case is a boolean. Older files omit it and default to expanded. Present non-boolean values are rejected. Unknown sibling fields are still rejected.
 
+Optional `hideHoldingParticipants` on a saved case is a boolean roster display preference. Older files omit it and default to showing holders. Present non-boolean values are rejected. Hiding holders filters the roster cards only. Tested-case and model counts stay unchanged.
+
 ### Feasible effective volume interval
 
 The optional review can intersect participant profit, commitment, capacity and demand limits. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.

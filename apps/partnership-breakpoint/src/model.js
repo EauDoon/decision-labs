@@ -33,6 +33,7 @@
  * @property {ParticipantInput[]} participants
  * @property {StressSettings} [stress] Optional. Legacy cases omit this object.
  * @property {boolean} [collapseAllHoldCases] Optional display preference. Omitted files default to expanded.
+ * @property {boolean} [hideHoldingParticipants] Optional roster display preference. Omitted files default to showing holders.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -46,7 +47,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -188,6 +189,12 @@ export function validateConfiguration(config) {
     const collapse = own(config, 'collapseAllHoldCases');
     if (collapse !== true && collapse !== false) {
       errors.push('Collapse all-hold cases must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideHoldingParticipants')) {
+    const hideHolders = own(config, 'hideHoldingParticipants');
+    if (hideHolders !== true && hideHolders !== false) {
+      errors.push('Hide holding participants must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
