@@ -39,7 +39,8 @@ keyboard shortcuts, Trust and limits, and catalog versions. Catalog keys `w`, `k
 focus the workbenches, How it works, What's new, or copy the catalog address on
 http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
 workbench link without opening it. Key `a` focuses the first workbench article
-without opening it. Key `f` focuses the footer version line. That key does not
+without opening it. Key `b` focuses the last workbench card without opening
+it. Key `f` focuses the footer version line. That key does not
 open a workbench. Key `p` prints this catalog page. It is not a live product
 sheet. Keys `v` and `j` copy the printed version list and one-sentence jobs.
 Key `i` copies Trust and limits from this page as Markdown. That list is not a
@@ -138,6 +139,8 @@ new. Press `w` to focus the workbenches. Press `k` to focus How it works.
 Press `t` to focus Trust and limits. Press `s` to focus the first Open
 workbench link. Press `a` to focus the first workbench article without opening
 it. That key is distinct from `s`, which focuses the first Open workbench link.
+Press `b` to focus the last workbench card without opening it. That key moves
+focus; it does not open the workbench.
 Press `f` to focus the footer version line. That key does
 not open a workbench. Press `p` to print this catalog. That key prints this
 page in the browser. It is not a live product sheet. Press `c` to copy the catalog address
