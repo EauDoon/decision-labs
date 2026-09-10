@@ -377,6 +377,27 @@ test('copy jobs copies catalog names and jobs as Markdown with a visible fallbac
   assert.match(readme, /not a live product feed/);
 });
 
+test('copy Trust copies the printed heading and list as Markdown with a visible fallback', () => {
+  assert.match(html, /id="copy-trust"/);
+  assert.match(html, />Copy Trust and limits</);
+  assert.match(html, /id="copy-trust-fallback"/);
+  assert.match(html, /class="copy-trust-fallback"/);
+  assert.match(html, /textarea id="copy-trust-fallback"/);
+  assert.match(html, /trustMarkdown/);
+  assert.match(html, /getElementById\('trust'\)/);
+  assert.match(html, /querySelectorAll\('ul li'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /trustFallback\.hidden = false/);
+  assert.match(html, /trustFallback\.select\(\)/);
+  assert.match(html, /Not a live policy feed/);
+  assert.match(html, /It is not a live policy feed/);
+  assert.match(html, /id="trust"/);
+  assert.match(html, /id="trust-title"/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy Trust and limits copies the Trust and limits heading/);
+  assert.match(readme, /not a live policy feed/);
+});
+
 test('copy versions copies catalog names as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-versions"/);
   assert.match(html, />Copy versions</);

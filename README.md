@@ -139,6 +139,10 @@ not a live product version. Copy jobs copies the four workbench names and
 one-sentence jobs from the catalog cards as Markdown, with the same clipboard
 and visible text box fallback. That list is not a live product feed.
 Press `j` to copy catalog jobs through that same control.
+Copy Trust and limits copies the Trust and limits heading and list items
+already printed on this catalog page as Markdown. It uses the browser
+clipboard when that API is available, and shows a visible text box if it is
+not. That list is not a live policy feed.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.

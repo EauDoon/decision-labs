@@ -234,7 +234,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -248,19 +248,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status, .copy-jobs-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-trust-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools { margin: 12px 0 0; }
-    .copy-versions-fallback, .copy-jobs-fallback {
+    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback, .copy-trust-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -273,7 +273,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-trust-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -315,7 +315,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -605,6 +605,8 @@
       <p>Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</p>
       <h3>Catalog jobs</h3>
       <p>Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</p>
+      <h3>Catalog trust</h3>
+      <p>Copy Trust and limits copies the heading and list items already printed in Trust and limits as Markdown. It reads this catalog page. It is not a live policy feed.</p>
       <h3>JSON export</h3>
       <p>Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</p>
       <h3>Independent workbenches</h3>
@@ -620,6 +622,11 @@
         <li><strong>Not a decision maker.</strong> A ranked shock, a pooled offer, a clause package, or a weekend queue is evidence for a conversation. People keep judgment, governing rules, and accountability.</li>
         <li><strong>Model notes live in each workbench.</strong> Formulas, units, and non-goals are documented beside the tool that uses them. This launcher does not serve those files; open the workbench when you need the exact conventions.</li>
       </ul>
+      <p class="copy-trust-tools" id="copy-trust-tools">
+        <button type="button" class="copy-trust" id="copy-trust">Copy Trust and limits</button>
+        <span class="copy-trust-status" id="copy-trust-status" role="status"></span>
+      </p>
+      <textarea id="copy-trust-fallback" class="copy-trust-fallback" hidden readonly rows="8" aria-label="Trust and limits as Markdown"></textarea>
     </section>
   </main>
   <footer class="shell site-footer">
@@ -741,6 +748,32 @@
             jobsFallback.select();
           }
           if (jobsStatus) jobsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product feed.';
+        }
+      });
+      const trustBtn = document.getElementById('copy-trust');
+      const trustStatus = document.getElementById('copy-trust-status');
+      const trustFallback = document.getElementById('copy-trust-fallback');
+      const trustMarkdown = () => {
+        const section = document.getElementById('trust');
+        const heading = section?.querySelector('h2')?.textContent.trim() ?? '';
+        const items = [...(section?.querySelectorAll('ul li') ?? [])].map((item) => `- ${item.textContent.trim()}`).filter((line) => line !== '- ');
+        return [`## ${heading}`, ...items].join('\n');
+      };
+      trustBtn?.addEventListener('click', async () => {
+        const markdown = trustMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (trustFallback) trustFallback.hidden = true;
+          if (trustStatus) trustStatus.textContent = 'Copied Trust and limits from this catalog page as Markdown. Not a live policy feed.';
+        } catch {
+          if (trustFallback) {
+            trustFallback.hidden = false;
+            trustFallback.value = markdown;
+            trustFallback.focus();
+            trustFallback.select();
+          }
+          if (trustStatus) trustStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog Trust and limits list, not a live policy feed.';
         }
       });
       const setOpen = (open, options = {}) => {
