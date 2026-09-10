@@ -61,7 +61,7 @@ test('standalone renderer refuses missing markers and external CSS resources', (
   assert.throws(() => renderStandalone({ html, css: 'body { background: url(image.png); }', model: '', app: appImport }), /URL resource/);
 });
 
-test('standalone retains 1.5.11 review tools and 1.5.12 copy controls', async () => {
+test('standalone retains 1.5.12 review tools and 1.5.13 copy controls', async () => {
   const html = await buildStandalone();
   assert.match(html, /createPartnershipReviewPacket/);
   assert.match(html, /replayPartnershipReviewPacket/);
@@ -87,6 +87,8 @@ test('standalone retains 1.5.11 review tools and 1.5.12 copy controls', async ()
   assert.match(html, /id="hide-first-over-capacity-participant"[^>]*aria-keyshortcuts="@"/);
   assert.match(html, /id="copy-first-over-capacity-remaining"/);
   assert.match(html, /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  assert.match(html, /id="copy-last-over-capacity-label"/);
+  assert.match(html, /data-action="copy-last-over-capacity-label"/);
   assert.match(html, /School concert split/);
   assert.match(html, /Sports carnival split/);
   assert.match(html, /Netball carnival/);

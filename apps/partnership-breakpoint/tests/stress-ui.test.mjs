@@ -71,6 +71,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'hide-within-capacity-participants',
         'copy-first-over-capacity-label', 'first-over-capacity-label-copy-text',
         'copy-first-over-capacity-remaining', 'first-over-capacity-remaining-copy-text',
+        'copy-last-over-capacity-label', 'last-over-capacity-label-copy-text',
         'hide-first-breakpoint-participant',
         'hide-first-over-capacity-participant',
       ]);
@@ -752,6 +753,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.equal(JSON.stringify(app.saved()), over);
   assert.match(app.lastPrint(), /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 1\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First over-capacity participant<\/h2><p>First over-capacity participant: Liquidity Partner\. Roster row currently over listed capacity\. Not a forecast\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner\. How far over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
   assert.match(html, /\.panel:not\(\.print-keep\)/);
@@ -776,6 +778,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /<h2>First-breakpoint volume-to-hold<\/h2><p>First-breakpoint volume-to-hold: 90,000 txn for Participant 3\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>First over-capacity participant<\/h2><p>First over-capacity participant: none entered\.<\/p>/);
+  assert.match(snapshot, /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
   assert.doesNotMatch(snapshot, /Least-headroom participant: Liquidity Partner/);
@@ -783,6 +786,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.doesNotMatch(snapshot, /First-breakpoint remaining-to-hold: 0\.0% share for Liquidity Partner/);
   assert.doesNotMatch(snapshot, /First-breakpoint volume-to-hold: 90,000 txn for Liquidity Partner/);
   assert.doesNotMatch(snapshot, /First over-capacity participant: Liquidity Partner/);
+  assert.doesNotMatch(snapshot, /First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner/);
   assert.match(html, /\.print-redacted \.participant-live-name/);
   assert.match(html, /\.print-redacted \.participant-redacted-name/);
   assert.match(app.markup(), /class="participant-live-name">Platform</);
@@ -3528,6 +3532,67 @@ test('copy first over-capacity remaining listed capacity is one Markdown line wi
   firstOfTwo.edit('deal.monthlyVolume', '121000');
   firstOfTwo.click('copy-first-over-capacity-remaining');
   assert.equal(firstOfTwo.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Distributor. How far over listed capacity. Not a forecast.');
+});
+
+test('copy last over-capacity participant label is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-last-over-capacity-label"/);
+  assert.match(fallback.markup(), /data-action="copy-last-over-capacity-label"/);
+  fallback.click('copy-last-over-capacity-label');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="last-over-capacity-label-copy-text"/);
+  assert.match(fallback.markup(), /Last over-capacity participant: none entered\./);
+  assert.match(fallback.markup(), /id="last-over-capacity-label-copy-title">Last over-capacity participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="over-capacity-count-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-last-over-capacity-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-label-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-last-over-capacity-label');
+  assert.match(fallback.markup(), /id="last-over-capacity-label-copy-text"/);
+  assert.match(fallback.markup(), />Last over-capacity participant: none entered\.</);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-last-over-capacity-label');
+  assert.equal(withClipboard.copied().length, 1);
+  const empty = withClipboard.copied()[0];
+  assert.equal(empty.split('\n').length, 1);
+  assert.equal(empty, 'Last over-capacity participant: none entered.');
+  assert.doesNotMatch(empty, /First over-capacity participant/);
+  assert.doesNotMatch(empty, /First over-capacity remaining listed capacity/);
+  assert.doesNotMatch(empty, /Over-capacity participant count/);
+  assert.doesNotMatch(empty, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="last-over-capacity-label-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-last-over-capacity-label');
+  assert.match(denied.markup(), /id="last-over-capacity-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const over = await workbench('file:', { clipboard: 'ok' });
+  over.edit('deal.monthlyVolume', '116000');
+  over.click('copy-last-over-capacity-label');
+  assert.equal(over.copied().at(-1), 'Last over-capacity participant: Liquidity Partner. Roster row currently over listed capacity. Not a forecast.');
+  over.click('copy-first-over-capacity-label');
+  assert.equal(over.copied().at(-1), 'First over-capacity participant: Liquidity Partner. Roster row currently over listed capacity. Not a forecast.');
+  over.click('copy-first-over-capacity-remaining');
+  assert.equal(over.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
+  over.click('copy-over-capacity-count');
+  assert.equal(over.copied().at(-1), 'Over-capacity participant count: 1. Count of roster rows currently over listed capacity. Not a forecast.');
+
+  const lastOfTwo = await workbench('file:', { clipboard: 'ok' });
+  lastOfTwo.edit('deal.monthlyVolume', '121000');
+  lastOfTwo.click('copy-last-over-capacity-label');
+  assert.equal(lastOfTwo.copied().at(-1), 'Last over-capacity participant: Liquidity Partner. Roster row currently over listed capacity. Not a forecast.');
+  lastOfTwo.click('copy-first-over-capacity-label');
+  assert.equal(lastOfTwo.copied().at(-1), 'First over-capacity participant: Distributor. Roster row currently over listed capacity. Not a forecast.');
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
