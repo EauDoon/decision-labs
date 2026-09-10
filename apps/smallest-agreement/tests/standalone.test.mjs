@@ -149,7 +149,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Print redacted/u);
   assert.match(html, /id="print-redacted-button"/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count, and the first below-floor group label as one line/u);
+  assert.match(html, /a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count, the first below-floor group label as one line, and a one-line threshold-group count/u);
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
   assert.match(html, /Duplicate group/u);
@@ -1699,6 +1699,60 @@ test("print facilitator pack includes the first below-floor group label as one l
   assert.match(labelledApp.ballot(), /First below-floor group: Group 1/u);
   assert.doesNotMatch(labelledApp.ballot(), /Residents/u);
   assert.equal(JSON.parse(labelledStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+});
+
+test("print facilitator pack includes the threshold-group count as one line without changing the saved draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /a one-line threshold-group count/u);
+  assert.match(html, /not a legal quorum/u);
+  const passing = {
+    title: "Print threshold-group count workshop",
+    threshold: 70,
+    groups: [
+      { id: "cleared", name: "Residents", weight: 1 },
+      { id: "short", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "Hours", options: [
+      { id: "original", label: "Keep original hours", original: true, changeCost: 0, support: { cleared: 90, short: 20 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { cleared: 80, short: 30 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { cleared: 70, short: 40 } },
+    ] }],
+  };
+  const storage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(passing)]]);
+  const app = await savedWorkbench(storage);
+  assert.match(app.ballot(), /Groups meeting the approval threshold: 1\. A threshold is a number you entered, not a legal quorum/u);
+  assert.match(app.ballot(), /Participant groups: Residents, Open/u);
+  app.click("#print-button");
+  assert.equal(app.printCalls(), 1);
+  assert.match(app.ballot(), /Groups meeting the approval threshold: 1/u);
+  app.click("#print-redacted-button");
+  assert.equal(app.printCalls(), 2);
+  assert.match(app.ballot(), /Participant groups: Group 1, Group 2/u);
+  assert.match(app.ballot(), /Groups meeting the approval threshold: 1/u);
+  assert.doesNotMatch(app.ballot(), /Residents/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+
+  const zero = {
+    title: "Print zero threshold-group count workshop",
+    threshold: 95,
+    groups: [
+      { id: "cleared", name: "Residents", weight: 1 },
+      { id: "short", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "Hours", options: [
+      { id: "original", label: "Keep original hours", original: true, changeCost: 0, support: { cleared: 40, short: 20 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { cleared: 30, short: 30 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { cleared: 20, short: 40 } },
+    ] }],
+  };
+  const zeroStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(zero)]]);
+  const zeroApp = await savedWorkbench(zeroStorage);
+  assert.match(zeroApp.ballot(), /Groups meeting the approval threshold: 0\. A threshold is a number you entered, not a legal quorum/u);
+  zeroApp.click("#print-redacted-button");
+  assert.match(zeroApp.ballot(), /Participant groups: Group 1, Group 2/u);
+  assert.match(zeroApp.ballot(), /Groups meeting the approval threshold: 0/u);
+  assert.doesNotMatch(zeroApp.ballot(), /Residents/u);
+  assert.equal(JSON.parse(zeroStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
 });
 
 test("print facilitator pack includes the numeric approval threshold without changing the saved draft", async () => {
