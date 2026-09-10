@@ -729,6 +729,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>Deal title</h2><p>${state.deal.title ? escapeAttribute(state.deal.title) : 'No deal title was entered.'}</p></section>
     <section class="print-only print-keep"><h2>Currency code</h2><p>${currencyPrefix() ? escapeAttribute(currencyPrefix()) : 'No currency code was entered.'}</p></section>
     <section class="print-only print-keep"><h2>Least headroom</h2><p>${escapeAttribute(result.weakestParticipant.name)} has the least volume headroom to its ${escapeAttribute(result.weakestParticipant.bindingConstraint.label)} limit.</p></section>
+    <section class="print-only print-keep"><h2>First-breakpoint participant</h2><p>${escapeAttribute(firstBreakpointLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
     <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>

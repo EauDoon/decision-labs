@@ -676,7 +676,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, and currency code', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, and first-breakpoint participant', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -690,6 +690,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /<h2>Currency code<\/h2><p>No currency code was entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Deal notes<\/h2>/);
   assert.match(app.markup(), /<h2>Least headroom<\/h2><p>Liquidity Partner has the least volume headroom to its minimum acceptable profit limit\.<\/p>/);
+  assert.match(app.markup(), /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   const before = JSON.stringify(app.saved());
   app.click('print-report');
@@ -697,6 +698,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.equal(JSON.stringify(app.saved()), before);
   assert.match(app.lastPrint(), /<h2>Deal title<\/h2><p>No deal title was entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Currency code<\/h2><p>No currency code was entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   app.edit('deal.title', 'Harbor JV', { type: 'text' });
   app.edit('deal.currency', 'USD', { type: 'text' });
@@ -724,8 +726,10 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /class="participant-redacted-name">Participant 1</);
   assert.doesNotMatch(snapshot, /class="participant-live-name">Platform</);
   assert.match(snapshot, /Participant 3 has the least volume headroom to its minimum acceptable profit limit/);
+  assert.match(snapshot, /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Participant 3\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
+  assert.doesNotMatch(snapshot, /First-breakpoint participant: Liquidity Partner/);
   assert.match(html, /\.print-redacted \.participant-live-name/);
   assert.match(html, /\.print-redacted \.participant-redacted-name/);
   assert.match(app.markup(), /class="participant-live-name">Platform</);
