@@ -37,9 +37,12 @@ workbench / How it works actions, in-page trust notes, card versions, and a
 What's new section. Skip links jump to What's new, workbenches, How it works,
 keyboard shortcuts, and Trust and limits. Catalog keys `w`, `k`, `n`, and `c`
 focus the workbenches, How it works, What's new, or copy the catalog address on
-http. Keys `v` and `j` copy the printed version list and one-sentence jobs.
-Keys `l` and `o` focus or open the last-launched workbench stored in this
-browser. Key `o` assigns a location like keys 1 to 4. It does not claim a
+http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
+workbench link without opening it. Keys `v` and `j` copy the printed version list and one-sentence jobs.
+Key `i` copies Trust and limits from this page as Markdown. That list is not a
+live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
+browser. Key `x` clears that last-launched marker in this browser. That recency
+is this-browser storage, not a cloud recency. Key `o` assigns a location like keys 1 to 4. It does not claim a
 copy succeeded on a file URL. Copy versions copies the four names and versions printed on this page as
 Markdown. That list is not a live product version and it does not call a
 registry. What's new names current in-workbench tools (share-to-hold,
@@ -110,9 +113,11 @@ local drafts. A path outside that set still returns HTTP 404; the body is a
 Decision Labs page that points back to the catalog rather than a blank
 "Not found" line. Set `PORT` to an integer from 1 through 65535 to choose another
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
-an input. Press `h` to focus the catalog heading. Press `n` to focus What's
+an input. Press `h` to focus the catalog heading. Press `m` to focus the
+main catalog content. Press `n` to focus What's
 new. Press `w` to focus the workbenches. Press `k` to focus How it works.
-Press `t` to focus Trust and limits. Press `c` to copy the catalog address
+Press `t` to focus Trust and limits. Press `s` to focus the first Open
+workbench link. Press `c` to copy the catalog address
 when this page is served over http. On a file URL that key does not claim a
 copy succeeded. Press `v` to copy catalog versions from this page. That key
 uses the same Copy versions control, including the visible text box when the
@@ -122,12 +127,17 @@ That recency is storage in this browser, not a cloud recency. Press `o` to
 open that last-launched workbench. The key assigns `location` the same way
 keys 1 to 4 do, including writing last-launched storage. If none is stored,
 it focuses the workbenches and does not navigate. It does not copy, including
-on a file URL. Press `?` on the catalog for the in-page shortcut list. The branded 404
+on a file URL. Press `x` to clear last-launched storage in this browser and
+hide the recency notes. That clear is this-browser storage, not a cloud
+recency. If this browser refuses the storage write, the notes still hide for
+this view and no error is shown. Press `?` on the catalog for the in-page shortcut list. The branded 404
 page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
 Smallest Agreement, and Weekend Gap. Copy versions on that 404 page copies
 the printed catalog version line as Markdown. It does not fetch a package
-file or add another public path. When the catalog is served over http,
+file or add another public path. Copy Trust and limits on that 404 page copies
+the printed Trust and limits heading and list as Markdown. It does not fetch a
+policy file or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
 this catalog page as Markdown. It uses the browser clipboard when that API is
@@ -136,6 +146,11 @@ not a live product version. Copy jobs copies the four workbench names and
 one-sentence jobs from the catalog cards as Markdown, with the same clipboard
 and visible text box fallback. That list is not a live product feed.
 Press `j` to copy catalog jobs through that same control.
+Copy Trust and limits copies the Trust and limits heading and list items
+already printed on this catalog page as Markdown. It uses the browser
+clipboard when that API is available, and shows a visible text box if it is
+not. That list is not a live policy feed.
+Press `i` to copy Trust and limits through that same control.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
@@ -242,4 +257,4 @@ repository-wide and component issues in the
 
 MIT. See [LICENSE](LICENSE) and each app's retained `LICENSE` file.
 
-The local last-launched marker updates from both the Open workbench links and keys 1 to 4. Storage failure does not prevent opening an app. Missing or unreadable last-launched storage is silent: no recency note appears.
+The local last-launched marker updates from both the Open workbench links and keys 1 to 4. Storage failure does not prevent opening an app. Missing or unreadable last-launched storage is silent: no recency note appears. Key `x` clears that marker in this browser and hides the notes. A storage write failure stays silent.
