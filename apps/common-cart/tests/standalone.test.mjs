@@ -40,28 +40,29 @@ test("standalone GUI has no external resource dependency", async () => {
   assert.match(html, /not valid JSON/u);
 });
 
-test("standalone retains 1.4.14 leftover-fill pickup tools and 1.4.15 leftover-fill label controls", async () => {
+test("standalone retains 1.4.15 leftover-fill label tools and 1.4.16 leftover-fill minimum controls", async () => {
   const html = await buildStandalone();
-  assert.match(html, /id="copy-leftover-fill-pickup"/u);
-  assert.match(html, /id="copy-leftover-fill-pickup"[^>]*aria-keyshortcuts="\*"/u);
-  assert.match(html, /id="hide-buyers-filled-by-leftover-fill"/u);
-  assert.match(html, /id="hide-last-buyer-filled-by-leftover-fill"/u);
-  assert.match(html, /data-preset="cricketCarnivalLunch"/u);
   assert.match(html, /id="copy-leftover-fill-label"/u);
   assert.match(html, /id="copy-leftover-fill-label"[^>]*aria-keyshortcuts="\$"/u);
   assert.match(html, /id="hide-first-buyer-filled-by-leftover-fill"/u);
-  assert.match(html, /id="leftover-print-fill-label"/u);
-  assert.match(html, /Leftover fill label: none/u);
+  assert.match(html, /id="hide-last-buyer-filled-by-leftover-fill"/u);
   assert.match(html, /data-preset="tennisCarnivalLunch"/u);
-  assert.match(html, /function copyLeftoverFillLabel\(/u);
-  assert.match(html, /function focusLeftoverFillLabelCopy\(/u);
-  assert.match(html, /function focusHideLastBuyerFilledByLeftoverFill\(/u);
-  assert.match(html, /filterBuyerIdsHidingFirstBuyerFilledByLeftoverFill\(/u);
-  assert.match(html, /hideFirstBuyerFilledByLeftoverFill/u);
-  assert.match(html, /if \(key === "\$"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillLabel\(\);/u);
-  assert.match(html, /if \(key === "\^"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillLabelCopy\(\);/u);
-  assert.match(html, /if \(key === "`"\) \{\s*event\.preventDefault\(\);\s*focusHideLastBuyerFilledByLeftoverFill\(\);/u);
-  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-fill-label/u);
-  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-buyer-filled-by-leftover-fill/u);
+  assert.match(html, /id="copy-leftover-fill-minimum"/u);
+  assert.match(html, /id="copy-leftover-fill-minimum"[^>]*aria-keyshortcuts="5"/u);
+  assert.match(html, /id="hide-first-buyer-filled-by-tertiary-fill"/u);
+  assert.match(html, /id="leftover-print-fill-minimum"/u);
+  assert.match(html, /Leftover fill minimum: none/u);
+  assert.match(html, /data-preset="basketballCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverFillMinimum\(/u);
+  assert.match(html, /function focusLeftoverFillMinimumCopy\(/u);
+  assert.match(html, /function focusHideFirstBuyerFilledByTertiaryFill\(/u);
+  assert.match(html, /filterBuyerIdsHidingFirstBuyerFilledByTertiaryFill\(/u);
+  assert.match(html, /hideFirstBuyerFilledByTertiaryFill/u);
+  assert.match(html, /if \(key === "5"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMinimum\(\);/u);
+  assert.match(html, /if \(key === "6"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillMinimumCopy\(\);/u);
+  assert.match(html, /if \(key === "7"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstBuyerFilledByTertiaryFill\(\);/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-fill-minimum/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-buyer-filled-by-tertiary-fill/u);
 });
 
