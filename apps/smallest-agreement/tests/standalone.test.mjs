@@ -117,6 +117,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Print redacted/u);
   assert.match(html, /id="print-redacted-button"/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
+  assert.match(html, /one-line lock count on the worksheet/u);
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
   assert.match(html, /Duplicate group/u);
@@ -1100,7 +1101,7 @@ test("print facilitator pack includes recommended package option labels", async 
 
 test("print facilitator pack includes remaining change-budget without changing the saved draft", async () => {
   const html = await standaloneBytes();
-  assert.match(html, /remaining change-budget, and the numeric approval threshold on the worksheet/u);
+  assert.match(html, /remaining change-budget, the numeric approval threshold, and a one-line lock count on the worksheet/u);
   assert.match(html, /not a legal appropriation/u);
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -1159,6 +1160,55 @@ test("print facilitator pack includes remaining change-budget without changing t
   const spent = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(exhausted)]]));
   assert.match(spent.ballot(), /Remaining change-budget is exhausted \(0\.0 leftover\)/u);
   assert.match(spent.ballot(), /not a legal appropriation/u);
+});
+
+test("print facilitator pack includes a one-line lock count without changing the saved draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /one-line lock count on the worksheet/u);
+  assert.match(html, /not a legal hold/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for lock-count print");
+  assert.match(app.ballot(), /Current lock count: 0/u);
+  assert.match(app.ballot(), /not a legal hold/u);
+  assert.match(app.ballot(), /Participant groups: Residents, Shopkeepers, Park stewards/u);
+  app.click("#print-button");
+  assert.equal(app.printCalls(), 1);
+  assert.match(app.ballot(), /Current lock count: 0/u);
+  app.click("#print-redacted-button");
+  assert.equal(app.printCalls(), 2);
+  assert.match(app.ballot(), /Participant groups: Group 1, Group 2, Group 3/u);
+  assert.match(app.ballot(), /Current lock count: 0/u);
+  assert.doesNotMatch(app.ballot(), /Residents/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).clauses.some((clause) => clause.lockedOptionId), false);
+
+  const locked = {
+    title: "Print lock count workshop",
+    threshold: 70,
+    groups: [{ id: "g", name: "Residents", weight: 1 }],
+    clauses: [
+      { id: "one", title: "Hours", lockedOptionId: "one-alt", options: [
+        { id: "one-original", label: "Keep original hours", original: true, changeCost: 0, support: { g: 90 } },
+        { id: "one-alt", label: "Extend hours", original: false, changeCost: 1, support: { g: 90 } },
+        { id: "one-other", label: "Cut hours", original: false, changeCost: 2, support: { g: 20 } },
+      ] },
+      { id: "two", title: "Path", options: [
+        { id: "two-original", label: "Keep original path", original: true, changeCost: 0, support: { g: 90 } },
+        { id: "two-alt", label: "Warm path", original: false, changeCost: 1, support: { g: 40 } },
+        { id: "two-other", label: "Motion path", original: false, changeCost: 2, support: { g: 20 } },
+      ] },
+    ],
+  };
+  const lockedStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(locked)]]);
+  const lockedApp = await savedWorkbench(lockedStorage);
+  assert.match(lockedApp.ballot(), /Current lock count: 1\. Locks are draft choices, not a legal hold/u);
+  lockedApp.click("#print-redacted-button");
+  assert.match(lockedApp.ballot(), /Participant groups: Group 1/u);
+  assert.match(lockedApp.ballot(), /Current lock count: 1/u);
+  assert.doesNotMatch(lockedApp.ballot(), /Residents/u);
+  assert.equal(JSON.parse(lockedStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+  assert.equal(JSON.parse(lockedStorage.get("smallest-agreement:proposal:v1")).clauses[0].lockedOptionId, "one-alt");
 });
 
 test("print facilitator pack includes the numeric approval threshold without changing the saved draft", async () => {
