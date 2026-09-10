@@ -801,6 +801,11 @@ function handleShortcut(event) {
     copyLeftoverCoverage();
     return;
   }
+  if (key === "t") {
+    event.preventDefault();
+    focusTertiaryLeftoverFill();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -852,6 +857,22 @@ function focusUncoveredLeftover() {
   const leftoverExists = document.querySelector("#leftover-buyer-rows tr") || document.querySelector("#uncovered-leftover.leftover-uncovered");
   if (leftoverExists) {
     document.querySelector("#uncovered-leftover")?.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusTertiaryLeftoverFill() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  let tertiary = false;
+  try {
+    tertiary = Boolean(computeResidualCoverage(scenario).tertiary);
+  } catch {
+    tertiary = false;
+  }
+  if (tertiary) {
+    document.querySelector("#tertiary-fill")?.focus();
     return;
   }
   document.querySelector("#residual-title")?.focus();

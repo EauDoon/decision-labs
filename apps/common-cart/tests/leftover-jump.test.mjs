@@ -60,3 +60,17 @@ test("the leftover buyer table stays in the organizer residual panel", async () 
   assert.match(buyerPanel, /organizer-private/u);
   assert.equal(merchantPanel.includes("leftover-buyer-rows"), false);
 });
+
+test("tertiary leftover fill stays on the organizer leftover table", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="leftover-coverage-rows"/u);
+  assert.match(buyerPanel, /id="residual-title"/u);
+  assert.equal(merchantPanel.includes("focusTertiaryLeftoverFill"), false);
+  assert.equal(merchantPanel.includes("tertiary leftover fill"), false);
+  assert.match(app, /function focusTertiaryLeftoverFill\(/u);
+  assert.match(app, /#tertiary-fill/u);
+  assert.match(app, /#residual-title/u);
+});

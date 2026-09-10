@@ -165,3 +165,20 @@ test("keyboard handler copies leftover residual coverage when not typing", async
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.match(app, /organizer-private Markdown/u);
 });
+
+test("shortcut help documents the tertiary leftover fill jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>t<\/kbd> Focus tertiary leftover fill/u);
+  assert.match(html, /id="tertiary-fill"|id="leftover-coverage-rows"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to tertiary leftover fill when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "t"\)/u);
+  assert.match(app, /function focusTertiaryLeftoverFill\(/u);
+  assert.match(app, /#tertiary-fill/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
