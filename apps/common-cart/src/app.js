@@ -1021,6 +1021,11 @@ function handleShortcut(event) {
     copyUncoveredLeftoverUnitCount();
     return;
   }
+  if (key === "-") {
+    event.preventDefault();
+    focusUncoveredLeftoverUnitCountCopy();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1186,6 +1191,17 @@ function focusLeftoverFillUnitCountCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const copy = document.querySelector("#copy-leftover-fill-units");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusUncoveredLeftoverUnitCountCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-uncovered-leftover-units");
   if (copy) {
     copy.focus();
     return;

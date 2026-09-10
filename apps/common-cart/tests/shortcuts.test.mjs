@@ -527,6 +527,25 @@ test("colon uncovered leftover unit-count copy uses the existing uncovered lefto
   assert.match(app, /if \(key === "y" \|\| key === ";"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
 });
 
+test("shortcut help documents uncovered leftover unit-count copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>-<\/kbd> Focus the uncovered leftover units copy control, or leftover heading if missing/u);
+  assert.match(html, /id="copy-uncovered-leftover-units"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to uncovered leftover unit-count copy when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "-"\)/u);
+  assert.match(app, /function focusUncoveredLeftoverUnitCountCopy\(/u);
+  assert.match(app, /#copy-uncovered-leftover-units/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "-"\) \{\s*event\.preventDefault\(\);\s*copyUncoveredLeftoverUnitCount/u);
+  assert.match(app, /if \(key === ":"\) \{\s*event\.preventDefault\(\);\s*copyUncoveredLeftoverUnitCount\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
