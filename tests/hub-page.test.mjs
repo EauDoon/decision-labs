@@ -316,6 +316,7 @@ test('load focuses skip-link hash targets', () => {
 test('copy jobs copies catalog names and jobs as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-jobs"/);
   assert.match(html, />Copy jobs</);
+  assert.match(html, /aria-keyshortcuts="j"/);
   assert.match(html, /id="copy-jobs-fallback"/);
   assert.match(html, /class="copy-jobs-fallback"/);
   assert.match(html, /textarea id="copy-jobs-fallback"/);
@@ -336,6 +337,7 @@ test('copy jobs copies catalog names and jobs as Markdown with a visible fallbac
 test('copy versions copies catalog names as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-versions"/);
   assert.match(html, />Copy versions</);
+  assert.match(html, /aria-keyshortcuts="v"/);
   assert.match(html, /id="copy-versions-fallback"/);
   assert.match(html, /class="copy-versions-fallback"/);
   assert.match(html, /textarea id="copy-versions-fallback"/);
