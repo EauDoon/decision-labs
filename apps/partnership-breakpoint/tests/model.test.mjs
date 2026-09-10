@@ -860,6 +860,27 @@ test('volleyball carnival split preset is a distinct committee court-hire first-
   assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
 });
 
+test('volleyball carnival remaining listed capacity is distinct from tennis and basketball', () => {
+  const volleyball = clonePreset('volleyballCarnivalSplit');
+  const result = calculatePartnership(volleyball);
+  assert.equal(result.effectiveVolume, 3300);
+  const remaining = volleyball.participants.map((item) => item.capacity - result.effectiveVolume);
+  assert.deepEqual(remaining, [600, 1800, 250]);
+  assert.ok(remaining.every((value) => value > 1e-9));
+  const lastWithin = [...volleyball.participants].reverse().find((item) => item.capacity - result.effectiveVolume >= -1e-9);
+  assert.equal(lastWithin.id, 'volleyball-first-aid');
+  const lastSpare = [...volleyball.participants].reverse().find((item) => item.capacity - result.effectiveVolume > 1e-9);
+  assert.equal(lastSpare.id, 'volleyball-first-aid');
+  const tennis = clonePreset('tennisCarnivalSplit');
+  const basketball = clonePreset('basketballCarnivalSplit');
+  const tennisRemaining = tennis.participants.map((item) => item.capacity - calculatePartnership(tennis).effectiveVolume);
+  const basketballRemaining = basketball.participants.map((item) => item.capacity - calculatePartnership(basketball).effectiveVolume);
+  assert.notEqual(JSON.stringify(remaining), JSON.stringify(tennisRemaining));
+  assert.notEqual(JSON.stringify(remaining), JSON.stringify(basketballRemaining));
+  assert.notEqual(result.effectiveVolume, calculatePartnership(tennis).effectiveVolume);
+  assert.notEqual(result.effectiveVolume, calculatePartnership(basketball).effectiveVolume);
+});
+
 test('creator take-rate and three-party JV presets calculate interesting first breakpoints', () => {
   const creator = calculatePartnership(clonePreset('creatorTakeRate'));
   assert.equal(creator.participants.length, 2);
