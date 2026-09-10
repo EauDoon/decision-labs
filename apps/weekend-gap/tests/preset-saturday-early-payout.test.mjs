@@ -28,6 +28,7 @@ test("Saturday early payout open keeps the Normal Friday calendar with an earlie
   assert.equal(preset.saturdayEarlyPayoutOpen, true);
   assert.equal(DEFAULT_SCENARIO.saturdayEarlyPayoutOpen, false);
   assert.equal(preset.sundayLatePayoutClose, false);
+  assert.equal(preset.fridayEarlyPayoutOpen, false);
   assert.equal(preset.sundayLateBankClose, false);
   assert.equal(preset.saturdayEarlyFxOpen, false);
   assert.equal(preset.fridayFxLateClose, false);
@@ -56,6 +57,7 @@ test("Saturday early payout open keeps the Normal Friday calendar with an earlie
   assert.notDeepEqual(preset, PRESETS.saturdayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayLateBankClose);
   assert.notDeepEqual(preset, PRESETS.sundayLatePayoutClose);
+  assert.notDeepEqual(preset, PRESETS.fridayEarlyPayoutOpen);
   const early = runSimulation(preset);
   const normal = runSimulation(DEFAULT_SCENARIO);
   const fx = runSimulation(PRESETS.saturdayEarlyFxOpen);
