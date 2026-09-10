@@ -447,6 +447,23 @@ test("keyboard c copies the selected Gantt hour Markdown and ignores the key whi
   assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, true);
 });
 
+test("keyboard v copies selected versus peak-queue hour Markdown and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("v");
+  assert.equal(ui.nodes.get("selected-versus-peak-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("selected-versus-peak-copy-fallback").value, /Selected Gantt hour:/);
+  assert.match(ui.nodes.get("selected-versus-peak-copy-fallback").value, /Peak-queue hour:/);
+  assert.match(ui.nodes.get("selected-versus-peak-copy-fallback").value, /Not a forecast/);
+  ui.nodes.get("selected-versus-peak-copy-fallback").hidden = true;
+  ui.nodes.get("selected-versus-peak-copy-fallback").value = "";
+  await ui.keydown("V", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("selected-versus-peak-copy-fallback").hidden, true);
+  await ui.keydown("v", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("selected-versus-peak-copy-fallback").hidden, true);
+  await ui.keydown("v", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("selected-versus-peak-copy-fallback").hidden, true);
+});
+
 test("keyboard x copies closed-hours Markdown and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("x");

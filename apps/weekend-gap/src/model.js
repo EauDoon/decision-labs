@@ -1403,6 +1403,18 @@ export function peakQueueHourToMarkdown(input) {
   ].join("\n");
 }
 
+/** Two-line selected Gantt hour versus peak-queue hour. Not a forecast. */
+export function selectedVersusPeakHourToMarkdown(input, selectedHour = 0) {
+  const result = runSimulation(input);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const selected = result.timeline[hour];
+  const selectedLine = "Selected Gantt hour: " + selected.timeLabel + " (hour " + selected.hour + ").";
+  const peakLine = result.summary.peakQueuedAud > 0
+    ? "Peak-queue hour: " + formatTime(result.summary.peakQueueHour) + " (hour " + result.summary.peakQueueHour + "). Not a forecast."
+    : "Peak-queue hour: none. Not a forecast.";
+  return selectedLine + "\n" + peakLine;
+}
+
 /** Markdown list of hours with closed gates. Local drawing, not a bank feed. */
 export function closedGanttHoursToMarkdown(input) {
   const schedule = buildGateSchedule(input);

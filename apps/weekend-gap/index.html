@@ -299,6 +299,7 @@ SOFTWARE.
                 <button id="copy-hours-to-clear" type="button">Copy hours to clear</button>
                 <button id="copy-hours-to-first-settlement" type="button">Copy hours to first settlement</button>
                 <button id="copy-peak-hour" type="button">Copy peak-queue hour</button>
+                <button id="copy-selected-versus-peak" type="button">Copy selected versus peak hour</button>
                 <button id="export-dashboard-csv" type="button">Export dashboard CSV</button>
               </div>
             </div>
@@ -308,6 +309,8 @@ SOFTWARE.
             <textarea id="hours-to-first-settlement-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="peak-hour-copy-fallback">Peak-queue hour Markdown fallback</label>
             <textarea id="peak-hour-copy-fallback" rows="8" hidden readonly></textarea>
+            <label class="sr-only" for="selected-versus-peak-copy-fallback">Selected versus peak hour Markdown fallback</label>
+            <textarea id="selected-versus-peak-copy-fallback" rows="3" hidden readonly></textarea>
             <dl class="outcome-grid">
               <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
               <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
@@ -694,6 +697,7 @@ SOFTWARE.
           <li><kbd>M</kbd> Jump to the compare Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>
+          <li><kbd>V</kbd> Copy selected versus peak-queue hour as Markdown</li>
           <li><kbd>X</kbd> Copy closed hours as Markdown</li>
           <li><kbd>T</kbd> Jump to the timing review</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>

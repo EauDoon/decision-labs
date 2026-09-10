@@ -29,6 +29,7 @@ import {
   selectedGanttHourToMarkdown,
   remainingReserveAtHourToMarkdown,
   peakQueueHourToMarkdown,
+  selectedVersusPeakHourToMarkdown,
   closedGanttHoursToMarkdown,
   fxGanttHoursToMarkdown,
   weekendFxHourCountsToMarkdown,
@@ -1370,6 +1371,9 @@ document.querySelector("#copy-peak-hour").addEventListener("click", async () => 
   const text = peakQueueHourToMarkdown(scenario);
   await copyTextWithFallback(text, "#peak-hour-copy-fallback", "Peak-queue hour copied as Markdown. This is a synthetic snapshot, not a live bank or payout queue.");
 });
+document.querySelector("#copy-selected-versus-peak").addEventListener("click", async () => {
+  await copySelectedVersusPeakHourMarkdown();
+});
 document.querySelector("#copy-closed-hours").addEventListener("click", async () => {
   await copyClosedHoursMarkdown();
 });
@@ -1577,6 +1581,10 @@ function jumpToTimingReview() {
 function copySelectedGanttHourMarkdown() {
   const text = selectedGanttHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
+}
+function copySelectedVersusPeakHourMarkdown() {
+  const text = selectedVersusPeakHourToMarkdown(scenario, selectedHour);
+  return copyTextWithFallback(text, "#selected-versus-peak-copy-fallback", "Selected hour versus peak-queue hour copied as Markdown. This is not a forecast.");
 }
 function copyRemainingReserveMarkdown() {
   const text = remainingReserveAtHourToMarkdown(scenario, selectedHour);
@@ -1835,6 +1843,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "c" || event.key === "C") {
     event.preventDefault();
     copySelectedGanttHourMarkdown();
+    return;
+  }
+  if (event.key === "v" || event.key === "V") {
+    event.preventDefault();
+    copySelectedVersusPeakHourMarkdown();
     return;
   }
   if (event.key === "x" || event.key === "X") {
