@@ -42,6 +42,7 @@
  * @property {boolean} [hideParticipantsWithSpareCapacity] Optional roster display preference. Omitted files default to showing rows that still have unused listed capacity.
  * @property {boolean} [hideParticipantsAtLeastHeadroom] Optional roster display preference. Omitted files default to showing the least-headroom roster row.
  * @property {boolean} [hideParticipantsWithinCapacity] Optional roster display preference. Omitted files default to showing roster rows that are within listed capacity.
+ * @property {boolean} [hideFirstBreakpointParticipant] Optional roster display preference. Omitted files default to showing the first-breakpoint roster row.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -55,7 +56,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -340,6 +341,12 @@ export function validateConfiguration(config) {
     const hideWithin = own(config, 'hideParticipantsWithinCapacity');
     if (hideWithin !== true && hideWithin !== false) {
       errors.push('Hide participants within capacity must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideFirstBreakpointParticipant')) {
+    const hideFirst = own(config, 'hideFirstBreakpointParticipant');
+    if (hideFirst !== true && hideFirst !== false) {
+      errors.push('Hide first-breakpoint participant must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {

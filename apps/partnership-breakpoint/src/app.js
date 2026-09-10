@@ -97,6 +97,7 @@ let hideParticipantsWithoutCapacity = false;
 let hideParticipantsWithSpareCapacity = false;
 let hideParticipantsAtLeastHeadroom = false;
 let hideParticipantsWithinCapacity = false;
+let hideFirstBreakpointParticipant = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -273,6 +274,7 @@ function readCollapsePreference() {
   hideParticipantsWithSpareCapacity = state.hideParticipantsWithSpareCapacity === true;
   hideParticipantsAtLeastHeadroom = state.hideParticipantsAtLeastHeadroom === true;
   hideParticipantsWithinCapacity = state.hideParticipantsWithinCapacity === true;
+  hideFirstBreakpointParticipant = state.hideFirstBreakpointParticipant === true;
 }
 
 function writeCollapsePreference() {
@@ -296,6 +298,8 @@ function writeCollapsePreference() {
   else delete state.hideParticipantsAtLeastHeadroom;
   if (hideParticipantsWithinCapacity) state.hideParticipantsWithinCapacity = true;
   else delete state.hideParticipantsWithinCapacity;
+  if (hideFirstBreakpointParticipant) state.hideFirstBreakpointParticipant = true;
+  else delete state.hideFirstBreakpointParticipant;
 }
 
 function compactErrorMessage(error) {
@@ -566,6 +570,11 @@ function participantWithinListedCapacity(result, participant) {
   return volume <= capacity + 1e-9;
 }
 
+function participantIsFirstBreakpoint(result, participant) {
+  if (!result?.firstBreakpoint?.participant) return false;
+  return result.firstBreakpoint.participant.id === participant.id;
+}
+
 function participantHiddenFromRoster(result, participant) {
   if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
   if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
@@ -575,6 +584,7 @@ function participantHiddenFromRoster(result, participant) {
   if (hideParticipantsWithSpareCapacity && participantWithSpareCapacity(result, participant)) return true;
   if (hideParticipantsAtLeastHeadroom && participantAtLeastHeadroom(result, participant)) return true;
   if (hideParticipantsWithinCapacity && participantWithinListedCapacity(result, participant)) return true;
+  if (hideFirstBreakpointParticipant && participantIsFirstBreakpoint(result, participant)) return true;
   return false;
 }
 
@@ -603,6 +613,9 @@ function inputPanel(result) {
     : 0;
   const hiddenWithinCapacityCount = hideParticipantsWithinCapacity && result
     ? state.participants.filter((participant) => participantWithinListedCapacity(result, participant)).length
+    : 0;
+  const hiddenFirstBreakpointCount = hideFirstBreakpointParticipant && result
+    ? state.participants.filter((participant) => participantIsFirstBreakpoint(result, participant)).length
     : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
   const firstOverCapacityId = result
@@ -664,7 +677,10 @@ function inputPanel(result) {
   const withinCapacityFilterNote = hideParticipantsWithinCapacity
     ? `${hiddenWithinCapacityCount} participant${hiddenWithinCapacityCount === 1 ? '' : 's'} who are within listed capacity ${hiddenWithinCapacityCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
     : 'Hide participants who are within listed capacity to filter this roster display only. Expand restores them. Counts stay the same.';
-  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom, hideParticipantsWithinCapacity].filter(Boolean).length;
+  const firstBreakpointFilterNote = hideFirstBreakpointParticipant
+    ? `${hiddenFirstBreakpointCount} first-breakpoint participant${hiddenFirstBreakpointCount === 1 ? '' : 's'} ${hiddenFirstBreakpointCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores ${hiddenFirstBreakpointCount === 1 ? 'it' : 'them'}. Tested-case and model counts are unchanged.`
+    : 'Hide the first-breakpoint roster row to filter this roster display only. Expand restores it. Counts stay the same.';
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom, hideParticipantsWithinCapacity, hideFirstBreakpointParticipant].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
     ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
@@ -682,6 +698,8 @@ function inputPanel(result) {
                   ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the least-headroom roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
                   : rosterFilterCount === 1 && hideParticipantsWithinCapacity
                     ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is within listed capacity. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+                    : rosterFilterCount === 1 && hideFirstBreakpointParticipant
+                      ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the first-breakpoint roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : rosterFilterCount > 0
               ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : ''
@@ -743,6 +761,8 @@ function inputPanel(result) {
           <p class="notice">${leastHeadroomFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-within-capacity-participants" data-action="hide-within-capacity-participants" aria-keyshortcuts="{" aria-pressed="${hideParticipantsWithinCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants who are within listed capacity</button><button type="button" data-action="show-within-capacity-participants" ${hideParticipantsWithinCapacity ? '' : 'disabled'}>Show participants within listed capacity</button></div>
           <p class="notice">${withinCapacityFilterNote}</p>
+          <div class="button-row"><button type="button" data-action="hide-first-breakpoint-participant" aria-pressed="${hideFirstBreakpointParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first-breakpoint participant</button><button type="button" data-action="show-first-breakpoint-participant" ${hideFirstBreakpointParticipant ? '' : 'disabled'}>Show the first-breakpoint participant</button></div>
+          <p class="notice">${firstBreakpointFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
@@ -1501,6 +1521,24 @@ function attachEvents() {
     }
     if (action === 'show-within-capacity-participants') {
       hideParticipantsWithinCapacity = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-first-breakpoint-participant') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding the first-breakpoint participant.');
+        return;
+      }
+      hideFirstBreakpointParticipant = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-first-breakpoint-participant') {
+      hideFirstBreakpointParticipant = false;
       writeCollapsePreference();
       saveState();
       render();
