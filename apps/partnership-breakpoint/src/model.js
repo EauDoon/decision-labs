@@ -182,6 +182,15 @@ export const PRESETS = Object.freeze({
       { id: 'ticket-office', name: 'Ticket office', revenueShare: 0.2, variableCostPerTransaction: 1.4, fixedMonthlyCost: 900, minimumAcceptableProfit: 1200, capacity: 2800, minimumCommitment: 0, riskCost: 200 },
     ],
   },
+  popupCinemaSplit: {
+    name: 'Pop-up cinema split',
+    deal: { monthlyVolume: 1600, feePerTransaction: 24, addressableVolume: 2800, volumeShockPct: 0 },
+    participants: [
+      { id: 'cinema-venue', name: 'Cinema venue', revenueShare: 0.42, variableCostPerTransaction: 1.8, fixedMonthlyCost: 7200, minimumAcceptableProfit: 4200, capacity: 2800, minimumCommitment: 0, riskCost: 1000 },
+      { id: 'projectionist', name: 'Projectionist', revenueShare: 0.33, variableCostPerTransaction: 3.6, fixedMonthlyCost: 2100, minimumAcceptableProfit: 2800, capacity: 3600, minimumCommitment: 250, riskCost: 550 },
+      { id: 'ticket-desk', name: 'Ticket desk', revenueShare: 0.25, variableCostPerTransaction: 0.95, fixedMonthlyCost: 1300, minimumAcceptableProfit: 1600, capacity: 2400, minimumCommitment: 0, riskCost: 280 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
