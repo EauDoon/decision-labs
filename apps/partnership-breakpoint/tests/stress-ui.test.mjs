@@ -53,7 +53,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
-        'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text',
+        'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1114,6 +1114,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>c<\/kbd> Jump to snapshot or imported JSON compare/);
   assert.match(app.markup(), /<kbd>p<\/kbd> Print the one-pager/);
   assert.match(app.markup(), /<kbd>f<\/kbd> Jump to the First breakpoint heading/);
+  assert.match(app.markup(), /<kbd>w<\/kbd> Jump to the Contribution waterfall heading/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1256,6 +1257,24 @@ test('keyboard f jumps to the First breakpoint heading unless a field is focused
   app.keydown('f');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+});
+
+test('keyboard w jumps to the Contribution waterfall heading unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="waterfall-title" tabindex="-1"/);
+  app.keydown('w');
+  assert.ok(app.focused().includes('#waterfall-title'));
+  assert.ok(app.focused().includes('scroll:#waterfall-title'));
+  const before = app.focused().length;
+  app.keydown('w', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('w', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('w');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="waterfall-title"/);
 });
 
 test('copy contribution waterfall uses Markdown and a clipboard fallback', async () => {

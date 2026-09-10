@@ -866,7 +866,7 @@ function waterfallSection(result) {
         <tr><th scope="row">Minimum acceptable profit</th><td>${formatMoney(chart.minimum)}</td></tr>
       </tbody></table></div></section>`;
   }).join('');
-  return `<section class="panel print-keep"><div class="panel-heading"><h2>Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p><div class="button-row"><button type="button" data-action="export-waterfall-svg">Download waterfall SVG</button><button type="button" data-action="copy-waterfall">Copy contribution waterfall</button></div>${charts}</div></section>`;
+  return `<section class="panel print-keep" id="contribution-waterfall"><div class="panel-heading"><h2 id="waterfall-title" tabindex="-1">Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p><div class="button-row"><button type="button" data-action="export-waterfall-svg">Download waterfall SVG</button><button type="button" data-action="copy-waterfall">Copy contribution waterfall</button></div>${charts}</div></section>`;
 }
 
 function sensitivityGrid() {
@@ -1486,6 +1486,11 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'p' || event.key === 'P') printOnePager();
   if (event.key === 'f' || event.key === 'F') {
     const target = document.querySelector('#first-breakpoint-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'w' || event.key === 'W') {
+    const target = document.querySelector('#waterfall-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -2308,6 +2313,7 @@ function helpDialog() {
         <li><kbd>c</kbd> Jump to snapshot or imported JSON compare heading</li>
         <li><kbd>p</kbd> Print the one-pager when the case is valid</li>
         <li><kbd>f</kbd> Jump to the First breakpoint heading</li>
+        <li><kbd>w</kbd> Jump to the Contribution waterfall heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
