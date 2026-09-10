@@ -560,9 +560,12 @@ SOFTWARE.
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
+              <button id="copy-closed-hours" type="button">Copy closed hours</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
+            <label class="sr-only" for="closed-hours-copy-fallback">Closed hours Markdown fallback</label>
+            <textarea id="closed-hours-copy-fallback" rows="8" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
               <table>

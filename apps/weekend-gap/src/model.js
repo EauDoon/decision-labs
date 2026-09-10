@@ -1295,6 +1295,32 @@ export function peakQueueHourToMarkdown(input) {
   ].join("\n");
 }
 
+/** Markdown list of hours with closed gates. Local drawing, not a bank feed. */
+export function closedGanttHoursToMarkdown(input) {
+  const schedule = buildGateSchedule(input);
+  const rows = [];
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    const closed = [];
+    if (!point.issuerOpen) closed.push("Issuer");
+    if (!point.bankOpen) closed.push("Bank");
+    if (!point.payoutOpen) closed.push("Payout");
+    if (!point.fxWeekday) closed.push("FX");
+    if (closed.length === 0) continue;
+    rows.push("| " + point.timeLabel + " (hour " + point.hour + ") | " + closed.join(", ") + " |");
+  }
+  return [
+    "# Weekend Gap closed hours",
+    "",
+    "Local drawing of modeled gate hours. Not a bank feed.",
+    "",
+    "| Hour | Closed gates |",
+    "| --- | --- |",
+    ...rows,
+    ""
+  ].join("\n");
+}
+
 /** Hourly current versus baseline gate state. Observation only, not a ranking. */
 export function compareGateSchedules(baselineInput, currentInput) {
   const baseline = buildGateSchedule(baselineInput);

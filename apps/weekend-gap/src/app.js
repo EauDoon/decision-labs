@@ -28,6 +28,7 @@ import {
   ganttToCSV,
   selectedGanttHourToMarkdown,
   peakQueueHourToMarkdown,
+  closedGanttHoursToMarkdown,
   firstClosedGanttHour,
   ganttHourClosedOnAnyGate,
   GANTT_GATE_FILTERS,
@@ -1305,6 +1306,10 @@ document.querySelector("#copy-gantt-hour").addEventListener("click", async () =>
 document.querySelector("#copy-peak-hour").addEventListener("click", async () => {
   const text = peakQueueHourToMarkdown(scenario);
   await copyTextWithFallback(text, "#peak-hour-copy-fallback", "Peak-queue hour copied as Markdown. This is a synthetic snapshot, not a live bank or payout queue.");
+});
+document.querySelector("#copy-closed-hours").addEventListener("click", async () => {
+  const text = closedGanttHoursToMarkdown(scenario);
+  await copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
 });
 document.querySelector("#copy-bottleneck-markdown").addEventListener("click", async () => {
   const text = bottleneckCountsToMarkdown(scenario);
