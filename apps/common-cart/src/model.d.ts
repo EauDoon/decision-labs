@@ -148,6 +148,7 @@ export const presets: Readonly<{
   scoutCamp: Scenario;
   schoolExcursionLunch: Scenario;
   netballCanteen: Scenario;
+  swimmingCarnivalLunch: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -270,7 +271,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -319,6 +320,8 @@ export function filterBuyerIdsHidingBuyersWithLeftover(rawScenario: unknown, hid
 export function filterBuyerIdsHidingUnservedBuyers(rawScenario: unknown, hideUnservedBuyers: boolean): string[];
 /** Display-only. Matching is unchanged. Hides leftover-only buyers (zero winner units, leftover fill and/or tertiary units greater than zero). Unserved buyers are not leftover-only. When hideLeftoverOnlyBuyers is false, every buyer id is returned. */
 export function filterBuyerIdsHidingLeftoverOnlyBuyers(rawScenario: unknown, hideLeftoverOnlyBuyers: boolean): string[];
+/** Display-only. Matching is unchanged. Hides organizer buyer rows that received winner units. Leftover-only and unserved buyers stay visible. When hideWinnerAllocatedBuyers is false, every buyer id is returned. */
+export function filterBuyerIdsHidingWinnerAllocatedBuyers(rawScenario: unknown, hideWinnerAllocatedBuyers: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
@@ -440,6 +443,8 @@ export function createLeftoverFillMerchantLabelMarkdown(rawScenario: unknown): s
 export function createLeftoverFillRemainingCapacityMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill fulfillment. Pickup or shipping. Not a merchant export. */
 export function createLeftoverFillFulfillmentMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover fill delivery days. Count only. Not a merchant export. */
+export function createLeftoverFillDeliveryMarkdown(rawScenario: unknown): string;
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
 export function createWinningRemainingCapacityMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line requested units. Count only. Not a merchant export. */
