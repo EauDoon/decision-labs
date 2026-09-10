@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -90,6 +90,9 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, /id="copy-first-review"/);
   assert.match(page, />Copy first review path</);
   assert.match(page, /firstReviewMarkdown/);
+  assert.match(page, /id="copy-first-open"/);
+  assert.match(page, />Copy first Open href</);
+  assert.match(page, /firstOpenMarkdown/);
 });
 
 test('404 catalog jobs match the four catalog cards', () => {
@@ -161,6 +164,22 @@ test('404 last workbench heading matches the last catalog workbench card heading
   assert.match(page, /id="workbenches"/);
   assert.match(page, /id="copy-first-workbench"/);
   assert.match(page, />Copy first workbench heading</);
+});
+
+test('404 first Open href matches the first catalog Open workbench href', () => {
+  const href = catalogFirstOpenHref();
+  assert.equal(href, 'apps/partnership-breakpoint/standalone.html');
+  assert.equal(html.includes(`href="${href}"`), true, 'first Open href missing from catalog');
+  assert.notEqual(href, catalogFirstReviewPath());
+  assert.notEqual(href, catalogFirstWorkbenchHeading());
+  const page = notFoundPage();
+  assert.equal(page.includes(href), true, 'first Open href missing from 404 page');
+  assert.match(page, /id="copy-first-open"/);
+  assert.match(page, />Copy first Open href</);
+  assert.match(page, /querySelector\('#workbenches a\.open'\)/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /id="copy-first-review"/);
+  assert.match(page, />Copy first review path</);
 });
 
 test('404 first review path matches the first catalog workbench review path', () => {
