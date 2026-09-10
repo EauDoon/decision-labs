@@ -101,6 +101,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="sundayLateBankClose">Sunday late bank close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="sundayLatePayoutClose">Sunday late payout close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="saturdayEarlyPayoutOpen">Saturday early payout open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="fridayEarlyPayoutOpen">Friday early payout open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -271,6 +272,13 @@ SOFTWARE.
               </label>
               <p>When selected, Saturday 07:00 to 09:00 treats the payout gate as open even though Saturday is not a business day. Issuer, bank and FX stay on their Saturday rules those hours. Older scenario files omit this field and keep Saturday payout closed. This is a synthetic calendar, not a bank feed.</p>
             </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="fridayEarlyPayoutOpen">
+                <input id="fridayEarlyPayoutOpen" name="fridayEarlyPayoutOpen" data-field="fridayEarlyPayoutOpen" type="checkbox">
+                Open Friday payout Friday evening
+              </label>
+              <p>When selected, Friday 18:00 to 20:00 treats the payout gate as open after the ordinary Friday close. Issuer, bank and FX stay on their Friday evening rules those hours. Older scenario files omit this field and keep Friday evening payout closed. This is a synthetic calendar, not a bank feed.</p>
+            </div>
           </form>
 
           <section class="library-controls" aria-labelledby="library-title">
@@ -368,6 +376,7 @@ SOFTWARE.
               <div id="first-closed-bank-hour-line"><dt>First closed bank hour</dt><dd id="first-closed-bank-hour-value">Calculating</dd></div>
               <div id="first-closed-issuer-hour-line"><dt>First closed issuer hour</dt><dd id="first-closed-issuer-hour-value">Calculating</dd></div>
               <div id="first-closed-payout-hour-line"><dt>First closed payout hour</dt><dd id="first-closed-payout-hour-value">Calculating</dd></div>
+              <div id="first-open-payout-hour-line"><dt>First open payout hour</dt><dd id="first-open-payout-hour-value">Calculating</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -670,8 +679,12 @@ SOFTWARE.
                 Hide hours where the payout gate is closed
               </label>
               <label class="checkbox-label" for="gantt-hide-fx-closed">
-                <input id="gantt-hide-fx-closed" type="checkbox">
+                <input id="gantt-hide-fx-closed" type="checkbox" aria-keyshortcuts="@">
                 Hide hours where the FX gate is closed
+              </label>
+              <label class="checkbox-label" for="gantt-hide-payout-open">
+                <input id="gantt-hide-payout-open" type="checkbox">
+                Hide hours where the payout gate is open
               </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
@@ -684,7 +697,8 @@ SOFTWARE.
               <button id="copy-first-closed-bank" type="button">Copy first closed bank hour</button>
               <button id="copy-first-closed-issuer" type="button" aria-keyshortcuts=": -">Copy first closed issuer hour</button>
               <button id="copy-first-closed-payout" type="button" aria-keyshortcuts='"'>Copy first closed payout hour</button>
-              <button id="copy-first-open-payout" type="button">Copy first open payout hour</button>
+              <button id="copy-first-open-payout" type="button" aria-keyshortcuts="~">Copy first open payout hour</button>
+              <button id="copy-first-open-fx" type="button">Copy first open FX hour</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
@@ -706,6 +720,8 @@ SOFTWARE.
             <textarea id="first-closed-payout-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="first-open-payout-copy-fallback">First open payout hour Markdown fallback</label>
             <textarea id="first-open-payout-copy-fallback" rows="2" hidden readonly></textarea>
+            <label class="sr-only" for="first-open-fx-copy-fallback">First open FX hour Markdown fallback</label>
+            <textarea id="first-open-fx-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -800,7 +816,9 @@ SOFTWARE.
           <li><kbd>:</kbd> Copy first closed issuer hour as Markdown</li>
           <li><kbd>"</kbd> Copy first closed payout hour as Markdown</li>
           <li><kbd>}</kbd> Copy first closed FX hour as Markdown</li>
+          <li><kbd>~</kbd> Copy first open payout hour as Markdown</li>
           <li><kbd>+</kbd> Jump to the first-closed-FX-hour copy control</li>
+          <li><kbd>!</kbd> Jump to the first-open-payout-hour copy control</li>
           <li><kbd>_</kbd> Jump to the first-closed-payout-hour copy control</li>
           <li><kbd>&lt;</kbd> Jump to the first-closed-bank-hour copy control</li>
           <li><kbd>-</kbd> Jump to the first-closed-issuer-hour copy control</li>
@@ -808,6 +826,7 @@ SOFTWARE.
           <li><kbd>=</kbd> Jump to the hide-bank-closed Gantt filter</li>
           <li><kbd>{</kbd> Jump to the hide-issuer-closed Gantt filter</li>
           <li><kbd>|</kbd> Jump to the hide-payout-closed Gantt filter</li>
+          <li><kbd>@</kbd> Jump to the hide-FX-closed Gantt filter</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>

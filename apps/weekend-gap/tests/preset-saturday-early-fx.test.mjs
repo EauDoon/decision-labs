@@ -53,6 +53,7 @@ test("Saturday early FX open keeps the Normal Friday calendar with an earlier Sa
   assert.notDeepEqual(preset, PRESETS.sundayLateBankClose);
   assert.notDeepEqual(preset, PRESETS.sundayLatePayoutClose);
   assert.notDeepEqual(preset, PRESETS.saturdayEarlyPayoutOpen);
+  assert.notDeepEqual(preset, PRESETS.fridayEarlyPayoutOpen);
   const early = runSimulation(preset);
   const normal = runSimulation(DEFAULT_SCENARIO);
   assert.equal(early.timeline[14].timeLabel, "Sat 05:00");

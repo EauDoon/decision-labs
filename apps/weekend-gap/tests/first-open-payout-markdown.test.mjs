@@ -9,6 +9,7 @@ import {
   firstClosedPayoutHourToMarkdown,
   firstOpenPayoutGanttHour,
   firstOpenPayoutHourToMarkdown,
+  firstOpenFxHourToMarkdown,
   formatTime
 } from "../src/model.js";
 
@@ -27,6 +28,7 @@ test("first open payout hour Markdown is one synthetic line with an honest empty
   assert.notEqual(text, firstClosedFxHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(text, firstClosedBankHourToMarkdown(DEFAULT_SCENARIO));
   assert.notEqual(text, firstClosedIssuerHourToMarkdown(DEFAULT_SCENARIO));
+  assert.notEqual(text, firstOpenFxHourToMarkdown(DEFAULT_SCENARIO));
   const earlierPayout = {
     ...DEFAULT_SCENARIO,
     payoutOpenStartHour: 16

@@ -160,6 +160,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Sunday late bank, issuer-hour copy, and issuer-closed hide in Weekend Gap 1\.5\.10/);
   assert.match(html, /Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1\.5\.11/);
   assert.match(html, /Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1\.5\.12/);
+  assert.match(html, /Friday early payout, open-payout copy, and payout-open hide in Weekend Gap 1\.5\.13/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
   assert.match(html, /Catalog cards list each workbench version next to its job/);
   assert.match(html, /not checkout, inventory, or a second live order/);
@@ -236,6 +237,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /first-closed-issuer copy shortcut, Sunday late bank close/);
   assert.match(readme, /first-closed-payout copy shortcut, Sunday late payout close/);
   assert.match(readme, /first-closed-FX copy shortcut, Saturday early payout open/);
+  assert.match(readme, /first-open-payout copy shortcut, Friday early payout open/);
   assert.match(readme, /how-it-works jump, version-line copy, and skip-link focus/);
   assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(readme, /trust-item jump, first-job copy, and 404 Copy version line/);
@@ -5382,6 +5384,7 @@ test('What\'s new and README name last What\'s new copy and jumps without changi
   assert.match(html, /Last-job copy, last-job jump, and first-job jump/);
   assert.match(html, /Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11/);
   assert.match(html, /Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12/);
+  assert.match(html, /Friday early payout, open-payout copy, and payout-open hide in Weekend Gap 1.5.13/);
   assert.match(readme, /last What's new copy, last-news jump, and first-news jump/);
   assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
   assert.match(readme, /Copy last What's new heading on\s+that 404 page copies/);
@@ -5401,7 +5404,9 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
   assert.equal(headings[0], "First What's new copy, intro jump, and skip-link jump");
-  assert.equal(headings[headings.length - 1], 'Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12');
+  assert.equal(headings[headings.length - 1], 'Friday early payout, open-payout copy, and payout-open hide in Weekend Gap 1.5.13');
+  assert.equal(headings.includes('Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12'), true);
+  assert.equal(headings.includes('Friday early payout, open-payout copy, and payout-open hide in Weekend Gap 1.5.13'), true);
   assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
   assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
   assert.equal(headings.includes('Swimming carnival, over-capacity label copy, and first-over-capacity hide in Partnership Breakpoint 1.5.12'), true);
