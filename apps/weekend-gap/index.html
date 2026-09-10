@@ -91,6 +91,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="compressedFridayClose">Compressed Friday close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="paydayFridayBurst">Payday Friday burst (synthetic)</button>
               <button type="button" class="preset-button" data-preset="publicHolidayMonday">Public-holiday Monday (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="saturdayMarketBurst">Saturday market burst (synthetic)</button>
             </div>
           </fieldset>
 
@@ -204,6 +205,7 @@ SOFTWARE.
               <select id="demandProfile" name="demandProfile" data-field="demandProfile">
                 <option value="flat">Even across 72 hours</option>
                 <option value="fridayBurst">Friday burst (8x weight before midnight)</option>
+                <option value="saturdayBurst">Saturday burst (8x weight on Saturday)</option>
                 <option value="mondayRush">Monday rush (8x weight from midnight)</option>
               </select>
               <p>Total demand stays fixed. Timing changes when it joins the queue.</p>
@@ -292,10 +294,13 @@ SOFTWARE.
               <div class="planning-actions">
                 <p id="outcome-summary" class="gate-summary">Calculating</p>
                 <button id="copy-dashboard-markdown" type="button">Copy dashboard numbers</button>
+                <button id="copy-hours-to-clear" type="button">Copy hours to clear</button>
                 <button id="copy-peak-hour" type="button">Copy peak-queue hour</button>
                 <button id="export-dashboard-csv" type="button">Export dashboard CSV</button>
               </div>
             </div>
+            <label class="sr-only" for="hours-to-clear-copy-fallback">Hours-to-clear Markdown fallback</label>
+            <textarea id="hours-to-clear-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="peak-hour-copy-fallback">Peak-queue hour Markdown fallback</label>
             <textarea id="peak-hour-copy-fallback" rows="8" hidden readonly></textarea>
             <dl class="outcome-grid">
@@ -305,7 +310,7 @@ SOFTWARE.
               <div><dt>Peak queue hour</dt><dd id="peak-queue-hour-value">Calculating</dd></div>
               <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
               <div><dt>Hours to first settlement</dt><dd id="first-settlement-value">Calculating</dd></div>
-              <div><dt>Hours to clear queue</dt><dd id="queue-clear-value">Calculating</dd></div>
+              <div id="hours-to-clear-line"><dt>Hours to clear queue</dt><dd id="queue-clear-value">Calculating</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -563,20 +568,27 @@ SOFTWARE.
                 <input id="gantt-closed-only" type="checkbox">
                 Show only hours closed on at least one gate
               </label>
+              <label class="checkbox-label" for="gantt-every-closed">
+                <input id="gantt-every-closed" type="checkbox">
+                Show only hours where every gate is closed
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
               <button id="copy-closed-hours" type="button">Copy closed hours</button>
+              <button id="copy-fx-hours" type="button">Copy FX hours</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
             <label class="sr-only" for="closed-hours-copy-fallback">Closed hours Markdown fallback</label>
             <textarea id="closed-hours-copy-fallback" rows="8" hidden readonly></textarea>
+            <label class="sr-only" for="fx-hours-copy-fallback">FX hours Markdown fallback</label>
+            <textarea id="fx-hours-copy-fallback" rows="8" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
-            <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
+            <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
                 <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
-                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
+                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col" id="gantt-bank-row"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
                 <tbody id="gantt-table"></tbody>
               </table>
             </div>
@@ -652,8 +664,12 @@ SOFTWARE.
           <li><kbd>D</kbd> Jump to the dashboard outcome summary</li>
           <li><kbd>Q</kbd> Jump to the queue chart</li>
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
+          <li><kbd>H</kbd> Jump to the selected Gantt hour</li>
+          <li><kbd>B</kbd> Jump to the Bank Gantt row</li>
+          <li><kbd>M</kbd> Jump to the compare Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>
+          <li><kbd>X</kbd> Copy closed hours as Markdown</li>
           <li><kbd>T</kbd> Jump to the timing review</li>
           <li><kbd>U</kbd> Undo the last scenario edit</li>
           <li><kbd>R</kbd> Redo a scenario edit</li>

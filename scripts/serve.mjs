@@ -64,7 +64,7 @@ export function notFoundPage() {
     a:hover { text-decoration-thickness: 2px; }
     a:focus-visible, button:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
     .copy-versions-tools { margin: 16px 0 0; }
-    .copy-versions {
+    .copy-versions, .copy-trust {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -77,8 +77,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback {
+    .copy-versions-status, .copy-trust-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -88,7 +88,11 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden] { display: none; }
+    .trust { margin: 28px 0 8px; padding-top: 8px; }
+    .trust ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
+    .trust li { margin: 8px 0; }
+    .copy-trust-tools { margin: 16px 0 0; }
   </style>
 </head>
 <body>
@@ -102,6 +106,21 @@ export function notFoundPage() {
       <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
     </p>
     <textarea id="copy-versions-fallback" class="copy-versions-fallback" hidden readonly rows="4" aria-label="Workbench versions as Markdown"></textarea>
+    <section class="trust" id="trust">
+      <h2 id="trust-title">Trust and limits</h2>
+      <ul>
+        <li><strong>Local-first.</strong> Pages run in your browser. The optional launcher binds loopback only. Nothing here calls a remote API or loads live market, merchant, or account data.</li>
+        <li><strong>No account.</strong> There is no sign-in, cloud save, or hosted workspace. Browser storage stays on this device. Clear the site data and those drafts are gone unless you exported JSON.</li>
+        <li><strong>Deterministic math.</strong> The same valid inputs produce the same outputs. The models do not sample, forecast, or assign probabilities, prices, fairness, or legitimacy.</li>
+        <li><strong>Not a decision maker.</strong> A ranked shock, a pooled offer, a clause package, or a weekend queue is evidence for a conversation. People keep judgment, governing rules, and accountability.</li>
+        <li><strong>Model notes live in each workbench.</strong> Formulas, units, and non-goals are documented beside the tool that uses them. This launcher does not serve those files; open the workbench when you need the exact conventions.</li>
+      </ul>
+    </section>
+    <p class="copy-trust-tools">
+      <button type="button" class="copy-trust" id="copy-trust">Copy Trust and limits</button>
+      <span class="copy-trust-status" id="copy-trust-status" role="status"></span>
+    </p>
+    <textarea id="copy-trust-fallback" class="copy-trust-fallback" hidden readonly rows="8" aria-label="Trust and limits as Markdown"></textarea>
     <p><a href="/">Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap</a></p>
   </main>
   <script>
@@ -130,6 +149,32 @@ export function notFoundPage() {
             versionsFallback.select();
           }
           if (versionsStatus) versionsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product version.';
+        }
+      });
+      const trustBtn = document.getElementById('copy-trust');
+      const trustStatus = document.getElementById('copy-trust-status');
+      const trustFallback = document.getElementById('copy-trust-fallback');
+      const trustMarkdown = () => {
+        const section = document.getElementById('trust');
+        const heading = section?.querySelector('h2')?.textContent.trim() ?? '';
+        const items = [...(section?.querySelectorAll('ul li') ?? [])].map((item) => '- ' + item.textContent.trim()).filter((line) => line !== '- ');
+        return ['## ' + heading, ...items].join('\\n');
+      };
+      trustBtn?.addEventListener('click', async () => {
+        const markdown = trustMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (trustFallback) trustFallback.hidden = true;
+          if (trustStatus) trustStatus.textContent = 'Copied Trust and limits from this catalog page as Markdown. Not a live policy feed.';
+        } catch {
+          if (trustFallback) {
+            trustFallback.hidden = false;
+            trustFallback.value = markdown;
+            trustFallback.focus();
+            trustFallback.select();
+          }
+          if (trustStatus) trustStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog Trust and limits list, not a live policy feed.';
         }
       });
     })();

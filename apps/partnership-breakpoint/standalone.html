@@ -414,6 +414,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
  * @property {StressSettings} [stress] Optional. Legacy cases omit this object.
  * @property {boolean} [collapseAllHoldCases] Optional display preference. Omitted files default to expanded.
  * @property {boolean} [hideHoldingParticipants] Optional roster display preference. Omitted files default to showing holders.
+ * @property {boolean} [hideAllHoldLedger] Optional ledger display preference. Omitted files default to showing all-hold rows.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -427,7 +428,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
 const EPSILON = 1e-9;
 const MAX_PARTICIPANTS = 24;
 const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -523,6 +524,15 @@ const PRESETS = Object.freeze({
       { id: 'booking-platform', name: 'Platform', revenueShare: 0.2, variableCostPerTransaction: 0.9, fixedMonthlyCost: 5000, minimumAcceptableProfit: 3000, capacity: 12000, minimumCommitment: 0, riskCost: 700 },
     ],
   },
+  threePartyJointVenture: {
+    name: 'Three-party joint venture',
+    deal: { monthlyVolume: 8000, feePerTransaction: 55, addressableVolume: 12000, volumeShockPct: 0 },
+    participants: [
+      { id: 'synthetic-operator', name: 'Synthetic operator', revenueShare: 0.4, variableCostPerTransaction: 6, fixedMonthlyCost: 18000, minimumAcceptableProfit: 12000, capacity: 10000, minimumCommitment: 0, riskCost: 3000 },
+      { id: 'capital-partner', name: 'Capital partner', revenueShare: 0.38, variableCostPerTransaction: 0.5, fixedMonthlyCost: 2000, minimumAcceptableProfit: 50000, capacity: null, minimumCommitment: 0, riskCost: 8000 },
+      { id: 'operator-talent', name: 'Operator-talent', revenueShare: 0.22, variableCostPerTransaction: 3, fixedMonthlyCost: 9000, minimumAcceptableProfit: 15000, capacity: 15000, minimumCommitment: 2000, riskCost: 1500 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -584,6 +594,12 @@ function validateConfiguration(config) {
     const hideHolders = own(config, 'hideHoldingParticipants');
     if (hideHolders !== true && hideHolders !== false) {
       errors.push('Hide holding participants must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideAllHoldLedger')) {
+    const hideLedger = own(config, 'hideAllHoldLedger');
+    if (hideLedger !== true && hideLedger !== false) {
+      errors.push('Hide all-hold ledger must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
@@ -2215,6 +2231,9 @@ let notesCopyText = '';
 let waterfallCopyText = '';
 let viabilityCopyText = '';
 let utilizationCopyText = '';
+let tornadoCopyText = '';
+let operatingCopyText = '';
+let splitCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -2225,6 +2244,7 @@ const mutedStressIds = new Set();
 let collapseAllHoldCases = false;
 let hideHoldingParticipants = false;
 let hideAllCompoundHolders = false;
+let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
 const redoHistory = [];
@@ -2242,6 +2262,9 @@ function checkpoint() {
   waterfallCopyText = '';
   viabilityCopyText = '';
   utilizationCopyText = '';
+  tornadoCopyText = '';
+  operatingCopyText = '';
+  splitCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -2267,6 +2290,9 @@ function travelHistory(direction) {
   waterfallCopyText = '';
   viabilityCopyText = '';
   utilizationCopyText = '';
+  tornadoCopyText = '';
+  operatingCopyText = '';
+  splitCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -2370,6 +2396,7 @@ function withStress(config) {
 function readCollapsePreference() {
   collapseAllHoldCases = state.collapseAllHoldCases === true;
   hideHoldingParticipants = state.hideHoldingParticipants === true;
+  hideAllCompoundHolders = state.hideAllHoldLedger === true;
 }
 
 function writeCollapsePreference() {
@@ -2377,6 +2404,8 @@ function writeCollapsePreference() {
   else delete state.collapseAllHoldCases;
   if (hideHoldingParticipants) state.hideHoldingParticipants = true;
   else delete state.hideHoldingParticipants;
+  if (hideAllCompoundHolders) state.hideAllHoldLedger = true;
+  else delete state.hideAllHoldLedger;
 }
 
 function compactErrorMessage(error) {
@@ -2642,7 +2671,7 @@ function inputPanel(result) {
       <div class="panel-heading"><h1>Deal ledger</h1><span class="optional">editable</span></div>
       <div class="panel-body">
         <section class="input-section" aria-labelledby="deal-inputs-title">
-          <h2 id="deal-inputs-title">Shared deal</h2>
+          <h2 id="deal-inputs-title" tabindex="-1">Shared deal</h2>
           <p class="notice">Volume shock % is the only baseline volume reduction, 0 through 100. Addressable volume caps realized demand. Empty required fields are not saved. An optional title, notes, and 3-letter currency code travel with JSON, hash links, and autosave. Currency is a display prefix only; omitted currency keeps the word units.</p>
           <div class="field-grid">
             ${field({ label: 'Deal title', path: 'deal.title', value: state.deal.title ?? '', optional: true, wide: true, type: 'text', title: 'Optional display name, 1 through 80 characters after trimming. Leave blank to omit.' })}
@@ -2720,7 +2749,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -2742,6 +2771,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Total participant profit</span><strong>${formatMoney(result.totalProfit)}</strong></div>
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
+    <section class="print-only print-keep"><h2>Least headroom</h2><p>${escapeAttribute(result.weakestParticipant.name)} has the least volume headroom to its ${escapeAttribute(result.weakestParticipant.bindingConstraint.label)} limit.</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
     <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
     <nav class="results-jump" aria-label="Jump in results" id="results-jump" tabindex="-1">
@@ -2752,6 +2782,7 @@ function resultsPanel(result) {
       <a href="#three-compare-title">Three-snapshot compare</a>
       ${importedCompare ? '<a href="#imported-compare-title">Imported JSON compare</a>' : ''}
       <a href="#charts-title">Charts</a>
+      <a href="#tornado-title">Tornado</a>
       <a href="#waterfall-title">Waterfall</a>
       <a href="#compound-title">Compound stress</a>
       <a href="#participant-ledger">Participant ledger</a>
@@ -2768,6 +2799,9 @@ function resultsPanel(result) {
     ${waterfallCopySection()}
     ${viabilityCopySection()}
     ${utilizationCopySection()}
+    ${tornadoCopySection()}
+    ${operatingCopySection()}
+    ${splitCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -2825,14 +2859,14 @@ function stressSection() {
   const collapseNote = collapseAllHoldCases
     ? `${hiddenHoldCount} all-hold ${hiddenHoldCount === 1 ? 'case is' : 'cases are'} hidden from this table. ${stress.passCount} of ${stress.caseCount} tested cases still hold. Counts are unchanged.`
     : 'Collapse cases every participant holds to hide those rows from this table only. Counts stay the same.';
-  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title">Compound stress and negotiation</h2><span class="optional">v1.4.3</span></div>
+  return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title" tabindex="-1">Compound stress and negotiation</h2><span class="optional">v1.4.3</span></div>
     <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
       <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
-      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button><button type="button" data-action="export-csv">Export all cases CSV</button><button type="button" data-action="export-visible-csv">Export visible cases CSV</button><button type="button" data-action="copy-visible-csv">Copy visible cases CSV</button></div>
+      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="copy-tested-split">Copy tested split</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button><button type="button" data-action="export-csv">Export all cases CSV</button><button type="button" data-action="export-visible-csv">Export visible cases CSV</button><button type="button" data-action="copy-visible-csv">Copy visible cases CSV</button></div>
       <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant. ${collapseNote}</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
-    <details class="case-details"><summary>Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods. ${visibleCases.length} of ${stress.caseCount} rows are visible.</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases || `<tr><td colspan="5">Every displayed case currently holds. ${stress.passCount} of ${stress.caseCount} tested cases hold. Expand to inspect all-hold rows. Counts are unchanged.</td></tr>`}</tbody></table></div></details>
+    <details class="case-details"><summary id="inspect-cases-title">Inspect all ${stress.caseCount} compound cases</summary><div class="table-wrap" tabindex="0" role="region" aria-label="Compound case evidence, scroll horizontally"><table class="stress-table"><caption>Deterministic case evidence, counts are not likelihoods. ${visibleCases.length} of ${stress.caseCount} rows are visible.</caption><thead><tr><th scope="col">Case and simultaneous shocks</th><th scope="col">Effective volume</th><th scope="col">Fee / transaction</th><th scope="col">Total profit</th><th scope="col">Participant tests</th></tr></thead><tbody>${cases || `<tr><td colspan="5">Every displayed case currently holds. ${stress.passCount} of ${stress.caseCount} tested cases hold. Expand to inspect all-hold rows. Counts are unchanged.</td></tr>`}</tbody></table></div></details>
     <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
 }
 
@@ -2925,13 +2959,14 @@ function tornadoChart(result) {
     ['fee', 'Fee down'],
     ['variableCost', 'Cost up'],
   ];
-  const rows = [];
+  let rows = [];
   for (const participant of result.participants) {
     for (const [kind, label] of kinds) {
       const shock = participant.shocks[kind];
       const bounded = shock.status === 'bounded' && shock.changePct != null && Number.isFinite(shock.changePct);
       rows.push({
         name: participant.name,
+        kind,
         label,
         status: shock.status,
         changePct: bounded ? shock.changePct : null,
@@ -2942,12 +2977,15 @@ function tornadoChart(result) {
       });
     }
   }
+  if (hideUnboundedTornado) {
+    rows = rows.filter((row) => row.status !== 'unbounded' && row.display !== 'No bounded shock');
+  }
   const finite = rows.map((row) => row.changePct).filter((value) => value != null);
   const maxPct = Math.max(1, ...finite);
   const rowHeight = 22;
   const left = 190;
   const width = 720;
-  const height = 28 + rows.length * rowHeight;
+  const height = 28 + Math.max(rows.length, 1) * rowHeight;
   const barMax = width - left - 90;
   const bars = rows.map((row, index) => {
     const y = 8 + index * rowHeight;
@@ -2956,8 +2994,10 @@ function tornadoChart(result) {
       <rect x="${left}" y="${y}" width="${Math.max(0, barWidth)}" height="14" fill="${row.changePct == null ? '#eae7de' : '#1558d6'}"></rect>
       <text x="${left + Math.max(0, barWidth) + 6}" y="${y + 13}" font-size="11" fill="#1f2328">${escapeAttribute(row.display)}</text>`;
   }).join('');
-  const tableRows = rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('');
-  return { width, height, bars, tableRows };
+  const tableRows = rows.length
+    ? rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('')
+    : '<tr><td colspan="3">Every displayed tornado shock is unbounded or impossible. Expand to show all shocks. Model math is unchanged.</td></tr>';
+  return { width, height, bars, tableRows, rows };
 }
 
 function tornadoSvgMarkup(result, { standalone = false } = {}) {
@@ -2973,7 +3013,13 @@ function tornadoSvgFile(result) {
 
 function tornadoSection(result) {
   const chart = tornadoChart(result);
-  return `<section class="panel print-keep"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
+  const hiddenCount = hideUnboundedTornado
+    ? result.participants.length * 4 - chart.rows.length
+    : 0;
+  const filterNote = hideUnboundedTornado
+    ? `${hiddenCount} unbounded or impossible ${hiddenCount === 1 ? 'shock is' : 'shocks are'} hidden from this tornado display. Expand restores them. Model math is unchanged.`
+    : 'Hide unbounded or impossible shocks to filter this tornado display only. Expand restores them. Model math is unchanged.';
+  return `<section class="panel print-keep"><div class="panel-heading"><h2 id="tornado-title" tabindex="-1">Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button><button type="button" data-action="copy-tornado">Copy tornado</button><button type="button" data-action="hide-unbounded-tornado" aria-pressed="${hideUnboundedTornado}">Hide unbounded shocks</button><button type="button" data-action="show-unbounded-tornado" ${hideUnboundedTornado ? '' : 'disabled'}>Show all tornado shocks</button></div><p class="notice">${filterNote}</p><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
 }
 
 function waterfallChart(participant) {
@@ -3082,7 +3128,7 @@ function sensitivityGrid() {
 function sensitivitySection() {
   const grid = sensitivityGrid();
   const tableRows = grid.fees.map((fee, row) => `<tr><th scope="row">${formatNumber(fee, 3)}</th>${grid.volumes.map((volume, column) => `<td class="${grid.cells[row][column] ? 'cell-viable' : 'cell-fail'}" aria-label="Fee ${formatNumber(fee, 3)}, volume ${formatNumber(volume)}: ${grid.cells[row][column] ? 'viable' : 'not viable'}">${grid.cells[row][column] ? 'Holds' : 'Exit'}</td>`).join('')}</tr>`).join('');
-  return `<section class="panel"><div class="panel-heading"><h2>Operating region</h2><span class="optional">fee and volume sensitivity</span></div><div class="sensitivity-layout"><div><canvas id="sensitivity-canvas" width="560" height="400" role="img" aria-label="Canvas chart of viable and non-viable fee and monthly-volume combinations. The visible table provides the same values.">Canvas chart unavailable. Use the operating region table.</canvas><div class="legend"><span><i class="swatch viable"></i>Every participant holds</span><span><i class="swatch fail"></i>At least one participant exits</span></div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Operating region values, scroll horizontally"><table class="sensitivity-table"><caption>Operating region table. Rows are fee per transaction. Columns are monthly volume.</caption><thead><tr><th>Fee / volume</th>${grid.volumes.map((volume) => `<th>${formatNumber(volume)}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table></div></div></section>`;
+  return `<section class="panel"><div class="panel-heading"><h2 id="operating-region-title" tabindex="-1">Operating region</h2><span class="optional">fee and volume sensitivity</span></div><div class="panel-body"><p>Fee and volume combinations where every participant holds, or at least one participant exits. Display only. Model math is unchanged.</p><div class="button-row"><button type="button" data-action="copy-operating-region">Copy operating region</button></div></div><div class="sensitivity-layout"><div><canvas id="sensitivity-canvas" width="560" height="400" role="img" aria-label="Canvas chart of viable and non-viable fee and monthly-volume combinations. The visible table provides the same values.">Canvas chart unavailable. Use the operating region table.</canvas><div class="legend"><span><i class="swatch viable"></i>Every participant holds</span><span><i class="swatch fail"></i>At least one participant exits</span></div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Operating region values, scroll horizontally"><table class="sensitivity-table"><caption>Operating region table. Rows are fee per transaction. Columns are monthly volume.</caption><thead><tr><th>Fee / volume</th>${grid.volumes.map((volume) => `<th>${formatNumber(volume)}</th>`).join('')}</tr></thead><tbody>${tableRows}</tbody></table></div></div></section>`;
 }
 
 function methodAndLimits() {
@@ -3234,6 +3280,9 @@ function attachEvents() {
     if (action === 'close-waterfall-copy') { waterfallCopyText = ''; render(); return; }
     if (action === 'close-viability-copy') { viabilityCopyText = ''; render(); return; }
     if (action === 'close-utilization-copy') { utilizationCopyText = ''; render(); return; }
+    if (action === 'close-tornado-copy') { tornadoCopyText = ''; render(); return; }
+    if (action === 'close-operating-copy') { operatingCopyText = ''; render(); return; }
+    if (action === 'close-split-copy') { splitCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -3286,11 +3335,29 @@ function attachEvents() {
         return;
       }
       hideAllCompoundHolders = true;
+      writeCollapsePreference();
+      saveState();
       render();
       return;
     }
     if (action === 'show-all-hold-ledger') {
       hideAllCompoundHolders = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-unbounded-tornado') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding unbounded tornado shocks.');
+        return;
+      }
+      hideUnboundedTornado = true;
+      render();
+      return;
+    }
+    if (action === 'show-unbounded-tornado') {
+      hideUnboundedTornado = false;
       render();
       return;
     }
@@ -3385,6 +3452,9 @@ function attachEvents() {
     if (action === 'copy-waterfall') copyContributionWaterfall();
     if (action === 'copy-viability') copyViabilityCard();
     if (action === 'copy-utilization') copyCapacityUtilization();
+    if (action === 'copy-tornado') copyTornadoChart();
+    if (action === 'copy-operating-region') copyOperatingRegion();
+    if (action === 'copy-tested-split') copyTestedSplit();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -3715,6 +3785,21 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === 'b' || event.key === 'B') {
     const target = document.querySelector('#viability-heading');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 't' || event.key === 'T') {
+    const target = document.querySelector('#tornado-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'd' || event.key === 'D') {
+    const target = document.querySelector('#deal-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'k' || event.key === 'K') {
+    const target = document.querySelector('#compound-title') ?? document.querySelector('#inspect-cases-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -4360,6 +4445,219 @@ function copyCapacityUtilization() {
   showUtilizationCopyFallback(text, fallbackNote);
 }
 
+function tornadoBoundedPercentage(row) {
+  if (row.status === 'already-failing') return 'Already failing';
+  if (row.status === 'at-breakpoint') return 'At breakpoint';
+  if (row.changePct == null) return 'Unbounded';
+  return formatPct(row.changePct);
+}
+
+function tornadoMarkdown(result) {
+  const chart = tornadoChart(result);
+  const lines = ['# Adverse-shock tornado', '', '| Participant | Shock axis | Bounded percentage |', '| --- | --- | --- |'];
+  if (!chart.rows.length) {
+    lines.push('| _none_ | _none_ | Unbounded |');
+  } else {
+    for (const row of chart.rows) {
+      lines.push('| ' + reportText(row.name) + ' | ' + shockLabel(row.kind) + ' | ' + tornadoBoundedPercentage(row) + ' |');
+    }
+  }
+  lines.push('');
+  lines.push('Bounded percentage is the displayed adverse movement from the current scenario. Unbounded shocks have no invented number. This is a comparison aid, not a forecast.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showTornadoCopyFallback(text, message) {
+  tornadoCopyText = text;
+  render();
+  document.querySelector('#tornado-copy-text')?.focus();
+  setNotice(message);
+}
+
+function tornadoCopySection() {
+  if (!tornadoCopyText) return '';
+  return `<section class="panel" aria-labelledby="tornado-copy-title"><div class="panel-heading"><h2 id="tornado-copy-title">Tornado Markdown</h2><button type="button" data-action="close-tornado-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This lists participant, shock axis, and bounded percentage. It is not a forecast.</p><label class="brief-copy-label" for="tornado-copy-text">Tornado Markdown</label><textarea id="tornado-copy-text" readonly rows="12">${escapeAttribute(tornadoCopyText)}</textarea></div></section>`;
+}
+
+function copyTornadoChart() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the tornado chart. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = tornadoMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Tornado copied as Markdown. It is a comparison aid, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          tornadoCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showTornadoCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      tornadoCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showTornadoCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showTornadoCopyFallback(text, fallbackNote);
+}
+
+function operatingRegionMarkdown() {
+  const grid = sensitivityGrid();
+  const total = grid.fees.length * grid.volumes.length;
+  let holdCount = 0;
+  for (const row of grid.cells) {
+    for (const holds of row) {
+      if (holds) holdCount += 1;
+    }
+  }
+  const lines = [
+    '# Operating region',
+    '',
+    'Fee and volume sensitivity. Display only.',
+    '',
+    'Holds cells: ' + holdCount + ' of ' + total + '. Exit cells: ' + (total - holdCount) + ' of ' + total + '.',
+    '',
+    '| Fee / volume | ' + grid.volumes.map((volume) => formatNumber(volume)).join(' | ') + ' |',
+    '| --- | ' + grid.volumes.map(() => '---').join(' | ') + ' |',
+  ];
+  for (let row = 0; row < grid.fees.length; row += 1) {
+    const cells = grid.cells[row].map((holds) => holds ? 'Holds' : 'Exit');
+    lines.push('| ' + formatNumber(grid.fees[row], 3) + ' | ' + cells.join(' | ') + ' |');
+  }
+  lines.push('');
+  lines.push('This table is the displayed fee and volume grid. It is a display, not a forecast.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showOperatingCopyFallback(text, message) {
+  operatingCopyText = text;
+  render();
+  document.querySelector('#operating-copy-text')?.focus();
+  setNotice(message);
+}
+
+function operatingCopySection() {
+  if (!operatingCopyText) return '';
+  return `<section class="panel" aria-labelledby="operating-copy-title"><div class="panel-heading"><h2 id="operating-copy-title">Operating region Markdown</h2><button type="button" data-action="close-operating-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is the displayed fee and volume sensitivity grid. Display only.</p><label class="brief-copy-label" for="operating-copy-text">Operating region Markdown</label><textarea id="operating-copy-text" readonly rows="14">${escapeAttribute(operatingCopyText)}</textarea></div></section>`;
+}
+
+function copyOperatingRegion() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the operating region. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = operatingRegionMarkdown();
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Operating region copied as Markdown. Display only.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          operatingCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showOperatingCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      operatingCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showOperatingCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showOperatingCopyFallback(text, fallbackNote);
+}
+
+function testedSplitMarkdown(stress) {
+  const available = stress.negotiation.proposal ? 'yes' : 'no';
+  const lines = [
+    '# Tested split',
+    '',
+    'Cases held: ' + stress.passCount + ' of ' + stress.caseCount,
+    'Fixed split available: ' + available,
+    '',
+    '| Participant | Cases held |',
+    '| --- | --- |',
+  ];
+  for (const participant of stress.participants) {
+    lines.push('| ' + reportText(participant.name) + ' | ' + participant.passCount + ' / ' + stress.caseCount + ' |');
+  }
+  lines.push('');
+  lines.push('Counts are counts. This is not a probability.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showSplitCopyFallback(text, message) {
+  splitCopyText = text;
+  render();
+  document.querySelector('#split-copy-text')?.focus();
+  setNotice(message);
+}
+
+function splitCopySection() {
+  if (!splitCopyText) return '';
+  return `<section class="panel" aria-labelledby="split-copy-title"><div class="panel-heading"><h2 id="split-copy-title">Tested split Markdown</h2><button type="button" data-action="close-split-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. Counts are counts. This is not a probability.</p><label class="brief-copy-label" for="split-copy-text">Tested split Markdown</label><textarea id="split-copy-text" readonly rows="12">${escapeAttribute(splitCopyText)}</textarea></div></section>`;
+}
+
+function copyTestedSplit() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the tested split. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = testedSplitMarkdown(evaluateStressGrid(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Tested split copied as Markdown. Counts are counts. It is not a probability.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          splitCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showSplitCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      splitCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showSplitCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showSplitCopyFallback(text, fallbackNote);
+}
+
 function exportTornadoSvg() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -4663,6 +4961,9 @@ function helpDialog() {
         <li><kbd>w</kbd> Jump to the Contribution waterfall heading</li>
         <li><kbd>l</kbd> Jump to the Participant ledger heading</li>
         <li><kbd>b</kbd> Jump to the viability and binding-limit card heading</li>
+        <li><kbd>t</kbd> Jump to the tornado chart heading</li>
+        <li><kbd>d</kbd> Jump to the Shared deal heading</li>
+        <li><kbd>k</kbd> Jump to the Compound stress heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

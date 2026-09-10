@@ -72,6 +72,7 @@ test("the buyer room has a paste area that is ignored by shortcuts while typing"
   assert.match(buyerPanel, /A tab in the first line is read as TSV/u);
   assert.match(app, /importBuyersFromTable\(/u);
   assert.match(app, /function pasteBuyersTable\(/u);
+  assert.match(app, /function focusBuyerPaste\(/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.match(app, /textarea/u);
 });

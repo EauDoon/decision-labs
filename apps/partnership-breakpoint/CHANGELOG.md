@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.3
+
+- Keeps the 1.5.0 constraint review and 1.5.1/1.5.2 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, waterfall SVG, copy waterfall, persisted hide holders, Talent/agent/platform, ledger all-hold filter, and keys `f` `w` `l` `b` `c` `p`.
+- Press `t` to jump to the tornado chart heading when no field is focused. Shortcuts stay ignored while a field is focused.
+- Copy tornado copies each participant, shock axis, and bounded percentage as Markdown. Clipboard falls back to a textarea. It is a comparison aid, not a forecast.
+- Press `d` to jump to the Shared deal heading, which includes deal notes, when no field is focused.
+- Copy operating region copies the displayed fee and volume sensitivity grid as Markdown. Display only.
+- Added the Three-party joint venture starting point, a synthetic operator plus capital partner plus operator-talent with different cost bases, distinct from Balanced, Two-party 50/50 studio, Four-party marketplace, Licensor and distributor, Talent, agent, and platform, and Three-party JV. It is a synthetic starting point, not a live roster.
+- Hide participants who hold in every tested compound case now travels on saved case JSON as optional `hideAllHoldLedger`. Older files omit it and default to showing those ledger rows. Unknown sibling fields are still rejected. Display only; counts stay unchanged.
+- Press `k` to jump to the Compound stress heading, which includes Inspect cases, when no field is focused.
+- Copy tested split copies hold counts and whether a fixed split is available as Markdown. Clipboard falls back to a textarea. Counts are counts. It is not a probability.
+- Hide unbounded shocks filters unbounded or impossible shocks from the tornado chart and table. Restore shows all. Display only. Model math is unchanged.
+- Print one-pager includes the least-headroom participant line when the case is valid. The saved case is unchanged.
+
 ## 1.5.2
 
 - Keeps the 1.5.0 constraint review and 1.5.1 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, exact recompute, stale-read cancel, and no replacement of the working case.
