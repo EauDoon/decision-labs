@@ -1795,6 +1795,15 @@ function jumpToFirstClosedFxCopy() {
   if (jumpToGanttFxRow()) return true;
   return jumpToDashboard();
 }
+function jumpToFirstClosedFxCopyOrGantt() {
+  const control = document.querySelector("#copy-first-closed-fx");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 function copyFirstClosedFxHourMarkdown() {
   const text = firstClosedFxHourToMarkdown(scenario);
   return copyTextWithFallback(text, "#first-closed-fx-copy-fallback", "First closed FX hour copied as one-line Markdown. These are counts of modeled hours, not a bank calendar.");
@@ -2137,6 +2146,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "_") {
     event.preventDefault();
     jumpToFirstClosedPayoutCopy();
+    return;
+  }
+  if (event.key === "+") {
+    event.preventDefault();
+    jumpToFirstClosedFxCopyOrGantt();
     return;
   }
   if (event.key === ">") {

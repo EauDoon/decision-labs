@@ -893,6 +893,28 @@ test("keyboard apostrophe copies first closed bank hour through the existing con
   assert.equal(ui.nodes.get("first-closed-bank-copy-fallback").hidden, true);
 });
 
+test("keyboard plus jumps to the first-closed-FX copy control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("+");
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, true);
+  assert.equal(ui.nodes.get("first-closed-fx-copy-fallback").hidden, true);
+  ui.nodes.get("copy-first-closed-fx").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("+", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("+", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, false);
+  await ui.keydown("+", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, false);
+  await ui.keydown("_");
+  assert.equal(ui.nodes.get("copy-first-closed-payout").focused, true);
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, false);
+  await ui.keydown("=");
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, true);
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, false);
+});
+
 test("keyboard underscore jumps to the first-closed-payout copy control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("_");

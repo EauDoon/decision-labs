@@ -8,7 +8,7 @@ test("keyboard close-brace is wired to copy first closed FX hour through the exi
   assert.match(html, /id="copy-first-closed-fx"/);
   assert.match(html, /<kbd>\}<\/kbd>/u);
   assert.match(html, /Copy first closed FX hour as Markdown/);
-  assert.match(html, /id="copy-first-closed-fx"[^>]*aria-keyshortcuts="\}"/u);
+  assert.match(html, /id="copy-first-closed-fx"[^>]*aria-keyshortcuts="[^"]*\}/u);
   assert.match(app, /function copyFirstClosedFxHourMarkdown/);
   assert.match(app, /firstClosedFxHourToMarkdown\(scenario\)/);
   assert.match(app, /event\.key === "\}"/u);
