@@ -227,6 +227,65 @@ test('skip link reaches catalog versions without a public path', () => {
   assert.match(readme, /catalog versions/);
 });
 
+test('period focuses Skip to catalog versions when focus is not in an input', () => {
+  assert.match(html, /event\.key === '\.'/);
+  assert.match(html, /querySelector\('a\.skip\[href="#version-line"\]'\)\?\.focus\(\)/);
+  assert.match(html, /class="skip" href="#version-line">Skip to catalog versions/);
+  assert.match(html, /<kbd>\.<\/kbd><\/dt><dd>Focus Skip to catalog versions/);
+  assert.match(html, /Press <kbd>\.<\/kbd> to focus Skip to catalog versions/);
+  assert.match(html, /This key moves focus; it does not open a workbench/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const skipVersions = { focus() { focused.push('skip-versions'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === 'a.skip[href="#version-line"]' ? skipVersions : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('.', input);
+  fire('.', textarea);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('.', body);
+  assert.deepEqual(focused, ['skip-versions']);
+  assert.deepEqual(assigned, []);
+});
+
 test('skip link reaches How it works and the section can take focus', () => {
   assert.match(html, /class="skip" href="#how-it-works">Skip to How it works/);
   assert.match(html, /id="how-it-works" tabindex="-1"/);
