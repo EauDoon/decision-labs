@@ -102,6 +102,10 @@ function catalogReviewPaths() {
   );
 }
 
+export function catalogFirstReviewPath() {
+  return catalogReviewPaths()[0] ?? '';
+}
+
 export function catalogLastReviewPath() {
   const paths = catalogReviewPaths();
   return paths[paths.length - 1] ?? '';
@@ -114,6 +118,7 @@ export function notFoundPage() {
   const lastWhatsNew = catalogLastWhatsNewHeading();
   const firstWorkbench = catalogFirstWorkbenchHeading();
   const lastWorkbench = catalogLastWorkbenchHeading();
+  const firstReview = catalogFirstReviewPath();
   const lastReview = catalogLastReviewPath();
   const newsHeadings = [];
   if (firstWhatsNew) newsHeadings.push(firstWhatsNew);
@@ -123,9 +128,14 @@ export function notFoundPage() {
   if (firstWorkbench) workbenchHeadings.push(firstWorkbench);
   if (lastWorkbench && lastWorkbench !== firstWorkbench) workbenchHeadings.push(lastWorkbench);
   const workbenchList = workbenchHeadings.map((heading, index, all) => {
-    const review = index === all.length - 1 && lastReview
-      ? `\n        <p class="review-path">${escapeHtml(lastReview)}</p>`
-      : '';
+    const reviews = [];
+    if (index === 0 && firstReview) {
+      reviews.push(`<p class="review-path">${escapeHtml(firstReview)}</p>`);
+    }
+    if (index === all.length - 1 && lastReview && !(index === 0 && firstReview === lastReview)) {
+      reviews.push(`<p class="review-path">${escapeHtml(lastReview)}</p>`);
+    }
+    const review = reviews.length ? `\n        ${reviews.join('\n        ')}` : '';
     return `<article class="workbench">
         <h3>${escapeHtml(heading)}</h3>${review}
       </article>`;
@@ -166,9 +176,10 @@ export function notFoundPage() {
     .copy-first-whats-new-tools { margin: 16px 0 0; }
     .copy-first-workbench-tools { margin: 16px 0 0; }
     .copy-last-workbench-tools { margin: 16px 0 0; }
+    .copy-first-review-tools { margin: 16px 0 0; }
     .copy-last-review-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench, .copy-last-workbench, .copy-last-review {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench, .copy-last-workbench, .copy-first-review, .copy-last-review {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -181,8 +192,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status, .copy-last-workbench-status, .copy-last-review-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback, .copy-last-workbench-fallback, .copy-last-review-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status, .copy-last-workbench-status, .copy-first-review-status, .copy-last-review-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback, .copy-last-workbench-fallback, .copy-first-review-fallback, .copy-last-review-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -192,7 +203,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-first-review-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -265,6 +276,11 @@ export function notFoundPage() {
       <span class="copy-last-workbench-status" id="copy-last-workbench-status" role="status"></span>
     </p>
     <textarea id="copy-last-workbench-fallback" class="copy-last-workbench-fallback" hidden readonly rows="2" aria-label="Last workbench heading as Markdown"></textarea>
+    <p class="copy-first-review-tools">
+      <button type="button" class="copy-first-review" id="copy-first-review">Copy first review path</button>
+      <span class="copy-first-review-status" id="copy-first-review-status" role="status"></span>
+    </p>
+    <textarea id="copy-first-review-fallback" class="copy-first-review-fallback" hidden readonly rows="2" aria-label="First review path as Markdown"></textarea>
     <p class="copy-last-review-tools">
       <button type="button" class="copy-last-review" id="copy-last-review">Copy last review path</button>
       <span class="copy-last-review-status" id="copy-last-review-status" role="status"></span>
@@ -573,6 +589,41 @@ export function notFoundPage() {
             lastWorkbenchStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. Last workbench heading was missing. This is catalog copy, not a live product feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last workbench heading, not a live product feed.';
+          }
+        }
+      });
+      const firstReviewBtn = document.getElementById('copy-first-review');
+      const firstReviewStatus = document.getElementById('copy-first-review-status');
+      const firstReviewFallback = document.getElementById('copy-first-review-fallback');
+      const firstReviewMarkdown = () => {
+        const path = document.querySelector('#workbenches article.workbench .review-path');
+        const text = path?.textContent.trim() ?? '';
+        if (!text) return '';
+        return '- ' + text;
+      };
+      firstReviewBtn?.addEventListener('click', async () => {
+        const markdown = firstReviewMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstReviewFallback) firstReviewFallback.hidden = true;
+          if (firstReviewStatus) {
+            firstReviewStatus.textContent = empty
+              ? 'First review path was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the first review path from this page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (firstReviewFallback) {
+            firstReviewFallback.hidden = false;
+            firstReviewFallback.value = markdown;
+            firstReviewFallback.focus();
+            firstReviewFallback.select();
+          }
+          if (firstReviewStatus) {
+            firstReviewStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First review path was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first review path, not a live product feed.';
           }
         }
       });
