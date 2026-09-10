@@ -29,7 +29,7 @@ Every workbench:
 | --- | --- | --- | --- |
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.2 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.1 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
-| [The Smallest Agreement](apps/smallest-agreement/) | 1.5.1 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
+| [The Smallest Agreement](apps/smallest-agreement/) | 1.5.2 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
 | [Weekend Gap](apps/weekend-gap/) | 1.5.2 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
@@ -60,7 +60,9 @@ roster export, imported-JSON compare, and the four-party marketplace start.
 The Smallest Agreement 1.4.3 also names clause CSV import, veto-only filter,
 and the Library Quiet Hours start. The Smallest Agreement 1.5.1 also names
 the locked-clause filter, Sports Fixture Night start, and original versus
-recommended versus pinned copy. Common Cart 1.4.1 also names organizer buyer
+recommended versus pinned copy. The Smallest Agreement 1.5.2 also names the
+Market stall hours start, lock Markdown copy, and recommended-difference filter.
+Common Cart 1.4.1 also names organizer buyer
 CSV, leftover jump, and the community garden start. Partnership Breakpoint 1.5.1
 also names waterfall SVG download, compare and print keys, and the Licensor
 and distributor start. Partnership Breakpoint 1.5.2 also names waterfall

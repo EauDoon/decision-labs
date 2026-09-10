@@ -10,6 +10,7 @@ import {
   MAX_OPTIONS_PER_CLAUSE,
   MAX_WEIGHT,
   approvalForOptions,
+  getOriginalOptions,
   canonicalProposal,
   clauseContributions,
   clauseWeightedSupport,
@@ -20,6 +21,11 @@ import {
   parseSupportMatrixCsv,
   parseParticipantGroupsCsv,
   formatParticipantGroupsCsv,
+  duplicateClauseOption,
+  changedClauseIds,
+  groupsBelowSupportRequirement,
+  formatCurrentLocksMarkdown,
+  formatRecommendedChangeCostCsv,
   parseClauseOptionsCsv,
   formatClauseOptionsCsv,
   previewLockedOption,
@@ -1235,6 +1241,13 @@ test("participant groups CSV replaces groups with named errors for unknown colum
   const formula = parseParticipantGroupsCsv("name,weight,one:original,one:alternative,one:other\r\nA,=SUM(1),1,2,3\r\n", input);
   assert.equal(formula.errors[0].code, "formula_cell");
   assert.equal(parseParticipantGroupsCsv("   ", input).errors[0].code, "empty_csv");
+  const tsv = parseParticipantGroupsCsv("name\tweight\tmin_support\tveto\tone:original\tone:alternative\tone:other\nStallholders\t2\t\tno\t90\t80\t70\n", input);
+  assert.equal(tsv.status, "ok");
+  assert.equal(tsv.importedGroups, 1);
+  assert.equal(tsv.proposal.groups[0].name, "Stallholders");
+  const partial = parseParticipantGroupsCsv("name,weight,one:original,one:alternative,one:other\r\nGood,1,90,80,70\r\nBad,nope,1,2,3\r\n", input);
+  assert.equal(partial.status, "invalid");
+  assert.equal(partial.errors[0].code, "invalid_weight");
 });
 
 test("clause options CSV replaces clauses with named errors and keeps matching support scores", () => {
@@ -1624,6 +1637,158 @@ test("workspace JSON persists display filters that the solver ignores, and older
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, vetoGroupsOnly: "yes", proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, lockedClausesOnly: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
+});
+
+test("workspace JSON persists changed-clause and below-floor filters and rejects unknown keys", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 50 }),
+      option("alternative", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const baseline = findSmallestAgreement(input);
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true });
+  assert.equal(exported.status, "ok");
+  assert.equal(exported.changedClausesOnly, true);
+  assert.equal(exported.belowFloorGroupsOnly, true);
+  const parsed = parseWorkspaceJson(exported.json);
+  assert.equal(parsed.status, "ok");
+  assert.equal(parsed.changedClausesOnly, true);
+  assert.equal(parsed.belowFloorGroupsOnly, true);
+  assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
+  assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
+  const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
+  assert.equal(omitted.changedClausesOnly, false);
+  assert.equal(omitted.belowFloorGroupsOnly, false);
+  const bare = parseWorkspaceJson(JSON.stringify(input));
+  assert.equal(bare.changedClausesOnly, null);
+  assert.equal(bare.belowFloorGroupsOnly, null);
+  assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
+  assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, belowFloorGroupsOnly: 1, proposal: input })).errors[0].code, "invalid_filter");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("changedClauseIds lists clauses whose recommended option is not the original", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 90 }), option("two-change", false, { g: 40 }, 1), option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "found");
+  const changed = changedClauseIds(input, result);
+  assert.equal(changed.status, "ok");
+  assert.deepEqual(changed.clauseIds, ["one"]);
+  assert.deepEqual(changedClauseIds(input, { status: "infeasible" }).clauseIds, []);
+  assert.equal(changedClauseIds({ title: "" }, result).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+  assert.deepEqual(findSmallestAgreement(input), result);
+});
+
+test("groupsBelowSupportRequirement uses each floor or the approval threshold", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", original: true, label: "Keep", changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", original: false, label: "Mid", changeCost: 1, support: { floored: 85, open: 40 } },
+      { id: "high", original: false, label: "High", changeCost: 2, support: { floored: 90, open: 80 } },
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const belowOriginal = groupsBelowSupportRequirement(input, originals);
+  assert.equal(belowOriginal.status, "ok");
+  assert.deepEqual(belowOriginal.groups.map((group) => group.id), ["floored"]);
+  const mid = input.clauses[0].options[1];
+  const belowMid = groupsBelowSupportRequirement(input, [mid]);
+  assert.deepEqual(belowMid.groups.map((group) => group.id), ["open"]);
+  assert.equal(belowMid.groups[0].required, 70);
+  assert.equal(groupsBelowSupportRequirement(input, []).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("duplicateClauseOption copies cost and support with a unique id and name", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 50 }),
+      option("alternative", false, { g: 80 }, 3),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const duplicated = duplicateClauseOption(input, "one", "alternative");
+  assert.equal(duplicated.status, "ok");
+  const copy = duplicated.proposal.clauses[0].options.at(-1);
+  assert.equal(copy.id, "option-copy-1");
+  assert.equal(copy.original, false);
+  assert.equal(copy.label, "alternative (copy)");
+  assert.equal(copy.changeCost, 3);
+  assert.deepEqual(copy.support, { g: 80 });
+  const again = duplicateClauseOption(duplicated.proposal, "one", "alternative");
+  assert.equal(again.proposal.clauses[0].options.at(-1).label, "alternative (copy 2)");
+  const fromOriginal = duplicateClauseOption(input, "one", "original");
+  assert.equal(fromOriginal.status, "ok");
+  assert.equal(fromOriginal.proposal.clauses[0].options.at(-1).original, false);
+  assert.equal(fromOriginal.proposal.clauses[0].options.at(-1).changeCost, 0);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(duplicateClauseOption(input, "missing", "alternative").status, "invalid");
+  const capped = structuredClone(input);
+  capped.clauses[0].options = Array.from({ length: MAX_OPTIONS_PER_CLAUSE }, (_, index) => option(`o-${index}`, index === 0, { g: 50 }, index === 0 ? 0 : 1));
+  assert.equal(duplicateClauseOption(capped, "one", "o-1").status, "invalid");
+});
+
+test("formatCurrentLocksMarkdown lists locked option labels or Unlocked", () => {
+  const input = proposal({
+    clauses: [
+      { id: "one", title: "One", lockedOptionId: "one-change", options: [
+        option("one-original", true, { g: 50 }), option("one-change", false, { g: 80 }, 1), option("one-other", false, { g: 70 }, 2),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 50 }), option("two-change", false, { g: 80 }, 1), option("two-other", false, { g: 70 }, 2),
+      ] },
+    ],
+  });
+  const listed = formatCurrentLocksMarkdown(input);
+  assert.equal(listed.status, "ok");
+  assert.match(listed.text, /# Current clause locks/u);
+  assert.match(listed.text, /not a legal hold/u);
+  assert.match(listed.text, /- One: one-change/u);
+  assert.match(listed.text, /- Two: Unlocked/u);
+  assert.doesNotMatch(listed.text, /legal right/u);
+  assert.equal(formatCurrentLocksMarkdown({ title: "" }).status, "invalid");
+});
+
+test("formatRecommendedChangeCostCsv writes formula-safe original vs recommended costs", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [{ id: "one", title: "=Hours keep", options: [
+      option("one-original", true, { g: 40 }), option("one-change", false, { g: 90 }, 2), option("one-other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const result = findSmallestAgreement(input);
+  const exported = formatRecommendedChangeCostCsv(input, result);
+  assert.equal(exported.status, "ok");
+  assert.match(exported.csv, /^"clause","original_option","recommended_option","cost_delta"\r\n/u);
+  assert.match(exported.csv, /"'=Hours keep"/u);
+  assert.match(exported.csv, /"2"\r\n/u);
+  assert.equal(formatRecommendedChangeCostCsv(input, { status: "infeasible" }).status, "unavailable");
+  assert.equal(formatRecommendedChangeCostCsv({ title: "" }, result).status, "invalid");
 });
 
 test("locks JSON round-trips current locks and fails closed on unknown ids", () => {

@@ -1,5 +1,23 @@
 # Changelog
 
+## 1.5.2 - 2026-09-10
+
+A workshop follow-up on 1.5.1. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Filter clause cards to those that differ between the original and recommended packages. Hidden cards still count in the model.
+- Market stall hours preset: synthetic stallholders, neighbours (a veto group), and market officers scoring stall open hours, packing, and neighbour noise. Distinct from Neighbourhood Plan, Library Quiet Hours, and Sports Fixture Night. Not a recorded vote.
+- Keyboard `c` jumps to the change-budget field when focus is not in an input, select, or text area. Shortcut help lists it.
+- Keyboard `p` prints the facilitator pack, matching the existing print button. Ignored while typing.
+- Copy current locks as Markdown (clause title and locked option label, or Unlocked). Clipboard write has a textarea fallback. It is not a legal hold.
+- Undoable duplicate of a clause option, including an original. The copy gets a new id, a unique copy name, and the same cost and support. Invalid at the option cap.
+- Keyboard `k` jumps to the first unlocked clause card, or the lock controls if every clause is locked. Ignored while typing.
+- Filter participant groups to those whose average on the inspected package is below their support floor, or the approval threshold when no floor is set. Hidden groups still count in the model. Solver counts stay the same.
+- Copy recommended versus original change-cost CSV (`clause`, `original_option`, `recommended_option`, `cost_delta`). Formula-like cells receive a leading apostrophe. Clipboard write has a textarea fallback.
+- Paste TSV or CSV participant groups into a textarea using the same `parseParticipantGroupsCsv` validation as file import. A first line with tabs is treated as TSV. Partial pastes are rejected. Illegal strings are not coerced.
+- Persist the changed-clause and below-floor display filters in version-1 workspace JSON and local workspace prefs. Unknown workspace keys are rejected. Older files omit the keys and default to show-all. The solver ignores the filters.
+
 ## 1.5.1 - 2026-09-10
 
 A workshop follow-up on 1.5.0. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not recorded votes. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
