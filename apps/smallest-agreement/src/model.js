@@ -2195,6 +2195,33 @@ export function formatFirstNonVetoGroupLabelMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the last group marked as a veto group.
+ * Honest when none. Distinct from first veto group copy and first non-veto group copy.
+ * A veto is a number you entered, not a legal right.
+ */
+export function formatLastVetoGroupLabelMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const disclaimer = "A veto is a number you entered, not a legal right.";
+  const vetoGroups = p.groups.filter((group) => group.veto === true);
+  const last = vetoGroups[vetoGroups.length - 1];
+  if (!last) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No veto group is marked, so there is no last veto group label to copy. ${disclaimer}\n`,
+    };
+  }
+  return {
+    status: "ok",
+    empty: false,
+    label: last.name,
+    text: `Last veto group: ${briefText(last.name)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2479,6 +2506,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideNonVetoGroups",
   "hideFirstVetoGroup",
   "hideLastVetoGroup",
+  "hideFirstNonVetoGroup",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2499,6 +2527,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideNonVetoGroups",
   "hideFirstVetoGroup",
   "hideLastVetoGroup",
+  "hideFirstNonVetoGroup",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2562,6 +2591,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideFirstVetoGroup.error) return { status: "invalid", errors: [hideFirstVetoGroup.error] };
   const hideLastVetoGroup = readWorkspaceBoolean(prefs, "hideLastVetoGroup");
   if (hideLastVetoGroup.error) return { status: "invalid", errors: [hideLastVetoGroup.error] };
+  const hideFirstNonVetoGroup = readWorkspaceBoolean(prefs, "hideFirstNonVetoGroup");
+  if (hideFirstNonVetoGroup.error) return { status: "invalid", errors: [hideFirstNonVetoGroup.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2581,6 +2612,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideNonVetoGroups: hideNonVetoGroups.value,
     hideFirstVetoGroup: hideFirstVetoGroup.value,
     hideLastVetoGroup: hideLastVetoGroup.value,
+    hideFirstNonVetoGroup: hideFirstNonVetoGroup.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2601,6 +2633,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideNonVetoGroups: hideNonVetoGroups.value,
       hideFirstVetoGroup: hideFirstVetoGroup.value,
       hideLastVetoGroup: hideLastVetoGroup.value,
+      hideFirstNonVetoGroup: hideFirstNonVetoGroup.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2634,6 +2667,7 @@ export function parseWorkspaceJson(text) {
       hideNonVetoGroups: null,
       hideFirstVetoGroup: null,
       hideLastVetoGroup: null,
+      hideFirstNonVetoGroup: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2682,6 +2716,8 @@ export function parseWorkspaceJson(text) {
   if (hideFirstVetoGroup.error) return { status: "invalid", errors: [hideFirstVetoGroup.error] };
   const hideLastVetoGroup = readWorkspaceBoolean(raw, "hideLastVetoGroup");
   if (hideLastVetoGroup.error) return { status: "invalid", errors: [hideLastVetoGroup.error] };
+  const hideFirstNonVetoGroup = readWorkspaceBoolean(raw, "hideFirstNonVetoGroup");
+  if (hideFirstNonVetoGroup.error) return { status: "invalid", errors: [hideFirstNonVetoGroup.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2703,6 +2739,7 @@ export function parseWorkspaceJson(text) {
     hideNonVetoGroups: hideNonVetoGroups.value,
     hideFirstVetoGroup: hideFirstVetoGroup.value,
     hideLastVetoGroup: hideLastVetoGroup.value,
+    hideFirstNonVetoGroup: hideFirstNonVetoGroup.value,
   };
 }
 

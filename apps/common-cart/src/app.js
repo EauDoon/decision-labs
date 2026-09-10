@@ -24,6 +24,7 @@ import {
   filterBuyerIdsHidingLeftoverOnlyBuyers,
   filterBuyerIdsHidingWinnerAllocatedBuyers,
   filterBuyerIdsHidingBuyersFilledByLeftoverFill,
+  filterBuyerIdsHidingLastBuyerFilledByLeftoverFill,
   organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
@@ -64,6 +65,7 @@ import {
   createLeftoverFillFulfillmentMarkdown,
   createLeftoverFillDeliveryMarkdown,
   createLeftoverFillPickupMarkdown,
+  createLeftoverFillLabelMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   organizerLeftoverRows,
@@ -146,6 +148,7 @@ let hideUnservedBuyers = false;
 let hideLeftoverOnlyBuyers = false;
 let hideWinnerAllocatedBuyers = false;
 let hideBuyersFilledByLeftoverFill = false;
+let hideLastBuyerFilledByLeftoverFill = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -173,6 +176,7 @@ function loadWorkspace() {
     hideLeftoverOnlyBuyers = workspace.hideLeftoverOnlyBuyers;
     hideWinnerAllocatedBuyers = workspace.hideWinnerAllocatedBuyers;
     hideBuyersFilledByLeftoverFill = workspace.hideBuyersFilledByLeftoverFill;
+    hideLastBuyerFilledByLeftoverFill = workspace.hideLastBuyerFilledByLeftoverFill;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -215,7 +219,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, hideLastBuyerFilledByLeftoverFill });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -347,6 +351,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-leftover-fill-fulfillment").addEventListener("click", copyLeftoverFillFulfillment);
   document.querySelector("#copy-leftover-fill-delivery").addEventListener("click", copyLeftoverFillDelivery);
   document.querySelector("#copy-leftover-fill-pickup").addEventListener("click", copyLeftoverFillPickup);
+  document.querySelector("#copy-leftover-fill-label").addEventListener("click", copyLeftoverFillLabel);
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-uncovered-leftover-units").addEventListener("click", copyUncoveredLeftoverUnitCount);
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
@@ -800,6 +805,18 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#hide-last-buyer-filled-by-leftover-fill").addEventListener("change", (event) => {
+    hideLastBuyerFilledByLeftoverFill = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideLastBuyerFilledByLeftoverFill
+        ? "Hiding the last leftover-fill buyer. Display only. Winner-allocated, unserved, and other leftover-fill buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing the last leftover-fill buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#hide-covered-leftover-rows").addEventListener("change", (event) => {
     hideCoveredLeftoverRows = event.target.checked;
     persistWorkspaceDisplaySettings();
@@ -1188,6 +1205,21 @@ function handleShortcut(event) {
     focusHideWinnerAllocatedBuyers();
     return;
   }
+  if (key === "*") {
+    event.preventDefault();
+    copyLeftoverFillPickup();
+    return;
+  }
+  if (key === "&") {
+    event.preventDefault();
+    focusLeftoverFillPickupCopy();
+    return;
+  }
+  if (key === "%") {
+    event.preventDefault();
+    focusHideBuyersFilledByLeftoverFill();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1415,6 +1447,17 @@ function focusLeftoverFillDeliveryCopy() {
   document.querySelector("#residual-title")?.focus();
 }
 
+function focusLeftoverFillPickupCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-fill-pickup");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
 function focusHideFullyFilledBuyers() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
@@ -1473,6 +1516,22 @@ function focusHideWinnerAllocatedBuyers() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const hide = document.querySelector("#hide-winner-allocated-buyers");
+  if (hide) {
+    hide.focus();
+    return;
+  }
+  const heading = document.querySelector("#buyers-list");
+  if (heading) {
+    heading.focus();
+    return;
+  }
+  document.querySelector("#buyer-tab")?.focus();
+}
+
+function focusHideBuyersFilledByLeftoverFill() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const hide = document.querySelector("#hide-buyers-filled-by-leftover-fill");
   if (hide) {
     hide.focus();
     return;
@@ -1634,6 +1693,8 @@ function renderEditor() {
   if (hideWinnerAllocated) hideWinnerAllocated.checked = hideWinnerAllocatedBuyers;
   const hideLeftoverFillBuyers = document.querySelector("#hide-buyers-filled-by-leftover-fill");
   if (hideLeftoverFillBuyers) hideLeftoverFillBuyers.checked = hideBuyersFilledByLeftoverFill;
+  const hideLastLeftoverFillBuyer = document.querySelector("#hide-last-buyer-filled-by-leftover-fill");
+  if (hideLastLeftoverFillBuyer) hideLastLeftoverFillBuyer.checked = hideLastBuyerFilledByLeftoverFill;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -1818,6 +1879,14 @@ function applyBuyerDisplayFilters() {
     try {
       const leftoverFillHidden = new Set(filterBuyerIdsHidingBuyersFilledByLeftoverFill(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => leftoverFillHidden.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
+  if (hideLastBuyerFilledByLeftoverFill) {
+    try {
+      const lastLeftoverFillHidden = new Set(filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => lastLeftoverFillHidden.has(id)));
     } catch {
       visibleIds = new Set();
     }
@@ -3078,6 +3147,16 @@ function copyLeftoverFillPickup() {
       "Clipboard was blocked. Organizer-private leftover fill pickup Markdown is in the textarea. Count only. This is not a merchant export."
     );
   } catch (error) { setStatus(`Leftover fill pickup copy failed: ${messageOf(error)}`); }
+}
+
+function copyLeftoverFillLabel() {
+  try {
+    copyTextWithFallback(
+      createLeftoverFillLabelMarkdown(scenario),
+      "Leftover fill label copied as organizer-private Markdown. Offer label only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover fill label Markdown is in the textarea. Offer label only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover fill label copy failed: ${messageOf(error)}`); }
 }
 
 function copyUncoveredLeftoverCounts() {
