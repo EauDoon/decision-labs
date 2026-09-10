@@ -3887,6 +3887,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "@") {
     event.preventDefault();
     jumpToHideNonVetoGroups();
+  } else if (event.key === "(") {
+    event.preventDefault();
+    copyVetoGroupCount();
   }
 });
 
