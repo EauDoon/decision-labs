@@ -112,6 +112,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Sports carnival, volume-to-hold copy, and within-capacity hide in Partnership Breakpoint 1\.5\.10/);
   assert.match(html, /Netball carnival, over-capacity copy, and first-breakpoint hide in Partnership Breakpoint 1\.5\.11/);
   assert.match(html, /Swimming carnival, over-capacity label copy, and first-over-capacity hide in Partnership Breakpoint 1\.5\.12/);
+  assert.match(html, /Athletics carnival, remaining-capacity copy, and last-over-capacity hide in Partnership Breakpoint 1\.5\.13/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -200,6 +201,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /volume-to-hold copy shortcut, the Sports carnival split start/);
   assert.match(readme, /over-capacity count copy shortcut, the Netball carnival split start/);
   assert.match(readme, /over-capacity label copy shortcut, the Swimming carnival split start/);
+  assert.match(readme, /remaining-capacity copy shortcut, the Athletics carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -5399,6 +5401,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
   assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
   assert.equal(headings.includes('Swimming carnival, over-capacity label copy, and first-over-capacity hide in Partnership Breakpoint 1.5.12'), true);
+  assert.equal(headings.includes('Athletics carnival, remaining-capacity copy, and last-over-capacity hide in Partnership Breakpoint 1.5.13'), true);
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1.5.12'), true);
   assert.match(html, /Copy first What's new heading through close-paren as Markdown/);
