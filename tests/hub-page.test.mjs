@@ -1721,6 +1721,30 @@ test('copy first job copies the first card as one Markdown line with a visible f
   assert.match(readme, /Press `;` to copy the first workbench name/);
 });
 
+test('copy first Trust item copies the first Trust list item as one Markdown line with a visible fallback', () => {
+  assert.match(html, /id="copy-first-trust"/);
+  assert.match(html, />Copy first Trust item</);
+  assert.match(html, /aria-keyshortcuts=":"/);
+  assert.match(html, /id="copy-first-trust-fallback"/);
+  assert.match(html, /class="copy-first-trust-fallback"/);
+  assert.match(html, /textarea id="copy-first-trust-fallback"/);
+  assert.match(html, /firstTrustMarkdown/);
+  assert.match(html, /querySelector\('#trust li'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /firstTrustFallback\.hidden = false/);
+  assert.match(html, /firstTrustFallback\.select\(\)/);
+  assert.match(html, /Not a live policy feed/);
+  assert.match(html, /This is the first Trust and limits item, not a live policy feed/);
+  assert.match(html, /Copied an empty string/);
+  assert.match(html, /This is distinct from <kbd>i<\/kbd>, which copies the full Trust and limits list/);
+  assert.match(html, /from <kbd>;<\/kbd>, which copies the first workbench job/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-trust-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-trust-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy first Trust item copies the first Trust and limits list item/);
+  assert.match(readme, /Press `:` to copy the first Trust and limits list item/);
+});
+
 test('copy How it works copies the printed heading and list as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-how"/);
   assert.match(html, />Copy How it works</);
@@ -2337,6 +2361,71 @@ test('keyboard semicolon copies the first workbench job through its own control'
   assert.equal(clicks.firstJob, 1);
   assert.equal(clicks.jobs, 0);
   assert.equal(clicks.last, 0);
+});
+
+test('keyboard colon copies the first Trust item through its own control', () => {
+  assert.match(html, /event\.key === ':'/);
+  assert.match(html, /firstTrustBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts=":"/);
+  assert.match(html, /<kbd>:<\/kbd><\/dt><dd>Copy the first Trust and limits list item as one Markdown line from this catalog page, not a live policy feed/);
+  assert.match(html, /Press <kbd>:<\/kbd> to copy the first Trust and limits list item/);
+  assert.match(html, /If that item is missing, this copies an empty string/);
+  assert.match(html, /This is distinct from <kbd>i<\/kbd>, which copies the full Trust and limits list/);
+  assert.match(html, /from <kbd>;<\/kbd>, which copies the first workbench job/);
+  assert.match(readme, /Press `:` to copy the first Trust and limits list item/);
+  const clicks = { firstTrust: 0, trust: 0, firstJob: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-trust') return { click() { clicks.firstTrust += 1; }, addEventListener() {} };
+      if (id === 'copy-trust') return { click() { clicks.trust += 1; }, addEventListener() {} };
+      if (id === 'copy-first-job') return { click() { clicks.firstJob += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire(':', input, true);
+  fire(':', textarea, true);
+  assert.equal(clicks.firstTrust, 0);
+  assert.equal(clicks.trust, 0);
+  assert.equal(clicks.firstJob, 0);
+  fire(':', body, true);
+  assert.equal(clicks.firstTrust, 1);
+  assert.equal(clicks.trust, 0);
+  assert.equal(clicks.firstJob, 0);
+  fire(';', body, false);
+  assert.equal(clicks.firstJob, 1);
+  assert.equal(clicks.firstTrust, 1);
 });
 
 test('keyboard y copies the last-launched job from this-browser storage', () => {
@@ -3261,6 +3350,83 @@ test('copy first job shows a visible textarea when clipboard is unavailable', as
   assert.equal(fallback.value, '- Partnership Breakpoint: Find which participant in a revenue split.');
   assert.match(status.textContent, /Clipboard unavailable/);
   assert.match(status.textContent, /not a live product feed/);
+});
+
+test('copy first Trust item markdown is the first Trust list item, or empty if missing', async () => {
+  let copied = '';
+  let clickFirst = null;
+  const firstItem = { textContent: 'Local-first. Pages run in your browser.' };
+  let item = firstItem;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-trust') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-trust-status') return { textContent: '' };
+      if (id === 'copy-first-trust-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#trust li' ? item : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickFirst();
+  assert.equal(copied, '- Local-first. Pages run in your browser.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /## Trust and limits/);
+  assert.doesNotMatch(copied, /live policy feed/);
+  item = null;
+  copied = 'stale';
+  await clickFirst();
+  assert.equal(copied, '');
+});
+
+test('copy first Trust item shows a visible textarea when clipboard is unavailable', async () => {
+  let clickFirst = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-trust') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-trust-status') return status;
+      if (id === 'copy-first-trust-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#trust li' ? { textContent: 'Local-first. Pages run in your browser.' } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickFirst();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Local-first. Pages run in your browser.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live policy feed/);
+});
+
+test('print CSS hides copy first Trust tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-first-trust-tools, \.copy-first-trust-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-first-job-tools, \.copy-first-job-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
 });
 
 test('copy jobs shows a visible textarea when clipboard is unavailable', async () => {
