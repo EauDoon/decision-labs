@@ -45,6 +45,7 @@ import {
   formatFirstVetoGroupLabelMarkdown,
   formatVetoGroupCountMarkdown,
   formatFirstNonVetoGroupLabelMarkdown,
+  formatLastVetoGroupLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -727,6 +728,39 @@ const presets = {
       },
     ],
   },
+  "cricket-club-hours": {
+    title: "Cricket club hours: scoring nets, tea room, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "scoring-nets", title: "Scoring nets", options: [
+          { id: "scoring-nets-original", original: true, label: "Keep weekday nets open from 15:00 with no posted net rota", changeCost: 0, support: { students: 28, neighbours: 82, pandc: 70 } },
+          { id: "scoring-nets-late", original: false, label: "Open weekday cricket nets at 16:30 with a posted net rota", changeCost: 2, support: { students: 82, neighbours: 56, pandc: 66 } },
+          { id: "scoring-nets-weekend", original: false, label: "Hold Saturday morning nets at 08:30 with a booking card", changeCost: 3, support: { students: 76, neighbours: 62, pandc: 64 } },
+        ],
+      },
+      {
+        id: "tea-room", title: "Tea room", options: [
+          { id: "tea-room-original", original: true, label: "No posted tea-room close time", changeCost: 0, support: { students: 80, neighbours: 24, pandc: 38 } },
+          { id: "tea-room-cap", original: false, label: "Close the tea room at 19:00 and keep kettles off the verandah", changeCost: 2, support: { students: 64, neighbours: 78, pandc: 74 } },
+          { id: "tea-room-cut", original: false, label: "Serve tea only during innings breaks and retire the urn after stumps", changeCost: 4, support: { students: 46, neighbours: 84, pandc: 62 } },
+        ],
+      },
+      {
+        id: "pavilion-lockup", title: "Pavilion lock-up", options: [
+          { id: "pavilion-lockup-original", original: true, label: "Leave the pavilion gate on a shared padlock after club hours", changeCost: 0, support: { students: 32, neighbours: 48, pandc: 52 } },
+          { id: "pavilion-lockup-steward", original: false, label: "Require a P&C steward to lock the pavilion before 19:30", changeCost: 2, support: { students: 78, neighbours: 70, pandc: 80 } },
+          { id: "pavilion-lockup-timer", original: false, label: "Add a timed lock on the pavilion gate after the last session", changeCost: 3, support: { students: 68, neighbours: 66, pandc: 72 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -751,6 +785,7 @@ let hideVetoGroups = false;
 let hideNonVetoGroups = false;
 let hideFirstVetoGroup = false;
 let hideLastVetoGroup = false;
+let hideFirstNonVetoGroup = false;
 let overBudgetClausesOnly = false;
 let noCheaperRemainingClausesOnly = false;
 let printRedacted = false;
@@ -777,8 +812,8 @@ function renderPrintKicker() {
   const kicker = $(".facilitator-pack-kicker");
   if (!kicker) return;
   kicker.textContent = printRedacted
-    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, a one-line lock count, and the first locked clause option label as one line stay on the worksheet, plus a one-line below-floor group count, the first below-floor group label as one line, a one-line threshold-group count, the first veto group label as one line, and a one-line veto-group count. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. A floor is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote."
-    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count, the first below-floor group label as one line, a one-line threshold-group count, the first veto group label as one line, and a one-line veto-group count. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. A floor is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote.";
+    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, a one-line lock count, and the first locked clause option label as one line stay on the worksheet, plus a one-line below-floor group count, the first below-floor group label as one line, a one-line threshold-group count, the first veto group label as one line, a one-line veto-group count, and the first non-veto group label as one line. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. A floor is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote."
+    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count, the first below-floor group label as one line, a one-line threshold-group count, the first veto group label as one line, a one-line veto-group count, and the first non-veto group label as one line. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. A floor is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote.";
 }
 
 function renderCopyFallbacks(result) {
@@ -837,6 +872,11 @@ function renderCopyFallbacks(result) {
     const listed = formatFirstNonVetoGroupLabelMarkdown(state.proposal);
     firstNonVetoGroupBox.value = listed.status === "ok" ? listed.text : "";
   }
+  const lastVetoGroupBox = $("#last-veto-group-fallback");
+  if (lastVetoGroupBox) {
+    const listed = formatLastVetoGroupLabelMarkdown(state.proposal);
+    lastVetoGroupBox.value = listed.status === "ok" ? listed.text : "";
+  }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
@@ -889,6 +929,7 @@ function loadWorkspacePrefs() {
     hideNonVetoGroups = parsed?.hideNonVetoGroups === true;
     hideFirstVetoGroup = parsed?.hideFirstVetoGroup === true;
     hideLastVetoGroup = parsed?.hideLastVetoGroup === true;
+    hideFirstNonVetoGroup = parsed?.hideFirstNonVetoGroup === true;
     noCheaperRemainingClausesOnly = parsed?.noCheaperRemainingClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
@@ -897,7 +938,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, noCheaperRemainingClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -1108,6 +1149,7 @@ function hiddenGroupsEmptyState() {
     if (hideNonVetoGroups) reasons.push("are not marked as a veto group");
     if (hideFirstVetoGroup) reasons.push("are the first veto group");
     if (hideLastVetoGroup) reasons.push("are the last veto group");
+    if (hideFirstNonVetoGroup) reasons.push("are the first non-veto group");
     if (hideGroupsAtFloor) reasons.push("currently meet their support floor");
     if (hideGroupsWithoutFloors) reasons.push("have no support floor");
     if (reasons.length === 1 && hideGroupsBelowThreshold) {
@@ -1125,11 +1167,17 @@ function hiddenGroupsEmptyState() {
     if (reasons.length === 1 && hideLastVetoGroup) {
       return "No groups remain after hiding the last veto group. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
     }
+    if (reasons.length === 1 && hideFirstNonVetoGroup) {
+      return "No groups remain after hiding the first non-veto group. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
+    }
     if (reasons.length === 2 && hideVetoGroups && hideFirstVetoGroup) {
       return "No groups remain after hiding veto groups and the first veto group. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
     }
     if (reasons.length === 2 && hideVetoGroups && hideLastVetoGroup) {
       return "No groups remain after hiding veto groups and the last veto group. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
+    }
+    if (reasons.length === 2 && hideNonVetoGroups && hideFirstNonVetoGroup) {
+      return "No groups remain after hiding non-veto groups and the first non-veto group. Hidden groups still count in the model. A veto is a number you entered, not a legal right.";
     }
     if (reasons.length === 1) {
       return `No groups remain after hiding groups that ${reasons[0]}. Hidden groups still count in the model.`;
@@ -1192,6 +1240,10 @@ function visibleParticipantGroups() {
       const lastVeto = vetoGroups[vetoGroups.length - 1];
       if (lastVeto && group.id === lastVeto.id) return false;
     }
+    if (hideFirstNonVetoGroup) {
+      const firstNonVeto = state.proposal.groups.find((row) => row.veto !== true);
+      if (firstNonVeto && group.id === firstNonVeto.id) return false;
+    }
     return true;
   });
   return { visible, belowIds };
@@ -1218,9 +1270,11 @@ function renderGroups(vetoBlocks = new Set()) {
   if (hideFirstVetoGroupCheckbox) hideFirstVetoGroupCheckbox.checked = hideFirstVetoGroup;
   const hideLastVetoGroupCheckbox = $("#hide-last-veto-group");
   if (hideLastVetoGroupCheckbox) hideLastVetoGroupCheckbox.checked = hideLastVetoGroup;
+  const hideFirstNonVetoGroupCheckbox = $("#hide-first-non-veto-group");
+  if (hideFirstNonVetoGroupCheckbox) hideFirstNonVetoGroupCheckbox.checked = hideFirstNonVetoGroup;
   const { visible, belowIds } = visibleParticipantGroups();
   const status = $("#veto-groups-status");
-  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors || hideGroupsMeetingThreshold || hideGroupsBelowThreshold || hideVetoGroups || hideNonVetoGroups || hideFirstVetoGroup || hideLastVetoGroup;
+  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor || hideGroupsWithoutFloors || hideGroupsMeetingThreshold || hideGroupsBelowThreshold || hideVetoGroups || hideNonVetoGroups || hideFirstVetoGroup || hideLastVetoGroup || hideFirstNonVetoGroup;
   if (!visible.length) {
     const message = hiddenGroupsEmptyState();
     if (status) status.textContent = groupFiltersOn ? message : "";
@@ -1425,8 +1479,19 @@ function renderBallot(vetoBlocks = blockingVetoIds(currentResult())) {
   const vetoCountLine = vetoCount.status === "ok"
     ? `<p>${escapeHtml(vetoCount.text.trim())}</p>`
     : "";
+  const firstNonVeto = formatFirstNonVetoGroupLabelMarkdown(proposal);
+  let firstNonVetoLine = "";
+  if (firstNonVeto.status === "ok") {
+    if (printRedacted && !firstNonVeto.empty) {
+      const first = proposal.groups.find((row) => row.veto !== true);
+      const name = first ? groupDisplayName(first) : "Group";
+      firstNonVetoLine = `<p>First non-veto group: ${escapeHtml(name)}. A veto is a number you entered, not a legal right. The label is not a legal identity.</p>`;
+    } else {
+      firstNonVetoLine = `<p>${escapeHtml(firstNonVeto.text.trim())}</p>`;
+    }
+  }
   const groupList = proposal.groups.map((group) => escapeHtml(groupDisplayName(group))).join(", ");
-  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${remainingLine}${thresholdLine}${lockCountLine}${firstLockedLine}${belowFloorCountLine}${firstBelowFloorLine}${thresholdGroupCountLine}${firstVetoLine}${vetoCountLine}${vetoNote}${proposal.clauses.map((clause) => {
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${remainingLine}${thresholdLine}${lockCountLine}${firstLockedLine}${belowFloorCountLine}${firstBelowFloorLine}${thresholdGroupCountLine}${firstVetoLine}${vetoCountLine}${firstNonVetoLine}${vetoNote}${proposal.clauses.map((clause) => {
     const recommended = clause.options.find((option) => recommendedIds.has(option.id));
     const recommendedLine = recommended ? `<p>Recommended: ${escapeHtml(recommended.label)}</p>` : "";
     return `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}${recommendedLine}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${recommendedIds.has(option.id) ? " (recommended)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`;
@@ -1465,6 +1530,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-first-veto-group-button").disabled = result.status === "invalid";
   $("#copy-veto-group-count-button").disabled = result.status === "invalid";
   $("#copy-first-non-veto-group-button").disabled = result.status === "invalid";
+  $("#copy-last-veto-group-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -2194,6 +2260,14 @@ function setHideLastVetoGroup(next) {
   renderGroups(blockingVetoIds(currentResult()));
 }
 
+function setHideFirstNonVetoGroup(next) {
+  hideFirstNonVetoGroup = next === true;
+  const checkbox = $("#hide-first-non-veto-group");
+  if (checkbox) checkbox.checked = hideFirstNonVetoGroup;
+  persistWorkspacePrefs();
+  renderGroups(blockingVetoIds(currentResult()));
+}
+
 $("#veto-groups-only").addEventListener("change", (event) => {
   setVetoGroupsOnly(event.target.checked === true);
 });
@@ -2223,6 +2297,9 @@ $("#hide-first-veto-group").addEventListener("change", (event) => {
 });
 $("#hide-last-veto-group").addEventListener("change", (event) => {
   setHideLastVetoGroup(event.target.checked === true);
+});
+$("#hide-first-non-veto-group").addEventListener("change", (event) => {
+  setHideFirstNonVetoGroup(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -2581,7 +2658,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, hideVetoGroups, hideNonVetoGroups, hideFirstVetoGroup, hideLastVetoGroup, hideFirstNonVetoGroup, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -3011,6 +3088,22 @@ async function copyFirstNonVetoGroup() {
   }
 }
 $("#copy-first-non-veto-group-button").addEventListener("click", copyFirstNonVetoGroup);
+async function copyLastVetoGroup() {
+  const listed = formatLastVetoGroupLabelMarkdown(state.proposal);
+  if (listed.status !== "ok") return notifyDraft("Fix the draft before copying the last veto group label.");
+  const fallback = $("#last-veto-group-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.empty
+    ? "No veto group is marked. Copied an honest empty last veto group label. A veto is a number you entered, not a legal right."
+    : "Last veto group label copied as Markdown. A veto is a number you entered, not a legal right.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the last veto group label from the Markdown box. A veto is a number you entered, not a legal right.");
+  }
+}
+$("#copy-last-veto-group-button").addEventListener("click", copyLastVetoGroup);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -3076,6 +3169,7 @@ $("#import-file").addEventListener("change", async (event) => {
       hideNonVetoGroups = workspace.hideNonVetoGroups === true;
       hideFirstVetoGroup = workspace.hideFirstVetoGroup === true;
       hideLastVetoGroup = workspace.hideLastVetoGroup === true;
+      hideFirstNonVetoGroup = workspace.hideFirstNonVetoGroup === true;
       noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
@@ -3481,6 +3575,14 @@ function jumpToBelowFloor() {
       needsRender = true;
     }
   }
+  if (hideFirstNonVetoGroup) {
+    const firstNonVeto = state.proposal.groups.find((group) => group.veto !== true);
+    if (firstNonVeto && first.id === firstNonVeto.id) {
+      hideFirstNonVetoGroup = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
   if (needsRender) renderGroups(blockingVetoIds(currentResult()));
   const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
   if (target?.focus) {
@@ -3772,6 +3874,24 @@ function jumpToHideFirstVetoGroup() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToFirstNonVetoGroupCopy() {
+  const control = $("#copy-first-non-veto-group-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
+function jumpToHideLastVetoGroup() {
+  const control = $("#hide-last-veto-group");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -4020,6 +4140,15 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "#") {
     event.preventDefault();
     jumpToHideFirstVetoGroup();
+  } else if (event.key === "*") {
+    event.preventDefault();
+    copyFirstNonVetoGroup();
+  } else if (event.key === "&") {
+    event.preventDefault();
+    jumpToFirstNonVetoGroupCopy();
+  } else if (event.key === "%") {
+    event.preventDefault();
+    jumpToHideLastVetoGroup();
   }
 });
 
