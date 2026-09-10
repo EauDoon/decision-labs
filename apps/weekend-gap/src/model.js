@@ -36,7 +36,8 @@ export const DEFAULT_SCENARIO = Object.freeze({
   saturdayHoliday: false,
   fridayFxLateClose: false,
   saturdayEarlyFxOpen: false,
-  sundayLateBankClose: false
+  sundayLateBankClose: false,
+  sundayLatePayoutClose: false
 });
 
 export const PRESETS = Object.freeze({
@@ -166,6 +167,11 @@ export const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Sunday late bank close (synthetic)",
     sundayLateBankClose: true
+  }),
+  sundayLatePayoutClose: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Sunday late payout close (synthetic)",
+    sundayLatePayoutClose: true
   })
 });
 
@@ -194,7 +200,8 @@ const FIELD_RULES = Object.freeze({
   saturdayHoliday: { type: "boolean" },
   fridayFxLateClose: { type: "boolean" },
   saturdayEarlyFxOpen: { type: "boolean" },
-  sundayLateBankClose: { type: "boolean" }
+  sundayLateBankClose: { type: "boolean" },
+  sundayLatePayoutClose: { type: "boolean" }
 });
 
 export function finiteNumber(value, fallback) {
@@ -345,13 +352,20 @@ function isSundayLateBankHour(hourOffset, scenario) {
   return dayIndex === 0 && localHour >= 16 && localHour < 18;
 }
 
+/** Sunday 16:00-18:00 keeps the payout gate open when Sunday late payout close is on. */
+function isSundayLatePayoutHour(hourOffset, scenario) {
+  if (scenario.sundayLatePayoutClose !== true) return false;
+  const { dayIndex, localHour } = dayAndHourAt(hourOffset);
+  return dayIndex === 0 && localHour >= 16 && localHour < 18;
+}
+
 export function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
   const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario);
   const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
   const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateBankHour(hourOffset, scenario);
-  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
+  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLatePayoutHour(hourOffset, scenario);
   const fxMultiplier = fxWeekday ? 1 : scenario.weekendFxMultiplier;
   return {
     issuerOpen,
@@ -804,7 +818,8 @@ const WORKSPACE_KEYS = Object.freeze([
   "hideClosedGanttHours",
   "hideZeroQueueGanttHours",
   "hideBankClosedGanttHours",
-  "hideIssuerClosedGanttHours"
+  "hideIssuerClosedGanttHours",
+  "hidePayoutClosedGanttHours"
 ]);
 
 function assertWorkspaceKeys(raw) {
@@ -819,7 +834,7 @@ function assertWorkspaceKeys(raw) {
 
 /** Portable editing state; computed results are always regenerated on restore. */
 export function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false, hideWeekendGanttHours = false, hideOpenGanttHours = false, hideClosedGanttHours = false, hideZeroQueueGanttHours = false, hideBankClosedGanttHours = false, hideIssuerClosedGanttHours = false } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false, hideWeekendGanttHours = false, hideOpenGanttHours = false, hideClosedGanttHours = false, hideZeroQueueGanttHours = false, hideBankClosedGanttHours = false, hideIssuerClosedGanttHours = false, hidePayoutClosedGanttHours = false } = options;
   const ganttHourIndex = options.ganttHourIndex === undefined ? selectedHour : options.ganttHourIndex;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
   if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > 72) throw new RangeError("Workspace Gantt hour index is invalid.");
@@ -838,8 +853,9 @@ export function workspaceToJSON(current, baseline, options = {}) {
   if (hideZeroQueueGanttHours !== true && hideZeroQueueGanttHours !== false) throw new RangeError("Workspace Gantt zero-queue-hour filter is invalid.");
   if (hideBankClosedGanttHours !== true && hideBankClosedGanttHours !== false) throw new RangeError("Workspace Gantt bank-closed-hour filter is invalid.");
   if (hideIssuerClosedGanttHours !== true && hideIssuerClosedGanttHours !== false) throw new RangeError("Workspace Gantt issuer-closed-hour filter is invalid.");
+  if (hidePayoutClosedGanttHours !== true && hidePayoutClosedGanttHours !== false) throw new RangeError("Workspace Gantt payout-closed-hour filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours, hideWeekendGanttHours, hideOpenGanttHours, hideClosedGanttHours, hideZeroQueueGanttHours, hideBankClosedGanttHours, hideIssuerClosedGanttHours }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours, hideWeekendGanttHours, hideOpenGanttHours, hideClosedGanttHours, hideZeroQueueGanttHours, hideBankClosedGanttHours, hideIssuerClosedGanttHours, hidePayoutClosedGanttHours }, null, 2);
 }
 export function workspaceFromJSON(text) {
   try {
@@ -873,7 +889,8 @@ export function workspaceFromJSON(text) {
       hideClosedGanttHours: raw.hideClosedGanttHours === undefined ? false : raw.hideClosedGanttHours,
       hideZeroQueueGanttHours: raw.hideZeroQueueGanttHours === undefined ? false : raw.hideZeroQueueGanttHours,
       hideBankClosedGanttHours: raw.hideBankClosedGanttHours === undefined ? false : raw.hideBankClosedGanttHours,
-      hideIssuerClosedGanttHours: raw.hideIssuerClosedGanttHours === undefined ? false : raw.hideIssuerClosedGanttHours
+      hideIssuerClosedGanttHours: raw.hideIssuerClosedGanttHours === undefined ? false : raw.hideIssuerClosedGanttHours,
+      hidePayoutClosedGanttHours: raw.hidePayoutClosedGanttHours === undefined ? false : raw.hidePayoutClosedGanttHours
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -1381,6 +1398,12 @@ export function ganttHourIssuerClosed(point) {
   return point.issuerOpen === false;
 }
 
+/** True when the payout gate is closed. Display filter only. Distinct from issuer-closed and bank-closed. */
+export function ganttHourPayoutClosed(point) {
+  if (!point || typeof point !== "object") return false;
+  return point.payoutOpen === false;
+}
+
 export const GANTT_GATE_FILTERS = Object.freeze(["all", "issuer", "bank", "payout", "fx"]);
 
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
@@ -1396,6 +1419,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const hideZeroQueueHours = options.hideZeroQueueHours === true;
   const hideBankClosedHours = options.hideBankClosedHours === true;
   const hideIssuerClosedHours = options.hideIssuerClosedHours === true;
+  const hidePayoutClosedHours = options.hidePayoutClosedHours === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -1425,6 +1449,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
       if (hideZeroQueueHours && ganttHourHasZeroQueue(queueTimeline[hour])) continue;
       if (hideBankClosedHours && ganttHourBankClosed(schedule.hours[hour]) && hour !== markerHour) continue;
       if (hideIssuerClosedHours && ganttHourIssuerClosed(schedule.hours[hour]) && hour !== markerHour) continue;
+      if (hidePayoutClosedHours && ganttHourPayoutClosed(schedule.hours[hour]) && hour !== markerHour) continue;
       if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[2](hour);

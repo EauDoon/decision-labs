@@ -8,14 +8,20 @@ const TIMESTAMP_KEYS = ["timestamp", "createdAt", "exportedAt", "generatedAt", "
 test("analysis JSON remains timestamp-free for identical inputs", () => {
   const output = analysisToJSON(DEFAULT_SCENARIO, PRESETS.weekendRush, 80, 70);
   assert.equal(output, analysisToJSON(DEFAULT_SCENARIO, PRESETS.weekendRush, 80, 70));
+  const payout = analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayLatePayoutClose, 80, 70);
+  assert.equal(payout, analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayLatePayoutClose, 80, 70));
   const report = JSON.parse(output);
+  const payoutReport = JSON.parse(payout);
   for (const key of TIMESTAMP_KEYS) {
     assert.equal(Object.prototype.hasOwnProperty.call(report, key), false, `analysis JSON must not include ${key}`);
+    assert.equal(Object.prototype.hasOwnProperty.call(payoutReport, key), false, `analysis JSON must not include ${key}`);
   }
   assert.doesNotMatch(output, /"timestamp"\s*:/);
   assert.doesNotMatch(output, /"createdAt"\s*:/);
   assert.doesNotMatch(output, /"exportedAt"\s*:/);
   assert.doesNotMatch(output, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  assert.doesNotMatch(payout, /"timestamp"\s*:/);
+  assert.doesNotMatch(payout, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
 });
 
 test("analysisToJSON does not call the clock", async () => {

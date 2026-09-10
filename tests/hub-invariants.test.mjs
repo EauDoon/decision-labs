@@ -109,6 +109,66 @@ test('404 Copy last How it works item does not expand PUBLIC_PATHS or connect-sr
   assert.doesNotMatch(serve, /hosted API/i);
 });
 
+test('catalog keys close-brace plus pipe stay distinct from first-job jobs last-How and equals', () => {
+  assert.match(html, /event\.key === '}'/);
+  assert.match(html, /event\.key === '\+'/);
+  assert.equal(html.includes("event.key === '|'"), true);
+  assert.match(html, /event\.key === ';'/);
+  assert.match(html, /event\.key === 'j'/);
+  assert.match(html, /event\.key === '>'/);
+  assert.match(html, /event\.key === '_'/);
+  assert.match(html, /event\.key === '<'/);
+  assert.match(html, /event\.key === '='/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /id="copy-last-job"/);
+  assert.match(html, />Copy last job</);
+  assert.match(html, /id="copy-first-job"/);
+  assert.match(html, />Copy first job</);
+  assert.match(html, /id="copy-jobs"/);
+  assert.match(html, />Copy jobs</);
+  assert.match(html, /id="copy-last-how"/);
+  assert.match(html, />Copy last How it works item</);
+  assert.notEqual(html.match(/id="copy-last-job"/)?.[0], html.match(/id="copy-first-job"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-job"/)?.[0], html.match(/id="copy-jobs"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-job"/)?.[0], html.match(/id="copy-last"/)?.[0]);
+  assert.match(html, /lastJobBtn\?\.click\(\)/);
+  assert.match(html, /firstJobBtn\?\.click\(\)/);
+  assert.match(html, /jobsBtn\?\.click\(\)/);
+  assert.match(html, /lastHowBtn\?\.click\(\)/);
+});
+
+test('print CSS hides copy last job tools like other copy tools', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-last-job-tools, \.copy-last-job-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-first-job-tools, \.copy-first-job-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-last-how-tools, \.copy-last-how-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+});
+
+test('404 Copy last job does not expand PUBLIC_PATHS or connect-src', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  assert.match(serve, /request\.method !== 'GET' && request\.method !== 'HEAD'/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-last-job"/);
+  assert.match(page, />Copy last job</);
+  assert.match(page, /lastJobMarkdown/);
+  assert.match(page, /id="copy-jobs"/);
+  assert.match(page, />Copy jobs</);
+  assert.match(page, /id="catalog-jobs"/);
+  assert.doesNotMatch(page, /id="copy-first-job"/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(serve, /hosted API/i);
+});
+
 
 test('404 Copy first How it works item does not expand PUBLIC_PATHS or connect-src', () => {
   assert.equal(PUBLIC_PATHS.length, 6);
