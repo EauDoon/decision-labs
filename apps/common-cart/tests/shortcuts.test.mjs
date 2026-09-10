@@ -276,3 +276,17 @@ test("keyboard handler copies leftover unspent item headroom when not typing", a
   assert.match(app, /isTypingTarget\(event\.target\)/u);
   assert.match(app, /organizer-private Markdown/u);
 });
+
+test("shortcut help documents the requested units jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>q<\/kbd> Focus requested units/u);
+  assert.match(html, /id="metric-units"[^>]*tabindex="-1"/u);
+});
+
+test("keyboard handler jumps to requested units when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "q"\)/u);
+  assert.match(app, /function focusRequestedUnits\(/u);
+  assert.match(app, /#metric-units/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});

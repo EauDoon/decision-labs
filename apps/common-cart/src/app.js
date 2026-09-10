@@ -857,6 +857,11 @@ function handleShortcut(event) {
     copyLeftoverHeadroom();
     return;
   }
+  if (key === "q") {
+    event.preventDefault();
+    focusRequestedUnits();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -890,6 +895,10 @@ function focusLeftoverHeadroom() {
 
 function focusGroupHeadroom() {
   document.querySelector("#metric-savings")?.focus();
+}
+
+function focusRequestedUnits() {
+  document.querySelector("#metric-units")?.focus();
 }
 
 function focusCartReview() {
