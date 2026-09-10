@@ -88,6 +88,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(html, /Trust-item jump, first-job copy, and 404 Copy version line/);
   assert.match(html, /Version-line jump, last-open jump, and 404 Copy first Trust item/);
+  assert.match(html, /First How-it-works copy, How copy jump, and last Trust copy/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -2098,12 +2099,12 @@ test('shortcuts panel lists d comma period with honest limits', () => {
 });
 
 test('What\'s new and README name this hub-only wave without changing workbench versions', () => {
-  assert.match(html, /Version-line jump, last-open jump, and 404 Copy first Trust item/);
+  assert.match(html, /First How-it-works copy, How copy jump, and last Trust copy/);
   assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
   assert.match(html, /without adding a public path/);
-  assert.match(readme, /version-line jump, last-open jump, and 404 Copy first Trust item/);
+  assert.match(readme, /first How-it-works copy, How copy jump, and last Trust copy/);
   assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
-  assert.match(readme, /Copy first Trust item on that 404 page copies/);
+  assert.match(readme, /Copy first How it works item on\s+that 404 page copies/);
   assert.doesNotMatch(html, /hosted API/i);
   assert.doesNotMatch(html, /live service/i);
 });
@@ -3807,5 +3808,175 @@ test('copy How it works shows a visible textarea when clipboard is unavailable',
   assert.equal(fallback.value, '## How it works\n- Standalone files. Every workbench ships standalone.html.');
   assert.match(status.textContent, /Clipboard unavailable/);
   assert.match(status.textContent, /not a live policy feed/);
+});
+
+test('copy first How it works item copies the first How list item as one Markdown line with a visible fallback', () => {
+  assert.match(html, /id="copy-first-how"/);
+  assert.match(html, />Copy first How it works item</);
+  assert.match(html, /aria-keyshortcuts="-"/);
+  assert.match(html, /id="copy-first-how-fallback"/);
+  assert.match(html, /class="copy-first-how-fallback"/);
+  assert.match(html, /textarea id="copy-first-how-fallback"/);
+  assert.match(html, /firstHowMarkdown/);
+  assert.match(html, /querySelector\('#how-it-works li'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /firstHowFallback\.hidden = false/);
+  assert.match(html, /firstHowFallback\.select\(\)/);
+  assert.match(html, /Not a live policy feed/);
+  assert.match(html, /This is the first How it works item, not a live policy feed/);
+  assert.match(html, /Copied an empty string/);
+  assert.match(html, /This is distinct from <kbd>u<\/kbd>, which copies the full How it works list/);
+  assert.match(html, /from <kbd>d<\/kbd>, which focuses the first How it works list item/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-how-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-how-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy first How it works item copies the first How it works list item/);
+  assert.match(readme, /Press `-` to copy the first How it works list item/);
+});
+
+test('keyboard minus copies the first How it works item through its own control', () => {
+  assert.match(html, /event\.key === '-'/);
+  assert.match(html, /firstHowBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="-"/);
+  assert.match(html, /<kbd>-<\/kbd><\/dt><dd>Copy the first How it works list item as one Markdown line from this catalog page, not a live policy feed/);
+  assert.match(html, /Press <kbd>-<\/kbd> to copy the first How it works list item/);
+  assert.match(html, /If that item is missing, this copies an empty string/);
+  assert.match(html, /This is distinct from <kbd>u<\/kbd>, which copies the full How it works list/);
+  assert.match(html, /from <kbd>d<\/kbd>, which focuses the first How it works list item/);
+  assert.match(readme, /Press `-` to copy the first How it works list item/);
+  const clicks = { firstHow: 0, how: 0 };
+  const focused = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-how') return { click() { clicks.firstHow += 1; }, addEventListener() {} };
+      if (id === 'copy-how') return { click() { clicks.how += 1; }, addEventListener() {}, focus() { focused.push('copy-how'); } };
+      if (id === 'how-title') return { focus() { focused.push('how-title'); } };
+      if (id === 'how-it-works') return { focus() { focused.push('how-it-works'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#how-it-works li' ? { focus() { focused.push('how-li'); } } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('-', input);
+  fire('-', textarea);
+  assert.equal(clicks.firstHow, 0);
+  assert.equal(clicks.how, 0);
+  assert.deepEqual(focused, []);
+  fire('-', body);
+  assert.equal(clicks.firstHow, 1);
+  assert.equal(clicks.how, 0);
+  assert.deepEqual(focused, []);
+  fire('u', body);
+  assert.equal(clicks.how, 1);
+  assert.equal(clicks.firstHow, 1);
+});
+
+test('copy first How it works item markdown is the first How list item, or empty if missing', async () => {
+  let copied = '';
+  let clickFirst = null;
+  const firstItem = { textContent: 'How copy jump. Key equals focuses Copy How it works.' };
+  let item = firstItem;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-how') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-how-status') return { textContent: '' };
+      if (id === 'copy-first-how-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#how-it-works li' ? item : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickFirst();
+  assert.equal(copied, '- How copy jump. Key equals focuses Copy How it works.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /## How it works/);
+  assert.doesNotMatch(copied, /live policy feed/);
+  item = null;
+  copied = 'stale';
+  await clickFirst();
+  assert.equal(copied, '');
+});
+
+test('copy first How it works item shows a visible textarea when clipboard is unavailable', async () => {
+  let clickFirst = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-how') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-how-status') return status;
+      if (id === 'copy-first-how-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#how-it-works li' ? { textContent: 'How copy jump. Key equals focuses Copy How it works.' } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickFirst();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- How copy jump. Key equals focuses Copy How it works.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live policy feed/);
+});
+
+test('print CSS hides copy first How tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-first-how-tools, \.copy-first-how-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-first-trust-tools, \.copy-first-trust-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
 });
 
