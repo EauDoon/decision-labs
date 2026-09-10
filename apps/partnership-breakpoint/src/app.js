@@ -872,6 +872,7 @@ function inputPanel(result) {
           <p class="notice">${withinCapacityFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-last-within-capacity-participant" data-action="hide-last-within-capacity-participant" aria-pressed="${hideLastWithinCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last within-capacity participant</button><button type="button" data-action="show-last-within-capacity-participant" ${hideLastWithinCapacityParticipant ? '' : 'disabled'}>Show the last within-capacity participant</button></div>
           <p class="notice">${lastWithinCapacityFilterNote}</p>
+          <div class="button-row"><button type="button" id="hide-first-within-capacity-participant" data-action="hide-first-within-capacity-participant" aria-keyshortcuts="\`" aria-pressed="false" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first within-capacity participant</button><button type="button" data-action="show-first-within-capacity-participant" disabled>Show the first within-capacity participant</button></div>
           <div class="button-row"><button type="button" id="hide-first-breakpoint-participant" data-action="hide-first-breakpoint-participant" aria-keyshortcuts="|" aria-pressed="${hideFirstBreakpointParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first-breakpoint participant</button><button type="button" data-action="show-first-breakpoint-participant" ${hideFirstBreakpointParticipant ? '' : 'disabled'}>Show the first-breakpoint participant</button></div>
           <p class="notice">${firstBreakpointFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-last-breakpoint-participant" data-action="hide-last-breakpoint-participant" aria-pressed="${hideLastBreakpointParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last first-breakpoint participant</button><button type="button" data-action="show-last-breakpoint-participant" ${hideLastBreakpointParticipant ? '' : 'disabled'}>Show the last first-breakpoint participant</button><button type="button" id="copy-last-breakpoint-label" data-action="copy-last-breakpoint-label">Copy last first-breakpoint participant label</button></div>
@@ -2379,6 +2380,19 @@ window.addEventListener('keydown', (event) => {
   if (event.key === '&') {
     const target = document.querySelector('#copy-last-over-capacity-remaining')
       ?? document.querySelector('#first-breakpoint-title')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === '^') {
+    const target = document.querySelector('#copy-first-within-capacity-remaining')
+      ?? document.querySelector('#first-breakpoint-title')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === '`') {
+    const target = document.querySelector('#hide-first-within-capacity-participant')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -4389,8 +4403,10 @@ function helpDialog() {
         <li><kbd>$</kbd> Copy first within-capacity remaining listed capacity as Markdown</li>
         <li><kbd>)</kbd> Jump to Copy last over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>&amp;</kbd> Jump to Copy last over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
+        <li><kbd>^</kbd> Jump to Copy first within-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>#</kbd> Jump to Hide the last over-capacity participant, or the Participants heading if missing</li>
         <li><kbd>%</kbd> Jump to Hide the last first-breakpoint participant, or the Participants heading if missing</li>
+        <li><kbd>\`</kbd> Jump to Hide the first within-capacity participant, or the Participants heading if missing</li>
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>|</kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing</li>
