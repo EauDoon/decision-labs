@@ -2374,6 +2374,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideLockedClauses",
   "hideGroupsMeetingThreshold",
   "hideGroupsBelowThreshold",
+  "hideVetoGroups",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2390,6 +2391,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideLockedClauses",
   "hideGroupsMeetingThreshold",
   "hideGroupsBelowThreshold",
+  "hideVetoGroups",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2445,6 +2447,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideGroupsMeetingThreshold.error) return { status: "invalid", errors: [hideGroupsMeetingThreshold.error] };
   const hideGroupsBelowThreshold = readWorkspaceBoolean(prefs, "hideGroupsBelowThreshold");
   if (hideGroupsBelowThreshold.error) return { status: "invalid", errors: [hideGroupsBelowThreshold.error] };
+  const hideVetoGroups = readWorkspaceBoolean(prefs, "hideVetoGroups");
+  if (hideVetoGroups.error) return { status: "invalid", errors: [hideVetoGroups.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2460,6 +2464,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideLockedClauses: hideLockedClauses.value,
     hideGroupsMeetingThreshold: hideGroupsMeetingThreshold.value,
     hideGroupsBelowThreshold: hideGroupsBelowThreshold.value,
+    hideVetoGroups: hideVetoGroups.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2476,6 +2481,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideLockedClauses: hideLockedClauses.value,
       hideGroupsMeetingThreshold: hideGroupsMeetingThreshold.value,
       hideGroupsBelowThreshold: hideGroupsBelowThreshold.value,
+      hideVetoGroups: hideVetoGroups.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2505,6 +2511,7 @@ export function parseWorkspaceJson(text) {
       hideLockedClauses: null,
       hideGroupsMeetingThreshold: null,
       hideGroupsBelowThreshold: null,
+      hideVetoGroups: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2545,6 +2552,8 @@ export function parseWorkspaceJson(text) {
   if (hideGroupsMeetingThreshold.error) return { status: "invalid", errors: [hideGroupsMeetingThreshold.error] };
   const hideGroupsBelowThreshold = readWorkspaceBoolean(raw, "hideGroupsBelowThreshold");
   if (hideGroupsBelowThreshold.error) return { status: "invalid", errors: [hideGroupsBelowThreshold.error] };
+  const hideVetoGroups = readWorkspaceBoolean(raw, "hideVetoGroups");
+  if (hideVetoGroups.error) return { status: "invalid", errors: [hideVetoGroups.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2562,6 +2571,7 @@ export function parseWorkspaceJson(text) {
     hideLockedClauses: hideLockedClauses.value,
     hideGroupsMeetingThreshold: hideGroupsMeetingThreshold.value,
     hideGroupsBelowThreshold: hideGroupsBelowThreshold.value,
+    hideVetoGroups: hideVetoGroups.value,
   };
 }
 
