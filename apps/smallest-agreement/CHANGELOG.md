@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.16 - 2026-09-10
+
+A workshop follow-up on 1.5.15. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `5` copies the last non-veto group label through the existing `#copy-last-non-veto-group-button` (same one-line Markdown). Ignored while typing. Distinct from `$` last-veto copy and `*` first-non-veto copy. A veto is a number you entered, not a legal right.
+- Keyboard `6` jumps to that last non-veto group copy control, or the groups heading if missing. Ignored while typing. It does not copy. Distinct from `^` last-veto copy jump and `&` first-non-veto copy jump.
+- Keyboard `7` jumps to the hide-last-group-below-threshold control, or the groups heading if missing. Ignored while typing. Distinct from backtick hide-first-non-veto-group.
+- Basketball club hours preset: synthetic students, neighbours (a veto group), and P&C scoring hall booking, ball racks, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, Rooftop BBQ hours, School disco hours, Sports day hours, Netball training hours, Swimming club hours, Athletics club hours, Cricket club hours, and Tennis club hours. Not a recorded vote.
+- Hide only the last group whose average support on the inspected package is below the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsBelowThreshold, hideLastNonVetoGroup, hideFirstNonVetoGroup, and hideLastVetoGroup. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all. If composed with other hides, the empty-groups notice is honest and model counts stay the same.
+- Copy the last non-veto group label as one-line Markdown, with a clipboard fallback. Honest when none. Distinct from last veto group copy and first non-veto group copy. A veto is a number you entered, not a legal right. Do not treat the label as a legal identity.
+
 ## 1.5.15 - 2026-09-10
 
 A workshop follow-up on 1.5.14. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
