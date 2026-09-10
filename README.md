@@ -48,8 +48,7 @@ not open the workbench. Key `p` prints this catalog page. It is not a live produ
 sheet. Key `e` copies the catalog heading and lede from this page as Markdown.
 That copy is catalog copy, not a live product feed. If those nodes are
 missing, it copies an empty string. Keys `v` and `j` copy the printed version list and one-sentence jobs.
-Key `q` copies those same catalog jobs through the Copy jobs control. It does
-not fork that Markdown. Key `i` copies Trust and limits from this page as Markdown. That list is not a
+Key `q` copies those same catalog jobs through the Copy jobs control. It does not fork that Markdown. Key `i` copies Trust and limits from this page as Markdown. That list is not a
 live policy feed. Key `u` copies How it works from this page as Markdown. That
 list is not a live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
 browser. Key `x` clears that last-launched marker in this browser. Key `y`
@@ -197,8 +196,7 @@ Copy jobs copies the four workbench names and
 one-sentence jobs from the catalog cards as Markdown, with the same clipboard
 and visible text box fallback. That list is not a live product feed.
 Press `j` to copy catalog jobs through that same control.
-Press `q` to copy catalog jobs through that same Copy jobs control. It does
-not fork that Markdown.
+Press `q` to copy catalog jobs through that same Copy jobs control. It does not fork that Markdown.
 Copy skip links copies the six skip-link labels and hash hrefs already printed
 in the skip navigation as Markdown, with the same clipboard and visible text
 box fallback. This is in-page navigation copy, not a sitemap API.
