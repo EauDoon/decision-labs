@@ -290,6 +290,20 @@ test('copy versions copies catalog names as Markdown with a visible fallback', (
   assert.doesNotMatch(html, /hosted API/i);
 });
 
+test('keyboard o opens the last-launched workbench like keys 1 to 4', () => {
+  assert.match(html, /event\.key === 'o'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /window\.location\.assign\(link\.href\)/);
+  assert.match(html, /localStorage\.setItem\(LAST_WORKBENCH_KEY, stored\)/);
+  assert.match(html, /querySelectorAll\('#workbenches a\.open'\)\[index\]/);
+  assert.match(html, /<kbd>o<\/kbd><\/dt><dd>Open the last-launched workbench, the same as keys 1 to 4/);
+  assert.match(html, /This key assigns a location; it does not copy/);
+  assert.match(html, /Press <kbd>o<\/kbd> to open it/);
+  assert.match(readme, /Press `o` to\s+open that last-launched workbench/);
+  assert.match(readme, /It does not copy, including\s+on a file URL/);
+  assert.doesNotMatch(html, /Copied[\s\S]*event\.key === 'o'/);
+});
+
 test('keyboard l focuses the last-launched workbench card in this browser', () => {
   assert.match(html, /event\.key === 'l'/);
   assert.match(html, /inEditable\(event\.target\)/);
