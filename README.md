@@ -29,7 +29,7 @@ Every workbench:
 | --- | --- | --- | --- |
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.0 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.0 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
-| [The Smallest Agreement](apps/smallest-agreement/) | 1.5.0 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
+| [The Smallest Agreement](apps/smallest-agreement/) | 1.5.1 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
 | [Weekend Gap](apps/weekend-gap/) | 1.5.0 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
@@ -55,7 +55,9 @@ Friday close start. Common Cart 1.3.3 also names offer CSV export, variant
 filter, and empty-offer recovery. Partnership Breakpoint 1.4.3 also names
 roster export, imported-JSON compare, and the four-party marketplace start.
 The Smallest Agreement 1.4.3 also names clause CSV import, veto-only filter,
-and the Library Quiet Hours start. These are
+and the Library Quiet Hours start. The Smallest Agreement 1.5.1 also names
+the locked-clause filter, Sports Fixture Night start, and original versus
+recommended versus pinned copy. These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
 loopback launcher does not serve those markdown files; open the app folder or
