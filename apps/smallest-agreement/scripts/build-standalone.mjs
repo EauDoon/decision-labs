@@ -60,6 +60,7 @@ const appImport = `import {
   formatVetoGroupCountMarkdown,
   formatFirstNonVetoGroupLabelMarkdown,
   formatLastVetoGroupLabelMarkdown,
+  formatLastNonVetoGroupLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
