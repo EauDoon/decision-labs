@@ -133,6 +133,21 @@ test("requested units copy jump stays on the organizer requested-units control",
   assert.match(app, /#buyer-tab/u);
 });
 
+test("leftover print jump stays on the leftover print control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="leftover-print-fill"[^>]*tabindex="-1"/u);
+  assert.match(buyerPanel, /id="residual-title"/u);
+  assert.equal(merchantPanel.includes("leftover-print-fill"), false);
+  assert.equal(merchantPanel.includes("focusLeftoverPrintControl"), false);
+  assert.match(app, /function focusLeftoverPrintControl\(/u);
+  assert.match(app, /#leftover-print-fill/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /if \(key === "\]"\)/u);
+});
+
 test("leftover item headroom has a stable organizer focus target", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");

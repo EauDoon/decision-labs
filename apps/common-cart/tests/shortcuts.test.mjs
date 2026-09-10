@@ -417,6 +417,26 @@ test("keyboard handler jumps to requested units copy when not typing", async () 
   assert.doesNotMatch(app, /if \(key === "\["\) \{\s*event\.preventDefault\(\);\s*copyRequestedUnits/u);
 });
 
+test("shortcut help documents leftover print control jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>\]<\/kbd> Focus the leftover print control, or leftover heading if missing/u);
+  assert.match(html, /id="leftover-print-fill"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to leftover print control when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "\]"\)/u);
+  assert.match(app, /function focusLeftoverPrintControl\(/u);
+  assert.match(app, /#leftover-print-fill/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "\]"\) \{\s*event\.preventDefault\(\);\s*focusWinningRemainingCapacityCopy/u);
+  assert.match(app, /if \(key === "\."\)/u);
+  assert.match(app, /function focusWinningRemainingCapacityCopy\(/u);
+});
+
 test("Export private buyer report stays organizer-private in the buyer room", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
