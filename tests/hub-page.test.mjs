@@ -90,6 +90,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Version-line jump, last-open jump, and 404 Copy first Trust item/);
   assert.match(html, /First How-it-works copy, How copy jump, and last Trust copy/);
   assert.match(html, /Last How copy, last-How jump, and first-How jump/);
+  assert.match(html, /Last-job copy, last-job jump, and first-job jump/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -217,6 +218,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /version-line jump, last-open jump, and 404 Copy first Trust item/);
   assert.match(readme, /first How-it-works copy, How copy jump, and last Trust copy/);
   assert.match(readme, /last How-it-works copy, last-How jump, and first-How jump/);
+  assert.match(readme, /last-job copy, last-job jump, and first-job jump/);
   assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
@@ -230,6 +232,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy first Trust item on that 404 page copies/);
   assert.match(readme, /Copy first How it works item on\s+that 404 page copies/);
   assert.match(readme, /Copy last How it works item on\s+that 404 page copies/);
+  assert.match(readme, /Copy last job on\s+that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -5044,4 +5047,144 @@ test('less-than greater-than underscore do not steal How copy, How jump, or firs
   assert.equal(clicks.firstHow, 1);
   assert.equal(clicks.lastHow, 1);
   assert.deepEqual(focused, ['how-li', 'how-it-works', 'copy-how', 'copy-last-how', 'copy-first-how']);
+});
+
+test('What\'s new and README name last-job copy and jumps without changing workbench versions', () => {
+  assert.match(html, /Last-job copy, last-job jump, and first-job jump/);
+  assert.match(html, /Copy last job through \} as Markdown/);
+  assert.match(html, /jump with keyboard \+/);
+  assert.match(html, /jump to Copy first job with keyboard \|/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /without adding a public path/);
+  assert.match(readme, /last-job copy, last-job jump, and first-job jump/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy last job on\s+that 404 page copies/);
+  assert.match(readme, /Copy last job copies the last workbench name/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+});
+
+test('copy last job control is distinct from Copy first job and Copy jobs', () => {
+  assert.match(html, /id="copy-last-job"/);
+  assert.match(html, />Copy last job</);
+  assert.match(html, /aria-keyshortcuts="}"/);
+  assert.match(html, /id="copy-last-job-fallback"/);
+  assert.match(html, /class="copy-last-job-fallback"/);
+  assert.match(html, /textarea id="copy-last-job-fallback"/);
+  assert.match(html, /id="copy-first-job"/);
+  assert.match(html, />Copy first job</);
+  assert.match(html, /id="copy-jobs"/);
+  assert.match(html, />Copy jobs</);
+  assert.notEqual(html.match(/id="copy-last-job"/)?.[0], html.match(/id="copy-first-job"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-job"/)?.[0], html.match(/id="copy-jobs"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-job"/)?.[0], html.match(/id="copy-last"/)?.[0]);
+  assert.match(html, /@media print[\s\S]*\.copy-last-job-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-last-job-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('copy last job markdown is the last catalog card, or empty if missing', async () => {
+  assert.match(html, /lastJobMarkdown/);
+  assert.match(html, /querySelectorAll\('article\.workbench'\)/);
+  assert.match(html, /cards\[cards\.length - 1\]/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /lastJobFallback\.hidden = false/);
+  assert.match(html, /lastJobFallback\.select\(\)/);
+  assert.match(html, /Not a live product feed/);
+  assert.match(html, /This is the last catalog job, not a live product feed/);
+  assert.match(html, /Copied an empty string/);
+  let copied = '';
+  let clickLast = null;
+  let cards = [
+    {
+      querySelector(sel) {
+        if (sel === 'h3') return { textContent: 'Partnership Breakpoint' };
+        if (sel === 'p.job') return { textContent: 'Find which participant in a revenue split.' };
+        return null;
+      },
+    },
+    {
+      querySelector(sel) {
+        if (sel === 'h3') return { textContent: 'Weekend Gap' };
+        if (sel === 'p.job') return { textContent: 'Follow synthetic AUD redemption demand.' };
+        return null;
+      },
+    },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-job') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-job-status') return { textContent: '' };
+      if (id === 'copy-last-job-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === 'article.workbench' ? cards : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- Weekend Gap: Follow synthetic AUD redemption demand.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Partnership Breakpoint/);
+  assert.doesNotMatch(copied, /live product feed/);
+  cards = [];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
+});
+
+test('copy last job shows a visible textarea when clipboard is unavailable', async () => {
+  let clickLast = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-job') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-job-status') return status;
+      if (id === 'copy-last-job-fallback') return fallback;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === 'article.workbench' ? [{
+        querySelector(sel) {
+          if (sel === 'h3') return { textContent: 'Weekend Gap' };
+          if (sel === 'p.job') return { textContent: 'Follow synthetic AUD redemption demand.' };
+          return null;
+        },
+      }] : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickLast();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Weekend Gap: Follow synthetic AUD redemption demand.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+});
+
+test('print CSS hides copy last job tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-last-job-tools, \.copy-last-job-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-first-job-tools, \.copy-first-job-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
 });
