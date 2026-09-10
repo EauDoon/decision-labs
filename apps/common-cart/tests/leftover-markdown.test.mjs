@@ -369,6 +369,7 @@ test("winning remaining capacity copy sits next to leftover print and stays off 
   assert.match(app, /createWinningRemainingCapacityMarkdown\(/u);
   assert.match(app, /function copyWinningRemainingCapacity\(/u);
   assert.match(app, /function copyTextWithFallback\(/u);
+  assert.match(app, /if \(key === ","\)/u);
   assert.doesNotMatch(app, /if \(key === "y"\) \{\s*event\.preventDefault\(\);\s*copyWinningRemainingCapacity/u);
   assert.doesNotMatch(app, /if \(key === "z"\) \{\s*event\.preventDefault\(\);\s*copyWinningRemainingCapacity/u);
 });

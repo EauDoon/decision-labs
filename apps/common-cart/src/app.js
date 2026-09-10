@@ -913,6 +913,11 @@ function handleShortcut(event) {
     focusLeftoverFill();
     return;
   }
+  if (key === ",") {
+    event.preventDefault();
+    copyWinningRemainingCapacity();
+    return;
+  }
 }
 
 function focusBuyersList() {
