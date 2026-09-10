@@ -7,6 +7,8 @@ test("volleyball carnival lunch leftover fill is hall pickup and stays distinct 
   const volleyball = evaluateMarket(clonePreset("volleyballCarnivalLunch"));
   const basketball = evaluateMarket(clonePreset("basketballCarnivalLunch"));
   assert.ok(volleyball.winner);
+  assert.equal(volleyball.winner.offer.merchant, "Court-side Volleyball Delivery");
+  assert.equal(volleyball.winner.offer.fulfillment, "shipping");
   assert.equal(volleyball.scenario.title, "Volleyball carnival lunch");
   assert.notEqual(volleyball.scenario.title, basketball.scenario.title);
   assert.notDeepEqual(clonePreset("volleyballCarnivalLunch"), clonePreset("basketballCarnivalLunch"));
@@ -16,6 +18,7 @@ test("volleyball carnival lunch leftover fill is hall pickup and stays distinct 
   const leftoverOffer = volleyball.scenario.offers.find((offer) => offer.id === leftoverFill.offerId);
   assert.equal(leftoverOffer.fulfillment, "pickup");
   assert.equal(leftoverOffer.minimumUnits, 10);
+  assert.equal(leftoverOffer.capacity, 38);
   assert.notEqual(leftoverOffer.minimumUnits, basketball.scenario.offers.find((offer) => offer.merchant === "Hall Basketball Pickup").minimumUnits);
   assert.ok(volleyball.results.some((result) => result.offer.merchant === "Court-side Volleyball Delivery" && result.offer.fulfillment === "shipping"));
   assert.ok(volleyball.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Volleyball pie")));
