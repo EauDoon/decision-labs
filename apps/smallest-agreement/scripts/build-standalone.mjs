@@ -60,6 +60,7 @@ const appImport = `import {
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,
   formatApprovalThresholdMarkdown,
+  formatRecommendedPackageOptionCountMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,

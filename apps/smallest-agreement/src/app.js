@@ -46,6 +46,7 @@ import {
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,
   formatApprovalThresholdMarkdown,
+  formatRecommendedPackageOptionCountMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -502,6 +503,11 @@ function renderCopyFallbacks(result) {
   if (packageBox) {
     const packaged = formatRecommendedPackageMarkdown(state.proposal, result ?? currentResult());
     packageBox.value = packaged.status === "ok" ? packaged.text : packaged.status === "unavailable" ? packaged.text : "";
+  }
+  const optionCountBox = $("#option-count-fallback");
+  if (optionCountBox) {
+    const counted = formatRecommendedPackageOptionCountMarkdown(state.proposal, result ?? currentResult());
+    optionCountBox.value = counted.status === "ok" || counted.status === "unavailable" ? counted.text : "";
   }
   const locksBox = $("#locks-markdown-fallback");
   if (locksBox) {
@@ -972,6 +978,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-option-count-button").disabled = result.status === "invalid";
   $("#copy-original-versus-recommended-button").disabled = result.status === "invalid";
   $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#copy-remaining-budget-button").disabled = result.status === "invalid";
@@ -2193,6 +2200,20 @@ $("#copy-package-button").addEventListener("click", async () => {
     notifyDraft("Clipboard is blocked. Copy the recommended package from the Markdown box. It is not a recorded vote.");
   }
 });
+async function copyRecommendedOptionCount() {
+  const listed = formatRecommendedPackageOptionCountMarkdown(state.proposal, currentResult());
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the recommended package option count.");
+  const fallback = $("#option-count-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Recommended package option count copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the recommended package option count from the Markdown box. It is not a recorded vote.");
+  }
+}
+$("#copy-option-count-button").addEventListener("click", copyRecommendedOptionCount);
 async function copyOriginalVersusRecommended() {
   const listed = formatOriginalVersusRecommendedMarkdown(state.proposal, currentResult());
   if (listed.status === "invalid") return notifyDraft("Fix the draft before copying original versus recommended labels and costs.");

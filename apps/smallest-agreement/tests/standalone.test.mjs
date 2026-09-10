@@ -145,6 +145,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Copy original versus recommended/u);
   assert.match(html, /id="original-versus-recommended-fallback"/u);
   assert.match(html, /id="package-markdown-fallback"/u);
+  assert.match(html, /id="copy-option-count-button"/u);
+  assert.match(html, /Copy option count/u);
+  assert.match(html, /id="option-count-fallback"/u);
   assert.match(html, /id="copy-locks-button"/u);
   assert.match(html, /Copy current locks/u);
   assert.match(html, /id="locks-markdown-fallback"/u);
@@ -370,6 +373,7 @@ async function savedWorkbench(storage, hash = "") {
     groupSupport: () => element("#group-support-fallback").value,
     remainingBudget: () => element("#remaining-budget-fallback").value,
     approvalThreshold: () => element("#approval-threshold-fallback").value,
+    optionCount: () => element("#option-count-fallback").value,
     originalVersusRecommended: () => element("#original-versus-recommended-fallback").value,
     locksMarkdown: () => element("#locks-markdown-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
@@ -986,7 +990,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /\.hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note/u);
@@ -2286,6 +2290,45 @@ test("copy remaining budget writes one-line Markdown distinct from package and g
   await spent.click("#copy-remaining-budget-button");
   assert.match(spent.clipboardText(), /Remaining change-budget is exhausted \(0\.0 leftover\)/u);
   assert.match(spent.message(), /not a legal appropriation/u);
+});
+
+test("copy recommended package option count writes one-line Markdown with a clipboard fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-option-count-button"/u);
+  assert.match(html, /Copy option count/u);
+  assert.match(html, /id="option-count-fallback"/u);
+  assert.match(html, /not a recorded vote/u);
+  const app = await savedWorkbench(new Map());
+  assert.equal(app.optionCount(), "Recommended package option count: 3. This is a decision aid, not a recorded vote.\n");
+  assert.doesNotMatch(app.optionCount(), /Close at 20:00/u);
+  assert.doesNotMatch(app.optionCount(), /^# Recommended package/u);
+  await app.click("#copy-option-count-button");
+  assert.equal(app.clipboardText(), app.optionCount());
+  assert.match(app.message(), /not a recorded vote/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-option-count-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#option-count-fallback");
+  assert.match(blocked.optionCount(), /Recommended package option count: 3/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a recorded vote/u);
+  const draft = {
+    title: "No recommendation option count workshop",
+    threshold: 95,
+    maxChangeCost: 0,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { g: 10 } },
+      { id: "alt", label: "Alt", original: false, changeCost: 1, support: { g: 90 } },
+      { id: "other", label: "Other", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+  const missing = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  assert.match(missing.optionCount(), /No recommended package is available/u);
+  await missing.click("#copy-option-count-button");
+  assert.match(missing.clipboardText(), /No recommended package is available/u);
+  assert.match(missing.message(), /not a recorded vote/u);
 });
 
 test("copy approval threshold writes one-line Markdown with a clipboard fallback", async () => {
