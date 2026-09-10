@@ -1257,6 +1257,12 @@ export function ganttHourClosedOnEveryGate(point) {
   return !point.issuerOpen && !point.bankOpen && !point.payoutOpen && !point.fxWeekday;
 }
 
+/** True when issuer, bank and payout are open, and FX is weekday depth. */
+export function ganttHourOpenOnEveryGate(point) {
+  if (!point || typeof point !== "object") return false;
+  return point.issuerOpen && point.bankOpen && point.payoutOpen && point.fxWeekday;
+}
+
 /** True when the Gantt hour falls on Saturday or Sunday. */
 export function ganttHourIsWeekend(point) {
   if (!point || typeof point !== "object" || !Number.isInteger(point.hour)) return false;
@@ -1273,6 +1279,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const closedOnly = options.closedOnly === true;
   const everyClosedOnly = options.everyClosedOnly === true;
   const hideWeekdayHours = options.hideWeekdayHours === true;
+  const hideOpenHours = options.hideOpenHours === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -1295,6 +1302,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
     const y = top + rowIndex * rowHeight;
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
       if (hideWeekdayHours && !ganttHourIsWeekend(schedule.hours[hour])) continue;
+      if (hideOpenHours && ganttHourOpenOnEveryGate(schedule.hours[hour])) continue;
       if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[2](hour);

@@ -37,6 +37,7 @@ import {
   firstClosedGanttHour,
   ganttHourClosedOnAnyGate,
   ganttHourClosedOnEveryGate,
+  ganttHourOpenOnEveryGate,
   ganttHourIsWeekend,
   GANTT_GATE_FILTERS,
   gateDisplayLabels,
@@ -406,19 +407,21 @@ function renderGantt() {
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
   const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
   const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
+  const hideOpenHours = Boolean(document.querySelector("#gantt-hide-open")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, gateFilter });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideOpenHours, gateFilter });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([selectedHour]);
-  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours) {
+  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours && !hideOpenHours) {
     rowIndexes.add(0);
     rowIndexes.add(SIMULATION_HOURS);
   }
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
     const point = schedule.hours[hour];
     if (hideWeekdayHours && !ganttHourIsWeekend(point) && hour !== selectedHour) continue;
+    if (hideOpenHours && ganttHourOpenOnEveryGate(point) && hour !== selectedHour) continue;
     if (everyClosedOnly) {
       if (ganttHourClosedOnEveryGate(point)) rowIndexes.add(hour);
       continue;
@@ -471,6 +474,9 @@ function renderGantt() {
     }
     if (hideWeekdayHours) {
       filterNote.textContent += ` Showing Saturday and Sunday hours only. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
+    }
+    if (hideOpenHours) {
+      filterNote.textContent += ` Hours open on every gate are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
     }
   }
 }
@@ -1317,6 +1323,10 @@ document.querySelector("#gantt-hide-weekdays").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
+document.querySelector("#gantt-hide-open").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
 document.querySelector("#gantt-gate-filter").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
@@ -1623,9 +1633,10 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
   const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
   const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
+  const hideOpenHours = Boolean(document.querySelector("#gantt-hide-open")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, gateFilter, redacted: true });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideOpenHours, gateFilter, redacted: true });
   window.print();
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
