@@ -62,7 +62,7 @@ body {
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible,
-#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus {
+#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus, #leftover-coverage-rows tr:focus, #leftover-buyer-rows tr:focus, #uncovered-leftover:focus, #variant-overlap-region:focus, #paste-buyers:focus {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
 }
@@ -378,6 +378,45 @@ footer {
   #merchant-result-rows, #variant-overlap-rows, #demand-groups, #residual-summary {
     break-inside: avoid;
   }
+  body.print-leftover .skip-link,
+  body.print-leftover .header-actions,
+  body.print-leftover .preset-bar,
+  body.print-leftover .hero,
+  body.print-leftover .masthead,
+  body.print-leftover .status-line,
+  body.print-leftover #save-state,
+  body.print-leftover .snapshot-bar,
+  body.print-leftover .tabs,
+  body.print-leftover .print-chrome,
+  body.print-leftover .print-private,
+  body.print-leftover #method-panel,
+  body.print-leftover #merchant-panel,
+  body.print-leftover .result-grid,
+  body.print-leftover .section-heading,
+  body.print-leftover #buyers-list,
+  body.print-leftover #empty-buyer-recovery,
+  body.print-leftover #variants-help,
+  body.print-leftover footer,
+  body.print-leftover .cart-review,
+  body.print-leftover #coach-dialog,
+  body.print-leftover #shortcut-help,
+  body.print-leftover .scoreboard .metric:not(.feature),
+  body.print-leftover #inspector-rows,
+  body.print-leftover #exclusion-groups,
+  body.print-leftover #capacity-bar,
+  body.print-leftover #next-tier-summary,
+  body.print-leftover #delivery-heatmap,
+  body.print-leftover .demand-grid,
+  body.print-leftover #inspector-summary,
+  body.print-leftover .privacy-panel {
+    display: none !important;
+  }
+  body.print-leftover .print-leftover-keep,
+  body.print-leftover .residual-panel,
+  body.print-leftover #leftover-coverage,
+  body.print-leftover .scoreboard .metric.feature {
+    display: block !important;
+  }
 }
 
 .cart-review { margin-block: 1.2rem; }
@@ -429,6 +468,10 @@ footer {
         <li><kbd>b</kbd> Focus the buyer list</li>
         <li><kbd>w</kbd> Focus the winner and inspector summary</li>
         <li><kbd>l</kbd> Focus leftover residual coverage</li>
+        <li><kbd>p</kbd> Print an organizer leftover one-pager</li>
+        <li><kbd>v</kbd> Focus the variant overlap region</li>
+        <li><kbd>j</kbd> Focus the first uncovered leftover row</li>
+        <li><kbd>s</kbd> Focus the buyer CSV or TSV paste control</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -476,6 +519,7 @@ footer {
           <button class="preset" data-preset="officePantry" type="button">Office pantry</button>
           <button class="preset" data-preset="hardware" type="button">Hardware tools</button>
           <button class="preset" data-preset="garden" type="button">Garden seed</button>
+          <button class="preset" data-preset="schoolFete" type="button">School fete</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -489,6 +533,11 @@ footer {
     </section>
 
     <div class="status-line" id="status" role="status" aria-live="polite"></div>
+    <div id="clipboard-fallback" class="print-chrome" hidden>
+      <label>Clipboard was blocked. Copy this text
+        <textarea id="clipboard-fallback-text" rows="10" readonly spellcheck="false"></textarea>
+      </label>
+    </div>
     <p id="entry-cap-warning" class="status-short print-chrome" hidden></p>
     <p id="save-state" class="canvas-note" role="status" aria-live="polite"></p>
     <section class="snapshot-bar print-chrome" aria-label="Saved room workspace">
@@ -677,6 +726,8 @@ footer {
               <select id="offer-inspector"></select>
             </label>
           </div>
+          <button id="copy-winner-inspector" class="print-chrome" type="button">Copy winner inspector summary (organizer private)</button>
+          <p class="canvas-note print-chrome">Organizer-private Markdown of the winning offer label, leftover buyers and units, and residual coverage. Buyer identities stay out. This is not a merchant export.</p>
           <div class="table-shell compact print-private">
             <table>
               <caption class="sr-only">Buyer outcomes for the inspected offer</caption>
@@ -704,6 +755,23 @@ footer {
             </div>
             <p id="residual-note" class="canvas-note"></p>
             <div id="residual-summary" class="residual-summary"></div>
+            <p id="leftover-print-winner" class="canvas-note leftover-print-winner print-leftover-keep">Winner merchant: None unlocked</p>
+            <div id="leftover-coverage" class="table-shell compact print-leftover-keep">
+              <table>
+                <caption>Organizer leftover coverage. Buyer counts and units after the winner, including leftover fill and tertiary fill. Merchant labels only. This table is organizer-private.</caption>
+                <thead><tr><th scope="col">Stage</th><th scope="col">Merchant</th><th scope="col">Buyers</th><th scope="col">Units</th></tr></thead>
+                <tbody id="leftover-coverage-rows"></tbody>
+              </table>
+            </div>
+            <div id="leftover-buyer-list" class="table-shell compact print-private">
+              <table>
+                <caption>Organizer leftover buyers after the winner. Private labels. This list is organizer-private and is not a merchant export.</caption>
+                <thead><tr><th scope="col">Private label</th><th scope="col">Units</th><th scope="col">Coverage</th></tr></thead>
+                <tbody id="leftover-buyer-rows"></tbody>
+              </table>
+            </div>
+            <button id="copy-leftover-coverage" class="print-chrome" type="button">Copy leftover coverage (organizer private)</button>
+            <p class="canvas-note print-chrome">Organizer-private Markdown of leftover buyer counts and units. Clipboard copies when allowed; otherwise a textarea is shown. This is not a merchant export.</p>
           </article>
           <button id="buyer-report" class="print-chrome" type="button">Export private buyer report (CSV)</button>
           <button id="organizer-briefing" class="print-chrome" type="button">Export organizer briefing</button>
@@ -768,7 +836,12 @@ footer {
               <option value="pickup">Pickup</option>
             </select>
           </label>
-          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last choice is kept in this browser's workspace file. Older workspace files without it still open.</p>
+          <label class="checkbox-field">
+            <input id="hide-unwinnable-offers" type="checkbox">
+            Hide offers that cannot currently win
+          </label>
+          <button id="restore-unwinnable-offers" type="button">Restore unwinnable offers</button>
+          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last fulfillment and hide-unwinnable choices are kept in this browser's workspace file. Older workspace files without it still open. Hide-unwinnable is display only. Merchant views still show counts only.</p>
         </div>
         <div class="snapshot-bar print-chrome" aria-label="Offer list order">
           <label>Sort offers
@@ -819,6 +892,8 @@ footer {
             <svg id="delivery-heatmap" class="capacity-bar print-keep" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
             <button id="heatmap-csv" class="print-chrome" type="button">Export heatmap CSV</button>
             <h4>Offered variant overlap</h4>
+            <div id="variant-overlap-region" tabindex="-1" aria-labelledby="variant-overlap-heading">
+            <h5 id="variant-overlap-heading" class="sr-only">Variant overlap counts</h5>
             <p id="variant-overlap-note" class="canvas-note"></p>
             <div class="table-shell compact">
               <table>
@@ -829,6 +904,7 @@ footer {
             </div>
             <button id="overlap-csv" class="print-chrome" type="button">Copy overlap CSV</button>
             <button id="overlap-markdown" class="print-chrome" type="button">Copy overlap Markdown</button>
+            </div>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>
@@ -1039,6 +1115,23 @@ const presets = Object.freeze({
       offer("O02", "Heirloom Packet", "Garden seed pack", "Heirloom tomato", 16, 8, 9, 20, 1.5),
       { ...offer("O03", "Soil Yard Pickup", "Garden seed pack", "Potting soil", 12, 10, 5, 24, 8), fulfillment: "pickup" }
     ]
+  },
+  schoolFete: {
+    title: "School fete catering",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Year three stall", "Fete catering pack", 12, 18, 6, ["Sausage sizzle", "Cake stall"]),
+      buyer("B02", "Cake stall crew", "Fete catering pack", 8, 16, 5, ["Cake stall"]),
+      buyer("B03", "Drinks tent", "Fete catering pack", 10, 20, 7, ["Drinks cooler"]),
+      buyer("B04", "P and C kitchen", "Fete catering pack", 16, 17, 6, ["Sausage sizzle", "Drinks cooler"]),
+      buyer("B05", "Second-hand stall", "Fete catering pack", 6, 15, 4, ["Cake stall", "Drinks cooler"]),
+      buyer("B06", "Sports tent", "Fete catering pack", 9, 19, 8, ["Sausage sizzle"])
+    ],
+    offers: [
+      offer("O01", "Sizzle Supply Co", "Fete catering pack", "Sausage sizzle", 12, 18, 4, 40, 2),
+      offer("O02", "Bake Share", "Fete catering pack", "Cake stall", 14, 10, 5, 24, 1.5),
+      { ...offer("O03", "Hall Pickup Drinks", "Fete catering pack", "Drinks cooler", 11, 12, 3, 30, 6), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -1080,7 +1173,7 @@ function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -1097,7 +1190,15 @@ function validateWorkspace(candidate) {
     }
     hideExcluded = hideExcludedBuyers;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded };
+  const hideUnwinnableOffers = own(candidate, "hideUnwinnableOffers");
+  let hideUnwinnable = false;
+  if (hideUnwinnableOffers !== undefined) {
+    if (hideUnwinnableOffers !== true && hideUnwinnableOffers !== false) {
+      throw new ScenarioError("Hide unwinnable offers must be true or false.");
+    }
+    hideUnwinnable = hideUnwinnableOffers;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable };
 }
 
 function duplicateEntry(rawScenario, kind, id) {
@@ -1155,6 +1256,18 @@ function filterOfferIdsByFulfillment(rawScenario, fulfillment) {
   const scenario = validateScenario(rawScenario);
   if (fulfillment === "all") return scenario.offers.map((offer) => offer.id);
   return scenario.offers.filter((offer) => offer.fulfillment === fulfillment).map((offer) => offer.id);
+}
+
+/** Display-only. Matching is unchanged. When hideUnwinnable is false, every offer id is returned. Locked and zero-unlock offers are omitted when true. */
+function filterOfferIdsHidingUnwinnable(rawScenario, hideUnwinnable) {
+  if (hideUnwinnable !== true && hideUnwinnable !== false) {
+    throw new ScenarioError("Hide unwinnable offers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideUnwinnable) return scenario.offers.map((offer) => offer.id);
+  const market = evaluateMarket(scenario);
+  const unlocked = new Set(market.results.filter((result) => result.qualifies).map((result) => result.offer.id));
+  return scenario.offers.filter((offer) => unlocked.has(offer.id)).map((offer) => offer.id);
 }
 
 function acceptedVariantFilterOptions(rawScenario) {
@@ -1954,6 +2067,133 @@ function createWinnerAggregatesMarkdown(rawScenario) {
       : `- Tertiary fill: none.`,
     ``,
     `These aggregates omit private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+/** Organizer leftover table. Counts and merchant labels only. No buyer IDs, labels, budgets, or allocations. */
+function leftoverCoverageRows(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  return [
+    {
+      id: "leftover-after-winner",
+      stage: "Leftover after winner",
+      merchant: coverage.primary?.merchant ?? "None",
+      buyerCount: coverage.leftoverBuyerCount,
+      units: coverage.leftoverUnits,
+      uncovered: false
+    },
+    {
+      id: "leftover-fill",
+      stage: "Leftover fill",
+      merchant: coverage.secondary?.merchant ?? "None",
+      buyerCount: coverage.secondary ? coverage.secondary.deliveredBuyers : 0,
+      units: coverage.secondary ? coverage.secondary.fulfilledUnits : 0,
+      uncovered: false
+    },
+    {
+      id: "tertiary-fill",
+      stage: "Tertiary fill",
+      merchant: coverage.tertiary?.merchant ?? "None",
+      buyerCount: coverage.tertiary ? coverage.tertiary.deliveredBuyers : 0,
+      units: coverage.tertiary ? coverage.tertiary.fulfilledUnits : 0,
+      uncovered: false
+    },
+    {
+      id: "uncovered-leftover",
+      stage: "Uncovered leftover",
+      merchant: "None",
+      buyerCount: coverage.unfilledBuyerCount,
+      units: coverage.unfilledUnits,
+      uncovered: coverage.leftoverBuyerCount > 0
+    }
+  ];
+}
+
+/** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
+function createLeftoverCoverageMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const rows = leftoverCoverageRows(rawScenario);
+  const lines = [
+    `# Common Cart leftover residual coverage (organizer private)`,
+    ``,
+    `This Markdown is organizer-private. It is not a merchant export.`,
+    ``,
+    `- Winning merchant: ${coverage.primary?.merchant ?? "None unlocked"}`,
+    `- Leftover after winner: ${coverage.leftoverBuyerCount} buyers, ${coverage.leftoverUnits} units.`,
+    coverage.secondary
+      ? `- Leftover fill: ${coverage.secondary.merchant} / ${coverage.secondary.variant}, ${coverage.secondary.fulfilledUnits} units, ${coverage.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    coverage.tertiary
+      ? `- Tertiary fill: ${coverage.tertiary.merchant} / ${coverage.tertiary.variant}, ${coverage.tertiary.fulfilledUnits} units, ${coverage.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
+    `- Still unfilled: ${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units.`,
+    `- ${coverage.note}`,
+    ``,
+    `| Stage | Merchant | Buyers | Units |`,
+    `| --- | --- | --- | --- |`,
+    ...rows.map((row) => `| ${markdownTableCell(row.stage)} | ${markdownTableCell(row.merchant)} | ${row.buyerCount} | ${row.units} |`),
+    ``,
+    `Buyer counts and units only. Labels, IDs, budgets, and allocations are omitted.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
+/** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
+function organizerLeftoverRows(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const coverage = computeResidualCoverage(rawScenario);
+  const buyers = new Map(scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const secondary = new Set(coverage.secondary?.selectedBuyerIds ?? []);
+  const tertiary = new Set(coverage.tertiary?.selectedBuyerIds ?? []);
+  return coverage.leftoverBuyerIds.map((id) => {
+    const buyer = buyers.get(id);
+    if (secondary.has(id)) {
+      return { label: buyer.label, quantity: buyer.quantity, status: "Leftover fill", uncovered: false };
+    }
+    if (tertiary.has(id)) {
+      return { label: buyer.label, quantity: buyer.quantity, status: "Tertiary fill", uncovered: false };
+    }
+    return { label: buyer.label, quantity: buyer.quantity, status: "Uncovered leftover", uncovered: true };
+  });
+}
+
+/** Organizer-private winner inspector Markdown. Winning offer label, leftover counts, and residual coverage. */
+function createWinnerInspectorSummaryMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const coverage = computeResidualCoverage(rawScenario);
+  const winner = market.winner;
+  const lines = [
+    `# Common Cart winner inspector summary (organizer private)`,
+    ``,
+    `This Markdown is organizer-private. It is not a merchant export.`,
+    ``,
+    `## Winning offer`,
+    winner
+      ? [
+        `- Offer: ${winner.offer.merchant} / ${winner.offer.variant}`,
+        `- Fulfilled units: ${winner.fulfilledUnits}`,
+        `- Included buyers: ${winner.deliveredBuyers}`,
+        `- Fulfillment: ${winner.offer.fulfillment}`
+      ].join("\n")
+      : `- No qualifying offer.`,
+    ``,
+    `## Leftover after winner`,
+    `- Leftover buyers: ${coverage.leftoverBuyerCount}`,
+    `- Leftover units: ${coverage.leftoverUnits}`,
+    `- Still unfilled buyers: ${coverage.unfilledBuyerCount}`,
+    `- Still unfilled units: ${coverage.unfilledUnits}`,
+    ``,
+    `## Residual coverage`,
+    `- ${coverage.note}`,
+    coverage.secondary
+      ? `- Leftover fill: ${coverage.secondary.merchant} / ${coverage.secondary.variant}, ${coverage.secondary.fulfilledUnits} units, ${coverage.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    coverage.tertiary
+      ? `- Tertiary fill: ${coverage.tertiary.merchant} / ${coverage.tertiary.variant}, ${coverage.tertiary.fulfilledUnits} units, ${coverage.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
+    ``,
+    `Buyer identities, IDs, budgets, and allocations are omitted.`
   ];
   return `${lines.join("\n")}\n`;
 }
@@ -2875,6 +3115,7 @@ let buyerSortPreviewIds = null;
 let offerSortPreviewIds = null;
 let buyerVariantFilter = "all";
 let hideExcludedBuyers = false;
+let hideUnwinnableOffers = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -2890,6 +3131,7 @@ function loadWorkspace() {
     const workspace = validateWorkspace(JSON.parse(raw));
     offerFulfillmentFilter = workspace.fulfillmentFilter;
     hideExcludedBuyers = workspace.hideExcludedBuyers;
+    hideUnwinnableOffers = workspace.hideUnwinnableOffers;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -2932,7 +3174,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -3032,19 +3274,11 @@ function bindStaticEvents() {
   });
   document.querySelector("#overlap-markdown").addEventListener("click", () => {
     try {
-      const markdown = createVariantOverlapMarkdown(scenario);
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(markdown).then(
-          () => setStatus("Overlap Markdown copied. It contains buyer counts only. Labels, IDs, budgets, and allocations are omitted.", true),
-          () => {
-            downloadFile(markdown, "common-cart-variant-overlap.md", "text/markdown;charset=utf-8");
-            setStatus("Clipboard was blocked, so the overlap Markdown was downloaded instead. Counts only.", true);
-          }
-        );
-        return;
-      }
-      downloadFile(markdown, "common-cart-variant-overlap.md", "text/markdown;charset=utf-8");
-      setStatus("Overlap Markdown downloaded. It contains buyer counts only.", true);
+      copyTextWithFallback(
+        createVariantOverlapMarkdown(scenario),
+        "Overlap Markdown copied. It contains buyer counts only. Labels, IDs, budgets, and allocations are omitted.",
+        "Clipboard was blocked. Overlap Markdown is in the textarea. Counts only. Labels, IDs, budgets, and allocations are omitted."
+      );
     } catch (error) { setStatus(`Overlap Markdown copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#copy-winner-aggregates").addEventListener("click", () => {
@@ -3063,6 +3297,24 @@ function bindStaticEvents() {
       downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
       setStatus("Winner aggregates downloaded as Markdown. Counts and totals only.", true);
     } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#copy-leftover-coverage").addEventListener("click", () => {
+    try {
+      copyTextWithFallback(
+        createLeftoverCoverageMarkdown(scenario),
+        "Leftover coverage copied as organizer-private Markdown. Buyer counts and units only. This is not a merchant export.",
+        "Clipboard was blocked. Organizer-private leftover Markdown is in the textarea. Buyer counts and units only. This is not a merchant export."
+      );
+    } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
+    try {
+      copyTextWithFallback(
+        createWinnerInspectorSummaryMarkdown(scenario),
+        "Winner inspector summary copied as organizer-private Markdown. Winning offer label, leftover counts, and residual coverage. Buyer identities omitted.",
+        "Clipboard was blocked. Organizer-private winner inspector Markdown is in the textarea. Buyer identities omitted."
+      );
+    } catch (error) { setStatus(`Winner inspector copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#copy-exclusion-counts").addEventListener("click", () => {
     try {
@@ -3333,6 +3585,30 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#hide-unwinnable-offers").addEventListener("change", (event) => {
+    hideUnwinnableOffers = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyOfferFulfillmentFilter();
+      setStatus(hideUnwinnableOffers
+        ? "Hiding offers that cannot currently win. Display only. Saved offers and matching stay unchanged. Merchant views still show counts only."
+        : "Showing locked and zero-unlock offers again. Saved offers and matching stay unchanged.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#restore-unwinnable-offers").addEventListener("click", () => {
+    hideUnwinnableOffers = false;
+    persistWorkspaceDisplaySettings();
+    const hideControl = document.querySelector("#hide-unwinnable-offers");
+    if (hideControl) hideControl.checked = false;
+    try {
+      applyOfferFulfillmentFilter();
+      setStatus("Restored unwinnable offers on screen. Saved offers and matching stay unchanged. Merchant views still show counts only.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#buyer-variant-filter").addEventListener("change", (event) => {
     buyerVariantFilter = event.target.value;
     try {
@@ -3512,6 +3788,27 @@ function handleShortcut(event) {
   if (key === "l") {
     event.preventDefault();
     focusResidualCoverage();
+    return;
+  }
+  if (key === "p") {
+    event.preventDefault();
+    printLeftoverOnePager();
+    return;
+  }
+  if (key === "v") {
+    event.preventDefault();
+    focusVariantOverlap();
+    return;
+  }
+  if (key === "j") {
+    event.preventDefault();
+    focusUncoveredLeftover();
+    return;
+  }
+  if (key === "s") {
+    event.preventDefault();
+    focusBuyerPaste();
+    return;
   }
 }
 
@@ -3536,6 +3833,43 @@ function focusResidualCoverage() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#residual-title")?.focus();
+}
+
+function printLeftoverOnePager() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.body.classList.add("print-leftover");
+  const cleanup = () => document.body.classList.remove("print-leftover");
+  window.addEventListener("afterprint", cleanup, { once: true });
+  window.print();
+}
+
+function focusVariantOverlap() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  if (merchantTab) activateTab(merchantTab);
+  document.querySelector("#variant-overlap-region")?.focus();
+}
+
+function focusUncoveredLeftover() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const uncoveredBuyer = document.querySelector("#leftover-buyer-rows .leftover-uncovered");
+  if (uncoveredBuyer) {
+    uncoveredBuyer.focus();
+    return;
+  }
+  const leftoverExists = document.querySelector("#leftover-buyer-rows tr") || document.querySelector("#uncovered-leftover.leftover-uncovered");
+  if (leftoverExists) {
+    document.querySelector("#uncovered-leftover")?.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusBuyerPaste() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#paste-buyers")?.focus();
 }
 
 function focusOffersList() {
@@ -3674,6 +4008,14 @@ function applyOfferFulfillmentFilter() {
   } catch {
     visibleIds = new Set(scenario.offers.map((offer) => offer.id));
   }
+  if (hideUnwinnableOffers) {
+    try {
+      const unlocked = new Set(filterOfferIdsHidingUnwinnable(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => unlocked.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
   elements.offerRows.querySelectorAll("tr[data-id]").forEach((row) => {
     row.hidden = !visibleIds.has(row.dataset.id);
   });
@@ -3681,12 +4023,22 @@ function applyOfferFulfillmentFilter() {
   scenario.offers.forEach((offer, index) => {
     if (editors[index]) editors[index].hidden = !visibleIds.has(offer.id);
   });
+  elements.merchantResults?.querySelectorAll("tr[data-id]").forEach((row) => {
+    row.hidden = !visibleIds.has(row.dataset.id);
+  });
+  elements.resultRows?.querySelectorAll("tr[data-id]").forEach((row) => {
+    row.hidden = !visibleIds.has(row.dataset.id);
+  });
+  const hideControl = document.querySelector("#hide-unwinnable-offers");
+  if (hideControl) hideControl.checked = hideUnwinnableOffers;
+  const restore = document.querySelector("#restore-unwinnable-offers");
+  if (restore) restore.disabled = !hideUnwinnableOffers;
   const note = document.querySelector("#offer-filter-note");
   if (!note) return;
   const hiddenCount = scenario.offers.length - visibleIds.size;
   note.textContent = hiddenCount === 0
-    ? "The filter hides rows on screen. Saved offers and matching stay unchanged."
-    : `Showing ${visibleIds.size} of ${scenario.offers.length} offers. Hidden rows stay in the room and still match.`;
+    ? "The filter hides rows on screen. Saved offers and matching stay unchanged. Merchant views still show counts only."
+    : `Showing ${visibleIds.size} of ${scenario.offers.length} offers. Hidden rows stay in the room and still match. Merchant views still show counts only.`;
 }
 
 function populateBuyerVariantFilter() {
@@ -3938,8 +4290,12 @@ function refresh() {
       residualEmpty.textContent = "Residual coverage will appear once every field is valid.";
       residualSummary.append(residualEmpty);
     }
-    const residualNote = document.querySelector("#residual-note");
-    if (residualNote) residualNote.textContent = "";
+    const leftoverRows = document.querySelector("#leftover-coverage-rows");
+    if (leftoverRows) leftoverRows.replaceChildren();
+    const leftoverBuyers = document.querySelector("#leftover-buyer-rows");
+    if (leftoverBuyers) leftoverBuyers.replaceChildren();
+    const leftoverFallback = document.querySelector("#clipboard-fallback");
+    if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
     const demandNote = document.createElement("p");
     demandNote.className = "canvas-note";
@@ -4121,6 +4477,7 @@ function renderResults(market) {
   const labels = new Map(market.scenario.buyers.map((buyer) => [buyer.id, buyerDisplayLabel(buyer)]));
   const rows = market.ranked.map((result) => {
     const row = document.createElement("tr");
+    row.dataset.id = result.offer.id;
     addCell(row, `${result.offer.merchant} / ${result.offer.variant}`);
     addCell(row, result.qualifies ? "Unlocked" : result.offer.tiers?.length ? "No feasible tier" : `${result.unitsShort} short`, result.qualifies ? "status-pass" : "status-short");
     addCell(row, String(result.fulfilledUnits));
@@ -4136,6 +4493,7 @@ function renderResults(market) {
   elements.resultRows.replaceChildren(...rows);
   elements.merchantResults.replaceChildren(...market.ranked.map((result) => {
     const row = document.createElement("tr");
+    row.dataset.id = result.offer.id;
     const gap = unitsToNextTier(market.scenario, result.offer.id);
     addCell(row, result.offer.merchant);
     addCell(row, result.qualifies ? "Unlocked" : "Locked");
@@ -4146,6 +4504,7 @@ function renderResults(market) {
     addCell(row, gap.unitsNeeded === null ? gap.reason : `${gap.unitsNeeded} units (${gap.supplierBuyerCount} excluded buyers, ${gap.supplierUnits} units they hold)`);
     return row;
   }));
+  applyOfferFulfillmentFilter();
 }
 
 function renderResidualCoverage(rawScenario) {
@@ -4161,6 +4520,7 @@ function renderResidualCoverage(rawScenario) {
     appendDetail(list, "Unfilled buyers", coverage.unfilledBuyerCount);
     appendDetail(list, "Unfilled units", coverage.unfilledUnits);
     summary.replaceChildren(list);
+    renderLeftoverCoverageTable(rawScenario);
     return;
   }
   appendDetail(list, "Winning offer", `${coverage.primary.merchant} / ${coverage.primary.variant}`);
@@ -4189,6 +4549,53 @@ function renderResidualCoverage(rawScenario) {
   leftoverNote.className = "canvas-note";
   leftoverNote.textContent = leftover.note;
   summary.replaceChildren(list, leftoverNote);
+  renderLeftoverCoverageTable(rawScenario);
+}
+
+function leftoverRowCells(row) {
+  const element = document.createElement("tr");
+  element.id = row.id;
+  element.dataset.stage = row.id;
+  if (row.uncovered) element.classList.add("leftover-uncovered");
+  element.tabIndex = -1;
+  addCell(element, row.stage);
+  addCell(element, row.merchant);
+  addCell(element, String(row.buyerCount));
+  addCell(element, String(row.units));
+  return element;
+}
+
+function renderLeftoverCoverageTable(rawScenario) {
+  const body = document.querySelector("#leftover-coverage-rows");
+  if (!body) return;
+  const rows = leftoverCoverageRows(rawScenario);
+  body.replaceChildren(...rows.map(leftoverRowCells));
+  const winner = document.querySelector("#leftover-print-winner");
+  if (winner) {
+    const coverage = computeResidualCoverage(rawScenario);
+    winner.textContent = coverage.primary
+      ? `Winner merchant: ${coverage.primary.merchant}`
+      : "Winner merchant: None unlocked";
+  }
+  renderOrganizerLeftoverRows(rawScenario);
+}
+
+function renderOrganizerLeftoverRows(rawScenario) {
+  const body = document.querySelector("#leftover-buyer-rows");
+  if (!body) return;
+  const coverage = computeResidualCoverage(rawScenario);
+  const rows = organizerLeftoverRows(rawScenario);
+  body.replaceChildren(...rows.map((entry, index) => {
+    const row = document.createElement("tr");
+    row.tabIndex = -1;
+    row.dataset.index = String(index);
+    if (entry.uncovered) row.classList.add("leftover-uncovered");
+    const buyer = scenario.buyers.find((item) => item.id === coverage.leftoverBuyerIds[index]);
+    addCell(row, buyer ? buyerDisplayLabel(buyer) : entry.label);
+    addCell(row, String(entry.quantity));
+    addCell(row, entry.status);
+    return row;
+  }));
 }
 
 function renderInspector(market) {
@@ -4708,6 +5115,36 @@ function exportScenario() {
   } catch (error) {
     setStatus(`Export failed: ${messageOf(error)}`);
   }
+}
+
+function copyTextWithFallback(text, successMessage, fallbackMessage) {
+  const wrap = document.querySelector("#clipboard-fallback");
+  const area = document.querySelector("#clipboard-fallback-text");
+  const hideFallback = () => {
+    if (wrap) wrap.hidden = true;
+  };
+  const showFallback = () => {
+    if (!wrap || !area) {
+      setStatus("Clipboard was blocked. The text could not be copied automatically.");
+      return;
+    }
+    area.value = text;
+    wrap.hidden = false;
+    area.focus();
+    area.select();
+    setStatus(fallbackMessage);
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        hideFallback();
+        setStatus(successMessage, true);
+      },
+      showFallback
+    );
+    return;
+  }
+  showFallback();
 }
 
 function downloadFile(content, filename, type) {

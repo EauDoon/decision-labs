@@ -168,7 +168,12 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /id="copy-versions"/);
   assert.match(missing.body, />Copy versions</);
   assert.match(missing.body, /querySelector\('\.version-line'\)/);
+  assert.match(missing.body, /id="copy-trust"/);
+  assert.match(missing.body, />Copy Trust and limits</);
+  assert.match(missing.body, /id="trust"/);
+  assert.match(missing.body, /Not a live policy feed/);
   assert.doesNotMatch(missing.body, /\bfetch\s*\(/);
+  assert.doesNotMatch(missing.body, /XMLHttpRequest/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
   assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
 
@@ -224,6 +229,47 @@ test('404 copy versions markdown comes from the printed catalog line', async () 
   assert.equal(PUBLIC_PATHS.length, 6);
 });
 
+test('404 copy Trust markdown comes from the printed heading and list', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  const heading = { textContent: 'Trust and limits' };
+  const items = [
+    { textContent: 'Local-first. Pages run in your browser.' },
+    { textContent: 'No account. There is no sign-in.' },
+  ];
+  const section = {
+    querySelector(selector) {
+      return selector === 'h2' ? heading : null;
+    },
+    querySelectorAll(selector) {
+      return selector === 'ul li' ? items : [];
+    },
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-versions') return { addEventListener() {} };
+      if (id === 'copy-versions-status') return { textContent: '' };
+      if (id === 'copy-versions-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-trust') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-trust-status') return { textContent: '' };
+      if (id === 'copy-trust-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'trust') return section;
+      return null;
+    },
+    querySelector() { return null; },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '## Trust and limits\n- Local-first. Pages run in your browser.\n- No account. There is no sign-in.');
+  assert.doesNotMatch(copied, /live policy feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
 test('404 copy-versions script parses as classic browser JavaScript', () => {
   const page = notFoundPage();
   const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
@@ -237,6 +283,8 @@ test('404 copy-versions script parses as classic browser JavaScript', () => {
   assert.equal(result.status, 0, result.stderr || result.error?.message);
   assert.doesNotMatch(source, /\bfetch\s*\(/);
   assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /trustMarkdown/);
+  assert.match(source, /Not a live policy feed/);
 });
 
 test('404 copy versions uses the printed catalog line without extra public paths', () => {
@@ -249,6 +297,32 @@ test('404 copy versions uses the printed catalog line without extra public paths
   assert.match(page, /querySelector\('\.version-line'\)/);
   assert.match(page, /Current catalog:/);
   assert.match(page, /Not a live product version/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy Trust uses the printed heading and list without extra public paths', () => {
+  const page = notFoundPage();
+  assert.match(page, /id="copy-trust"/);
+  assert.match(page, />Copy Trust and limits</);
+  assert.match(page, /id="copy-trust-fallback"/);
+  assert.match(page, /textarea id="copy-trust-fallback"/);
+  assert.match(page, /trustMarkdown/);
+  assert.match(page, /id="trust"/);
+  assert.match(page, /id="trust-title">Trust and limits/);
+  assert.match(page, /Local-first/);
+  assert.match(page, /Not a decision maker/);
+  assert.match(page, /Not a live policy feed/);
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(page, /XMLHttpRequest/);
   assert.equal(PUBLIC_PATHS.length, 6);
