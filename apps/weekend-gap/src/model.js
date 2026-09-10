@@ -119,6 +119,15 @@ export const PRESETS = Object.freeze({
     reserveCashAud: 5900000,
     redemptionDemandAud: 3600000,
     weekendFxMultiplier: 3.1
+  }),
+  sundayStallClose: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Sunday stall close (synthetic)",
+    demandProfile: "sundayBurst",
+    payoutOpenEndHour: 16,
+    reserveCashAud: 5750000,
+    redemptionDemandAud: 3400000,
+    weekendFxMultiplier: 2.9
   })
 });
 
@@ -128,7 +137,7 @@ const FIELD_RULES = Object.freeze({
   bankLabel: { type: "text", maxLength: 40 },
   payoutLabel: { type: "text", maxLength: 40 },
   fxLabel: { type: "text", maxLength: 40 },
-  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush", "saturdayBurst"] },
+  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush", "saturdayBurst", "sundayBurst"] },
   nominalLiquidityAud: { min: 10000, max: 5000000000 },
   reserveCashAud: { min: 0, max: 5000000000 },
   issuerThroughputAudPerHour: { min: 0, max: 1000000000 },
@@ -295,10 +304,11 @@ export function getOperationalStatus(scenarioInput, hourOffset) {
 export function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS, profile = "flat") {
   const total = Math.max(0, finiteNumber(totalDemandAud, 0));
   if (!Number.isInteger(hours) || hours < 1 || hours > 720) throw new RangeError("Demand schedule requires 1 to 720 whole hours.");
-  if (!["flat", "fridayBurst", "mondayRush", "saturdayBurst"].includes(profile)) throw new RangeError("Unknown demand profile.");
+  if (!["flat", "fridayBurst", "mondayRush", "saturdayBurst", "sundayBurst"].includes(profile)) throw new RangeError("Unknown demand profile.");
   const weights = Array.from({ length: hours }, (_, hour) =>
     profile === "fridayBurst" && hour < 9 ? 8
       : profile === "saturdayBurst" && hour >= 9 && hour < 33 ? 8
+      : profile === "sundayBurst" && hour >= 48 && hour < 57 ? 8
       : profile === "mondayRush" && hour >= 57 ? 8
       : 1);
   const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
@@ -723,7 +733,8 @@ const WORKSPACE_KEYS = Object.freeze([
   "ganttGateFilter",
   "queueBacklogOnly",
   "ganttHourIndex",
-  "ganttEveryGateClosed"
+  "ganttEveryGateClosed",
+  "hideWeekdayGanttHours"
 ]);
 
 function assertWorkspaceKeys(raw) {
@@ -738,7 +749,7 @@ function assertWorkspaceKeys(raw) {
 
 /** Portable editing state; computed results are always regenerated on restore. */
 export function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false } = options;
   const ganttHourIndex = options.ganttHourIndex === undefined ? selectedHour : options.ganttHourIndex;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
   if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > 72) throw new RangeError("Workspace Gantt hour index is invalid.");
@@ -750,8 +761,9 @@ export function workspaceToJSON(current, baseline, options = {}) {
   if (!GANTT_GATE_FILTERS.includes(ganttGateFilter)) throw new RangeError("Workspace Gantt gate filter is invalid.");
   if (queueBacklogOnly !== true && queueBacklogOnly !== false) throw new RangeError("Workspace queue backlog filter is invalid.");
   if (ganttEveryGateClosed !== true && ganttEveryGateClosed !== false) throw new RangeError("Workspace Gantt every-gate-closed filter is invalid.");
+  if (hideWeekdayGanttHours !== true && hideWeekdayGanttHours !== false) throw new RangeError("Workspace Gantt weekday-hour filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours }, null, 2);
 }
 export function workspaceFromJSON(text) {
   try {
@@ -778,7 +790,8 @@ export function workspaceFromJSON(text) {
       ganttGateFilter: raw.ganttGateFilter === undefined ? "all" : raw.ganttGateFilter,
       queueBacklogOnly: raw.queueBacklogOnly === undefined ? false : raw.queueBacklogOnly,
       ganttHourIndex: restoredHour,
-      ganttEveryGateClosed: raw.ganttEveryGateClosed === undefined ? false : raw.ganttEveryGateClosed
+      ganttEveryGateClosed: raw.ganttEveryGateClosed === undefined ? false : raw.ganttEveryGateClosed,
+      hideWeekdayGanttHours: raw.hideWeekdayGanttHours === undefined ? false : raw.hideWeekdayGanttHours
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -1073,6 +1086,7 @@ const DEMAND_PROFILE_LABELS = Object.freeze({
 export function stepDemandProfile(profile, direction) {
   if (direction !== "earlier" && direction !== "later") throw new RangeError("Demand timing steps must be earlier or later.");
   if (profile === "saturdayBurst") return direction === "earlier" ? "fridayBurst" : "flat";
+  if (profile === "sundayBurst") return direction === "earlier" ? "saturdayBurst" : "mondayRush";
   if (!DEMAND_PROFILES.includes(profile)) throw new RangeError("Unknown demand profile.");
   const index = DEMAND_PROFILE_STEP_ORDER.indexOf(profile);
   const nextIndex = direction === "earlier" ? Math.max(0, index - 1) : Math.min(DEMAND_PROFILE_STEP_ORDER.length - 1, index + 1);
@@ -1226,6 +1240,13 @@ export function ganttHourClosedOnEveryGate(point) {
   return !point.issuerOpen && !point.bankOpen && !point.payoutOpen && !point.fxWeekday;
 }
 
+/** True when the Gantt hour falls on Saturday or Sunday. */
+export function ganttHourIsWeekend(point) {
+  if (!point || typeof point !== "object" || !Number.isInteger(point.hour)) return false;
+  const { dayIndex } = dayAndHourAt(point.hour);
+  return dayIndex === 0 || dayIndex === 6;
+}
+
 export const GANTT_GATE_FILTERS = Object.freeze(["all", "issuer", "bank", "payout", "fx"]);
 
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
@@ -1234,6 +1255,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
   const closedOnly = options.closedOnly === true;
   const everyClosedOnly = options.everyClosedOnly === true;
+  const hideWeekdayHours = options.hideWeekdayHours === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -1255,6 +1277,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   rows.forEach((row, rowIndex) => {
     const y = top + rowIndex * rowHeight;
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+      if (hideWeekdayHours && !ganttHourIsWeekend(schedule.hours[hour])) continue;
       if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[2](hour);
@@ -1327,6 +1350,14 @@ export function selectedGanttHourToMarkdown(input, selectedHour = 0) {
     "| FX | " + ganttGateStateLabel(point.fxWeekday, true) + " |",
     ""
   ].join("\n");
+}
+
+/** One-line remaining reserve and queued AUD at the selected Gantt hour. Synthetic snapshot, not live. */
+export function remainingReserveAtHourToMarkdown(input, selectedHour = 0) {
+  const result = runSimulation(input);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const point = result.timeline[hour];
+  return "Remaining reserve: " + point.reserveRemainingAud + " AUD. Queued AUD: " + point.queuedAud + ". Hour: " + point.timeLabel + " (hour " + point.hour + "). Synthetic educational snapshot, not live market data.";
 }
 
 /** Markdown for the peak-queue checkpoint. Synthetic snapshot, not a live queue. */
@@ -1409,6 +1440,20 @@ export function fxGanttHoursToMarkdown(input) {
     ...rows,
     ""
   ].join("\n");
+}
+
+/** Compact count of weekend FX open versus closed hours. Counts of hours, not a bank calendar. */
+export function weekendFxHourCountsToMarkdown(input) {
+  const schedule = buildGateSchedule(input);
+  let open = 0;
+  let closed = 0;
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    if (!ganttHourIsWeekend(point)) continue;
+    if (point.fxWeekday) open += 1;
+    else closed += 1;
+  }
+  return "Weekend FX hours: " + open + " open, " + closed + " closed. Counts of modeled hours, not a bank calendar.";
 }
 
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
