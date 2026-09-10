@@ -478,6 +478,21 @@ test("keyboard t jumps to the timing review and ignores the key while typing", a
   assert.equal(ui.nodes.get("weekend-review-title").focused, false);
 });
 
+test("keyboard n jumps to the first-payout marker and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("n");
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").focused, true);
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").attributes.tabindex, "-1");
+  assert.equal(ui.nodes.get("selected-chart").value, "gantt");
+  ui.nodes.get("gantt-first-payout-marker").focused = false;
+  await ui.keydown("N", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").focused, false);
+  await ui.keydown("n", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").focused, false);
+  await ui.keydown("n", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-first-payout-marker").focused, false);
+});
+
 test("keyboard k jumps to the hours-to-clear line and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("k");

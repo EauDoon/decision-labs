@@ -547,7 +547,9 @@ SOFTWARE.
             <p class="eyebrow">Operating calendar</p>
             <h2 id="gantt-title" tabindex="-1">72-hour gate Gantt</h2>
             <p>Issuer, bank and payout rows show open (solid) versus closed (hatched) for each hour. Color is extra; the hatch marks closed hours. FX shows weekday depth (solid) versus weekend thinning (hatched). The solid vertical line is the timeline slider hour. The dashed marker is the first payout window. A table follows.</p>
-            <p id="gantt-payout-note"></p>
+            <div id="gantt-first-payout-marker" tabindex="-1">
+              <p id="gantt-payout-note"></p>
+            </div>
             <p id="gantt-filter-note" role="status"></p>
             <div class="planning-actions">
               <label for="gantt-density">Show Gantt rows</label>
@@ -666,6 +668,7 @@ SOFTWARE.
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
           <li><kbd>H</kbd> Jump to the selected Gantt hour</li>
           <li><kbd>K</kbd> Jump to the hours-to-clear line</li>
+          <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>B</kbd> Jump to the Bank Gantt row</li>
           <li><kbd>M</kbd> Jump to the compare Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>

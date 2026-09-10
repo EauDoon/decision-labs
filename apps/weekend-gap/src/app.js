@@ -1463,6 +1463,17 @@ function jumpToHoursToClear() {
   line.scrollIntoView?.({ block: "start" });
   return true;
 }
+function jumpToFirstPayoutMarker() {
+  const hour = simulation.timeline[0].nextPayoutHour;
+  if (hour === null) return jumpToGantt();
+  const marker = document.querySelector("#gantt-first-payout-marker");
+  if (!marker) return jumpToGantt();
+  marker.setAttribute("tabindex", "-1");
+  marker.focus();
+  marker.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
 function jumpToGanttBankRow() {
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
@@ -1689,6 +1700,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "k" || event.key === "K") {
     event.preventDefault();
     jumpToHoursToClear();
+    return;
+  }
+  if (event.key === "n" || event.key === "N") {
+    event.preventDefault();
+    jumpToFirstPayoutMarker();
     return;
   }
   if (event.key === "b" || event.key === "B") {
