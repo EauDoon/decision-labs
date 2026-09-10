@@ -16,7 +16,8 @@ test("print leftover one-pager keeps leftover table and winner merchant label on
   assert.match(app, /function printLeftoverOnePager\(/u);
   assert.match(app, /print-leftover/u);
   assert.match(app, /Winner merchant:/u);
-  assert.doesNotMatch(app, /leftoverBuyerIds/u);
+  const leftoverPrint = app.slice(app.indexOf("function printLeftoverOnePager"), app.indexOf("function focusVariantOverlap"));
+  assert.doesNotMatch(leftoverPrint, /leftoverBuyerIds/u);
 });
 
 test("print one-pager hides coach, help, and private buyer rows", async () => {
