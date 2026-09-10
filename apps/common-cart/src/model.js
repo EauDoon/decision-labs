@@ -176,6 +176,23 @@ export const presets = Object.freeze({
       offer("O02", "Wide Format Supply", "Photocopy paper ream", "A3 80gsm", 9, 8, 6, 24, 3),
       { ...offer("O03", "Lobby Paper Pickup", "Photocopy paper ream", "Recycled A4", 5, 12, 2, 40, 4), fulfillment: "pickup" }
     ]
+  },
+  sportsKit: {
+    title: "Sports club match-day kit",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Firsts squad", "Match-day kit pack", 8, 42, 6, ["Club jersey", "Training shorts"]),
+      buyer("B02", "Reserves bench", "Match-day kit pack", 6, 36, 5, ["Club jersey"]),
+      buyer("B03", "Juniors pack", "Match-day kit pack", 10, 28, 7, ["Training shorts"]),
+      buyer("B04", "Touchline crew", "Match-day kit pack", 5, 24, 4, ["Water crate"]),
+      buyer("B05", "Away strip", "Match-day kit pack", 7, 40, 8, ["Club jersey", "Water crate"]),
+      buyer("B06", "Training group", "Match-day kit pack", 4, 22, 3, ["Training shorts", "Water crate"])
+    ],
+    offers: [
+      offer("O01", "Field Kit Delivery", "Match-day kit pack", "Club jersey", 28, 12, 5, 40, 4),
+      offer("O02", "Pitch Shorts Co", "Match-day kit pack", "Training shorts", 18, 10, 6, 24, 2),
+      { ...offer("O03", "Clubhouse Kit Pickup", "Match-day kit pack", "Water crate", 14, 6, 2, 20, 8), fulfillment: "pickup" }
+    ]
   }
 });
 
