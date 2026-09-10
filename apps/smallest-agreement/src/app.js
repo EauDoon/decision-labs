@@ -3753,6 +3753,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "|") {
     event.preventDefault();
     jumpToHideVetoGroups();
+  } else if (event.key === "~") {
+    event.preventDefault();
+    copyFirstVetoGroup();
   }
 });
 
