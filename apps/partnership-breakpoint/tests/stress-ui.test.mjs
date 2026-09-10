@@ -63,7 +63,8 @@ async function workbench(protocol = 'file:', options = {}) {
         'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
         'title-copy-text', 'over-capacity-participant', 'copy-deal-title',
         'breakpoint-label-copy-text', 'copy-first-breakpoint-label',
-        'viability-label-copy-text',
+        'viability-label-copy-text', 'copy-viability-label',
+        'print-report', 'print-one-pager-title',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1309,6 +1310,9 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>,<\/kbd> Copy the first-breakpoint participant label as Markdown/);
   assert.match(app.markup(), /<kbd>\.<\/kbd> Jump to Copy first-breakpoint participant label, or the First breakpoint heading if missing/);
   assert.match(app.markup(), /<kbd>\/<\/kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing/);
+  assert.match(app.markup(), /<kbd>;<\/kbd> Copy the least-headroom participant label as Markdown/);
+  assert.match(app.markup(), /<kbd>\[<\/kbd> Jump to Copy least-headroom participant label, or the First breakpoint or results heading if missing/);
+  assert.match(app.markup(), /<kbd>\]<\/kbd> Jump to Print one-pager, or the print \/ one-pager heading if missing/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1845,6 +1849,87 @@ test('keyboard slash jumps to Copy deal title and currency while Shift+/ stays h
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
   app.keydown('?');
   assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
+});
+
+test('keyboard semicolon copies the least-headroom participant label through the same control', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  fallback.keydown(';');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.markup(), /Least-headroom participant: Liquidity Partner\. Volume-headroom ranking, not a forecast\./);
+  assert.match(fallback.markup(), /id="viability-label-copy-title">Least-headroom participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-viability-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="viability-label-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown(';', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown(';', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown(';');
+  assert.match(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.markup(), />Least-headroom participant: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown(';');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'Least-headroom participant: Liquidity Partner. Volume-headroom ranking, not a forecast.');
+  assert.doesNotMatch(withClipboard.copied()[0], /First-breakpoint participant/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown(';', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.keydown(';');
+  assert.match(denied.markup(), /id="viability-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('keyboard [ jumps to Copy least-headroom participant label unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-viability-label"/);
+  assert.match(app.markup(), /id="first-breakpoint-title" tabindex="-1"/);
+  app.keydown('[');
+  assert.ok(app.focused().includes('#copy-viability-label'));
+  assert.ok(app.focused().includes('scroll:#copy-viability-label'));
+  const before = app.focused().length;
+  app.keydown('[', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('[', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('[');
+  assert.ok(app.focused().includes('#results-start'));
+  assert.ok(app.focused().includes('scroll:#results-start'));
+  assert.doesNotMatch(app.markup(), /id="copy-viability-label"/);
+  assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+});
+
+test('keyboard ] jumps to Print one-pager unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="print-report"/);
+  assert.match(app.markup(), /id="print-one-pager-title" tabindex="-1"/);
+  app.keydown(']');
+  assert.ok(app.focused().includes('#print-report'));
+  assert.ok(app.focused().includes('scroll:#print-report'));
+  const before = app.focused().length;
+  app.keydown(']', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown(']', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown(']');
+  assert.ok(app.focused().includes('#print-report'));
+  assert.ok(app.focused().includes('scroll:#print-report'));
 });
 
 test('keyboard z jumps to Copy deal title and currency unless a field is focused', async () => {
