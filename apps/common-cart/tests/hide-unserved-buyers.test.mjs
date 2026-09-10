@@ -85,4 +85,7 @@ test("the organizer hide-unserved-buyers filter is not on the merchant table", a
   assert.match(app, /hideUnservedBuyers/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
+  assert.match(app, /function focusHideUnservedBuyers\(/u);
+  assert.match(app, /if \(key === "\|"\) \{\s*event\.preventDefault\(\);\s*focusHideUnservedBuyers\(\);/u);
+  assert.match(buyerPanel, /aria-keyshortcuts="\|"/u);
 });

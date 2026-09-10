@@ -693,6 +693,26 @@ test("keyboard handler jumps to leftover fill remaining copy when not typing", a
   assert.match(app, /if \(key === "="\) \{\s*event\.preventDefault\(\);\s*focusHideBuyersWithLeftover\(\);/u);
 });
 
+test("shortcut help documents hide unserved buyers jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>\|<\/kbd> Focus hide unserved buyers, or the buyer list if missing/u);
+  assert.match(html, /id="hide-unserved-buyers"/u);
+  assert.match(html, /id="hide-unserved-buyers"[^>]*aria-keyshortcuts="\|"/u);
+  assert.match(html, /id="buyers-list"/u);
+});
+
+test("keyboard handler jumps to hide unserved buyers when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "\|"\)/u);
+  assert.match(app, /function focusHideUnservedBuyers\(/u);
+  assert.match(app, /#hide-unserved-buyers/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "\|"\) \{\s*event\.preventDefault\(\);\s*focusHideOffersWithRemainingCapacity/u);
+  assert.match(app, /if \(key === "\{"\) \{\s*event\.preventDefault\(\);\s*focusHideOffersWithRemainingCapacity\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

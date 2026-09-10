@@ -1102,6 +1102,11 @@ function handleShortcut(event) {
     focusLeftoverFillRemainingCopy();
     return;
   }
+  if (key === "|") {
+    event.preventDefault();
+    focusHideUnservedBuyers();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1327,6 +1332,22 @@ function focusHideBuyersWithLeftover() {
     return;
   }
   document.querySelector("#buyers-list")?.focus();
+}
+
+function focusHideUnservedBuyers() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const hide = document.querySelector("#hide-unserved-buyers");
+  if (hide) {
+    hide.focus();
+    return;
+  }
+  const heading = document.querySelector("#buyers-list");
+  if (heading) {
+    heading.focus();
+    return;
+  }
+  document.querySelector("#buyer-tab")?.focus();
 }
 
 function focusHideOffersWithRemainingCapacity() {
