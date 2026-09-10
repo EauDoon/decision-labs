@@ -1186,6 +1186,7 @@ test('festival stall split preset loads from the starting-point buttons', async 
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cinema-venue,projectionist,ticket-desk');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'concert-venue,pta,ticketing');
 });
 
 test('pop-up cinema split preset loads from the starting-point buttons', async () => {
@@ -1212,6 +1213,7 @@ test('pop-up cinema split preset loads from the starting-point buttons', async (
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'venue,promoter,sound');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'stallholder,site-manager,ticket-office');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'presenter,station,underwriter');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'concert-venue,pta,ticketing');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
