@@ -77,6 +77,7 @@ let allocationCopyText = '';
 let titleCopyText = '';
 let breakpointLabelCopyText = '';
 let remainingCopyText = '';
+let volumeCopyText = '';
 let viabilityLabelCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
@@ -93,6 +94,7 @@ let hideParticipantsOverCapacity = false;
 let hideParticipantsAtHold = false;
 let hideParticipantsWithoutCapacity = false;
 let hideParticipantsWithSpareCapacity = false;
+let hideParticipantsAtLeastHeadroom = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -119,6 +121,7 @@ function checkpoint() {
   titleCopyText = '';
   breakpointLabelCopyText = '';
   remainingCopyText = '';
+  volumeCopyText = '';
   viabilityLabelCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
@@ -153,6 +156,7 @@ function travelHistory(direction) {
   titleCopyText = '';
   breakpointLabelCopyText = '';
   remainingCopyText = '';
+  volumeCopyText = '';
   viabilityLabelCopyText = '';
   importSequence += 1;
   activePreset = '';
@@ -263,6 +267,7 @@ function readCollapsePreference() {
   hideParticipantsAtHold = state.hideParticipantsAtHold === true;
   hideParticipantsWithoutCapacity = state.hideParticipantsWithoutCapacity === true;
   hideParticipantsWithSpareCapacity = state.hideParticipantsWithSpareCapacity === true;
+  hideParticipantsAtLeastHeadroom = state.hideParticipantsAtLeastHeadroom === true;
 }
 
 function writeCollapsePreference() {
@@ -282,6 +287,8 @@ function writeCollapsePreference() {
   else delete state.hideParticipantsWithoutCapacity;
   if (hideParticipantsWithSpareCapacity) state.hideParticipantsWithSpareCapacity = true;
   else delete state.hideParticipantsWithSpareCapacity;
+  if (hideParticipantsAtLeastHeadroom) state.hideParticipantsAtLeastHeadroom = true;
+  else delete state.hideParticipantsAtLeastHeadroom;
 }
 
 function compactErrorMessage(error) {
@@ -464,7 +471,7 @@ function shockUnits(kind) {
 }
 
 function copyFirstBreakpointButton() {
-  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button><button type="button" id="copy-first-breakpoint-label" data-action="copy-first-breakpoint-label">Copy first-breakpoint participant label</button><button type="button" id="copy-first-breakpoint-remaining" data-action="copy-first-breakpoint-remaining">Copy first-breakpoint remaining-to-hold</button></div>`;
+  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button><button type="button" id="copy-first-breakpoint-label" data-action="copy-first-breakpoint-label">Copy first-breakpoint participant label</button><button type="button" id="copy-first-breakpoint-remaining" data-action="copy-first-breakpoint-remaining">Copy first-breakpoint remaining-to-hold</button><button type="button" id="copy-first-breakpoint-volume" data-action="copy-first-breakpoint-volume">Copy first-breakpoint volume-to-hold</button></div>`;
 }
 
 function breakpointSection(result) {
@@ -538,6 +545,11 @@ function participantWithSpareCapacity(result, participant) {
   return capacity - volume > 1e-9;
 }
 
+function participantAtLeastHeadroom(result, participant) {
+  if (!result?.weakestParticipant) return false;
+  return result.weakestParticipant.id === participant.id;
+}
+
 function participantHiddenFromRoster(result, participant) {
   if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
   if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
@@ -545,6 +557,7 @@ function participantHiddenFromRoster(result, participant) {
   if (hideParticipantsAtHold && participantAtHoldNoCapacityBreach(result, participant)) return true;
   if (hideParticipantsWithoutCapacity && participantWithoutListedCapacity(participant)) return true;
   if (hideParticipantsWithSpareCapacity && participantWithSpareCapacity(result, participant)) return true;
+  if (hideParticipantsAtLeastHeadroom && participantAtLeastHeadroom(result, participant)) return true;
   return false;
 }
 
@@ -567,6 +580,9 @@ function inputPanel(result) {
     : 0;
   const hiddenSpareCapacityCount = hideParticipantsWithSpareCapacity && result
     ? state.participants.filter((participant) => participantWithSpareCapacity(result, participant)).length
+    : 0;
+  const hiddenLeastHeadroomCount = hideParticipantsAtLeastHeadroom && result
+    ? state.participants.filter((participant) => participantAtLeastHeadroom(result, participant)).length
     : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
   const firstOverCapacityId = result
@@ -622,7 +638,10 @@ function inputPanel(result) {
   const spareCapacityFilterNote = hideParticipantsWithSpareCapacity
     ? `${hiddenSpareCapacityCount} participant${hiddenSpareCapacityCount === 1 ? '' : 's'} with unused listed capacity ${hiddenSpareCapacityCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
     : 'Hide participants with unused listed capacity to filter this roster display only. Expand restores them. Counts stay the same.';
-  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity].filter(Boolean).length;
+  const leastHeadroomFilterNote = hideParticipantsAtLeastHeadroom
+    ? `${hiddenLeastHeadroomCount} least-headroom participant${hiddenLeastHeadroomCount === 1 ? '' : 's'} ${hiddenLeastHeadroomCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
+    : 'Hide the least-headroom roster row to filter this roster display only. Expand restores it. Counts stay the same.';
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
     ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
@@ -636,6 +655,8 @@ function inputPanel(result) {
               ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has unbounded or omitted capacity. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : rosterFilterCount === 1 && hideParticipantsWithSpareCapacity
                 ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has unused listed capacity. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+                : rosterFilterCount === 1 && hideParticipantsAtLeastHeadroom
+                  ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the least-headroom roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : rosterFilterCount > 0
               ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : ''
@@ -693,6 +714,8 @@ function inputPanel(result) {
           <p class="notice">${withoutCapacityFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-spare-capacity-participants" aria-pressed="${hideParticipantsWithSpareCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants with unused listed capacity</button><button type="button" data-action="show-spare-capacity-participants" ${hideParticipantsWithSpareCapacity ? '' : 'disabled'}>Show participants with spare capacity</button></div>
           <p class="notice">${spareCapacityFilterNote}</p>
+          <div class="button-row"><button type="button" data-action="hide-least-headroom-participants" aria-pressed="${hideParticipantsAtLeastHeadroom}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the least-headroom participant</button><button type="button" data-action="show-least-headroom-participants" ${hideParticipantsAtLeastHeadroom ? '' : 'disabled'}>Show the least-headroom participant</button></div>
+          <p class="notice">${leastHeadroomFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
@@ -735,7 +758,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${viabilityLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -762,6 +785,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>Least headroom</h2><p>${escapeAttribute(result.weakestParticipant.name)} has the least volume headroom to its ${escapeAttribute(result.weakestParticipant.bindingConstraint.label)} limit.</p></section>
     <section class="print-only print-keep"><h2>Least-headroom participant</h2><p>${escapeAttribute(leastHeadroomLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First-breakpoint participant</h2><p>${escapeAttribute(firstBreakpointLabelMarkdown(result))}</p></section>
+    <section class="print-only print-keep"><h2>First-breakpoint remaining-to-hold</h2><p>${escapeAttribute(firstBreakpointRemainingToHoldMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
     <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
@@ -798,6 +822,7 @@ function resultsPanel(result) {
     ${titleCopySection()}
     ${breakpointLabelCopySection()}
     ${remainingCopySection()}
+    ${volumeCopySection()}
     ${viabilityLabelCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
@@ -1285,6 +1310,7 @@ function attachEvents() {
     if (action === 'close-title-copy') { titleCopyText = ''; render(); return; }
     if (action === 'close-breakpoint-label-copy') { breakpointLabelCopyText = ''; render(); return; }
     if (action === 'close-remaining-copy') { remainingCopyText = ''; render(); return; }
+    if (action === 'close-volume-copy') { volumeCopyText = ''; render(); return; }
     if (action === 'close-viability-label-copy') { viabilityLabelCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
@@ -1414,6 +1440,24 @@ function attachEvents() {
       render();
       return;
     }
+    if (action === 'hide-least-headroom-participants') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding the least-headroom participant.');
+        return;
+      }
+      hideParticipantsAtLeastHeadroom = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-least-headroom-participants') {
+      hideParticipantsAtLeastHeadroom = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
     if (action === 'hide-all-hold-ledger') {
       if (!validateConfiguration(state).valid) {
         setNotice('Resolve invalid inputs before hiding participants who hold in every tested compound case.');
@@ -1535,6 +1579,7 @@ function attachEvents() {
     if (action === 'copy-first-breakpoint-snapshot') copyFirstBreakpointSnapshot();
     if (action === 'copy-first-breakpoint-label') copyFirstBreakpointLabel();
     if (action === 'copy-first-breakpoint-remaining') copyFirstBreakpointRemainingToHold();
+    if (action === 'copy-first-breakpoint-volume') copyFirstBreakpointVolumeToHold();
     if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-waterfall') copyContributionWaterfall();
@@ -1946,8 +1991,20 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === ',') copyFirstBreakpointLabel();
   if (event.key === ';') copyLeastHeadroomLabel();
+  if (event.key === "'") copyFirstBreakpointRemainingToHold();
   if (event.key === '.') {
     const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === '<') {
+    const target = document.querySelector('#copy-first-breakpoint-remaining') ?? document.querySelector('#first-breakpoint-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === '>') {
+    const target = document.querySelector('[data-action="hide-spare-capacity-participants"]')
+      ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -2493,6 +2550,60 @@ function copyFirstBreakpointRemainingToHold() {
     }
   }
   showRemainingCopyFallback(text, fallbackNote);
+}
+
+function firstBreakpointVolumeToHoldMarkdown(result) {
+  const breakpoint = result?.firstBreakpoint;
+  if (!breakpoint?.participant) return 'First-breakpoint volume-to-hold: none entered.';
+  const participant = breakpoint.participant;
+  const name = reportText(participant.name);
+  const volume = participant.exitVolume;
+  if (volume == null || !Number.isFinite(volume)) return 'First-breakpoint volume-to-hold: none entered.';
+  return 'First-breakpoint volume-to-hold: ' + formatVolume(volume) + ' for ' + name + '. Synthetic ranking, not a forecast.';
+}
+
+function showVolumeCopyFallback(text, message) {
+  volumeCopyText = text;
+  render();
+  document.querySelector('#volume-copy-text')?.focus();
+  setNotice(message);
+}
+
+function volumeCopySection() {
+  if (!volumeCopyText) return '';
+  return `<section class="panel" aria-labelledby="volume-copy-title"><div class="panel-heading"><h2 id="volume-copy-title">First-breakpoint volume-to-hold Markdown</h2><button type="button" data-action="close-volume-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is the first-breakpoint participant exit volume already in the result. It is distinct from remaining-to-hold copy, least-headroom copy, and first-breakpoint label copy.</p><label class="brief-copy-label" for="volume-copy-text">First-breakpoint volume-to-hold Markdown</label><textarea id="volume-copy-text" readonly rows="4">${escapeAttribute(volumeCopyText)}</textarea></div></section>`;
+}
+
+function copyFirstBreakpointVolumeToHold() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = firstBreakpointVolumeToHoldMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'First-breakpoint volume-to-hold copied as Markdown. Synthetic ranking, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          volumeCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showVolumeCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      volumeCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showVolumeCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showVolumeCopyFallback(text, fallbackNote);
 }
 
 function leastHeadroomLabelMarkdown(result) {
@@ -3507,6 +3618,9 @@ function helpDialog() {
         <li><kbd>;</kbd> Copy the least-headroom participant label as Markdown</li>
         <li><kbd>[</kbd> Jump to Copy least-headroom participant label, or the First breakpoint or results heading if missing</li>
         <li><kbd>]</kbd> Jump to Print one-pager, or the print / one-pager heading if missing</li>
+        <li><kbd>'</kbd> Copy first-breakpoint remaining-to-hold as Markdown</li>
+        <li><kbd>&lt;</kbd> Jump to Copy first-breakpoint remaining-to-hold, or the First breakpoint heading if missing</li>
+        <li><kbd>&gt;</kbd> Jump to Hide participants with unused listed capacity, or the Participants heading if missing</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
