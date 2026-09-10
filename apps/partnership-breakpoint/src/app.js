@@ -1565,6 +1565,11 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'b' || event.key === 'B') {
+    const target = document.querySelector('#viability-heading');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -2509,6 +2514,7 @@ function helpDialog() {
         <li><kbd>f</kbd> Jump to the First breakpoint heading</li>
         <li><kbd>w</kbd> Jump to the Contribution waterfall heading</li>
         <li><kbd>l</kbd> Jump to the Participant ledger heading</li>
+        <li><kbd>b</kbd> Jump to the viability and binding-limit card heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

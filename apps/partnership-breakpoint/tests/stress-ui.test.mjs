@@ -1132,6 +1132,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>f<\/kbd> Jump to the First breakpoint heading/);
   assert.match(app.markup(), /<kbd>w<\/kbd> Jump to the Contribution waterfall heading/);
   assert.match(app.markup(), /<kbd>l<\/kbd> Jump to the Participant ledger heading/);
+  assert.match(app.markup(), /<kbd>b<\/kbd> Jump to the viability and binding-limit card heading/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1274,6 +1275,24 @@ test('keyboard f jumps to the First breakpoint heading unless a field is focused
   app.keydown('f');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+});
+
+test('keyboard b jumps to the viability card heading unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="viability-heading" tabindex="-1"/);
+  app.keydown('b');
+  assert.ok(app.focused().includes('#viability-heading'));
+  assert.ok(app.focused().includes('scroll:#viability-heading'));
+  const before = app.focused().length;
+  app.keydown('b', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('b', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('b');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="viability-heading"/);
 });
 
 test('keyboard l jumps to the Participant ledger heading unless a field is focused', async () => {
