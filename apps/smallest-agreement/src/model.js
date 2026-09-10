@@ -1040,6 +1040,36 @@ export function overBudgetClauseIds(proposal, result) {
   return { status: "ok", clauseIds, remaining, exhausted: false };
 }
 
+/**
+ * Clause ids whose recommended option has no remaining cheaper alternative.
+ * Remaining cheaper means another option with a strictly lower changeCost.
+ * Empty when there is no recommendation. Display-only. The solver ignores the list.
+ */
+export function clausesWithoutCheaperRemainingOption(proposal, result) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const selected = result?.agreement?.options;
+  if (!Array.isArray(selected) || selected.length !== proposal.clauses.length) {
+    return { status: "ok", clauseIds: [] };
+  }
+  const clauseIds = [];
+  for (let index = 0; index < proposal.clauses.length; index += 1) {
+    const clause = proposal.clauses[index];
+    const recommended = clause.options.find((option) => option.id === selected[index]?.id);
+    if (!recommended) continue;
+    let cheaper = false;
+    for (const option of clause.options) {
+      if (option.id === recommended.id) continue;
+      if (recommended.changeCost - option.changeCost > EPSILON) {
+        cheaper = true;
+        break;
+      }
+    }
+    if (!cheaper) clauseIds.push(clause.id);
+  }
+  return { status: "ok", clauseIds };
+}
+
 /** A deterministic downside scenario, not a probability estimate or a new optimization. */
 export function stressPackage(proposal, optionIds, supportDrop) {
   if (!Number.isFinite(supportDrop) || supportDrop < 0 || supportDrop > 100) {

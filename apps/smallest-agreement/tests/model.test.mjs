@@ -26,6 +26,7 @@ import {
   groupsBelowSupportRequirement,
   groupsMeetingDeclaredSupportFloor,
   overBudgetClauseIds,
+  clausesWithoutCheaperRemainingOption,
   formatCurrentLocksMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
@@ -1854,6 +1855,54 @@ test("overBudgetClauseIds lists clauses whose cheapest remaining change exceeds 
   assert.equal(spent.exhausted, true);
   assert.deepEqual(spent.clauseIds, ["one"]);
   assert.equal(overBudgetClauseIds({ title: "" }, result).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+  assert.deepEqual(findSmallestAgreement(input), result);
+});
+
+test("clausesWithoutCheaperRemainingOption lists clauses with no cheaper remaining option than the recommendation", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "keep", title: "Keep", options: [
+        option("keep-original", true, { g: 90 }), option("keep-alt", false, { g: 40 }, 5), option("keep-other", false, { g: 20 }, 8),
+      ] },
+      { id: "spend", title: "Spend", options: [
+        option("spend-original", true, { g: 40 }), option("spend-alt", false, { g: 90 }, 2), option("spend-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "found");
+  const listed = clausesWithoutCheaperRemainingOption(input, result);
+  assert.equal(listed.status, "ok");
+  assert.deepEqual(listed.clauseIds, ["keep"]);
+  assert.deepEqual(clausesWithoutCheaperRemainingOption(input, { status: "infeasible" }).clauseIds, []);
+  assert.equal(clausesWithoutCheaperRemainingOption({ title: "" }, result).status, "invalid");
+
+  const originals = proposal({
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { g: 90 }), option("one-alt", false, { g: 40 }, 1), option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 90 }), option("two-alt", false, { g: 40 }, 1), option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const originalResult = findSmallestAgreement(originals);
+  assert.equal(originalResult.status, "already_passing");
+  assert.deepEqual(clausesWithoutCheaperRemainingOption(originals, originalResult).clauseIds, ["one", "two"]);
+
+  const tied = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 0), option("other", false, { g: 20 }, 0),
+    ] }],
+  });
+  const tiedResult = findSmallestAgreement(tied);
+  assert.equal(tiedResult.status, "already_passing");
+  assert.deepEqual(clausesWithoutCheaperRemainingOption(tied, tiedResult).clauseIds, ["one"]);
+
   assert.equal(JSON.stringify(input), before);
   assert.deepEqual(findSmallestAgreement(input), result);
 });
