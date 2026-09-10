@@ -2459,6 +2459,61 @@ test('keyboard colon copies the first Trust item through its own control', () =>
   assert.equal(clicks.firstTrust, 1);
 });
 
+test('colon does not steal semicolon first-job copy or apostrophe Skip to Trust', () => {
+  assert.match(html, /event\.key === ';'/);
+  assert.match(html, /event\.key === ':'/);
+  assert.match(html, /event\.key === "'"/);
+  assert.match(html, /firstJobBtn\?\.click\(\)/);
+  assert.match(html, /firstTrustBtn\?\.click\(\)/);
+  assert.match(html, /querySelector\('a\.skip\[href="#trust"\]'\)\?\.focus\(\)/);
+  const clicks = { firstJob: 0, firstTrust: 0 };
+  const focused = [];
+  let keydown = null;
+  const skipTrust = { focus() { focused.push('skip-trust'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-job') return { click() { clicks.firstJob += 1; }, addEventListener() {} };
+      if (id === 'copy-first-trust') return { click() { clicks.firstTrust += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === 'a.skip[href="#trust"]' ? skipTrust : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, shiftKey = false) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  fire(';', false);
+  fire("'", false);
+  fire(':', true);
+  assert.equal(clicks.firstJob, 1);
+  assert.equal(clicks.firstTrust, 1);
+  assert.deepEqual(focused, ['skip-trust']);
+});
+
 test('keyboard y copies the last-launched job from this-browser storage', () => {
   assert.match(html, /event\.key === 'y'/);
   assert.match(html, /lastBtn\?\.click\(\)/);
