@@ -95,6 +95,7 @@ let hideParticipantsAtHold = false;
 let hideParticipantsWithoutCapacity = false;
 let hideParticipantsWithSpareCapacity = false;
 let hideParticipantsAtLeastHeadroom = false;
+let hideParticipantsWithinCapacity = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -268,6 +269,7 @@ function readCollapsePreference() {
   hideParticipantsWithoutCapacity = state.hideParticipantsWithoutCapacity === true;
   hideParticipantsWithSpareCapacity = state.hideParticipantsWithSpareCapacity === true;
   hideParticipantsAtLeastHeadroom = state.hideParticipantsAtLeastHeadroom === true;
+  hideParticipantsWithinCapacity = state.hideParticipantsWithinCapacity === true;
 }
 
 function writeCollapsePreference() {
@@ -289,6 +291,8 @@ function writeCollapsePreference() {
   else delete state.hideParticipantsWithSpareCapacity;
   if (hideParticipantsAtLeastHeadroom) state.hideParticipantsAtLeastHeadroom = true;
   else delete state.hideParticipantsAtLeastHeadroom;
+  if (hideParticipantsWithinCapacity) state.hideParticipantsWithinCapacity = true;
+  else delete state.hideParticipantsWithinCapacity;
 }
 
 function compactErrorMessage(error) {
@@ -550,6 +554,15 @@ function participantAtLeastHeadroom(result, participant) {
   return result.weakestParticipant.id === participant.id;
 }
 
+function participantWithinListedCapacity(result, participant) {
+  if (!result) return false;
+  const capacity = participant.capacity;
+  if (capacity == null || !Number.isFinite(capacity)) return false;
+  const volume = result.effectiveVolume;
+  if (!Number.isFinite(volume)) return false;
+  return volume <= capacity + 1e-9;
+}
+
 function participantHiddenFromRoster(result, participant) {
   if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
   if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
@@ -558,6 +571,7 @@ function participantHiddenFromRoster(result, participant) {
   if (hideParticipantsWithoutCapacity && participantWithoutListedCapacity(participant)) return true;
   if (hideParticipantsWithSpareCapacity && participantWithSpareCapacity(result, participant)) return true;
   if (hideParticipantsAtLeastHeadroom && participantAtLeastHeadroom(result, participant)) return true;
+  if (hideParticipantsWithinCapacity && participantWithinListedCapacity(result, participant)) return true;
   return false;
 }
 
@@ -583,6 +597,9 @@ function inputPanel(result) {
     : 0;
   const hiddenLeastHeadroomCount = hideParticipantsAtLeastHeadroom && result
     ? state.participants.filter((participant) => participantAtLeastHeadroom(result, participant)).length
+    : 0;
+  const hiddenWithinCapacityCount = hideParticipantsWithinCapacity && result
+    ? state.participants.filter((participant) => participantWithinListedCapacity(result, participant)).length
     : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
   const firstOverCapacityId = result
@@ -641,7 +658,10 @@ function inputPanel(result) {
   const leastHeadroomFilterNote = hideParticipantsAtLeastHeadroom
     ? `${hiddenLeastHeadroomCount} least-headroom participant${hiddenLeastHeadroomCount === 1 ? '' : 's'} ${hiddenLeastHeadroomCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
     : 'Hide the least-headroom roster row to filter this roster display only. Expand restores it. Counts stay the same.';
-  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom].filter(Boolean).length;
+  const withinCapacityFilterNote = hideParticipantsWithinCapacity
+    ? `${hiddenWithinCapacityCount} participant${hiddenWithinCapacityCount === 1 ? '' : 's'} who are within listed capacity ${hiddenWithinCapacityCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
+    : 'Hide participants who are within listed capacity to filter this roster display only. Expand restores them. Counts stay the same.';
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom, hideParticipantsWithinCapacity].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
     ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
@@ -657,6 +677,8 @@ function inputPanel(result) {
                 ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has unused listed capacity. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
                 : rosterFilterCount === 1 && hideParticipantsAtLeastHeadroom
                   ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the least-headroom roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+                  : rosterFilterCount === 1 && hideParticipantsWithinCapacity
+                    ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is within listed capacity. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : rosterFilterCount > 0
               ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : ''
@@ -716,6 +738,8 @@ function inputPanel(result) {
           <p class="notice">${spareCapacityFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-least-headroom-participants" aria-keyshortcuts="=" aria-pressed="${hideParticipantsAtLeastHeadroom}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the least-headroom participant</button><button type="button" data-action="show-least-headroom-participants" ${hideParticipantsAtLeastHeadroom ? '' : 'disabled'}>Show the least-headroom participant</button></div>
           <p class="notice">${leastHeadroomFilterNote}</p>
+          <div class="button-row"><button type="button" data-action="hide-within-capacity-participants" aria-pressed="${hideParticipantsWithinCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants who are within listed capacity</button><button type="button" data-action="show-within-capacity-participants" ${hideParticipantsWithinCapacity ? '' : 'disabled'}>Show participants within listed capacity</button></div>
+          <p class="notice">${withinCapacityFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
@@ -1453,6 +1477,24 @@ function attachEvents() {
     }
     if (action === 'show-least-headroom-participants') {
       hideParticipantsAtLeastHeadroom = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-within-capacity-participants') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding participants who are within listed capacity.');
+        return;
+      }
+      hideParticipantsWithinCapacity = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-within-capacity-participants') {
+      hideParticipantsWithinCapacity = false;
       writeCollapsePreference();
       saveState();
       render();

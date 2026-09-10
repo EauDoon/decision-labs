@@ -41,6 +41,7 @@
  * @property {boolean} [hideParticipantsWithoutCapacity] Optional roster display preference. Omitted files default to showing rows whose capacity is unbounded or omitted.
  * @property {boolean} [hideParticipantsWithSpareCapacity] Optional roster display preference. Omitted files default to showing rows that still have unused listed capacity.
  * @property {boolean} [hideParticipantsAtLeastHeadroom] Optional roster display preference. Omitted files default to showing the least-headroom roster row.
+ * @property {boolean} [hideParticipantsWithinCapacity] Optional roster display preference. Omitted files default to showing roster rows that are within listed capacity.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -54,7 +55,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -324,6 +325,12 @@ export function validateConfiguration(config) {
     const hideLeast = own(config, 'hideParticipantsAtLeastHeadroom');
     if (hideLeast !== true && hideLeast !== false) {
       errors.push('Hide participants at least headroom must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideParticipantsWithinCapacity')) {
+    const hideWithin = own(config, 'hideParticipantsWithinCapacity');
+    if (hideWithin !== true && hideWithin !== false) {
+      errors.push('Hide participants within capacity must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
