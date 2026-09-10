@@ -1894,7 +1894,7 @@ test('left bracket focuses Copy version line when focus is not in an input', () 
   assert.match(html, /This key moves focus; it does not open a workbench/);
   assert.match(html, /inEditable\(event\.target\)/);
   assert.match(readme, /Key `\[` focuses the Copy version line control/);
-  assert.match(readme, /Press `\[` to focus the Copy version line control/);
+  assert.match(readme, /Press `\[` to focus the Copy\s+version line control/);
   const focused = [];
   const clicks = { versionLine: 0 };
   const assigned = [];
@@ -2124,7 +2124,7 @@ test('shortcuts panel lists brackets and colon with honest limits', () => {
   assert.match(html, /Press <kbd>\[<\/kbd> to focus Copy version line/);
   assert.match(html, /Press <kbd>\]<\/kbd> to focus the last Open workbench link/);
   assert.match(html, /Press <kbd>:<\/kbd> to copy the first Trust and limits list item/);
-  assert.match(readme, /Press `\[` to focus the Copy version line control/);
+  assert.match(readme, /Press `\[` to focus the Copy\s+version line control/);
   assert.match(readme, /Press `\]` to focus the last Open workbench link/);
   assert.match(readme, /Press `:` to copy the first Trust and limits list item/);
 });
