@@ -92,6 +92,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Last How copy, last-How jump, and first-How jump/);
   assert.match(html, /Last-job copy, last-job jump, and first-job jump/);
   assert.match(html, /Last What's new copy, last-news jump, and first-news jump/);
+  assert.match(html, /First What's new copy, intro jump, and skip-link jump/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -237,6 +238,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /last How-it-works copy, last-How jump, and first-How jump/);
   assert.match(readme, /last-job copy, last-job jump, and first-job jump/);
   assert.match(readme, /last What's new copy, last-news jump, and first-news jump/);
+  assert.match(readme, /first What's new copy, intro jump, and skip-link jump/);
   assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
@@ -252,6 +254,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy last How it works item on\s+that 404 page copies/);
   assert.match(readme, /Copy last job on\s+that 404 page copies/);
   assert.match(readme, /Copy last What's new heading on\s+that 404 page copies/);
+  assert.match(readme, /Copy first What's new heading on\s+that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -1509,6 +1512,8 @@ test('at focuses Copy catalog intro when focus is not in an input', () => {
   assert.match(html, /Press <kbd>@<\/kbd> to focus Copy catalog intro/);
   assert.match(html, /This is distinct from <kbd>e<\/kbd>, which copies the catalog heading and lede/);
   assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Key `@` focuses the Copy catalog intro control/);
+  assert.match(readme, /Press `@` to focus the Copy catalog intro control/);
   const focused = [];
   const clicks = { lede: 0 };
   const assigned = [];
@@ -1776,6 +1781,8 @@ test('hash focuses Copy skip links when focus is not in an input', () => {
   assert.match(html, /Press <kbd>#<\/kbd> to focus Copy skip links/);
   assert.match(html, /This is distinct from <kbd>z<\/kbd>, which copies skip-link targets/);
   assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Key `#` focuses the Copy skip links control/);
+  assert.match(readme, /Press `#` to focus the Copy skip links control/);
   const focused = [];
   const clicks = { skips: 0 };
   const assigned = [];
@@ -5384,6 +5391,38 @@ test('What\'s new and README name last What\'s new copy and jumps without changi
   assert.doesNotMatch(html, /live service/i);
 });
 
+test('What\'s new and README name first What\'s new copy, intro jump, and skip-link jump without changing workbench versions', () => {
+  const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
+  const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
+  assert.equal(headings[0], "First What's new copy, intro jump, and skip-link jump");
+  assert.equal(headings[headings.length - 1], 'Saturday early payout, closed-FX copy, and FX-closed hide in Weekend Gap 1.5.12');
+  assert.equal(headings.includes("Last What's new copy, last-news jump, and first-news jump"), true);
+  assert.equal(headings.includes('Last-job copy, last-job jump, and first-job jump'), true);
+  assert.equal(headings.includes('Swimming carnival, over-capacity label copy, and first-over-capacity hide in Partnership Breakpoint 1.5.12'), true);
+  assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
+  assert.equal(headings.includes('Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1.5.12'), true);
+  assert.match(html, /Copy first What's new heading through close-paren as Markdown/);
+  assert.match(html, /jump to Copy catalog intro with keyboard at/);
+  assert.match(html, /jump to Copy skip links with keyboard hash/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /without adding a public path/);
+  assert.match(html, /These are in-page catalog tools/);
+  assert.match(readme, /first What's new copy, intro jump, and skip-link jump/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy first What's new heading on\s+that 404 page copies/);
+  assert.match(readme, /Copy first What's new heading copies the first What's new heading/);
+  assert.match(readme, /Press `\)` to copy the first What's new heading/);
+  assert.match(readme, /Press `@` to focus the Copy catalog intro control/);
+  assert.match(readme, /Press `#` to focus the Copy skip links control/);
+  assert.match(readme, /Key `\)` copies the first What's new heading/);
+  assert.match(readme, /Key `@` focuses the Copy catalog intro control/);
+  assert.match(readme, /Key `#` focuses the Copy skip links control/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+  assert.doesNotMatch(readme, /hosted API/i);
+  assert.doesNotMatch(readme, /live service/i);
+});
+
 test('copy last job control is distinct from Copy first job and Copy jobs', () => {
   assert.match(html, /id="copy-last-job"/);
   assert.match(html, />Copy last job</);
@@ -6593,6 +6632,8 @@ test('keyboard close-paren copies the first What\'s new heading through its own 
   assert.match(html, /This is distinct from <kbd>~<\/kbd>, which copies the last What's new heading/);
   assert.match(html, /from <kbd>g<\/kbd>, which focuses the first What's new heading/);
   assert.match(html, /from <kbd>\(<\/kbd>, which focuses Copy first What's new heading/);
+  assert.match(readme, /Press `\)` to copy the first What's new heading/);
+  assert.match(readme, /Key `\)` copies the first What's new heading/);
   const clicks = { firstNews: 0, lastNews: 0 };
   const focused = [];
   const assigned = [];
