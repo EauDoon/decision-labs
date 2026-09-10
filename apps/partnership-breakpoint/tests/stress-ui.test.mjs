@@ -1171,6 +1171,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>d<\/kbd> Jump to the Shared deal heading/);
   assert.match(app.markup(), /<kbd>k<\/kbd> Jump to the Compound stress heading/);
   assert.match(app.markup(), /<kbd>h<\/kbd> Jump to the least-headroom participant card, or the Participants heading if none/);
+  assert.match(app.markup(), /<kbd>a<\/kbd> Jump to Add participant/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1199,6 +1200,25 @@ test('keyboard g jumps to the results nav unless a field is focused', async () =
   app.keydown('g');
   assert.ok(app.focused().includes('#results-start'));
   assert.doesNotMatch(app.markup(), /id="results-jump"/);
+});
+
+test('keyboard a jumps to Add participant unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="add-participant"/);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const beforeCount = forms();
+  app.keydown('a');
+  assert.ok(app.focused().includes('#add-participant'));
+  assert.ok(app.focused().includes('scroll:#add-participant'));
+  assert.equal(forms(), beforeCount);
+  const before = app.focused().length;
+  app.keydown('a', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  assert.equal(forms(), beforeCount);
+  app.keydown('a', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  assert.equal(forms(), beforeCount);
 });
 
 test('keyboard n focuses Add participant and ignores focused inputs', async () => {

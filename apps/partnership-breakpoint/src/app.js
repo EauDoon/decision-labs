@@ -1647,6 +1647,11 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'a' || event.key === 'A') {
+    const add = document.querySelector('#add-participant');
+    add?.focus?.({ preventScroll: false });
+    add?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -2809,6 +2814,7 @@ function helpDialog() {
         <li><kbd>d</kbd> Jump to the Shared deal heading</li>
         <li><kbd>k</kbd> Jump to the Compound stress heading</li>
         <li><kbd>h</kbd> Jump to the least-headroom participant card, or the Participants heading if none</li>
+        <li><kbd>a</kbd> Jump to Add participant</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
