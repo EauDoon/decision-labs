@@ -2,6 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
+import { spawnSync } from 'node:child_process';
 import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
@@ -192,6 +193,21 @@ test('launcher port rejects ambiguous, empty and out-of-range values', () => {
   for (const raw of ['', '0', '65536', '-1', '1.5', '0x1000', ' 4170', 'NaN']) {
     assert.throws(() => parsePort(raw), /PORT/);
   }
+});
+
+test('404 copy-versions script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
 });
 
 test('404 copy versions uses the printed catalog line without extra public paths', () => {
