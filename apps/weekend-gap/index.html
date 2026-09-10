@@ -52,6 +52,11 @@ SOFTWARE.
       <div class="review-controls"><select id="weekend-review-tool"></select><button id="weekend-review-run" type="button">Run review</button></div>
       <div class="review-controls"><button id="weekend-review-export" type="button" disabled>Export review packet</button><button id="weekend-review-import" type="button">Inspect review packet</button><input id="weekend-review-file" type="file" accept="application/json,.json" hidden></div>
       <p>Packets contain scenario assumptions and the exact calculated table. They are unsigned consistency records.</p><p id="weekend-review-origin"></p>
+      <div class="planning-actions">
+        <button id="copy-cohort-markdown" type="button">Copy arrival-cohort table</button>
+      </div>
+      <label class="sr-only" for="cohort-copy-fallback">Arrival-cohort Markdown fallback</label>
+      <textarea id="cohort-copy-fallback" rows="10" hidden readonly></textarea>
       <div id="weekend-review-output" aria-live="polite"></div>
     </details>
     <main id="dashboard" class="page-shell">

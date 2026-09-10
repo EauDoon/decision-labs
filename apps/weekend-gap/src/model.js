@@ -1321,6 +1321,39 @@ export function closedGanttHoursToMarkdown(input) {
   ].join("\n");
 }
 
+/** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
+export function arrivalCohortsToMarkdown(input) {
+  const result = runSimulation(input);
+  const cohorts = [];
+  let front = 0;
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = result.timeline[hour + 1];
+    cohorts.push({ hour, arrived: point.demandThisHour, remaining: point.demandThisHour });
+    let available = point.settledThisHour;
+    while (available > 0 && front < cohorts.length) {
+      const cohort = cohorts[front];
+      const amount = Math.min(available, cohort.remaining);
+      cohort.remaining = Math.max(0, cohort.remaining - amount);
+      available = Math.max(0, available - amount);
+      if (cohort.remaining === 0) front += 1;
+      else break;
+    }
+  }
+  const rows = cohorts.map((cohort) =>
+    "| " + formatTime(cohort.hour) + " (hour " + cohort.hour + ") | " + cohort.arrived + " | " + cohort.remaining + " |"
+  );
+  return [
+    "# Weekend Gap arrival cohorts",
+    "",
+    "Synthetic educational ledger. Not a forecast.",
+    "",
+    "| Cohort window | Arrivals AUD | Remaining AUD |",
+    "| --- | --- | --- |",
+    ...rows,
+    ""
+  ].join("\n");
+}
+
 /** Hourly current versus baseline gate state. Observation only, not a ranking. */
 export function compareGateSchedules(baselineInput, currentInput) {
   const baseline = buildGateSchedule(baselineInput);
