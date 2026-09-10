@@ -144,6 +144,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Sports day, below-floor copy, and veto hide in The Smallest Agreement 1\.5\.10/);
   assert.match(html, /Netball training, threshold-count copy, and non-veto hide in The Smallest Agreement 1\.5\.11/);
   assert.match(html, /Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1\.5\.12/);
+  assert.match(html, /Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1\.5\.13/);
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /Dashboard copy, file compare, and compressed Friday in Weekend Gap 1\.4\.3/);
@@ -219,6 +220,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Sports day hours start, first below-floor group copy shortcut/);
   assert.match(readme, /Netball training hours start, threshold-group count copy shortcut/);
   assert.match(readme, /Swimming club hours start, first-veto-group copy shortcut/);
+  assert.match(readme, /Athletics club hours start, veto-group count copy shortcut/);
   assert.match(readme, /queue-clear hours and Gantt compare/);
   assert.match(readme, /queue CSV export, peak-queue jump/);
   assert.match(readme, /dashboard Markdown copy, two-file compare/);
@@ -5407,6 +5409,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1.5.12'), true);
+  assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.match(html, /Copy first What's new heading through close-paren as Markdown/);
   assert.match(html, /jump to Copy catalog intro with keyboard at/);
   assert.match(html, /jump to Copy skip links with keyboard hash/);
