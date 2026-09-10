@@ -364,6 +364,22 @@ test("leftover fill pickup copy jump stays on the organizer leftover pickup cont
   assert.doesNotMatch(app, /if \(key === "&"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillDeliveryCopy/u);
 });
 
+test("leftover fill label copy stays on the organizer leftover control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-label"/u);
+  assert.match(buyerPanel, /Copy leftover fill label \(organizer private\)/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-label"), false);
+  assert.equal(merchantPanel.includes("copyLeftoverFillLabel"), false);
+  assert.match(app, /function copyLeftoverFillLabel\(/u);
+  assert.match(app, /#copy-leftover-fill-label/u);
+  assert.match(app, /function copyLeftoverFillPickup\(/u);
+  assert.match(app, /function copyLeftoverFillMerchantLabel\(/u);
+  assert.match(app, /function copyLeftoverFillUnitCount\(/u);
+});
+
 test("leftover print jump stays on the leftover print control", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
