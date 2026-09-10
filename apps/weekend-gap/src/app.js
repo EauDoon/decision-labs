@@ -42,6 +42,7 @@ import {
   ganttHourClosedOnEveryGate,
   ganttHourOpenOnEveryGate,
   ganttHourIsWeekend,
+  ganttHourHasZeroQueue,
   GANTT_GATE_FILTERS,
   gateDisplayLabels,
   GENERIC_GATE_LABELS,
@@ -69,7 +70,7 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, hideWeekdayGanttHours: false, hideWeekendGanttHours: false, hideOpenGanttHours: false, hideClosedGanttHours: false };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, hideWeekdayGanttHours: false, hideWeekendGanttHours: false, hideOpenGanttHours: false, hideClosedGanttHours: false, hideZeroQueueGanttHours: false };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -424,13 +425,14 @@ function renderGantt() {
   const hideWeekendHours = Boolean(document.querySelector("#gantt-hide-weekends")?.checked);
   const hideOpenHours = Boolean(document.querySelector("#gantt-hide-open")?.checked);
   const hideClosedHours = Boolean(document.querySelector("#gantt-hide-closed")?.checked);
+  const hideZeroQueueHours = Boolean(document.querySelector("#gantt-hide-zero-queue")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, gateFilter });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, hideZeroQueueHours, gateFilter });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([selectedHour]);
-  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours && !hideWeekendHours && !hideOpenHours && !hideClosedHours) {
+  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours && !hideWeekendHours && !hideOpenHours && !hideClosedHours && !hideZeroQueueHours) {
     rowIndexes.add(0);
     rowIndexes.add(SIMULATION_HOURS);
   }
@@ -440,6 +442,7 @@ function renderGantt() {
     if (hideWeekendHours && ganttHourIsWeekend(point) && hour !== selectedHour) continue;
     if (hideOpenHours && ganttHourOpenOnEveryGate(point) && hour !== selectedHour) continue;
     if (hideClosedHours && ganttHourClosedOnEveryGate(point) && hour !== selectedHour) continue;
+    if (hideZeroQueueHours && ganttHourHasZeroQueue(simulation.timeline[hour]) && hour !== selectedHour) continue;
     if (everyClosedOnly) {
       if (ganttHourClosedOnEveryGate(point)) rowIndexes.add(hour);
       continue;
@@ -501,6 +504,9 @@ function renderGantt() {
     }
     if (hideClosedHours) {
       filterNote.textContent += ` Hours closed on every gate are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
+    }
+    if (hideZeroQueueHours) {
+      filterNote.textContent += ` Hours whose synthetic queue is zero are hidden. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
     }
   }
 }
@@ -1248,7 +1254,8 @@ function currentWorkspace() {
     hideWeekdayGanttHours: Boolean(document.querySelector("#gantt-hide-weekdays")?.checked),
     hideWeekendGanttHours: Boolean(document.querySelector("#gantt-hide-weekends")?.checked),
     hideOpenGanttHours: Boolean(document.querySelector("#gantt-hide-open")?.checked),
-    hideClosedGanttHours: Boolean(document.querySelector("#gantt-hide-closed")?.checked) });
+    hideClosedGanttHours: Boolean(document.querySelector("#gantt-hide-closed")?.checked),
+    hideZeroQueueGanttHours: Boolean(document.querySelector("#gantt-hide-zero-queue")?.checked) });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -1258,7 +1265,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true, hideZeroQueueGanttHours: saved.hideZeroQueueGanttHours === true };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, ganttHourIndex: selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -1270,7 +1277,7 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true, hideWeekendGanttHours: saved.hideWeekendGanttHours === true, hideOpenGanttHours: saved.hideOpenGanttHours === true, hideClosedGanttHours: saved.hideClosedGanttHours === true, hideZeroQueueGanttHours: saved.hideZeroQueueGanttHours === true };
   baselineScenario={...saved.baseline}; selectedHour=saved.ganttHourIndex ?? saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
@@ -1285,6 +1292,7 @@ function applyWorkspace(saved) {
   document.querySelector("#gantt-hide-weekends").checked = saved.hideWeekendGanttHours === true;
   document.querySelector("#gantt-hide-open").checked = saved.hideOpenGanttHours === true;
   document.querySelector("#gantt-hide-closed").checked = saved.hideClosedGanttHours === true;
+  document.querySelector("#gantt-hide-zero-queue").checked = saved.hideZeroQueueGanttHours === true;
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -1362,6 +1370,10 @@ document.querySelector("#gantt-hide-open").addEventListener("change",()=>{
   saveWorkspace();
 });
 document.querySelector("#gantt-hide-closed").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
+document.querySelector("#gantt-hide-zero-queue").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
@@ -1744,9 +1756,10 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   const hideWeekendHours = Boolean(document.querySelector("#gantt-hide-weekends")?.checked);
   const hideOpenHours = Boolean(document.querySelector("#gantt-hide-open")?.checked);
   const hideClosedHours = Boolean(document.querySelector("#gantt-hide-closed")?.checked);
+  const hideZeroQueueHours = Boolean(document.querySelector("#gantt-hide-zero-queue")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, gateFilter, redacted: true });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, hideWeekendHours, hideOpenHours, hideClosedHours, hideZeroQueueHours, gateFilter, redacted: true });
   window.print();
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
