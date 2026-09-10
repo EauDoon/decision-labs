@@ -286,6 +286,172 @@ test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(readme, /Skip links jump to What's new, workbenches, How it works,\s+keyboard shortcuts, Trust and limits, and catalog versions/);
 });
 
+test('g focuses the first What\'s new heading when focus is not in an input', () => {
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /querySelector\('#whats-new h3'\)/);
+  assert.match(html, /getElementById\('whats-new-title'\)/);
+  assert.match(html, /id="whats-new-title" tabindex="-1"/);
+  assert.match(html, /#whats-new h3:focus-visible/);
+  assert.match(html, /<kbd>g<\/kbd><\/dt><dd>Focus the first What's new heading/);
+  assert.match(html, /Press <kbd>g<\/kbd> to focus the first What's new heading/);
+  assert.match(html, /This key does not open a workbench/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `g` to focus the first What's new heading/);
+  assert.match(readme, /does not open a workbench/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const firstNews = { focus() { focused.push('h3'); } };
+  const title = { focus() { focused.push('title'); } };
+  const section = { focus() { focused.push('whats-new'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'whats-new-title') return title;
+      if (id === 'whats-new') return section;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? firstNews : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('g', input);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('g', body);
+  assert.deepEqual(focused, ['h3']);
+  assert.deepEqual(assigned, []);
+});
+
+test('g focuses the What\'s new heading when no item heading exists', () => {
+  const focused = [];
+  let keydown = null;
+  const title = { focus() { focused.push('title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'whats-new-title') return title;
+      if (id === 'whats-new') return { focus() { focused.push('whats-new'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector() { return null; },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  keydown({
+    key: 'g',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['title']);
+});
+
+test('r focuses the first review path when focus is not in an input', () => {
+  assert.match(html, /event\.key === 'r'/);
+  assert.match(html, /querySelector\('#workbench-1 \.review-path'\)\?\.focus\(\)/);
+  assert.match(html, /class="review-path" tabindex="-1"/);
+  assert.match(html, /\.review-path:focus-visible/);
+  assert.match(html, /<kbd>r<\/kbd><\/dt><dd>Focus the first review path on the first workbench card/);
+  assert.match(html, /Press <kbd>r<\/kbd> to focus the first review path/);
+  assert.match(html, /This key moves focus; it does not open the workbench/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `r` to focus the first review/);
+  assert.match(readme, /does not open the workbench/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const review = { focus() { focused.push('review-path'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbench-1 .review-path' ? review : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('r', input);
+  fire('r', textarea);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('r', body);
+  assert.deepEqual(focused, ['review-path']);
+  assert.deepEqual(assigned, []);
+});
+
 test('b focuses the last workbench card when focus is not in an input', () => {
   assert.match(html, /event\.key === 'b'/);
   assert.match(html, /getElementById\('workbench-4'\)\?\.focus\(\)/);

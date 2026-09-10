@@ -41,7 +41,10 @@ http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
 workbench link without opening it. Key `a` focuses the first workbench article
 without opening it. Key `b` focuses the last workbench card without opening
 it. Key `f` focuses the footer version line. That key does not
-open a workbench. Key `p` prints this catalog page. It is not a live product
+open a workbench. Key `g` focuses the first What's new heading, or the What's
+new heading if none. That key does not open a workbench. Key `r` focuses the
+first review path on the first workbench card. That key moves focus; it does
+not open the workbench. Key `p` prints this catalog page. It is not a live product
 sheet. Keys `v` and `j` copy the printed version list and one-sentence jobs.
 Key `i` copies Trust and limits from this page as Markdown. That list is not a
 live policy feed. Key `u` copies How it works from this page as Markdown. That
@@ -135,12 +138,15 @@ Decision Labs page that points back to the catalog rather than a blank
 port. Keys 1 to 4 on the catalog open the four workbenches when focus is not in
 an input. Press `h` to focus the catalog heading. Press `m` to focus the
 main catalog content. Press `n` to focus What's
-new. Press `w` to focus the workbenches. Press `k` to focus How it works.
+new. Press `g` to focus the first What's new heading. Press `w` to focus the
+workbenches. Press `k` to focus How it works.
 Press `t` to focus Trust and limits. Press `s` to focus the first Open
 workbench link. Press `a` to focus the first workbench article without opening
 it. That key is distinct from `s`, which focuses the first Open workbench link.
 Press `b` to focus the last workbench card without opening it. That key moves
-focus; it does not open the workbench.
+focus; it does not open the workbench. Press `r` to focus the first review
+path on the first workbench card. That key moves focus; it does not open the
+workbench.
 Press `f` to focus the footer version line. That key does
 not open a workbench. Press `p` to print this catalog. That key prints this
 page in the browser. It is not a live product sheet. Press `c` to copy the catalog address

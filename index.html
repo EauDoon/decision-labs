@@ -150,8 +150,14 @@
     #trust:focus-visible,
     #main:focus,
     #main:focus-visible,
+    #whats-new-title:focus,
+    #whats-new-title:focus-visible,
+    #whats-new h3:focus,
+    #whats-new h3:focus-visible,
     .workbench:focus,
     .workbench:focus-visible,
+    .review-path:focus,
+    .review-path:focus-visible,
     .version-line:focus,
     .version-line:focus-visible {
       outline: 3px solid var(--focus);
@@ -408,11 +414,11 @@
   </nav>
   <main class="shell" id="main" tabindex="-1">
     <section class="whats-new" id="whats-new" tabindex="-1" aria-labelledby="whats-new-title">
-      <h2 id="whats-new-title">What's new</h2>
+      <h2 id="whats-new-title" tabindex="-1">What's new</h2>
       <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank. Catalog cards list each workbench version next to its job.</p>
       <ul class="whats-new-list">
         <li>
-          <h3>Share-to-hold in Partnership Breakpoint</h3>
+          <h3 tabindex="-1">Share-to-hold in Partnership Breakpoint</h3>
           <p>Solve the minimum revenue share at which a named participant still meets their floor in the open case, then apply it if you choose. The solver is local arithmetic. It does not quote a market or predict who will stay.</p>
         </li>
         <li>
@@ -549,7 +555,7 @@
         <li data-app="smallest-agreement">1.5.4</li>
         <li data-app="weekend-gap">1.5.4</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -560,12 +566,14 @@
           <dt><kbd>h</kbd></dt><dd>Focus the catalog heading</dd>
           <dt><kbd>m</kbd></dt><dd>Focus the main catalog content. This key does not open a workbench.</dd>
           <dt><kbd>n</kbd></dt><dd>Focus What's new</dd>
+          <dt><kbd>g</kbd></dt><dd>Focus the first What's new heading. This key does not open a workbench.</dd>
           <dt><kbd>w</kbd></dt><dd>Focus the workbenches</dd>
           <dt><kbd>k</kbd></dt><dd>Focus How it works</dd>
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
           <dt><kbd>s</kbd></dt><dd>Focus the first Open workbench link. This key moves focus; it does not open the workbench.</dd>
           <dt><kbd>a</kbd></dt><dd>Focus the first workbench article. This key moves focus to the card; it does not open the workbench.</dd>
           <dt><kbd>b</kbd></dt><dd>Focus the last workbench card. This key moves focus; it does not open the workbench.</dd>
+          <dt><kbd>r</kbd></dt><dd>Focus the first review path on the first workbench card. This key moves focus; it does not open the workbench.</dd>
           <dt><kbd>f</kbd></dt><dd>Focus the footer version line. This key does not open a workbench.</dd>
           <dt><kbd>p</kbd></dt><dd>Print this catalog page. This prints the page in the browser, not a live product sheet.</dd>
           <dt><kbd>c</kbd></dt><dd>Copy catalog address when this page is served over http</dd>
@@ -589,7 +597,7 @@
           <h3>Partnership Breakpoint</h3>
           <p class="version">Version <span data-app-version="partnership-breakpoint">1.5.4</span></p>
           <p class="last-launched" data-last-workbench="1" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
-          <p class="review-path"><strong>Review constraints and negotiation room.</strong> Check cost allowances, feasible volume and operational conflicts before exporting a review packet.</p>
+          <p class="review-path" tabindex="-1"><strong>Review constraints and negotiation room.</strong> Check cost allowances, feasible volume and operational conflicts before exporting a review packet.</p>
           <p class="job">Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move.</p>
           <p class="sample">You will see <strong>Balanced</strong>, the built-in synthetic starting point: a shared-revenue case with participant costs and exit floors already filled in.</p>
         </div>
@@ -604,7 +612,7 @@
           <h3>Common Cart</h3>
           <p class="version">Version <span data-app-version="common-cart">1.4.4</span></p>
           <p class="last-launched" data-last-workbench="2" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
-          <p class="review-path"><strong>Review buyer coverage and offer resilience.</strong> In the buyer room, inspect private buyer alternatives and bounded offer changes.</p>
+          <p class="review-path" tabindex="-1"><strong>Review buyer coverage and offer resilience.</strong> In the buyer room, inspect private buyer alternatives and bounded offer changes.</p>
           <p class="job">Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view.</p>
           <p class="sample">You will see the built-in synthetic <strong>coffee</strong> scenario (Neighbourhood coffee run): pooled buyers and conditional merchant offers for coffee beans.</p>
         </div>
@@ -619,7 +627,7 @@
           <h3>The Smallest Agreement</h3>
           <p class="version">Version <span data-app-version="smallest-agreement">1.5.4</span></p>
           <p class="last-launched" data-last-workbench="3" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
-          <p class="review-path"><strong>Review the package before discussion.</strong> Inspect approval margins, alternatives and bounded rule changes before facilitation.</p>
+          <p class="review-path" tabindex="-1"><strong>Review the package before discussion.</strong> Inspect approval margins, alternatives and bounded rule changes before facilitation.</p>
           <p class="job">Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget.</p>
           <p class="sample">You will see <strong>Neighbourhood Plan</strong>, the built-in synthetic neighborhood-plan scenario: clause alternatives, an approval threshold, and a change-cost budget.</p>
         </div>
@@ -634,7 +642,7 @@
           <h3>Weekend Gap</h3>
           <p class="version">Version <span data-app-version="weekend-gap">1.5.4</span></p>
           <p class="last-launched" data-last-workbench="4" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
-          <p class="review-path"><strong>Review the timing behind the queue.</strong> Inspect arrival cohorts, closed intervals and reserve or throughput scenarios.</p>
+          <p class="review-path" tabindex="-1"><strong>Review the timing behind the queue.</strong> Inspect arrival cohorts, closed intervals and reserve or throughput scenarios.</p>
           <p class="job">Follow synthetic AUD redemption demand from Friday to Monday and see how reserves and settlement windows change the queue when banking is closed.</p>
           <p class="sample">You will see <strong>Normal Friday</strong>, the built-in 72-hour synthetic redemption case from Friday afternoon through Monday.</p>
         </div>
@@ -955,6 +963,12 @@
           document.getElementById('whats-new')?.focus();
           return;
         }
+        if (event.key === 'g') {
+          event.preventDefault();
+          const firstNews = document.querySelector('#whats-new h3');
+          (firstNews || document.getElementById('whats-new-title') || document.getElementById('whats-new'))?.focus();
+          return;
+        }
         if (event.key === 'w') {
           event.preventDefault();
           document.getElementById('workbenches')?.focus();
@@ -983,6 +997,11 @@
         if (event.key === 'b') {
           event.preventDefault();
           document.getElementById('workbench-4')?.focus();
+          return;
+        }
+        if (event.key === 'r') {
+          event.preventDefault();
+          document.querySelector('#workbench-1 .review-path')?.focus();
           return;
         }
         if (event.key === 'f') {
