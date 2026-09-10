@@ -38,7 +38,9 @@ What's new section. Skip links jump to What's new, workbenches, How it works,
 keyboard shortcuts, Trust and limits, and catalog versions. Catalog keys `w`, `k`, `n`, and `c`
 focus the workbenches, How it works, What's new, or copy the catalog address on
 http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
-workbench link without opening it. Key `a` focuses the first workbench article
+workbench link without opening it. Key `]` focuses the last Open workbench
+link, or the workbenches heading if none. That key moves focus; it does not
+open the workbench. Key `a` focuses the first workbench article
 without opening it. Key `b` focuses the last workbench card without opening
 it. Key `f` focuses the footer version line. That key does not
 open a workbench. Key `g` focuses the first What's new heading, or the What's
@@ -172,7 +174,9 @@ does not open a workbench.
 Press `/` to focus the first Trust and limits list item. That key moves focus;
 it does not open a workbench. Shift+/ still opens the shortcut list.
 Press `t` to focus Trust and limits. Press `s` to focus the first Open
-workbench link. Press `a` to focus the first workbench article without opening
+workbench link. Press `]` to focus the last Open workbench link. That key
+moves focus; it does not open the workbench. If none is present, it focuses
+the workbenches heading. Press `a` to focus the first workbench article without opening
 it. That key is distinct from `s`, which focuses the first Open workbench link.
 Press `b` to focus the last workbench card without opening it. That key moves
 focus; it does not open the workbench. Press `r` to focus the first review

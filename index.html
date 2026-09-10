@@ -624,7 +624,7 @@
         <li data-app="smallest-agreement">1.5.7</li>
         <li data-app="weekend-gap">1.5.6</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>/</kbd> to focus the first Trust and limits list item. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>;</kbd> to copy the first workbench job. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>.</kbd> to focus Skip to catalog versions. Press <kbd>'</kbd> to focus Skip to Trust and limits. Press <kbd>[</kbd> to focus Copy version line. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>/</kbd> to focus the first Trust and limits list item. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>;</kbd> to copy the first workbench job. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>.</kbd> to focus Skip to catalog versions. Press <kbd>'</kbd> to focus Skip to Trust and limits. Press <kbd>[</kbd> to focus Copy version line. Press <kbd>]</kbd> to focus the last Open workbench link. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -642,6 +642,7 @@
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
           <dt><kbd>/</kbd></dt><dd>Focus the first Trust and limits list item, or the Trust and limits heading if none. This key moves focus; it does not open a workbench. Shift+/ stays <kbd>?</kbd>.</dd>
           <dt><kbd>s</kbd></dt><dd>Focus the first Open workbench link. This key moves focus; it does not open the workbench.</dd>
+          <dt><kbd>]</kbd></dt><dd>Focus the last Open workbench link, or the workbenches heading if none. This key moves focus; it does not open the workbench.</dd>
           <dt><kbd>a</kbd></dt><dd>Focus the first workbench article. This key moves focus to the card; it does not open the workbench.</dd>
           <dt><kbd>b</kbd></dt><dd>Focus the last workbench card. This key moves focus; it does not open the workbench.</dd>
           <dt><kbd>r</kbd></dt><dd>Focus the first review path on the first workbench card. This key moves focus; it does not open the workbench.</dd>
@@ -739,6 +740,7 @@
       <ul>
         <li tabindex="-1"><strong>How-it-works jump.</strong> Key d focuses the first How it works list item, or the How it works heading if none. It moves focus only. It does not open a workbench.</li>
         <li tabindex="-1"><strong>Trust-item jump.</strong> Key slash focuses the first Trust and limits list item, or the Trust and limits heading if none. It moves focus only. It does not open a workbench. Shift+/ still opens the shortcut list.</li>
+        <li tabindex="-1"><strong>Last-open jump.</strong> Key right bracket focuses the last Open workbench link, or the workbenches heading if none. It moves focus only. It does not open the workbench.</li>
         <li tabindex="-1"><strong>Standalone files.</strong> Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</li>
         <li tabindex="-1"><strong>Loopback catalog address.</strong> When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</li>
         <li tabindex="-1"><strong>Catalog print.</strong> Print this catalog prints the page in the browser. It is not a live product sheet.</li>
@@ -1241,6 +1243,13 @@
         if (event.key === 's') {
           event.preventDefault();
           document.querySelector('#workbenches a.open')?.focus();
+          return;
+        }
+        if (event.key === ']') {
+          event.preventDefault();
+          const opens = document.querySelectorAll('#workbenches a.open');
+          const lastOpen = opens[opens.length - 1];
+          (lastOpen || document.getElementById('workbenches-title') || document.getElementById('workbenches'))?.focus();
           return;
         }
         if (event.key === 'a') {
