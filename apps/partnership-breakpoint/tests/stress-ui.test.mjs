@@ -1535,6 +1535,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>:<\/kbd> Copy first-breakpoint volume-to-hold as Markdown/);
   assert.match(app.markup(), /<kbd>"<\/kbd> Copy over-capacity participant count as Markdown/);
   assert.match(app.markup(), /<kbd>\}<\/kbd> Copy the first over-capacity participant label as Markdown/u);
+  assert.match(app.markup(), /<kbd>~<\/kbd> Copy first over-capacity remaining listed capacity as Markdown/);
   assert.match(app.markup(), /<kbd>\+<\/kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\|<\/kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>_<\/kbd> Jump to Copy over-capacity participant count, or the Participants heading if missing/);
@@ -2470,6 +2471,71 @@ test('keyboard } copies first over-capacity participant label through the same c
   firstOfTwo.edit('deal.monthlyVolume', '121000');
   firstOfTwo.keydown('}');
   assert.equal(firstOfTwo.copied().at(-1), 'First over-capacity participant: Distributor. Roster row currently over listed capacity. Not a forecast.');
+});
+
+test('keyboard tilde copies first over-capacity remaining listed capacity through the same control', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"/);
+  assert.match(fallback.markup(), /id="copy-first-over-capacity-remaining"[^>]*aria-keyshortcuts="~"/);
+  fallback.keydown('~');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  assert.match(fallback.markup(), /First over-capacity remaining listed capacity: none entered\./);
+  assert.match(fallback.markup(), /id="first-over-capacity-remaining-copy-title">First over-capacity remaining listed capacity Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="over-capacity-count-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="volume-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-first-over-capacity-remaining-copy');
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown('~', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('~', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown('~');
+  assert.match(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  assert.match(fallback.markup(), />First over-capacity remaining listed capacity: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown('~');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'First over-capacity remaining listed capacity: none entered.');
+  assert.doesNotMatch(withClipboard.copied()[0], /First over-capacity participant: none entered/);
+  assert.doesNotMatch(withClipboard.copied()[0], /Over-capacity participant count/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown('~', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+  withClipboard.keydown('}');
+  assert.notEqual(withClipboard.copied().at(-1), withClipboard.copied()[0]);
+  assert.match(withClipboard.copied().at(-1), /First over-capacity participant/);
+  withClipboard.keydown('"');
+  assert.match(withClipboard.copied().at(-1), /Over-capacity participant count/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.keydown('~');
+  assert.match(denied.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const over = await workbench('file:', { clipboard: 'ok' });
+  over.edit('deal.monthlyVolume', '116000');
+  over.keydown('~');
+  assert.equal(over.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
+  over.keydown('}');
+  assert.equal(over.copied().at(-1), 'First over-capacity participant: Liquidity Partner. Roster row currently over listed capacity. Not a forecast.');
+  over.keydown('"');
+  assert.equal(over.copied().at(-1), 'Over-capacity participant count: 1. Count of roster rows currently over listed capacity. Not a forecast.');
+
+  const firstOfTwo = await workbench('file:', { clipboard: 'ok' });
+  firstOfTwo.edit('deal.monthlyVolume', '121000');
+  firstOfTwo.keydown('~');
+  assert.equal(firstOfTwo.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Distributor. How far over listed capacity. Not a forecast.');
 });
 
 test('keyboard + jumps to Copy first over-capacity participant label unless a field is focused', async () => {
