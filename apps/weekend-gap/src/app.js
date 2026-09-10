@@ -44,6 +44,7 @@ import {
   firstClosedFxGanttHour,
   firstClosedIssuerGanttHour,
   firstClosedPayoutGanttHour,
+  firstOpenPayoutGanttHour,
   ganttHourClosedOnAnyGate,
   ganttHourClosedOnEveryGate,
   ganttHourOpenOnEveryGate,
@@ -114,6 +115,7 @@ const elements = {
   firstClosedBankHour: document.querySelector("#first-closed-bank-hour-value"),
   firstClosedIssuerHour: document.querySelector("#first-closed-issuer-hour-value"),
   firstClosedPayoutHour: document.querySelector("#first-closed-payout-hour-value"),
+  firstOpenPayoutHour: document.querySelector("#first-open-payout-hour-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -336,6 +338,12 @@ function render() {
     elements.firstClosedPayoutHour.textContent = closedPayoutHour === null
       ? "none"
       : `${formatTime(closedPayoutHour)} (hour ${closedPayoutHour})`;
+  }
+  if (elements.firstOpenPayoutHour) {
+    const openPayoutHour = firstOpenPayoutGanttHour(scenario);
+    elements.firstOpenPayoutHour.textContent = openPayoutHour === null
+      ? "none"
+      : `${formatTime(openPayoutHour)} (hour ${openPayoutHour})`;
   }
   const jumpFirst = document.querySelector("#jump-first-settlement");
   if (jumpFirst) {
@@ -1950,7 +1958,7 @@ document.querySelector("#export-report").addEventListener("click",()=>{
 });
 document.querySelector("#print").addEventListener("click", () => {
   window.print();
-  document.querySelector("#workspace-status").textContent = "Print keeps dashboard numbers, hours to clear the queue when a queue exists, with an honest empty when none, the first closed FX hour when one exists, with an honest empty when none, the first closed bank hour when one exists, with an honest empty when none, the first closed issuer hour when one exists, with an honest empty when none, the first closed payout hour when one exists, with an honest empty when none, and the Gantt. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print keeps dashboard numbers, hours to clear the queue when a queue exists, with an honest empty when none, the first closed FX hour when one exists, with an honest empty when none, the first closed bank hour when one exists, with an honest empty when none, the first closed issuer hour when one exists, with an honest empty when none, the first closed payout hour when one exists, with an honest empty when none, the first open payout hour when one exists, with an honest empty when none, and the Gantt. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
 });
 document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.add("print-redacted");
@@ -1974,7 +1982,7 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief when a queue exists, with an honest empty when none, and the selected Gantt hour stay on the printed brief. Remaining reserve at that hour stays on the printed brief. Hours to first settlement stay on the printed brief. The first closed FX hour label stays on the printed brief when one exists, with an honest empty when none. The first closed bank hour stays on the printed brief when one exists, with an honest empty when none. The first closed issuer hour stays on the printed brief when one exists, with an honest empty when none. The first closed payout hour stays on the printed brief when one exists, with an honest empty when none. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief when a queue exists, with an honest empty when none, and the selected Gantt hour stay on the printed brief. Remaining reserve at that hour stays on the printed brief. Hours to first settlement stay on the printed brief. The first closed FX hour label stays on the printed brief when one exists, with an honest empty when none. The first closed bank hour stays on the printed brief when one exists, with an honest empty when none. The first closed issuer hour stays on the printed brief when one exists, with an honest empty when none. The first closed payout hour stays on the printed brief when one exists, with an honest empty when none. The first open payout hour stays on the printed brief when one exists, with an honest empty when none. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
 });
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();
