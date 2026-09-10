@@ -2267,6 +2267,11 @@ document.addEventListener("keydown", (event) => {
     copyFirstOpenFxHourMarkdown();
     return;
   }
+  if (event.key === "*") {
+    event.preventDefault();
+    copyFirstOpenBankHourMarkdown();
+    return;
+  }
   if (event.key === "<") {
     event.preventDefault();
     jumpToFirstClosedBankCopy();
