@@ -3657,6 +3657,15 @@ function jumpToVetoGroupCountCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToHideFirstVetoGroup() {
+  const control = $("#hide-first-veto-group");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -3902,6 +3911,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === ")") {
     event.preventDefault();
     jumpToVetoGroupCountCopy();
+  } else if (event.key === "#") {
+    event.preventDefault();
+    jumpToHideFirstVetoGroup();
   }
 });
 

@@ -387,7 +387,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <p id="hide-veto-groups-filter-note" class="field-note">Hides groups marked as a veto group. Hidden groups still count in the model. The solver is unchanged. Distinct from Show veto groups only, Hide non-veto groups, Hide first veto group, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, leftover-budget, and locked-clause filters. A veto is a number you entered, not a legal right.</p>
           <label class="hide-non-veto-groups-filter" for="hide-non-veto-groups"><input id="hide-non-veto-groups" type="checkbox" aria-keyshortcuts="@"> Hide non-veto groups</label>
           <p id="hide-non-veto-groups-filter-note" class="field-note">Hides groups that are not marked as a veto group. Hidden groups still count in the model. The solver is unchanged. Distinct from Hide veto groups, Hide first veto group, Show veto groups only, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, and hideGroupsBelowThreshold. A veto is a number you entered, not a legal right.</p>
-          <label class="hide-first-veto-group-filter" for="hide-first-veto-group"><input id="hide-first-veto-group" type="checkbox"> Hide first veto group</label>
+          <label class="hide-first-veto-group-filter" for="hide-first-veto-group"><input id="hide-first-veto-group" type="checkbox" aria-keyshortcuts="#"> Hide first veto group</label>
           <p id="hide-first-veto-group-filter-note" class="field-note">Hides only the first group marked as a veto group. Hidden groups still count in the model. The solver is unchanged. Distinct from Hide veto groups and Hide non-veto groups. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A veto is a number you entered, not a legal right.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
@@ -684,6 +684,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>@</kbd> Jump to the hide-non-veto-groups control, or the groups heading</li>
           <li><kbd>(</kbd> Copy the veto-group count as one-line Markdown</li>
           <li><kbd>)</kbd> Jump to the veto-group count copy control, or the groups heading</li>
+          <li><kbd>#</kbd> Jump to the hide-first-veto-group control, or the groups heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -7397,6 +7398,15 @@ function jumpToVetoGroupCountCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToHideFirstVetoGroup() {
+  const control = $("#hide-first-veto-group");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -7642,6 +7652,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === ")") {
     event.preventDefault();
     jumpToVetoGroupCountCopy();
+  } else if (event.key === "#") {
+    event.preventDefault();
+    jumpToHideFirstVetoGroup();
   }
 });
 
