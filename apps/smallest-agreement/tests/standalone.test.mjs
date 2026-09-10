@@ -95,6 +95,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Show veto groups only/u);
   assert.match(html, /id="locked-clauses-only"/u);
   assert.match(html, /Show locked clauses only/u);
+  assert.match(html, /id="hide-unlocked-clauses"/u);
+  assert.match(html, /Hide unlocked clauses/u);
   assert.match(html, /id="changed-clauses-only"/u);
   assert.match(html, /Show clauses that differ from the recommendation/u);
   assert.match(html, /id="over-budget-clauses-only"/u);
@@ -307,6 +309,11 @@ async function savedWorkbench(storage, hash = "") {
     vetoGroupsStatus: () => element("#veto-groups-status").textContent,
     filterLockedClauses: (checked) => {
       const target = element("#locked-clauses-only");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
+    filterHideUnlockedClauses: (checked) => {
+      const target = element("#hide-unlocked-clauses");
       target.checked = checked;
       target.events.get("change")({ target: { checked } });
     },
@@ -887,6 +894,7 @@ test("hall hire hours preset loads a distinct synthetic hall workshop", async ()
   assert.doesNotMatch(app.title(), /Protected Access/u);
   assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
   assert.doesNotMatch(app.title(), /Club Constitution/u);
+  assert.doesNotMatch(app.title(), /Community garden watering/u);
   assert.doesNotMatch(app.clauses(), /Lighting hours/u);
   assert.doesNotMatch(app.clauses(), /Stall open hours/u);
   assert.doesNotMatch(app.clauses(), /Access hours/u);
@@ -1042,7 +1050,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
   assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
-  assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
+  assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /\.hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note/u);
   assert.match(html, /\.hide-groups-without-floors-filter, #hide-groups-without-floors-filter-note/u);
@@ -1340,6 +1348,45 @@ test("clause filter live region announces when no clauses match", async () => {
   assert.match(app.filterStatus(), /No clauses match this filter/u);
   app.filterClauses("");
   assert.equal(app.filterStatus(), "");
+});
+
+test("hide-unlocked-clauses hides unlocked cards without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="hide-unlocked-clauses"/u);
+  assert.match(html, /Hide unlocked clauses/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterHideUnlockedClauses(true);
+  assert.match(app.clauses(), /No clauses remain after hiding unlocked clauses/u);
+  assert.match(app.filterStatus(), /No clauses remain after hiding unlocked clauses/u);
+  assert.match(app.ballot(), /Park access hours/u);
+  assert.match(app.ballot(), /Weekend market use/u);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  app.filterLockedClauses(true);
+  assert.match(app.clauses(), /No clauses remain after hiding unlocked clauses/u);
+  app.filterLockedClauses(false);
+  app.filterChangedClauses(true);
+  assert.match(app.clauses(), /No clauses differ between the original and recommended packages/u);
+  app.filterChangedClauses(false);
+  app.filterHideUnlockedClauses(false);
+  assert.match(app.clauses(), /Park access hours/u);
+  app.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
+  app.filterHideUnlockedClauses(true);
+  assert.match(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.doesNotMatch(app.clauses(), /Path lighting/u);
+  assert.match(app.filterStatus(), /Showing 1 of 3 clauses/u);
+  assert.match(app.ballot(), /Weekend market use/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideUnlockedClauses, true);
+  assert.equal(Object.hasOwn(JSON.parse(storage.get("smallest-agreement:proposal:v1")), "hideUnlockedClauses"), false);
+  const saved = JSON.parse(storage.get("smallest-agreement:proposal:v1"));
+  assert.equal(saved.clauses.length, 3);
+  app.clearFocus();
+  app.keydown("k");
+  assert.equal(app.focused(), '[data-field="clause-title"][data-clause-id="market"]');
+  assert.match(app.clauses(), /Weekend market use/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideUnlockedClauses, false);
 });
 
 test("locked-clause filter hides unlocked cards without changing the stored draft", async () => {
@@ -2770,6 +2817,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(Object.hasOwn(proposal, "overBudgetClausesOnly"), false);
   assert.equal(Object.hasOwn(proposal, "hideGroupsAtFloor"), false);
   assert.equal(Object.hasOwn(proposal, "hideGroupsWithoutFloors"), false);
+  assert.equal(Object.hasOwn(proposal, "hideUnlockedClauses"), false);
   assert.equal(Object.hasOwn(proposal, "noCheaperRemainingClausesOnly"), false);
   assert.equal(proposal.clauses.length, 3);
   assert.match(app.groups(), /No veto groups match this filter/u);
@@ -2781,6 +2829,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   app.filterHideGroupsAtFloor(true);
   app.filterHideGroupsWithoutFloors(true);
   app.filterNoCheaperRemainingClauses(true);
+  app.filterHideUnlockedClauses(true);
   const nextPrefs = JSON.parse(storage.get("smallest-agreement:workspace:v1"));
   assert.equal(nextPrefs.changedClausesOnly, true);
   assert.equal(nextPrefs.belowFloorGroupsOnly, true);
@@ -2788,6 +2837,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(nextPrefs.hideGroupsAtFloor, true);
   assert.equal(nextPrefs.hideGroupsWithoutFloors, true);
   assert.equal(nextPrefs.noCheaperRemainingClausesOnly, true);
+  assert.equal(nextPrefs.hideUnlockedClauses, true);
   app.filterVetoGroups(false);
   app.filterLockedClauses(false);
   await app.importJson(JSON.stringify({
@@ -2811,6 +2861,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).vetoGroupsOnly, false);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).lockedClausesOnly, false);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideGroupsWithoutFloors, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideUnlockedClauses, false);
   await app.importJson(JSON.stringify({
     format: "smallest-agreement-workspace",
     version: 1,
