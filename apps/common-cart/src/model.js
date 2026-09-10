@@ -1467,6 +1467,13 @@ export function createLeftoverFillUnitCountMarkdown(rawScenario) {
   return `Common Cart leftover fill units (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
+/** Organizer-private one-line leftover fill merchant label. Merchant label only. Not a merchant export. */
+export function createLeftoverFillMerchantLabelMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const merchant = coverage.secondary?.merchant ?? "none";
+  return `Common Cart leftover fill merchant (organizer private): ${merchant}. Not a merchant export.\n`;
+}
+
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
 export function createWinningRemainingCapacityMarkdown(rawScenario) {
   const market = evaluateMarket(rawScenario);
