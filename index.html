@@ -244,7 +244,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .copy-last, .copy-lede, .print-catalog {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .print-catalog {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -258,19 +258,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .print-catalog:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .print-catalog:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .print-catalog:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .print-catalog:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .print-catalog-tools { margin: 12px 0 0; }
-    .copy-versions-fallback, .copy-jobs-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback {
+    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .print-catalog-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -283,7 +283,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -325,7 +325,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .copy-last, .copy-lede, .print-catalog { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .print-catalog { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -357,6 +357,7 @@
       .catalog-url-tools, .copy-versions-tools, .copy-versions-fallback, .copy-jobs-tools, .copy-jobs-fallback, .copy-trust-tools, .copy-trust-fallback { display: none !important; }
       .copy-how-tools, .copy-how-fallback, .copy-last-tools, .copy-last-fallback { display: none !important; }
       .copy-lede-tools, .copy-lede-fallback { display: none !important; }
+      .copy-skips-tools, .copy-skips-fallback { display: none !important; }
       .whats-new, .workbench .version, .version-line, .trust { display: block !important; }
       #how-it-works, .guide { display: block !important; }
       #how-it-works, #how-it-works h2, #how-it-works h3, #how-it-works p, #how-it-works li { color: #000; }
@@ -561,7 +562,7 @@
         <li data-app="smallest-agreement">1.5.4</li>
         <li data-app="weekend-gap">1.5.4</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -590,6 +591,7 @@
           <dt><kbd>i</kbd></dt><dd>Copy Trust and limits as Markdown from this catalog page, not a live policy feed. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
           <dt><kbd>u</kbd></dt><dd>Copy How it works as Markdown from this catalog page, not a live policy feed. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
           <dt><kbd>y</kbd></dt><dd>Copy the last-launched workbench name and one-sentence job as Markdown from this-browser storage, or an empty line if none is stored. This is not a cloud recency. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
+          <dt><kbd>z</kbd></dt><dd>Copy the six skip-link targets as a Markdown list of skip-link text and hash hrefs from the skip links on this page. This is in-page navigation copy, not a sitemap API. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
           <dt><kbd>l</kbd></dt><dd>Focus the last-launched workbench card, or the workbenches heading if none is stored. This is storage in this browser, not a cloud recency.</dd>
           <dt><kbd>o</kbd></dt><dd>Open the last-launched workbench, the same as keys 1 to 4. If none is stored, focus the workbenches. This key assigns a location; it does not copy. It does not claim a copy succeeded on a file URL.</dd>
           <dt><kbd>x</kbd></dt><dd>Clear last-launched storage in this browser and hide the recency notes. This is this-browser storage, not a cloud recency. A storage write failure stays silent and does not clear drafts.</dd>
@@ -669,6 +671,7 @@
         <li><strong>Standalone files.</strong> Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</li>
         <li><strong>Loopback catalog address.</strong> When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</li>
         <li><strong>Catalog print.</strong> Print this catalog prints the page in the browser. It is not a live product sheet.</li>
+        <li><strong>Skip-link targets.</strong> Copy skip links copies the six skip-link labels and hash hrefs already printed in the skip navigation as Markdown. It is in-page navigation copy, not a sitemap API.</li>
         <li><strong>Catalog intro.</strong> Copy catalog intro copies the catalog heading and lede paragraph already printed on this page as Markdown. It reads this catalog page. It is not a live product feed. If those nodes are missing, it copies an empty string.</li>
         <li><strong>Catalog versions.</strong> Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</li>
         <li><strong>Catalog jobs.</strong> Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</li>
@@ -720,6 +723,11 @@
       <span class="copy-last-status" id="copy-last-status" role="status"></span>
     </p>
     <textarea id="copy-last-fallback" class="copy-last-fallback" hidden readonly rows="2" aria-label="Last launched job as Markdown"></textarea>
+    <p class="copy-skips-tools" id="copy-skips-tools">
+      <button type="button" class="copy-skips" id="copy-skips" aria-keyshortcuts="z">Copy skip links</button>
+      <span class="copy-skips-status" id="copy-skips-status" role="status"></span>
+    </p>
+    <textarea id="copy-skips-fallback" class="copy-skips-fallback" hidden readonly rows="6" aria-label="Skip-link targets as Markdown"></textarea>
     <p>This page is the catalog. It is not a combined product version. Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap each ship their own version and changelog.</p>
     <p>Transparent assumptions. Deterministic calculations. Decisions remain with people.</p>
   </footer>
@@ -966,6 +974,41 @@
           }
         }
       });
+      const skipsBtn = document.getElementById('copy-skips');
+      const skipsStatus = document.getElementById('copy-skips-status');
+      const skipsFallback = document.getElementById('copy-skips-fallback');
+      const skipsMarkdown = () => [...document.querySelectorAll('.skips a.skip')].map((link) => {
+        const text = link.textContent.trim();
+        const href = link.getAttribute('href') ?? '';
+        if (!text && !href) return '';
+        return `- ${text} (${href})`;
+      }).filter(Boolean).join('\n');
+      skipsBtn?.addEventListener('click', async () => {
+        const markdown = skipsMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (skipsFallback) skipsFallback.hidden = true;
+          if (skipsStatus) {
+            skipsStatus.textContent = empty
+              ? 'Skip links were missing. Copied an empty string. This is in-page navigation copy, not a sitemap API.'
+              : 'Copied skip-link targets from this page as Markdown. This is in-page navigation copy, not a sitemap API.';
+          }
+        } catch {
+          if (skipsFallback) {
+            skipsFallback.hidden = false;
+            skipsFallback.value = markdown;
+            skipsFallback.focus();
+            skipsFallback.select();
+          }
+          if (skipsStatus) {
+            skipsStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Skip links were missing. This is in-page navigation copy, not a sitemap API.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is in-page navigation copy, not a sitemap API.';
+          }
+        }
+      });
       const setOpen = (open, options = {}) => {
         if (!shortcuts) return;
         shortcuts.hidden = !open;
@@ -1098,6 +1141,11 @@
         if (event.key === 'y') {
           event.preventDefault();
           lastBtn?.click();
+          return;
+        }
+        if (event.key === 'z') {
+          event.preventDefault();
+          skipsBtn?.click();
           return;
         }
         if (event.key === 'l') {

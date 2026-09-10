@@ -55,7 +55,9 @@ list is not a live policy feed. Keys `l` and `o` focus or open the last-launched
 browser. Key `x` clears that last-launched marker in this browser. Key `y`
 copies the last-launched workbench name and one-sentence job from this-browser
 storage, or an empty line if none is stored. That recency
-is this-browser storage, not a cloud recency. Key `o` assigns a location like keys 1 to 4. It does not claim a
+is this-browser storage, not a cloud recency. Key `z` copies the six skip-link
+targets from this page as Markdown. That copy is in-page navigation copy, not
+a sitemap API. Key `o` assigns a location like keys 1 to 4. It does not claim a
 copy succeeded on a file URL. Copy versions copies the four names and versions printed on this page as
 Markdown. That list is not a live product version and it does not call a
 registry. What's new names current in-workbench tools (share-to-hold,
@@ -193,6 +195,9 @@ and visible text box fallback. That list is not a live product feed.
 Press `j` to copy catalog jobs through that same control.
 Press `q` to copy catalog jobs through that same Copy jobs control. It does
 not fork that Markdown.
+Copy skip links copies the six skip-link labels and hash hrefs already printed
+in the skip navigation as Markdown, with the same clipboard and visible text
+box fallback. This is in-page navigation copy, not a sitemap API.
 Copy Trust and limits copies the Trust and limits heading and list items
 already printed on this catalog page as Markdown. It uses the browser
 clipboard when that API is available, and shows a visible text box if it is
@@ -202,6 +207,9 @@ Press `u` to copy How it works through that same control.
 Press `y` to copy the last-launched workbench name and one-sentence job from
 this-browser storage. If none is stored, that key copies an empty line. This is
 not a cloud recency.
+Press `z` to copy skip-link targets from this page. That key uses the same Copy
+skip links control, including the visible text box when the clipboard API is
+unavailable. This is in-page navigation copy, not a sitemap API.
 Copy How it works copies the How it works heading and list items already
 printed on this catalog page as Markdown. It uses the browser clipboard when
 that API is available, and shows a visible text box if it is not. That list

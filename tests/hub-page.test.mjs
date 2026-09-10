@@ -1026,6 +1026,163 @@ test('print CSS hides copy lede tools and keeps How it works and versions', () =
   assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
 });
 
+test('copy skip links copies skip-link text and hash hrefs as Markdown with a visible fallback', () => {
+  assert.match(html, /id="copy-skips"/);
+  assert.match(html, />Copy skip links</);
+  assert.match(html, /aria-keyshortcuts="z"/);
+  assert.match(html, /id="copy-skips-fallback"/);
+  assert.match(html, /class="copy-skips-fallback"/);
+  assert.match(html, /textarea id="copy-skips-fallback"/);
+  assert.match(html, /skipsMarkdown/);
+  assert.match(html, /querySelectorAll\('\.skips a\.skip'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /skipsFallback\.hidden = false/);
+  assert.match(html, /skipsFallback\.select\(\)/);
+  assert.match(html, /not a sitemap API/);
+  assert.match(html, /in-page navigation copy/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy skip links copies the six skip-link labels/);
+  assert.match(readme, /not a sitemap API/);
+});
+
+test('keyboard z copies skip-link targets through the same control', () => {
+  assert.match(html, /event\.key === 'z'/);
+  assert.match(html, /skipsBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="z"/);
+  assert.match(html, /<kbd>z<\/kbd><\/dt><dd>Copy the six skip-link targets as a Markdown list of skip-link text and hash hrefs/);
+  assert.match(html, /This is in-page navigation copy, not a sitemap API/);
+  assert.match(html, /Press <kbd>z<\/kbd> to copy skip-link targets/);
+  assert.match(readme, /Press `z` to copy skip-link targets/);
+  assert.match(readme, /not a sitemap API/);
+  const clicks = { skips: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return { click() { clicks.skips += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('z', input);
+  fire('z', textarea);
+  assert.equal(clicks.skips, 0);
+  fire('z', body);
+  assert.equal(clicks.skips, 1);
+});
+
+test('copy skip links markdown is heading text plus hash hrefs from the skip links', async () => {
+  let copied = '';
+  let clickSkips = null;
+  const links = [
+    { textContent: 'Skip to what\'s new', getAttribute() { return '#whats-new'; } },
+    { textContent: 'Skip to workbenches', getAttribute() { return '#workbenches'; } },
+    { textContent: 'Skip to How it works', getAttribute() { return '#how-it-works'; } },
+    { textContent: 'Skip to keyboard shortcuts', getAttribute() { return '#shortcuts'; } },
+    { textContent: 'Skip to Trust and limits', getAttribute() { return '#trust'; } },
+    { textContent: 'Skip to catalog versions', getAttribute() { return '#version-line'; } },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return { addEventListener(name, handler) { if (name === 'click') clickSkips = handler; } };
+      if (id === 'copy-skips-status') return { textContent: '' };
+      if (id === 'copy-skips-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '.skips a.skip' ? links : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickSkips();
+  assert.equal(
+    copied,
+    "- Skip to what's new (#whats-new)\n- Skip to workbenches (#workbenches)\n- Skip to How it works (#how-it-works)\n- Skip to keyboard shortcuts (#shortcuts)\n- Skip to Trust and limits (#trust)\n- Skip to catalog versions (#version-line)",
+  );
+  assert.doesNotMatch(copied, /sitemap API/);
+});
+
+test('copy skip links shows a visible textarea when clipboard is unavailable', async () => {
+  let clickSkips = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const links = [
+    { textContent: 'Skip to what\'s new', getAttribute() { return '#whats-new'; } },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return { addEventListener(name, handler) { if (name === 'click') clickSkips = handler; } };
+      if (id === 'copy-skips-status') return status;
+      if (id === 'copy-skips-fallback') return fallback;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '.skips a.skip' ? links : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickSkips();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, "- Skip to what's new (#whats-new)");
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a sitemap API/);
+});
+
+test('print CSS hides copy skip tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-skips-tools, \.copy-skips-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-lede-tools, \.copy-lede-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
 test('copy jobs copies catalog names and jobs as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-jobs"/);
   assert.match(html, />Copy jobs</);
