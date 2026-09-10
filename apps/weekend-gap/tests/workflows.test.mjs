@@ -941,6 +941,32 @@ test("keyboard open-paren copies first open FX hour through the existing control
   assert.notEqual(ui.nodes.get("first-open-fx-copy-fallback").value, ui.nodes.get("first-closed-fx-copy-fallback").value);
 });
 
+test("keyboard star copies first open bank hour through the existing control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("*");
+  assert.equal(ui.nodes.get("first-open-bank-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-open-bank-copy-fallback").value, /First open bank hour:/);
+  assert.match(ui.nodes.get("first-open-bank-copy-fallback").value, /Counts of modeled hours, not a bank calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-open-bank-copy-fallback").value, /First open FX hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-open-bank-copy-fallback").value, /First open payout hour:/);
+  ui.nodes.get("first-open-bank-copy-fallback").hidden = true;
+  ui.nodes.get("first-open-bank-copy-fallback").value = "";
+  await ui.keydown("*", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("first-open-bank-copy-fallback").hidden, true);
+  await ui.keydown("*", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("first-open-bank-copy-fallback").hidden, true);
+  await ui.keydown("*", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("first-open-bank-copy-fallback").hidden, true);
+  await ui.keydown("(");
+  assert.equal(ui.nodes.get("first-open-fx-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-open-fx-copy-fallback").value, /First open FX hour:/);
+  assert.notEqual(ui.nodes.get("first-open-bank-copy-fallback").value, ui.nodes.get("first-open-fx-copy-fallback").value);
+  await ui.keydown("~");
+  assert.equal(ui.nodes.get("first-open-payout-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-open-payout-copy-fallback").value, /First open payout hour:/);
+  assert.notEqual(ui.nodes.get("first-open-bank-copy-fallback").value, ui.nodes.get("first-open-payout-copy-fallback").value);
+});
+
 test("keyboard quote copies first closed payout hour through the existing control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown('"');
@@ -1063,6 +1089,26 @@ test("keyboard close-paren jumps to the first-open-FX copy control and ignores t
   assert.equal(ui.nodes.get("first-open-fx-copy-fallback").hidden, true);
 });
 
+test("keyboard ampersand jumps to the first-open-bank copy control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("&");
+  assert.equal(ui.nodes.get("copy-first-open-bank").focused, true);
+  assert.equal(ui.nodes.get("first-open-bank-copy-fallback").hidden, true);
+  ui.nodes.get("copy-first-open-bank").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("&", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-first-open-bank").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("&", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-first-open-bank").focused, false);
+  await ui.keydown("&", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-first-open-bank").focused, false);
+  await ui.keydown(")");
+  assert.equal(ui.nodes.get("copy-first-open-fx").focused, true);
+  assert.equal(ui.nodes.get("copy-first-open-bank").focused, false);
+  assert.equal(ui.nodes.get("first-open-bank-copy-fallback").hidden, true);
+});
+
 test("keyboard underscore jumps to the first-closed-payout copy control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("_");
@@ -1166,6 +1212,24 @@ test("keyboard hash jumps to the hide-payout-open filter and ignores the key whi
   await ui.keydown("@");
   assert.equal(ui.nodes.get("gantt-hide-fx-closed").focused, true);
   assert.equal(ui.nodes.get("gantt-hide-payout-open").focused, false);
+});
+
+test("keyboard percent jumps to the hide-FX-open filter and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("%");
+  assert.equal(ui.nodes.get("gantt-hide-fx-open").focused, true);
+  ui.nodes.get("gantt-hide-fx-open").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("%", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-hide-fx-open").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("%", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-hide-fx-open").focused, false);
+  await ui.keydown("%", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-hide-fx-open").focused, false);
+  await ui.keydown("#");
+  assert.equal(ui.nodes.get("gantt-hide-payout-open").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-fx-open").focused, false);
 });
 
 test("keyboard left brace jumps to the hide-issuer-closed filter and ignores the key while typing", async () => {
