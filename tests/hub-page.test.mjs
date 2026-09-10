@@ -339,6 +339,17 @@ test('keyboard l focuses the last-launched workbench card in this browser', () =
   assert.match(readme, /not a cloud recency/);
 });
 
+test('keyboard j copies catalog jobs through the same control', () => {
+  assert.match(html, /event\.key === 'j'/);
+  assert.match(html, /jobsBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /<kbd>j<\/kbd><\/dt><dd>Copy workbench names and one-sentence jobs as Markdown/);
+  assert.match(html, /Press <kbd>j<\/kbd> to copy catalog jobs/);
+  assert.match(readme, /Press `j` to copy catalog jobs/);
+  assert.match(html, /jobsMarkdown/);
+  assert.match(html, /jobsFallback\.hidden = false/);
+});
+
 test('keyboard v copies catalog versions through the same control', () => {
   assert.match(html, /event\.key === 'v'/);
   assert.match(html, /versionsBtn\?\.click\(\)/);

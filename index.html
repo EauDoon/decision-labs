@@ -491,7 +491,7 @@
         <li data-app="smallest-agreement">1.5.1</li>
         <li data-app="weekend-gap">1.5.1</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>j</kbd> to copy catalog jobs. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -506,6 +506,7 @@
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
           <dt><kbd>c</kbd></dt><dd>Copy catalog address when this page is served over http</dd>
           <dt><kbd>v</kbd></dt><dd>Copy workbench names and versions as Markdown</dd>
+          <dt><kbd>j</kbd></dt><dd>Copy workbench names and one-sentence jobs as Markdown</dd>
           <dt><kbd>l</kbd></dt><dd>Focus the last-launched workbench card, or the workbenches heading if none is stored</dd>
           <dt><kbd>o</kbd></dt><dd>Open the last-launched workbench, the same as keys 1 to 4. If none is stored, focus the workbenches. This key assigns a location; it does not copy.</dd>
           <dt><kbd>?</kbd></dt><dd>Show or hide this list</dd>
@@ -787,6 +788,11 @@
         if (event.key === 'v') {
           event.preventDefault();
           versionsBtn?.click();
+          return;
+        }
+        if (event.key === 'j') {
+          event.preventDefault();
+          jobsBtn?.click();
           return;
         }
         if (event.key === 'l') {
