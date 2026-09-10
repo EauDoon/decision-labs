@@ -63,6 +63,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
         'title-copy-text', 'over-capacity-participant', 'copy-deal-title',
         'breakpoint-label-copy-text', 'copy-first-breakpoint-label',
+        'viability-label-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -2328,6 +2329,49 @@ test('copy first-breakpoint participant label is one Markdown line and not a for
   already.import(failing);
   already.click('copy-first-breakpoint-label');
   assert.equal(already.copied().at(-1), 'First-breakpoint participant: Liquidity Partner. Synthetic ranking, not a forecast.');
+});
+
+test('copy least-headroom participant label is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-viability-label"/);
+  fallback.click('copy-viability-label');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.markup(), /Least-headroom participant: Liquidity Partner\. Volume-headroom ranking, not a forecast\./);
+  assert.match(fallback.markup(), /id="viability-label-copy-title">Least-headroom participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /First-breakpoint participant:/);
+  assert.doesNotMatch(fallback.markup(), /# Viability and binding limit/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-viability-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="viability-label-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-viability-label');
+  assert.match(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.markup(), /Least-headroom participant: none entered\./);
+  assert.doesNotMatch(fallback.markup(), /Liquidity Partner/);
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-viability-label');
+  assert.equal(withClipboard.copied().length, 1);
+  const text = withClipboard.copied()[0];
+  assert.equal(text.split('\n').length, 1);
+  assert.equal(text, 'Least-headroom participant: Liquidity Partner. Volume-headroom ranking, not a forecast.');
+  assert.doesNotMatch(text, /First-breakpoint participant/);
+  assert.doesNotMatch(text, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="viability-label-copy-text"/);
+  withClipboard.edit('deal.monthlyVolume', '');
+  withClipboard.click('copy-viability-label');
+  assert.equal(withClipboard.copied()[1], 'Least-headroom participant: none entered.');
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-viability-label');
+  assert.match(denied.markup(), /id="viability-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {

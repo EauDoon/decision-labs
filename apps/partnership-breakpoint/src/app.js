@@ -76,6 +76,7 @@ let splitCopyText = '';
 let allocationCopyText = '';
 let titleCopyText = '';
 let breakpointLabelCopyText = '';
+let viabilityLabelCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -115,6 +116,7 @@ function checkpoint() {
   allocationCopyText = '';
   titleCopyText = '';
   breakpointLabelCopyText = '';
+  viabilityLabelCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -147,6 +149,7 @@ function travelHistory(direction) {
   allocationCopyText = '';
   titleCopyText = '';
   breakpointLabelCopyText = '';
+  viabilityLabelCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -704,7 +707,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${viabilityLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -717,7 +720,7 @@ function resultsPanel(result) {
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
   return `<section class="results" id="results-start">
     <section class="status-card ${statusClass}" id="viability-card" tabindex="-1" aria-labelledby="viability-heading" aria-live="polite">
-      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button></div></div>
+      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button><button type="button" data-action="copy-viability-label">Copy least-headroom participant label</button></div></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
     </section>
     <section class="metric-strip" aria-label="Deal summary">
@@ -765,6 +768,7 @@ function resultsPanel(result) {
     ${breakpointSnapshotCopySection()}
     ${titleCopySection()}
     ${breakpointLabelCopySection()}
+    ${viabilityLabelCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -1250,6 +1254,7 @@ function attachEvents() {
     if (action === 'close-allocation-copy') { allocationCopyText = ''; render(); return; }
     if (action === 'close-title-copy') { titleCopyText = ''; render(); return; }
     if (action === 'close-breakpoint-label-copy') { breakpointLabelCopyText = ''; render(); return; }
+    if (action === 'close-viability-label-copy') { viabilityLabelCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1484,6 +1489,7 @@ function attachEvents() {
     if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-waterfall') copyContributionWaterfall();
     if (action === 'copy-viability') copyViabilityCard();
+    if (action === 'copy-viability-label') copyLeastHeadroomLabel();
     if (action === 'copy-utilization') copyCapacityUtilization();
     if (action === 'copy-tornado') copyTornadoChart();
     if (action === 'copy-operating-region') copyOperatingRegion();
@@ -2359,6 +2365,58 @@ function copyFirstBreakpointLabel() {
     }
   }
   showBreakpointLabelCopyFallback(text, fallbackNote);
+}
+
+function leastHeadroomLabelMarkdown(result) {
+  const name = result?.weakestParticipant
+    ? reportText(result.weakestParticipant.name)
+    : '';
+  if (!name) return 'Least-headroom participant: none entered.';
+  return 'Least-headroom participant: ' + name + '. Volume-headroom ranking, not a forecast.';
+}
+
+function showViabilityLabelCopyFallback(text, message) {
+  viabilityLabelCopyText = text;
+  render();
+  document.querySelector('#viability-label-copy-text')?.focus();
+  setNotice(message);
+}
+
+function viabilityLabelCopySection() {
+  if (!viabilityLabelCopyText) return '';
+  return `<section class="panel" aria-labelledby="viability-label-copy-title"><div class="panel-heading"><h2 id="viability-label-copy-title">Least-headroom participant label Markdown</h2><button type="button" data-action="close-viability-label-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This names the viability card participant. It is not a forecast.</p><label class="brief-copy-label" for="viability-label-copy-text">Least-headroom participant label Markdown</label><textarea id="viability-label-copy-text" readonly rows="4">${escapeAttribute(viabilityLabelCopyText)}</textarea></div></section>`;
+}
+
+function copyLeastHeadroomLabel() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = leastHeadroomLabelMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Least-headroom participant label copied as Markdown. Volume-headroom ranking, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          viabilityLabelCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showViabilityLabelCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      viabilityLabelCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showViabilityLabelCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showViabilityLabelCopyFallback(text, fallbackNote);
 }
 
 function shareHoldPreviewMarkdown(solved) {
