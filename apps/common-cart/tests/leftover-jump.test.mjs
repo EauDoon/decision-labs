@@ -105,6 +105,19 @@ test("leftover fill jump stays on the organizer leftover table", async () => {
   assert.match(app, /#residual-title/u);
 });
 
+test("leftover fill copy jump stays on the organizer leftover fill control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill"/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill"), false);
+  assert.equal(merchantPanel.includes("focusLeftoverFillCopy"), false);
+  assert.match(app, /function focusLeftoverFillCopy\(/u);
+  assert.match(app, /#copy-leftover-fill/u);
+  assert.match(app, /if \(key === "\/" && !event\.shiftKey\)/u);
+});
+
 test("leftover item headroom has a stable organizer focus target", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");

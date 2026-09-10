@@ -179,6 +179,10 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, />Copy jobs</);
   assert.match(missing.body, /id="catalog-jobs"/);
   assert.match(missing.body, /Not a live product feed/);
+  assert.match(missing.body, /id="copy-lede"/);
+  assert.match(missing.body, />Copy catalog intro</);
+  assert.match(missing.body, /class="lede"/);
+  assert.match(missing.body, /ledeMarkdown/);
   assert.doesNotMatch(missing.body, /\bfetch\s*\(/);
   assert.doesNotMatch(missing.body, /XMLHttpRequest/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
@@ -620,4 +624,162 @@ test('404 copy jobs stays GET HEAD only with connect-src none', async (t) => {
   assert.match(missing.body, /Partnership Breakpoint:/);
   assert.match(missing.body, /Not a live product feed/);
   assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+});
+
+test('404 copy catalog intro markdown comes from the printed heading and lede', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  const heading = { textContent: 'This path is not in the catalog' };
+  const lede = { textContent: 'The local launcher serves only the Decision Labs catalog page and the four workbenches.' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-lede-status') return { textContent: '' };
+      if (id === 'copy-lede-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === 'h1') return heading;
+      if (selector === 'p.lede') return lede;
+      return null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '# This path is not in the catalog\n\nThe local launcher serves only the Decision Labs catalog page and the four workbenches.');
+  assert.doesNotMatch(copied, /live product feed/);
+  heading.textContent = '';
+  lede.textContent = '';
+  copied = 'stale';
+  await click();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy catalog intro uses the printed heading and lede without extra public paths', () => {
+  const page = notFoundPage();
+  assert.match(page, /id="copy-lede"/);
+  assert.match(page, />Copy catalog intro</);
+  assert.match(page, /id="copy-lede-fallback"/);
+  assert.match(page, /textarea id="copy-lede-fallback"/);
+  assert.match(page, /ledeMarkdown/);
+  assert.match(page, /class="lede"/);
+  assert.match(page, /querySelector\('h1'\)/);
+  assert.match(page, /querySelector\('p\.lede'\)/);
+  assert.match(page, /Not a live product feed/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy-lede script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /ledeMarkdown/);
+  assert.match(source, /Not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy catalog intro shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-lede-status') return status;
+      if (id === 'copy-lede-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === 'h1') return { textContent: 'This path is not in the catalog' };
+      if (selector === 'p.lede') return { textContent: 'The local launcher serves only the Decision Labs catalog page.' };
+      return null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '# This path is not in the catalog\n\nThe local launcher serves only the Decision Labs catalog page.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy catalog intro stays GET HEAD only with connect-src none', async (t) => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-lede-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /id="copy-lede"/);
+  assert.match(missing.body, />Copy catalog intro</);
+  assert.match(missing.body, /class="lede"/);
+  assert.match(missing.body, /Not a live product feed/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+  assert.equal((await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-lede-path',
+      method: 'HEAD',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  })).status, 404);
 });

@@ -105,7 +105,7 @@ test("office fruit box is distinct synthetic weekly fruit for an office", () => 
 });
 
 test("new presets survive validation and keep a deterministic winner", () => {
-  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit", "libraryPaper", "sportsKit"]) {
+  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit", "libraryPaper", "sportsKit", "surfFirstAid"]) {
     const first = evaluateMarket(clonePreset(name));
     const second = evaluateMarket(validateScenario(clonePreset(name)));
     assert.equal(first.winner.offer.id, second.winner.offer.id);
@@ -220,4 +220,51 @@ test("the example bar includes the sports club match-day kit preset", async () =
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /data-preset="sportsKit"/u);
   assert.match(html, /Sports kit/u);
+});
+
+test("surf club first-aid kit is distinct synthetic mixed first-aid for a club", () => {
+  const kit = evaluateMarket(clonePreset("surfFirstAid"));
+  const coffee = evaluateMarket(clonePreset("neighbourhood"));
+  const studio = evaluateMarket(clonePreset("studio"));
+  const pantry = evaluateMarket(clonePreset("pantry"));
+  const office = evaluateMarket(clonePreset("officePantry"));
+  const hardware = evaluateMarket(clonePreset("hardware"));
+  const garden = evaluateMarket(clonePreset("garden"));
+  const fete = evaluateMarket(clonePreset("schoolFete"));
+  const fruit = evaluateMarket(clonePreset("officeFruit"));
+  const paper = evaluateMarket(clonePreset("libraryPaper"));
+  const sports = evaluateMarket(clonePreset("sportsKit"));
+  const ladder = evaluateMarket(clonePreset("tiers"));
+  assert.ok(kit.winner);
+  assert.equal(kit.scenario.title, "Surf club first-aid kit");
+  assert.equal(kit.scenario.buyers[0].category, "Surf first-aid kit");
+  assert.notEqual(kit.scenario.buyers[0].category, coffee.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, studio.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, pantry.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, office.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, hardware.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, garden.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, fete.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, fruit.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, paper.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.buyers[0].category, sports.scenario.buyers[0].category);
+  assert.notEqual(kit.scenario.title, ladder.scenario.title);
+  assert.ok(kit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Crepe bandage")));
+  assert.ok(kit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Ice pack")));
+  assert.ok(kit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Saline rinse")));
+  assert.ok(kit.results.some((result) => result.offer.merchant === "Beach Kit Delivery" && result.offer.fulfillment === "shipping"));
+  assert.ok(kit.results.some((result) => result.offer.merchant === "Clubhouse First-Aid Pickup" && result.offer.fulfillment === "pickup"));
+  const quantities = kit.scenario.buyers.map((buyer) => buyer.quantity);
+  assert.equal(new Set(quantities).size > 1, true);
+  const first = evaluateMarket(clonePreset("surfFirstAid"));
+  const second = evaluateMarket(validateScenario(clonePreset("surfFirstAid")));
+  assert.equal(first.winner.offer.id, second.winner.offer.id);
+  assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
+});
+
+test("the example bar includes the surf club first-aid kit preset", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /data-preset="surfFirstAid"/u);
+  assert.match(html, /Surf first-aid/u);
 });

@@ -28,9 +28,9 @@ Every workbench:
 | Workbench | Version | Job to be done | Built-in synthetic example |
 | --- | --- | --- | --- |
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.5 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
-| [Common Cart](apps/common-cart/) | 1.4.5 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
+| [Common Cart](apps/common-cart/) | 1.4.6 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.5 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | 1.5.5 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
+| [Weekend Gap](apps/weekend-gap/) | 1.5.6 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
@@ -42,12 +42,16 @@ workbench link without opening it. Key `a` focuses the first workbench article
 without opening it. Key `b` focuses the last workbench card without opening
 it. Key `f` focuses the footer version line. That key does not
 open a workbench. Key `g` focuses the first What's new heading, or the What's
-new heading if none. That key does not open a workbench. Key `r` focuses the
+new heading if none. That key does not open a workbench. Key `d` focuses the
+first How it works list item, or the How it works heading if none. That key
+moves focus; it does not open a workbench. Key `r` focuses the
 first review path on the first workbench card. That key moves focus; it does
 not open the workbench. Key `p` prints this catalog page. It is not a live product
 sheet. Key `e` copies the catalog heading and lede from this page as Markdown.
 That copy is catalog copy, not a live product feed. If those nodes are
 missing, it copies an empty string. Keys `v` and `j` copy the printed version list and one-sentence jobs.
+Key `,` copies the footer version line from this page as one Markdown line.
+That copy is catalog copy, not a live product version.
 Key `q` copies those same catalog jobs through the Copy jobs control. It does not fork that Markdown. Key `i` copies Trust and limits from this page as Markdown. That list is not a
 live policy feed. Key `u` copies How it works from this page as Markdown. That
 list is not a live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
@@ -56,7 +60,8 @@ copies the last-launched workbench name and one-sentence job from this-browser
 storage, or an empty line if none is stored. That recency
 is this-browser storage, not a cloud recency. Key `z` copies the six skip-link
 targets from this page as Markdown. That copy is in-page navigation copy, not
-a sitemap API. Key `o` assigns a location like keys 1 to 4. It does not claim a
+a sitemap API. Key `.` focuses Skip to catalog versions. That key moves
+focus; it does not open a workbench. Key `o` assigns a location like keys 1 to 4. It does not claim a
 copy succeeded on a file URL. Copy versions copies the four names and versions printed on this page as
 Markdown. That list is not a live product version and it does not call a
 registry. What's new names current in-workbench tools (share-to-hold,
@@ -89,7 +94,7 @@ Common Cart 1.4.1 also names organizer buyer
 CSV, leftover jump, and the community garden start. Common Cart 1.4.2 also names
 organizer leftover copy, school fete catering, and overlap Markdown. Common Cart 1.4.3 also names
 uncovered leftover counts, the Office fruit box start, and leftover review jumps. Common Cart 1.4.4 also names
-leftover headroom copy, the Library photocopy paper start, and uncovered leftover jumps. Common Cart 1.4.5 also names leftover fill copy, the Sports club match-day kit start, and remaining-capacity copy. Partnership Breakpoint 1.5.1
+leftover headroom copy, the Library photocopy paper start, and uncovered leftover jumps. Common Cart 1.4.5 also names leftover fill copy, the Sports club match-day kit start, and remaining-capacity copy. Common Cart 1.4.6 also names remaining-capacity jump, the Surf club first-aid kit start, and leftover-fill copy jump. Partnership Breakpoint 1.5.1
 also names waterfall SVG download, compare and print keys, and the Licensor
 and distributor start. Partnership Breakpoint 1.5.2 also names waterfall
 Markdown copy, the Talent, agent, and platform start, and the all-hold ledger
@@ -102,7 +107,9 @@ Payday Friday burst, and one-row dashboard CSV. Weekend Gap 1.5.2 also names
 peak-queue hour copy, Public-holiday Monday, and the single-gate Gantt filter.
 Weekend Gap 1.5.3 also names hours-to-clear Markdown copy, Saturday market
 burst, and selected Gantt hour persist. Weekend Gap 1.5.4 also names remaining
-reserve copy, Sunday stall close, and the weekend-hours Gantt filter. Weekend Gap 1.5.5 also names hours-to-first-settlement Markdown copy, Thin Saturday FX, and the hide-open Gantt filter.
+reserve copy, Sunday stall close, and the weekend-hours Gantt filter. Weekend Gap 1.5.5 also names hours-to-first-settlement Markdown copy, Thin Saturday FX, and the hide-open Gantt filter. Weekend Gap 1.5.6 also names first-settlement jump, Early Monday bank open, and the hide-weekend Gantt filter.
+The catalog also names how-it-works jump, version-line copy, and skip-link focus.
+That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names skip-link copy, last-card focus, and 404 Copy jobs.
 That What's new entry is hub-only. It does not change workbench versions.
 These are
@@ -148,6 +155,8 @@ an input. Press `h` to focus the catalog heading. Press `m` to focus the
 main catalog content. Press `n` to focus What's
 new. Press `g` to focus the first What's new heading. Press `w` to focus the
 workbenches. Press `k` to focus How it works.
+Press `d` to focus the first How it works list item. That key moves focus; it
+does not open a workbench.
 Press `t` to focus Trust and limits. Press `s` to focus the first Open
 workbench link. Press `a` to focus the first workbench article without opening
 it. That key is distinct from `s`, which focuses the first Open workbench link.
@@ -165,7 +174,10 @@ box when the clipboard API is unavailable. If those nodes are missing, it
 copies an empty string. This is catalog copy, not a live product feed.
 Press `v` to copy catalog versions from this page. That key
 uses the same Copy versions control, including the visible text box when the
-clipboard API is unavailable. Press `l` to focus the workbench card that is
+clipboard API is unavailable. Press `,` to copy the footer version line from
+this page as one Markdown line. That key uses the same Copy version line
+control, including the visible text box when the clipboard API is unavailable.
+This is catalog copy, not a live product version. Press `l` to focus the workbench card that is
 Last launched in this browser, or the workbenches heading if none is stored.
 That recency is storage in this browser, not a cloud recency. Press `o` to
 open that last-launched workbench. The key assigns `location` the same way
@@ -185,12 +197,17 @@ policy file or add another public path. Copy How it works on that 404 page copie
 the printed How it works heading and list as Markdown. It does not fetch a
 policy file or add another public path. Copy jobs on that 404 page copies the
 printed workbench names and one-sentence jobs as Markdown. It does not fetch a
-product feed or add another public path. When the catalog is served over http,
+product feed or add another public path. Copy catalog intro on that 404 page copies
+the printed heading and lede as Markdown. It does not fetch a product feed or
+add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
 this catalog page as Markdown. It uses the browser clipboard when that API is
 available, and shows a visible text box if it is not. This is the catalog list,
-not a live product version. Copy catalog intro copies the catalog heading and
+not a live product version. Copy version line copies the footer version-line
+text already printed on this page as one Markdown line, with the same clipboard
+and visible text box fallback. That copy is catalog copy, not a live product
+version. Copy catalog intro copies the catalog heading and
 lede paragraph already printed on this page as Markdown, with the same
 clipboard and visible text box fallback. If those nodes are missing, it
 copies an empty string. That copy is catalog copy, not a live product feed.
@@ -214,6 +231,8 @@ not a cloud recency.
 Press `z` to copy skip-link targets from this page. That key uses the same Copy
 skip links control, including the visible text box when the clipboard API is
 unavailable. This is in-page navigation copy, not a sitemap API.
+Press `.` to focus Skip to catalog versions. That key moves focus; it does not
+open a workbench.
 Copy How it works copies the How it works heading and list items already
 printed on this catalog page as Markdown. It uses the browser clipboard when
 that API is available, and shows a visible text box if it is not. That list

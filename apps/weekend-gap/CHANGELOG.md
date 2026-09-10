@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.6 - 2026-09-10
+
+A workshop follow-up on 1.5.5. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.5 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `y` jumps to the hours-to-first-settlement dashboard line, or the dashboard heading if that line is missing. Distinct from timeline jump `J` and hours-to-clear `K`. Ignored while typing.
+- Keyboard `z` copies remaining reserve at the selected hour through the existing remaining-reserve copy control, using the same Markdown. Ignored while typing.
+- Early Monday bank open (synthetic) preset: same 72-hour calendar as Normal Friday, Monday bank window opens one hour earlier. Distinct from Payday Friday, Public-holiday Monday, Saturday market, Sunday stall close, Thin Saturday FX, Thin FX Tight Windows, Long-weekend, and Compressed Friday. Not a live queue.
+- Filter that hides Saturday and Sunday Gantt hours. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideWeekendGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Inverse of `hideWeekdayGanttHours`. Hide-open, every-gate-closed, weekday, and single-gate filters still compose.
+- Print and print redacted include the hours-to-first-settlement line. The saved scenario is unchanged.
+- Copy first closed FX hour label as one-line Markdown with an honest empty when none exists. Clipboard write has a textarea fallback. Counts of modeled hours, not a bank calendar.
+
 ## 1.5.5 - 2026-09-10
 
 A workshop follow-up on 1.5.4. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.4 review UI stay in place. Analysis JSON still has no timestamps.
