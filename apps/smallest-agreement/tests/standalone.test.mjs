@@ -56,6 +56,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>k<\/kbd> Jump to the first unlocked clause card, or the lock controls/u);
   assert.match(html, /<kbd>t<\/kbd> Jump to the approval threshold field/u);
   assert.match(html, /<kbd>a<\/kbd> Focus Add clause/u);
+  assert.match(html, /<kbd>w<\/kbd> Jump to group weights or renormalize controls/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -1345,6 +1346,22 @@ test("keyboard a focuses Add clause unless an input is active", async () => {
   assert.equal(app.focused(), "");
   app.keydown("A");
   assert.equal(app.focused(), "#add-clause");
+});
+
+test("keyboard w jumps to group weights or renormalize controls unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>w<\/kbd> Jump to group weights or renormalize controls/u);
+  assert.match(html, /id="weight-renorm"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("w");
+  assert.equal(app.focused(), '[data-action="preview-renorm"]');
+  app.clearFocus();
+  app.keydown("w", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("w", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("W");
+  assert.equal(app.focused(), '[data-action="preview-renorm"]');
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {

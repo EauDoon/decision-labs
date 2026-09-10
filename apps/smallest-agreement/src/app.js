@@ -2374,6 +2374,15 @@ function jumpToVetoBlockers() {
   notifyDraft("No veto-blocker highlight is on screen. Review the veto list in Constraint checks. A veto is a numerical constraint, not a legal right.");
 }
 
+function jumpToWeights() {
+  const preview = $('[data-action="preview-renorm"]') || $('[data-action="apply-renorm"]');
+  if (preview?.focus) {
+    preview.focus();
+    return;
+  }
+  $("#weight-renorm")?.focus?.();
+}
+
 function findAgreement() {
   $("#results-heading")?.focus?.();
   notifyDraft("Search already runs as you edit. Review the recommendation below.");
@@ -2446,6 +2455,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "a" || event.key === "A") {
     event.preventDefault();
     $("#add-clause")?.focus?.();
+  } else if (event.key === "w" || event.key === "W") {
+    event.preventDefault();
+    jumpToWeights();
   }
 });
 

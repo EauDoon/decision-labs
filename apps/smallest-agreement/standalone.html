@@ -358,7 +358,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <p id="floor-note" class="field-note">Optional minimum support protects each named group's average across clauses, regardless of weight. Blank means no floor. A floor does not establish consent.</p>
           <p id="veto-note" class="field-note">A veto group must reach the overall threshold (or its higher support floor, if one is set). Old drafts without this mark stay valid. A veto is a numerical constraint, not a legal right.</p>
           <div id="weight-shares"></div>
-          <div id="weight-renorm"></div>
+          <div id="weight-renorm" tabindex="-1"></div>
         </section>
       </aside>
 
@@ -569,6 +569,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>k</kbd> Jump to the first unlocked clause card, or the lock controls</li>
           <li><kbd>t</kbd> Jump to the approval threshold field</li>
           <li><kbd>a</kbd> Focus Add clause</li>
+          <li><kbd>w</kbd> Jump to group weights or renormalize controls</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -5463,6 +5464,15 @@ function jumpToVetoBlockers() {
   notifyDraft("No veto-blocker highlight is on screen. Review the veto list in Constraint checks. A veto is a numerical constraint, not a legal right.");
 }
 
+function jumpToWeights() {
+  const preview = $('[data-action="preview-renorm"]') || $('[data-action="apply-renorm"]');
+  if (preview?.focus) {
+    preview.focus();
+    return;
+  }
+  $("#weight-renorm")?.focus?.();
+}
+
 function findAgreement() {
   $("#results-heading")?.focus?.();
   notifyDraft("Search already runs as you edit. Review the recommendation below.");
@@ -5535,6 +5545,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "a" || event.key === "A") {
     event.preventDefault();
     $("#add-clause")?.focus?.();
+  } else if (event.key === "w" || event.key === "W") {
+    event.preventDefault();
+    jumpToWeights();
   }
 });
 
