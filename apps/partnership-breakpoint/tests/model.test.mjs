@@ -409,6 +409,32 @@ test('four-party marketplace preset is distinct from two- and three-party starti
   assert.ok(result.participants.every((item) => item.viable));
 });
 
+test('talent, agent, and platform preset is a distinct three-party starting point', () => {
+  const agency = clonePreset('talentAgentPlatform');
+  assert.equal(PRESETS.talentAgentPlatform.name, 'Talent, agent, and platform');
+  assert.equal(agency.participants.length, 3);
+  assert.deepEqual(agency.participants.map((item) => item.id), ['talent', 'booking-agent', 'booking-platform']);
+  assert.deepEqual(agency.participants.map((item) => item.name), ['Talent', 'Booking agent', 'Platform']);
+  assert.deepEqual(agency.participants.map((item) => item.revenueShare), [0.62, 0.18, 0.2]);
+  assert.equal(agency.deal.monthlyVolume, 7500);
+  assert.equal(agency.deal.feePerTransaction, 24);
+  assert.equal(agency.participants[0].capacity, null);
+  assert.notEqual(agency.participants[0].variableCostPerTransaction, agency.participants[1].variableCostPerTransaction);
+  assert.notEqual(agency.participants[1].variableCostPerTransaction, agency.participants[2].variableCostPerTransaction);
+  assert.notEqual(agency.participants.map((item) => item.id).join(','), clonePreset('balanced').participants.map((item) => item.id).join(','));
+  assert.notEqual(agency.participants.length, clonePreset('twoPartyStudio').participants.length);
+  assert.notEqual(agency.participants.length, clonePreset('fourPartyMarketplace').participants.length);
+  assert.notEqual(agency.participants.map((item) => item.id).join(','), clonePreset('licensorDistributor').participants.map((item) => item.id).join(','));
+  assert.notEqual(agency.deal.feePerTransaction, clonePreset('balanced').deal.feePerTransaction);
+  assert.notEqual(agency.deal.feePerTransaction, clonePreset('twoPartyStudio').deal.feePerTransaction);
+  assert.notEqual(agency.deal.feePerTransaction, clonePreset('fourPartyMarketplace').deal.feePerTransaction);
+  assert.notEqual(agency.deal.feePerTransaction, clonePreset('licensorDistributor').deal.feePerTransaction);
+  const result = calculatePartnership(agency);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.viable));
+  assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
+});
+
 test('licensor and distributor preset is a distinct two-party IP starting point', () => {
   const license = clonePreset('licensorDistributor');
   assert.equal(PRESETS.licensorDistributor.name, 'Licensor and distributor');

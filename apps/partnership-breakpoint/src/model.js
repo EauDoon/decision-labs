@@ -134,6 +134,15 @@ export const PRESETS = Object.freeze({
       { id: 'territory-distributor', name: 'Territory distributor', revenueShare: 0.6, variableCostPerTransaction: 6.5, fixedMonthlyCost: 14000, minimumAcceptableProfit: 9000, capacity: 11000, minimumCommitment: 2500, riskCost: 2800 },
     ],
   },
+  talentAgentPlatform: {
+    name: 'Talent, agent, and platform',
+    deal: { monthlyVolume: 7500, feePerTransaction: 24, addressableVolume: 11000, volumeShockPct: 0 },
+    participants: [
+      { id: 'talent', name: 'Talent', revenueShare: 0.62, variableCostPerTransaction: 1.2, fixedMonthlyCost: 10000, minimumAcceptableProfit: 25000, capacity: null, minimumCommitment: 0, riskCost: 2500 },
+      { id: 'booking-agent', name: 'Booking agent', revenueShare: 0.18, variableCostPerTransaction: 0.35, fixedMonthlyCost: 2500, minimumAcceptableProfit: 4000, capacity: 10000, minimumCommitment: 2000, riskCost: 400 },
+      { id: 'booking-platform', name: 'Platform', revenueShare: 0.2, variableCostPerTransaction: 0.9, fixedMonthlyCost: 5000, minimumAcceptableProfit: 3000, capacity: 12000, minimumCommitment: 0, riskCost: 700 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {

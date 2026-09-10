@@ -7,6 +7,7 @@
 - Press `w` to jump to the Contribution waterfall heading when no field is focused.
 - Copy the viability card copies the least-headroom participant, headroom, and binding limit as Markdown. Clipboard falls back to a textarea. Counts are counts. It is not a probability.
 - Hide participants who currently hold now travels on saved case JSON as optional `hideHoldingParticipants`. Older files omit it and default to showing holders. Unknown sibling fields are still rejected. Display only; counts stay unchanged.
+- Added the Talent, agent, and platform starting point, a three-party talent plus booking agent plus platform with different cost bases, distinct from Balanced, Two-party 50/50 studio, Four-party marketplace, and Licensor and distributor. It is a synthetic starting point, not a live roster.
 
 ## 1.5.1
 
