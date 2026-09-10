@@ -1331,8 +1331,7 @@ document.querySelector("#copy-peak-hour").addEventListener("click", async () => 
   await copyTextWithFallback(text, "#peak-hour-copy-fallback", "Peak-queue hour copied as Markdown. This is a synthetic snapshot, not a live bank or payout queue.");
 });
 document.querySelector("#copy-closed-hours").addEventListener("click", async () => {
-  const text = closedGanttHoursToMarkdown(scenario);
-  await copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
+  await copyClosedHoursMarkdown();
 });
 document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
   const text = arrivalCohortsToMarkdown(scenario);
@@ -1448,6 +1447,10 @@ function jumpToTimingReview() {
 function copySelectedGanttHourMarkdown() {
   const text = selectedGanttHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
+}
+function copyClosedHoursMarkdown() {
+  const text = closedGanttHoursToMarkdown(scenario);
+  return copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
@@ -1636,6 +1639,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "c" || event.key === "C") {
     event.preventDefault();
     copySelectedGanttHourMarkdown();
+    return;
+  }
+  if (event.key === "x" || event.key === "X") {
+    event.preventDefault();
+    copyClosedHoursMarkdown();
     return;
   }
   if (event.key === "t" || event.key === "T") {

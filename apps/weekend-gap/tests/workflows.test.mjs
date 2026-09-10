@@ -419,6 +419,22 @@ test("keyboard c copies the selected Gantt hour Markdown and ignores the key whi
   assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, true);
 });
 
+test("keyboard x copies closed-hours Markdown and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("x");
+  assert.equal(ui.nodes.get("closed-hours-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("closed-hours-copy-fallback").value, /Weekend Gap closed hours/);
+  assert.match(ui.nodes.get("closed-hours-copy-fallback").value, /Not a bank feed/);
+  ui.nodes.get("closed-hours-copy-fallback").hidden = true;
+  ui.nodes.get("closed-hours-copy-fallback").value = "";
+  await ui.keydown("X", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("closed-hours-copy-fallback").hidden, true);
+  await ui.keydown("x", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("closed-hours-copy-fallback").hidden, true);
+  await ui.keydown("x", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("closed-hours-copy-fallback").hidden, true);
+});
+
 test("keyboard t jumps to the timing review and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("t");
