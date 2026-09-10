@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -72,6 +72,9 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, /id="copy-last-job"/);
   assert.match(page, />Copy last job</);
   assert.match(page, /lastJobMarkdown/);
+  assert.match(page, /id="copy-last-whats-new"/);
+  assert.match(page, />Copy last What's new heading</);
+  assert.match(page, /lastWhatsNewMarkdown/);
 });
 
 test('404 catalog jobs match the four catalog cards', () => {
@@ -90,6 +93,16 @@ test('404 catalog jobs match the four catalog cards', () => {
   for (const { name, job } of jobs) {
     assert.equal(page.includes(`${name}: ${job}`), true, `${name} job missing from 404 page`);
   }
+});
+
+test('404 last What\'s new heading matches the last catalog What\'s new heading', () => {
+  const heading = catalogLastWhatsNewHeading();
+  assert.match(heading, /\S/);
+  assert.equal(html.includes(`>${heading}</h3>`), true, 'last What\'s new heading missing from catalog');
+  const page = notFoundPage();
+  assert.equal(page.includes(heading), true, 'last What\'s new heading missing from 404 page');
+  assert.match(page, /id="copy-last-whats-new"/);
+  assert.match(page, />Copy last What's new heading</);
 });
 
 test('catalog versions stay Partnership Breakpoint 1.5.11, Common Cart 1.4.11, The Smallest Agreement 1.5.11, Weekend Gap 1.5.11', () => {

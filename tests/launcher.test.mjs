@@ -4,7 +4,7 @@ import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -1832,6 +1832,220 @@ test('404 copy last job stays GET HEAD only with connect-src none', async (t) =>
       hostname: '127.0.0.1',
       port,
       path: '/no-copy-last-job-path',
+      method: 'HEAD',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(head.status, 404);
+  assert.equal(head.body, '');
+});
+
+test('404 copy last What\'s new heading markdown is the last printed What\'s new heading', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  let headings = [
+    { textContent: 'Last-job copy, last-job jump, and first-job jump' },
+    { textContent: 'Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-whats-new') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-last-whats-new-status') return { textContent: '' };
+      if (id === 'copy-last-whats-new-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#whats-new h3' ? headings : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '- Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Last-job copy/);
+  assert.doesNotMatch(copied, /live product feed/);
+  headings = [];
+  copied = 'stale';
+  await click();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last What\'s new heading is distinct from Copy last job', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let lastCopied = '';
+  let clickJob = null;
+  let clickNews = null;
+  const jobs = [
+    { textContent: 'Partnership Breakpoint: Find which participant in a revenue split.' },
+    { textContent: 'Weekend Gap: Follow synthetic AUD redemption demand.' },
+  ];
+  const headings = [
+    { textContent: 'Last-job copy, last-job jump, and first-job jump' },
+    { textContent: 'Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-job') return { addEventListener(name, handler) { if (name === 'click') clickJob = handler; } };
+      if (id === 'copy-last-job-status') return { textContent: '' };
+      if (id === 'copy-last-job-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-last-whats-new') return { addEventListener(name, handler) { if (name === 'click') clickNews = handler; } };
+      if (id === 'copy-last-whats-new-status') return { textContent: '' };
+      if (id === 'copy-last-whats-new-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      if (selector === '#catalog-jobs li') return jobs;
+      if (selector === '#whats-new h3') return headings;
+      return [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { lastCopied = text; } } },
+  });
+  await clickJob();
+  const job = lastCopied;
+  await clickNews();
+  const news = lastCopied;
+  assert.equal(job, '- Weekend Gap: Follow synthetic AUD redemption demand.');
+  assert.equal(news, '- Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11');
+  assert.notEqual(news, job);
+  assert.doesNotMatch(page, /id="copy-first-whats-new"/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last What\'s new heading uses the printed heading without extra public paths', () => {
+  const page = notFoundPage();
+  const lastHeading = catalogLastWhatsNewHeading();
+  assert.match(lastHeading, /\S/);
+  assert.equal(page.includes(lastHeading), true, '404 page should print the last What\'s new heading');
+  assert.match(page, /id="copy-last-whats-new"/);
+  assert.match(page, />Copy last What's new heading</);
+  assert.match(page, /id="copy-last-whats-new-fallback"/);
+  assert.match(page, /textarea id="copy-last-whats-new-fallback"/);
+  assert.match(page, /lastWhatsNewMarkdown/);
+  assert.match(page, /querySelectorAll\('#whats-new h3'\)/);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-last-job"/);
+  assert.match(page, />Copy last job</);
+  assert.doesNotMatch(page, /id="copy-first-whats-new"/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy-last-whats-new script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /lastWhatsNewMarkdown/);
+  assert.match(source, /Not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last What\'s new heading shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-whats-new') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-last-whats-new-status') return status;
+      if (id === 'copy-last-whats-new-fallback') return fallback;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#whats-new h3' ? [{ textContent: 'Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11' }] : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy last What\'s new heading stays GET HEAD only with connect-src none', async (t) => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-last-whats-new-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /id="copy-last-whats-new"/);
+  assert.match(missing.body, />Copy last What's new heading</);
+  assert.match(missing.body, /id="whats-new"/);
+  assert.match(missing.body, /Not a live product feed/);
+  assert.match(missing.body, /id="copy-last-job"/);
+  assert.doesNotMatch(missing.body, /id="copy-first-whats-new"/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+  const head = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-last-whats-new-path',
       method: 'HEAD',
       headers: { host: `127.0.0.1:${port}` },
     }, (res) => {
