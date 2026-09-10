@@ -926,6 +926,10 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
                 <input id="gantt-every-closed" type="checkbox">
                 Show only hours where every gate is closed
               </label>
+              <label class="checkbox-label" for="gantt-hide-weekdays">
+                <input id="gantt-hide-weekdays" type="checkbox">
+                Show only Saturday and Sunday hours
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
@@ -1780,7 +1784,8 @@ const WORKSPACE_KEYS = Object.freeze([
   "ganttGateFilter",
   "queueBacklogOnly",
   "ganttHourIndex",
-  "ganttEveryGateClosed"
+  "ganttEveryGateClosed",
+  "hideWeekdayGanttHours"
 ]);
 
 function assertWorkspaceKeys(raw) {
@@ -1795,7 +1800,7 @@ function assertWorkspaceKeys(raw) {
 
 /** Portable editing state; computed results are always regenerated on restore. */
 function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false } = options;
   const ganttHourIndex = options.ganttHourIndex === undefined ? selectedHour : options.ganttHourIndex;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
   if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > 72) throw new RangeError("Workspace Gantt hour index is invalid.");
@@ -1807,8 +1812,9 @@ function workspaceToJSON(current, baseline, options = {}) {
   if (!GANTT_GATE_FILTERS.includes(ganttGateFilter)) throw new RangeError("Workspace Gantt gate filter is invalid.");
   if (queueBacklogOnly !== true && queueBacklogOnly !== false) throw new RangeError("Workspace queue backlog filter is invalid.");
   if (ganttEveryGateClosed !== true && ganttEveryGateClosed !== false) throw new RangeError("Workspace Gantt every-gate-closed filter is invalid.");
+  if (hideWeekdayGanttHours !== true && hideWeekdayGanttHours !== false) throw new RangeError("Workspace Gantt weekday-hour filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours }, null, 2);
 }
 function workspaceFromJSON(text) {
   try {
@@ -1835,7 +1841,8 @@ function workspaceFromJSON(text) {
       ganttGateFilter: raw.ganttGateFilter === undefined ? "all" : raw.ganttGateFilter,
       queueBacklogOnly: raw.queueBacklogOnly === undefined ? false : raw.queueBacklogOnly,
       ganttHourIndex: restoredHour,
-      ganttEveryGateClosed: raw.ganttEveryGateClosed === undefined ? false : raw.ganttEveryGateClosed
+      ganttEveryGateClosed: raw.ganttEveryGateClosed === undefined ? false : raw.ganttEveryGateClosed,
+      hideWeekdayGanttHours: raw.hideWeekdayGanttHours === undefined ? false : raw.hideWeekdayGanttHours
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -2284,6 +2291,13 @@ function ganttHourClosedOnEveryGate(point) {
   return !point.issuerOpen && !point.bankOpen && !point.payoutOpen && !point.fxWeekday;
 }
 
+/** True when the Gantt hour falls on Saturday or Sunday. */
+function ganttHourIsWeekend(point) {
+  if (!point || typeof point !== "object" || !Number.isInteger(point.hour)) return false;
+  const { dayIndex } = dayAndHourAt(point.hour);
+  return dayIndex === 0 || dayIndex === 6;
+}
+
 const GANTT_GATE_FILTERS = Object.freeze(["all", "issuer", "bank", "payout", "fx"]);
 
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
@@ -2292,6 +2306,7 @@ function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
   const closedOnly = options.closedOnly === true;
   const everyClosedOnly = options.everyClosedOnly === true;
+  const hideWeekdayHours = options.hideWeekdayHours === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -2313,6 +2328,7 @@ function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   rows.forEach((row, rowIndex) => {
     const y = top + rowIndex * rowHeight;
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+      if (hideWeekdayHours && !ganttHourIsWeekend(schedule.hours[hour])) continue;
       if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[2](hour);
@@ -2775,14 +2791,14 @@ function replayWeekendReviewPacket(candidate) {
   return current;
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket };
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, ganttHourIsWeekend, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, ganttHourIsWeekend, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket } = window.__WeekendGapModel;
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, hideWeekdayGanttHours: false };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -3118,18 +3134,20 @@ function renderTable() {
 function renderGantt() {
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
   const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
+  const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, gateFilter });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, gateFilter });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([selectedHour]);
-  if (!closedOnly && !everyClosedOnly) {
+  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours) {
     rowIndexes.add(0);
     rowIndexes.add(SIMULATION_HOURS);
   }
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
     const point = schedule.hours[hour];
+    if (hideWeekdayHours && !ganttHourIsWeekend(point) && hour !== selectedHour) continue;
     if (everyClosedOnly) {
       if (ganttHourClosedOnEveryGate(point)) rowIndexes.add(hour);
       continue;
@@ -3179,6 +3197,9 @@ function renderGantt() {
     if (gateFilter !== "all") {
       const gateName = GENERIC_GATE_LABELS[gateFilter] || gateFilter;
       filterNote.textContent += ` Chart shows ${gateName} only. Simulation is unchanged.`;
+    }
+    if (hideWeekdayHours) {
+      filterNote.textContent += ` Showing Saturday and Sunday hours only. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
     }
   }
 }
@@ -3922,7 +3943,8 @@ function currentWorkspace() {
     ganttClosedOnly: Boolean(document.querySelector("#gantt-closed-only")?.checked),
     ganttGateFilter: GANTT_GATE_FILTERS.includes(document.querySelector("#gantt-gate-filter")?.value) ? document.querySelector("#gantt-gate-filter").value : "all",
     queueBacklogOnly: Boolean(document.querySelector("#queue-backlog-only")?.checked),
-    ganttEveryGateClosed: Boolean(document.querySelector("#gantt-every-closed")?.checked) });
+    ganttEveryGateClosed: Boolean(document.querySelector("#gantt-every-closed")?.checked),
+    hideWeekdayGanttHours: Boolean(document.querySelector("#gantt-hide-weekdays")?.checked) });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -3932,7 +3954,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, ganttHourIndex: selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -3944,7 +3966,7 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true };
   baselineScenario={...saved.baseline}; selectedHour=saved.ganttHourIndex ?? saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
@@ -3955,6 +3977,7 @@ function applyWorkspace(saved) {
   document.querySelector("#gantt-gate-filter").value = GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all";
   document.querySelector("#queue-backlog-only").checked = saved.queueBacklogOnly === true;
   document.querySelector("#gantt-every-closed").checked = saved.ganttEveryGateClosed === true;
+  document.querySelector("#gantt-hide-weekdays").checked = saved.hideWeekdayGanttHours === true;
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -4016,6 +4039,10 @@ document.querySelector("#gantt-closed-only").addEventListener("change",()=>{
   saveWorkspace();
 });
 document.querySelector("#gantt-every-closed").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
+document.querySelector("#gantt-hide-weekdays").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
@@ -4286,9 +4313,10 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   applyGateDisplayLabels(true);
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
   const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
+  const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, gateFilter, redacted: true });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, gateFilter, redacted: true });
   window.print();
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
