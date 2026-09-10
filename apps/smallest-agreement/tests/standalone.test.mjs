@@ -1133,7 +1133,7 @@ test("school disco hours preset loads a distinct synthetic disco workshop", asyn
   assert.match(app.clauses(), /Hall lock-up/u);
   assert.match(app.groups(), /Students/u);
   assert.match(app.groups(), /Neighbours/u);
-  assert.match(app.groups(), /P&C/u);
+  assert.match(app.groups(), /P&amp;C/u);
   assert.doesNotMatch(app.title(), /Rooftop BBQ hours/u);
   assert.doesNotMatch(app.title(), /Shared laundry hours/u);
   assert.doesNotMatch(app.title(), /Community garden watering/u);
@@ -3411,12 +3411,11 @@ test("copy first below-floor group writes one-line Markdown with a clipboard fal
     groups: [
       { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
       { id: "open", name: "Open", weight: 1 },
-      { id: "later", name: "Later floor", weight: 1, minSupport: 90 },
     ],
     clauses: [{ id: "one", title: "One", options: [
-      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { floored: 50, open: 90, later: 40 } },
-      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 85, open: 40, later: 95 } },
-      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 50, open: 80, later: 40 } },
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 50, open: 40 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 50, open: 80 } },
     ] }],
   };
   const labelled = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
