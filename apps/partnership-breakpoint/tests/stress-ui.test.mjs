@@ -68,6 +68,8 @@ async function workbench(protocol = 'file:', options = {}) {
         'remaining-copy-text', 'copy-first-breakpoint-remaining',
         'volume-copy-text', 'copy-first-breakpoint-volume',
         'over-capacity-count-copy-text', 'copy-over-capacity-count',
+        'hide-within-capacity-participants',
+        'copy-first-over-capacity-label', 'first-over-capacity-label-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -2285,6 +2287,29 @@ test('keyboard = jumps to Hide the least-headroom participant unless a field is 
   app.keydown('=');
   assert.ok(app.focused().includes('[data-action="hide-least-headroom-participants"]'));
   assert.ok(app.focused().includes('scroll:[data-action="hide-least-headroom-participants"]'));
+});
+
+test('keyboard _ jumps to Copy over-capacity participant count unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-over-capacity-count"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('_');
+  assert.ok(app.focused().includes('#copy-over-capacity-count'));
+  assert.ok(app.focused().includes('scroll:#copy-over-capacity-count'));
+  assert.ok(!app.focused().includes('#copy-first-breakpoint-volume'));
+  const before = app.focused().length;
+  app.keydown('_', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('_', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('-');
+  assert.ok(app.focused().includes('#copy-first-breakpoint-volume'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('_');
+  assert.ok(app.focused().includes('#copy-over-capacity-count'));
+  assert.ok(app.focused().includes('scroll:#copy-over-capacity-count'));
+  assert.match(app.markup(), /id="copy-over-capacity-count"/);
 });
 
 test('keyboard z jumps to Copy deal title and currency unless a field is focused', async () => {
