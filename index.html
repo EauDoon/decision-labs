@@ -252,7 +252,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-first-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -266,19 +266,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-first-job:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .copy-version-line:hover, .print-catalog:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-first-job:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .copy-version-line:focus-visible, .print-catalog:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-first-job:hover, .copy-first-trust:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .copy-version-line:hover, .print-catalog:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-first-job:focus-visible, .copy-first-trust:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .copy-version-line:focus-visible, .print-catalog:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-first-job-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status, .copy-version-line-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-first-job-status, .copy-first-trust-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status, .copy-version-line-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools, .copy-first-job-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .copy-version-line-tools, .print-catalog-tools { margin: 12px 0 0; }
-    .copy-versions-fallback, .copy-jobs-fallback, .copy-first-job-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback, .copy-version-line-fallback {
+    .copy-versions-tools, .copy-jobs-tools, .copy-first-job-tools, .copy-first-trust-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .copy-version-line-tools, .print-catalog-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback, .copy-first-job-fallback, .copy-first-trust-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback, .copy-version-line-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -291,7 +291,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-first-job-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-first-job-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -333,7 +333,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-first-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -368,6 +368,7 @@
       .copy-skips-tools, .copy-skips-fallback { display: none !important; }
       .copy-version-line-tools, .copy-version-line-fallback { display: none !important; }
       .copy-first-job-tools, .copy-first-job-fallback { display: none !important; }
+      .copy-first-trust-tools, .copy-first-trust-fallback { display: none !important; }
       .whats-new, .workbench .version, .version-line, .trust { display: block !important; }
       #how-it-works, .guide { display: block !important; }
       #how-it-works, #how-it-works h2, #how-it-works h3, #how-it-works p, #how-it-works li { color: #000; }
@@ -434,6 +435,10 @@
       <h2 id="whats-new-title" tabindex="-1">What's new</h2>
       <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank. Catalog cards list each workbench version next to its job.</p>
       <ul class="whats-new-list">
+        <li>
+          <h3 tabindex="-1">Version-line jump, last-open jump, and 404 Copy first Trust item</h3>
+          <p>The catalog can jump to the Copy version line control, jump to the last Open workbench link, and copy the first Trust and limits list item as one Markdown line. The branded 404 page can copy the first printed Trust item without adding a public path. These are in-page catalog tools. They do not change workbench versions and they do not call a live product feed.</p>
+        </li>
         <li>
           <h3 tabindex="-1">Trust-item jump, first-job copy, and 404 Copy version line</h3>
           <p>The catalog can jump to the first Trust and limits list item, copy the first workbench job as one Markdown line, and focus Skip to Trust and limits from the keyboard. The branded 404 page can copy the printed version line without adding a public path. These are in-page catalog tools. They do not change workbench versions and they do not call a live product feed.</p>
@@ -632,7 +637,7 @@
         <li data-app="smallest-agreement">1.5.7</li>
         <li data-app="weekend-gap">1.5.7</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>/</kbd> to focus the first Trust and limits list item. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>;</kbd> to copy the first workbench job. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>.</kbd> to focus Skip to catalog versions. Press <kbd>'</kbd> to focus Skip to Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>/</kbd> to focus the first Trust and limits list item. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>;</kbd> to copy the first workbench job. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>.</kbd> to focus Skip to catalog versions. Press <kbd>'</kbd> to focus Skip to Trust and limits. Press <kbd>[</kbd> to focus Copy version line. Press <kbd>]</kbd> to focus the last Open workbench link. Press <kbd>:</kbd> to copy the first Trust and limits list item. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -650,6 +655,7 @@
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
           <dt><kbd>/</kbd></dt><dd>Focus the first Trust and limits list item, or the Trust and limits heading if none. This key moves focus; it does not open a workbench. Shift+/ stays <kbd>?</kbd>.</dd>
           <dt><kbd>s</kbd></dt><dd>Focus the first Open workbench link. This key moves focus; it does not open the workbench.</dd>
+          <dt><kbd>]</kbd></dt><dd>Focus the last Open workbench link, or the workbenches heading if none. This key moves focus; it does not open the workbench.</dd>
           <dt><kbd>a</kbd></dt><dd>Focus the first workbench article. This key moves focus to the card; it does not open the workbench.</dd>
           <dt><kbd>b</kbd></dt><dd>Focus the last workbench card. This key moves focus; it does not open the workbench.</dd>
           <dt><kbd>r</kbd></dt><dd>Focus the first review path on the first workbench card. This key moves focus; it does not open the workbench.</dd>
@@ -659,9 +665,11 @@
           <dt><kbd>e</kbd></dt><dd>Copy the catalog heading and lede as Markdown from this catalog page, not a live product feed. Clipboard write uses the visible text box when the clipboard API is unavailable. If those nodes are missing, this copies an empty string.</dd>
           <dt><kbd>v</kbd></dt><dd>Copy workbench names and versions as Markdown from this catalog page, not a live product version</dd>
           <dt><kbd>,</kbd></dt><dd>Copy the footer version line as one Markdown line from this catalog page, not a live product version. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
+          <dt><kbd>[</kbd></dt><dd>Focus the Copy version line control, or the footer version line if that control is missing. This key moves focus; it does not open a workbench. It does not copy.</dd>
           <dt><kbd>j</kbd></dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed</dd>
           <dt><kbd>q</kbd></dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed. This key uses the same Copy jobs control as <kbd>j</kbd>. It does not fork that Markdown.</dd>
           <dt><kbd>;</kbd></dt><dd>Copy the first workbench name and one-sentence job as one Markdown line from this catalog page, not a live product feed. If that card is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>j</kbd> and <kbd>q</kbd>, which copy all four jobs, and from <kbd>y</kbd>, which copies the last-launched job.</dd>
+          <dt><kbd>:</kbd></dt><dd>Copy the first Trust and limits list item as one Markdown line from this catalog page, not a live policy feed. If that item is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>i</kbd>, which copies the full Trust and limits list, and from <kbd>;</kbd>, which copies the first workbench job.</dd>
           <dt><kbd>i</kbd></dt><dd>Copy Trust and limits as Markdown from this catalog page, not a live policy feed. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
           <dt><kbd>u</kbd></dt><dd>Copy How it works as Markdown from this catalog page, not a live policy feed. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
           <dt><kbd>y</kbd></dt><dd>Copy the last-launched workbench name and one-sentence job as Markdown from this-browser storage, or an empty line if none is stored. This is not a cloud recency. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
@@ -746,6 +754,7 @@
       <ul>
         <li tabindex="-1"><strong>How-it-works jump.</strong> Key d focuses the first How it works list item, or the How it works heading if none. It moves focus only. It does not open a workbench.</li>
         <li tabindex="-1"><strong>Trust-item jump.</strong> Key slash focuses the first Trust and limits list item, or the Trust and limits heading if none. It moves focus only. It does not open a workbench. Shift+/ still opens the shortcut list.</li>
+        <li tabindex="-1"><strong>Last-open jump.</strong> Key right bracket focuses the last Open workbench link, or the workbenches heading if none. It moves focus only. It does not open the workbench.</li>
         <li tabindex="-1"><strong>Standalone files.</strong> Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</li>
         <li tabindex="-1"><strong>Loopback catalog address.</strong> When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</li>
         <li tabindex="-1"><strong>Catalog print.</strong> Print this catalog prints the page in the browser. It is not a live product sheet.</li>
@@ -755,9 +764,11 @@
         <li tabindex="-1"><strong>Catalog intro.</strong> Copy catalog intro copies the catalog heading and lede paragraph already printed on this page as Markdown. It reads this catalog page. It is not a live product feed. If those nodes are missing, it copies an empty string.</li>
         <li tabindex="-1"><strong>Catalog versions.</strong> Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</li>
         <li tabindex="-1"><strong>Version line.</strong> Copy version line copies the footer version-line text already printed on this page as one Markdown line. It reads this catalog page. It is not a live product version.</li>
+        <li tabindex="-1"><strong>Version-line jump.</strong> Key left bracket focuses the Copy version line control, or the footer version line if that control is missing. It moves focus only. It does not open a workbench. It does not copy.</li>
         <li tabindex="-1"><strong>Catalog jobs.</strong> Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</li>
         <li tabindex="-1"><strong>First catalog job.</strong> Copy first job copies the first workbench name and one-sentence job already printed on this page as one Markdown line. If that card is missing, it copies an empty string. It reads this catalog page. It is not a live product feed. It is distinct from Copy jobs, which copies all four jobs, and from Copy last launched.</li>
         <li tabindex="-1"><strong>Catalog trust.</strong> Copy Trust and limits copies the heading and list items already printed in Trust and limits as Markdown. It reads this catalog page. It is not a live policy feed.</li>
+        <li tabindex="-1"><strong>First Trust item.</strong> Copy first Trust item copies the first Trust and limits list item already printed on this page as one Markdown line. If that item is missing, it copies an empty string. It reads this catalog page. It is not a live policy feed. It is distinct from Copy Trust and limits, which copies the full list, and from Copy first job.</li>
         <li tabindex="-1"><strong>JSON export.</strong> Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</li>
         <li tabindex="-1"><strong>Independent workbenches.</strong> The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository. Keys 1 to 4 can leave a Last launched in this browser note on that card. The note is storage in this browser, not a cloud recency. Last-launched storage that is missing or unreadable is silent: the catalog shows no recency note. Press x to clear that marker in this browser and hide the notes. That clear is this-browser storage, not a cloud recency.</li>
         <li tabindex="-1"><strong>Last launched job.</strong> Copy last launched copies the stored workbench name and one-sentence job from this browser as Markdown. If none is stored, it copies an empty line. This is this-browser storage, not a cloud recency.</li>
@@ -783,6 +794,11 @@
         <span class="copy-trust-status" id="copy-trust-status" role="status"></span>
       </p>
       <textarea id="copy-trust-fallback" class="copy-trust-fallback" hidden readonly rows="8" aria-label="Trust and limits as Markdown"></textarea>
+      <p class="copy-first-trust-tools" id="copy-first-trust-tools">
+        <button type="button" class="copy-first-trust" id="copy-first-trust" aria-keyshortcuts=":">Copy first Trust item</button>
+        <span class="copy-first-trust-status" id="copy-first-trust-status" role="status"></span>
+      </p>
+      <textarea id="copy-first-trust-fallback" class="copy-first-trust-fallback" hidden readonly rows="2" aria-label="First Trust and limits item as Markdown"></textarea>
     </section>
   </main>
   <footer class="shell site-footer">
@@ -1063,6 +1079,41 @@
           if (trustStatus) trustStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog Trust and limits list, not a live policy feed.';
         }
       });
+      const firstTrustBtn = document.getElementById('copy-first-trust');
+      const firstTrustStatus = document.getElementById('copy-first-trust-status');
+      const firstTrustFallback = document.getElementById('copy-first-trust-fallback');
+      const firstTrustMarkdown = () => {
+        const item = document.querySelector('#trust li');
+        const text = item?.textContent.trim() ?? '';
+        if (!text) return '';
+        return `- ${text}`;
+      };
+      firstTrustBtn?.addEventListener('click', async () => {
+        const markdown = firstTrustMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstTrustFallback) firstTrustFallback.hidden = true;
+          if (firstTrustStatus) {
+            firstTrustStatus.textContent = empty
+              ? 'First Trust and limits list item was missing. Copied an empty string. This is catalog copy, not a live policy feed.'
+              : 'Copied the first Trust and limits list item from this catalog page as Markdown. Not a live policy feed.';
+          }
+        } catch {
+          if (firstTrustFallback) {
+            firstTrustFallback.hidden = false;
+            firstTrustFallback.value = markdown;
+            firstTrustFallback.focus();
+            firstTrustFallback.select();
+          }
+          if (firstTrustStatus) {
+            firstTrustStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First Trust and limits list item was missing. This is catalog copy, not a live policy feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first Trust and limits item, not a live policy feed.';
+          }
+        }
+      });
       const howBtn = document.getElementById('copy-how');
       const howStatus = document.getElementById('copy-how-status');
       const howFallback = document.getElementById('copy-how-fallback');
@@ -1249,6 +1300,13 @@
           document.querySelector('#workbenches a.open')?.focus();
           return;
         }
+        if (event.key === ']') {
+          event.preventDefault();
+          const opens = document.querySelectorAll('#workbenches a.open');
+          const lastOpen = opens[opens.length - 1];
+          (lastOpen || document.getElementById('workbenches-title') || document.getElementById('workbenches'))?.focus();
+          return;
+        }
         if (event.key === 'a') {
           event.preventDefault();
           document.getElementById('workbench-1')?.focus();
@@ -1294,6 +1352,11 @@
           versionLineBtn?.click();
           return;
         }
+        if (event.key === '[') {
+          event.preventDefault();
+          (document.getElementById('copy-version-line') || document.getElementById('version-line'))?.focus();
+          return;
+        }
         if (event.key === 'j') {
           event.preventDefault();
           jobsBtn?.click();
@@ -1307,6 +1370,11 @@
         if (event.key === ';') {
           event.preventDefault();
           firstJobBtn?.click();
+          return;
+        }
+        if (event.key === ':') {
+          event.preventDefault();
+          firstTrustBtn?.click();
           return;
         }
         if (event.key === 'i') {

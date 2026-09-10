@@ -38,7 +38,9 @@ What's new section. Skip links jump to What's new, workbenches, How it works,
 keyboard shortcuts, Trust and limits, and catalog versions. Catalog keys `w`, `k`, `n`, and `c`
 focus the workbenches, How it works, What's new, or copy the catalog address on
 http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
-workbench link without opening it. Key `a` focuses the first workbench article
+workbench link without opening it. Key `]` focuses the last Open workbench
+link, or the workbenches heading if none. That key moves focus; it does not
+open the workbench. Key `a` focuses the first workbench article
 without opening it. Key `b` focuses the last workbench card without opening
 it. Key `f` focuses the footer version line. That key does not
 open a workbench. Key `g` focuses the first What's new heading, or the What's
@@ -54,7 +56,10 @@ That copy is catalog copy, not a live product feed. If those nodes are
 missing, it copies an empty string. Keys `v` and `j` copy the printed version list and one-sentence jobs.
 Key `,` copies the footer version line from this page as one Markdown line.
 That copy is catalog copy, not a live product version.
-Key `q` copies those same catalog jobs through the Copy jobs control. It does not fork that Markdown. Key `;` copies the first workbench name and one-sentence job from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that card is missing, it copies an empty string. That key is distinct from `j` and `q`, which copy all four jobs, and from `y`, which copies the last-launched job. Key `i` copies Trust and limits from this page as Markdown. That list is not a
+Key `[` focuses the Copy version line control, or the footer version line if
+that control is missing. That key moves focus; it does not open a workbench.
+It does not copy.
+Key `q` copies those same catalog jobs through the Copy jobs control. It does not fork that Markdown. Key `;` copies the first workbench name and one-sentence job from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that card is missing, it copies an empty string. That key is distinct from `j` and `q`, which copy all four jobs, and from `y`, which copies the last-launched job. Key `:` copies the first Trust and limits list item from this page as one Markdown line. That copy is catalog copy, not a live policy feed. If that item is missing, it copies an empty string. That key is distinct from `i`, which copies the full Trust and limits list, and from `;`, which copies the first workbench job. Key `i` copies Trust and limits from this page as Markdown. That list is not a
 live policy feed. Key `u` copies How it works from this page as Markdown. That
 list is not a live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
 browser. Key `x` clears that last-launched marker in this browser. Key `y`
@@ -121,6 +126,8 @@ The catalog also names skip-link copy, last-card focus, and 404 Copy jobs.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names trust-item jump, first-job copy, and 404 Copy version line.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names version-line jump, last-open jump, and 404 Copy first Trust item.
+That What's new entry is hub-only. It does not change workbench versions.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
@@ -169,7 +176,9 @@ does not open a workbench.
 Press `/` to focus the first Trust and limits list item. That key moves focus;
 it does not open a workbench. Shift+/ still opens the shortcut list.
 Press `t` to focus Trust and limits. Press `s` to focus the first Open
-workbench link. Press `a` to focus the first workbench article without opening
+workbench link. Press `]` to focus the last Open workbench link. That key
+moves focus; it does not open the workbench. If none is present, it focuses
+the workbenches heading. Press `a` to focus the first workbench article without opening
 it. That key is distinct from `s`, which focuses the first Open workbench link.
 Press `b` to focus the last workbench card without opening it. That key moves
 focus; it does not open the workbench. Press `r` to focus the first review
@@ -188,7 +197,9 @@ uses the same Copy versions control, including the visible text box when the
 clipboard API is unavailable. Press `,` to copy the footer version line from
 this page as one Markdown line. That key uses the same Copy version line
 control, including the visible text box when the clipboard API is unavailable.
-This is catalog copy, not a live product version. Press `l` to focus the workbench card that is
+This is catalog copy, not a live product version. Press `[` to focus the Copy
+version line control, or the footer version line if that control is missing.
+That key moves focus; it does not open a workbench. It does not copy. Press `l` to focus the workbench card that is
 Last launched in this browser, or the workbenches heading if none is stored.
 That recency is storage in this browser, not a cloud recency. Press `o` to
 open that last-launched workbench. The key assigns `location` the same way
@@ -212,7 +223,9 @@ product feed or add another public path. Copy catalog intro on that 404 page cop
 the printed heading and lede as Markdown. It does not fetch a product feed or
 add another public path. Copy version line on that 404 page copies the printed
 catalog version listing as one Markdown line. It does not fetch a package
-file or add another public path. When the catalog is served over http,
+file or add another public path. Copy first Trust item on that 404 page copies
+the printed first Trust and limits list item as one Markdown line. It does not
+fetch a policy file or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
 this catalog page as Markdown. It uses the browser clipboard when that API is
@@ -238,6 +251,12 @@ as one Markdown line. That key uses the same Copy first job control, including
 the visible text box when the clipboard API is unavailable. If that card is
 missing, it copies an empty string. This is catalog copy, not a live product
 feed. It is distinct from `j` and `q`, which copy all four jobs, and from `y`.
+Press `:` to copy the first Trust and limits list item from this page as one
+Markdown line. That key uses the same Copy first Trust item control, including
+the visible text box when the clipboard API is unavailable. If that item is
+missing, it copies an empty string. This is catalog copy, not a live policy
+feed. It is distinct from `i`, which copies the full Trust and limits list, and
+from `;`.
 Copy skip links copies the six skip-link labels and hash hrefs already printed
 in the skip navigation as Markdown, with the same clipboard and visible text
 box fallback. This is in-page navigation copy, not a sitemap API.
@@ -245,6 +264,12 @@ Copy Trust and limits copies the Trust and limits heading and list items
 already printed on this catalog page as Markdown. It uses the browser
 clipboard when that API is available, and shows a visible text box if it is
 not. That list is not a live policy feed.
+Copy first Trust item copies the first Trust and limits list item already
+printed on this catalog page as one Markdown line, with the same clipboard
+and visible text box fallback. If that item is missing, it copies an empty
+string. That copy is catalog copy, not a live policy feed. It is distinct
+from Copy Trust and limits, which copies the full list, and from Copy first
+job.
 Press `i` to copy Trust and limits through that same control.
 Press `u` to copy How it works through that same control.
 Press `y` to copy the last-launched workbench name and one-sentence job from
