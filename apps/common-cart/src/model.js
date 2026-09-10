@@ -217,7 +217,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -250,7 +250,15 @@ export function validateWorkspace(candidate) {
     }
     hideCoveredLeftover = hideCoveredLeftoverRows;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover };
+  const hideTertiaryLeftoverRow = own(candidate, "hideTertiaryLeftoverRow");
+  let hideTertiaryLeftover = false;
+  if (hideTertiaryLeftoverRow !== undefined) {
+    if (hideTertiaryLeftoverRow !== true && hideTertiaryLeftoverRow !== false) {
+      throw new ScenarioError("Hide tertiary leftover row must be true or false.");
+    }
+    hideTertiaryLeftover = hideTertiaryLeftoverRow;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -1184,6 +1192,16 @@ export function filterLeftoverCoverageRowsHidingCovered(rawScenario, hideCovered
   const rows = leftoverCoverageRows(rawScenario);
   if (!hideCovered) return rows;
   return rows.filter((row) => !row.covered);
+}
+
+/** Display-only leftover table filter. Matching is unchanged. */
+export function filterLeftoverCoverageRowsHidingTertiary(rawScenario, hideTertiary) {
+  if (hideTertiary !== true && hideTertiary !== false) {
+    throw new ScenarioError("Hide tertiary leftover row must be true or false.");
+  }
+  const rows = leftoverCoverageRows(rawScenario);
+  if (!hideTertiary) return rows;
+  return rows.filter((row) => row.id !== "tertiary-fill");
 }
 
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */

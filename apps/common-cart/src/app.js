@@ -44,6 +44,7 @@ import {
   createWinnerAggregatesMarkdown,
   leftoverCoverageRows,
   filterLeftoverCoverageRowsHidingCovered,
+  filterLeftoverCoverageRowsHidingTertiary,
   createLeftoverCoverageMarkdown,
   createWinningMerchantLabelMarkdown,
   organizerLeftoverRows,
@@ -115,6 +116,7 @@ let buyerVariantFilter = "all";
 let hideExcludedBuyers = false;
 let hideUnwinnableOffers = false;
 let hideCoveredLeftoverRows = false;
+let hideTertiaryLeftoverRow = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -132,6 +134,7 @@ function loadWorkspace() {
     hideExcludedBuyers = workspace.hideExcludedBuyers;
     hideUnwinnableOffers = workspace.hideUnwinnableOffers;
     hideCoveredLeftoverRows = workspace.hideCoveredLeftoverRows;
+    hideTertiaryLeftoverRow = workspace.hideTertiaryLeftoverRow;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -174,7 +177,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -636,6 +639,18 @@ function bindStaticEvents() {
       setStatus(hideCoveredLeftoverRows
         ? "Hiding leftover coverage rows that are fully covered. Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
         : "Showing covered leftover rows again. Saved leftover matching stays unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#hide-tertiary-leftover-row").addEventListener("change", (event) => {
+    hideTertiaryLeftoverRow = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyLeftoverCoverageDisplayFilter();
+      setStatus(hideTertiaryLeftoverRow
+        ? "Hiding the tertiary leftover coverage row. Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing the tertiary leftover coverage row again. Saved leftover matching stays unchanged. The last hide choice is kept in this browser.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -1686,6 +1701,7 @@ function leftoverRowCells(row) {
   if (row.uncovered) element.classList.add("leftover-uncovered");
   element.tabIndex = -1;
   if (hideCoveredLeftoverRows && row.covered) element.hidden = true;
+  if (hideTertiaryLeftoverRow && row.id === "tertiary-fill") element.hidden = true;
   addCell(element, row.stage);
   addCell(element, row.merchant);
   addCell(element, String(row.buyerCount));
@@ -1696,12 +1712,15 @@ function leftoverRowCells(row) {
 function applyLeftoverCoverageDisplayFilter() {
   const hideControl = document.querySelector("#hide-covered-leftover-rows");
   if (hideControl) hideControl.checked = hideCoveredLeftoverRows;
+  const hideTertiaryControl = document.querySelector("#hide-tertiary-leftover-row");
+  if (hideTertiaryControl) hideTertiaryControl.checked = hideTertiaryLeftoverRow;
   const body = document.querySelector("#leftover-coverage-rows");
   if (!body) return;
   try {
-    const visible = new Set(filterLeftoverCoverageRowsHidingCovered(scenario, hideCoveredLeftoverRows).map((row) => row.id));
+    const coveredVisible = new Set(filterLeftoverCoverageRowsHidingCovered(scenario, hideCoveredLeftoverRows).map((row) => row.id));
+    const tertiaryVisible = new Set(filterLeftoverCoverageRowsHidingTertiary(scenario, hideTertiaryLeftoverRow).map((row) => row.id));
     body.querySelectorAll("tr[data-stage]").forEach((row) => {
-      row.hidden = !visible.has(row.dataset.stage);
+      row.hidden = !coveredVisible.has(row.dataset.stage) || !tertiaryVisible.has(row.dataset.stage);
     });
   } catch {
     body.querySelectorAll("tr[data-stage]").forEach((row) => {

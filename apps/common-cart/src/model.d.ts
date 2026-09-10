@@ -263,7 +263,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -401,6 +401,8 @@ export interface LeftoverCoverageRow {
 export function leftoverCoverageRows(rawScenario: unknown): LeftoverCoverageRow[];
 /** Display-only leftover table filter. Matching is unchanged. */
 export function filterLeftoverCoverageRowsHidingCovered(rawScenario: unknown, hideCovered: boolean): LeftoverCoverageRow[];
+/** Display-only leftover table filter. Matching is unchanged. Hides the tertiary leftover-coverage row when present. */
+export function filterLeftoverCoverageRowsHidingTertiary(rawScenario: unknown, hideTertiary: boolean): LeftoverCoverageRow[];
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
 export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
 /** Merchant label only. Honest empty when none unlocked. No buyer data. */

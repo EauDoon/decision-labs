@@ -793,6 +793,11 @@ footer {
               Hide leftover rows that are fully covered
             </label>
             <p id="hide-covered-leftover-note" class="canvas-note print-chrome">Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide-covered leftover choice is kept in this browser's workspace file. Older workspace files without it still show every leftover row.</p>
+            <label class="checkbox-field print-chrome">
+              <input id="hide-tertiary-leftover-row" type="checkbox">
+              Hide the tertiary leftover coverage row
+            </label>
+            <p id="hide-tertiary-leftover-note" class="canvas-note print-chrome">Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide-tertiary leftover choice is kept in this browser's workspace file. Older workspace files without it still show every leftover row.</p>
             <div id="leftover-buyer-list" class="table-shell compact print-private">
               <table>
                 <caption>Organizer leftover buyers after the winner. Private labels. This list is organizer-private and is not a merchant export.</caption>
@@ -1239,7 +1244,7 @@ function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -1272,7 +1277,15 @@ function validateWorkspace(candidate) {
     }
     hideCoveredLeftover = hideCoveredLeftoverRows;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover };
+  const hideTertiaryLeftoverRow = own(candidate, "hideTertiaryLeftoverRow");
+  let hideTertiaryLeftover = false;
+  if (hideTertiaryLeftoverRow !== undefined) {
+    if (hideTertiaryLeftoverRow !== true && hideTertiaryLeftoverRow !== false) {
+      throw new ScenarioError("Hide tertiary leftover row must be true or false.");
+    }
+    hideTertiaryLeftover = hideTertiaryLeftoverRow;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover };
 }
 
 function duplicateEntry(rawScenario, kind, id) {
@@ -2206,6 +2219,16 @@ function filterLeftoverCoverageRowsHidingCovered(rawScenario, hideCovered) {
   const rows = leftoverCoverageRows(rawScenario);
   if (!hideCovered) return rows;
   return rows.filter((row) => !row.covered);
+}
+
+/** Display-only leftover table filter. Matching is unchanged. */
+function filterLeftoverCoverageRowsHidingTertiary(rawScenario, hideTertiary) {
+  if (hideTertiary !== true && hideTertiary !== false) {
+    throw new ScenarioError("Hide tertiary leftover row must be true or false.");
+  }
+  const rows = leftoverCoverageRows(rawScenario);
+  if (!hideTertiary) return rows;
+  return rows.filter((row) => row.id !== "tertiary-fill");
 }
 
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
@@ -3245,6 +3268,7 @@ let buyerVariantFilter = "all";
 let hideExcludedBuyers = false;
 let hideUnwinnableOffers = false;
 let hideCoveredLeftoverRows = false;
+let hideTertiaryLeftoverRow = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -3262,6 +3286,7 @@ function loadWorkspace() {
     hideExcludedBuyers = workspace.hideExcludedBuyers;
     hideUnwinnableOffers = workspace.hideUnwinnableOffers;
     hideCoveredLeftoverRows = workspace.hideCoveredLeftoverRows;
+    hideTertiaryLeftoverRow = workspace.hideTertiaryLeftoverRow;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -3304,7 +3329,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -3766,6 +3791,18 @@ function bindStaticEvents() {
       setStatus(hideCoveredLeftoverRows
         ? "Hiding leftover coverage rows that are fully covered. Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
         : "Showing covered leftover rows again. Saved leftover matching stays unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#hide-tertiary-leftover-row").addEventListener("change", (event) => {
+    hideTertiaryLeftoverRow = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyLeftoverCoverageDisplayFilter();
+      setStatus(hideTertiaryLeftoverRow
+        ? "Hiding the tertiary leftover coverage row. Display only. Saved leftover matching stays unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing the tertiary leftover coverage row again. Saved leftover matching stays unchanged. The last hide choice is kept in this browser.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -4816,6 +4853,7 @@ function leftoverRowCells(row) {
   if (row.uncovered) element.classList.add("leftover-uncovered");
   element.tabIndex = -1;
   if (hideCoveredLeftoverRows && row.covered) element.hidden = true;
+  if (hideTertiaryLeftoverRow && row.id === "tertiary-fill") element.hidden = true;
   addCell(element, row.stage);
   addCell(element, row.merchant);
   addCell(element, String(row.buyerCount));
@@ -4826,12 +4864,15 @@ function leftoverRowCells(row) {
 function applyLeftoverCoverageDisplayFilter() {
   const hideControl = document.querySelector("#hide-covered-leftover-rows");
   if (hideControl) hideControl.checked = hideCoveredLeftoverRows;
+  const hideTertiaryControl = document.querySelector("#hide-tertiary-leftover-row");
+  if (hideTertiaryControl) hideTertiaryControl.checked = hideTertiaryLeftoverRow;
   const body = document.querySelector("#leftover-coverage-rows");
   if (!body) return;
   try {
-    const visible = new Set(filterLeftoverCoverageRowsHidingCovered(scenario, hideCoveredLeftoverRows).map((row) => row.id));
+    const coveredVisible = new Set(filterLeftoverCoverageRowsHidingCovered(scenario, hideCoveredLeftoverRows).map((row) => row.id));
+    const tertiaryVisible = new Set(filterLeftoverCoverageRowsHidingTertiary(scenario, hideTertiaryLeftoverRow).map((row) => row.id));
     body.querySelectorAll("tr[data-stage]").forEach((row) => {
-      row.hidden = !visible.has(row.dataset.stage);
+      row.hidden = !coveredVisible.has(row.dataset.stage) || !tertiaryVisible.has(row.dataset.stage);
     });
   } catch {
     body.querySelectorAll("tr[data-stage]").forEach((row) => {
