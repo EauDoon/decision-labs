@@ -61,8 +61,24 @@ test("standalone retains 1.4.15 leftover-fill label tools and 1.4.16 leftover-fi
   assert.match(html, /if \(key === "5"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMinimum\(\);/u);
   assert.match(html, /if \(key === "6"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillMinimumCopy\(\);/u);
   assert.match(html, /if \(key === "7"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstBuyerFilledByTertiaryFill\(\);/u);
+  assert.match(html, /id="copy-leftover-fill-maximum"/u);
+  assert.match(html, /id="copy-leftover-fill-maximum"[^>]*aria-keyshortcuts="8"/u);
+  assert.match(html, /id="hide-last-buyer-filled-by-tertiary-fill"/u);
+  assert.match(html, /id="leftover-print-fill-maximum"/u);
+  assert.match(html, /Leftover fill maximum: none/u);
+  assert.match(html, /data-preset="volleyballCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverFillMaximum\(/u);
+  assert.match(html, /function focusLeftoverFillMaximumCopy\(/u);
+  assert.match(html, /function focusHideLastBuyerFilledByTertiaryFill\(/u);
+  assert.match(html, /filterBuyerIdsHidingLastBuyerFilledByTertiaryFill\(/u);
+  assert.match(html, /hideLastBuyerFilledByTertiaryFill/u);
+  assert.match(html, /if \(key === "8"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMaximum\(\);/u);
+  assert.match(html, /if \(key === "9"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillMaximumCopy\(\);/u);
+  assert.match(html, /if \(key === "0"\) \{\s*event\.preventDefault\(\);\s*focusHideLastBuyerFilledByTertiaryFill\(\);/u);
   assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-fill-minimum/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-buyer-filled-by-tertiary-fill/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-fill-maximum/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-last-buyer-filled-by-tertiary-fill/u);
 });
 
