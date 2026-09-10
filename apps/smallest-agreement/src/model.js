@@ -2507,6 +2507,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideFirstVetoGroup",
   "hideLastVetoGroup",
   "hideFirstNonVetoGroup",
+  "hideLastNonVetoGroup",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2528,6 +2529,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideFirstVetoGroup",
   "hideLastVetoGroup",
   "hideFirstNonVetoGroup",
+  "hideLastNonVetoGroup",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2593,6 +2595,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideLastVetoGroup.error) return { status: "invalid", errors: [hideLastVetoGroup.error] };
   const hideFirstNonVetoGroup = readWorkspaceBoolean(prefs, "hideFirstNonVetoGroup");
   if (hideFirstNonVetoGroup.error) return { status: "invalid", errors: [hideFirstNonVetoGroup.error] };
+  const hideLastNonVetoGroup = readWorkspaceBoolean(prefs, "hideLastNonVetoGroup");
+  if (hideLastNonVetoGroup.error) return { status: "invalid", errors: [hideLastNonVetoGroup.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2613,6 +2617,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideFirstVetoGroup: hideFirstVetoGroup.value,
     hideLastVetoGroup: hideLastVetoGroup.value,
     hideFirstNonVetoGroup: hideFirstNonVetoGroup.value,
+    hideLastNonVetoGroup: hideLastNonVetoGroup.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2634,6 +2639,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideFirstVetoGroup: hideFirstVetoGroup.value,
       hideLastVetoGroup: hideLastVetoGroup.value,
       hideFirstNonVetoGroup: hideFirstNonVetoGroup.value,
+      hideLastNonVetoGroup: hideLastNonVetoGroup.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2668,6 +2674,7 @@ export function parseWorkspaceJson(text) {
       hideFirstVetoGroup: null,
       hideLastVetoGroup: null,
       hideFirstNonVetoGroup: null,
+      hideLastNonVetoGroup: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2718,6 +2725,8 @@ export function parseWorkspaceJson(text) {
   if (hideLastVetoGroup.error) return { status: "invalid", errors: [hideLastVetoGroup.error] };
   const hideFirstNonVetoGroup = readWorkspaceBoolean(raw, "hideFirstNonVetoGroup");
   if (hideFirstNonVetoGroup.error) return { status: "invalid", errors: [hideFirstNonVetoGroup.error] };
+  const hideLastNonVetoGroup = readWorkspaceBoolean(raw, "hideLastNonVetoGroup");
+  if (hideLastNonVetoGroup.error) return { status: "invalid", errors: [hideLastNonVetoGroup.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2740,6 +2749,7 @@ export function parseWorkspaceJson(text) {
     hideFirstVetoGroup: hideFirstVetoGroup.value,
     hideLastVetoGroup: hideLastVetoGroup.value,
     hideFirstNonVetoGroup: hideFirstNonVetoGroup.value,
+    hideLastNonVetoGroup: hideLastNonVetoGroup.value,
   };
 }
 
