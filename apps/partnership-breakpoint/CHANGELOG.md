@@ -2,6 +2,7 @@
 
 ## 1.5.2
 
+- Keeps the 1.5.0 constraint review and 1.5.1 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, exact recompute, stale-read cancel, and no replacement of the working case.
 - Press `f` to jump to the First breakpoint heading when no field is focused. Shortcuts stay ignored while a field is focused.
 - Copy contribution waterfall copies each participant, contribution per transaction, and revenue share as Markdown. Clipboard falls back to a textarea. It is a comparison aid, not a forecast.
 - Press `w` to jump to the Contribution waterfall heading when no field is focused.

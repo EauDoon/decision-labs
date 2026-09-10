@@ -174,6 +174,7 @@ button.danger:hover { background: var(--coral); color: white; }
 .status-card.viable { border-left: 6px solid var(--cobalt); }
 .status-card.fragile { border-left: 6px solid var(--coral); }
 .eyebrow { display: block; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; margin-bottom: .35rem; }
+.status-card h2.eyebrow { margin: 0 0 .35rem; font-weight: 650; }
 .status-card h1 { font-size: clamp(1.25rem, 2vw, 1.8rem); margin: 0; line-height: 1.05; }
 .status-card p { color: var(--muted); margin: .45rem 0 0; max-width: 50rem; }
 .score { text-align: right; }
@@ -412,6 +413,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
  * @property {ParticipantInput[]} participants
  * @property {StressSettings} [stress] Optional. Legacy cases omit this object.
  * @property {boolean} [collapseAllHoldCases] Optional display preference. Omitted files default to expanded.
+ * @property {boolean} [hideHoldingParticipants] Optional roster display preference. Omitted files default to showing holders.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -425,7 +427,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
 const EPSILON = 1e-9;
 const MAX_PARTICIPANTS = 24;
 const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -512,6 +514,15 @@ const PRESETS = Object.freeze({
       { id: 'territory-distributor', name: 'Territory distributor', revenueShare: 0.6, variableCostPerTransaction: 6.5, fixedMonthlyCost: 14000, minimumAcceptableProfit: 9000, capacity: 11000, minimumCommitment: 2500, riskCost: 2800 },
     ],
   },
+  talentAgentPlatform: {
+    name: 'Talent, agent, and platform',
+    deal: { monthlyVolume: 7500, feePerTransaction: 24, addressableVolume: 11000, volumeShockPct: 0 },
+    participants: [
+      { id: 'talent', name: 'Talent', revenueShare: 0.62, variableCostPerTransaction: 1.2, fixedMonthlyCost: 10000, minimumAcceptableProfit: 25000, capacity: null, minimumCommitment: 0, riskCost: 2500 },
+      { id: 'booking-agent', name: 'Booking agent', revenueShare: 0.18, variableCostPerTransaction: 0.35, fixedMonthlyCost: 2500, minimumAcceptableProfit: 4000, capacity: 10000, minimumCommitment: 2000, riskCost: 400 },
+      { id: 'booking-platform', name: 'Platform', revenueShare: 0.2, variableCostPerTransaction: 0.9, fixedMonthlyCost: 5000, minimumAcceptableProfit: 3000, capacity: 12000, minimumCommitment: 0, riskCost: 700 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -567,6 +578,12 @@ function validateConfiguration(config) {
     const collapse = own(config, 'collapseAllHoldCases');
     if (collapse !== true && collapse !== false) {
       errors.push('Collapse all-hold cases must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideHoldingParticipants')) {
+    const hideHolders = own(config, 'hideHoldingParticipants');
+    if (hideHolders !== true && hideHolders !== false) {
+      errors.push('Hide holding participants must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
@@ -2195,6 +2212,9 @@ let csvCopyText = '';
 let breakpointCopyText = '';
 let shareHoldCopyText = '';
 let notesCopyText = '';
+let waterfallCopyText = '';
+let viabilityCopyText = '';
+let utilizationCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -2204,6 +2224,7 @@ let dialogNeedsInitialFocus = coachVisible;
 const mutedStressIds = new Set();
 let collapseAllHoldCases = false;
 let hideHoldingParticipants = false;
+let hideAllCompoundHolders = false;
 let printRedacted = false;
 const undoHistory = [];
 const redoHistory = [];
@@ -2218,6 +2239,9 @@ function checkpoint() {
   breakpointCopyText = '';
   shareHoldCopyText = '';
   notesCopyText = '';
+  waterfallCopyText = '';
+  viabilityCopyText = '';
+  utilizationCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -2240,6 +2264,9 @@ function travelHistory(direction) {
   breakpointCopyText = '';
   shareHoldCopyText = '';
   notesCopyText = '';
+  waterfallCopyText = '';
+  viabilityCopyText = '';
+  utilizationCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -2342,11 +2369,14 @@ function withStress(config) {
 
 function readCollapsePreference() {
   collapseAllHoldCases = state.collapseAllHoldCases === true;
+  hideHoldingParticipants = state.hideHoldingParticipants === true;
 }
 
 function writeCollapsePreference() {
   if (collapseAllHoldCases) state.collapseAllHoldCases = true;
   else delete state.collapseAllHoldCases;
+  if (hideHoldingParticipants) state.hideHoldingParticipants = true;
+  else delete state.hideHoldingParticipants;
 }
 
 function compactErrorMessage(error) {
@@ -2535,24 +2565,24 @@ function copyFirstBreakpointButton() {
 function breakpointSection(result) {
   const breakpoint = result.firstBreakpoint;
   if (!breakpoint?.participant) {
-    return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p>${copyFirstBreakpointButton()}</div></section>`;
+    return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
 
   const participantName = escapeAttribute(breakpoint.participant.name);
   const label = shockLabel(breakpoint.kind);
   const shock = breakpoint.shock;
   if (breakpoint.status === 'already-failing') {
-    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p>${copyFirstBreakpointButton()}</div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
   if (breakpoint.status === 'at-breakpoint') {
-    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p>${copyFirstBreakpointButton()}</div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
 
   const units = shockUnits(breakpoint.kind);
   const threshold = units === 'txn'
     ? `${formatNumber(shock.breakpoint)} txn`
     : `${formatNumber(shock.breakpoint, 4)} units / txn`;
-  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
+  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2 id="first-breakpoint-title" tabindex="-1">First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
 }
 
 function participantDetailsOpen(index) {
@@ -2690,7 +2720,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -2702,8 +2732,8 @@ function resultsPanel(result) {
     ? `${result.weakestParticipant.name} has the least volume headroom to its ${result.weakestParticipant.bindingConstraint.label} limit.`
     : `${result.participants.filter((participant) => !participant.viable).map((participant) => participant.name).join(', ')} fails at least one exit criterion.`);
   return `<section class="results" id="results-start">
-    <section class="status-card ${statusClass}" aria-live="polite">
-      <div><span class="eyebrow">Partnership viability</span><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p></div>
+    <section class="status-card ${statusClass}" aria-labelledby="viability-heading" aria-live="polite">
+      <div><h2 class="eyebrow" id="viability-heading" tabindex="-1">Partnership viability</h2><h1>${status}</h1>${identity ? `<p>${identity}</p>` : ''}<p>${statusDetail}</p><div class="button-row"><button type="button" data-action="copy-viability">Copy viability card</button></div></div>
       <div class="score"><strong>${result.viable ? 'VIABLE' : 'NOT VIABLE'}</strong><span>at ${formatVolume(result.effectiveVolume)} / month</span></div>
     </section>
     <section class="metric-strip" aria-label="Deal summary">
@@ -2716,11 +2746,13 @@ function resultsPanel(result) {
     <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
     <nav class="results-jump" aria-label="Jump in results" id="results-jump" tabindex="-1">
       <span class="eyebrow">Jump in results</span>
+      <a href="#viability-heading">Viability</a>
       <a href="#first-breakpoint">First breakpoint</a>
       <a href="#fee-guidance-title">Fee guide</a>
       <a href="#three-compare-title">Three-snapshot compare</a>
       ${importedCompare ? '<a href="#imported-compare-title">Imported JSON compare</a>' : ''}
       <a href="#charts-title">Charts</a>
+      <a href="#waterfall-title">Waterfall</a>
       <a href="#compound-title">Compound stress</a>
       <a href="#participant-ledger">Participant ledger</a>
     </nav>
@@ -2733,6 +2765,9 @@ function resultsPanel(result) {
     ${breakpointCopySection()}
     ${shareHoldCopySection()}
     ${notesCopySection()}
+    ${waterfallCopySection()}
+    ${viabilityCopySection()}
+    ${utilizationCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -2801,6 +2836,22 @@ function stressSection() {
     <p class="output-note">Only these discrete cases are evaluated. No claim is made about untested cases or future participant behavior. Edit Compound stress settings in the Deal ledger.</p></section>`;
 }
 
+function participantHoldsEveryCompoundCase(stress, participantId) {
+  const row = stress.participants.find((item) => item.id === participantId);
+  return Boolean(row && row.passCount === stress.caseCount);
+}
+
+function capacityUtilizationLabel(participant) {
+  if (participant.capacity == null || participant.capacityUtilization == null) {
+    return 'Unbounded';
+  }
+  if (!Number.isFinite(participant.capacityUtilization)) {
+    return 'Exceeds zero capacity';
+  }
+  const pct = participant.capacityUtilization * 100;
+  return `${formatNumber(participant.volume)} / ${formatNumber(participant.capacity)} (${formatPct(pct)} of capacity)`;
+}
+
 function capacityUtilizationCell(participant) {
   if (participant.capacity == null || participant.capacityUtilization == null) {
     return '<td>Unbounded</td>';
@@ -2816,7 +2867,16 @@ function capacityUtilizationCell(participant) {
 }
 
 function participantTable(result) {
-  const rows = result.participants.map((participant, index) => `
+  const stress = evaluateStressGrid(state);
+  const hiddenHoldCount = hideAllCompoundHolders
+    ? result.participants.filter((participant) => participantHoldsEveryCompoundCase(stress, participant.id)).length
+    : 0;
+  const visibleParticipants = hideAllCompoundHolders
+    ? result.participants.filter((participant) => !participantHoldsEveryCompoundCase(stress, participant.id))
+    : result.participants;
+  const rows = visibleParticipants.map((participant) => {
+    const index = result.participants.findIndex((item) => item.id === participant.id);
+    return `
     <tr>
       <td><strong>${printSafeName(index, participant.name)}</strong></td>
       <td>${formatMoney(participant.revenue)}</td>
@@ -2832,8 +2892,15 @@ function participantTable(result) {
       ${capacityUtilizationCell(participant)}
       <td>${escapeAttribute(participant.bindingConstraint.label)}</td>
       <td class="${participant.viable ? 'pass-text' : 'failure-text'}">${participant.viable ? 'Holds' : escapeAttribute(participant.failureReasons.join('; '))}</td>
-    </tr>`).join('');
-  return `<section class="panel print-keep" id="participant-ledger"><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Capacity use</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary. Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied.</p></section>`;
+    </tr>`;
+  }).join('');
+  const emptyRow = hideAllCompoundHolders && !visibleParticipants.length
+    ? `<tr><td colspan="14">Every displayed participant holds in every tested compound case. Expand to see the hidden ledger rows. ${stress.passCount} of ${stress.caseCount} tested cases hold. Counts are unchanged.</td></tr>`
+    : '';
+  const filterNote = hideAllCompoundHolders
+    ? `${hiddenHoldCount} participant${hiddenHoldCount === 1 ? '' : 's'} who hold in every tested compound case ${hiddenHoldCount === 1 ? 'is' : 'are'} hidden from this ledger display. Expand restores them. Grid counts are unchanged.`
+    : 'Hide participants who hold in every tested compound case to filter this ledger display only. Expand restores them. Counts stay the same.';
+  return `<section class="panel print-keep" id="participant-ledger"><div class="panel-heading"><h2 id="participant-ledger-title" tabindex="-1">Participant ledger</h2><span class="optional">display values</span></div><div class="panel-body"><div class="button-row"><button type="button" data-action="copy-utilization">Copy capacity utilization</button><button type="button" data-action="hide-all-hold-ledger" aria-pressed="${hideAllCompoundHolders}">Hide participants who hold in every tested compound case</button><button type="button" data-action="show-all-hold-ledger" ${hideAllCompoundHolders ? '' : 'disabled'}>Show all-hold ledger rows</button></div><p class="notice">${filterNote}</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Participant ledger, scroll horizontally"><table><caption>Participant ledger</caption><thead><tr><th>Participant</th><th>Revenue</th><th>Variable cost</th><th>Fixed cost</th><th>Risk cost</th><th>Monthly profit</th><th>Margin</th><th>Break-even volume</th><th>Exit volume</th><th>Headroom</th><th>Capacity</th><th>Capacity use</th><th>Binding limit</th><th>Exit test</th></tr></thead><tbody>${rows || emptyRow}</tbody></table></div><p class="output-note">Exit volume is the greater of the profit threshold and minimum commitment. Binding limit identifies the nearest economic or capacity boundary. Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied. Hiding all-hold participants is a display filter. Tested-case counts stay unchanged.</p></section>`;
 }
 
 function shockCard(label, shock, units) {
@@ -2991,7 +3058,7 @@ function waterfallSection(result) {
         <tr><th scope="row">Minimum acceptable profit</th><td>${formatMoney(chart.minimum)}</td></tr>
       </tbody></table></div></section>`;
   }).join('');
-  return `<section class="panel print-keep"><div class="panel-heading"><h2>Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p><div class="button-row"><button type="button" data-action="export-waterfall-svg">Download waterfall SVG</button></div>${charts}</div></section>`;
+  return `<section class="panel print-keep" id="contribution-waterfall"><div class="panel-heading"><h2 id="waterfall-title" tabindex="-1">Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p><div class="button-row"><button type="button" data-action="export-waterfall-svg">Download waterfall SVG</button><button type="button" data-action="copy-waterfall">Copy contribution waterfall</button></div>${charts}</div></section>`;
 }
 
 function sensitivityGrid() {
@@ -3164,6 +3231,9 @@ function attachEvents() {
     if (action === 'close-breakpoint-copy') { breakpointCopyText = ''; render(); return; }
     if (action === 'close-share-hold-copy') { shareHoldCopyText = ''; render(); return; }
     if (action === 'close-notes-copy') { notesCopyText = ''; render(); return; }
+    if (action === 'close-waterfall-copy') { waterfallCopyText = ''; render(); return; }
+    if (action === 'close-viability-copy') { viabilityCopyText = ''; render(); return; }
+    if (action === 'close-utilization-copy') { utilizationCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -3198,11 +3268,29 @@ function attachEvents() {
         return;
       }
       hideHoldingParticipants = true;
+      writeCollapsePreference();
+      saveState();
       render();
       return;
     }
     if (action === 'show-holding-participants') {
       hideHoldingParticipants = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-all-hold-ledger') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding participants who hold in every tested compound case.');
+        return;
+      }
+      hideAllCompoundHolders = true;
+      render();
+      return;
+    }
+    if (action === 'show-all-hold-ledger') {
+      hideAllCompoundHolders = false;
       render();
       return;
     }
@@ -3294,6 +3382,9 @@ function attachEvents() {
     if (action === 'copy-first-breakpoint') copyFirstBreakpoint();
     if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-deal-notes') copyDealNotes();
+    if (action === 'copy-waterfall') copyContributionWaterfall();
+    if (action === 'copy-viability') copyViabilityCard();
+    if (action === 'copy-utilization') copyCapacityUtilization();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -3607,6 +3698,26 @@ window.addEventListener('keydown', (event) => {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'p' || event.key === 'P') printOnePager();
+  if (event.key === 'f' || event.key === 'F') {
+    const target = document.querySelector('#first-breakpoint-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'w' || event.key === 'W') {
+    const target = document.querySelector('#waterfall-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'l' || event.key === 'L') {
+    const target = document.querySelector('#participant-ledger-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'b' || event.key === 'B') {
+    const target = document.querySelector('#viability-heading');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -4065,6 +4176,190 @@ function copyDealNotes() {
   showNotesCopyFallback(text, fallbackNote);
 }
 
+function contributionWaterfallMarkdown(result) {
+  const lines = ['# Contribution waterfall', '', '| Participant | Contribution | Share |', '| --- | --- | --- |'];
+  for (const participant of result.participants) {
+    const contribution = Number.isFinite(participant.contributionPerTransaction)
+      ? `${formatNumber(participant.contributionPerTransaction, 4)} units / txn`
+      : 'n/a';
+    lines.push('| ' + reportText(participant.name) + ' | ' + contribution + ' | ' + formatPct(participant.revenueShare * 100) + ' |');
+  }
+  lines.push('');
+  lines.push('Contribution is fee times share less variable cost per transaction. This is a comparison aid, not a forecast.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showWaterfallCopyFallback(text, message) {
+  waterfallCopyText = text;
+  render();
+  document.querySelector('#waterfall-copy-text')?.focus();
+  setNotice(message);
+}
+
+function waterfallCopySection() {
+  if (!waterfallCopyText) return '';
+  return `<section class="panel" aria-labelledby="waterfall-copy-title"><div class="panel-heading"><h2 id="waterfall-copy-title">Contribution waterfall Markdown</h2><button type="button" data-action="close-waterfall-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This lists contribution and share. It is not a forecast.</p><label class="brief-copy-label" for="waterfall-copy-text">Contribution waterfall Markdown</label><textarea id="waterfall-copy-text" readonly rows="12">${escapeAttribute(waterfallCopyText)}</textarea></div></section>`;
+}
+
+function copyContributionWaterfall() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the contribution waterfall. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = contributionWaterfallMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Contribution waterfall copied as Markdown. It is a comparison aid, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          waterfallCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showWaterfallCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      waterfallCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showWaterfallCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showWaterfallCopyFallback(text, fallbackNote);
+}
+
+function viabilityCardMarkdown(result) {
+  const weakest = result.weakestParticipant;
+  const headroom = weakest.headroomToExit === null ? 'Impossible' : formatVolume(weakest.headroomToExit);
+  const lines = [
+    '# Viability and binding limit',
+    '',
+    'Participant: ' + reportText(weakest.name),
+    'Headroom: ' + headroom,
+    'Binding limit: ' + reportText(weakest.bindingConstraint.label),
+    'Partnership: ' + (result.viable ? 'VIABLE' : 'NOT VIABLE'),
+    'Effective volume: ' + formatVolume(result.effectiveVolume),
+    '',
+    'This names the participant with the least volume headroom. Counts are counts. It is not a probability.',
+    '',
+  ];
+  return lines.join('\n');
+}
+
+function showViabilityCopyFallback(text, message) {
+  viabilityCopyText = text;
+  render();
+  document.querySelector('#viability-copy-text')?.focus();
+  setNotice(message);
+}
+
+function viabilityCopySection() {
+  if (!viabilityCopyText) return '';
+  return `<section class="panel" aria-labelledby="viability-copy-title"><div class="panel-heading"><h2 id="viability-copy-title">Viability card Markdown</h2><button type="button" data-action="close-viability-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. Counts are counts. This is not a probability.</p><label class="brief-copy-label" for="viability-copy-text">Viability card Markdown</label><textarea id="viability-copy-text" readonly rows="12">${escapeAttribute(viabilityCopyText)}</textarea></div></section>`;
+}
+
+function copyViabilityCard() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the viability card. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = viabilityCardMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Viability card copied as Markdown. Counts are counts. It is not a probability.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          viabilityCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showViabilityCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      viabilityCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showViabilityCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showViabilityCopyFallback(text, fallbackNote);
+}
+
+function capacityUtilizationMarkdown(result) {
+  const lines = ['# Capacity utilization', '', '| Participant | Capacity use |', '| --- | --- |'];
+  for (const participant of result.participants) {
+    lines.push('| ' + reportText(participant.name) + ' | ' + capacityUtilizationLabel(participant) + ' |');
+  }
+  lines.push('');
+  lines.push('Capacity use is effective volume divided by capacity, or Unbounded when no capacity is supplied. This is a display, not a probability.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showUtilizationCopyFallback(text, message) {
+  utilizationCopyText = text;
+  render();
+  document.querySelector('#utilization-copy-text')?.focus();
+  setNotice(message);
+}
+
+function utilizationCopySection() {
+  if (!utilizationCopyText) return '';
+  return `<section class="panel" aria-labelledby="utilization-copy-title"><div class="panel-heading"><h2 id="utilization-copy-title">Capacity utilization Markdown</h2><button type="button" data-action="close-utilization-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is a display of volume over capacity, not a probability.</p><label class="brief-copy-label" for="utilization-copy-text">Capacity utilization Markdown</label><textarea id="utilization-copy-text" readonly rows="12">${escapeAttribute(utilizationCopyText)}</textarea></div></section>`;
+}
+
+function copyCapacityUtilization() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying capacity utilization. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = capacityUtilizationMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Capacity utilization copied as Markdown. It is a display, not a probability.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          utilizationCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showUtilizationCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      utilizationCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showUtilizationCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showUtilizationCopyFallback(text, fallbackNote);
+}
+
 function exportTornadoSvg() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -4364,6 +4659,10 @@ function helpDialog() {
         <li><kbd>s</kbd> Jump to share-to-hold (preview if open, otherwise the first solver)</li>
         <li><kbd>c</kbd> Jump to snapshot or imported JSON compare heading</li>
         <li><kbd>p</kbd> Print the one-pager when the case is valid</li>
+        <li><kbd>f</kbd> Jump to the First breakpoint heading</li>
+        <li><kbd>w</kbd> Jump to the Contribution waterfall heading</li>
+        <li><kbd>l</kbd> Jump to the Participant ledger heading</li>
+        <li><kbd>b</kbd> Jump to the viability and binding-limit card heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
