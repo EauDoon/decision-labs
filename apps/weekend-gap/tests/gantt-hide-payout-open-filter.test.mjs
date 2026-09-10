@@ -66,8 +66,8 @@ test("hide-payout-open Gantt SVG is display-only and keeps the selected hour vis
   const holiday = { ...DEFAULT_SCENARIO, mondayHoliday: true };
   const everyClosed = buildGateGanttSvg(holiday, 0, { everyClosedOnly: true });
   const composedEvery = buildGateGanttSvg(holiday, 0, { hidePayoutOpenHours: true, everyClosedOnly: true });
-  const closedOnly = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { closedOnly: true });
-  const composedClosedOnly = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hidePayoutOpenHours: true, closedOnly: true });
+  const closedOnly = buildGateGanttSvg(earlyFriday, 0, { closedOnly: true });
+  const composedClosedOnly = buildGateGanttSvg(earlyFriday, 0, { hidePayoutOpenHours: true, closedOnly: true });
   const fxOnly = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hidePayoutOpenHours: true, gateFilter: "fx" });
   const selectedOpen = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hidePayoutOpenHours: true });
   const selectedClosed = buildGateGanttSvg(DEFAULT_SCENARIO, 2, { hidePayoutOpenHours: true });
