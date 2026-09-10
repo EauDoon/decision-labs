@@ -40,6 +40,7 @@ import {
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   firstClosedFxGanttHour,
+  firstClosedIssuerGanttHour,
   ganttHourClosedOnAnyGate,
   ganttHourClosedOnEveryGate,
   ganttHourOpenOnEveryGate,
@@ -105,6 +106,7 @@ const elements = {
   remainingReserve: document.querySelector("#remaining-reserve-value"),
   firstClosedFxHour: document.querySelector("#first-closed-fx-hour-value"),
   firstClosedBankHour: document.querySelector("#first-closed-bank-hour-value"),
+  firstClosedIssuerHour: document.querySelector("#first-closed-issuer-hour-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -315,6 +317,12 @@ function render() {
     elements.firstClosedBankHour.textContent = closedBankHour === null
       ? "none"
       : `${formatTime(closedBankHour)} (hour ${closedBankHour})`;
+  }
+  if (elements.firstClosedIssuerHour) {
+    const closedIssuerHour = firstClosedIssuerGanttHour(scenario);
+    elements.firstClosedIssuerHour.textContent = closedIssuerHour === null
+      ? "none"
+      : `${formatTime(closedIssuerHour)} (hour ${closedIssuerHour})`;
   }
   const jumpFirst = document.querySelector("#jump-first-settlement");
   if (jumpFirst) {
@@ -1828,7 +1836,7 @@ document.querySelector("#export-report").addEventListener("click",()=>{
 });
 document.querySelector("#print").addEventListener("click", () => {
   window.print();
-  document.querySelector("#workspace-status").textContent = "Print keeps dashboard numbers, hours to clear the queue when a queue exists, with an honest empty when none, the first closed bank hour when one exists, with an honest empty when none, and the Gantt. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print keeps dashboard numbers, hours to clear the queue when a queue exists, with an honest empty when none, the first closed bank hour when one exists, with an honest empty when none, the first closed issuer hour when one exists, with an honest empty when none, and the Gantt. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
 });
 document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.add("print-redacted");
@@ -1849,7 +1857,7 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief when a queue exists, with an honest empty when none, and the selected Gantt hour stay on the printed brief. Remaining reserve at that hour stays on the printed brief. Hours to first settlement stay on the printed brief. The first closed FX hour label stays on the printed brief. The first closed bank hour stays on the printed brief when one exists, with an honest empty when none. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief when a queue exists, with an honest empty when none, and the selected Gantt hour stay on the printed brief. Remaining reserve at that hour stays on the printed brief. Hours to first settlement stay on the printed brief. The first closed FX hour label stays on the printed brief. The first closed bank hour stays on the printed brief when one exists, with an honest empty when none. The first closed issuer hour stays on the printed brief when one exists, with an honest empty when none. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
 });
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();
