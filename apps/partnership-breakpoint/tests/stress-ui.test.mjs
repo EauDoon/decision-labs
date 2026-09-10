@@ -55,7 +55,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
         'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
         'viability-copy-text', 'viability-heading', 'utilization-copy-text', 'participant-ledger-title',
-        'tornado-title', 'tornado-copy-text',
+        'tornado-title', 'tornado-copy-text', 'deal-inputs-title',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1139,6 +1139,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>l<\/kbd> Jump to the Participant ledger heading/);
   assert.match(app.markup(), /<kbd>b<\/kbd> Jump to the viability and binding-limit card heading/);
   assert.match(app.markup(), /<kbd>t<\/kbd> Jump to the tornado chart heading/);
+  assert.match(app.markup(), /<kbd>d<\/kbd> Jump to the Shared deal heading/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1317,6 +1318,25 @@ test('keyboard l jumps to the Participant ledger heading unless a field is focus
   app.keydown('l');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="participant-ledger-title"/);
+});
+
+test('keyboard d jumps to the Shared deal heading unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="deal-inputs-title" tabindex="-1"/);
+  assert.match(app.markup(), /<h2 id="deal-inputs-title" tabindex="-1">Shared deal<\/h2>/);
+  assert.match(app.markup(), /Deal notes/);
+  app.keydown('d');
+  assert.ok(app.focused().includes('#deal-inputs-title'));
+  assert.ok(app.focused().includes('scroll:#deal-inputs-title'));
+  const before = app.focused().length;
+  app.keydown('d', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('d', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('d');
+  assert.ok(app.focused().includes('#deal-inputs-title'));
 });
 
 test('keyboard t jumps to the tornado chart heading unless a field is focused', async () => {

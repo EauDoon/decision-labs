@@ -499,7 +499,7 @@ function inputPanel(result) {
       <div class="panel-heading"><h1>Deal ledger</h1><span class="optional">editable</span></div>
       <div class="panel-body">
         <section class="input-section" aria-labelledby="deal-inputs-title">
-          <h2 id="deal-inputs-title">Shared deal</h2>
+          <h2 id="deal-inputs-title" tabindex="-1">Shared deal</h2>
           <p class="notice">Volume shock % is the only baseline volume reduction, 0 through 100. Addressable volume caps realized demand. Empty required fields are not saved. An optional title, notes, and 3-letter currency code travel with JSON, hash links, and autosave. Currency is a display prefix only; omitted currency keeps the word units.</p>
           <div class="field-grid">
             ${field({ label: 'Deal title', path: 'deal.title', value: state.deal.title ?? '', optional: true, wide: true, type: 'text', title: 'Optional display name, 1 through 80 characters after trimming. Leave blank to omit.' })}
@@ -1585,6 +1585,11 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'd' || event.key === 'D') {
+    const target = document.querySelector('#deal-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -2597,6 +2602,7 @@ function helpDialog() {
         <li><kbd>l</kbd> Jump to the Participant ledger heading</li>
         <li><kbd>b</kbd> Jump to the viability and binding-limit card heading</li>
         <li><kbd>t</kbd> Jump to the tornado chart heading</li>
+        <li><kbd>d</kbd> Jump to the Shared deal heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
