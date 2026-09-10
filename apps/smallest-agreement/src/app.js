@@ -3415,6 +3415,16 @@ function jumpToHideGroupsBelowThreshold() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToThresholdGroupCountCopy() {
+  const control = $("#copy-threshold-group-count-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  const heading = $("#groups-heading") || $("#results-heading");
+  heading?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -3639,6 +3649,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "}") {
     event.preventDefault();
     copyThresholdGroupCount();
+  } else if (event.key === "+") {
+    event.preventDefault();
+    jumpToThresholdGroupCountCopy();
   }
 });
 
