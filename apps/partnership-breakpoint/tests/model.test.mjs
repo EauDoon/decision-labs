@@ -665,6 +665,33 @@ test('sports carnival split preset is a distinct carnival ride ticket starting p
   assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
 });
 
+test('netball carnival split preset is a distinct committee canteen first-aid starting point', () => {
+  const netball = clonePreset('netballCarnivalSplit');
+  assert.equal(PRESETS.netballCarnivalSplit.name, 'Netball carnival');
+  assert.equal(netball.participants.length, 3);
+  assert.deepEqual(netball.participants.map((item) => item.id), ['netball-committee', 'canteen', 'first-aid']);
+  assert.deepEqual(netball.participants.map((item) => item.name), ['Carnival committee', 'Canteen', 'First-aid']);
+  assert.deepEqual(netball.participants.map((item) => item.revenueShare), [0.41, 0.34, 0.25]);
+  assert.equal(netball.deal.monthlyVolume, 2100);
+  assert.equal(netball.deal.feePerTransaction, 14);
+  assert.notEqual(netball.participants[0].variableCostPerTransaction, netball.participants[1].variableCostPerTransaction);
+  assert.notEqual(netball.participants[1].variableCostPerTransaction, netball.participants[2].variableCostPerTransaction);
+  assert.notEqual(netball.participants[0].fixedMonthlyCost, netball.participants[1].fixedMonthlyCost);
+  assert.notEqual(netball.participants[1].fixedMonthlyCost, netball.participants[2].fixedMonthlyCost);
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit', 'schoolConcertSplit', 'sportsCarnivalSplit'];
+  for (const key of others) {
+    const other = clonePreset(key);
+    assert.notEqual(netball.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
+    assert.notEqual(JSON.stringify(netball.deal), JSON.stringify(other.deal), key);
+    assert.notEqual(JSON.stringify(netball.participants.map((item) => item.variableCostPerTransaction)), JSON.stringify(other.participants.map((item) => item.variableCostPerTransaction)), key);
+    assert.notEqual(JSON.stringify(netball.participants.map((item) => item.fixedMonthlyCost)), JSON.stringify(other.participants.map((item) => item.fixedMonthlyCost)), key);
+  }
+  const result = calculatePartnership(netball);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.viable));
+  assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
+});
+
 test('creator take-rate and three-party JV presets calculate interesting first breakpoints', () => {
   const creator = calculatePartnership(clonePreset('creatorTakeRate'));
   assert.equal(creator.participants.length, 2);

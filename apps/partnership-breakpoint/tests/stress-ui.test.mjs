@@ -1324,6 +1324,40 @@ test('sports carnival split preset loads from the starting-point buttons', async
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
 
+test('netball carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="netballCarnivalSplit"/);
+  assert.match(app.markup(), /Netball carnival/);
+  assert.doesNotMatch(app.markup(), /Netball carnival split/);
+  app.click('preset', { preset: 'netballCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['netball-committee', 'canteen', 'first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Canteen', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 14);
+  assert.equal(app.saved().deal.monthlyVolume, 2100);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[0].fixedMonthlyCost, app.saved().participants[1].fixedMonthlyCost);
+  assert.notEqual(app.saved().participants[1].fixedMonthlyCost, app.saved().participants[2].fixedMonthlyCost);
+  assert.match(app.notice(), /Netball carnival loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'platform,distributor,liquidity-partner');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'production-studio,distribution-studio');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'marketplace,seller,logistics,payments');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'ip-licensor,territory-distributor');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'talent,booking-agent,booking-platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'synthetic-operator,capital-partner,operator-talent');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'podcast-host,podcast-network');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'venue,promoter,sound');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'stallholder,site-manager,ticket-office');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cinema-venue,projectionist,ticket-desk');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'presenter,station,underwriter');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'concert-venue,pta,ticketing');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'carnival-committee,ride-operator,ticket-booth');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
+});
+
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
   const app = await workbench();
   assert.match(app.markup(), /data-preset="talentAgentPlatform"/);
