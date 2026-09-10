@@ -69,6 +69,7 @@ let notesCopyText = '';
 let waterfallCopyText = '';
 let viabilityCopyText = '';
 let utilizationCopyText = '';
+let tornadoCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -96,6 +97,7 @@ function checkpoint() {
   waterfallCopyText = '';
   viabilityCopyText = '';
   utilizationCopyText = '';
+  tornadoCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -121,6 +123,7 @@ function travelHistory(direction) {
   waterfallCopyText = '';
   viabilityCopyText = '';
   utilizationCopyText = '';
+  tornadoCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -574,7 +577,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -623,6 +626,7 @@ function resultsPanel(result) {
     ${waterfallCopySection()}
     ${viabilityCopySection()}
     ${utilizationCopySection()}
+    ${tornadoCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -787,6 +791,7 @@ function tornadoChart(result) {
       const bounded = shock.status === 'bounded' && shock.changePct != null && Number.isFinite(shock.changePct);
       rows.push({
         name: participant.name,
+        kind,
         label,
         status: shock.status,
         changePct: bounded ? shock.changePct : null,
@@ -812,7 +817,7 @@ function tornadoChart(result) {
       <text x="${left + Math.max(0, barWidth) + 6}" y="${y + 13}" font-size="11" fill="#1f2328">${escapeAttribute(row.display)}</text>`;
   }).join('');
   const tableRows = rows.map((row) => `<tr><th scope="row">${escapeAttribute(row.name)}</th><td>${escapeAttribute(row.label)}</td><td>${escapeAttribute(row.display)}</td></tr>`).join('');
-  return { width, height, bars, tableRows };
+  return { width, height, bars, tableRows, rows };
 }
 
 function tornadoSvgMarkup(result, { standalone = false } = {}) {
@@ -828,7 +833,7 @@ function tornadoSvgFile(result) {
 
 function tornadoSection(result) {
   const chart = tornadoChart(result);
-  return `<section class="panel print-keep"><div class="panel-heading"><h2 id="tornado-title" tabindex="-1">Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
+  return `<section class="panel print-keep"><div class="panel-heading"><h2 id="tornado-title" tabindex="-1">Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button><button type="button" data-action="copy-tornado">Copy tornado</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
 }
 
 function waterfallChart(participant) {
@@ -1089,6 +1094,7 @@ function attachEvents() {
     if (action === 'close-waterfall-copy') { waterfallCopyText = ''; render(); return; }
     if (action === 'close-viability-copy') { viabilityCopyText = ''; render(); return; }
     if (action === 'close-utilization-copy') { utilizationCopyText = ''; render(); return; }
+    if (action === 'close-tornado-copy') { tornadoCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1240,6 +1246,7 @@ function attachEvents() {
     if (action === 'copy-waterfall') copyContributionWaterfall();
     if (action === 'copy-viability') copyViabilityCard();
     if (action === 'copy-utilization') copyCapacityUtilization();
+    if (action === 'copy-tornado') copyTornadoChart();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -2218,6 +2225,72 @@ function copyCapacityUtilization() {
     }
   }
   showUtilizationCopyFallback(text, fallbackNote);
+}
+
+function tornadoBoundedPercentage(row) {
+  if (row.status === 'already-failing') return 'Already failing';
+  if (row.status === 'at-breakpoint') return 'At breakpoint';
+  if (row.changePct == null) return 'Unbounded';
+  return formatPct(row.changePct);
+}
+
+function tornadoMarkdown(result) {
+  const chart = tornadoChart(result);
+  const lines = ['# Adverse-shock tornado', '', '| Participant | Shock axis | Bounded percentage |', '| --- | --- | --- |'];
+  for (const row of chart.rows) {
+    lines.push('| ' + reportText(row.name) + ' | ' + shockLabel(row.kind) + ' | ' + tornadoBoundedPercentage(row) + ' |');
+  }
+  lines.push('');
+  lines.push('Bounded percentage is the displayed adverse movement from the current scenario. Unbounded shocks have no invented number. This is a comparison aid, not a forecast.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showTornadoCopyFallback(text, message) {
+  tornadoCopyText = text;
+  render();
+  document.querySelector('#tornado-copy-text')?.focus();
+  setNotice(message);
+}
+
+function tornadoCopySection() {
+  if (!tornadoCopyText) return '';
+  return `<section class="panel" aria-labelledby="tornado-copy-title"><div class="panel-heading"><h2 id="tornado-copy-title">Tornado Markdown</h2><button type="button" data-action="close-tornado-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This lists participant, shock axis, and bounded percentage. It is not a forecast.</p><label class="brief-copy-label" for="tornado-copy-text">Tornado Markdown</label><textarea id="tornado-copy-text" readonly rows="12">${escapeAttribute(tornadoCopyText)}</textarea></div></section>`;
+}
+
+function copyTornadoChart() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the tornado chart. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = tornadoMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Tornado copied as Markdown. It is a comparison aid, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          tornadoCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showTornadoCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      tornadoCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showTornadoCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showTornadoCopyFallback(text, fallbackNote);
 }
 
 function exportTornadoSvg() {

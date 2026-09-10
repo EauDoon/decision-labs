@@ -55,7 +55,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
         'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
         'viability-copy-text', 'viability-heading', 'utilization-copy-text', 'participant-ledger-title',
-        'tornado-title',
+        'tornado-title', 'tornado-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1434,6 +1434,50 @@ test('copy viability card uses participant, headroom, and binding limit Markdown
   denied.click('copy-viability');
   assert.match(denied.markup(), /id="viability-copy-text"/);
   assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('copy tornado uses participant, shock axis, and bounded percentage Markdown', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-tornado"/);
+  fallback.click('copy-tornado');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="tornado-copy-text"/);
+  assert.match(fallback.markup(), /Participant \| Shock axis \| Bounded percentage/);
+  assert.match(fallback.markup(), /Platform \| volume decrease \| 17\.5%/);
+  assert.match(fallback.markup(), /Platform \| volume increase \| 30\.0%/);
+  assert.match(fallback.markup(), /Liquidity Partner \| fee decrease \| 4\.0%/);
+  assert.match(fallback.markup(), /not a forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-tornado-copy');
+  assert.doesNotMatch(fallback.markup(), /id="tornado-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-tornado');
+  assert.doesNotMatch(fallback.markup(), /id="tornado-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the tornado chart/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-tornado');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Adverse-shock tornado/);
+  assert.match(withClipboard.copied()[0], /Platform \| volume decrease \| 17\.5%/);
+  assert.match(withClipboard.copied()[0], /Distributor \| volume increase \| 20\.0%/);
+  assert.match(withClipboard.copied()[0], /not a forecast/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="tornado-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-tornado');
+  assert.match(denied.markup(), /id="tornado-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const unbounded = await workbench();
+  unbounded.click('dismiss-coach');
+  unbounded.click('preset', { preset: 'talentAgentPlatform' });
+  unbounded.click('copy-tornado');
+  assert.match(unbounded.markup(), /Talent \| volume increase \| Unbounded/);
 });
 
 test('copy contribution waterfall uses Markdown and a clipboard fallback', async () => {
