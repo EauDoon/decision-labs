@@ -319,7 +319,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -400,7 +400,15 @@ export function validateWorkspace(candidate) {
     }
     hideLeftoverBuyers = hideBuyersWithLeftover;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers };
+  const hideUnservedBuyers = own(candidate, "hideUnservedBuyers");
+  let hideUnserved = false;
+  if (hideUnservedBuyers !== undefined) {
+    if (hideUnservedBuyers !== true && hideUnservedBuyers !== false) {
+      throw new ScenarioError("Hide unserved buyers must be true or false.");
+    }
+    hideUnserved = hideUnservedBuyers;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -576,6 +584,21 @@ export function filterBuyerIdsHidingBuyersWithLeftover(rawScenario, hideBuyersWi
   if (!hideBuyersWithLeftover) return scenario.buyers.map((buyer) => buyer.id);
   const leftover = new Set(computeResidualCoverage(scenario).leftoverBuyerIds);
   return scenario.buyers.filter((buyer) => !leftover.has(buyer.id)).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides organizer buyer rows with zero allocated units after the winner, leftover fill, and tertiary fill. */
+export function filterBuyerIdsHidingUnservedBuyers(rawScenario, hideUnservedBuyers) {
+  if (hideUnservedBuyers !== true && hideUnservedBuyers !== false) {
+    throw new ScenarioError("Hide unserved buyers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideUnservedBuyers) return scenario.buyers.map((buyer) => buyer.id);
+  const market = evaluateMarket(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  const served = new Set(market.winner?.selectedBuyerIds ?? []);
+  for (const id of coverage.secondary?.selectedBuyerIds ?? []) served.add(id);
+  for (const id of coverage.tertiary?.selectedBuyerIds ?? []) served.add(id);
+  return scenario.buyers.filter((buyer) => served.has(buyer.id)).map((buyer) => buyer.id);
 }
 
 /** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
