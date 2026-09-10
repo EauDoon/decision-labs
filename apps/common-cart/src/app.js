@@ -25,6 +25,7 @@ import {
   filterBuyerIdsHidingWinnerAllocatedBuyers,
   filterBuyerIdsHidingBuyersFilledByLeftoverFill,
   filterBuyerIdsHidingLastBuyerFilledByLeftoverFill,
+  filterBuyerIdsHidingFirstBuyerFilledByLeftoverFill,
   organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
@@ -149,6 +150,7 @@ let hideLeftoverOnlyBuyers = false;
 let hideWinnerAllocatedBuyers = false;
 let hideBuyersFilledByLeftoverFill = false;
 let hideLastBuyerFilledByLeftoverFill = false;
+let hideFirstBuyerFilledByLeftoverFill = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -177,6 +179,7 @@ function loadWorkspace() {
     hideWinnerAllocatedBuyers = workspace.hideWinnerAllocatedBuyers;
     hideBuyersFilledByLeftoverFill = workspace.hideBuyersFilledByLeftoverFill;
     hideLastBuyerFilledByLeftoverFill = workspace.hideLastBuyerFilledByLeftoverFill;
+    hideFirstBuyerFilledByLeftoverFill = workspace.hideFirstBuyerFilledByLeftoverFill;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -219,7 +222,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, hideLastBuyerFilledByLeftoverFill });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, hideLastBuyerFilledByLeftoverFill, hideFirstBuyerFilledByLeftoverFill });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -817,6 +820,18 @@ function bindStaticEvents() {
       setStatus(messageOf(error));
     }
   });
+  document.querySelector("#hide-first-buyer-filled-by-leftover-fill").addEventListener("change", (event) => {
+    hideFirstBuyerFilledByLeftoverFill = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideFirstBuyerFilledByLeftoverFill
+        ? "Hiding the first leftover-fill buyer. Display only. Winner-allocated, unserved, and other leftover-fill buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing the first leftover-fill buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
   document.querySelector("#hide-covered-leftover-rows").addEventListener("change", (event) => {
     hideCoveredLeftoverRows = event.target.checked;
     persistWorkspaceDisplaySettings();
@@ -1220,6 +1235,21 @@ function handleShortcut(event) {
     focusHideBuyersFilledByLeftoverFill();
     return;
   }
+  if (key === "$") {
+    event.preventDefault();
+    copyLeftoverFillLabel();
+    return;
+  }
+  if (key === "^") {
+    event.preventDefault();
+    focusLeftoverFillLabelCopy();
+    return;
+  }
+  if (key === "`") {
+    event.preventDefault();
+    focusHideLastBuyerFilledByLeftoverFill();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1458,6 +1488,17 @@ function focusLeftoverFillPickupCopy() {
   document.querySelector("#residual-title")?.focus();
 }
 
+function focusLeftoverFillLabelCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-fill-label");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
 function focusHideFullyFilledBuyers() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
@@ -1532,6 +1573,22 @@ function focusHideBuyersFilledByLeftoverFill() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const hide = document.querySelector("#hide-buyers-filled-by-leftover-fill");
+  if (hide) {
+    hide.focus();
+    return;
+  }
+  const heading = document.querySelector("#buyers-list");
+  if (heading) {
+    heading.focus();
+    return;
+  }
+  document.querySelector("#buyer-tab")?.focus();
+}
+
+function focusHideLastBuyerFilledByLeftoverFill() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const hide = document.querySelector("#hide-last-buyer-filled-by-leftover-fill");
   if (hide) {
     hide.focus();
     return;
@@ -1695,6 +1752,8 @@ function renderEditor() {
   if (hideLeftoverFillBuyers) hideLeftoverFillBuyers.checked = hideBuyersFilledByLeftoverFill;
   const hideLastLeftoverFillBuyer = document.querySelector("#hide-last-buyer-filled-by-leftover-fill");
   if (hideLastLeftoverFillBuyer) hideLastLeftoverFillBuyer.checked = hideLastBuyerFilledByLeftoverFill;
+  const hideFirstLeftoverFillBuyer = document.querySelector("#hide-first-buyer-filled-by-leftover-fill");
+  if (hideFirstLeftoverFillBuyer) hideFirstLeftoverFillBuyer.checked = hideFirstBuyerFilledByLeftoverFill;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -1887,6 +1946,14 @@ function applyBuyerDisplayFilters() {
     try {
       const lastLeftoverFillHidden = new Set(filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => lastLeftoverFillHidden.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
+  if (hideFirstBuyerFilledByLeftoverFill) {
+    try {
+      const firstLeftoverFillHidden = new Set(filterBuyerIdsHidingFirstBuyerFilledByLeftoverFill(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => firstLeftoverFillHidden.has(id)));
     } catch {
       visibleIds = new Set();
     }
@@ -2121,6 +2188,8 @@ function refresh() {
     if (leftoverPrintFillDelivery) leftoverPrintFillDelivery.textContent = "Leftover fill delivery days: none";
     const leftoverPrintFillPickup = document.querySelector("#leftover-print-fill-pickup");
     if (leftoverPrintFillPickup) leftoverPrintFillPickup.textContent = "Leftover fill pickup days: none";
+    const leftoverPrintFillLabel = document.querySelector("#leftover-print-fill-label");
+    if (leftoverPrintFillLabel) leftoverPrintFillLabel.textContent = "Leftover fill label: none";
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -2492,6 +2561,13 @@ function renderLeftoverCoverageTable(rawScenario) {
     leftoverFillPickupPrint.textContent = coverage.secondary && leftoverOffer && leftoverOffer.fulfillment === "pickup"
       ? `Leftover fill pickup days: ${leftoverOffer.deliveryDays} days`
       : "Leftover fill pickup days: none";
+  }
+  const leftoverFillLabelPrint = document.querySelector("#leftover-print-fill-label");
+  if (leftoverFillLabelPrint) {
+    const coverage = computeResidualCoverage(rawScenario);
+    leftoverFillLabelPrint.textContent = coverage.secondary
+      ? `Leftover fill label: ${coverage.secondary.merchant} / ${coverage.secondary.variant}`
+      : "Leftover fill label: none";
   }
   const uncoveredPrint = document.querySelector("#leftover-print-uncovered");
   if (uncoveredPrint) {
