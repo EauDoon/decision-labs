@@ -32,6 +32,7 @@ import {
   createWinningFulfillmentMarkdown,
   createLeftoverFillMarkdown,
   createLeftoverFillUnitCountMarkdown,
+  createLeftoverFillMerchantLabelMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   createUncoveredLeftoverUnitCountMarkdown
@@ -226,6 +227,18 @@ test("leftover fill unit-count Markdown omits buyer identities", () => {
   assert.equal(leftoverFillUnits.includes("Harbour Roasters"), false);
 });
 
+test("leftover fill merchant Markdown omits buyer identities", () => {
+  const scenario = secretNeighbourhood();
+  const leftoverFillMerchant = createLeftoverFillMerchantLabelMarkdown(scenario);
+  assertOmitsPrivateBuyers(leftoverFillMerchant, ["SECRET_TITLE"]);
+  assert.match(leftoverFillMerchant, /organizer private/);
+  assert.match(leftoverFillMerchant, /Not a merchant export/);
+  assert.notEqual(leftoverFillMerchant, createLeftoverFillMarkdown(scenario));
+  assert.notEqual(leftoverFillMerchant, createLeftoverFillUnitCountMarkdown(scenario));
+  assert.notEqual(leftoverFillMerchant, createUncoveredLeftoverUnitCountMarkdown(scenario));
+  assert.notEqual(leftoverFillMerchant, createWinningMerchantLabelMarkdown(scenario));
+});
+
 test("merchant surfaces omit leftover fill unit-count copy", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
@@ -293,6 +306,42 @@ test("merchant surfaces omit uncovered leftover unit-count copy", async () => {
   for (const text of merchantSurfaces) {
     assert.equal(String(text).includes("uncovered leftover units (organizer private)"), false);
     assert.equal(String(text).includes("copy-uncovered-leftover-units"), false);
+    assert.equal(String(text).includes("Not a merchant export"), false);
+    assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
+  }
+});
+
+test("merchant surfaces omit leftover fill merchant copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-merchant"/u);
+  assert.match(buyerPanel, /Leftover fill merchant copy is merchant label only/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-merchant"), false);
+  assert.equal(merchantPanel.includes("Copy leftover fill merchant"), false);
+  assert.equal(merchantPanel.includes("Leftover fill merchant copy"), false);
+  assert.equal(merchantPanel.includes("createLeftoverFillMerchantLabelMarkdown"), false);
+  const leftoverFillMerchant = createLeftoverFillMerchantLabelMarkdown(secretNeighbourhood());
+  assert.match(leftoverFillMerchant, /organizer private/);
+  assert.match(leftoverFillMerchant, /Not a merchant export/);
+  assertOmitsPrivateBuyers(leftoverFillMerchant, ["SECRET_TITLE"]);
+  const left = secretNeighbourhood();
+  const merchantSurfaces = [
+    JSON.stringify(createMerchantReport(left)),
+    JSON.stringify(createMerchantResidualReport(left)),
+    createWinnerAggregatesMarkdown(left),
+    createDeliveryHeatmapCsv(left),
+    createOfferCsv(left),
+    createVariantOverlapCsv(left),
+    createVariantOverlapMarkdown(left),
+    createExclusionCountsMarkdown(left, left.offers[1].id),
+    createWinningMerchantLabelMarkdown(left),
+    createWinningFulfillmentMarkdown(left),
+    createWinningRemainingCapacityMarkdown(left)
+  ];
+  for (const text of merchantSurfaces) {
+    assert.equal(String(text).includes("leftover fill merchant (organizer private)"), false);
+    assert.equal(String(text).includes("copy-leftover-fill-merchant"), false);
     assert.equal(String(text).includes("Not a merchant export"), false);
     assertOmitsPrivateBuyers(text, ["SECRET_TITLE"]);
   }

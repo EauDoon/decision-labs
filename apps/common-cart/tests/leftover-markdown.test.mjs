@@ -466,6 +466,29 @@ test("the buyer room copies leftover fill unit-count with a textarea fallback", 
   assert.match(app, /if \(key === "y" \|\| key === ";"\)/u);
 });
 
+test("the buyer room copies leftover fill merchant with a textarea fallback", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-merchant"/u);
+  assert.match(buyerPanel, /Copy leftover fill merchant \(organizer private\)/u);
+  assert.match(buyerPanel, /Leftover fill merchant copy is merchant label only/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-merchant"), false);
+  assert.equal(merchantPanel.includes("Copy leftover fill merchant"), false);
+  assert.equal(merchantPanel.includes("Leftover fill merchant copy"), false);
+  assert.match(app, /createLeftoverFillMerchantLabelMarkdown\(/u);
+  assert.match(app, /function copyLeftoverFillMerchantLabel\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.match(app, /This is not a merchant export/u);
+  assert.match(app, /Merchant label only\. This is not a merchant export/u);
+  assert.match(buyerPanel, /id="copy-leftover-fill"/u);
+  assert.match(buyerPanel, /id="copy-leftover-fill-units"/u);
+  assert.match(buyerPanel, /id="copy-uncovered-leftover-units"/u);
+  assert.match(buyerPanel, /id="copy-winning-merchant"/u);
+});
+
 test("the buyer room copies uncovered leftover unit-count with a textarea fallback", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
