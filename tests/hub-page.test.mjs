@@ -4440,3 +4440,21 @@ test('minus equals quote do not steal How copy, How jump, or first Trust copy', 
   assert.deepEqual(focused, ['how-li', 'how-it-works', 'copy-how']);
 });
 
+test('copy last How it works item control is distinct from Copy How it works and Copy first How it works item', () => {
+  assert.match(html, /id="copy-last-how"/);
+  assert.match(html, />Copy last How it works item</);
+  assert.match(html, /aria-keyshortcuts="<"/);
+  assert.match(html, /id="copy-last-how-fallback"/);
+  assert.match(html, /class="copy-last-how-fallback"/);
+  assert.match(html, /textarea id="copy-last-how-fallback"/);
+  assert.match(html, /id="copy-first-how"/);
+  assert.match(html, />Copy first How it works item</);
+  assert.match(html, /id="copy-how"/);
+  assert.match(html, />Copy How it works</);
+  assert.notEqual(html.match(/id="copy-last-how"/)?.[0], html.match(/id="copy-first-how"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-how"/)?.[0], html.match(/id="copy-how"/)?.[0]);
+  assert.match(html, /@media print[\s\S]*\.copy-last-how-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-last-how-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
