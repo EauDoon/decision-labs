@@ -61,7 +61,7 @@ test('standalone renderer refuses missing markers and external CSS resources', (
   assert.throws(() => renderStandalone({ html, css: 'body { background: url(image.png); }', model: '', app: appImport }), /URL resource/);
 });
 
-test('standalone retains 1.5.10 review tools and 1.5.11 copy controls', async () => {
+test('standalone retains 1.5.11 review tools and 1.5.12 copy controls', async () => {
   const html = await buildStandalone();
   assert.match(html, /createPartnershipReviewPacket/);
   assert.match(html, /replayPartnershipReviewPacket/);
@@ -76,14 +76,20 @@ test('standalone retains 1.5.10 review tools and 1.5.11 copy controls', async ()
   assert.match(html, /data-action="hide-within-capacity-participants"/);
   assert.match(html, /id="hide-within-capacity-participants"/);
   assert.match(html, /data-action="hide-first-breakpoint-participant"/);
+  assert.match(html, /id="hide-first-breakpoint-participant"/);
+  assert.match(html, /id="hide-first-breakpoint-participant"[^>]*aria-keyshortcuts="\|"/);
   assert.match(html, /aria-keyshortcuts="\{"/);
   assert.match(html, /id="copy-over-capacity-count"/);
   assert.match(html, /id="copy-over-capacity-count"[^>]*aria-keyshortcuts='"'/);
   assert.match(html, /id="copy-first-over-capacity-label"/);
+  assert.match(html, /id="copy-first-over-capacity-label"[^>]*aria-keyshortcuts="\}"/u);
+  assert.match(html, /id="copy-first-over-capacity-remaining"/);
   assert.match(html, /School concert split/);
   assert.match(html, /Sports carnival split/);
   assert.match(html, /Netball carnival/);
+  assert.match(html, /Swimming carnival split/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
+  assert.match(html, /hideFirstOverCapacityParticipant/);
 });
