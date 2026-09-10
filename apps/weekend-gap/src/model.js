@@ -1571,6 +1571,15 @@ export function firstClosedFxHourToMarkdown(input) {
   return "First closed FX hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not a bank calendar.";
 }
 
+/** One-line first closed bank hour label. Honest empty when none exists. Distinct from first-closed-FX copy. */
+export function firstClosedBankHourToMarkdown(input) {
+  const hour = firstClosedGanttHour(input);
+  if (hour === null) {
+    return "First closed bank hour: none. Counts of modeled hours, not a bank calendar.";
+  }
+  return "First closed bank hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not a bank calendar.";
+}
+
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
 export function arrivalCohortsToMarkdown(input) {
   const result = runSimulation(input);

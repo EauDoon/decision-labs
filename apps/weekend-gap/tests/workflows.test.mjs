@@ -785,6 +785,19 @@ test("copy hours-to-clear button uses the one-line helper with an honest empty",
   assert.doesNotMatch(ui.nodes.get("hours-to-clear-copy-fallback").value, /Hours to clear queue: \./);
 });
 
+test("copy first closed bank hour uses one-line Markdown distinct from first-closed FX", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.nodes.get("copy-first-closed-bank").click();
+  assert.equal(ui.nodes.get("first-closed-bank-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-bank-copy-fallback").value, /First closed bank hour:/);
+  assert.match(ui.nodes.get("first-closed-bank-copy-fallback").value, /Counts of modeled hours, not a bank calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-closed-bank-copy-fallback").value, /First closed FX hour:/);
+  await ui.nodes.get("copy-first-closed-fx").click();
+  assert.equal(ui.nodes.get("first-closed-fx-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-fx-copy-fallback").value, /First closed FX hour:/);
+  assert.notEqual(ui.nodes.get("first-closed-bank-copy-fallback").value, ui.nodes.get("first-closed-fx-copy-fallback").value);
+});
+
 test("keyboard h jumps to the selected Gantt hour table and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("h");

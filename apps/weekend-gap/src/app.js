@@ -35,6 +35,7 @@ import {
   fxGanttHoursToMarkdown,
   weekendFxHourCountsToMarkdown,
   firstClosedFxHourToMarkdown,
+  firstClosedBankHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   firstClosedFxGanttHour,
@@ -1449,6 +1450,9 @@ document.querySelector("#copy-weekend-fx-counts").addEventListener("click", asyn
 document.querySelector("#copy-first-closed-fx").addEventListener("click", async () => {
   await copyFirstClosedFxHourMarkdown();
 });
+document.querySelector("#copy-first-closed-bank").addEventListener("click", async () => {
+  await copyFirstClosedBankHourMarkdown();
+});
 document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
   const text = arrivalCohortsToMarkdown(scenario);
   await copyTextWithFallback(text, "#cohort-copy-fallback", "Arrival-cohort table copied as Markdown. This is a synthetic ledger, not a forecast.");
@@ -1727,6 +1731,10 @@ function jumpToFirstClosedFxCopy() {
 function copyFirstClosedFxHourMarkdown() {
   const text = firstClosedFxHourToMarkdown(scenario);
   return copyTextWithFallback(text, "#first-closed-fx-copy-fallback", "First closed FX hour copied as one-line Markdown. These are counts of modeled hours, not a bank calendar.");
+}
+function copyFirstClosedBankHourMarkdown() {
+  const text = firstClosedBankHourToMarkdown(scenario);
+  return copyTextWithFallback(text, "#first-closed-bank-copy-fallback", "First closed bank hour copied as one-line Markdown. These are counts of modeled hours, not a bank calendar.");
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
