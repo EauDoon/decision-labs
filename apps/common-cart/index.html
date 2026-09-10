@@ -72,6 +72,7 @@ SOFTWARE.
         <li><kbd>w</kbd> Focus the winner and inspector summary</li>
         <li><kbd>l</kbd> Focus leftover residual coverage</li>
         <li><kbd>p</kbd> Print an organizer leftover one-pager</li>
+        <li><kbd>v</kbd> Focus the variant overlap region</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -478,6 +479,8 @@ SOFTWARE.
             <svg id="delivery-heatmap" class="capacity-bar print-keep" viewBox="0 0 400 88" role="img" aria-labelledby="delivery-heatmap-text"></svg>
             <button id="heatmap-csv" class="print-chrome" type="button">Export heatmap CSV</button>
             <h4>Offered variant overlap</h4>
+            <div id="variant-overlap-region" tabindex="-1" aria-labelledby="variant-overlap-heading">
+            <h5 id="variant-overlap-heading" class="sr-only">Variant overlap counts</h5>
             <p id="variant-overlap-note" class="canvas-note"></p>
             <div class="table-shell compact">
               <table>
@@ -488,6 +491,7 @@ SOFTWARE.
             </div>
             <button id="overlap-csv" class="print-chrome" type="button">Copy overlap CSV</button>
             <button id="overlap-markdown" class="print-chrome" type="button">Copy overlap Markdown</button>
+            </div>
           </article>
           <article class="panel privacy-panel">
             <p class="section-number">Privacy boundary</p>

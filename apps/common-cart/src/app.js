@@ -758,6 +758,11 @@ function handleShortcut(event) {
     printLeftoverOnePager();
     return;
   }
+  if (key === "v") {
+    event.preventDefault();
+    focusVariantOverlap();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -790,6 +795,12 @@ function printLeftoverOnePager() {
   const cleanup = () => document.body.classList.remove("print-leftover");
   window.addEventListener("afterprint", cleanup, { once: true });
   window.print();
+}
+
+function focusVariantOverlap() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  if (merchantTab) activateTab(merchantTab);
+  document.querySelector("#variant-overlap-region")?.focus();
 }
 
 function focusOffersList() {

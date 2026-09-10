@@ -106,3 +106,14 @@ test("the merchant table can copy overlap Markdown", async () => {
   assert.match(app, /createVariantOverlapMarkdown\(/u);
 });
 
+test("variant overlap region is merchant-facing counts only", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  const region = merchantPanel.slice(merchantPanel.indexOf('id="variant-overlap-region"'), merchantPanel.indexOf("Copy overlap Markdown"));
+  assert.match(merchantPanel, /id="variant-overlap-region"/u);
+  assert.match(region, /Labels, IDs, budgets, and allocations are omitted/u);
+  assert.equal(region.includes("Private label"), false);
+  assert.equal(region.includes("maxUnitPrice"), false);
+  assert.equal(region.includes("leftoverBuyerIds"), false);
+});
+
