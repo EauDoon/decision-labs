@@ -102,6 +102,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Hall split preset, capacity copy, and inspect jump in Partnership Breakpoint 1\.5\.5/);
   assert.match(html, /Festival stall, notes copy, and over-capacity jump in Partnership Breakpoint 1\.5\.6/);
   assert.match(html, /Cinema split, headroom copy, and breakpoint jump in Partnership Breakpoint 1\.5\.7/);
+  assert.match(html, /Community radio, least-headroom copy, and print jump in Partnership Breakpoint 1\.5\.8/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -132,6 +133,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Thin Saturday FX, settlement copy, and issuer jump in Weekend Gap 1\.5\.5/);
   assert.match(html, /Early Monday bank, settlement jump, and weekend Gantt hide in Weekend Gap 1\.5\.6/);
   assert.match(html, /Late FX close, settlement copy, and closed Gantt hide in Weekend Gap 1\.5\.7/);
+  assert.match(html, /Late issuer, hours-to-clear copy, and zero-queue hide in Weekend Gap 1\.5\.8/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
   assert.match(html, /Catalog cards list each workbench version next to its job/);
   assert.match(html, /not checkout, inventory, or a second live order/);
@@ -165,6 +167,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /capacity-utilization Markdown copy, the Community hall split start/);
   assert.match(readme, /first-breakpoint participant copy, the Festival stall split start/);
   assert.match(readme, /least-headroom participant copy, the Pop-up cinema split start/);
+  assert.match(readme, /least-headroom copy shortcut, the Community radio split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -185,6 +188,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /hours-to-first-settlement Markdown copy, Thin Saturday FX/);
   assert.match(readme, /first-settlement jump, Early Monday bank open/);
   assert.match(readme, /first-settlement copy shortcut, Friday late FX close/);
+  assert.match(readme, /hours-to-clear copy shortcut, Monday late issuer open/);
   assert.match(readme, /how-it-works jump, version-line copy, and skip-link focus/);
   assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(readme, /trust-item jump, first-job copy, and 404 Copy version line/);
