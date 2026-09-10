@@ -92,6 +92,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="paydayFridayBurst">Payday Friday burst (synthetic)</button>
               <button type="button" class="preset-button" data-preset="publicHolidayMonday">Public-holiday Monday (synthetic)</button>
               <button type="button" class="preset-button" data-preset="saturdayMarketBurst">Saturday market burst (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="sundayStallClose">Sunday stall close (synthetic)</button>
             </div>
           </fieldset>
 
@@ -206,6 +207,7 @@ SOFTWARE.
                 <option value="flat">Even across 72 hours</option>
                 <option value="fridayBurst">Friday burst (8x weight before midnight)</option>
                 <option value="saturdayBurst">Saturday burst (8x weight on Saturday)</option>
+                <option value="sundayBurst">Sunday burst (8x weight late Sunday)</option>
                 <option value="mondayRush">Monday rush (8x weight from midnight)</option>
               </select>
               <p>Total demand stays fixed. Timing changes when it joins the queue.</p>
@@ -311,6 +313,7 @@ SOFTWARE.
               <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
               <div><dt>Hours to first settlement</dt><dd id="first-settlement-value">Calculating</dd></div>
               <div id="hours-to-clear-line"><dt>Hours to clear queue</dt><dd id="queue-clear-value">Calculating</dd></div>
+              <div id="selected-gantt-hour-line"><dt>Selected Gantt hour</dt><dd id="selected-gantt-hour-value">Calculating</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -338,7 +341,7 @@ SOFTWARE.
             <p class="eyebrow">Scenario comparison</p>
             <h2 id="comparison-title">Hold a baseline. Test a change.</h2>
             <p>Baseline: <strong id="baseline-name"></strong>. It starts from the loaded scenario and is saved with your local workspace.</p>
-            <div class="planning-actions">
+            <div class="planning-actions" id="analysis-export-controls" tabindex="-1">
               <button id="pin-baseline" type="button">Pin current as baseline</button>
               <button id="restore-baseline" type="button">Restore baseline</button>
               <button id="analysis-export" type="button">Export analysis JSON</button>
@@ -547,7 +550,9 @@ SOFTWARE.
             <p class="eyebrow">Operating calendar</p>
             <h2 id="gantt-title" tabindex="-1">72-hour gate Gantt</h2>
             <p>Issuer, bank and payout rows show open (solid) versus closed (hatched) for each hour. Color is extra; the hatch marks closed hours. FX shows weekday depth (solid) versus weekend thinning (hatched). The solid vertical line is the timeline slider hour. The dashed marker is the first payout window. A table follows.</p>
-            <p id="gantt-payout-note"></p>
+            <div id="gantt-first-payout-marker" tabindex="-1">
+              <p id="gantt-payout-note"></p>
+            </div>
             <p id="gantt-filter-note" role="status"></p>
             <div class="planning-actions">
               <label for="gantt-density">Show Gantt rows</label>
@@ -572,23 +577,33 @@ SOFTWARE.
                 <input id="gantt-every-closed" type="checkbox">
                 Show only hours where every gate is closed
               </label>
+              <label class="checkbox-label" for="gantt-hide-weekdays">
+                <input id="gantt-hide-weekdays" type="checkbox">
+                Show only Saturday and Sunday hours
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
+              <button id="copy-remaining-reserve" type="button">Copy remaining reserve</button>
               <button id="copy-closed-hours" type="button">Copy closed hours</button>
               <button id="copy-fx-hours" type="button">Copy FX hours</button>
+              <button id="copy-weekend-fx-counts" type="button">Copy weekend FX counts</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
+            <label class="sr-only" for="remaining-reserve-copy-fallback">Remaining reserve Markdown fallback</label>
+            <textarea id="remaining-reserve-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="closed-hours-copy-fallback">Closed hours Markdown fallback</label>
             <textarea id="closed-hours-copy-fallback" rows="8" hidden readonly></textarea>
             <label class="sr-only" for="fx-hours-copy-fallback">FX hours Markdown fallback</label>
             <textarea id="fx-hours-copy-fallback" rows="8" hidden readonly></textarea>
+            <label class="sr-only" for="weekend-fx-counts-copy-fallback">Weekend FX counts Markdown fallback</label>
+            <textarea id="weekend-fx-counts-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
                 <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
-                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col" id="gantt-bank-row"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
+                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col" id="gantt-bank-row"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col" id="gantt-fx-row"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
                 <tbody id="gantt-table"></tbody>
               </table>
             </div>
@@ -665,7 +680,11 @@ SOFTWARE.
           <li><kbd>Q</kbd> Jump to the queue chart</li>
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
           <li><kbd>H</kbd> Jump to the selected Gantt hour</li>
+          <li><kbd>K</kbd> Jump to the hours-to-clear line</li>
+          <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
+          <li><kbd>A</kbd> Jump to analysis and export controls</li>
           <li><kbd>B</kbd> Jump to the Bank Gantt row</li>
+          <li><kbd>W</kbd> Jump to the FX Gantt row</li>
           <li><kbd>M</kbd> Jump to the compare Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>

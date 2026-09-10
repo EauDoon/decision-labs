@@ -39,8 +39,11 @@ import {
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
+  groupsMeetingDeclaredSupportFloor,
   overBudgetClauseIds,
+  clausesWithoutCheaperRemainingOption,
   formatGroupSupportMarkdown,
+  formatRemainingChangeBudgetMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -380,6 +383,39 @@ const presets = {
       },
     ],
   },
+  "street-stall-lighting": {
+    title: "Street stall lighting: lighting hours, glare, and pack-down",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "stallholders", name: "Stallholders", weight: 4 },
+      { id: "residents", name: "Nearby residents", weight: 3, veto: true },
+      { id: "officers", name: "Council officers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "lighting", title: "Lighting hours", options: [
+          { id: "lighting-original", original: true, label: "Keep stall lamps on until midnight", changeCost: 0, support: { stallholders: 88, residents: 30, officers: 42 } },
+          { id: "lighting-curfew", original: false, label: "Switch stall lamps off at 21:00", changeCost: 2, support: { stallholders: 54, residents: 86, officers: 78 } },
+          { id: "lighting-timer", original: false, label: "Timer lamps until last pack-down", changeCost: 3, support: { stallholders: 76, residents: 72, officers: 74 } },
+        ],
+      },
+      {
+        id: "glare", title: "Glare", options: [
+          { id: "glare-original", original: true, label: "Keep unshielded floodlights over the stalls", changeCost: 0, support: { stallholders: 82, residents: 22, officers: 46 } },
+          { id: "glare-shielded", original: false, label: "Fit shielded downward lamps on each stall", changeCost: 2, support: { stallholders: 74, residents: 80, officers: 82 } },
+          { id: "glare-string", original: false, label: "Use warm low-glare string lights along the street", changeCost: 3, support: { stallholders: 70, residents: 76, officers: 70 } },
+        ],
+      },
+      {
+        id: "packdown", title: "Pack-down lighting", options: [
+          { id: "packdown-original", original: true, label: "Pack down under the floodlights", changeCost: 0, support: { stallholders: 84, residents: 28, officers: 40 } },
+          { id: "packdown-headlamps", original: false, label: "Pack down with headlamps only", changeCost: 2, support: { stallholders: 48, residents: 84, officers: 72 } },
+          { id: "packdown-bay", original: false, label: "Pack in a lit loading bay off the street", changeCost: 3, support: { stallholders: 78, residents: 76, officers: 84 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -394,7 +430,9 @@ let vetoGroupsOnly = false;
 let lockedClausesOnly = false;
 let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
+let hideGroupsAtFloor = false;
 let overBudgetClausesOnly = false;
+let noCheaperRemainingClausesOnly = false;
 let printRedacted = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
@@ -419,8 +457,8 @@ function renderPrintKicker() {
   const kicker = $(".facilitator-pack-kicker");
   if (!kicker) return;
   kicker.textContent = printRedacted
-    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This is a decision aid, not a recorded vote."
-    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, and recommended package option labels on the worksheet. This is a decision aid, not a recorded vote.";
+    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels and remaining change-budget stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. This is a decision aid, not a recorded vote."
+    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, and remaining change-budget on the worksheet. This leftover is a draft accounting line, not a legal appropriation. This is a decision aid, not a recorded vote.";
 }
 
 function renderCopyFallbacks(result) {
@@ -444,6 +482,11 @@ function renderCopyFallbacks(result) {
     const listed = formatGroupSupportMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     supportBox.value = listed.status === "ok" ? listed.text : listed.status === "unavailable" ? listed.text : "";
   }
+  const remainingBox = $("#remaining-budget-fallback");
+  if (remainingBox) {
+    const remaining = formatRemainingChangeBudgetMarkdown(state.proposal, result ?? currentResult());
+    remainingBox.value = remaining.status === "ok" || remaining.status === "unavailable" ? remaining.text : "";
+  }
 }
 
 function firstProposalError(proposal) {
@@ -461,6 +504,8 @@ function loadWorkspacePrefs() {
     changedClausesOnly = parsed?.changedClausesOnly === true;
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
     overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
+    hideGroupsAtFloor = parsed?.hideGroupsAtFloor === true;
+    noCheaperRemainingClausesOnly = parsed?.noCheaperRemainingClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
   }
@@ -468,7 +513,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -671,31 +716,41 @@ function renderGroups(vetoBlocks = new Set()) {
   if (checkbox) checkbox.checked = vetoGroupsOnly;
   const belowCheckbox = $("#below-floor-groups-only");
   if (belowCheckbox) belowCheckbox.checked = belowFloorGroupsOnly;
+  const hideAtFloorCheckbox = $("#hide-groups-at-floor");
+  if (hideAtFloorCheckbox) hideAtFloorCheckbox.checked = hideGroupsAtFloor;
   const inspected = inspectedPackage(currentResult());
   const below = inspected
     ? groupsBelowSupportRequirement(state.proposal, inspected)
     : { status: "ok", groups: [] };
   const belowIds = new Set(below.status === "ok" ? below.groups.map((group) => group.id) : []);
+  const meeting = inspected
+    ? groupsMeetingDeclaredSupportFloor(state.proposal, inspected)
+    : { status: "ok", groups: [] };
+  const meetingIds = new Set(meeting.status === "ok" ? meeting.groups.map((group) => group.id) : []);
   const visible = state.proposal.groups.filter((group) => {
     if (vetoGroupsOnly && group.veto !== true) return false;
     if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
+    if (hideGroupsAtFloor && meetingIds.has(group.id)) return false;
     return true;
   });
   const status = $("#veto-groups-status");
+  const groupFiltersOn = vetoGroupsOnly || belowFloorGroupsOnly || hideGroupsAtFloor;
   if (!visible.length) {
-    const message = belowFloorGroupsOnly && vetoGroupsOnly
+    const message = hideGroupsAtFloor && !vetoGroupsOnly && !belowFloorGroupsOnly
+      ? "No groups remain after hiding groups that currently meet their support floor. Hidden groups still count in the model."
+      : belowFloorGroupsOnly && vetoGroupsOnly
       ? "No groups match the veto and below-floor filters. Hidden groups still count in the model."
       : belowFloorGroupsOnly
         ? "No groups are below their support floor or the approval threshold on the inspected package. Hidden groups still count in the model."
         : vetoGroupsOnly
           ? "No veto groups match this filter. Clear it to see every group. Hidden groups still count in the model."
           : "Add a participant group to begin.";
-    if (status) status.textContent = vetoGroupsOnly || belowFloorGroupsOnly ? message : "";
+    if (status) status.textContent = groupFiltersOn ? message : "";
     $("#groups-editor").innerHTML = `<p class="empty-state">${message}</p>`;
   } else {
-    if (status) status.textContent = vetoGroupsOnly || belowFloorGroupsOnly ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
+    if (status) status.textContent = groupFiltersOn ? `Showing ${visible.length} of ${state.proposal.groups.length} groups. Hidden groups still count in the model.` : "";
     $("#groups-editor").innerHTML = visible.map((group) => `
-    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}"${vetoBlocks.has(group.id) ? ` data-veto-block="${escapeHtml(group.id)}" tabindex="-1"` : ""}>
+    <div class="group-row${vetoBlocks.has(group.id) ? " veto-blocking" : ""}"${vetoBlocks.has(group.id) ? ` data-veto-block="${escapeHtml(group.id)}"` : ""}${belowIds.has(group.id) ? ` data-below-floor="${escapeHtml(group.id)}"` : ""}${vetoBlocks.has(group.id) || belowIds.has(group.id) ? " tabindex=\"-1\"" : ""}>
       <label><span class="visually-hidden">Group name</span><input data-field="group-name" data-group-id="${escapeHtml(group.id)}" value="${escapeHtml(group.name)}" maxlength="80" aria-label="Group name"></label>
       <label><span class="visually-hidden">Weight</span><input data-field="group-weight" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="1000000" step="any" required value="${group.weight}" aria-label="${escapeHtml(group.name)} weight"></label>
       <button class="text-button" type="button" data-action="duplicate-group" data-group-id="${escapeHtml(group.id)}" ${state.proposal.groups.length >= MAX_GROUPS ? "disabled" : ""}>Duplicate group</button>
@@ -751,20 +806,28 @@ function renderClauses() {
   if (changedCheckbox) changedCheckbox.checked = changedClausesOnly;
   const overBudgetCheckbox = $("#over-budget-clauses-only");
   if (overBudgetCheckbox) overBudgetCheckbox.checked = overBudgetClausesOnly;
+  const noCheaperCheckbox = $("#no-cheaper-remaining-clauses-only");
+  if (noCheaperCheckbox) noCheaperCheckbox.checked = noCheaperRemainingClausesOnly;
   const changed = changedClauseIds(state.proposal, currentResult());
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
   const overBudget = overBudgetClauseIds(state.proposal, currentResult());
   const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, currentResult());
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
+  const recommendedIds = new Set((currentResult().agreement?.options ?? []).map((option) => option.id));
   const visible = state.proposal.clauses.filter((clause) => {
     if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
     if (changedClausesOnly && !changedIds.has(clause.id)) return false;
     if (overBudgetClausesOnly && !overBudgetIds.has(clause.id)) return false;
+    if (noCheaperRemainingClausesOnly && !noCheaperIds.has(clause.id)) return false;
     return clauseMatchesFilter(clause, query);
   });
   const status = $("#clause-filter-status");
-  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly;
+  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
   if (!visible.length) {
-    const message = overBudgetClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly
+    const message = noCheaperRemainingClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly
+      ? "No clauses lack a remaining cheaper option than the recommendation. Hidden cards still count in the model."
+      : overBudgetClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly
       ? "No clauses have a cheapest remaining change that exceeds the remaining budget. Hidden cards still count in the model."
       : changedClausesOnly && query === "" && !lockedClausesOnly
       ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
@@ -801,7 +864,7 @@ function renderClauses() {
         <thead><tr><th scope="col">Option</th><th scope="col">Change cost</th>${groups.map((group) => `<th scope="col">${escapeHtml(group.name)}<br>support</th>`).join("")}<th scope="col"><span class="visually-hidden">Actions</span></th></tr></thead>
         <tbody>${clause.options.map((option) => `
           <tr>
-            <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" value="${escapeHtml(option.label)}" maxlength="240" aria-label="${escapeHtml(clause.title)}, ${escapeHtml(option.label)} label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}</td>
+            <td><input class="option-label-input" data-field="option-label" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}"${recommendedIds.has(option.id) ? ` data-recommended-option="${escapeHtml(option.id)}"` : ""} value="${escapeHtml(option.label)}" maxlength="240" aria-label="${escapeHtml(clause.title)}, ${escapeHtml(option.label)} label"><br>${option.original ? '<span class="original-marker">Original option</span>' : ""}${recommendedIds.has(option.id) ? '<span class="original-marker">Recommended option</span>' : ""}</td>
             <td>${option.original ? '<span class="original-marker">0</span>' : `<input data-field="option-cost" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" type="number" min="0" max="1000000000" step="any" required value="${option.changeCost}" aria-label="${escapeHtml(option.label)} change cost">`}</td>
             ${groups.map((group) => `<td><input data-field="option-support" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" data-group-id="${escapeHtml(group.id)}" type="number" min="0" max="100" step="any" required value="${Number.isFinite(option.support[group.id]) ? option.support[group.id] : ""}" aria-label="${escapeHtml(option.label)}, ${escapeHtml(group.name)} support"></td>`).join("")}
             <td><div class="option-tools">${option.original ? "" : `<button class="text-button" type="button" data-action="try-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">Try this option</button>`}<button class="text-button" type="button" data-action="toggle-clause-lock" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}">${clause.lockedOptionId === option.id ? "Unlock option" : "Lock this option"}</button><button class="text-button" type="button" data-action="duplicate-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length >= MAX_OPTIONS_PER_CLAUSE ? "disabled" : ""}>Duplicate option</button>${option.original ? "" : `<button class="text-button danger" type="button" data-action="remove-option" data-clause-id="${escapeHtml(clause.id)}" data-option-id="${escapeHtml(option.id)}" ${clause.options.length <= 3 || clause.lockedOptionId === option.id ? "disabled" : ""}>Remove</button>`}${clause.lockedOptionId === option.id ? '<span class="original-marker">Locked</span>' : ""}</div></td>
@@ -813,7 +876,8 @@ function renderClauses() {
 
 function renderBallot(vetoBlocks = blockingVetoIds(currentResult())) {
   const proposal = state.proposal;
-  const recommendedIds = new Set((currentResult().agreement?.options ?? []).map((option) => option.id));
+  const result = currentResult();
+  const recommendedIds = new Set((result.agreement?.options ?? []).map((option) => option.id));
   const blocking = proposal.groups.filter((group) => vetoBlocks.has(group.id));
   const vetoNote = blocking.length
     ? `<p class="veto-blocking-note">Veto not met on the inspected package for: ${blocking.map((group) => escapeHtml(groupDisplayName(group))).join(", ")}. This is a numerical constraint, not a legal right.</p>`
@@ -821,8 +885,12 @@ function renderBallot(vetoBlocks = blockingVetoIds(currentResult())) {
   const recommendedNote = recommendedIds.size
     ? "<p>Recommended package option labels are marked on each clause. This is a decision aid, not a recorded vote.</p>"
     : "<p>No recommended package is available to mark. This is a decision aid, not a recorded vote.</p>";
+  const remaining = formatRemainingChangeBudgetMarkdown(proposal, result);
+  const remainingLine = remaining.status === "ok" || remaining.status === "unavailable"
+    ? `<p>${escapeHtml(remaining.text.trim())}</p>`
+    : "";
   const groupList = proposal.groups.map((group) => escapeHtml(groupDisplayName(group))).join(", ");
-  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${vetoNote}${proposal.clauses.map((clause) => {
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${remainingLine}${vetoNote}${proposal.clauses.map((clause) => {
     const recommended = clause.options.find((option) => recommendedIds.has(option.id));
     const recommendedLine = recommended ? `<p>Recommended: ${escapeHtml(recommended.label)}</p>` : "";
     return `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}${recommendedLine}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${recommendedIds.has(option.id) ? " (recommended)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`;
@@ -847,6 +915,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
   $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
+  $("#copy-remaining-budget-button").disabled = result.status === "invalid";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
@@ -1465,6 +1534,12 @@ $("#over-budget-clauses-only").addEventListener("change", (event) => {
   renderClauses();
   applyClauseDensity();
 });
+$("#no-cheaper-remaining-clauses-only").addEventListener("change", (event) => {
+  noCheaperRemainingClausesOnly = event.target.checked === true;
+  persistWorkspacePrefs();
+  renderClauses();
+  applyClauseDensity();
+});
 $("#clause-density").addEventListener("change", (event) => {
   clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
   persistWorkspacePrefs();
@@ -1486,11 +1561,22 @@ function setBelowFloorGroupsOnly(next) {
   renderGroups(blockingVetoIds(currentResult()));
 }
 
+function setHideGroupsAtFloor(next) {
+  hideGroupsAtFloor = next === true;
+  const checkbox = $("#hide-groups-at-floor");
+  if (checkbox) checkbox.checked = hideGroupsAtFloor;
+  persistWorkspacePrefs();
+  renderGroups(blockingVetoIds(currentResult()));
+}
+
 $("#veto-groups-only").addEventListener("change", (event) => {
   setVetoGroupsOnly(event.target.checked === true);
 });
 $("#below-floor-groups-only").addEventListener("change", (event) => {
   setBelowFloorGroupsOnly(event.target.checked === true);
+});
+$("#hide-groups-at-floor").addEventListener("change", (event) => {
+  setHideGroupsAtFloor(event.target.checked === true);
 });
 $("#near-miss-sort").addEventListener("change", (event) => {
   nearMissSort = event.target.value === "change_cost" ? "change_cost" : "approval_gap";
@@ -1849,7 +1935,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -2050,6 +2136,20 @@ $("#copy-group-support-button").addEventListener("click", async () => {
     notifyDraft("Clipboard is blocked. Copy the group support table from the Markdown box. Mixing weights are not a legal right.");
   }
 });
+async function copyRemainingBudget() {
+  const listed = formatRemainingChangeBudgetMarkdown(state.proposal, currentResult());
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying remaining change-budget.");
+  const fallback = $("#remaining-budget-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Remaining change-budget copied as Markdown. It is a draft accounting line, not a legal appropriation.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy remaining change-budget from the Markdown box. It is not a legal appropriation.");
+  }
+}
+$("#copy-remaining-budget-button").addEventListener("click", copyRemainingBudget);
 $("#copy-packages-table-button").addEventListener("click", async () => {
   const result = currentResult();
   if (result.status === "invalid") return notifyDraft("Fix the draft before copying the package table.");
@@ -2146,6 +2246,8 @@ $("#import-file").addEventListener("change", async (event) => {
       changedClausesOnly = workspace.changedClausesOnly === true;
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
+      hideGroupsAtFloor = workspace.hideGroupsAtFloor === true;
+      noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
@@ -2312,9 +2414,14 @@ function jumpToGroups() {
     ? groupsBelowSupportRequirement(state.proposal, inspected)
     : { status: "ok", groups: [] };
   const belowIds = new Set(below.status === "ok" ? below.groups.map((group) => group.id) : []);
+  const meeting = inspected
+    ? groupsMeetingDeclaredSupportFloor(state.proposal, inspected)
+    : { status: "ok", groups: [] };
+  const meetingIds = new Set(meeting.status === "ok" ? meeting.groups.map((group) => group.id) : []);
   const visible = state.proposal.groups.filter((group) => {
     if (vetoGroupsOnly && group.veto !== true) return false;
     if (belowFloorGroupsOnly && !belowIds.has(group.id)) return false;
+    if (hideGroupsAtFloor && meetingIds.has(group.id)) return false;
     return true;
   });
   if (visible.length) {
@@ -2340,6 +2447,8 @@ function jumpToUnlocked() {
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
   const overBudget = overBudgetClauseIds(state.proposal, currentResult());
   const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, currentResult());
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
   let needsRender = false;
   if (!clauseMatchesFilter(firstUnlocked, query)) {
     clauseFilter = "";
@@ -2359,6 +2468,11 @@ function jumpToUnlocked() {
   }
   if (overBudgetClausesOnly && !overBudgetIds.has(firstUnlocked.id)) {
     overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (noCheaperRemainingClausesOnly && !noCheaperIds.has(firstUnlocked.id)) {
+    noCheaperRemainingClausesOnly = false;
     persistWorkspacePrefs();
     needsRender = true;
   }
@@ -2395,6 +2509,102 @@ function jumpToWeights() {
     return;
   }
   $("#weight-renorm")?.focus?.();
+}
+
+function firstGroupBelowSupportFloor() {
+  const inspected = inspectedPackage(currentResult());
+  if (!inspected) return null;
+  const below = groupsBelowSupportRequirement(state.proposal, inspected);
+  if (below.status !== "ok" || !below.groups.length) return null;
+  return state.proposal.groups.find((group) => group.id === below.groups[0].id) ?? null;
+}
+
+function jumpToBelowFloor() {
+  const first = firstGroupBelowSupportFloor();
+  if (!first) {
+    $("#groups-heading")?.focus?.();
+    return;
+  }
+  let needsRender = false;
+  if (vetoGroupsOnly && first.veto !== true) {
+    vetoGroupsOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (hideGroupsAtFloor) {
+    const inspected = inspectedPackage(currentResult());
+    const meeting = inspected
+      ? groupsMeetingDeclaredSupportFloor(state.proposal, inspected)
+      : { status: "ok", groups: [] };
+    const meetingIds = new Set(meeting.status === "ok" ? meeting.groups.map((group) => group.id) : []);
+    if (meetingIds.has(first.id)) {
+      hideGroupsAtFloor = false;
+      persistWorkspacePrefs();
+      needsRender = true;
+    }
+  }
+  if (needsRender) renderGroups(blockingVetoIds(currentResult()));
+  const target = $(`[data-field="group-name"][data-group-id="${first.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
+function jumpToRecommendedOption() {
+  const result = currentResult();
+  const recommended = result.agreement?.options;
+  const first = recommended?.[0];
+  if (!first) {
+    $("#clauses-heading")?.focus?.();
+    return;
+  }
+  const clause = state.proposal.clauses[0];
+  const query = clauseFilter.trim().toLowerCase();
+  const changed = changedClauseIds(state.proposal, result);
+  const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
+  const overBudget = overBudgetClauseIds(state.proposal, result);
+  const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, result);
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
+  let needsRender = false;
+  if (clause && !clauseMatchesFilter(clause, query)) {
+    clauseFilter = "";
+    const filter = $("#clause-filter");
+    if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (clause && lockedClausesOnly && clause.lockedOptionId === undefined) {
+    lockedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (clause && changedClausesOnly && !changedIds.has(clause.id)) {
+    changedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (clause && overBudgetClausesOnly && !overBudgetIds.has(clause.id)) {
+    overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (clause && noCheaperRemainingClausesOnly && !noCheaperIds.has(clause.id)) {
+    noCheaperRemainingClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) {
+    renderClauses();
+    applyClauseDensity();
+  }
+  const target = $(`[data-recommended-option="${first.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#clauses-heading")?.focus?.();
 }
 
 function findAgreement() {
@@ -2475,6 +2685,18 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "m" || event.key === "M") {
     event.preventDefault();
     $("#budget-remaining")?.focus?.();
+  } else if (event.key === "d" || event.key === "D") {
+    event.preventDefault();
+    jumpToBelowFloor();
+  } else if (event.key === "o" || event.key === "O") {
+    event.preventDefault();
+    jumpToRecommendedOption();
+  } else if (event.key === "j" || event.key === "J") {
+    event.preventDefault();
+    copyRemainingBudget();
+  } else if (event.key === "x" || event.key === "X") {
+    event.preventDefault();
+    $("#export-button")?.focus?.();
   }
 });
 

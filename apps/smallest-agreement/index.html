@@ -51,6 +51,7 @@ SOFTWARE.
             <option value="sports-fixture-night">Sports Fixture Night</option>
             <option value="market-stall-hours">Market stall hours</option>
             <option value="shared-bike-shed">Shared bike shed</option>
+            <option value="street-stall-lighting">Street stall lighting</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -73,6 +74,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="brief-button">Export brief</button>
         <button class="button button-secondary" type="button" id="copy-package-button">Copy recommended package</button>
         <button class="button button-secondary" type="button" id="copy-group-support-button">Copy group support</button>
+        <button class="button button-secondary" type="button" id="copy-remaining-budget-button">Copy remaining budget</button>
         <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
@@ -137,6 +139,8 @@ SOFTWARE.
           <p id="veto-groups-filter-note" class="field-note">The filter hides group cards. Every group still participates in search and export. A veto is a numerical constraint, not a legal right.</p>
           <label class="below-floor-groups-filter" for="below-floor-groups-only"><input id="below-floor-groups-only" type="checkbox"> Show groups below their support floor</label>
           <p id="below-floor-groups-filter-note" class="field-note">Shows groups whose average on the inspected package is below their support floor, or the approval threshold when no floor is set. Hidden groups still count in the model. Solver counts stay the same.</p>
+          <label class="hide-groups-at-floor-filter" for="hide-groups-at-floor"><input id="hide-groups-at-floor" type="checkbox"> Hide groups currently meeting their support floor</label>
+          <p id="hide-groups-at-floor-filter-note" class="field-note">Hides groups whose average on the inspected package meets a declared support floor. Groups without a floor stay visible. Hidden groups still count in the model. The solver is unchanged.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
           <textarea id="groups-paste" rows="8" spellcheck="false" aria-describedby="groups-paste-note"></textarea>
@@ -174,13 +178,15 @@ SOFTWARE.
           <p id="changed-clauses-filter-note" class="field-note">Shows clause cards whose original option is not the recommended option. Hidden cards still count in the model. The solver is unchanged.</p>
           <label class="over-budget-clauses-filter" for="over-budget-clauses-only"><input id="over-budget-clauses-only" type="checkbox"> Show clauses whose cheapest remaining change exceeds remaining budget</label>
           <p id="over-budget-clauses-filter-note" class="field-note">Shows clause cards whose cheapest remaining change costs more than leftover budget. When the budget is exhausted, every clause card is shown. Hidden cards still count in the model. The solver is unchanged.</p>
+          <label class="no-cheaper-remaining-clauses-filter" for="no-cheaper-remaining-clauses-only"><input id="no-cheaper-remaining-clauses-only" type="checkbox"> Show clauses with no remaining cheaper option than the recommendation</label>
+          <p id="no-cheaper-remaining-clauses-filter-note" class="field-note">Shows clause cards whose other options all cost at least as much as the recommended option. Hidden cards still count in the model. The solver is unchanged. This is not a recorded vote.</p>
           <label class="clause-density-label" for="clause-density">Clause card density
             <select id="clause-density">
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
           </label>
-          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that match the original when Show clauses that differ from the recommendation is on, or whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on. When the budget is exhausted, that last filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that match the original when Show clauses that differ from the recommendation is on, whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on, or that still have a cheaper remaining option than the recommendation when that filter is on. When the budget is exhausted, the leftover-budget filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
           <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
@@ -194,7 +200,7 @@ SOFTWARE.
             <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading" tabindex="-1">The smallest agreement</h2></div>
             <p id="search-meta" class="search-meta"></p>
           </div>
-          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, and recommended package option labels on the worksheet. This is a decision aid, not a recorded vote.</p>
+          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, and remaining change-budget on the worksheet. This leftover is a draft accounting line, not a legal appropriation. This is a decision aid, not a recorded vote.</p>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
           <section class="result-card" aria-labelledby="side-by-side-heading">
@@ -207,6 +213,9 @@ SOFTWARE.
             <label class="group-support-fallback-label" for="group-support-fallback">Group support Markdown</label>
             <textarea id="group-support-fallback" readonly rows="8" spellcheck="false" aria-describedby="group-support-fallback-note"></textarea>
             <p id="group-support-fallback-note" class="field-note">The table lists group name, mixing weight, and average support on the inspected package. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <label class="remaining-budget-fallback-label" for="remaining-budget-fallback">Remaining change-budget Markdown</label>
+            <textarea id="remaining-budget-fallback" readonly rows="3" spellcheck="false" aria-describedby="remaining-budget-fallback-note"></textarea>
+            <p id="remaining-budget-fallback-note" class="field-note">One line of leftover change-budget. It is a draft accounting line, not a legal appropriation. If the clipboard is blocked, copy from this box.</p>
             <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
             <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
             <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
@@ -360,6 +369,10 @@ SOFTWARE.
           <li><kbd>a</kbd> Focus Add clause</li>
           <li><kbd>w</kbd> Jump to group weights or renormalize controls</li>
           <li><kbd>m</kbd> Jump to remaining change-budget or cost margin</li>
+          <li><kbd>d</kbd> Jump to the first group below its support floor, or the groups heading</li>
+          <li><kbd>o</kbd> Jump to the first recommended-package option card, or the clauses heading</li>
+          <li><kbd>j</kbd> Copy remaining change-budget as one-line Markdown</li>
+          <li><kbd>x</kbd> Focus the JSON export control</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>

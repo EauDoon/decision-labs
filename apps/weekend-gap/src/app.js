@@ -27,13 +27,16 @@ import {
   buildGateGanttSvg,
   ganttToCSV,
   selectedGanttHourToMarkdown,
+  remainingReserveAtHourToMarkdown,
   peakQueueHourToMarkdown,
   closedGanttHoursToMarkdown,
   fxGanttHoursToMarkdown,
+  weekendFxHourCountsToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   ganttHourClosedOnAnyGate,
   ganttHourClosedOnEveryGate,
+  ganttHourIsWeekend,
   GANTT_GATE_FILTERS,
   gateDisplayLabels,
   GENERIC_GATE_LABELS,
@@ -60,7 +63,7 @@ import {
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, hideWeekdayGanttHours: false };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -87,6 +90,7 @@ const elements = {
   backlogHours: document.querySelector("#backlog-hours-value"),
   firstSettlement: document.querySelector("#first-settlement-value"),
   queueClear: document.querySelector("#queue-clear-value"),
+  selectedGanttHour: document.querySelector("#selected-gantt-hour-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -280,6 +284,9 @@ function render() {
     ? "No settlement in 72h"
     : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
   elements.queueClear.textContent = formatHoursToClearQueue(hoursToClearQueue, peakQueuedAud);
+  if (elements.selectedGanttHour) {
+    elements.selectedGanttHour.textContent = `${point.timeLabel} (hour ${selectedHour})`;
+  }
   const jumpFirst = document.querySelector("#jump-first-settlement");
   if (jumpFirst) {
     jumpFirst.disabled = hoursToFirstSettlement === null;
@@ -396,18 +403,20 @@ function renderTable() {
 function renderGantt() {
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
   const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
+  const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, gateFilter });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, gateFilter });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([selectedHour]);
-  if (!closedOnly && !everyClosedOnly) {
+  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours) {
     rowIndexes.add(0);
     rowIndexes.add(SIMULATION_HOURS);
   }
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
     const point = schedule.hours[hour];
+    if (hideWeekdayHours && !ganttHourIsWeekend(point) && hour !== selectedHour) continue;
     if (everyClosedOnly) {
       if (ganttHourClosedOnEveryGate(point)) rowIndexes.add(hour);
       continue;
@@ -457,6 +466,9 @@ function renderGantt() {
     if (gateFilter !== "all") {
       const gateName = GENERIC_GATE_LABELS[gateFilter] || gateFilter;
       filterNote.textContent += ` Chart shows ${gateName} only. Simulation is unchanged.`;
+    }
+    if (hideWeekdayHours) {
+      filterNote.textContent += ` Showing Saturday and Sunday hours only. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
     }
   }
 }
@@ -1200,7 +1212,8 @@ function currentWorkspace() {
     ganttClosedOnly: Boolean(document.querySelector("#gantt-closed-only")?.checked),
     ganttGateFilter: GANTT_GATE_FILTERS.includes(document.querySelector("#gantt-gate-filter")?.value) ? document.querySelector("#gantt-gate-filter").value : "all",
     queueBacklogOnly: Boolean(document.querySelector("#queue-backlog-only")?.checked),
-    ganttEveryGateClosed: Boolean(document.querySelector("#gantt-every-closed")?.checked) });
+    ganttEveryGateClosed: Boolean(document.querySelector("#gantt-every-closed")?.checked),
+    hideWeekdayGanttHours: Boolean(document.querySelector("#gantt-hide-weekdays")?.checked) });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -1210,7 +1223,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, ganttHourIndex: selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -1222,7 +1235,7 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true };
   baselineScenario={...saved.baseline}; selectedHour=saved.ganttHourIndex ?? saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
@@ -1233,6 +1246,7 @@ function applyWorkspace(saved) {
   document.querySelector("#gantt-gate-filter").value = GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all";
   document.querySelector("#queue-backlog-only").checked = saved.queueBacklogOnly === true;
   document.querySelector("#gantt-every-closed").checked = saved.ganttEveryGateClosed === true;
+  document.querySelector("#gantt-hide-weekdays").checked = saved.hideWeekdayGanttHours === true;
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -1297,6 +1311,10 @@ document.querySelector("#gantt-every-closed").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
+document.querySelector("#gantt-hide-weekdays").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
 document.querySelector("#gantt-gate-filter").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
@@ -1344,6 +1362,9 @@ async function copyTextWithFallback(text, fallbackId, successMessage) {
 document.querySelector("#copy-gantt-hour").addEventListener("click", async () => {
   await copySelectedGanttHourMarkdown();
 });
+document.querySelector("#copy-remaining-reserve").addEventListener("click", async () => {
+  await copyRemainingReserveMarkdown();
+});
 document.querySelector("#copy-peak-hour").addEventListener("click", async () => {
   const text = peakQueueHourToMarkdown(scenario);
   await copyTextWithFallback(text, "#peak-hour-copy-fallback", "Peak-queue hour copied as Markdown. This is a synthetic snapshot, not a live bank or payout queue.");
@@ -1353,6 +1374,9 @@ document.querySelector("#copy-closed-hours").addEventListener("click", async () 
 });
 document.querySelector("#copy-fx-hours").addEventListener("click", async () => {
   await copyFxHoursMarkdown();
+});
+document.querySelector("#copy-weekend-fx-counts").addEventListener("click", async () => {
+  await copyWeekendFxHourCountsMarkdown();
 });
 document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
   const text = arrivalCohortsToMarkdown(scenario);
@@ -1455,11 +1479,50 @@ function jumpToSelectedGanttHour() {
   rememberChart("gantt");
   return true;
 }
+function jumpToHoursToClear() {
+  const line = document.querySelector("#hours-to-clear-line");
+  if (!line) return false;
+  line.setAttribute("tabindex", "-1");
+  line.focus();
+  line.scrollIntoView?.({ block: "start" });
+  return true;
+}
+function jumpToFirstPayoutMarker() {
+  const hour = simulation.timeline[0].nextPayoutHour;
+  if (hour === null) return jumpToGantt();
+  const marker = document.querySelector("#gantt-first-payout-marker");
+  if (!marker) return jumpToGantt();
+  marker.setAttribute("tabindex", "-1");
+  marker.focus();
+  marker.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
+function jumpToAnalysisExport() {
+  const controls = document.querySelector("#analysis-export-controls");
+  if (!controls) return false;
+  controls.setAttribute("tabindex", "-1");
+  controls.focus();
+  controls.scrollIntoView?.({ block: "start" });
+  return true;
+}
 function jumpToGanttBankRow() {
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
   if (gateFilter !== "all" && gateFilter !== "bank") return jumpToGantt();
   const row = document.querySelector("#gantt-bank-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
+function jumpToGanttFxRow() {
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  if (gateFilter !== "all" && gateFilter !== "fx") return jumpToGantt();
+  const row = document.querySelector("#gantt-fx-row");
   if (!row) return jumpToGantt();
   row.setAttribute("tabindex", "-1");
   row.focus();
@@ -1490,6 +1553,10 @@ function copySelectedGanttHourMarkdown() {
   const text = selectedGanttHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
 }
+function copyRemainingReserveMarkdown() {
+  const text = remainingReserveAtHourToMarkdown(scenario, selectedHour);
+  return copyTextWithFallback(text, "#remaining-reserve-copy-fallback", "Remaining reserve and queued AUD copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
+}
 function copyClosedHoursMarkdown() {
   const text = closedGanttHoursToMarkdown(scenario);
   return copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
@@ -1497,6 +1564,10 @@ function copyClosedHoursMarkdown() {
 function copyFxHoursMarkdown() {
   const text = fxGanttHoursToMarkdown(scenario);
   return copyTextWithFallback(text, "#fx-hours-copy-fallback", "FX hours copied as Markdown. This list is a local drawing, not a bank feed.");
+}
+function copyWeekendFxHourCountsMarkdown() {
+  const text = weekendFxHourCountsToMarkdown(scenario);
+  return copyTextWithFallback(text, "#weekend-fx-counts-copy-fallback", "Weekend FX hour counts copied as Markdown. These are counts of modeled hours, not a bank calendar.");
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
@@ -1518,14 +1589,15 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   applyGateDisplayLabels(true);
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
   const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
+  const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, gateFilter, redacted: true });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, gateFilter, redacted: true });
   window.print();
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue and the selected Gantt hour stay on the printed brief. The saved scenario was not changed.";
 });
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();
@@ -1678,9 +1750,29 @@ document.addEventListener("keydown", (event) => {
     jumpToSelectedGanttHour();
     return;
   }
+  if (event.key === "k" || event.key === "K") {
+    event.preventDefault();
+    jumpToHoursToClear();
+    return;
+  }
+  if (event.key === "n" || event.key === "N") {
+    event.preventDefault();
+    jumpToFirstPayoutMarker();
+    return;
+  }
+  if (event.key === "a" || event.key === "A") {
+    event.preventDefault();
+    jumpToAnalysisExport();
+    return;
+  }
   if (event.key === "b" || event.key === "B") {
     event.preventDefault();
     jumpToGanttBankRow();
+    return;
+  }
+  if (event.key === "w" || event.key === "W") {
+    event.preventDefault();
+    jumpToGanttFxRow();
     return;
   }
   if (event.key === "m" || event.key === "M") {

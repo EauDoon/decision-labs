@@ -485,6 +485,30 @@ test('licensor and distributor preset is a distinct two-party IP starting point'
   assert.ok(result.participants.every((item) => item.viable));
 });
 
+test('podcast host and network preset is a distinct two-party starting point', () => {
+  const podcast = clonePreset('podcastHostNetwork');
+  assert.equal(PRESETS.podcastHostNetwork.name, 'Podcast host and network');
+  assert.equal(podcast.participants.length, 2);
+  assert.deepEqual(podcast.participants.map((item) => item.id), ['podcast-host', 'podcast-network']);
+  assert.deepEqual(podcast.participants.map((item) => item.name), ['Podcast host', 'Podcast network']);
+  assert.deepEqual(podcast.participants.map((item) => item.revenueShare), [0.58, 0.42]);
+  assert.equal(podcast.deal.monthlyVolume, 3500);
+  assert.equal(podcast.deal.feePerTransaction, 14);
+  assert.equal(podcast.participants[0].capacity, null);
+  assert.notEqual(podcast.participants[0].variableCostPerTransaction, podcast.participants[1].variableCostPerTransaction);
+  assert.notEqual(podcast.participants[0].fixedMonthlyCost, podcast.participants[1].fixedMonthlyCost);
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture'];
+  for (const key of others) {
+    const other = clonePreset(key);
+    assert.notEqual(podcast.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
+    assert.notEqual(JSON.stringify(podcast.deal), JSON.stringify(other.deal), key);
+  }
+  const result = calculatePartnership(podcast);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.viable));
+  assert.equal(new Set(result.participants.map((item) => item.id)).size, 2);
+});
+
 test('creator take-rate and three-party JV presets calculate interesting first breakpoints', () => {
   const creator = calculatePartnership(clonePreset('creatorTakeRate'));
   assert.equal(creator.participants.length, 2);
@@ -595,6 +619,7 @@ test('optional hideAllHoldLedger is a boolean and older files omit it', () => {
   both.collapseAllHoldCases = true;
   both.hideHoldingParticipants = true;
   both.hideAllHoldLedger = true;
+  both.hideZeroShareParticipants = true;
   assert.equal(validateConfiguration(both).valid, true);
 });
 
@@ -627,6 +652,40 @@ test('optional hideHoldingParticipants is a boolean and older files omit it', ()
   const both = clonePreset('balanced');
   both.collapseAllHoldCases = true;
   both.hideHoldingParticipants = true;
+  both.hideZeroShareParticipants = true;
+  assert.equal(validateConfiguration(both).valid, true);
+});
+
+test('optional hideZeroShareParticipants is a boolean and older files omit it', () => {
+  const omitted = clonePreset('balanced');
+  assert.equal(Object.hasOwn(omitted, 'hideZeroShareParticipants'), false);
+  assert.equal(validateConfiguration(omitted).valid, true);
+
+  const hidden = clonePreset('balanced');
+  hidden.hideZeroShareParticipants = true;
+  assert.equal(validateConfiguration(hidden).valid, true);
+
+  const shown = clonePreset('balanced');
+  shown.hideZeroShareParticipants = false;
+  assert.equal(validateConfiguration(shown).valid, true);
+
+  for (const value of ['true', 1, 0, null, 'yes', {}]) {
+    const config = clonePreset('balanced');
+    config.hideZeroShareParticipants = value;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(value));
+    assert.match(validation.errors.join(' '), /boolean/);
+  }
+
+  const extra = clonePreset('balanced');
+  extra.hideZeroShareParticipants = true;
+  extra.unexpected = true;
+  assert.match(validateConfiguration(extra).errors.join(' '), /unknown field: unexpected/);
+
+  const both = clonePreset('balanced');
+  both.hideHoldingParticipants = true;
+  both.hideAllHoldLedger = true;
+  both.hideZeroShareParticipants = true;
   assert.equal(validateConfiguration(both).valid, true);
 });
 

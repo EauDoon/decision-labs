@@ -57,6 +57,9 @@ async function workbench(protocol = 'file:', options = {}) {
         'viability-copy-text', 'viability-heading', 'utilization-copy-text', 'participant-ledger-title',
         'tornado-title', 'tornado-copy-text', 'deal-inputs-title', 'operating-copy-text',
         'compound-title', 'inspect-cases-title', 'split-copy-text',
+        'least-headroom-participant', 'participant-inputs-title',
+        'field-deal-notes', 'viability-card', 'allocation-copy-text',
+        'breakpoint-snapshot-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -670,7 +673,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, and least headroom', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, and allocation balance', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -682,10 +685,12 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, and least headroo
   assert.match(app.markup(), /class="print-only print-keep"/);
   assert.match(app.markup(), /<h2>Deal notes<\/h2>/);
   assert.match(app.markup(), /<h2>Least headroom<\/h2><p>Liquidity Partner has the least volume headroom to its minimum acceptable profit limit\.<\/p>/);
+  assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   const before = JSON.stringify(app.saved());
   app.click('print-report');
   assert.equal(app.prints(), 1);
   assert.equal(JSON.stringify(app.saved()), before);
+  assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
   assert.match(html, /\.panel:not\(\.print-keep\)/);
@@ -704,6 +709,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /class="participant-redacted-name">Participant 1</);
   assert.doesNotMatch(snapshot, /class="participant-live-name">Platform</);
   assert.match(snapshot, /Participant 3 has the least volume headroom to its minimum acceptable profit limit/);
+  assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
   assert.match(html, /\.print-redacted \.participant-live-name/);
   assert.match(html, /\.print-redacted \.participant-redacted-name/);
@@ -1072,6 +1078,25 @@ test('three-party joint venture preset loads from the starting-point buttons', a
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
 
+test('podcast host and network preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="podcastHostNetwork"/);
+  assert.match(app.markup(), /Podcast host and network/);
+  app.click('preset', { preset: 'podcastHostNetwork' });
+  assert.equal(app.saved().participants.length, 2);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['podcast-host', 'podcast-network']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Podcast host', 'Podcast network']);
+  assert.equal(app.saved().deal.feePerTransaction, 14);
+  assert.equal(app.saved().deal.monthlyVolume, 3500);
+  assert.equal(app.saved().participants[0].capacity, null);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.match(app.notice(), /Podcast host and network loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'production-studio,distribution-studio');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'ip-licensor,territory-distributor');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+});
+
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
   const app = await workbench();
   assert.match(app.markup(), /data-preset="talentAgentPlatform"/);
@@ -1169,6 +1194,10 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>t<\/kbd> Jump to the tornado chart heading/);
   assert.match(app.markup(), /<kbd>d<\/kbd> Jump to the Shared deal heading/);
   assert.match(app.markup(), /<kbd>k<\/kbd> Jump to the Compound stress heading/);
+  assert.match(app.markup(), /<kbd>h<\/kbd> Jump to the least-headroom participant card, or the Participants heading if none/);
+  assert.match(app.markup(), /<kbd>a<\/kbd> Jump to Add participant/);
+  assert.match(app.markup(), /<kbd>m<\/kbd> Jump to deal notes/);
+  assert.match(app.markup(), /<kbd>v<\/kbd> Jump to the viability card/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1197,6 +1226,25 @@ test('keyboard g jumps to the results nav unless a field is focused', async () =
   app.keydown('g');
   assert.ok(app.focused().includes('#results-start'));
   assert.doesNotMatch(app.markup(), /id="results-jump"/);
+});
+
+test('keyboard a jumps to Add participant unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="add-participant"/);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const beforeCount = forms();
+  app.keydown('a');
+  assert.ok(app.focused().includes('#add-participant'));
+  assert.ok(app.focused().includes('scroll:#add-participant'));
+  assert.equal(forms(), beforeCount);
+  const before = app.focused().length;
+  app.keydown('a', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  assert.equal(forms(), beforeCount);
+  app.keydown('a', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  assert.equal(forms(), beforeCount);
 });
 
 test('keyboard n focuses Add participant and ignores focused inputs', async () => {
@@ -1313,6 +1361,24 @@ test('keyboard f jumps to the First breakpoint heading unless a field is focused
   assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
 });
 
+test('keyboard v jumps to the viability card unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="viability-card" tabindex="-1"/);
+  app.keydown('v');
+  assert.ok(app.focused().includes('#viability-card'));
+  assert.ok(app.focused().includes('scroll:#viability-card'));
+  const before = app.focused().length;
+  app.keydown('v', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('v', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('v');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="viability-card"/);
+});
+
 test('keyboard b jumps to the viability card heading unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
@@ -1368,6 +1434,20 @@ test('keyboard k jumps to Compound stress unless a field is focused', async () =
   assert.doesNotMatch(app.markup(), /id="compound-title"/);
 });
 
+test('keyboard m jumps to deal notes unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="field-deal-notes"/);
+  app.keydown('m');
+  assert.ok(app.focused().includes('#field-deal-notes'));
+  assert.ok(app.focused().includes('scroll:#field-deal-notes'));
+  const before = app.focused().length;
+  app.keydown('m', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('m', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+});
+
 test('keyboard d jumps to the Shared deal heading unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
@@ -1403,6 +1483,26 @@ test('keyboard t jumps to the tornado chart heading unless a field is focused', 
   app.keydown('t');
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="tornado-title"/);
+});
+
+test('keyboard h jumps to the least-headroom participant card unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="least-headroom-participant" tabindex="-1"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('h');
+  assert.ok(app.focused().includes('#least-headroom-participant'));
+  assert.ok(app.focused().includes('scroll:#least-headroom-participant'));
+  const before = app.focused().length;
+  app.keydown('h', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('h', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('h');
+  assert.ok(app.focused().includes('#participant-inputs-title'));
+  assert.ok(app.focused().includes('scroll:#participant-inputs-title'));
+  assert.doesNotMatch(app.markup(), /id="least-headroom-participant"/);
 });
 
 test('keyboard w jumps to the Contribution waterfall heading unless a field is focused', async () => {
@@ -1753,6 +1853,52 @@ test('copy first breakpoint uses displayed labels and a clipboard fallback', asy
   already.click('copy-first-breakpoint');
   assert.match(already.markup(), /Participant: Liquidity Partner/);
   assert.match(already.markup(), /Magnitude: Already failing/);
+});
+
+test('copy first-breakpoint snapshot is one Markdown line and not a forecast', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-first-breakpoint-snapshot"/);
+  fallback.click('copy-first-breakpoint-snapshot');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="breakpoint-snapshot-copy-text"/);
+  assert.match(fallback.markup(), /First-breakpoint snapshot: Liquidity Partner; fee decrease; 0\.0080 units \/ txn, 4\.0%\. Synthetic ranking, not a forecast\./);
+  assert.match(fallback.markup(), /id="breakpoint-snapshot-copy-title">First-breakpoint snapshot Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="tornado-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="waterfall-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="operating-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="allocation-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-breakpoint-snapshot-copy');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-snapshot-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-first-breakpoint-snapshot');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-snapshot-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the first-breakpoint snapshot/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-first-breakpoint-snapshot');
+  assert.equal(withClipboard.copied().length, 1);
+  const text = withClipboard.copied()[0];
+  assert.equal(text.split('\n').length, 1);
+  assert.match(text, /^First-breakpoint snapshot: Liquidity Partner; fee decrease; 0\.0080 units \/ txn, 4\.0%\. Synthetic ranking, not a forecast\.$/);
+  assert.doesNotMatch(text, /# Adverse-shock tornado|# Contribution waterfall|# Operating region|# Allocation balance/);
+  assert.doesNotMatch(text, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="breakpoint-snapshot-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-first-breakpoint-snapshot');
+  assert.match(denied.markup(), /id="breakpoint-snapshot-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const failing = clonePreset('balanced');
+  failing.participants[2].minimumAcceptableProfit = 10000;
+  const already = await workbench('file:', { clipboard: 'ok' });
+  already.import(failing);
+  already.click('copy-first-breakpoint-snapshot');
+  assert.match(already.copied().at(-1), /^First-breakpoint snapshot: Liquidity Partner is already failing an exit criterion\. Synthetic ranking, not a forecast\.$/);
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
@@ -2155,6 +2301,94 @@ test('hide-holding preference round-trips on saved JSON and defaults to shown', 
   assert.match(app.notice(), /unknown field: unexpected/);
 });
 
+test('hiding zero-share participants is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-zero-share-participants"/);
+  app.click('hide-zero-share-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /0 participants with zero revenue share are hidden from this roster display/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  app.click('show-zero-share-participants');
+  app.edit('participants.2.revenueShare', '0');
+  app.edit('participants.0.revenueShare', '0.5');
+  app.edit('participants.1.revenueShare', '0.5');
+  assert.equal(forms(), 3);
+  const beforeHide = holdCount();
+  assert.ok(beforeHide);
+  app.click('hide-zero-share-participants');
+  assert.equal(forms(), 2);
+  assert.match(app.markup(), /1 participant with zero revenue share is hidden from this roster display/);
+  assert.match(app.markup(), /Tested-case and model counts are unchanged/);
+  assert.doesNotMatch(app.markup(), /Participant 3: Liquidity Partner/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  assert.equal(holdCount(), beforeHide);
+  app.click('export');
+  const exported = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(exported.participants.length, 3);
+  assert.equal(exported.participants[2].revenueShare, 0);
+  assert.equal(exported.hideZeroShareParticipants, true);
+  app.click('show-zero-share-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /Liquidity Partner/);
+  assert.equal(holdCount(), beforeHide);
+});
+
+test('hide-zero-share preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  app.click('hide-zero-share-participants');
+  assert.equal(app.saved().hideZeroShareParticipants, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(forms(), 3);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideZeroShareParticipants, true);
+  assert.equal(hidden.participants.length, 3);
+  assert.equal(Object.hasOwn(hidden, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideAllHoldLedger'), false);
+  app.click('show-zero-share-participants');
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideZeroShareParticipants'), false);
+  assert.equal(forms(), 3);
+
+  const imported = clonePreset('balanced');
+  imported.hideZeroShareParticipants = true;
+  app.import(imported);
+  assert.equal(app.saved().hideZeroShareParticipants, true);
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(forms(), 3);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideZeroShareParticipants = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+  assert.equal(forms(), 3);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideZeroShareParticipants = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
 test('collapse all-hold preference round-trips on saved JSON and defaults to expanded', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
@@ -2189,6 +2423,51 @@ test('collapse all-hold preference round-trips on saved JSON and defaults to exp
   invalid.collapseAllHoldCases = 'true';
   app.import(invalid);
   assert.match(app.notice(), /boolean/);
+});
+
+test('copy allocation balance names missing or excess share and stays honest when empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-allocation-balance"/);
+  fallback.click('copy-allocation-balance');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="allocation-copy-text"/);
+  assert.match(fallback.markup(), /# Allocation balance/);
+  assert.match(fallback.markup(), /Allocated: 100\.0%\. Shares reconcile to 100%\./);
+  assert.match(fallback.markup(), /not a negotiated allocation/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-allocation-copy');
+  assert.doesNotMatch(fallback.markup(), /id="allocation-copy-text"/);
+
+  fallback.edit('participants.0.revenueShare', '0.2');
+  fallback.click('copy-allocation-balance');
+  assert.match(fallback.markup(), /Allocated: 80\.0%\./);
+  assert.match(fallback.markup(), /20\.0% remains unallocated/);
+  fallback.click('close-allocation-copy');
+  fallback.edit('participants.0.revenueShare', '0.6');
+  fallback.click('copy-allocation-balance');
+  assert.match(fallback.markup(), /Allocated: 120\.0%\./);
+  assert.match(fallback.markup(), /20\.0% is overallocated/);
+  fallback.click('close-allocation-copy');
+  fallback.edit('participants.0.revenueShare', '');
+  fallback.click('copy-allocation-balance');
+  assert.match(fallback.markup(), /Enter each revenue share to calculate the allocation balance\./);
+  assert.match(fallback.markup(), /not a negotiated allocation/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-allocation-balance');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Allocation balance/);
+  assert.match(withClipboard.copied()[0], /Allocated: 100\.0%\. Shares reconcile to 100%\./);
+  assert.match(withClipboard.copied()[0], /not a negotiated allocation/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.doesNotMatch(withClipboard.markup(), /id="allocation-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-allocation-balance');
+  assert.match(denied.markup(), /id="allocation-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('copy share URL is http-only and names clipboard failure without a network request', async () => {

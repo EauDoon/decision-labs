@@ -975,6 +975,33 @@ export function groupsBelowSupportRequirement(proposal, options) {
 }
 
 /**
+ * Groups with a declared support floor whose average meets that floor
+ * on the inspected package. Groups without minSupport are omitted.
+ * Display-only. Solver counts stay the same.
+ */
+export function groupsMeetingDeclaredSupportFloor(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const byGroup = approvalByGroup(proposal.groups, selected);
+  const groups = [];
+  proposal.groups.forEach((group, index) => {
+    if (group.minSupport === undefined) return;
+    const actual = byGroup[index].approval;
+    if (group.minSupport - actual <= EPSILON) {
+      groups.push({ id: group.id, name: group.name, required: group.minSupport, actual });
+    }
+  });
+  return { status: "ok", groups };
+}
+
+/**
  * Clause ids whose cheapest remaining change exceeds leftover change budget.
  * Remaining change is the lowest changeCost among options other than the inspected selection.
  * When leftover budget is 0 or negative, every clause is listed.
@@ -1011,6 +1038,36 @@ export function overBudgetClauseIds(proposal, result) {
     if (cheapest - remaining > EPSILON) clauseIds.push(clause.id);
   }
   return { status: "ok", clauseIds, remaining, exhausted: false };
+}
+
+/**
+ * Clause ids whose recommended option has no remaining cheaper alternative.
+ * Remaining cheaper means another option with a strictly lower changeCost.
+ * Empty when there is no recommendation. Display-only. The solver ignores the list.
+ */
+export function clausesWithoutCheaperRemainingOption(proposal, result) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const selected = result?.agreement?.options;
+  if (!Array.isArray(selected) || selected.length !== proposal.clauses.length) {
+    return { status: "ok", clauseIds: [] };
+  }
+  const clauseIds = [];
+  for (let index = 0; index < proposal.clauses.length; index += 1) {
+    const clause = proposal.clauses[index];
+    const recommended = clause.options.find((option) => option.id === selected[index]?.id);
+    if (!recommended) continue;
+    let cheaper = false;
+    for (const option of clause.options) {
+      if (option.id === recommended.id) continue;
+      if (recommended.changeCost - option.changeCost > EPSILON) {
+        cheaper = true;
+        break;
+      }
+    }
+    if (!cheaper) clauseIds.push(clause.id);
+  }
+  return { status: "ok", clauseIds };
 }
 
 /** A deterministic downside scenario, not a probability estimate or a new optimization. */
@@ -1842,6 +1899,57 @@ export function formatGroupSupportMarkdown(proposal, options) {
 }
 
 /**
+ * Leftover change-budget on the recommended package.
+ * Display-only accounting. It is not a legal appropriation.
+ */
+export function remainingChangeBudget(proposal, result = findSmallestAgreement(proposal)) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || result.status === "invalid") {
+    return { status: "invalid", errors: result?.errors ?? ["No result was available."] };
+  }
+  if (!Object.hasOwn(proposal, "maxChangeCost")) {
+    return { status: "ok", unlimited: true, exhausted: false, remaining: null, used: result.agreement?.changeCost ?? null };
+  }
+  if (!isFiniteNumber(proposal.maxChangeCost)) {
+    return { status: "invalid", errors: [`maxChangeCost must be from 0 through ${MAX_CHANGE_COST * MAX_CLAUSES}, or omitted.`] };
+  }
+  if (!result.agreement) {
+    return { status: "unavailable", unlimited: false, exhausted: false, remaining: null, used: null, budget: proposal.maxChangeCost };
+  }
+  const remaining = proposal.maxChangeCost - result.agreement.changeCost;
+  return {
+    status: "ok",
+    unlimited: false,
+    exhausted: remaining <= EPSILON,
+    remaining,
+    used: result.agreement.changeCost,
+    budget: proposal.maxChangeCost,
+  };
+}
+
+/**
+ * One-line Markdown of leftover change-budget for clipboard handoff.
+ * Honest when the budget is exhausted. Not a legal appropriation.
+ * Distinct from recommended-package copy and the group-support table.
+ */
+export function formatRemainingChangeBudgetMarkdown(proposal, result = findSmallestAgreement(proposal)) {
+  const listed = remainingChangeBudget(proposal, result);
+  if (listed.status === "invalid") return listed;
+  const disclaimer = "This leftover is a draft accounting line, not a legal appropriation.";
+  if (listed.status === "unavailable") {
+    return { status: "unavailable", text: `No recommended package is available, so leftover change-budget cannot be copied. ${disclaimer}\n` };
+  }
+  if (listed.unlimited) {
+    return { status: "ok", text: `No change-budget is set, so leftover change-budget is unlimited. ${disclaimer}\n` };
+  }
+  if (listed.exhausted) {
+    return { status: "ok", text: `Remaining change-budget is exhausted (${listed.remaining.toFixed(1)} leftover). ${disclaimer}\n` };
+  }
+  return { status: "ok", text: `Remaining change-budget: ${listed.remaining.toFixed(1)}. ${disclaimer}\n` };
+}
+
+/**
  * Compact formula-safe CSV of recommended versus original option labels and cost delta.
  * Unavailable when there is no recommended package.
  */
@@ -1991,6 +2099,8 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "changedClausesOnly",
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
+  "hideGroupsAtFloor",
+  "noCheaperRemainingClausesOnly",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2000,6 +2110,8 @@ const WORKSPACE_PREF_KEYS = new Set([
   "changedClausesOnly",
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
+  "hideGroupsAtFloor",
+  "noCheaperRemainingClausesOnly",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2041,6 +2153,10 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
   const overBudgetClausesOnly = readWorkspaceBoolean(prefs, "overBudgetClausesOnly");
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
+  const hideGroupsAtFloor = readWorkspaceBoolean(prefs, "hideGroupsAtFloor");
+  if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
+  const noCheaperRemainingClausesOnly = readWorkspaceBoolean(prefs, "noCheaperRemainingClausesOnly");
+  if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2049,6 +2165,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     changedClausesOnly: changedClausesOnly.value,
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
+    hideGroupsAtFloor: hideGroupsAtFloor.value,
+    noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2058,6 +2176,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       changedClausesOnly: changedClausesOnly.value,
       belowFloorGroupsOnly: belowFloorGroupsOnly.value,
       overBudgetClausesOnly: overBudgetClausesOnly.value,
+      hideGroupsAtFloor: hideGroupsAtFloor.value,
+      noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2080,6 +2200,8 @@ export function parseWorkspaceJson(text) {
       changedClausesOnly: null,
       belowFloorGroupsOnly: null,
       overBudgetClausesOnly: null,
+      hideGroupsAtFloor: null,
+      noCheaperRemainingClausesOnly: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2106,6 +2228,10 @@ export function parseWorkspaceJson(text) {
   if (belowFloorGroupsOnly.error) return { status: "invalid", errors: [belowFloorGroupsOnly.error] };
   const overBudgetClausesOnly = readWorkspaceBoolean(raw, "overBudgetClausesOnly");
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
+  const hideGroupsAtFloor = readWorkspaceBoolean(raw, "hideGroupsAtFloor");
+  if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
+  const noCheaperRemainingClausesOnly = readWorkspaceBoolean(raw, "noCheaperRemainingClausesOnly");
+  if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2116,6 +2242,8 @@ export function parseWorkspaceJson(text) {
     changedClausesOnly: changedClausesOnly.value,
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
+    hideGroupsAtFloor: hideGroupsAtFloor.value,
+    noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
   };
 }
 

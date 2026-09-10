@@ -442,6 +442,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
               <button type="button" class="preset-button" data-preset="paydayFridayBurst">Payday Friday burst (synthetic)</button>
               <button type="button" class="preset-button" data-preset="publicHolidayMonday">Public-holiday Monday (synthetic)</button>
               <button type="button" class="preset-button" data-preset="saturdayMarketBurst">Saturday market burst (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="sundayStallClose">Sunday stall close (synthetic)</button>
             </div>
           </fieldset>
 
@@ -556,6 +557,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
                 <option value="flat">Even across 72 hours</option>
                 <option value="fridayBurst">Friday burst (8x weight before midnight)</option>
                 <option value="saturdayBurst">Saturday burst (8x weight on Saturday)</option>
+                <option value="sundayBurst">Sunday burst (8x weight late Sunday)</option>
                 <option value="mondayRush">Monday rush (8x weight from midnight)</option>
               </select>
               <p>Total demand stays fixed. Timing changes when it joins the queue.</p>
@@ -661,6 +663,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
               <div><dt>Intervals ending with backlog</dt><dd id="backlog-hours-value">0 of 72</dd></div>
               <div><dt>Hours to first settlement</dt><dd id="first-settlement-value">Calculating</dd></div>
               <div id="hours-to-clear-line"><dt>Hours to clear queue</dt><dd id="queue-clear-value">Calculating</dd></div>
+              <div id="selected-gantt-hour-line"><dt>Selected Gantt hour</dt><dd id="selected-gantt-hour-value">Calculating</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -688,7 +691,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
             <p class="eyebrow">Scenario comparison</p>
             <h2 id="comparison-title">Hold a baseline. Test a change.</h2>
             <p>Baseline: <strong id="baseline-name"></strong>. It starts from the loaded scenario and is saved with your local workspace.</p>
-            <div class="planning-actions">
+            <div class="planning-actions" id="analysis-export-controls" tabindex="-1">
               <button id="pin-baseline" type="button">Pin current as baseline</button>
               <button id="restore-baseline" type="button">Restore baseline</button>
               <button id="analysis-export" type="button">Export analysis JSON</button>
@@ -897,7 +900,9 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
             <p class="eyebrow">Operating calendar</p>
             <h2 id="gantt-title" tabindex="-1">72-hour gate Gantt</h2>
             <p>Issuer, bank and payout rows show open (solid) versus closed (hatched) for each hour. Color is extra; the hatch marks closed hours. FX shows weekday depth (solid) versus weekend thinning (hatched). The solid vertical line is the timeline slider hour. The dashed marker is the first payout window. A table follows.</p>
-            <p id="gantt-payout-note"></p>
+            <div id="gantt-first-payout-marker" tabindex="-1">
+              <p id="gantt-payout-note"></p>
+            </div>
             <p id="gantt-filter-note" role="status"></p>
             <div class="planning-actions">
               <label for="gantt-density">Show Gantt rows</label>
@@ -922,23 +927,33 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
                 <input id="gantt-every-closed" type="checkbox">
                 Show only hours where every gate is closed
               </label>
+              <label class="checkbox-label" for="gantt-hide-weekdays">
+                <input id="gantt-hide-weekdays" type="checkbox">
+                Show only Saturday and Sunday hours
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
+              <button id="copy-remaining-reserve" type="button">Copy remaining reserve</button>
               <button id="copy-closed-hours" type="button">Copy closed hours</button>
               <button id="copy-fx-hours" type="button">Copy FX hours</button>
+              <button id="copy-weekend-fx-counts" type="button">Copy weekend FX counts</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
+            <label class="sr-only" for="remaining-reserve-copy-fallback">Remaining reserve Markdown fallback</label>
+            <textarea id="remaining-reserve-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="closed-hours-copy-fallback">Closed hours Markdown fallback</label>
             <textarea id="closed-hours-copy-fallback" rows="8" hidden readonly></textarea>
             <label class="sr-only" for="fx-hours-copy-fallback">FX hours Markdown fallback</label>
             <textarea id="fx-hours-copy-fallback" rows="8" hidden readonly></textarea>
+            <label class="sr-only" for="weekend-fx-counts-copy-fallback">Weekend FX counts Markdown fallback</label>
+            <textarea id="weekend-fx-counts-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
                 <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
-                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col" id="gantt-bank-row"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
+                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col" id="gantt-bank-row"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col" id="gantt-fx-row"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
                 <tbody id="gantt-table"></tbody>
               </table>
             </div>
@@ -1015,7 +1030,11 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
           <li><kbd>Q</kbd> Jump to the queue chart</li>
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
           <li><kbd>H</kbd> Jump to the selected Gantt hour</li>
+          <li><kbd>K</kbd> Jump to the hours-to-clear line</li>
+          <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
+          <li><kbd>A</kbd> Jump to analysis and export controls</li>
           <li><kbd>B</kbd> Jump to the Bank Gantt row</li>
+          <li><kbd>W</kbd> Jump to the FX Gantt row</li>
           <li><kbd>M</kbd> Jump to the compare Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>
@@ -1155,6 +1174,15 @@ const PRESETS = Object.freeze({
     reserveCashAud: 5900000,
     redemptionDemandAud: 3600000,
     weekendFxMultiplier: 3.1
+  }),
+  sundayStallClose: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Sunday stall close (synthetic)",
+    demandProfile: "sundayBurst",
+    payoutOpenEndHour: 16,
+    reserveCashAud: 5750000,
+    redemptionDemandAud: 3400000,
+    weekendFxMultiplier: 2.9
   })
 });
 
@@ -1164,7 +1192,7 @@ const FIELD_RULES = Object.freeze({
   bankLabel: { type: "text", maxLength: 40 },
   payoutLabel: { type: "text", maxLength: 40 },
   fxLabel: { type: "text", maxLength: 40 },
-  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush", "saturdayBurst"] },
+  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush", "saturdayBurst", "sundayBurst"] },
   nominalLiquidityAud: { min: 10000, max: 5000000000 },
   reserveCashAud: { min: 0, max: 5000000000 },
   issuerThroughputAudPerHour: { min: 0, max: 1000000000 },
@@ -1331,10 +1359,11 @@ function getOperationalStatus(scenarioInput, hourOffset) {
 function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS, profile = "flat") {
   const total = Math.max(0, finiteNumber(totalDemandAud, 0));
   if (!Number.isInteger(hours) || hours < 1 || hours > 720) throw new RangeError("Demand schedule requires 1 to 720 whole hours.");
-  if (!["flat", "fridayBurst", "mondayRush", "saturdayBurst"].includes(profile)) throw new RangeError("Unknown demand profile.");
+  if (!["flat", "fridayBurst", "mondayRush", "saturdayBurst", "sundayBurst"].includes(profile)) throw new RangeError("Unknown demand profile.");
   const weights = Array.from({ length: hours }, (_, hour) =>
     profile === "fridayBurst" && hour < 9 ? 8
       : profile === "saturdayBurst" && hour >= 9 && hour < 33 ? 8
+      : profile === "sundayBurst" && hour >= 48 && hour < 57 ? 8
       : profile === "mondayRush" && hour >= 57 ? 8
       : 1);
   const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
@@ -1759,7 +1788,8 @@ const WORKSPACE_KEYS = Object.freeze([
   "ganttGateFilter",
   "queueBacklogOnly",
   "ganttHourIndex",
-  "ganttEveryGateClosed"
+  "ganttEveryGateClosed",
+  "hideWeekdayGanttHours"
 ]);
 
 function assertWorkspaceKeys(raw) {
@@ -1774,7 +1804,7 @@ function assertWorkspaceKeys(raw) {
 
 /** Portable editing state; computed results are always regenerated on restore. */
 function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false } = options;
   const ganttHourIndex = options.ganttHourIndex === undefined ? selectedHour : options.ganttHourIndex;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
   if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > 72) throw new RangeError("Workspace Gantt hour index is invalid.");
@@ -1786,8 +1816,9 @@ function workspaceToJSON(current, baseline, options = {}) {
   if (!GANTT_GATE_FILTERS.includes(ganttGateFilter)) throw new RangeError("Workspace Gantt gate filter is invalid.");
   if (queueBacklogOnly !== true && queueBacklogOnly !== false) throw new RangeError("Workspace queue backlog filter is invalid.");
   if (ganttEveryGateClosed !== true && ganttEveryGateClosed !== false) throw new RangeError("Workspace Gantt every-gate-closed filter is invalid.");
+  if (hideWeekdayGanttHours !== true && hideWeekdayGanttHours !== false) throw new RangeError("Workspace Gantt weekday-hour filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours }, null, 2);
 }
 function workspaceFromJSON(text) {
   try {
@@ -1814,7 +1845,8 @@ function workspaceFromJSON(text) {
       ganttGateFilter: raw.ganttGateFilter === undefined ? "all" : raw.ganttGateFilter,
       queueBacklogOnly: raw.queueBacklogOnly === undefined ? false : raw.queueBacklogOnly,
       ganttHourIndex: restoredHour,
-      ganttEveryGateClosed: raw.ganttEveryGateClosed === undefined ? false : raw.ganttEveryGateClosed
+      ganttEveryGateClosed: raw.ganttEveryGateClosed === undefined ? false : raw.ganttEveryGateClosed,
+      hideWeekdayGanttHours: raw.hideWeekdayGanttHours === undefined ? false : raw.hideWeekdayGanttHours
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -2109,6 +2141,7 @@ const DEMAND_PROFILE_LABELS = Object.freeze({
 function stepDemandProfile(profile, direction) {
   if (direction !== "earlier" && direction !== "later") throw new RangeError("Demand timing steps must be earlier or later.");
   if (profile === "saturdayBurst") return direction === "earlier" ? "fridayBurst" : "flat";
+  if (profile === "sundayBurst") return direction === "earlier" ? "saturdayBurst" : "mondayRush";
   if (!DEMAND_PROFILES.includes(profile)) throw new RangeError("Unknown demand profile.");
   const index = DEMAND_PROFILE_STEP_ORDER.indexOf(profile);
   const nextIndex = direction === "earlier" ? Math.max(0, index - 1) : Math.min(DEMAND_PROFILE_STEP_ORDER.length - 1, index + 1);
@@ -2262,6 +2295,13 @@ function ganttHourClosedOnEveryGate(point) {
   return !point.issuerOpen && !point.bankOpen && !point.payoutOpen && !point.fxWeekday;
 }
 
+/** True when the Gantt hour falls on Saturday or Sunday. */
+function ganttHourIsWeekend(point) {
+  if (!point || typeof point !== "object" || !Number.isInteger(point.hour)) return false;
+  const { dayIndex } = dayAndHourAt(point.hour);
+  return dayIndex === 0 || dayIndex === 6;
+}
+
 const GANTT_GATE_FILTERS = Object.freeze(["all", "issuer", "bank", "payout", "fx"]);
 
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
@@ -2270,6 +2310,7 @@ function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
   const closedOnly = options.closedOnly === true;
   const everyClosedOnly = options.everyClosedOnly === true;
+  const hideWeekdayHours = options.hideWeekdayHours === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -2291,6 +2332,7 @@ function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   rows.forEach((row, rowIndex) => {
     const y = top + rowIndex * rowHeight;
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+      if (hideWeekdayHours && !ganttHourIsWeekend(schedule.hours[hour])) continue;
       if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[2](hour);
@@ -2363,6 +2405,14 @@ function selectedGanttHourToMarkdown(input, selectedHour = 0) {
     "| FX | " + ganttGateStateLabel(point.fxWeekday, true) + " |",
     ""
   ].join("\n");
+}
+
+/** One-line remaining reserve and queued AUD at the selected Gantt hour. Synthetic snapshot, not live. */
+function remainingReserveAtHourToMarkdown(input, selectedHour = 0) {
+  const result = runSimulation(input);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const point = result.timeline[hour];
+  return "Remaining reserve: " + point.reserveRemainingAud + " AUD. Queued AUD: " + point.queuedAud + ". Hour: " + point.timeLabel + " (hour " + point.hour + "). Synthetic educational snapshot, not live market data.";
 }
 
 /** Markdown for the peak-queue checkpoint. Synthetic snapshot, not a live queue. */
@@ -2445,6 +2495,20 @@ function fxGanttHoursToMarkdown(input) {
     ...rows,
     ""
   ].join("\n");
+}
+
+/** Compact count of weekend FX open versus closed hours. Counts of hours, not a bank calendar. */
+function weekendFxHourCountsToMarkdown(input) {
+  const schedule = buildGateSchedule(input);
+  let open = 0;
+  let closed = 0;
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    if (!ganttHourIsWeekend(point)) continue;
+    if (point.fxWeekday) open += 1;
+    else closed += 1;
+  }
+  return "Weekend FX hours: " + open + " open, " + closed + " closed. Counts of modeled hours, not a bank calendar.";
 }
 
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
@@ -2745,14 +2809,14 @@ function replayWeekendReviewPacket(candidate) {
   return current;
 }
 
-return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, peakQueueHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket };
+return { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, ganttHourIsWeekend, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, weekendFxHourCountsToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket };
 })());
 </script>
 <script>
-const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, peakQueueHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket } = window.__WeekendGapModel;
+const { SIMULATION_HOURS, START_DAY_INDEX, START_HOUR, DEFAULT_SCENARIO, PRESETS, finiteNumber, clamp, normaliseWindow, sanitizeScenario, dayAndHourAt, formatTime, isBusinessDay, weekendCloseOverlapNotice, mondaySaturdayHolidayNotice, isWithinHours, isOperational, getOperationalStatus, buildDemandSchedule, capacityForHour, estimateDiscountBps, nextPayoutTime, hoursToFirstSettlement, hoursToClearQueue, createSnapshot, runSimulation, compareScenarios, planReserve, analysisToJSON, scenarioToHash, scenarioFromHash, scenarioToJSON, scenarioFromJSON, compareScenarioFiles, compareThreeScenarioFiles, analyzeTimeline, runSensitivity, libraryFromJSON, CHART_VIEWS, workspaceToJSON, workspaceFromJSON, createScenarioHistory, timelineToCSV, queueToCSV, reportToHTML, reportToMarkdown, dashboardToMarkdown, hoursToClearQueueToMarkdown, dashboardToCSV, BOTTLENECK_LABELS, attributeBottlenecks, bottleneckCountsToMarkdown, WINDOW_GATES, shiftOperatingWindow, previewWindowShift, DEMAND_PROFILES, DEMAND_PROFILE_STEP_ORDER, stepDemandProfile, previewDemandProfileStep, compareDemandProfiles, GENERIC_GATE_LABELS, redactGateLabels, gateDisplayLabels, buildGateSchedule, firstClosedGanttHour, ganttHourClosedOnAnyGate, ganttHourClosedOnEveryGate, ganttHourIsWeekend, GANTT_GATE_FILTERS, buildGateGanttSvg, ganttToCSV, selectedGanttHourToMarkdown, remainingReserveAtHourToMarkdown, peakQueueHourToMarkdown, closedGanttHoursToMarkdown, fxGanttHoursToMarkdown, weekendFxHourCountsToMarkdown, arrivalCohortsToMarkdown, compareGateSchedules, buildComparisonGanttSvg, buildQueueChartSvg, buildSensitivityBarsSvg, compareSavedExperiments, WEEKEND_REVIEW_TOOLS, analyzeWeekendReview, createWeekendReviewPacket, replayWeekendReviewPacket } = window.__WeekendGapModel;
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, ganttHourIndex: 0, selectedChart: "queue", ganttClosedOnly: false, ganttGateFilter: "all", queueBacklogOnly: false, ganttEveryGateClosed: false, hideWeekdayGanttHours: false };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -2779,6 +2843,7 @@ const elements = {
   backlogHours: document.querySelector("#backlog-hours-value"),
   firstSettlement: document.querySelector("#first-settlement-value"),
   queueClear: document.querySelector("#queue-clear-value"),
+  selectedGanttHour: document.querySelector("#selected-gantt-hour-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -2972,6 +3037,9 @@ function render() {
     ? "No settlement in 72h"
     : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
   elements.queueClear.textContent = formatHoursToClearQueue(hoursToClearQueue, peakQueuedAud);
+  if (elements.selectedGanttHour) {
+    elements.selectedGanttHour.textContent = `${point.timeLabel} (hour ${selectedHour})`;
+  }
   const jumpFirst = document.querySelector("#jump-first-settlement");
   if (jumpFirst) {
     jumpFirst.disabled = hoursToFirstSettlement === null;
@@ -3088,18 +3156,20 @@ function renderTable() {
 function renderGantt() {
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
   const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
+  const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, gateFilter });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, gateFilter });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
   const rowIndexes = new Set([selectedHour]);
-  if (!closedOnly && !everyClosedOnly) {
+  if (!closedOnly && !everyClosedOnly && !hideWeekdayHours) {
     rowIndexes.add(0);
     rowIndexes.add(SIMULATION_HOURS);
   }
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
     const point = schedule.hours[hour];
+    if (hideWeekdayHours && !ganttHourIsWeekend(point) && hour !== selectedHour) continue;
     if (everyClosedOnly) {
       if (ganttHourClosedOnEveryGate(point)) rowIndexes.add(hour);
       continue;
@@ -3149,6 +3219,9 @@ function renderGantt() {
     if (gateFilter !== "all") {
       const gateName = GENERIC_GATE_LABELS[gateFilter] || gateFilter;
       filterNote.textContent += ` Chart shows ${gateName} only. Simulation is unchanged.`;
+    }
+    if (hideWeekdayHours) {
+      filterNote.textContent += ` Showing Saturday and Sunday hours only. Display only. The model still contains ${SIMULATION_HOURS} hours.`;
     }
   }
 }
@@ -3892,7 +3965,8 @@ function currentWorkspace() {
     ganttClosedOnly: Boolean(document.querySelector("#gantt-closed-only")?.checked),
     ganttGateFilter: GANTT_GATE_FILTERS.includes(document.querySelector("#gantt-gate-filter")?.value) ? document.querySelector("#gantt-gate-filter").value : "all",
     queueBacklogOnly: Boolean(document.querySelector("#queue-backlog-only")?.checked),
-    ganttEveryGateClosed: Boolean(document.querySelector("#gantt-every-closed")?.checked) });
+    ganttEveryGateClosed: Boolean(document.querySelector("#gantt-every-closed")?.checked),
+    hideWeekdayGanttHours: Boolean(document.querySelector("#gantt-hide-weekdays")?.checked) });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -3902,7 +3976,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, ganttHourIndex: selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -3914,7 +3988,7 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.ganttHourIndex ?? saved.selectedHour ?? 0, ganttHourIndex: saved.ganttHourIndex ?? saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true, ganttGateFilter: GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all", queueBacklogOnly: saved.queueBacklogOnly === true, ganttEveryGateClosed: saved.ganttEveryGateClosed === true, hideWeekdayGanttHours: saved.hideWeekdayGanttHours === true };
   baselineScenario={...saved.baseline}; selectedHour=saved.ganttHourIndex ?? saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
@@ -3925,6 +3999,7 @@ function applyWorkspace(saved) {
   document.querySelector("#gantt-gate-filter").value = GANTT_GATE_FILTERS.includes(saved.ganttGateFilter) ? saved.ganttGateFilter : "all";
   document.querySelector("#queue-backlog-only").checked = saved.queueBacklogOnly === true;
   document.querySelector("#gantt-every-closed").checked = saved.ganttEveryGateClosed === true;
+  document.querySelector("#gantt-hide-weekdays").checked = saved.hideWeekdayGanttHours === true;
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -3989,6 +4064,10 @@ document.querySelector("#gantt-every-closed").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
+document.querySelector("#gantt-hide-weekdays").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
 document.querySelector("#gantt-gate-filter").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
@@ -4036,6 +4115,9 @@ async function copyTextWithFallback(text, fallbackId, successMessage) {
 document.querySelector("#copy-gantt-hour").addEventListener("click", async () => {
   await copySelectedGanttHourMarkdown();
 });
+document.querySelector("#copy-remaining-reserve").addEventListener("click", async () => {
+  await copyRemainingReserveMarkdown();
+});
 document.querySelector("#copy-peak-hour").addEventListener("click", async () => {
   const text = peakQueueHourToMarkdown(scenario);
   await copyTextWithFallback(text, "#peak-hour-copy-fallback", "Peak-queue hour copied as Markdown. This is a synthetic snapshot, not a live bank or payout queue.");
@@ -4045,6 +4127,9 @@ document.querySelector("#copy-closed-hours").addEventListener("click", async () 
 });
 document.querySelector("#copy-fx-hours").addEventListener("click", async () => {
   await copyFxHoursMarkdown();
+});
+document.querySelector("#copy-weekend-fx-counts").addEventListener("click", async () => {
+  await copyWeekendFxHourCountsMarkdown();
 });
 document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
   const text = arrivalCohortsToMarkdown(scenario);
@@ -4147,11 +4232,50 @@ function jumpToSelectedGanttHour() {
   rememberChart("gantt");
   return true;
 }
+function jumpToHoursToClear() {
+  const line = document.querySelector("#hours-to-clear-line");
+  if (!line) return false;
+  line.setAttribute("tabindex", "-1");
+  line.focus();
+  line.scrollIntoView?.({ block: "start" });
+  return true;
+}
+function jumpToFirstPayoutMarker() {
+  const hour = simulation.timeline[0].nextPayoutHour;
+  if (hour === null) return jumpToGantt();
+  const marker = document.querySelector("#gantt-first-payout-marker");
+  if (!marker) return jumpToGantt();
+  marker.setAttribute("tabindex", "-1");
+  marker.focus();
+  marker.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
+function jumpToAnalysisExport() {
+  const controls = document.querySelector("#analysis-export-controls");
+  if (!controls) return false;
+  controls.setAttribute("tabindex", "-1");
+  controls.focus();
+  controls.scrollIntoView?.({ block: "start" });
+  return true;
+}
 function jumpToGanttBankRow() {
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
   if (gateFilter !== "all" && gateFilter !== "bank") return jumpToGantt();
   const row = document.querySelector("#gantt-bank-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
+function jumpToGanttFxRow() {
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  if (gateFilter !== "all" && gateFilter !== "fx") return jumpToGantt();
+  const row = document.querySelector("#gantt-fx-row");
   if (!row) return jumpToGantt();
   row.setAttribute("tabindex", "-1");
   row.focus();
@@ -4182,6 +4306,10 @@ function copySelectedGanttHourMarkdown() {
   const text = selectedGanttHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
 }
+function copyRemainingReserveMarkdown() {
+  const text = remainingReserveAtHourToMarkdown(scenario, selectedHour);
+  return copyTextWithFallback(text, "#remaining-reserve-copy-fallback", "Remaining reserve and queued AUD copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
+}
 function copyClosedHoursMarkdown() {
   const text = closedGanttHoursToMarkdown(scenario);
   return copyTextWithFallback(text, "#closed-hours-copy-fallback", "Closed hours copied as Markdown. This list is a local drawing, not a bank feed.");
@@ -4189,6 +4317,10 @@ function copyClosedHoursMarkdown() {
 function copyFxHoursMarkdown() {
   const text = fxGanttHoursToMarkdown(scenario);
   return copyTextWithFallback(text, "#fx-hours-copy-fallback", "FX hours copied as Markdown. This list is a local drawing, not a bank feed.");
+}
+function copyWeekendFxHourCountsMarkdown() {
+  const text = weekendFxHourCountsToMarkdown(scenario);
+  return copyTextWithFallback(text, "#weekend-fx-counts-copy-fallback", "Weekend FX hour counts copied as Markdown. These are counts of modeled hours, not a bank calendar.");
 }
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
@@ -4210,14 +4342,15 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   applyGateDisplayLabels(true);
   const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
   const everyClosedOnly = Boolean(document.querySelector("#gantt-every-closed")?.checked);
+  const hideWeekdayHours = Boolean(document.querySelector("#gantt-hide-weekdays")?.checked);
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, gateFilter, redacted: true });
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, everyClosedOnly, hideWeekdayHours, gateFilter, redacted: true });
   window.print();
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue and the selected Gantt hour stay on the printed brief. The saved scenario was not changed.";
 });
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();
@@ -4370,9 +4503,29 @@ document.addEventListener("keydown", (event) => {
     jumpToSelectedGanttHour();
     return;
   }
+  if (event.key === "k" || event.key === "K") {
+    event.preventDefault();
+    jumpToHoursToClear();
+    return;
+  }
+  if (event.key === "n" || event.key === "N") {
+    event.preventDefault();
+    jumpToFirstPayoutMarker();
+    return;
+  }
+  if (event.key === "a" || event.key === "A") {
+    event.preventDefault();
+    jumpToAnalysisExport();
+    return;
+  }
   if (event.key === "b" || event.key === "B") {
     event.preventDefault();
     jumpToGanttBankRow();
+    return;
+  }
+  if (event.key === "w" || event.key === "W") {
+    event.preventDefault();
+    jumpToGanttFxRow();
     return;
   }
   if (event.key === "m" || event.key === "M") {
