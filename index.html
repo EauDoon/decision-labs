@@ -252,7 +252,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-last-job, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -266,19 +266,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-first-job:hover, .copy-first-trust:hover, .copy-first-how:hover, .copy-last-how:hover, .copy-last-trust:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .copy-version-line:hover, .print-catalog:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-first-job:focus-visible, .copy-first-trust:focus-visible, .copy-first-how:focus-visible, .copy-last-how:focus-visible, .copy-last-trust:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .copy-version-line:focus-visible, .print-catalog:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-first-job:hover, .copy-last-job:hover, .copy-first-trust:hover, .copy-first-how:hover, .copy-last-how:hover, .copy-last-trust:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .copy-version-line:hover, .print-catalog:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-first-job:focus-visible, .copy-last-job:focus-visible, .copy-first-trust:focus-visible, .copy-first-how:focus-visible, .copy-last-how:focus-visible, .copy-last-trust:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .copy-version-line:focus-visible, .print-catalog:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-first-job-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-trust-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status, .copy-version-line-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-first-job-status, .copy-last-job-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-trust-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status, .copy-version-line-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools, .copy-first-job-tools, .copy-first-trust-tools, .copy-first-how-tools, .copy-last-how-tools, .copy-last-trust-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .copy-version-line-tools, .print-catalog-tools { margin: 12px 0 0; }
-    .copy-versions-fallback, .copy-jobs-fallback, .copy-first-job-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-trust-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback, .copy-version-line-fallback {
+    .copy-versions-tools, .copy-jobs-tools, .copy-first-job-tools, .copy-last-job-tools, .copy-first-trust-tools, .copy-first-how-tools, .copy-last-how-tools, .copy-last-trust-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .copy-version-line-tools, .print-catalog-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback, .copy-first-job-fallback, .copy-last-job-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-trust-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback, .copy-version-line-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -291,7 +291,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-first-job-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-trust-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-first-job-fallback[hidden], .copy-last-job-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-trust-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -333,7 +333,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-last-job, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -368,6 +368,7 @@
       .copy-skips-tools, .copy-skips-fallback { display: none !important; }
       .copy-version-line-tools, .copy-version-line-fallback { display: none !important; }
       .copy-first-job-tools, .copy-first-job-fallback { display: none !important; }
+      .copy-last-job-tools, .copy-last-job-fallback { display: none !important; }
       .copy-first-trust-tools, .copy-first-trust-fallback { display: none !important; }
       .copy-first-how-tools, .copy-first-how-fallback { display: none !important; }
       .copy-last-how-tools, .copy-last-how-fallback { display: none !important; }
@@ -912,6 +913,11 @@
       <span class="copy-first-job-status" id="copy-first-job-status" role="status"></span>
     </p>
     <textarea id="copy-first-job-fallback" class="copy-first-job-fallback" hidden readonly rows="2" aria-label="First workbench job as Markdown"></textarea>
+    <p class="copy-last-job-tools" id="copy-last-job-tools">
+      <button type="button" class="copy-last-job" id="copy-last-job" aria-keyshortcuts="}">Copy last job</button>
+      <span class="copy-last-job-status" id="copy-last-job-status" role="status"></span>
+    </p>
+    <textarea id="copy-last-job-fallback" class="copy-last-job-fallback" hidden readonly rows="2" aria-label="Last workbench job as Markdown"></textarea>
     <p class="copy-last-tools" id="copy-last-tools">
       <button type="button" class="copy-last" id="copy-last" aria-keyshortcuts="y">Copy last launched</button>
       <span class="copy-last-status" id="copy-last-status" role="status"></span>
@@ -1136,6 +1142,44 @@
             firstJobStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. First workbench card was missing. This is catalog copy, not a live product feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first catalog job, not a live product feed.';
+          }
+        }
+      });
+      const lastJobBtn = document.getElementById('copy-last-job');
+      const lastJobStatus = document.getElementById('copy-last-job-status');
+      const lastJobFallback = document.getElementById('copy-last-job-fallback');
+      const lastJobMarkdown = () => {
+        const cards = document.querySelectorAll('article.workbench');
+        const card = cards[cards.length - 1];
+        if (!card) return '';
+        const name = card.querySelector('h3')?.textContent.trim() ?? '';
+        const job = card.querySelector('p.job')?.textContent.trim() ?? '';
+        if (!name && !job) return '';
+        return `- ${name}: ${job}`;
+      };
+      lastJobBtn?.addEventListener('click', async () => {
+        const markdown = lastJobMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastJobFallback) lastJobFallback.hidden = true;
+          if (lastJobStatus) {
+            lastJobStatus.textContent = empty
+              ? 'Last workbench card was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the last workbench name and job from this catalog page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (lastJobFallback) {
+            lastJobFallback.hidden = false;
+            lastJobFallback.value = markdown;
+            lastJobFallback.focus();
+            lastJobFallback.select();
+          }
+          if (lastJobStatus) {
+            lastJobStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last workbench card was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last catalog job, not a live product feed.';
           }
         }
       });
