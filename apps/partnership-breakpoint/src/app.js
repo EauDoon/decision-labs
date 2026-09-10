@@ -787,7 +787,7 @@ function inputPanel(result) {
           <p class="notice">${withinCapacityFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-first-breakpoint-participant" data-action="hide-first-breakpoint-participant" aria-keyshortcuts="|" aria-pressed="${hideFirstBreakpointParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first-breakpoint participant</button><button type="button" data-action="show-first-breakpoint-participant" ${hideFirstBreakpointParticipant ? '' : 'disabled'}>Show the first-breakpoint participant</button></div>
           <p class="notice">${firstBreakpointFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-first-over-capacity-participant" data-action="hide-first-over-capacity-participant" aria-pressed="${hideFirstOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first over-capacity participant</button><button type="button" data-action="show-first-over-capacity-participant" ${hideFirstOverCapacityParticipant ? '' : 'disabled'}>Show the first over-capacity participant</button></div>
+          <div class="button-row"><button type="button" id="hide-first-over-capacity-participant" data-action="hide-first-over-capacity-participant" aria-keyshortcuts="@" aria-pressed="${hideFirstOverCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first over-capacity participant</button><button type="button" data-action="show-first-over-capacity-participant" ${hideFirstOverCapacityParticipant ? '' : 'disabled'}>Show the first over-capacity participant</button></div>
           <p class="notice">${firstOverCapacityFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
@@ -2189,6 +2189,12 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === '|') {
     const target = document.querySelector('#hide-first-breakpoint-participant')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === '@') {
+    const target = document.querySelector('#hide-first-over-capacity-participant')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -3968,6 +3974,7 @@ function helpDialog() {
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>|</kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing</li>
+        <li><kbd>@</kbd> Jump to Hide the first over-capacity participant, or the Participants heading if missing</li>
         <li><kbd>_</kbd> Jump to Copy over-capacity participant count, or the Participants heading if missing</li>
         <li><kbd>-</kbd> Jump to Copy first-breakpoint volume-to-hold, or the First breakpoint heading if missing</li>
         <li><kbd>=</kbd> Jump to Hide the least-headroom participant, or the Participants heading if missing</li>
