@@ -1092,6 +1092,11 @@ function handleShortcut(event) {
     focusHideOffersWithRemainingCapacity();
     return;
   }
+  if (key === "}") {
+    event.preventDefault();
+    copyLeftoverFillRemainingCapacity();
+    return;
+  }
 }
 
 function focusBuyersList() {
