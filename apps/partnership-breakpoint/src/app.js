@@ -72,6 +72,7 @@ let utilizationCopyText = '';
 let tornadoCopyText = '';
 let operatingCopyText = '';
 let splitCopyText = '';
+let allocationCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -103,6 +104,7 @@ function checkpoint() {
   tornadoCopyText = '';
   operatingCopyText = '';
   splitCopyText = '';
+  allocationCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -131,6 +133,7 @@ function travelHistory(direction) {
   tornadoCopyText = '';
   operatingCopyText = '';
   splitCopyText = '';
+  allocationCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -544,7 +547,7 @@ function inputPanel(result) {
           <h2 id="participant-inputs-title" tabindex="-1">Participants</h2>
           <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
           ${duplicateNameWarning()}
-          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
+          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="copy-allocation-balance">Copy allocation balance</button><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability. Copy allocation balance names missing or excess share. It is not a negotiated allocation.</p>
           <div class="button-row"><button type="button" data-action="hide-holding-participants" aria-pressed="${hideHoldingParticipants}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants who currently hold</button><button type="button" data-action="show-holding-participants" ${hideHoldingParticipants ? '' : 'disabled'}>Show holding participants</button></div>
           <p class="notice">${rosterFilterNote}</p>
           ${participantForms || (hideHoldingParticipants ? `<p class="notice">${firstVisibleIndex === -1 ? '<span id="share-hold-jump" tabindex="-1"></span>' : ''}Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>` : '')}
@@ -588,7 +591,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -641,6 +644,7 @@ function resultsPanel(result) {
     ${tornadoCopySection()}
     ${operatingCopySection()}
     ${splitCopySection()}
+    ${allocationCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -1122,6 +1126,7 @@ function attachEvents() {
     if (action === 'close-tornado-copy') { tornadoCopyText = ''; render(); return; }
     if (action === 'close-operating-copy') { operatingCopyText = ''; render(); return; }
     if (action === 'close-split-copy') { splitCopyText = ''; render(); return; }
+    if (action === 'close-allocation-copy') { allocationCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1294,6 +1299,7 @@ function attachEvents() {
     if (action === 'copy-tornado') copyTornadoChart();
     if (action === 'copy-operating-region') copyOperatingRegion();
     if (action === 'copy-tested-split') copyTestedSplit();
+    if (action === 'copy-allocation-balance') copyAllocationBalance();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -2515,6 +2521,59 @@ function copyTestedSplit() {
     }
   }
   showSplitCopyFallback(text, fallbackNote);
+}
+
+function allocationBalanceMarkdown() {
+  return [
+    '# Allocation balance',
+    '',
+    shareBalanceText(),
+    '',
+    'This names missing or excess revenue share. It is not a negotiated allocation.',
+    '',
+  ].join('\n');
+}
+
+function showAllocationCopyFallback(text, message) {
+  allocationCopyText = text;
+  render();
+  document.querySelector('#allocation-copy-text')?.focus();
+  setNotice(message);
+}
+
+function allocationCopySection() {
+  if (!allocationCopyText) return '';
+  return `<section class="panel" aria-labelledby="allocation-copy-title"><div class="panel-heading"><h2 id="allocation-copy-title">Allocation balance Markdown</h2><button type="button" data-action="close-allocation-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This names missing or excess share. It is not a negotiated allocation.</p><label class="brief-copy-label" for="allocation-copy-text">Allocation balance Markdown</label><textarea id="allocation-copy-text" readonly rows="10">${escapeAttribute(allocationCopyText)}</textarea></div></section>`;
+}
+
+function copyAllocationBalance() {
+  const text = allocationBalanceMarkdown();
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Allocation balance copied as Markdown. It is not a negotiated allocation.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          allocationCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showAllocationCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      allocationCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showAllocationCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showAllocationCopyFallback(text, fallbackNote);
 }
 
 function exportTornadoSvg() {

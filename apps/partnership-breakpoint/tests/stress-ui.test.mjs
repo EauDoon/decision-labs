@@ -58,7 +58,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'tornado-title', 'tornado-copy-text', 'deal-inputs-title', 'operating-copy-text',
         'compound-title', 'inspect-cases-title', 'split-copy-text',
         'least-headroom-participant', 'participant-inputs-title',
-        'field-deal-notes', 'viability-card',
+        'field-deal-notes', 'viability-card', 'allocation-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -2266,6 +2266,52 @@ test('collapse all-hold preference round-trips on saved JSON and defaults to exp
   invalid.collapseAllHoldCases = 'true';
   app.import(invalid);
   assert.match(app.notice(), /boolean/);
+});
+
+test('copy allocation balance names missing or excess share and stays honest when empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-allocation-balance"/);
+  fallback.click('copy-allocation-balance');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="allocation-copy-text"/);
+  assert.match(fallback.markup(), /# Allocation balance/);
+  assert.match(fallback.markup(), /Allocated: 100\.0%\. Shares reconcile to 100%\./);
+  assert.match(fallback.markup(), /not a negotiated allocation/);
+  assert.doesNotMatch(fallback.markup(), /probab/i);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-allocation-copy');
+  assert.doesNotMatch(fallback.markup(), /id="allocation-copy-text"/);
+
+  fallback.edit('participants.0.revenueShare', '0.2');
+  fallback.click('copy-allocation-balance');
+  assert.match(fallback.markup(), /Allocated: 80\.0%\./);
+  assert.match(fallback.markup(), /20\.0% remains unallocated/);
+  fallback.click('close-allocation-copy');
+  fallback.edit('participants.0.revenueShare', '0.6');
+  fallback.click('copy-allocation-balance');
+  assert.match(fallback.markup(), /Allocated: 120\.0%\./);
+  assert.match(fallback.markup(), /20\.0% is overallocated/);
+  fallback.click('close-allocation-copy');
+  fallback.edit('participants.0.revenueShare', '');
+  fallback.click('copy-allocation-balance');
+  assert.match(fallback.markup(), /Enter each revenue share to calculate the allocation balance\./);
+  assert.match(fallback.markup(), /not a negotiated allocation/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-allocation-balance');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Allocation balance/);
+  assert.match(withClipboard.copied()[0], /Allocated: 100\.0%\. Shares reconcile to 100%\./);
+  assert.match(withClipboard.copied()[0], /not a negotiated allocation/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.doesNotMatch(withClipboard.markup(), /id="allocation-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-allocation-balance');
+  assert.match(denied.markup(), /id="allocation-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('copy share URL is http-only and names clipboard failure without a network request', async () => {
