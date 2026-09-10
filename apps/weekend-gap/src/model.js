@@ -1436,6 +1436,17 @@ export function selectedVersusPeakHourToMarkdown(input, selectedHour = 0) {
   return selectedLine + "\n" + peakLine;
 }
 
+/** One-line next-payout hour label. Honest empty when none exists. */
+export function nextPayoutHourToMarkdown(input, selectedHour = 0) {
+  const result = runSimulation(input);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const nextHour = result.timeline[hour].nextPayoutHour;
+  if (nextHour === null) {
+    return "Next payout hour: none. Synthetic educational label, not a live payout time.";
+  }
+  return "Next payout hour: " + formatTime(nextHour) + " (hour " + nextHour + "). Synthetic educational label, not a live payout time.";
+}
+
 /** Markdown list of hours with closed gates. Local drawing, not a bank feed. */
 export function closedGanttHoursToMarkdown(input) {
   const schedule = buildGateSchedule(input);

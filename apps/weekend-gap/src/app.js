@@ -30,6 +30,7 @@ import {
   remainingReserveAtHourToMarkdown,
   peakQueueHourToMarkdown,
   selectedVersusPeakHourToMarkdown,
+  nextPayoutHourToMarkdown,
   closedGanttHoursToMarkdown,
   fxGanttHoursToMarkdown,
   weekendFxHourCountsToMarkdown,
@@ -1390,6 +1391,9 @@ document.querySelector("#copy-peak-hour").addEventListener("click", async () => 
 document.querySelector("#copy-selected-versus-peak").addEventListener("click", async () => {
   await copySelectedVersusPeakHourMarkdown();
 });
+document.querySelector("#copy-next-payout").addEventListener("click", async () => {
+  await copyNextPayoutHourMarkdown();
+});
 document.querySelector("#copy-closed-hours").addEventListener("click", async () => {
   await copyClosedHoursMarkdown();
 });
@@ -1602,6 +1606,10 @@ function copySelectedVersusPeakHourMarkdown() {
   const text = selectedVersusPeakHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#selected-versus-peak-copy-fallback", "Selected hour versus peak-queue hour copied as Markdown. This is not a forecast.");
 }
+function copyNextPayoutHourMarkdown() {
+  const text = nextPayoutHourToMarkdown(scenario, selectedHour);
+  return copyTextWithFallback(text, "#next-payout-copy-fallback", "Next-payout hour copied as one-line Markdown. This is a synthetic label, not a live payout time.");
+}
 function copyRemainingReserveMarkdown() {
   const text = remainingReserveAtHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#remaining-reserve-copy-fallback", "Remaining reserve and queued AUD copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
@@ -1647,7 +1655,7 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue, the selected Gantt hour, and remaining reserve at that hour stay on the printed brief. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue and the selected Gantt hour stay on the printed brief. Remaining reserve at that hour stays on the printed brief. The saved scenario was not changed.";
 });
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();

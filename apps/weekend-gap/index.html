@@ -541,6 +541,11 @@ SOFTWARE.
               <h2 id="payout-title">Next AUD payout window</h2>
               <strong id="next-payout">Calculating</strong>
               <p id="payout-explanation">The simulator checks issuer, bank and payout operating windows together.</p>
+              <div class="planning-actions">
+                <button id="copy-next-payout" type="button">Copy next-payout hour</button>
+              </div>
+              <label class="sr-only" for="next-payout-copy-fallback">Next-payout hour Markdown fallback</label>
+              <textarea id="next-payout-copy-fallback" rows="2" hidden readonly></textarea>
             </article>
             <article class="status-card card" aria-labelledby="chain-title">
               <p class="eyebrow">Settlement chain</p>
