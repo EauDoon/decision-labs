@@ -172,6 +172,15 @@ export const PRESETS = Object.freeze({
       { id: 'sound', name: 'Sound', revenueShare: 0.2, variableCostPerTransaction: 2.8, fixedMonthlyCost: 1800, minimumAcceptableProfit: 2000, capacity: 2800, minimumCommitment: 0, riskCost: 400 },
     ],
   },
+  festivalStallSplit: {
+    name: 'Festival stall split',
+    deal: { monthlyVolume: 2400, feePerTransaction: 18, addressableVolume: 3600, volumeShockPct: 0 },
+    participants: [
+      { id: 'stallholder', name: 'Stallholder', revenueShare: 0.48, variableCostPerTransaction: 4.2, fixedMonthlyCost: 1800, minimumAcceptableProfit: 4500, capacity: 3200, minimumCommitment: 400, riskCost: 500 },
+      { id: 'site-manager', name: 'Site manager', revenueShare: 0.32, variableCostPerTransaction: 0.6, fixedMonthlyCost: 4200, minimumAcceptableProfit: 2800, capacity: 4000, minimumCommitment: 0, riskCost: 800 },
+      { id: 'ticket-office', name: 'Ticket office', revenueShare: 0.2, variableCostPerTransaction: 1.4, fixedMonthlyCost: 900, minimumAcceptableProfit: 1200, capacity: 2800, minimumCommitment: 0, riskCost: 200 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
