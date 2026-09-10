@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.17 - 2026-09-10
+
+A workshop follow-up on 1.5.16. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `8` copies the last group below the numeric approval threshold through the new `#copy-last-below-threshold-group-button` (same one-line Markdown). Ignored while typing. Distinct from `5` last-non-veto copy and `"` first-below-floor copy. The label is not a legal identity.
+- Keyboard `9` jumps to that last below-threshold group copy control, or the groups heading if missing. Ignored while typing. It does not copy. Distinct from `6` last-non-veto copy jump.
+- Keyboard `0` jumps to the hide-first-group-below-threshold control, or the groups heading if missing. Ignored while typing. Distinct from `7` hide-last-group-below-threshold.
+- Volleyball club hours preset: synthetic students, neighbours (a veto group), and P&C scoring hall/court booking, net posts, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, Rooftop BBQ hours, School disco hours, Sports day hours, Netball training hours, Swimming club hours, Athletics club hours, Cricket club hours, Tennis club hours, and Basketball club hours. Not a recorded vote.
+- Hide only the first group whose average support on the inspected package is below the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsBelowThreshold, hideLastGroupBelowThreshold, and hideLastNonVetoGroup. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all. If composed with other hides, the empty-groups notice is honest and model counts stay the same.
+- Copy the last group below the numeric approval threshold as one-line Markdown, with a clipboard fallback. Honest when none. Distinct from last non-veto group copy and first below-floor group copy. A threshold is a number you entered, not a legal quorum. Do not treat the label as a legal identity.
+
 ## 1.5.16 - 2026-09-10
 
 A workshop follow-up on 1.5.15. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
