@@ -64,6 +64,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>x<\/kbd> Focus the JSON export control/u);
   assert.match(html, /<kbd>h<\/kbd> Jump to the workshop method \/ How it works heading/u);
   assert.match(html, /<kbd>i<\/kbd> Copy original versus recommended labels and costs as compact Markdown/u);
+  assert.match(html, /<kbd>q<\/kbd> Jump to the first clause that differs from the recommendation, or the clauses heading/u);
   assert.match(html, /id="method-heading"/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
@@ -1752,6 +1753,40 @@ test("keyboard j copies remaining change-budget unless an input is active", asyn
   blocked.clearFocus();
   blocked.keydown("j", { tagName: "INPUT", isContentEditable: false });
   assert.equal(blocked.focused(), "");
+});
+
+test("keyboard q jumps to the first clause that differs from the recommendation unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>q<\/kbd> Jump to the first clause that differs from the recommendation, or the clauses heading/u);
+  assert.match(html, /id="clauses-heading"/u);
+  const unchanged = await savedWorkbench(new Map());
+  unchanged.keydown("q");
+  assert.equal(unchanged.focused(), "#clauses-heading");
+  unchanged.clearFocus();
+  unchanged.keydown("q", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(unchanged.focused(), "");
+  unchanged.keydown("q", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(unchanged.focused(), "");
+  const draft = {
+    title: "Changed clause jump workshop",
+    threshold: 70,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [
+      { id: "keep", title: "Keep", options: [
+        { id: "keep-original", label: "Keep original keep", original: true, changeCost: 0, support: { g: 90 } },
+        { id: "keep-alt", label: "Alt keep", original: false, changeCost: 5, support: { g: 40 } },
+        { id: "keep-other", label: "Other keep", original: false, changeCost: 8, support: { g: 20 } },
+      ] },
+      { id: "spend", title: "Spend", options: [
+        { id: "spend-original", label: "Keep original spend", original: true, changeCost: 0, support: { g: 40 } },
+        { id: "spend-alt", label: "Alt spend", original: false, changeCost: 2, support: { g: 90 } },
+        { id: "spend-other", label: "Other spend", original: false, changeCost: 8, support: { g: 20 } },
+      ] },
+    ],
+  };
+  const changed = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  changed.keydown("Q");
+  assert.equal(changed.focused(), '[data-field="clause-title"][data-clause-id="spend"]');
 });
 
 test("keyboard i copies original versus recommended labels and costs unless an input is active", async () => {

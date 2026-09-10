@@ -2573,6 +2573,59 @@ function jumpToBelowFloor() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToChangedClause() {
+  const result = currentResult();
+  const changed = changedClauseIds(state.proposal, result);
+  const changedIds = changed.status === "ok" ? changed.clauseIds : [];
+  const firstId = changedIds[0];
+  if (!firstId) {
+    $("#clauses-heading")?.focus?.();
+    return;
+  }
+  const first = state.proposal.clauses.find((clause) => clause.id === firstId);
+  if (!first) {
+    $("#clauses-heading")?.focus?.();
+    return;
+  }
+  const query = clauseFilter.trim().toLowerCase();
+  const overBudget = overBudgetClauseIds(state.proposal, result);
+  const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, result);
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
+  let needsRender = false;
+  if (!clauseMatchesFilter(first, query)) {
+    clauseFilter = "";
+    const filter = $("#clause-filter");
+    if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (lockedClausesOnly && first.lockedOptionId === undefined) {
+    lockedClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (overBudgetClausesOnly && !overBudgetIds.has(first.id)) {
+    overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (noCheaperRemainingClausesOnly && !noCheaperIds.has(first.id)) {
+    noCheaperRemainingClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) {
+    renderClauses();
+    applyClauseDensity();
+  }
+  const target = $(`[data-field="clause-title"][data-clause-id="${first.id}"]`);
+  if (target?.focus) {
+    target.focus();
+    return;
+  }
+  $("#clauses-heading")?.focus?.();
+}
+
 function jumpToMethod() {
   $("#method-heading")?.focus?.();
 }
@@ -2728,6 +2781,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "i" || event.key === "I") {
     event.preventDefault();
     copyOriginalVersusRecommended();
+  } else if (event.key === "q" || event.key === "Q") {
+    event.preventDefault();
+    jumpToChangedClause();
   }
 });
 
