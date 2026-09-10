@@ -91,6 +91,22 @@ export function catalogLastWorkbenchHeading() {
   return headings[headings.length - 1] ?? '';
 }
 
+function catalogReviewPaths() {
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  const start = html.indexOf('id="workbenches"');
+  if (start < 0) return [];
+  const how = html.indexOf('id="how-it-works"', start);
+  const section = how > start ? html.slice(start, how) : html.slice(start);
+  return [...section.matchAll(/<p class="review-path"[^>]*>([\s\S]*?)<\/p>/g)].map((match) =>
+    match[1].replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim()
+  );
+}
+
+export function catalogLastReviewPath() {
+  const paths = catalogReviewPaths();
+  return paths[paths.length - 1] ?? '';
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
