@@ -1490,6 +1490,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>:<\/kbd> Copy first-breakpoint volume-to-hold as Markdown/);
   assert.match(app.markup(), /<kbd>"<\/kbd> Copy over-capacity participant count as Markdown/);
   assert.match(app.markup(), /<kbd>\}<\/kbd> Copy the first over-capacity participant label as Markdown/u);
+  assert.match(app.markup(), /<kbd>\+<\/kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>_<\/kbd> Jump to Copy over-capacity participant count, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>-<\/kbd> Jump to Copy first-breakpoint volume-to-hold, or the First breakpoint heading if missing/);
   assert.match(app.markup(), /<kbd>=<\/kbd> Jump to Hide the least-headroom participant, or the Participants heading if missing/);
@@ -2423,6 +2424,41 @@ test('keyboard } copies first over-capacity participant label through the same c
   firstOfTwo.edit('deal.monthlyVolume', '121000');
   firstOfTwo.keydown('}');
   assert.equal(firstOfTwo.copied().at(-1), 'First over-capacity participant: Distributor. Roster row currently over listed capacity. Not a forecast.');
+});
+
+test('keyboard + jumps to Copy first over-capacity participant label unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-first-over-capacity-label"/);
+  assert.match(app.markup(), /id="first-breakpoint-title" tabindex="-1"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('+');
+  assert.ok(app.focused().includes('#copy-first-over-capacity-label'));
+  assert.ok(app.focused().includes('scroll:#copy-first-over-capacity-label'));
+  assert.ok(!app.focused().includes('[data-action="hide-least-headroom-participants"]'));
+  assert.doesNotMatch(app.markup(), /id="first-over-capacity-label-copy-text"/);
+  const before = app.focused().length;
+  app.keydown('+', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('+', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('=');
+  assert.ok(app.focused().includes('[data-action="hide-least-headroom-participants"]'));
+  assert.ok(!app.focused().at(-1)?.includes('copy-first-over-capacity-label'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('+');
+  assert.ok(app.focused().includes('#copy-first-over-capacity-label'));
+  assert.ok(app.focused().includes('scroll:#copy-first-over-capacity-label'));
+  assert.match(app.markup(), /id="copy-first-over-capacity-label"/);
+  assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  assert.doesNotMatch(app.markup(), /id="first-over-capacity-label-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('dismiss-coach');
+  withClipboard.keydown('+');
+  assert.equal(withClipboard.copied().length, 0);
+  assert.ok(withClipboard.focused().includes('#copy-first-over-capacity-label'));
 });
 
 test('keyboard { jumps to Hide participants within listed capacity unless a field is focused', async () => {
