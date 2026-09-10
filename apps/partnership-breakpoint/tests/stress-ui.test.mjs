@@ -695,7 +695,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, and volume-to-hold', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, and over-capacity count', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -713,6 +713,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>First-breakpoint remaining-to-hold<\/h2><p>First-breakpoint remaining-to-hold: 0\.0% share for Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>First-breakpoint volume-to-hold<\/h2><p>First-breakpoint volume-to-hold: 90,000 txn for Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
+  assert.match(app.markup(), /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   const before = JSON.stringify(app.saved());
   app.click('print-report');
@@ -724,6 +725,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First-breakpoint remaining-to-hold<\/h2><p>First-breakpoint remaining-to-hold: 0\.0% share for Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First-breakpoint volume-to-hold<\/h2><p>First-breakpoint volume-to-hold: 90,000 txn for Liquidity Partner\. Synthetic ranking, not a forecast\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   app.edit('deal.title', 'Harbor JV', { type: 'text' });
   app.edit('deal.currency', 'USD', { type: 'text' });
@@ -733,6 +735,13 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.equal(JSON.stringify(app.saved()), titled);
   assert.match(app.lastPrint(), /<h2>Deal title<\/h2><p>Harbor JV<\/p>/);
   assert.match(app.lastPrint(), /<h2>Currency code<\/h2><p>USD<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
+  app.edit('deal.monthlyVolume', '116000');
+  const over = JSON.stringify(app.saved());
+  app.click('print-report');
+  assert.equal(app.prints(), 3);
+  assert.equal(JSON.stringify(app.saved()), over);
+  assert.match(app.lastPrint(), /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 1\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
   assert.match(html, /\.panel:not\(\.print-keep\)/);
@@ -755,6 +764,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /<h2>First-breakpoint participant<\/h2><p>First-breakpoint participant: Participant 3\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>First-breakpoint remaining-to-hold<\/h2><p>First-breakpoint remaining-to-hold: 0\.0% share for Participant 3\. Synthetic ranking, not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>First-breakpoint volume-to-hold<\/h2><p>First-breakpoint volume-to-hold: 90,000 txn for Participant 3\. Synthetic ranking, not a forecast\.<\/p>/);
+  assert.match(snapshot, /<h2>Over-capacity participant count<\/h2><p>Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
   assert.doesNotMatch(snapshot, /Least-headroom participant: Liquidity Partner/);
