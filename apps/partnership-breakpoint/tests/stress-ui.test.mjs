@@ -81,6 +81,12 @@ async function workbench(protocol = 'file:', options = {}) {
           scrollIntoView() { focused.push(`scroll:${selector}`); },
         };
       }
+      if (selector === '[data-action="hide-least-headroom-participants"]' && app.innerHTML.includes('data-action="hide-least-headroom-participants"')) {
+        return {
+          focus() { focused.push(selector); },
+          scrollIntoView() { focused.push(`scroll:${selector}`); },
+        };
+      }
       return null;
     } },
     localStorage: { getItem: (key) => storage.get(key) ?? null, setItem: (key, value) => { if (options.blockStorage) throw new Error('Blocked'); storage.set(key, value); } },
@@ -2138,6 +2144,45 @@ test('keyboard > jumps to Hide unused listed capacity unless a field is focused'
   app.keydown('>');
   assert.ok(app.focused().includes('[data-action="hide-spare-capacity-participants"]'));
   assert.ok(app.focused().includes('scroll:[data-action="hide-spare-capacity-participants"]'));
+});
+
+test('keyboard - jumps to Copy first-breakpoint volume-to-hold unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-first-breakpoint-volume"/);
+  assert.match(app.markup(), /id="first-breakpoint-title" tabindex="-1"/);
+  app.keydown('-');
+  assert.ok(app.focused().includes('#copy-first-breakpoint-volume'));
+  assert.ok(app.focused().includes('scroll:#copy-first-breakpoint-volume'));
+  const before = app.focused().length;
+  app.keydown('-', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('-', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('-');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="copy-first-breakpoint-volume"/);
+  assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+});
+
+test('keyboard = jumps to Hide the least-headroom participant unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /data-action="hide-least-headroom-participants"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('=');
+  assert.ok(app.focused().includes('[data-action="hide-least-headroom-participants"]'));
+  assert.ok(app.focused().includes('scroll:[data-action="hide-least-headroom-participants"]'));
+  const before = app.focused().length;
+  app.keydown('=', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('=', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('=');
+  assert.ok(app.focused().includes('[data-action="hide-least-headroom-participants"]'));
+  assert.ok(app.focused().includes('scroll:[data-action="hide-least-headroom-participants"]'));
 });
 
 test('keyboard z jumps to Copy deal title and currency unless a field is focused', async () => {
