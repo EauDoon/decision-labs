@@ -59,6 +59,7 @@ const appImport = `import {
   clausesWithoutCheaperRemainingOption,
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,
+  formatApprovalThresholdMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,

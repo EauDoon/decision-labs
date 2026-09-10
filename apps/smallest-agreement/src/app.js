@@ -45,6 +45,7 @@ import {
   clausesWithoutCheaperRemainingOption,
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,
+  formatApprovalThresholdMarkdown,
   compareWorkshopFiles,
   formatWorkspaceJson,
   parseWorkspaceJson,
@@ -522,6 +523,11 @@ function renderCopyFallbacks(result) {
     const remaining = formatRemainingChangeBudgetMarkdown(state.proposal, result ?? currentResult());
     remainingBox.value = remaining.status === "ok" || remaining.status === "unavailable" ? remaining.text : "";
   }
+  const thresholdBox = $("#approval-threshold-fallback");
+  if (thresholdBox) {
+    const threshold = formatApprovalThresholdMarkdown(state.proposal);
+    thresholdBox.value = threshold.status === "ok" ? threshold.text : "";
+  }
   const versusBox = $("#original-versus-recommended-fallback");
   if (versusBox) {
     const versus = formatOriginalVersusRecommendedMarkdown(state.proposal, result ?? currentResult());
@@ -965,6 +971,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-original-versus-recommended-button").disabled = result.status === "invalid";
   $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#copy-remaining-budget-button").disabled = result.status === "invalid";
+  $("#copy-approval-threshold-button").disabled = result.status === "invalid";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
@@ -2224,6 +2231,20 @@ async function copyRemainingBudget() {
   }
 }
 $("#copy-remaining-budget-button").addEventListener("click", copyRemainingBudget);
+async function copyApprovalThreshold() {
+  const listed = formatApprovalThresholdMarkdown(state.proposal);
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the approval threshold.");
+  const fallback = $("#approval-threshold-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Approval threshold copied as Markdown. It is a number you entered, not a legal quorum.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the approval threshold from the Markdown box. It is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-approval-threshold-button").addEventListener("click", copyApprovalThreshold);
 $("#copy-packages-table-button").addEventListener("click", async () => {
   const result = currentResult();
   if (result.status === "invalid") return notifyDraft("Fix the draft before copying the package table.");

@@ -137,6 +137,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="copy-remaining-budget-button"/u);
   assert.match(html, /Copy remaining budget/u);
   assert.match(html, /id="remaining-budget-fallback"/u);
+  assert.match(html, /id="copy-approval-threshold-button"/u);
+  assert.match(html, /Copy approval threshold/u);
+  assert.match(html, /id="approval-threshold-fallback"/u);
   assert.match(html, /id="copy-original-versus-recommended-button"/u);
   assert.match(html, /Copy original versus recommended/u);
   assert.match(html, /id="original-versus-recommended-fallback"/u);
@@ -365,6 +368,7 @@ async function savedWorkbench(storage, hash = "") {
     packageMarkdown: () => element("#package-markdown-fallback").value,
     groupSupport: () => element("#group-support-fallback").value,
     remainingBudget: () => element("#remaining-budget-fallback").value,
+    approvalThreshold: () => element("#approval-threshold-fallback").value,
     originalVersusRecommended: () => element("#original-versus-recommended-fallback").value,
     locksMarkdown: () => element("#locks-markdown-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
@@ -981,7 +985,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /\.hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note/u);
@@ -2220,6 +2224,44 @@ test("copy remaining budget writes one-line Markdown distinct from package and g
   await spent.click("#copy-remaining-budget-button");
   assert.match(spent.clipboardText(), /Remaining change-budget is exhausted \(0\.0 leftover\)/u);
   assert.match(spent.message(), /not a legal appropriation/u);
+});
+
+test("copy approval threshold writes one-line Markdown with a clipboard fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-approval-threshold-button"/u);
+  assert.match(html, /Copy approval threshold/u);
+  assert.match(html, /id="approval-threshold-fallback"/u);
+  assert.match(html, /not a legal quorum/u);
+  const app = await savedWorkbench(new Map());
+  assert.equal(app.approvalThreshold(), "Approval threshold: 68.0%. This is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(app.approvalThreshold(), /leftover change-budget/u);
+  assert.doesNotMatch(app.approvalThreshold(), /^# Recommended package/u);
+  await app.click("#copy-approval-threshold-button");
+  assert.equal(app.clipboardText(), app.approvalThreshold());
+  assert.match(app.message(), /not a legal quorum/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-approval-threshold-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#approval-threshold-fallback");
+  assert.match(blocked.approvalThreshold(), /Approval threshold: 68\.0%/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a legal quorum/u);
+  const draft = {
+    title: "Exact threshold workshop",
+    threshold: 70,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { g: 90 } },
+      { id: "alt", label: "Alt", original: false, changeCost: 2, support: { g: 40 } },
+      { id: "other", label: "Other", original: false, changeCost: 8, support: { g: 20 } },
+    ] }],
+  };
+  const exact = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  assert.equal(exact.approvalThreshold(), "Approval threshold: 70.0%. This is a number you entered, not a legal quorum.\n");
+  await exact.click("#copy-approval-threshold-button");
+  assert.equal(exact.clipboardText(), "Approval threshold: 70.0%. This is a number you entered, not a legal quorum.\n");
+  assert.match(exact.message(), /not a legal quorum/u);
 });
 
 test("copy package table writes a Markdown comparison and keeps a textarea fallback", async () => {
