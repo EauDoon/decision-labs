@@ -10,6 +10,7 @@ test("workspace round trip preserves detached baseline, notes and analysis contr
  assert.equal(result.workspace.ganttClosedOnly,false);
  assert.equal(result.workspace.ganttGateFilter,"all");
  assert.equal(result.workspace.queueBacklogOnly,false);
+ assert.equal(result.workspace.ganttEveryGateClosed,false);
  assert.equal(scenarioFromJSON(text).scenario,null);assert.deepEqual(workspaceFromJSON("\uFEFF"+text),result);
 });
 test("workspace Gantt density defaults to snapshots and older files remain valid",()=>{
@@ -97,8 +98,19 @@ test("older workspace files omit ganttHourIndex and restore the selected hour de
  assert.equal(workspaceFromJSON(JSON.stringify(neither)).workspace.ganttHourIndex,0);
  assert.equal(workspaceFromJSON(JSON.stringify({...raw,ganttHourIndex:65,selectedHour:65})).workspace.ganttHourIndex,65);
 });
+test("older workspace files omit ganttEveryGateClosed and restore all hours",()=>{
+ const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{ganttEveryGateClosed:true,notes:"legacy every-closed filter"});
+ const raw=JSON.parse(text);
+ assert.equal(raw.ganttEveryGateClosed,true);
+ delete raw.ganttEveryGateClosed;
+ const legacy=workspaceFromJSON(JSON.stringify(raw));
+ assert.ok(legacy.workspace);
+ assert.equal(legacy.workspace.ganttEveryGateClosed,false);
+ assert.deepEqual(legacy.errors,[]);
+ assert.equal(workspaceFromJSON(JSON.stringify({...raw,ganttEveryGateClosed:true})).workspace.ganttEveryGateClosed,true);
+});
 test("invalid workspace controls and format cannot replace an active workspace",()=>{
  const valid=JSON.parse(workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO));
- for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{ganttHourIndex:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"},{ganttGateFilter:"issuer-only"},{queueBacklogOnly:"yes"},{extraField:true},{constructor:{}}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
+ for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{ganttHourIndex:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"},{ganttGateFilter:"issuer-only"},{queueBacklogOnly:"yes"},{ganttEveryGateClosed:"yes"},{extraField:true},{constructor:{}}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
  assert.equal(workspaceFromJSON("x".repeat(250001)).workspace,null);
 });
