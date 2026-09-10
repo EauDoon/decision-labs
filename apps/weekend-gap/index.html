@@ -747,6 +747,7 @@ SOFTWARE.
               <button id="copy-first-open-fx" type="button" aria-keyshortcuts="(">Copy first open FX hour</button>
               <button id="copy-first-open-bank" type="button" aria-keyshortcuts="*">Copy first open bank hour</button>
               <button id="copy-first-open-issuer" type="button" aria-keyshortcuts="$">Copy first open issuer hour</button>
+              <button id="copy-last-open-issuer" type="button" aria-keyshortcuts="5">Copy last open issuer hour</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
@@ -774,6 +775,8 @@ SOFTWARE.
             <textarea id="first-open-bank-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="first-open-issuer-copy-fallback">First open issuer hour Markdown fallback</label>
             <textarea id="first-open-issuer-copy-fallback" rows="2" hidden readonly></textarea>
+            <label class="sr-only" for="last-open-issuer-copy-fallback">Last open issuer hour Markdown fallback</label>
+            <textarea id="last-open-issuer-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -872,6 +875,7 @@ SOFTWARE.
           <li><kbd>(</kbd> Copy first open FX hour as Markdown</li>
           <li><kbd>*</kbd> Copy first open bank hour as Markdown</li>
           <li><kbd>$</kbd> Copy first open issuer hour as Markdown</li>
+          <li><kbd>5</kbd> Copy last open issuer hour as Markdown</li>
           <li><kbd>+</kbd> Jump to the first-closed-FX-hour copy control</li>
           <li><kbd>!</kbd> Jump to the first-open-payout-hour copy control</li>
           <li><kbd>)</kbd> Jump to the first-open-FX-hour copy control</li>

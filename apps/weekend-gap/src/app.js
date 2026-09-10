@@ -42,6 +42,7 @@ import {
   firstOpenFxHourToMarkdown,
   firstOpenBankHourToMarkdown,
   firstOpenIssuerHourToMarkdown,
+  lastOpenIssuerHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   firstClosedFxGanttHour,
@@ -1621,6 +1622,9 @@ document.querySelector("#copy-first-open-bank").addEventListener("click", async 
 document.querySelector("#copy-first-open-issuer").addEventListener("click", async () => {
   await copyFirstOpenIssuerHourMarkdown();
 });
+document.querySelector("#copy-last-open-issuer").addEventListener("click", async () => {
+  await copyLastOpenIssuerHourMarkdown();
+});
 document.querySelector("#copy-cohort-markdown").addEventListener("click", async () => {
   const text = arrivalCohortsToMarkdown(scenario);
   await copyTextWithFallback(text, "#cohort-copy-fallback", "Arrival-cohort table copied as Markdown. This is a synthetic ledger, not a forecast.");
@@ -1936,6 +1940,10 @@ function copyFirstOpenBankHourMarkdown() {
 function copyFirstOpenIssuerHourMarkdown() {
   const text = firstOpenIssuerHourToMarkdown(scenario);
   return copyTextWithFallback(text, "#first-open-issuer-copy-fallback", "First open issuer hour copied as one-line Markdown. This is a synthetic label, not live issuer data.");
+}
+function copyLastOpenIssuerHourMarkdown() {
+  const text = lastOpenIssuerHourToMarkdown(scenario);
+  return copyTextWithFallback(text, "#last-open-issuer-copy-fallback", "Last open issuer hour copied as one-line Markdown. This is a synthetic label, not live issuer data.");
 }
 function jumpToFirstClosedBankCopy() {
   const control = document.querySelector("#copy-first-closed-bank");
@@ -2354,6 +2362,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "$") {
     event.preventDefault();
     copyFirstOpenIssuerHourMarkdown();
+    return;
+  }
+  if (event.key === "5") {
+    event.preventDefault();
+    copyLastOpenIssuerHourMarkdown();
     return;
   }
   if (event.key === "<") {
