@@ -625,6 +625,39 @@ const presets = {
       },
     ],
   },
+  "netball-training-hours": {
+    title: "Netball training hours: start time, court lights, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "netball-start", title: "Start time", options: [
+          { id: "netball-start-original", original: true, label: "Keep weekday netball training from 16:00 with no posted court rota", changeCost: 0, support: { students: 34, neighbours: 88, pandc: 76 } },
+          { id: "netball-start-late", original: false, label: "Begin weekday training at 17:00 with a posted court rota", changeCost: 2, support: { students: 88, neighbours: 62, pandc: 72 } },
+          { id: "netball-start-weekend", original: false, label: "Hold Saturday morning training at 09:00 with a booking card", changeCost: 3, support: { students: 82, neighbours: 68, pandc: 70 } },
+        ],
+      },
+      {
+        id: "court-lights", title: "Court lights", options: [
+          { id: "court-lights-original", original: true, label: "No posted court lighting cut-off", changeCost: 0, support: { students: 86, neighbours: 22, pandc: 44 } },
+          { id: "court-lights-cap", original: false, label: "Cut court lights at 20:00 and face lamps onto the court", changeCost: 2, support: { students: 70, neighbours: 84, pandc: 80 } },
+          { id: "court-lights-cut", original: false, label: "Use low court lamps after 19:00 and retire the flood array", changeCost: 4, support: { students: 52, neighbours: 90, pandc: 68 } },
+        ],
+      },
+      {
+        id: "netball-lockup", title: "Court lock-up", options: [
+          { id: "netball-lockup-original", original: true, label: "Leave the court gate on a shared padlock after training", changeCost: 0, support: { students: 38, neighbours: 54, pandc: 58 } },
+          { id: "netball-lockup-steward", original: false, label: "Require a P&C steward to lock the court gate before 20:15", changeCost: 2, support: { students: 84, neighbours: 76, pandc: 86 } },
+          { id: "netball-lockup-timer", original: false, label: "Add a timed lock on the court gate after the last training", changeCost: 3, support: { students: 74, neighbours: 72, pandc: 78 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
