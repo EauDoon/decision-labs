@@ -40,7 +40,8 @@ export const DEFAULT_SCENARIO = Object.freeze({
   sundayLatePayoutClose: false,
   saturdayEarlyPayoutOpen: false,
   fridayEarlyPayoutOpen: false,
-  saturdayLatePayoutOpen: false
+  saturdayLatePayoutOpen: false,
+  sundayEarlyPayoutOpen: false
 });
 
 export const PRESETS = Object.freeze({
@@ -190,6 +191,11 @@ export const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Saturday late payout open (synthetic)",
     saturdayLatePayoutOpen: true
+  }),
+  sundayEarlyPayoutOpen: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Sunday early payout open (synthetic)",
+    sundayEarlyPayoutOpen: true
   })
 });
 
@@ -222,7 +228,8 @@ const FIELD_RULES = Object.freeze({
   sundayLatePayoutClose: { type: "boolean" },
   saturdayEarlyPayoutOpen: { type: "boolean" },
   fridayEarlyPayoutOpen: { type: "boolean" },
-  saturdayLatePayoutOpen: { type: "boolean" }
+  saturdayLatePayoutOpen: { type: "boolean" },
+  sundayEarlyPayoutOpen: { type: "boolean" }
 });
 
 export function finiteNumber(value, fallback) {
@@ -401,13 +408,20 @@ function isSaturdayLatePayoutHour(hourOffset, scenario) {
   return dayIndex === 6 && localHour >= 18 && localHour < 20;
 }
 
+/** Sunday 08:00-10:00 keeps the payout gate open when Sunday early payout open is on. */
+function isSundayEarlyPayoutHour(hourOffset, scenario) {
+  if (scenario.sundayEarlyPayoutOpen !== true) return false;
+  const { dayIndex, localHour } = dayAndHourAt(hourOffset);
+  return dayIndex === 0 && localHour >= 8 && localHour < 10;
+}
+
 export function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
   const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario);
   const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday);
   const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateBankHour(hourOffset, scenario);
-  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLatePayoutHour(hourOffset, scenario) || isSaturdayEarlyPayoutHour(hourOffset, scenario) || isFridayEarlyPayoutHour(hourOffset, scenario) || isSaturdayLatePayoutHour(hourOffset, scenario);
+  const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLatePayoutHour(hourOffset, scenario) || isSaturdayEarlyPayoutHour(hourOffset, scenario) || isFridayEarlyPayoutHour(hourOffset, scenario) || isSaturdayLatePayoutHour(hourOffset, scenario) || isSundayEarlyPayoutHour(hourOffset, scenario);
   const fxMultiplier = fxWeekday ? 1 : scenario.weekendFxMultiplier;
   return {
     issuerOpen,
