@@ -1442,6 +1442,20 @@ export function fxGanttHoursToMarkdown(input) {
   ].join("\n");
 }
 
+/** Compact count of weekend FX open versus closed hours. Counts of hours, not a bank calendar. */
+export function weekendFxHourCountsToMarkdown(input) {
+  const schedule = buildGateSchedule(input);
+  let open = 0;
+  let closed = 0;
+  for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+    const point = schedule.hours[hour];
+    if (!ganttHourIsWeekend(point)) continue;
+    if (point.fxWeekday) open += 1;
+    else closed += 1;
+  }
+  return "Weekend FX hours: " + open + " open, " + closed + " closed. Counts of modeled hours, not a bank calendar.";
+}
+
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
 export function arrivalCohortsToMarkdown(input) {
   const result = runSimulation(input);
