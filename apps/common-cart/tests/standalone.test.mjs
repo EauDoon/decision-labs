@@ -40,7 +40,7 @@ test("standalone GUI has no external resource dependency", async () => {
   assert.match(html, /not valid JSON/u);
 });
 
-test("standalone retains 1.4.15 leftover-fill label tools and 1.4.16 leftover-fill minimum controls", async () => {
+test("standalone retains 1.4.16 leftover-fill minimum tools and 1.4.17 leftover-fill maximum controls", async () => {
   const html = await buildStandalone();
   assert.match(html, /id="copy-leftover-fill-label"/u);
   assert.match(html, /id="copy-leftover-fill-label"[^>]*aria-keyshortcuts="\$"/u);
