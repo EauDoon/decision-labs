@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.8 - 2026-09-10
+
+A workshop follow-up on 1.5.7. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.7 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `;` copies hours-to-clear through the existing copy control, using the same Markdown. Honest empty when there is no queue. Ignored while typing.
+- Keyboard `[` jumps to the hours-to-clear copy control, or the dashboard heading if that control is missing. Ignored while typing.
+- Keyboard `]` jumps to Print, or the print / one-pager heading if that control is missing. Ignored while typing.
+- Monday late issuer open (synthetic) preset: same 72-hour calendar as Normal Friday, Monday issuer window opens one hour later. Distinct from Payday Friday, Public-holiday Monday, Saturday market, Sunday stall close, Thin Saturday FX, Thin FX Tight Windows, Long-weekend, Compressed Friday, Early Monday bank open, and Friday late FX close. Not a live queue.
+- Filter that hides Gantt hours whose synthetic queue is zero. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideZeroQueueGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hideOpenGanttHours`, `hideClosedGanttHours`, `hideWeekendGanttHours`, `hideWeekdayGanttHours`, every-gate-closed, and single-gate filters.
+- Print and print redacted include the hours-to-clear line when a queue exists, with an honest empty when none. Counts of modeled hours, not a bank calendar. The saved scenario is unchanged.
+- Copy first closed bank hour label as one-line Markdown with an honest empty when none exists. Clipboard write has a textarea fallback. Distinct from first-closed-FX copy. Counts of modeled hours, not a bank calendar.
+
 ## 1.5.7 - 2026-09-10
 
 A workshop follow-up on 1.5.6. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.6 review UI stay in place. Analysis JSON still has no timestamps.
