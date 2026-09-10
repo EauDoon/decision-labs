@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.5.1 - 2026-09-10
+
+A workshop follow-up on 1.5.0. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not recorded votes. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `v` toggles the veto-only group filter when focus is not in an input, select, or text area. Shortcut help lists it.
+- Filter clause cards to those that currently have a lock. Hidden clauses still count in the model.
+- Keyboard `b` jumps to the first veto-blocker highlight, or the veto list. Ignored while typing.
+- Keyboard `g` focuses the participant groups heading or the first group card. Ignored while typing.
+- Undoable model reorder moves a clause up or down. Clause order is the last documented tie breaker.
+- Copy original, recommended, and pinned option labels as a Markdown table of clause titles. Clipboard write has a textarea fallback. It is not a vote record.
+- Sports Fixture Night preset: synthetic members, neighbours (a veto group), and council rangers scoring match end-time, floodlights, and match-night parking.
+- Persist the veto-only and locked-clause display filters in version-1 workspace JSON and local workspace prefs. Older files omit the keys and default to show-all. The solver ignores the filters.
+- Print redacted replaces group display names with Group 1 through Group N on the print path only. The saved draft is unchanged.
+- Paste TSV or CSV clause options into a textarea using the same `parseClauseOptionsCsv` validation as file import. A first line with tabs is treated as TSV. Import is undoable.
+
 ## 1.5.0 - 2026-09-10
 
 - Add one optional package review for margins, floors/vetoes, dominance, substitutions, rollbacks, threshold/budget scenarios, lock costs and targeted uncertainty.
