@@ -2023,6 +2023,11 @@ document.addEventListener("keydown", (event) => {
     copyFirstClosedBankHourMarkdown();
     return;
   }
+  if (event.key === ":") {
+    event.preventDefault();
+    copyFirstClosedIssuerHourMarkdown();
+    return;
+  }
   if (event.key === "<") {
     event.preventDefault();
     jumpToFirstClosedBankCopy();

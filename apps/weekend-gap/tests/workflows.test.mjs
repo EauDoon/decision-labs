@@ -783,6 +783,27 @@ test("keyboard slash jumps to remaining-reserve copy and shift-slash stays help"
   assert.match(ui.nodes.get("remaining-reserve-copy-fallback").value, /Remaining reserve:/);
 });
 
+test("keyboard colon copies first closed issuer hour through the existing control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown(":");
+  assert.equal(ui.nodes.get("first-closed-issuer-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-issuer-copy-fallback").value, /First closed issuer hour:/);
+  assert.match(ui.nodes.get("first-closed-issuer-copy-fallback").value, /Counts of modeled hours, not a bank calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-closed-issuer-copy-fallback").value, /First closed bank hour:/);
+  ui.nodes.get("first-closed-issuer-copy-fallback").hidden = true;
+  ui.nodes.get("first-closed-issuer-copy-fallback").value = "";
+  await ui.keydown(":", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("first-closed-issuer-copy-fallback").hidden, true);
+  await ui.keydown(":", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("first-closed-issuer-copy-fallback").hidden, true);
+  await ui.keydown(":", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("first-closed-issuer-copy-fallback").hidden, true);
+  await ui.keydown("'");
+  assert.equal(ui.nodes.get("first-closed-bank-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-bank-copy-fallback").value, /First closed bank hour:/);
+  assert.notEqual(ui.nodes.get("first-closed-issuer-copy-fallback").value, ui.nodes.get("first-closed-bank-copy-fallback").value);
+});
+
 test("keyboard apostrophe copies first closed bank hour through the existing control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("'");
