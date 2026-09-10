@@ -1,5 +1,22 @@
 # Changelog
 
+## 1.5.3 - 2026-09-10
+
+A workshop follow-up on 1.5.2. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `t` jumps to the approval threshold field when focus is not in an input, select, or text area. Shortcut help lists it.
+- Copy recommended package Markdown now keeps a textarea fallback when the clipboard is blocked. It is not a recorded vote.
+- Shared bike shed preset: synthetic bike users, neighbours (a veto group), and building managers scoring access hours, lighting, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, and Market stall hours. Not a recorded vote.
+- Keyboard `a` focuses Add clause. Ignored while typing.
+- Filter clause cards whose cheapest remaining change exceeds leftover budget, or every clause when the budget is exhausted. Hidden cards still count in the model. The solver is unchanged. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all.
+- Copy group support as a Markdown table of group name, mixing weight, and average support. Mixing weights are not a legal right. Clipboard write has a textarea fallback.
+- Keyboard `w` jumps to group weights or renormalize controls. Ignored while typing.
+- Keyboard `m` jumps to remaining change-budget or cost margin. Ignored while typing.
+- Undoable duplicate of a participant group now uses a unique copy name, the same weight, optional floor and veto, and a new id. Invalid at the group cap.
+- Print facilitator pack marks recommended package option labels on the worksheet. Print redacted still uses Group 1 through Group N. The saved draft is unchanged.
+
 ## 1.5.2 - 2026-09-10
 
 A workshop follow-up on 1.5.1. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
