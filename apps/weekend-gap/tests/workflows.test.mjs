@@ -847,6 +847,32 @@ test("keyboard close-brace copies first closed FX hour through the existing cont
   assert.notEqual(ui.nodes.get("first-closed-fx-copy-fallback").value, ui.nodes.get("first-closed-payout-copy-fallback").value);
 });
 
+test("keyboard tilde copies first open payout hour through the existing control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("~");
+  assert.equal(ui.nodes.get("first-open-payout-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-open-payout-copy-fallback").value, /First open payout hour:/);
+  assert.match(ui.nodes.get("first-open-payout-copy-fallback").value, /Counts of modeled hours, not a bank calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-open-payout-copy-fallback").value, /First closed FX hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-open-payout-copy-fallback").value, /First closed payout hour:/);
+  ui.nodes.get("first-open-payout-copy-fallback").hidden = true;
+  ui.nodes.get("first-open-payout-copy-fallback").value = "";
+  await ui.keydown("~", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("first-open-payout-copy-fallback").hidden, true);
+  await ui.keydown("~", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("first-open-payout-copy-fallback").hidden, true);
+  await ui.keydown("~", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("first-open-payout-copy-fallback").hidden, true);
+  await ui.keydown("}");
+  assert.equal(ui.nodes.get("first-closed-fx-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-fx-copy-fallback").value, /First closed FX hour:/);
+  assert.notEqual(ui.nodes.get("first-open-payout-copy-fallback").value, ui.nodes.get("first-closed-fx-copy-fallback").value);
+  await ui.keydown('"');
+  assert.equal(ui.nodes.get("first-closed-payout-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-payout-copy-fallback").value, /First closed payout hour:/);
+  assert.notEqual(ui.nodes.get("first-open-payout-copy-fallback").value, ui.nodes.get("first-closed-payout-copy-fallback").value);
+});
+
 test("keyboard quote copies first closed payout hour through the existing control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown('"');

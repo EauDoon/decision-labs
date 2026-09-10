@@ -2163,6 +2163,11 @@ document.addEventListener("keydown", (event) => {
     copyFirstClosedFxHourMarkdown();
     return;
   }
+  if (event.key === "~") {
+    event.preventDefault();
+    copyFirstOpenPayoutHourMarkdown();
+    return;
+  }
   if (event.key === "<") {
     event.preventDefault();
     jumpToFirstClosedBankCopy();
