@@ -78,6 +78,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /sports-fixture-night/u);
   assert.match(html, /market-stall-hours/u);
   assert.match(html, /shared-bike-shed/u);
+  assert.match(html, /street-stall-lighting/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -784,6 +785,39 @@ test("shared bike shed preset loads a distinct synthetic neighbour workshop", as
   assert.doesNotMatch(app.clauses(), /Park access hours/u);
   assert.doesNotMatch(app.clauses(), /Evening hours/u);
   assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+});
+
+test("street stall lighting preset loads a distinct synthetic lighting workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "street-stall-lighting");
+  app.click("#load-preset");
+  assert.match(app.title(), /Street stall lighting: lighting hours, glare, and pack-down/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Lighting hours/u);
+  assert.match(app.clauses(), /Glare/u);
+  assert.match(app.clauses(), /Pack-down lighting/u);
+  assert.match(app.groups(), /Stallholders/u);
+  assert.match(app.groups(), /Nearby residents/u);
+  assert.match(app.groups(), /Council officers/u);
+  assert.doesNotMatch(app.title(), /Market stall hours/u);
+  assert.doesNotMatch(app.title(), /Shared bike shed/u);
+  assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.title(), /Open Source Policy/u);
+  assert.doesNotMatch(app.title(), /Association Budget/u);
+  assert.doesNotMatch(app.title(), /Protected Access/u);
+  assert.doesNotMatch(app.title(), /Workplace Hybrid/u);
+  assert.doesNotMatch(app.title(), /Club Constitution/u);
+  assert.doesNotMatch(app.clauses(), /Stall open hours/u);
+  assert.doesNotMatch(app.clauses(), /Access hours/u);
+  assert.doesNotMatch(app.clauses(), /Match end-time/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Evening hours/u);
+  assert.doesNotMatch(app.clauses(), /Weekend market use/u);
+  assert.doesNotMatch(app.groups(), /Market officers/u);
+  assert.doesNotMatch(app.groups(), /Building managers/u);
 });
 
 test("keyboard f focuses the clause filter unless an input is active", async () => {

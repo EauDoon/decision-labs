@@ -381,6 +381,39 @@ const presets = {
       },
     ],
   },
+  "street-stall-lighting": {
+    title: "Street stall lighting: lighting hours, glare, and pack-down",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "stallholders", name: "Stallholders", weight: 4 },
+      { id: "residents", name: "Nearby residents", weight: 3, veto: true },
+      { id: "officers", name: "Council officers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "lighting", title: "Lighting hours", options: [
+          { id: "lighting-original", original: true, label: "Keep stall lamps on until midnight", changeCost: 0, support: { stallholders: 88, residents: 30, officers: 42 } },
+          { id: "lighting-curfew", original: false, label: "Switch stall lamps off at 21:00", changeCost: 2, support: { stallholders: 54, residents: 86, officers: 78 } },
+          { id: "lighting-timer", original: false, label: "Timer lamps until last pack-down", changeCost: 3, support: { stallholders: 76, residents: 72, officers: 74 } },
+        ],
+      },
+      {
+        id: "glare", title: "Glare", options: [
+          { id: "glare-original", original: true, label: "Keep unshielded floodlights over the stalls", changeCost: 0, support: { stallholders: 82, residents: 22, officers: 46 } },
+          { id: "glare-shielded", original: false, label: "Fit shielded downward lamps on each stall", changeCost: 2, support: { stallholders: 74, residents: 80, officers: 82 } },
+          { id: "glare-string", original: false, label: "Use warm low-glare string lights along the street", changeCost: 3, support: { stallholders: 70, residents: 76, officers: 70 } },
+        ],
+      },
+      {
+        id: "packdown", title: "Pack-down lighting", options: [
+          { id: "packdown-original", original: true, label: "Pack down under the floodlights", changeCost: 0, support: { stallholders: 84, residents: 28, officers: 40 } },
+          { id: "packdown-headlamps", original: false, label: "Pack down with headlamps only", changeCost: 2, support: { stallholders: 48, residents: 84, officers: 72 } },
+          { id: "packdown-bay", original: false, label: "Pack in a lit loading bay off the street", changeCost: 3, support: { stallholders: 78, residents: 76, officers: 84 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
