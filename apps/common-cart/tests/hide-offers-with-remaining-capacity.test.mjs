@@ -93,3 +93,18 @@ test("the hide-offers-with-remaining-capacity filter is display only and does no
   assert.match(app, /#restore-offers-with-remaining-capacity/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
 });
+
+test("hide offers with remaining capacity jump stays on the merchant offers filter", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(merchantPanel, /id="hide-offers-with-remaining-capacity"/u);
+  assert.match(merchantPanel, /id="offers-list"/u);
+  assert.match(app, /function focusHideOffersWithRemainingCapacity\(/u);
+  assert.match(app, /#hide-offers-with-remaining-capacity/u);
+  assert.match(app, /#offers-list/u);
+  assert.match(app, /#merchant-tab/u);
+  assert.match(app, /if \(key === "\{"\)/u);
+  assert.doesNotMatch(app, /if \(key === "\{"\) \{\s*event\.preventDefault\(\);\s*focusHideBuyersWithLeftover/u);
+  assert.match(app, /if \(key === "="\) \{\s*event\.preventDefault\(\);\s*focusHideBuyersWithLeftover\(\);/u);
+});
