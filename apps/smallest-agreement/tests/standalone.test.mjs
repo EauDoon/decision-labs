@@ -78,6 +78,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>:<\/kbd> Copy the below-floor group count as one-line Markdown/u);
   assert.match(html, /<kbd>-<\/kbd> Jump to the below-floor group count copy control, or the groups heading/u);
   assert.match(html, /<kbd>=<\/kbd> Jump to the hide-groups-meeting-threshold control, or the groups heading/u);
+  assert.match(html, /<kbd>"<\/kbd> Copy the first below-floor group label as one-line Markdown/u);
   assert.match(html, /id="locks-heading"/u);
   assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
@@ -2741,7 +2742,7 @@ test("keyboard apostrophe copies the first locked option unless an input is acti
   assert.equal(app.focused(), "");
   const quoted = await savedWorkbench(new Map());
   quoted.keydown("\"");
-  assert.equal(quoted.clipboardText(), "");
+  assert.doesNotMatch(quoted.clipboardText(), /First locked clause option/u);
   const locked = await savedWorkbench(new Map());
   locked.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
   locked.clearFocus();

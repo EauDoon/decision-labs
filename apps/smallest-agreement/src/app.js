@@ -3497,6 +3497,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === ":") {
     event.preventDefault();
     copyBelowFloorCount();
+  } else if (event.key === "\"") {
+    event.preventDefault();
+    copyFirstBelowFloorGroup();
   } else if (event.key === "-") {
     event.preventDefault();
     jumpToBelowFloorCountCopy();
