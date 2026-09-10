@@ -1,5 +1,6 @@
 import test from "node:test";
 import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
 import {
   ScenarioError,
   clonePreset,
@@ -72,4 +73,23 @@ test("hide offers with remaining capacity rejects prototype-like flags", () => {
   const scenario = clonePreset("studio");
   assert.throws(() => filterOfferIdsHidingOffersWithRemainingCapacity(scenario, "true"), /true or false/);
   assert.throws(() => filterOfferIdsHidingOffersWithRemainingCapacity(scenario, 1), ScenarioError);
+});
+
+test("the hide-offers-with-remaining-capacity filter is display only and does not leak buyer rows to merchants", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(merchantPanel, /id="hide-offers-with-remaining-capacity"/u);
+  assert.match(merchantPanel, /Hide offers whose remaining capacity after the winner is greater than zero/u);
+  assert.match(merchantPanel, /id="restore-offers-with-remaining-capacity"/u);
+  assert.match(merchantPanel, /Restore remaining-capacity-positive offers/u);
+  assert.match(merchantPanel, /id="hide-zero-remaining-capacity-offers"/u);
+  assert.match(merchantPanel, /Merchant views still show counts only/u);
+  assert.equal(merchantPanel.includes("buyer-rows"), false);
+  assert.equal(merchantPanel.includes("leftover-buyer-rows"), false);
+  assert.match(app, /function applyOfferFulfillmentFilter\(/u);
+  assert.match(app, /filterOfferIdsHidingOffersWithRemainingCapacity\(/u);
+  assert.match(app, /hideOffersWithRemainingCapacity/u);
+  assert.match(app, /#restore-offers-with-remaining-capacity/u);
+  assert.match(app, /persistWorkspaceDisplaySettings\(/u);
 });

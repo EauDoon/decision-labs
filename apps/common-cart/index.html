@@ -533,7 +533,12 @@ SOFTWARE.
             Hide offers with no remaining capacity after the winner
           </label>
           <button id="restore-zero-remaining-capacity-offers" type="button">Restore remaining-capacity offers</button>
-          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last fulfillment, hide-unwinnable, and hide-zero-remaining-capacity choices are kept in this browser's workspace file. Older workspace files without it still open. Hide-unwinnable and hide-zero-remaining-capacity are display only. Merchant views still show counts only.</p>
+          <label class="checkbox-field">
+            <input id="hide-offers-with-remaining-capacity" type="checkbox">
+            Hide offers whose remaining capacity after the winner is greater than zero
+          </label>
+          <button id="restore-offers-with-remaining-capacity" type="button">Restore remaining-capacity-positive offers</button>
+          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last fulfillment, hide-unwinnable, hide-zero-remaining-capacity, and hide-offers-with-remaining-capacity choices are kept in this browser's workspace file. Older workspace files without it still open. Hide-unwinnable, hide-zero-remaining-capacity, and hide-offers-with-remaining-capacity are display only. Merchant views still show counts only.</p>
         </div>
         <div class="snapshot-bar print-chrome" aria-label="Offer list order">
           <label>Sort offers
