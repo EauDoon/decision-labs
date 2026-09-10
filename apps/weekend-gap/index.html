@@ -338,7 +338,7 @@ SOFTWARE.
             <p class="eyebrow">Scenario comparison</p>
             <h2 id="comparison-title">Hold a baseline. Test a change.</h2>
             <p>Baseline: <strong id="baseline-name"></strong>. It starts from the loaded scenario and is saved with your local workspace.</p>
-            <div class="planning-actions">
+            <div class="planning-actions" id="analysis-export-controls" tabindex="-1">
               <button id="pin-baseline" type="button">Pin current as baseline</button>
               <button id="restore-baseline" type="button">Restore baseline</button>
               <button id="analysis-export" type="button">Export analysis JSON</button>
@@ -669,6 +669,7 @@ SOFTWARE.
           <li><kbd>H</kbd> Jump to the selected Gantt hour</li>
           <li><kbd>K</kbd> Jump to the hours-to-clear line</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
+          <li><kbd>A</kbd> Jump to analysis and export controls</li>
           <li><kbd>B</kbd> Jump to the Bank Gantt row</li>
           <li><kbd>M</kbd> Jump to the compare Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>

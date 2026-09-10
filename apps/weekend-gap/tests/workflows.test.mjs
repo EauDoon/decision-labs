@@ -478,6 +478,20 @@ test("keyboard t jumps to the timing review and ignores the key while typing", a
   assert.equal(ui.nodes.get("weekend-review-title").focused, false);
 });
 
+test("keyboard a jumps to analysis and export controls and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("a");
+  assert.equal(ui.nodes.get("analysis-export-controls").focused, true);
+  assert.equal(ui.nodes.get("analysis-export-controls").attributes.tabindex, "-1");
+  ui.nodes.get("analysis-export-controls").focused = false;
+  await ui.keydown("A", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("analysis-export-controls").focused, false);
+  await ui.keydown("a", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("analysis-export-controls").focused, false);
+  await ui.keydown("a", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("analysis-export-controls").focused, false);
+});
+
 test("keyboard n jumps to the first-payout marker and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("n");

@@ -1474,6 +1474,14 @@ function jumpToFirstPayoutMarker() {
   rememberChart("gantt");
   return true;
 }
+function jumpToAnalysisExport() {
+  const controls = document.querySelector("#analysis-export-controls");
+  if (!controls) return false;
+  controls.setAttribute("tabindex", "-1");
+  controls.focus();
+  controls.scrollIntoView?.({ block: "start" });
+  return true;
+}
 function jumpToGanttBankRow() {
   const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
   const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
@@ -1705,6 +1713,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "n" || event.key === "N") {
     event.preventDefault();
     jumpToFirstPayoutMarker();
+    return;
+  }
+  if (event.key === "a" || event.key === "A") {
+    event.preventDefault();
+    jumpToAnalysisExport();
     return;
   }
   if (event.key === "b" || event.key === "B") {
