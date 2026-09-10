@@ -31,7 +31,8 @@ import {
   createLeftoverHeadroomMarkdown,
   createWinningFulfillmentMarkdown,
   createLeftoverFillMarkdown,
-  createWinningRemainingCapacityMarkdown
+  createWinningRemainingCapacityMarkdown,
+  createRequestedUnitsMarkdown
 } from "../src/model.js";
 
 const PRIVATE_BUYER_MARKERS = ["SECRET_LABEL", "SECRET_ID", "SECRET_STUDIO", "987654.32", "maxUnitPrice", "leftoverBuyerIds", '"selectedBuyerIds":', '"allocations":'];
@@ -188,6 +189,16 @@ test("winning remaining capacity Markdown omits buyer identities", () => {
   assert.equal(remaining.includes("Harbour Roasters"), false);
 });
 
+test("requested units Markdown omits buyer identities", () => {
+  const scenario = secretNeighbourhood();
+  const requested = createRequestedUnitsMarkdown(scenario);
+  assertOmitsPrivateBuyers(requested, ["SECRET_TITLE"]);
+  assert.match(requested, /organizer private/);
+  assert.match(requested, /Not a merchant export/);
+  assert.match(requested, /requested units/);
+  assert.equal(requested.includes("Harbour Roasters"), false);
+});
+
 test("winning fulfillment Markdown omits buyer identities", () => {
   const scenario = secretNeighbourhood();
   const fulfillment = createWinningFulfillmentMarkdown(scenario);
@@ -216,6 +227,8 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.match(leftover, /Uncovered leftover: 0 buyers, 0 units/u);
   assert.match(leftover, /leftover-print-requested/u);
   assert.match(leftover, /Requested units: 0/u);
+  assert.match(leftover, /leftover-print-fill/u);
+  assert.match(leftover, /Leftover fill merchant: None/u);
   assert.equal(leftover.includes("maxUnitPrice"), false);
   assert.match(css, /body\.print-leftover \.print-private/u);
   const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
@@ -225,6 +238,7 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.equal(merchantPanel.includes("leftover-print-overlap"), false);
   assert.equal(merchantPanel.includes("leftover-print-uncovered"), false);
   assert.equal(merchantPanel.includes("leftover-print-requested"), false);
+  assert.equal(merchantPanel.includes("leftover-print-fill"), false);
 });
 
 test("merchant-facing 1.4.1 surfaces omit buyer labels, ids, budgets, and allocations", () => {
