@@ -56,7 +56,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
         'viability-copy-text', 'viability-heading', 'utilization-copy-text', 'participant-ledger-title',
         'tornado-title', 'tornado-copy-text', 'deal-inputs-title', 'operating-copy-text',
-        'compound-title', 'inspect-cases-title',
+        'compound-title', 'inspect-cases-title', 'split-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1492,6 +1492,57 @@ test('copy viability card uses participant, headroom, and binding limit Markdown
   denied.click('copy-viability');
   assert.match(denied.markup(), /id="viability-copy-text"/);
   assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('copy tested split copies hold counts and whether a fixed split is available', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-tested-split"/);
+  fallback.click('copy-tested-split');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="split-copy-text"/);
+  assert.match(fallback.markup(), /# Tested split/);
+  assert.match(fallback.markup(), /Cases held: 1 of 27/);
+  assert.match(fallback.markup(), /Fixed split available: no/);
+  assert.match(fallback.markup(), /Platform \| 11 \/ 27/);
+  assert.match(fallback.markup(), /Distributor \| 6 \/ 27/);
+  assert.match(fallback.markup(), /Liquidity Partner \| 1 \/ 27/);
+  assert.match(fallback.markup(), /Counts are counts/);
+  assert.match(fallback.markup(), /not a probability/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-split-copy');
+  assert.doesNotMatch(fallback.markup(), /id="split-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-tested-split');
+  assert.doesNotMatch(fallback.markup(), /id="split-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the tested split/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-tested-split');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Tested split/);
+  assert.match(withClipboard.copied()[0], /Cases held: 1 of 27/);
+  assert.match(withClipboard.copied()[0], /Fixed split available: no/);
+  assert.match(withClipboard.copied()[0], /Counts are counts/);
+  assert.match(withClipboard.copied()[0], /not a probability/);
+  assert.doesNotMatch(withClipboard.copied()[0], /likelihood/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.doesNotMatch(withClipboard.markup(), /id="split-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-tested-split');
+  assert.match(denied.markup(), /id="split-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const feasible = await workbench();
+  feasible.click('dismiss-coach');
+  feasible.edit('stress.volumeDropPct', '5');
+  feasible.edit('stress.volumeGrowthPct', '0');
+  feasible.edit('stress.feeDropPct', '0');
+  feasible.edit('stress.variableCostRisePct', '0');
+  feasible.click('copy-tested-split');
+  assert.match(feasible.markup(), /Cases held: 2 of 2/);
+  assert.match(feasible.markup(), /Fixed split available: yes/);
 });
 
 test('copy operating region copies the fee and volume sensitivity grid as Markdown', async () => {

@@ -71,6 +71,7 @@ let viabilityCopyText = '';
 let utilizationCopyText = '';
 let tornadoCopyText = '';
 let operatingCopyText = '';
+let splitCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -100,6 +101,7 @@ function checkpoint() {
   utilizationCopyText = '';
   tornadoCopyText = '';
   operatingCopyText = '';
+  splitCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -127,6 +129,7 @@ function travelHistory(direction) {
   utilizationCopyText = '';
   tornadoCopyText = '';
   operatingCopyText = '';
+  splitCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -583,7 +586,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -634,6 +637,7 @@ function resultsPanel(result) {
     ${utilizationCopySection()}
     ${tornadoCopySection()}
     ${operatingCopySection()}
+    ${splitCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -694,7 +698,7 @@ function stressSection() {
   return `<section class="panel compound-panel" aria-labelledby="compound-title"><div class="panel-heading"><h2 id="compound-title" tabindex="-1">Compound stress and negotiation</h2><span class="optional">v1.4.3</span></div>
     <div class="panel-body"><p class="stress-summary" aria-live="polite"><strong>${stress.passCount} of ${stress.caseCount} tested cases hold</strong> under the current shares.</p>
       <p>${statusText}</p><p>Minimum shares across all cases total <strong>${negotiation.requiredShareTotal === null ? 'no finite allocation' : formatPct(negotiation.requiredShareTotal * 100)}</strong>. Available revenue share: 100%. Profit gap means monthly profit less the participant's minimum.</p>
-      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button><button type="button" data-action="export-csv">Export all cases CSV</button><button type="button" data-action="export-visible-csv">Export visible cases CSV</button><button type="button" data-action="copy-visible-csv">Copy visible cases CSV</button></div>
+      <div class="button-row"><button type="button" class="primary" data-action="apply-stress-proposal" ${negotiation.proposal ? '' : 'disabled'}>Apply tested revenue split</button><button type="button" data-action="edit-stress-settings">Edit stress settings</button><button type="button" data-action="copy-tested-split">Copy tested split</button><button type="button" data-action="collapse-all-hold-cases" aria-pressed="${collapseAllHoldCases}">Collapse cases every participant holds</button><button type="button" data-action="expand-all-hold-cases" ${collapseAllHoldCases ? '' : 'disabled'}>Show all-hold cases</button><button type="button" data-action="export-csv">Export all cases CSV</button><button type="button" data-action="export-visible-csv">Export visible cases CSV</button><button type="button" data-action="copy-visible-csv">Copy visible cases CSV</button></div>
       <p class="notice">The proposal is conditional on the entered cases, not an agreed contract or an optimal negotiation. Preview the shares below before applying. Hide in table removes a row from this display only; counts and proposals still include that participant. ${collapseNote}</p></div>
     <div class="table-wrap" tabindex="0" role="region" aria-label="Stress participant ledger, scroll horizontally"><table class="stress-table"><caption>Participant stress ledger and proposed shares</caption><thead><tr><th scope="col">Participant</th><th scope="col">Cases held</th><th scope="col">Worst profit gap</th><th scope="col">Operations</th><th scope="col">Current share</th><th scope="col">Minimum share</th><th scope="col">Proposal</th></tr></thead><tbody>${rows}</tbody></table></div>
     ${stressCasePreview(stress)}
@@ -1103,6 +1107,7 @@ function attachEvents() {
     if (action === 'close-utilization-copy') { utilizationCopyText = ''; render(); return; }
     if (action === 'close-tornado-copy') { tornadoCopyText = ''; render(); return; }
     if (action === 'close-operating-copy') { operatingCopyText = ''; render(); return; }
+    if (action === 'close-split-copy') { splitCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1260,6 +1265,7 @@ function attachEvents() {
     if (action === 'copy-utilization') copyCapacityUtilization();
     if (action === 'copy-tornado') copyTornadoChart();
     if (action === 'copy-operating-region') copyOperatingRegion();
+    if (action === 'copy-tested-split') copyTestedSplit();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -2390,6 +2396,73 @@ function copyOperatingRegion() {
     }
   }
   showOperatingCopyFallback(text, fallbackNote);
+}
+
+function testedSplitMarkdown(stress) {
+  const available = stress.negotiation.proposal ? 'yes' : 'no';
+  const lines = [
+    '# Tested split',
+    '',
+    'Cases held: ' + stress.passCount + ' of ' + stress.caseCount,
+    'Fixed split available: ' + available,
+    '',
+    '| Participant | Cases held |',
+    '| --- | --- |',
+  ];
+  for (const participant of stress.participants) {
+    lines.push('| ' + reportText(participant.name) + ' | ' + participant.passCount + ' / ' + stress.caseCount + ' |');
+  }
+  lines.push('');
+  lines.push('Counts are counts. This is not a probability.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showSplitCopyFallback(text, message) {
+  splitCopyText = text;
+  render();
+  document.querySelector('#split-copy-text')?.focus();
+  setNotice(message);
+}
+
+function splitCopySection() {
+  if (!splitCopyText) return '';
+  return `<section class="panel" aria-labelledby="split-copy-title"><div class="panel-heading"><h2 id="split-copy-title">Tested split Markdown</h2><button type="button" data-action="close-split-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. Counts are counts. This is not a probability.</p><label class="brief-copy-label" for="split-copy-text">Tested split Markdown</label><textarea id="split-copy-text" readonly rows="12">${escapeAttribute(splitCopyText)}</textarea></div></section>`;
+}
+
+function copyTestedSplit() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the tested split. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = testedSplitMarkdown(evaluateStressGrid(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Tested split copied as Markdown. Counts are counts. It is not a probability.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          splitCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showSplitCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      splitCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showSplitCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showSplitCopyFallback(text, fallbackNote);
 }
 
 function exportTornadoSvg() {
