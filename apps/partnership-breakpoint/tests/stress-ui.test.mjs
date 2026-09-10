@@ -2313,6 +2313,31 @@ test('keyboard _ jumps to Copy over-capacity participant count unless a field is
   assert.match(app.markup(), /id="copy-over-capacity-count"/);
 });
 
+test('keyboard { jumps to Hide participants within listed capacity unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="hide-within-capacity-participants"/);
+  assert.match(app.markup(), /id="hide-within-capacity-participants"[^>]*aria-keyshortcuts="\{"/);
+  assert.match(app.markup(), /id="hide-within-capacity-participants"[^>]*data-action="hide-within-capacity-participants"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('{');
+  assert.ok(app.focused().includes('#hide-within-capacity-participants'));
+  assert.ok(app.focused().includes('scroll:#hide-within-capacity-participants'));
+  assert.ok(!app.focused().includes('[data-action="hide-least-headroom-participants"]'));
+  const before = app.focused().length;
+  app.keydown('{', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('{', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('=');
+  assert.ok(app.focused().includes('[data-action="hide-least-headroom-participants"]'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('{');
+  assert.ok(app.focused().includes('#hide-within-capacity-participants'));
+  assert.ok(app.focused().includes('scroll:#hide-within-capacity-participants'));
+  assert.match(app.markup(), /id="hide-within-capacity-participants"/);
+});
+
 test('keyboard z jumps to Copy deal title and currency unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
