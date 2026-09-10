@@ -333,6 +333,19 @@ test("closed-hours Gantt filter persists in workspace JSON and older files resto
   assert.equal(legacy.nodes.get("gantt-closed-only").checked, false);
 });
 
+test("single-gate Gantt filter persists in workspace JSON and older files restore all gates", async () => {
+  const ui = await boot();
+  await ui.edit("gantt-gate-filter", "bank", "change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).ganttGateFilter, "bank");
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-gate-filter").value, "bank");
+  assert.match(restored.nodes.get("gantt-filter-note").textContent, /Chart shows Bank only/);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.ganttGateFilter;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-gate-filter").value, "all");
+});
+
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);

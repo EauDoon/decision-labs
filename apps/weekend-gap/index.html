@@ -544,6 +544,14 @@ SOFTWARE.
                 <option value="all">Every hour</option>
                 <option value="open">Hours with any gate open</option>
               </select>
+              <label for="gantt-gate-filter">Show gates</label>
+              <select id="gantt-gate-filter">
+                <option value="all">All gates</option>
+                <option value="issuer">Issuer only</option>
+                <option value="bank">Bank only</option>
+                <option value="payout">Payout only</option>
+                <option value="fx">FX only</option>
+              </select>
               <label class="checkbox-label" for="gantt-closed-only">
                 <input id="gantt-closed-only" type="checkbox">
                 Show only hours closed on at least one gate
