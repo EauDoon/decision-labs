@@ -77,6 +77,7 @@ test("hide-issuer-closed Gantt SVG is display-only and keeps the selected hour v
   const composedZeroRects = (composedZero.match(/<rect /g) || []).length;
   const hiddenZeroRects = (hiddenZero.match(/<rect /g) || []).length;
   const splitIssuerRects = (splitIssuer.match(/<rect /g) || []).length;
+  const splitBankRects = (splitBank.match(/<rect /g) || []).length;
   const composedBankRects = (composedBank.match(/<rect /g) || []).length;
   const everyRects = (everyClosed.match(/<rect /g) || []).length;
   const composedEveryRects = (composedEvery.match(/<rect /g) || []).length;
@@ -90,7 +91,8 @@ test("hide-issuer-closed Gantt SVG is display-only and keeps the selected hour v
   assert.ok(composedWeekdayRects <= weekdayRects);
   assert.ok(composedWeekendRects <= weekendRects);
   assert.ok(composedZeroRects < hiddenZeroRects);
-  assert.ok(composedBankRects < splitIssuerRects);
+  assert.ok(composedBankRects < splitBankRects);
+  assert.ok(composedBankRects <= splitIssuerRects);
   assert.ok(composedEveryRects <= everyRects);
   assert.ok(composedClosedOnlyRects < closedOnlyRects);
   assert.ok(fxRects < hiddenRects);
