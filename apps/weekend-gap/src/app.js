@@ -2119,6 +2119,11 @@ document.addEventListener("keydown", (event) => {
     copyFirstClosedPayoutHourMarkdown();
     return;
   }
+  if (event.key === "}") {
+    event.preventDefault();
+    copyFirstClosedFxHourMarkdown();
+    return;
+  }
   if (event.key === "<") {
     event.preventDefault();
     jumpToFirstClosedBankCopy();

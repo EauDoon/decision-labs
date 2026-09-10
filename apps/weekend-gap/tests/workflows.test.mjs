@@ -811,6 +811,28 @@ test("keyboard slash jumps to remaining-reserve copy and shift-slash stays help"
   assert.match(ui.nodes.get("remaining-reserve-copy-fallback").value, /Remaining reserve:/);
 });
 
+test("keyboard close-brace copies first closed FX hour through the existing control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("}");
+  assert.equal(ui.nodes.get("first-closed-fx-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-fx-copy-fallback").value, /First closed FX hour:/);
+  assert.match(ui.nodes.get("first-closed-fx-copy-fallback").value, /Counts of modeled hours, not a bank calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-closed-fx-copy-fallback").value, /First closed payout hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-closed-fx-copy-fallback").value, /First closed issuer hour:/);
+  ui.nodes.get("first-closed-fx-copy-fallback").hidden = true;
+  ui.nodes.get("first-closed-fx-copy-fallback").value = "";
+  await ui.keydown("}", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("first-closed-fx-copy-fallback").hidden, true);
+  await ui.keydown("}", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("first-closed-fx-copy-fallback").hidden, true);
+  await ui.keydown("}", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("first-closed-fx-copy-fallback").hidden, true);
+  await ui.keydown('"');
+  assert.equal(ui.nodes.get("first-closed-payout-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-payout-copy-fallback").value, /First closed payout hour:/);
+  assert.notEqual(ui.nodes.get("first-closed-fx-copy-fallback").value, ui.nodes.get("first-closed-payout-copy-fallback").value);
+});
+
 test("keyboard quote copies first closed payout hour through the existing control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown('"');
