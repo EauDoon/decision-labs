@@ -27,10 +27,10 @@ Every workbench:
 
 | Workbench | Version | Job to be done | Built-in synthetic example |
 | --- | --- | --- | --- |
-| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.7 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
+| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.8 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.7 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
-| [The Smallest Agreement](apps/smallest-agreement/) | 1.5.7 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | 1.5.7 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
+| [The Smallest Agreement](apps/smallest-agreement/) | 1.5.8 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
+| [Weekend Gap](apps/weekend-gap/) | 1.5.8 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
@@ -102,6 +102,8 @@ The Smallest Agreement 1.5.6 also names the Community garden watering start,
 lock-count copy, and the unlocked-clause filter.
 The Smallest Agreement 1.5.7 also names the Shared laundry hours start,
 first-locked-option copy, and the locked-clause hide filter.
+The Smallest Agreement 1.5.8 also names the Rooftop BBQ hours start,
+first-locked-option copy shortcut, and the threshold-group hide filter.
 Common Cart 1.4.1 also names organizer buyer
 CSV, leftover jump, and the community garden start. Common Cart 1.4.2 also names
 organizer leftover copy, school fete catering, and overlap Markdown. Common Cart 1.4.3 also names
@@ -114,12 +116,12 @@ filter. Partnership Breakpoint 1.5.3 also names tornado Markdown copy, the
 Three-party joint venture start, and the all-hold ledger persist / unbounded
 tornado filter. Partnership Breakpoint 1.5.4 also names allocation-balance
 Markdown copy, the Podcast host and network start, and the zero-share roster
-filter. Partnership Breakpoint 1.5.5 also names capacity-utilization Markdown copy, the Community hall split start, and the over-capacity roster filter. Partnership Breakpoint 1.5.6 also names first-breakpoint participant copy, the Festival stall split start, and the at-hold roster filter. Partnership Breakpoint 1.5.7 also names least-headroom participant copy, the Pop-up cinema split start, and the unbounded-capacity roster filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
+filter. Partnership Breakpoint 1.5.5 also names capacity-utilization Markdown copy, the Community hall split start, and the over-capacity roster filter. Partnership Breakpoint 1.5.6 also names first-breakpoint participant copy, the Festival stall split start, and the at-hold roster filter. Partnership Breakpoint 1.5.7 also names least-headroom participant copy, the Pop-up cinema split start, and the unbounded-capacity roster filter. Partnership Breakpoint 1.5.8 also names least-headroom copy shortcut, the Community radio split start, and the spare-capacity roster filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
 Payday Friday burst, and one-row dashboard CSV. Weekend Gap 1.5.2 also names
 peak-queue hour copy, Public-holiday Monday, and the single-gate Gantt filter.
 Weekend Gap 1.5.3 also names hours-to-clear Markdown copy, Saturday market
 burst, and selected Gantt hour persist. Weekend Gap 1.5.4 also names remaining
-reserve copy, Sunday stall close, and the weekend-hours Gantt filter. Weekend Gap 1.5.5 also names hours-to-first-settlement Markdown copy, Thin Saturday FX, and the hide-open Gantt filter. Weekend Gap 1.5.6 also names first-settlement jump, Early Monday bank open, and the hide-weekend Gantt filter. Weekend Gap 1.5.7 also names first-settlement copy shortcut, Friday late FX close, and the hide-closed Gantt filter.
+reserve copy, Sunday stall close, and the weekend-hours Gantt filter. Weekend Gap 1.5.5 also names hours-to-first-settlement Markdown copy, Thin Saturday FX, and the hide-open Gantt filter. Weekend Gap 1.5.6 also names first-settlement jump, Early Monday bank open, and the hide-weekend Gantt filter. Weekend Gap 1.5.7 also names first-settlement copy shortcut, Friday late FX close, and the hide-closed Gantt filter. Weekend Gap 1.5.8 also names hours-to-clear copy shortcut, Monday late issuer open, and the hide-zero-queue Gantt filter.
 The catalog also names how-it-works jump, version-line copy, and skip-link focus.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names skip-link copy, last-card focus, and 404 Copy jobs.

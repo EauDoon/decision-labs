@@ -37,6 +37,7 @@ test("Friday late FX close keeps the Normal Friday calendar with a one-hour late
   assert.notDeepEqual(preset, PRESETS.longWeekendFridayStart);
   assert.notDeepEqual(preset, PRESETS.compressedFridayClose);
   assert.notDeepEqual(preset, PRESETS.earlyMondayBankOpen);
+  assert.notDeepEqual(preset, PRESETS.mondayLateIssuerOpen);
   const late = runSimulation(preset);
   const normal = runSimulation(DEFAULT_SCENARIO);
   assert.equal(late.timeline[9].timeLabel, "Sat 00:00");

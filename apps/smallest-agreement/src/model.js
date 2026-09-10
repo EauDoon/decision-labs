@@ -1002,6 +1002,60 @@ export function groupsMeetingDeclaredSupportFloor(proposal, options) {
 }
 
 /**
+ * Groups whose average on the inspected package meets the numeric approval threshold.
+ * Distinct from groups that meet a declared support floor.
+ * Display-only. Solver counts stay the same.
+ */
+export function groupsMeetingApprovalThreshold(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const byGroup = approvalByGroup(proposal.groups, selected);
+  const groups = [];
+  proposal.groups.forEach((group, index) => {
+    const actual = byGroup[index].approval;
+    if (proposal.threshold - actual <= EPSILON) {
+      groups.push({ id: group.id, name: group.name, required: proposal.threshold, actual });
+    }
+  });
+  return { status: "ok", groups };
+}
+
+/**
+ * Groups with a declared support floor whose average is below that floor
+ * on the inspected package. Groups without minSupport are omitted.
+ * A floor is a number you entered, not a legal quorum.
+ * Display-only. Solver counts stay the same.
+ */
+export function groupsBelowDeclaredSupportFloor(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const byGroup = approvalByGroup(proposal.groups, selected);
+  const groups = [];
+  proposal.groups.forEach((group, index) => {
+    if (group.minSupport === undefined) return;
+    const actual = byGroup[index].approval;
+    if (group.minSupport - actual > EPSILON) {
+      groups.push({ id: group.id, name: group.name, required: group.minSupport, actual });
+    }
+  });
+  return { status: "ok", groups };
+}
+
+/**
  * Clause ids whose cheapest remaining change exceeds leftover change budget.
  * Remaining change is the lowest changeCost among options other than the inspected selection.
  * When leftover budget is 0 or negative, every clause is listed.
@@ -1949,6 +2003,35 @@ export function formatFirstLockedClauseOptionLabelMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown count of groups currently below their declared support floor.
+ * Honest when the count is zero or no inspected package is available.
+ * Distinct from lock-count copy and remaining change-budget copy.
+ * A floor is a number you entered, not a legal quorum.
+ */
+export function formatGroupsBelowSupportFloorCountMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      count: 0,
+      text: `No inspected package is available, so there is no below-floor group count to copy. ${disclaimer}\n`,
+    };
+  }
+  const listed = groupsBelowDeclaredSupportFloor(proposal, options);
+  if (listed.status !== "ok") return listed;
+  const count = listed.groups.length;
+  return {
+    status: "ok",
+    empty: count === 0,
+    count,
+    text: `Groups below their support floor: ${count}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2227,6 +2310,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "noCheaperRemainingClausesOnly",
   "hideUnlockedClauses",
   "hideLockedClauses",
+  "hideGroupsMeetingThreshold",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2241,6 +2325,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "noCheaperRemainingClausesOnly",
   "hideUnlockedClauses",
   "hideLockedClauses",
+  "hideGroupsMeetingThreshold",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2292,6 +2377,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideUnlockedClauses.error) return { status: "invalid", errors: [hideUnlockedClauses.error] };
   const hideLockedClauses = readWorkspaceBoolean(prefs, "hideLockedClauses");
   if (hideLockedClauses.error) return { status: "invalid", errors: [hideLockedClauses.error] };
+  const hideGroupsMeetingThreshold = readWorkspaceBoolean(prefs, "hideGroupsMeetingThreshold");
+  if (hideGroupsMeetingThreshold.error) return { status: "invalid", errors: [hideGroupsMeetingThreshold.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2305,6 +2392,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     hideUnlockedClauses: hideUnlockedClauses.value,
     hideLockedClauses: hideLockedClauses.value,
+    hideGroupsMeetingThreshold: hideGroupsMeetingThreshold.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2319,6 +2407,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
       hideUnlockedClauses: hideUnlockedClauses.value,
       hideLockedClauses: hideLockedClauses.value,
+      hideGroupsMeetingThreshold: hideGroupsMeetingThreshold.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2346,6 +2435,7 @@ export function parseWorkspaceJson(text) {
       noCheaperRemainingClausesOnly: null,
       hideUnlockedClauses: null,
       hideLockedClauses: null,
+      hideGroupsMeetingThreshold: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2382,6 +2472,8 @@ export function parseWorkspaceJson(text) {
   if (hideUnlockedClauses.error) return { status: "invalid", errors: [hideUnlockedClauses.error] };
   const hideLockedClauses = readWorkspaceBoolean(raw, "hideLockedClauses");
   if (hideLockedClauses.error) return { status: "invalid", errors: [hideLockedClauses.error] };
+  const hideGroupsMeetingThreshold = readWorkspaceBoolean(raw, "hideGroupsMeetingThreshold");
+  if (hideGroupsMeetingThreshold.error) return { status: "invalid", errors: [hideGroupsMeetingThreshold.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2397,6 +2489,7 @@ export function parseWorkspaceJson(text) {
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     hideUnlockedClauses: hideUnlockedClauses.value,
     hideLockedClauses: hideLockedClauses.value,
+    hideGroupsMeetingThreshold: hideGroupsMeetingThreshold.value,
   };
 }
 

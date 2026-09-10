@@ -25,11 +25,14 @@ import {
   changedClauseIds,
   groupsBelowSupportRequirement,
   groupsMeetingDeclaredSupportFloor,
+  groupsMeetingApprovalThreshold,
+  groupsBelowDeclaredSupportFloor,
   overBudgetClauseIds,
   clausesWithoutCheaperRemainingOption,
   formatCurrentLocksMarkdown,
   formatCurrentLockCountMarkdown,
   formatFirstLockedClauseOptionLabelMarkdown,
+  formatGroupsBelowSupportFloorCountMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -1898,7 +1901,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true, hideGroupsMeetingThreshold: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
@@ -1908,6 +1911,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(exported.noCheaperRemainingClausesOnly, true);
   assert.equal(exported.hideUnlockedClauses, true);
   assert.equal(exported.hideLockedClauses, true);
+  assert.equal(exported.hideGroupsMeetingThreshold, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
@@ -1918,6 +1922,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parsed.noCheaperRemainingClausesOnly, true);
   assert.equal(parsed.hideUnlockedClauses, true);
   assert.equal(parsed.hideLockedClauses, true);
+  assert.equal(parsed.hideGroupsMeetingThreshold, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
@@ -1926,6 +1931,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(Object.hasOwn(parsed.proposal, "noCheaperRemainingClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideUnlockedClauses"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideLockedClauses"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideGroupsMeetingThreshold"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
@@ -1936,6 +1942,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(omitted.noCheaperRemainingClausesOnly, false);
   assert.equal(omitted.hideUnlockedClauses, false);
   assert.equal(omitted.hideLockedClauses, false);
+  assert.equal(omitted.hideGroupsMeetingThreshold, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
@@ -1945,6 +1952,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(bare.noCheaperRemainingClausesOnly, null);
   assert.equal(bare.hideUnlockedClauses, null);
   assert.equal(bare.hideLockedClauses, null);
+  assert.equal(bare.hideGroupsMeetingThreshold, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
@@ -1955,6 +1963,8 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(formatWorkspaceJson(input, { noCheaperRemainingClausesOnly: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { hideUnlockedClauses: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { hideLockedClauses: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideGroupsMeetingThreshold: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideGroupsMeetingThreshold: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -2125,6 +2135,59 @@ test("groupsMeetingDeclaredSupportFloor lists only groups that meet a declared f
   assert.equal(JSON.stringify(input), before);
 });
 
+test("groupsMeetingApprovalThreshold lists groups that meet the numeric threshold", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", original: true, label: "Keep", changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", original: false, label: "Mid", changeCost: 1, support: { floored: 85, open: 40 } },
+      { id: "high", original: false, label: "High", changeCost: 2, support: { floored: 90, open: 80 } },
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const meetingOriginal = groupsMeetingApprovalThreshold(input, originals);
+  assert.equal(meetingOriginal.status, "ok");
+  assert.deepEqual(meetingOriginal.groups.map((group) => group.id), ["open"]);
+  assert.equal(meetingOriginal.groups[0].required, 70);
+  const mid = input.clauses[0].options[1];
+  const meetingMid = groupsMeetingApprovalThreshold(input, [mid]);
+  assert.deepEqual(meetingMid.groups.map((group) => group.id), ["floored"]);
+  assert.equal(meetingMid.groups[0].required, 70);
+  assert.notEqual(meetingMid.groups[0].required, 80);
+  assert.equal(groupsMeetingApprovalThreshold(input, []).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("groupsBelowDeclaredSupportFloor lists only groups below a declared floor", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", original: true, label: "Keep", changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", original: false, label: "Mid", changeCost: 1, support: { floored: 85, open: 40 } },
+      { id: "high", original: false, label: "High", changeCost: 2, support: { floored: 90, open: 80 } },
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const belowOriginal = groupsBelowDeclaredSupportFloor(input, originals);
+  assert.equal(belowOriginal.status, "ok");
+  assert.deepEqual(belowOriginal.groups.map((group) => group.id), ["floored"]);
+  const mid = input.clauses[0].options[1];
+  const belowMid = groupsBelowDeclaredSupportFloor(input, [mid]);
+  assert.deepEqual(belowMid.groups.map((group) => group.id), []);
+  assert.equal(groupsBelowDeclaredSupportFloor(input, []).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+});
+
 test("duplicateClauseOption copies cost and support with a unique id and name", () => {
   const input = proposal({
     clauses: [{ id: "one", title: "One", options: [
@@ -2245,6 +2308,47 @@ test("first locked clause option label Markdown is one line and honest when none
   assert.equal(empty.text, "No clause is locked, so there is no first locked option label to copy. Locks are draft choices, not a legal hold.\n");
   assert.equal(empty.text.trim().includes("\n"), false);
   assert.equal(formatFirstLockedClauseOptionLabelMarkdown({ title: "" }).status, "invalid");
+});
+
+test("below-floor group count Markdown is one line, honest at zero, and not a legal quorum", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", original: true, label: "Keep", changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", original: false, label: "Mid", changeCost: 1, support: { floored: 85, open: 40 } },
+      { id: "high", original: false, label: "High", changeCost: 2, support: { floored: 90, open: 80 } },
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const copied = formatGroupsBelowSupportFloorCountMarkdown(input, originals);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.count, 1);
+  assert.equal(copied.empty, false);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Groups below their support floor: 1. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(copied.text, /Current lock count/u);
+  assert.doesNotMatch(copied.text, /Remaining change-budget/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const mid = input.clauses[0].options[1];
+  const zero = formatGroupsBelowSupportFloorCountMarkdown(input, [mid]);
+  assert.equal(zero.status, "ok");
+  assert.equal(zero.count, 0);
+  assert.equal(zero.empty, true);
+  assert.equal(zero.text, "Groups below their support floor: 0. A floor is a number you entered, not a legal quorum.\n");
+  const missing = formatGroupsBelowSupportFloorCountMarkdown(input, null);
+  assert.equal(missing.status, "unavailable");
+  assert.equal(missing.empty, true);
+  assert.match(missing.text, /No inspected package is available/u);
+  assert.match(missing.text, /not a legal quorum/u);
+  assert.equal(missing.text.trim().includes("\n"), false);
+  assert.equal(formatGroupsBelowSupportFloorCountMarkdown({ title: "" }).status, "invalid");
 });
 
 test("formatRecommendedChangeCostCsv writes formula-safe original vs recommended costs", () => {

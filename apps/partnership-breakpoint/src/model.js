@@ -39,6 +39,7 @@
  * @property {boolean} [hideParticipantsOverCapacity] Optional roster display preference. Omitted files default to showing rows whose volume is above listed capacity.
  * @property {boolean} [hideParticipantsAtHold] Optional roster display preference. Omitted files default to showing rows whose volume headroom is at or above a hold with no listed capacity breach.
  * @property {boolean} [hideParticipantsWithoutCapacity] Optional roster display preference. Omitted files default to showing rows whose capacity is unbounded or omitted.
+ * @property {boolean} [hideParticipantsWithSpareCapacity] Optional roster display preference. Omitted files default to showing rows that still have unused listed capacity.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -52,7 +53,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -192,6 +193,15 @@ export const PRESETS = Object.freeze({
       { id: 'ticket-desk', name: 'Ticket desk', revenueShare: 0.25, variableCostPerTransaction: 0.95, fixedMonthlyCost: 1300, minimumAcceptableProfit: 1600, capacity: 2400, minimumCommitment: 0, riskCost: 280 },
     ],
   },
+  communityRadioSplit: {
+    name: 'Community radio split',
+    deal: { monthlyVolume: 3200, feePerTransaction: 11, addressableVolume: 4800, volumeShockPct: 0 },
+    participants: [
+      { id: 'presenter', name: 'Presenter', revenueShare: 0.44, variableCostPerTransaction: 1.7, fixedMonthlyCost: 2400, minimumAcceptableProfit: 2800, capacity: 4000, minimumCommitment: 400, riskCost: 500 },
+      { id: 'station', name: 'Station', revenueShare: 0.36, variableCostPerTransaction: 0.5, fixedMonthlyCost: 3600, minimumAcceptableProfit: 1800, capacity: 5200, minimumCommitment: 0, riskCost: 700 },
+      { id: 'underwriter', name: 'Underwriter', revenueShare: 0.2, variableCostPerTransaction: 1.05, fixedMonthlyCost: 800, minimumAcceptableProfit: 1100, capacity: 3500, minimumCommitment: 0, riskCost: 260 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -283,6 +293,12 @@ export function validateConfiguration(config) {
     const hideWithout = own(config, 'hideParticipantsWithoutCapacity');
     if (hideWithout !== true && hideWithout !== false) {
       errors.push('Hide participants without capacity must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideParticipantsWithSpareCapacity')) {
+    const hideSpare = own(config, 'hideParticipantsWithSpareCapacity');
+    if (hideSpare !== true && hideSpare !== false) {
+      errors.push('Hide participants with spare capacity must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {

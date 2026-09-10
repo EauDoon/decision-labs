@@ -55,6 +55,7 @@ SOFTWARE.
             <option value="hall-hire-hours">Hall hire hours</option>
             <option value="community-garden-watering">Community garden watering</option>
             <option value="shared-laundry-hours">Shared laundry hours</option>
+            <option value="rooftop-bbq-hours">Rooftop BBQ hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -85,6 +86,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-lock-count-button">Copy lock count</button>
         <button class="button button-secondary" type="button" id="copy-first-locked-option-button">Copy first locked option</button>
+        <button class="button button-secondary" type="button" id="copy-below-floor-count-button">Copy below-floor group count</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -151,6 +153,8 @@ SOFTWARE.
           <p id="hide-groups-at-floor-filter-note" class="field-note">Hides groups whose average on the inspected package meets a declared support floor. Groups without a floor stay visible. Hidden groups still count in the model. The solver is unchanged.</p>
           <label class="hide-groups-without-floors-filter" for="hide-groups-without-floors"><input id="hide-groups-without-floors" type="checkbox"> Hide groups that have no support floor</label>
           <p id="hide-groups-without-floors-filter-note" class="field-note">Hides groups that have no declared support floor. Groups with a floor stay visible. Hidden groups still count in the model. The solver is unchanged.</p>
+          <label class="hide-groups-meeting-threshold-filter" for="hide-groups-meeting-threshold"><input id="hide-groups-meeting-threshold" type="checkbox"> Hide groups currently meeting the approval threshold</label>
+          <p id="hide-groups-meeting-threshold-filter-note" class="field-note">Hides groups whose average support on the inspected package currently meets the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hide-at-floor, hide-without-floors, leftover-budget, locked-clause, hide-unlocked, and hide-locked filters.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
           <textarea id="groups-paste" rows="8" spellcheck="false" aria-describedby="groups-paste-note"></textarea>
@@ -214,7 +218,7 @@ SOFTWARE.
             <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading" tabindex="-1">The smallest agreement</h2></div>
             <p id="search-meta" class="search-meta"></p>
           </div>
-          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.</p>
+          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, a one-line lock count, and the first locked clause option label as one line on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.</p>
           <h2 id="print-heading" class="visually-hidden" tabindex="-1">Facilitator pack</h2>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
@@ -253,6 +257,9 @@ SOFTWARE.
             <label class="first-locked-option-fallback-label" for="first-locked-option-fallback">First locked option Markdown</label>
             <textarea id="first-locked-option-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-locked-option-fallback-note"></textarea>
             <p id="first-locked-option-fallback-note" class="field-note">One line of the first locked clause option label, or an honest empty line when none. Distinct from lock-count copy and current-locks copy. Locks are draft choices, not a legal hold. If the clipboard is blocked, copy from this box.</p>
+            <label class="below-floor-count-fallback-label" for="below-floor-count-fallback">Below-floor group count Markdown</label>
+            <textarea id="below-floor-count-fallback" readonly rows="3" spellcheck="false" aria-describedby="below-floor-count-fallback-note"></textarea>
+            <p id="below-floor-count-fallback-note" class="field-note">One line of the count of groups currently below their declared support floor, or an honest zero. Distinct from lock-count copy and remaining change-budget copy. A floor is a number you entered, not a legal quorum. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
@@ -414,6 +421,9 @@ SOFTWARE.
           <li><kbd>;</kbd> Copy the current lock count as one-line Markdown</li>
           <li><kbd>[</kbd> Jump to the lock-count copy control, or the locks heading</li>
           <li><kbd>]</kbd> Jump to Print facilitator pack, or the facilitator pack heading</li>
+          <li><kbd>'</kbd> Copy the first locked clause option label as one-line Markdown</li>
+          <li><kbd>&lt;</kbd> Jump to the first-locked-option copy control, or the clauses heading</li>
+          <li><kbd>&gt;</kbd> Jump to the hide-locked-clauses control, or the clauses heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>

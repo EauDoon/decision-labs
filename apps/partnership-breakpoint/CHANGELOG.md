@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.8
+
+- Keeps the 1.5.0 constraint review and 1.5.1/1.5.2/1.5.3/1.5.4/1.5.5/1.5.6/1.5.7 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, waterfall SVG, copy waterfall, persisted hide holders, Talent/agent/platform, ledger all-hold filter, Three-party joint venture, Podcast host and network, first-breakpoint snapshot, Community hall split, Festival stall split, Pop-up cinema split, and keys `f` `w` `l` `b` `c` `p` `t` `d` `k` `h` `a` `m` `v` `i` `o` `j` `q` `x` `y` `z` `,` `.` `/`.
+- Press `;` (semicolon, no shift) to copy the least-headroom participant label through the existing copy control, with the same Markdown. Ignored in inputs.
+- Press `[` to jump to Copy least-headroom participant label, or the First breakpoint heading or results heading if that control is missing, when no field is focused. Shortcuts stay ignored while a field is focused.
+- Press `]` to jump to Print one-pager, or the print / one-pager heading if that control is missing, when no field is focused.
+- Added the Community radio split starting point, a three-party presenter plus station plus underwriter with different cost bases, distinct from Balanced, Thin Margin, Growth at a Cost, Creator take-rate, Three-party JV, Two-party 50/50 studio, Four-party marketplace, Licensor and distributor, Talent, agent, and platform, Three-party joint venture, Podcast host and network, Community hall split, Festival stall split, and Pop-up cinema split. It is a synthetic starting point, not a live roster.
+- Hide participants with unused listed capacity now travels on saved case JSON as optional `hideParticipantsWithSpareCapacity`. Older files omit it and default to showing those roster rows. Unknown sibling fields are still rejected. Display only; the solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, `hideParticipantsOverCapacity`, `hideParticipantsAtHold`, and `hideParticipantsWithoutCapacity` stay available.
+- Print one-pager includes the least-headroom participant label when the case is valid. It is a synthetic ranking, not a forecast. The saved case is unchanged.
+- Copy first-breakpoint remaining-to-hold copies a one-line Markdown volume or share still needed for that first-breakpoint participant, matching existing model fields, or an honest empty line when that amount is unavailable. Clipboard falls back to a textarea. It is distinct from first-breakpoint participant copy and least-headroom copy.
+
 ## 1.5.7
 
 - Keeps the 1.5.0 constraint review and 1.5.1/1.5.2/1.5.3/1.5.4/1.5.5/1.5.6 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, waterfall SVG, copy waterfall, persisted hide holders, Talent/agent/platform, ledger all-hold filter, Three-party joint venture, Podcast host and network, first-breakpoint snapshot, Community hall split, Festival stall split, and keys `f` `w` `l` `b` `c` `p` `t` `d` `k` `h` `a` `m` `v` `i` `o` `j` `q` `x` `y` `z`.
