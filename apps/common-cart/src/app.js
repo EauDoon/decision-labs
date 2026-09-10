@@ -845,6 +845,11 @@ function handleShortcut(event) {
     focusCartReview();
     return;
   }
+  if (key === "g") {
+    event.preventDefault();
+    focusGroupHeadroom();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -874,6 +879,10 @@ function focusLeftoverHeadroom() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#leftover-headroom")?.focus();
+}
+
+function focusGroupHeadroom() {
+  document.querySelector("#metric-savings")?.focus();
 }
 
 function focusCartReview() {

@@ -213,7 +213,6 @@ test("keyboard handler focuses the offer fulfillment filter when not typing", as
   assert.match(app, /#offer-fulfillment-filter/u);
   assert.match(app, /#merchant-tab/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
-  assert.doesNotMatch(app, /if \(key === "g"\)/u);
 });
 
 test("shortcut help documents leftover item headroom jump", async () => {
@@ -246,5 +245,19 @@ test("keyboard handler opens and focuses the review panel when not typing", asyn
   assert.match(app, /panel\.open = true/u);
   assert.match(app, /querySelector\("summary"\)\?\.focus\(\)/u);
   assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("shortcut help documents the group headroom jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>g<\/kbd> Focus group headroom/u);
+  assert.match(html, /id="metric-savings"[^>]*tabindex="-1"/u);
+});
+
+test("keyboard handler jumps to group headroom when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "g"\)/u);
+  assert.match(app, /function focusGroupHeadroom\(/u);
+  assert.match(app, /#metric-savings/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });

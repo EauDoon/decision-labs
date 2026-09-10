@@ -479,6 +479,7 @@ footer {
         <li><kbd>f</kbd> Focus the offer fulfillment filter</li>
         <li><kbd>h</kbd> Focus leftover item headroom after the winner</li>
         <li><kbd>k</kbd> Focus the organizer review panel</li>
+        <li><kbd>g</kbd> Focus group headroom</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -575,7 +576,7 @@ footer {
       </article>
       <article class="metric">
         <span class="metric-label">Group headroom</span>
-        <strong id="metric-savings">A$0</strong>
+        <strong id="metric-savings" tabindex="-1">A$0</strong>
         <small>Against included buyers' maximums</small>
       </article>
     </section>
@@ -3942,6 +3943,11 @@ function handleShortcut(event) {
     focusCartReview();
     return;
   }
+  if (key === "g") {
+    event.preventDefault();
+    focusGroupHeadroom();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -3971,6 +3977,10 @@ function focusLeftoverHeadroom() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#leftover-headroom")?.focus();
+}
+
+function focusGroupHeadroom() {
+  document.querySelector("#metric-savings")?.focus();
 }
 
 function focusCartReview() {
