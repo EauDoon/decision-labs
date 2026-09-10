@@ -24,9 +24,13 @@ import {
   duplicateClauseOption,
   changedClauseIds,
   groupsBelowSupportRequirement,
+  groupsMeetingDeclaredSupportFloor,
   overBudgetClauseIds,
+  clausesWithoutCheaperRemainingOption,
   formatCurrentLocksMarkdown,
   formatGroupSupportMarkdown,
+  remainingChangeBudget,
+  formatRemainingChangeBudgetMarkdown,
   formatRecommendedChangeCostCsv,
   parseClauseOptionsCsv,
   formatClauseOptionsCsv,
@@ -1518,6 +1522,72 @@ test("group support Markdown table lists name, weight, and average without claim
   assert.equal(formatGroupSupportMarkdown(input, null).status, "unavailable");
 });
 
+test("remaining change-budget Markdown is one line, honest when exhausted, and not a legal appropriation", () => {
+  const unlimited = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const beforeUnlimited = JSON.stringify(unlimited);
+  const unlimitedCopy = formatRemainingChangeBudgetMarkdown(unlimited);
+  assert.equal(unlimitedCopy.status, "ok");
+  assert.equal(unlimitedCopy.text.includes("\n"), true);
+  assert.equal(unlimitedCopy.text.trim().includes("\n"), false);
+  assert.match(unlimitedCopy.text, /leftover change-budget is unlimited/u);
+  assert.match(unlimitedCopy.text, /not a legal appropriation/u);
+  assert.doesNotMatch(unlimitedCopy.text, /^# Recommended package/u);
+  assert.doesNotMatch(unlimitedCopy.text, /\| Group \| Weight \| Average support \|/u);
+  assert.doesNotMatch(unlimitedCopy.text, /[\u2014\u2013]/u);
+  assert.equal(remainingChangeBudget(unlimited).unlimited, true);
+  assert.equal(JSON.stringify(unlimited), beforeUnlimited);
+
+  const leftover = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "keep", title: "Keep", options: [
+        option("keep-original", true, { g: 90 }), option("keep-alt", false, { g: 40 }, 5), option("keep-other", false, { g: 20 }, 8),
+      ] },
+      { id: "spend", title: "Spend", options: [
+        option("spend-original", true, { g: 40 }), option("spend-alt", false, { g: 90 }, 2), option("spend-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  leftover.maxChangeCost = 3;
+  const leftoverResult = findSmallestAgreement(leftover);
+  assert.equal(leftoverResult.status, "found");
+  const leftoverCopy = formatRemainingChangeBudgetMarkdown(leftover, leftoverResult);
+  assert.equal(leftoverCopy.status, "ok");
+  assert.match(leftoverCopy.text, /^Remaining change-budget: 1\.0\. This leftover is a draft accounting line, not a legal appropriation\.\n$/u);
+  assert.equal(remainingChangeBudget(leftover, leftoverResult).remaining, 1);
+  assert.equal(remainingChangeBudget(leftover, leftoverResult).exhausted, false);
+
+  const exhausted = proposal({
+    threshold: 70,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 40 }), option("alt", false, { g: 90 }, 2), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  exhausted.maxChangeCost = 2;
+  const spent = formatRemainingChangeBudgetMarkdown(exhausted, findSmallestAgreement(exhausted));
+  assert.equal(spent.status, "ok");
+  assert.match(spent.text, /Remaining change-budget is exhausted \(0\.0 leftover\)/u);
+  assert.match(spent.text, /not a legal appropriation/u);
+  assert.equal(remainingChangeBudget(exhausted).exhausted, true);
+
+  const missing = proposal({
+    threshold: 95,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 10 }), option("alt", false, { g: 20 }, 1), option("other", false, { g: 30 }, 2),
+    ] }],
+  });
+  missing.maxChangeCost = 0;
+  const none = formatRemainingChangeBudgetMarkdown(missing);
+  assert.equal(none.status, "unavailable");
+  assert.match(none.text, /No recommended package is available/u);
+  assert.match(none.text, /not a legal appropriation/u);
+  assert.equal(formatRemainingChangeBudgetMarkdown({ title: "" }).status, "invalid");
+});
+
 test("pinned package Markdown table lists original, recommended, and pinned labels without recording a vote", () => {
   const input = proposal({
     clauses: [{ id: "one", title: "Hours", options: [
@@ -1686,33 +1756,45 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, noCheaperRemainingClausesOnly: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
   assert.equal(exported.overBudgetClausesOnly, true);
+  assert.equal(exported.hideGroupsAtFloor, true);
+  assert.equal(exported.noCheaperRemainingClausesOnly, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
   assert.equal(parsed.belowFloorGroupsOnly, true);
   assert.equal(parsed.overBudgetClausesOnly, true);
+  assert.equal(parsed.hideGroupsAtFloor, true);
+  assert.equal(parsed.noCheaperRemainingClausesOnly, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideGroupsAtFloor"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "noCheaperRemainingClausesOnly"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
   assert.equal(omitted.belowFloorGroupsOnly, false);
   assert.equal(omitted.overBudgetClausesOnly, false);
+  assert.equal(omitted.hideGroupsAtFloor, false);
+  assert.equal(omitted.noCheaperRemainingClausesOnly, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
   assert.equal(bare.overBudgetClausesOnly, null);
+  assert.equal(bare.hideGroupsAtFloor, null);
+  assert.equal(bare.noCheaperRemainingClausesOnly, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, belowFloorGroupsOnly: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { overBudgetClausesOnly: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideGroupsAtFloor: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { noCheaperRemainingClausesOnly: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -1783,6 +1865,54 @@ test("overBudgetClauseIds lists clauses whose cheapest remaining change exceeds 
   assert.deepEqual(findSmallestAgreement(input), result);
 });
 
+test("clausesWithoutCheaperRemainingOption lists clauses with no cheaper remaining option than the recommendation", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "keep", title: "Keep", options: [
+        option("keep-original", true, { g: 90 }), option("keep-alt", false, { g: 40 }, 5), option("keep-other", false, { g: 20 }, 8),
+      ] },
+      { id: "spend", title: "Spend", options: [
+        option("spend-original", true, { g: 40 }), option("spend-alt", false, { g: 90 }, 2), option("spend-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const before = JSON.stringify(input);
+  const result = findSmallestAgreement(input);
+  assert.equal(result.status, "found");
+  const listed = clausesWithoutCheaperRemainingOption(input, result);
+  assert.equal(listed.status, "ok");
+  assert.deepEqual(listed.clauseIds, ["keep"]);
+  assert.deepEqual(clausesWithoutCheaperRemainingOption(input, { status: "infeasible" }).clauseIds, []);
+  assert.equal(clausesWithoutCheaperRemainingOption({ title: "" }, result).status, "invalid");
+
+  const originals = proposal({
+    clauses: [
+      { id: "one", title: "One", options: [
+        option("one-original", true, { g: 90 }), option("one-alt", false, { g: 40 }, 1), option("one-other", false, { g: 20 }, 8),
+      ] },
+      { id: "two", title: "Two", options: [
+        option("two-original", true, { g: 90 }), option("two-alt", false, { g: 40 }, 1), option("two-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  const originalResult = findSmallestAgreement(originals);
+  assert.equal(originalResult.status, "already_passing");
+  assert.deepEqual(clausesWithoutCheaperRemainingOption(originals, originalResult).clauseIds, ["one", "two"]);
+
+  const tied = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 0), option("other", false, { g: 20 }, 0),
+    ] }],
+  });
+  const tiedResult = findSmallestAgreement(tied);
+  assert.equal(tiedResult.status, "already_passing");
+  assert.deepEqual(clausesWithoutCheaperRemainingOption(tied, tiedResult).clauseIds, ["one"]);
+
+  assert.equal(JSON.stringify(input), before);
+  assert.deepEqual(findSmallestAgreement(input), result);
+});
+
 test("groupsBelowSupportRequirement uses each floor or the approval threshold", () => {
   const input = proposal({
     threshold: 70,
@@ -1806,6 +1936,32 @@ test("groupsBelowSupportRequirement uses each floor or the approval threshold", 
   assert.deepEqual(belowMid.groups.map((group) => group.id), ["open"]);
   assert.equal(belowMid.groups[0].required, 70);
   assert.equal(groupsBelowSupportRequirement(input, []).status, "invalid");
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("groupsMeetingDeclaredSupportFloor lists only groups that meet a declared floor", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", original: true, label: "Keep", changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", original: false, label: "Mid", changeCost: 1, support: { floored: 85, open: 40 } },
+      { id: "high", original: false, label: "High", changeCost: 2, support: { floored: 90, open: 80 } },
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const meetingOriginal = groupsMeetingDeclaredSupportFloor(input, originals);
+  assert.equal(meetingOriginal.status, "ok");
+  assert.deepEqual(meetingOriginal.groups.map((group) => group.id), []);
+  const mid = input.clauses[0].options[1];
+  const meetingMid = groupsMeetingDeclaredSupportFloor(input, [mid]);
+  assert.deepEqual(meetingMid.groups.map((group) => group.id), ["floored"]);
+  assert.equal(meetingMid.groups[0].required, 80);
+  assert.equal(groupsMeetingDeclaredSupportFloor(input, []).status, "invalid");
   assert.equal(JSON.stringify(input), before);
 });
 

@@ -1,5 +1,21 @@
 # Changelog
 
+## 1.5.4 - 2026-09-10
+
+A workshop follow-up on 1.5.3. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `d` jumps to the first group below its support floor, or the groups heading if none. Ignored while typing.
+- Keyboard `o` jumps to the first recommended-package option card, or the clauses heading if none. Ignored while typing. The recommendation is not a recorded vote.
+- Copy remaining change-budget as one-line Markdown, with a clipboard fallback. Honest when leftover is exhausted or unlimited. Distinct from recommended-package copy and the group-support table. It is not a legal appropriation.
+- Keyboard `j` copies that remaining change-budget line. Ignored while typing.
+- Keyboard `x` focuses the JSON export control. Ignored while typing. `e` still exports.
+- Street stall lighting preset: synthetic stallholders, nearby residents (a veto group), and council officers scoring lighting hours, glare, and pack-down. Distinct from Neighbourhood Plan, Open Source Policy, Association Budget, Protected Access, Workplace Hybrid, Club Constitution, Library Quiet Hours, Sports Fixture Night, Market stall hours, and Shared bike shed. Not a recorded vote.
+- Hide groups currently meeting a declared support floor. Groups without a floor stay visible. Hidden groups still count in the model. The solver is unchanged. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all.
+- Print facilitator pack includes remaining change-budget. Print redacted still uses Group 1 through Group N. The leftover is a draft accounting line, not a legal appropriation. The saved draft is unchanged.
+- Filter clause cards that have no remaining cheaper option than the recommendation. Hidden cards still count in the model. The solver is unchanged. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all.
+
 ## 1.5.3 - 2026-09-10
 
 A workshop follow-up on 1.5.2. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
