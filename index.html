@@ -1924,6 +1924,11 @@
           (document.getElementById('copy-first-workbench') || document.getElementById('workbenches-title') || document.getElementById('workbenches'))?.focus();
           return;
         }
+        if (event.key === '^') {
+          event.preventDefault();
+          (document.getElementById('copy-last-workbench') || document.getElementById('workbenches-title') || document.getElementById('workbenches'))?.focus();
+          return;
+        }
         if (event.key === '%') {
           event.preventDefault();
           (document.getElementById('copy-first-trust') || document.getElementById('trust-title') || document.getElementById('trust'))?.focus();
