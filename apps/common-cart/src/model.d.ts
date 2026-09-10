@@ -143,6 +143,7 @@ export const presets: Readonly<{
   libraryPaper: Scenario;
   sportsKit: Scenario;
   surfFirstAid: Scenario;
+  theatreWardrobe: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;

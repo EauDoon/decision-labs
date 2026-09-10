@@ -210,6 +210,23 @@ export const presets = Object.freeze({
       offer("O02", "Ice Pack Run", "Surf first-aid kit", "Ice pack", 9, 8, 5, 24, 2),
       { ...offer("O03", "Clubhouse First-Aid Pickup", "Surf first-aid kit", "Saline rinse", 8, 6, 2, 20, 6), fulfillment: "pickup" }
     ]
+  },
+  theatreWardrobe: {
+    title: "Theatre wardrobe kit",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Wardrobe truck", "Costume wardrobe pack", 8, 48, 8, ["Period costume", "Rehearsal blacks"]),
+      buyer("B02", "Chorus dressing", "Costume wardrobe pack", 12, 36, 6, ["Rehearsal blacks"]),
+      buyer("B03", "Principal cast", "Costume wardrobe pack", 5, 55, 10, ["Period costume", "Quick-change cloak"]),
+      buyer("B04", "Green room rail", "Costume wardrobe pack", 4, 28, 4, ["Quick-change cloak"]),
+      buyer("B05", "Understudy rail", "Costume wardrobe pack", 7, 44, 7, ["Period costume", "Rehearsal blacks"]),
+      buyer("B06", "Tour crate", "Costume wardrobe pack", 6, 38, 5, ["Rehearsal blacks", "Quick-change cloak"])
+    ],
+    offers: [
+      offer("O01", "Stage-door Costume Delivery", "Costume wardrobe pack", "Period costume", 32, 10, 5, 40, 5),
+      offer("O02", "Blacks Run Co", "Costume wardrobe pack", "Rehearsal blacks", 22, 8, 6, 30, 3),
+      { ...offer("O03", "Green-room Wardrobe Pickup", "Costume wardrobe pack", "Quick-change cloak", 18, 6, 2, 20, 8), fulfillment: "pickup" }
+    ]
   }
 });
 
