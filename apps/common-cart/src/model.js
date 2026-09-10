@@ -387,7 +387,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -500,7 +500,15 @@ export function validateWorkspace(candidate) {
     }
     hideLeftoverFillBuyers = hideBuyersFilledByLeftoverFill;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers };
+  const hideLastBuyerFilledByLeftoverFill = own(candidate, "hideLastBuyerFilledByLeftoverFill");
+  let hideLastLeftoverFillBuyer = false;
+  if (hideLastBuyerFilledByLeftoverFill !== undefined) {
+    if (hideLastBuyerFilledByLeftoverFill !== true && hideLastBuyerFilledByLeftoverFill !== false) {
+      throw new ScenarioError("Hide last leftover-fill buyer must be true or false.");
+    }
+    hideLastLeftoverFillBuyer = hideLastBuyerFilledByLeftoverFill;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -737,6 +745,25 @@ export function filterBuyerIdsHidingBuyersFilledByLeftoverFill(rawScenario, hide
   return scenario.buyers.filter((buyer) => {
     if (winnerIds.has(buyer.id)) return true;
     return !leftoverFillIds.has(buyer.id);
+  }).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides only the last leftover-fill selectedBuyerIds entry. Winner-allocated, unserved, and other leftover-fill buyers stay visible. */
+export function filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(rawScenario, hideLastBuyerFilledByLeftoverFill) {
+  if (hideLastBuyerFilledByLeftoverFill !== true && hideLastBuyerFilledByLeftoverFill !== false) {
+    throw new ScenarioError("Hide last leftover-fill buyer must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideLastBuyerFilledByLeftoverFill) return scenario.buyers.map((buyer) => buyer.id);
+  const market = evaluateMarket(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  const leftoverFillIds = coverage.secondary?.selectedBuyerIds ?? [];
+  const lastId = leftoverFillIds.length > 0 ? leftoverFillIds[leftoverFillIds.length - 1] : null;
+  const winnerIds = new Set(market.winner?.selectedBuyerIds ?? []);
+  return scenario.buyers.filter((buyer) => {
+    if (winnerIds.has(buyer.id)) return true;
+    if (lastId && buyer.id === lastId) return false;
+    return true;
   }).map((buyer) => buyer.id);
 }
 

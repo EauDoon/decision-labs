@@ -273,7 +273,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -326,6 +326,8 @@ export function filterBuyerIdsHidingLeftoverOnlyBuyers(rawScenario: unknown, hid
 export function filterBuyerIdsHidingWinnerAllocatedBuyers(rawScenario: unknown, hideWinnerAllocatedBuyers: boolean): string[];
 /** Display-only. Matching is unchanged. Hides organizer buyer rows in leftover-fill selectedBuyerIds. Winner-allocated and unserved buyers stay visible. When hideBuyersFilledByLeftoverFill is false, every buyer id is returned. */
 export function filterBuyerIdsHidingBuyersFilledByLeftoverFill(rawScenario: unknown, hideBuyersFilledByLeftoverFill: boolean): string[];
+/** Display-only. Matching is unchanged. Hides only the last leftover-fill selectedBuyerIds entry. Winner-allocated, unserved, and other leftover-fill buyers stay visible. When hideLastBuyerFilledByLeftoverFill is false, every buyer id is returned. */
+export function filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(rawScenario: unknown, hideLastBuyerFilledByLeftoverFill: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;

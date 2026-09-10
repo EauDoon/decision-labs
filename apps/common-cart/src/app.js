@@ -24,6 +24,7 @@ import {
   filterBuyerIdsHidingLeftoverOnlyBuyers,
   filterBuyerIdsHidingWinnerAllocatedBuyers,
   filterBuyerIdsHidingBuyersFilledByLeftoverFill,
+  filterBuyerIdsHidingLastBuyerFilledByLeftoverFill,
   organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
@@ -146,6 +147,7 @@ let hideUnservedBuyers = false;
 let hideLeftoverOnlyBuyers = false;
 let hideWinnerAllocatedBuyers = false;
 let hideBuyersFilledByLeftoverFill = false;
+let hideLastBuyerFilledByLeftoverFill = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -173,6 +175,7 @@ function loadWorkspace() {
     hideLeftoverOnlyBuyers = workspace.hideLeftoverOnlyBuyers;
     hideWinnerAllocatedBuyers = workspace.hideWinnerAllocatedBuyers;
     hideBuyersFilledByLeftoverFill = workspace.hideBuyersFilledByLeftoverFill;
+    hideLastBuyerFilledByLeftoverFill = workspace.hideLastBuyerFilledByLeftoverFill;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -215,7 +218,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideOffersWithRemainingCapacity, hideFullyFilledBuyers, hideBuyersWithLeftover, hideUnservedBuyers, hideLeftoverOnlyBuyers, hideWinnerAllocatedBuyers, hideBuyersFilledByLeftoverFill, hideLastBuyerFilledByLeftoverFill });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -796,6 +799,18 @@ function bindStaticEvents() {
       setStatus(hideBuyersFilledByLeftoverFill
         ? "Hiding buyers filled by leftover fill. Display only. Winner-allocated and unserved buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
         : "Showing leftover-fill buyers again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#hide-last-buyer-filled-by-leftover-fill").addEventListener("change", (event) => {
+    hideLastBuyerFilledByLeftoverFill = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideLastBuyerFilledByLeftoverFill
+        ? "Hiding the last leftover-fill buyer. Display only. Winner-allocated, unserved, and other leftover-fill buyers stay visible. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing the last leftover-fill buyer again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -1676,6 +1691,8 @@ function renderEditor() {
   if (hideWinnerAllocated) hideWinnerAllocated.checked = hideWinnerAllocatedBuyers;
   const hideLeftoverFillBuyers = document.querySelector("#hide-buyers-filled-by-leftover-fill");
   if (hideLeftoverFillBuyers) hideLeftoverFillBuyers.checked = hideBuyersFilledByLeftoverFill;
+  const hideLastLeftoverFillBuyer = document.querySelector("#hide-last-buyer-filled-by-leftover-fill");
+  if (hideLastLeftoverFillBuyer) hideLastLeftoverFillBuyer.checked = hideLastBuyerFilledByLeftoverFill;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -1860,6 +1877,14 @@ function applyBuyerDisplayFilters() {
     try {
       const leftoverFillHidden = new Set(filterBuyerIdsHidingBuyersFilledByLeftoverFill(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => leftoverFillHidden.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
+  if (hideLastBuyerFilledByLeftoverFill) {
+    try {
+      const lastLeftoverFillHidden = new Set(filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => lastLeftoverFillHidden.has(id)));
     } catch {
       visibleIds = new Set();
     }
