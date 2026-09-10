@@ -32,6 +32,7 @@
  * @property {Deal} deal
  * @property {ParticipantInput[]} participants
  * @property {StressSettings} [stress] Optional. Legacy cases omit this object.
+ * @property {boolean} [collapseAllHoldCases] Optional display preference. Omitted files default to expanded.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -45,7 +46,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -124,6 +125,14 @@ export const PRESETS = Object.freeze({
       { id: 'payments', name: 'Payments', revenueShare: 0.12, variableCostPerTransaction: 0.03, fixedMonthlyCost: 500, minimumAcceptableProfit: 1800, capacity: 26000, minimumCommitment: 0, riskCost: 100 },
     ],
   },
+  licensorDistributor: {
+    name: 'Licensor and distributor',
+    deal: { monthlyVolume: 9000, feePerTransaction: 22, addressableVolume: 14000, volumeShockPct: 0 },
+    participants: [
+      { id: 'ip-licensor', name: 'IP licensor', revenueShare: 0.4, variableCostPerTransaction: 0.25, fixedMonthlyCost: 3500, minimumAcceptableProfit: 20000, capacity: null, minimumCommitment: 0, riskCost: 1500 },
+      { id: 'territory-distributor', name: 'Territory distributor', revenueShare: 0.6, variableCostPerTransaction: 6.5, fixedMonthlyCost: 14000, minimumAcceptableProfit: 9000, capacity: 11000, minimumCommitment: 2500, riskCost: 2800 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -175,6 +184,12 @@ export function validateConfiguration(config) {
     return { valid: false, errors: ['Configuration must be an object.'] };
   }
   rejectUnknownKeys(config, CONFIG_KEYS, 'Configuration', errors);
+  if (Object.hasOwn(config, 'collapseAllHoldCases')) {
+    const collapse = own(config, 'collapseAllHoldCases');
+    if (collapse !== true && collapse !== false) {
+      errors.push('Collapse all-hold cases must be a boolean.');
+    }
+  }
   if (Object.hasOwn(config, 'stress')) {
     const stress = own(config, 'stress');
     if (!isPlainObject(stress)) {
@@ -788,6 +803,19 @@ export function moveParticipant(participants, index, direction) {
   next[target] = next[index];
   next[index] = displaced;
   return next;
+}
+
+/**
+ * Swaps two adjacent participants at `index` and `index + 1`. Identifiers and
+ * shares stay with each participant. Out-of-range indexes return a shallow copy.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+export function swapAdjacentParticipants(participants, index) {
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length - 1) {
+    return Array.isArray(participants) ? participants.map((item) => ({ ...item })) : [];
+  }
+  return moveParticipant(participants, index, 'down');
 }
 
 /**
@@ -1420,7 +1448,7 @@ export function sanitizeExportSlug(title) {
 }
 
 /**
- * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'|'participants'|'tornado'} kind
+ * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'|'participants'|'tornado'|'waterfall'} kind
  * @param {unknown} title
  */
 export function exportDownloadName(kind, title) {
@@ -1433,6 +1461,7 @@ export function exportDownloadName(kind, title) {
   if (kind === 'csv-visible') return slug ? `partnership-breakpoint-${slug}-stress-visible.csv` : 'partnership-breakpoint-stress-visible.csv';
   if (kind === 'participants') return slug ? `partnership-breakpoint-${slug}-participants.csv` : 'partnership-breakpoint-participants.csv';
   if (kind === 'tornado') return slug ? `partnership-breakpoint-${slug}-tornado.svg` : 'partnership-breakpoint-tornado.svg';
+  if (kind === 'waterfall') return slug ? `partnership-breakpoint-${slug}-waterfall.svg` : 'partnership-breakpoint-waterfall.svg';
   return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
 }
 

@@ -52,6 +52,8 @@ async function workbench(protocol = 'file:', options = {}) {
       const focusIds = new Set([
         'brief-copy-text', 'results-jump', 'results-start', 'add-participant',
         'share-hold-jump', 'share-hold-title', 'csv-copy-text', 'imported-compare-title',
+        'comparison-title', 'three-compare-title', 'breakpoint-copy-text', 'share-hold-copy-text',
+        'notes-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -706,7 +708,7 @@ test('invalid fields expose accessible state and printing requires a valid case'
  assert.match(app.markup(), /aria-live="polite">1 field needs attention\./);
  assert.match(app.markup(), /Go to first invalid field/);
  assert.match(app.markup(), /[0-9]+ field[s]? need/);
- assert.match(app.markup(), /<details class="participant-details" open>/);
+ assert.match(app.markup(), /<details class="participant-details"[^>]* open/);
  assert.match(html, /\.invalid-summary \{[\s\S]*position: sticky;/);
  app.click('print-report'); assert.equal(app.prints(), 1);
  app.click('undo'); app.click('print-report'); assert.equal(app.prints(), 2);
@@ -795,8 +797,9 @@ test('participant roster toolbar stays outside the disclosure and defaults to op
   assert.match(form, /data-action="duplicate-participant"/);
   assert.match(form, /data-action="move-participant-up"/);
   assert.match(form, /data-action="move-participant-down"/);
+  assert.match(form, /data-action="swap-participant-next"/);
   assert.match(form, /data-action="remove-participant"/);
-  assert.match(app.markup(), /<details class="participant-details" open>/);
+  assert.match(app.markup(), /<details class="participant-details"[^>]* open/);
   assert.match(html, /@media \(max-width: 390px\)/);
   assert.match(html, /\.participant-toolbar \.button-row/);
 });
@@ -816,6 +819,24 @@ test('duplicate and move roster controls keep unique ids and the original share 
   app.click('move-participant-up', { index: '1' });
   assert.deepEqual(app.saved().participants.map((item) => item.id), duplicated.participants.map((item) => item.id));
   assert.equal(app.saved().participants.reduce((sum, item) => sum + item.revenueShare, 0), 1);
+});
+
+test('swap with next reorders adjacent participants and can be undone', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  const original = ['platform', 'distributor', 'liquidity-partner'];
+  assert.deepEqual(app.saved().participants.map((item) => item.id), original);
+  const originalShares = app.saved().participants.map((item) => item.revenueShare);
+  app.click('swap-participant-next', { index: '0' });
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['distributor', 'platform', 'liquidity-partner']);
+  assert.equal(app.saved().participants[0].revenueShare, originalShares[1]);
+  assert.equal(app.saved().participants[1].revenueShare, originalShares[0]);
+  assert.match(app.notice(), /Adjacent participants swapped/);
+  app.click('undo');
+  assert.deepEqual(app.saved().participants.map((item) => item.id), original);
+  app.click('swap-participant-next', { index: '2' });
+  assert.deepEqual(app.saved().participants.map((item) => item.id), original);
 });
 
 test('removing a participant reallocates their share and blocks dropping the last two', async () => {
@@ -846,6 +867,40 @@ test('share-to-hold previews a split and requires an explicit apply', async () =
   assert.notDeepEqual(applied.participants.map((item) => item.revenueShare), originalShares);
   app.click('undo');
   assert.deepEqual(app.saved().participants.map((item) => item.revenueShare), originalShares);
+});
+
+test('copy share-to-hold preview uses Markdown and a clipboard fallback', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  fallback.click('copy-share-hold');
+  assert.match(fallback.notice(), /Open a share-to-hold preview before copying it/);
+  assert.doesNotMatch(fallback.markup(), /id="share-hold-copy-text"/);
+  fallback.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  assert.match(fallback.markup(), /data-action="copy-share-hold"/);
+  fallback.click('copy-share-hold');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="share-hold-copy-text"/);
+  assert.match(fallback.markup(), /Participant: Liquidity Partner/);
+  assert.match(fallback.markup(), /Status: possible/);
+  assert.match(fallback.markup(), /Minimum revenue share: 24\.0%/);
+  assert.match(fallback.markup(), /not a probability that the participant will stay/);
+  fallback.click('close-share-hold-copy');
+  assert.doesNotMatch(fallback.markup(), /id="share-hold-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  withClipboard.click('copy-share-hold');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /Participant: Liquidity Partner/);
+  assert.match(withClipboard.copied()[0], /Minimum revenue share: 24\.0%/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.doesNotMatch(withClipboard.markup(), /id="share-hold-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('solve-share-hold', { participantId: 'liquidity-partner' });
+  denied.click('copy-share-hold');
+  assert.match(denied.markup(), /id="share-hold-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('volume-to-hold previews a floor and requires an explicit apply', async () => {
@@ -930,10 +985,33 @@ test('contribution waterfall includes an SVG and a text fallback for each partic
   assert.match(app.markup(), /aria-label="Contribution waterfall for Platform/);
   assert.match(app.markup(), /<caption>Text equivalent for Platform<\/caption>/);
   assert.match(app.markup(), /Minimum acceptable profit/);
+  assert.match(app.markup(), /data-action="export-waterfall-svg"/);
   const tornadoAt = app.markup().indexOf('Adverse-shock tornado');
   const waterfallAt = app.markup().indexOf('Contribution waterfall');
   const stressAt = app.markup().indexOf('Compound stress and negotiation');
   assert.equal(tornadoAt > 0 && waterfallAt > tornadoAt && stressAt > waterfallAt, true);
+});
+
+test('waterfall SVG download writes a namespaced file and refuses invalid cases', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('export-waterfall-svg');
+  const file = app.downloads()[0];
+  assert.equal(file.filename, 'partnership-breakpoint-waterfall.svg');
+  const text = await file.blob.text();
+  assert.match(text, /^<\?xml version="1.0" encoding="UTF-8"\?>/);
+  assert.match(text, /xmlns="http:\/\/www.w3.org\/2000\/svg"/);
+  assert.match(text, /<svg /);
+  assert.match(text, /Platform/);
+  assert.match(text, /Revenue/);
+  assert.doesNotMatch(text, /probab/i);
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.click('export-waterfall-svg');
+  assert.equal(app.downloads()[1].filename, 'partnership-breakpoint-harbor-jv-waterfall.svg');
+  app.edit('deal.monthlyVolume', '');
+  app.click('export-waterfall-svg');
+  assert.equal(app.downloads().length, 2);
+  assert.match(app.notice(), /Resolve invalid inputs before downloading the waterfall SVG/);
 });
 
 test('two-party 50/50 studio preset loads from the starting-point buttons', async () => {
@@ -958,6 +1036,20 @@ test('four-party marketplace preset loads from the starting-point buttons', asyn
   assert.equal(app.saved().deal.feePerTransaction, 1.2);
   assert.equal(app.saved().deal.monthlyVolume, 25000);
   assert.match(app.notice(), /Four-party marketplace loaded/);
+});
+
+test('licensor and distributor preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="licensorDistributor"/);
+  assert.match(app.markup(), /Licensor and distributor/);
+  app.click('preset', { preset: 'licensorDistributor' });
+  assert.equal(app.saved().participants.length, 2);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['ip-licensor', 'territory-distributor']);
+  assert.equal(app.saved().deal.feePerTransaction, 22);
+  assert.equal(app.saved().participants[0].variableCostPerTransaction, 0.25);
+  assert.equal(app.saved().participants[1].variableCostPerTransaction, 6.5);
+  assert.match(app.notice(), /Licensor and distributor loaded/);
+  assert.match(app.markup(), /Operating region holds/);
 });
 
 test('visible tour and shortcut buttons reopen coach and help', async () => {
@@ -1019,6 +1111,8 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>g<\/kbd> Jump to the results nav/);
   assert.match(app.markup(), /<kbd>n<\/kbd> Focus Add participant/);
   assert.match(app.markup(), /<kbd>s<\/kbd> Jump to share-to-hold/);
+  assert.match(app.markup(), /<kbd>c<\/kbd> Jump to snapshot or imported JSON compare/);
+  assert.match(app.markup(), /<kbd>p<\/kbd> Print the one-pager/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1084,6 +1178,51 @@ test('keyboard s jumps to share-to-hold and ignores focused inputs', async () =>
   assert.ok(app.focused().includes('#share-hold-title'));
 });
 
+test('keyboard c jumps to snapshot or imported compare unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const idle = app.focused().length;
+  app.keydown('c');
+  assert.equal(app.focused().length, idle);
+  app.nameCase('Baseline');
+  app.click('save-case');
+  app.click('compare-case', { caseId: 'case-1' });
+  app.keydown('c');
+  assert.ok(app.focused().includes('#comparison-title'));
+  assert.ok(app.focused().includes('scroll:#comparison-title'));
+  const afterSnapshot = app.focused().length;
+  app.keydown('c', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, afterSnapshot);
+  app.keydown('c', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, afterSnapshot);
+  const other = clonePreset('balanced');
+  other.participants[0].fixedMonthlyCost = 1900;
+  app.compareImport(other, undefined, false, { name: 'alt.json' });
+  app.keydown('c');
+  assert.ok(app.focused().includes('#imported-compare-title'));
+  assert.ok(app.focused().includes('scroll:#imported-compare-title'));
+});
+
+test('keyboard p prints the one-pager when valid and ignores focused inputs', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.equal(app.prints(), 0);
+  app.keydown('p');
+  assert.equal(app.prints(), 1);
+  const before = app.prints();
+  app.keydown('p', { tagName: 'INPUT' });
+  assert.equal(app.prints(), before);
+  app.keydown('p', { tagName: 'TEXTAREA' });
+  assert.equal(app.prints(), before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('p');
+  assert.equal(app.prints(), before);
+  assert.match(app.notice(), /Resolve invalid inputs before printing/);
+  app.click('undo');
+  app.keydown('p');
+  assert.equal(app.prints(), before + 1);
+});
+
 test('redacted export replaces names, clears the title, and keeps identifiers', async () => {
   const app = await workbench();
   app.edit('deal.title', 'Secret Alliance', { type: 'text' });
@@ -1098,6 +1237,50 @@ test('redacted export replaces names, clears the title, and keeps identifiers', 
   app.edit('deal.monthlyVolume', '');
   app.click('export-redacted');
   assert.equal(app.downloads().length, 1);
+});
+
+test('copy first breakpoint uses displayed labels and a clipboard fallback', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-first-breakpoint"/);
+  fallback.click('copy-first-breakpoint');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="breakpoint-copy-text"/);
+  assert.match(fallback.markup(), /Participant: Liquidity Partner/);
+  assert.match(fallback.markup(), /Shock axis: fee decrease/);
+  assert.match(fallback.markup(), /Magnitude: 0\.0080 units \/ txn, 4\.0%/);
+  assert.match(fallback.markup(), /not a probability forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-breakpoint-copy');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-first-breakpoint');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the first breakpoint/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-first-breakpoint');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /Participant: Liquidity Partner/);
+  assert.match(withClipboard.copied()[0], /Shock axis: fee decrease/);
+  assert.match(withClipboard.copied()[0], /Magnitude: 0\.0080 units \/ txn, 4\.0%/);
+  assert.match(withClipboard.copied()[0], /not a probability forecast/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="breakpoint-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-first-breakpoint');
+  assert.match(denied.markup(), /id="breakpoint-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const failing = clonePreset('balanced');
+  failing.participants[2].minimumAcceptableProfit = 10000;
+  const already = await workbench();
+  already.import(failing);
+  already.click('copy-first-breakpoint');
+  assert.match(already.markup(), /Participant: Liquidity Partner/);
+  assert.match(already.markup(), /Magnitude: Already failing/);
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
@@ -1126,6 +1309,57 @@ test('negotiation brief copies Markdown or keeps a visible textarea fallback', a
   const denied = await workbench('file:', { clipboard: 'fail' });
   denied.click('copy-brief');
   assert.match(denied.markup(), /id="brief-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
+test('copy deal notes uses Markdown and a clipboard fallback', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-deal-notes"/);
+  fallback.click('copy-deal-notes');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="notes-copy-text"/);
+  assert.match(fallback.markup(), /# Deal notes/);
+  assert.match(fallback.markup(), /No deal notes were entered\./);
+  assert.match(fallback.markup(), /not a probability or forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-notes-copy');
+  assert.doesNotMatch(fallback.markup(), /id="notes-copy-text"/);
+
+  fallback.edit('deal.notes', '  Review the capacity clause.  ', { type: 'text', optional: 'true' });
+  fallback.click('copy-deal-notes');
+  assert.match(fallback.markup(), /id="notes-copy-text"/);
+  assert.match(fallback.markup(), /Review the capacity clause\./);
+  assert.doesNotMatch(fallback.markup(), /No deal notes were entered\./);
+  fallback.click('close-notes-copy');
+
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-deal-notes');
+  assert.match(fallback.markup(), /id="notes-copy-text"/);
+  assert.match(fallback.markup(), /Review the capacity clause\./);
+  fallback.click('close-notes-copy');
+  fallback.click('undo');
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-deal-notes');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Deal notes/);
+  assert.match(withClipboard.copied()[0], /No deal notes were entered\./);
+  assert.match(withClipboard.copied()[0], /not a probability or forecast/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="notes-copy-text"/);
+  withClipboard.edit('deal.notes', 'Harbor counterparty wants a 90-day review.', { type: 'text', optional: 'true' });
+  withClipboard.click('copy-deal-notes');
+  assert.equal(withClipboard.copied().length, 2);
+  assert.match(withClipboard.copied()[1], /Harbor counterparty wants a 90-day review\./);
+  assert.doesNotMatch(withClipboard.copied()[1], /No deal notes were entered\./);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.edit('deal.notes', 'Keep the fee floor in view.', { type: 'text', optional: 'true' });
+  denied.click('copy-deal-notes');
+  assert.match(denied.markup(), /id="notes-copy-text"/);
+  assert.match(denied.markup(), /Keep the fee floor in view\./);
   assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
@@ -1250,6 +1484,44 @@ test('stress grid hide-in-table is display-only and does not change case counts'
   assert.match(app.markup(), /data-action="mute-stress-row" data-participant-id="platform"/);
 });
 
+test('hiding participants who currently hold is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-holding-participants"/);
+  app.click('hide-holding-participants');
+  assert.equal(forms(), 0);
+  assert.match(app.markup(), /3 participants who currently hold are hidden from this roster display/);
+  assert.match(app.markup(), /Tested-case and model counts are unchanged/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /Every displayed participant currently holds/);
+  assert.match(app.markup(), /participant-live-name">Platform/);
+  assert.match(app.markup(), /participant-live-name">Distributor/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  app.click('export');
+  assert.equal(JSON.parse(await app.downloads()[0].blob.text()).participants.length, 3);
+  app.click('show-holding-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  const failing = clonePreset('balanced');
+  failing.participants[2].minimumAcceptableProfit = 10000;
+  app.import(failing);
+  assert.equal(forms(), 3);
+  app.click('hide-holding-participants');
+  assert.equal(forms(), 1);
+  assert.match(app.markup(), /Liquidity Partner/);
+  assert.match(app.markup(), /2 participants who currently hold are hidden from this roster display/);
+  assert.match(app.markup(), /class="participant-form first-fail"/);
+  app.click('show-holding-participants');
+  assert.equal(forms(), 3);
+  app.edit('deal.monthlyVolume', '');
+  app.click('hide-holding-participants');
+  assert.match(app.notice(), /Resolve invalid inputs before hiding participants who currently hold/);
+  assert.equal(forms(), 3);
+});
+
 test('collapsing all-hold stress cases is display-only and expand restores the rows', async () => {
   const app = await workbench();
   assert.match(app.markup(), /1 of 27 tested cases hold/);
@@ -1269,6 +1541,42 @@ test('collapsing all-hold stress cases is display-only and expand restores the r
   assert.match(app.markup(), /1 of 27 tested cases hold/);
   assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
   assert.match(app.markup(), /27 of 27 rows are visible/);
+});
+
+test('collapse all-hold preference round-trips on saved JSON and defaults to expanded', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'collapseAllHoldCases'), false);
+  app.click('collapse-all-hold-cases');
+  assert.equal(app.saved().collapseAllHoldCases, true);
+  assert.doesNotMatch(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  app.click('export');
+  const collapsed = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(collapsed.collapseAllHoldCases, true);
+  app.click('expand-all-hold-cases');
+  assert.equal(Object.hasOwn(app.saved(), 'collapseAllHoldCases'), false);
+  app.click('export');
+  const expandedFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(expandedFile, 'collapseAllHoldCases'), false);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+
+  const imported = clonePreset('balanced');
+  imported.collapseAllHoldCases = true;
+  app.import(imported);
+  assert.equal(app.saved().collapseAllHoldCases, true);
+  assert.doesNotMatch(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'collapseAllHoldCases'), false);
+  assert.match(app.markup(), /data-action="inspect-stress" data-scenario-id="case-1"/);
+
+  const invalid = clonePreset('balanced');
+  invalid.collapseAllHoldCases = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
 });
 
 test('copy share URL is http-only and names clipboard failure without a network request', async () => {

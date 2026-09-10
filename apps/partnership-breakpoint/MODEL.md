@@ -144,7 +144,7 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 ## Roster edits
 
-`duplicateParticipant` copies costs and constraints, assigns `nextUnusedParticipantId`, appends ` copy` to the name (trimmed to 80 characters), and sets `revenueShare` to 0 so the original allocation still sums to the same total. `moveParticipant` swaps two adjacent rows without changing shares. `dropAndReallocate` removes one participant when more than two remain and spreads that share across whoever remains in proportion to their current weights. If remaining weights are all zero, the dropped share is split equally. The last remaining participant absorbs floating-point remainder so a previously valid split still sums to 1.
+`duplicateParticipant` copies costs and constraints, assigns `nextUnusedParticipantId`, appends ` copy` to the name (trimmed to 80 characters), and sets `revenueShare` to 0 so the original allocation still sums to the same total. `moveParticipant` swaps two adjacent rows without changing shares. `swapAdjacentParticipants` swaps the participant at `index` with the next row, keeping identifiers and shares with each person. Out-of-range indexes return a shallow copy unchanged. `dropAndReallocate` removes one participant when more than two remain and spreads that share across whoever remains in proportion to their current weights. If remaining weights are all zero, the dropped share is split equally. The last remaining participant absorbs floating-point remainder so a previously valid split still sums to 1.
 
 `uniqueCopyName` appends ` copy`, then ` copy 2`, and so on, staying within 80 characters. The GUI uses it when duplicating the current case as an independent snapshot. The copy receives its own title and library entry. Later draft edits do not change the snapshot.
 
@@ -176,7 +176,7 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 
 ## Export filenames
 
-`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`, `partnership-breakpoint-stress-visible.csv`, `partnership-breakpoint-participants.csv`, `partnership-breakpoint-tornado.svg`). Path separators cannot appear in the slug.
+`exportDownloadName` builds download names from an optional deal title. The title is lowercased, non-alphanumeric runs become hyphens, and the slug is capped at 40 characters. `Harbor JV` becomes `partnership-breakpoint-harbor-jv.json`. Empty or unusable titles keep the previous names (`partnership-breakpoint.json`, `partnership-breakpoint-redacted.json`, `partnership-breakpoint-report.md`, `partnership-breakpoint-brief.md`, `partnership-breakpoint-stress.csv`, `partnership-breakpoint-stress-visible.csv`, `partnership-breakpoint-participants.csv`, `partnership-breakpoint-tornado.svg`, `partnership-breakpoint-waterfall.svg`). Path separators cannot appear in the slug.
 
 ## Stress-grid CSV
 
@@ -196,13 +196,13 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 
 ## Charts
 
-The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. Download tornado SVG writes that same chart as a standalone SVG file with an XML declaration and SVG namespace. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Both charts ship with text-equivalent tables. Neither assigns probability.
+The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. Download tornado SVG writes that same chart as a standalone SVG file with an XML declaration and SVG namespace. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Download waterfall SVG writes every participant chart in one namespaced SVG file with the same XML declaration. Both charts ship with text-equivalent tables. Neither assigns probability.
 
 ## Display-only stress mute
 
 Hiding a participant row in the stress ledger is a display filter. Case counts, hold counts, worst profit gaps, operational failures, and any tested proposal still include that participant. Showing the row again does not recalculate the grid.
 
-Collapsing cases every participant holds hides those case-evidence rows from the inspect table only. Expand restores them. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking.
+Collapsing cases every participant holds hides those case-evidence rows from the inspect table only. Expand restores them. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking. Optional `collapseAllHoldCases` on a saved case is a boolean. Older files omit it and default to expanded. Present non-boolean values are rejected. Unknown sibling fields are still rejected.
 
 ### Feasible effective volume interval
 

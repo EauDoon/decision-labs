@@ -411,6 +411,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
  * @property {Deal} deal
  * @property {ParticipantInput[]} participants
  * @property {StressSettings} [stress] Optional. Legacy cases omit this object.
+ * @property {boolean} [collapseAllHoldCases] Optional display preference. Omitted files default to expanded.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -424,7 +425,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
 const EPSILON = 1e-9;
 const MAX_PARTICIPANTS = 24;
 const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -503,6 +504,14 @@ const PRESETS = Object.freeze({
       { id: 'payments', name: 'Payments', revenueShare: 0.12, variableCostPerTransaction: 0.03, fixedMonthlyCost: 500, minimumAcceptableProfit: 1800, capacity: 26000, minimumCommitment: 0, riskCost: 100 },
     ],
   },
+  licensorDistributor: {
+    name: 'Licensor and distributor',
+    deal: { monthlyVolume: 9000, feePerTransaction: 22, addressableVolume: 14000, volumeShockPct: 0 },
+    participants: [
+      { id: 'ip-licensor', name: 'IP licensor', revenueShare: 0.4, variableCostPerTransaction: 0.25, fixedMonthlyCost: 3500, minimumAcceptableProfit: 20000, capacity: null, minimumCommitment: 0, riskCost: 1500 },
+      { id: 'territory-distributor', name: 'Territory distributor', revenueShare: 0.6, variableCostPerTransaction: 6.5, fixedMonthlyCost: 14000, minimumAcceptableProfit: 9000, capacity: 11000, minimumCommitment: 2500, riskCost: 2800 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -554,6 +563,12 @@ function validateConfiguration(config) {
     return { valid: false, errors: ['Configuration must be an object.'] };
   }
   rejectUnknownKeys(config, CONFIG_KEYS, 'Configuration', errors);
+  if (Object.hasOwn(config, 'collapseAllHoldCases')) {
+    const collapse = own(config, 'collapseAllHoldCases');
+    if (collapse !== true && collapse !== false) {
+      errors.push('Collapse all-hold cases must be a boolean.');
+    }
+  }
   if (Object.hasOwn(config, 'stress')) {
     const stress = own(config, 'stress');
     if (!isPlainObject(stress)) {
@@ -1167,6 +1182,19 @@ function moveParticipant(participants, index, direction) {
   next[target] = next[index];
   next[index] = displaced;
   return next;
+}
+
+/**
+ * Swaps two adjacent participants at `index` and `index + 1`. Identifiers and
+ * shares stay with each participant. Out-of-range indexes return a shallow copy.
+ * @param {ParticipantInput[]} participants
+ * @param {number} index
+ */
+function swapAdjacentParticipants(participants, index) {
+  if (!Array.isArray(participants) || !Number.isInteger(index) || index < 0 || index >= participants.length - 1) {
+    return Array.isArray(participants) ? participants.map((item) => ({ ...item })) : [];
+  }
+  return moveParticipant(participants, index, 'down');
 }
 
 /**
@@ -1799,7 +1827,7 @@ function sanitizeExportSlug(title) {
 }
 
 /**
- * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'|'participants'|'tornado'} kind
+ * @param {'json'|'redacted'|'report'|'brief'|'csv'|'csv-visible'|'participants'|'tornado'|'waterfall'} kind
  * @param {unknown} title
  */
 function exportDownloadName(kind, title) {
@@ -1812,6 +1840,7 @@ function exportDownloadName(kind, title) {
   if (kind === 'csv-visible') return slug ? `partnership-breakpoint-${slug}-stress-visible.csv` : 'partnership-breakpoint-stress-visible.csv';
   if (kind === 'participants') return slug ? `partnership-breakpoint-${slug}-participants.csv` : 'partnership-breakpoint-participants.csv';
   if (kind === 'tornado') return slug ? `partnership-breakpoint-${slug}-tornado.svg` : 'partnership-breakpoint-tornado.svg';
+  if (kind === 'waterfall') return slug ? `partnership-breakpoint-${slug}-waterfall.svg` : 'partnership-breakpoint-waterfall.svg';
   return slug ? `partnership-breakpoint-${slug}.json` : 'partnership-breakpoint.json';
 }
 
@@ -2163,6 +2192,9 @@ let feeHoldPreview = null;
 let volumeHoldPreview = null;
 let briefCopyText = '';
 let csvCopyText = '';
+let breakpointCopyText = '';
+let shareHoldCopyText = '';
+let notesCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -2171,6 +2203,7 @@ let dialogOpener = null;
 let dialogNeedsInitialFocus = coachVisible;
 const mutedStressIds = new Set();
 let collapseAllHoldCases = false;
+let hideHoldingParticipants = false;
 let printRedacted = false;
 const undoHistory = [];
 const redoHistory = [];
@@ -2182,6 +2215,9 @@ function checkpoint() {
   volumeHoldPreview = null;
   briefCopyText = '';
   csvCopyText = '';
+  breakpointCopyText = '';
+  shareHoldCopyText = '';
+  notesCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -2194,12 +2230,16 @@ function travelHistory(direction) {
   if (!source.length) return;
   destination.push(clone(state));
   state = source.pop();
+  readCollapsePreference();
   stressPreviewId = '';
   shareHoldPreview = null;
   feeHoldPreview = null;
   volumeHoldPreview = null;
   briefCopyText = '';
   csvCopyText = '';
+  breakpointCopyText = '';
+  shareHoldCopyText = '';
+  notesCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -2260,7 +2300,7 @@ function handleLibraryAction(action, id) {
   if (action === 'load-case') {
     const item = caseLibrary.find((entry) => entry.id === id);
     if (!item) return;
-    checkpoint(); state = withStress(clone(item.config)); activePreset = ''; caseName = item.name;
+    checkpoint(); state = withStress(clone(item.config)); readCollapsePreference(); activePreset = ''; caseName = item.name;
     refresh(`Loaded snapshot: ${item.name}. Undo restores your prior draft.`);
   }
   if (action === 'remove-case') {
@@ -2298,6 +2338,15 @@ function printSafeName(index, name) {
 
 function withStress(config) {
   return { ...config, stress: { ...(config.stress ?? DEFAULT_STRESS) } };
+}
+
+function readCollapsePreference() {
+  collapseAllHoldCases = state.collapseAllHoldCases === true;
+}
+
+function writeCollapsePreference() {
+  if (collapseAllHoldCases) state.collapseAllHoldCases = true;
+  else delete state.collapseAllHoldCases;
 }
 
 function compactErrorMessage(error) {
@@ -2479,49 +2528,66 @@ function shockUnits(kind) {
   return kind === 'volume' || kind === 'volumeIncrease' ? 'txn' : 'units / txn';
 }
 
+function copyFirstBreakpointButton() {
+  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button></div>`;
+}
+
 function breakpointSection(result) {
   const breakpoint = result.firstBreakpoint;
   if (!breakpoint?.participant) {
-    return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p></div></section>`;
+    return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p>No bounded adverse shock is available in the current inputs. The displayed participant thresholds remain unbounded.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
 
   const participantName = escapeAttribute(breakpoint.participant.name);
   const label = shockLabel(breakpoint.kind);
   const shock = breakpoint.shock;
   if (breakpoint.status === 'already-failing') {
-    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p></div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already failing an exit criterion. Resolve the input before relying on a shock threshold.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
   if (breakpoint.status === 'at-breakpoint') {
-    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p></div></section>`;
+    return `<section class="panel breakpoint-summary alarm" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">action now</span></div><div class="panel-body"><p><strong>${participantName}</strong> is already at its ${label}. Any further adverse movement fails.</p>${copyFirstBreakpointButton()}</div></section>`;
   }
 
   const units = shockUnits(breakpoint.kind);
   const threshold = units === 'txn'
     ? `${formatNumber(shock.breakpoint)} txn`
     : `${formatNumber(shock.breakpoint, 4)} units / txn`;
-  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p></div></section>`;
+  return `<section class="panel breakpoint-summary" id="first-breakpoint"><div class="panel-heading"><h2>First breakpoint</h2><span class="optional">relative adverse movement</span></div><div class="panel-body"><p><strong>Protect ${participantName} first.</strong> A ${label} of <strong>${compactShock(shock, units)}</strong> reaches the boundary at ${threshold}.</p><p class="output-note">This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.</p>${copyFirstBreakpointButton()}</div></section>`;
 }
 
 function participantDetailsOpen(index) {
   const nodes = app?.querySelectorAll?.('.participant-details');
   if (!nodes?.length) return true;
+  const match = [...nodes].find((node) => Number(node.dataset?.participantIndex) === index);
+  if (match) return Boolean(match.open);
   return Boolean(nodes[index]?.open);
+}
+
+function participantCurrentlyHolds(result, participantId) {
+  return Boolean(result?.participants.find((item) => item.id === participantId)?.viable);
 }
 
 function inputPanel(result) {
   const firstFailId = result?.participants.find((participant) => !participant.viable)?.id ?? null;
-  const participantForms = state.participants.map((participant, index) => `
+  const hiddenHoldCount = hideHoldingParticipants && result
+    ? state.participants.filter((participant) => participantCurrentlyHolds(result, participant.id)).length
+    : 0;
+  const firstVisibleIndex = state.participants.findIndex((participant) => !(hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)));
+  const participantForms = state.participants.map((participant, index) => {
+    if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return '';
+    return `
     <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}" aria-labelledby="participant-${index}-title">
       <div class="participant-toolbar">
         <div class="button-row participant-roster">
           <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
           <button type="button" data-action="move-participant-up" data-index="${index}" ${index === 0 ? 'disabled title="Already first"' : ''}>Move up</button>
           <button type="button" data-action="move-participant-down" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Move down</button>
+          <button type="button" data-action="swap-participant-next" data-index="${index}" ${index === state.participants.length - 1 ? 'disabled title="Already last"' : ''}>Swap with next</button>
           <button type="button" class="danger" data-action="remove-participant" data-index="${index}" ${state.participants.length <= 2 ? 'disabled title="At least two participants are required"' : ''}>Remove</button>
         </div>
       </div>
       ${firstFailId === participant.id ? '<p class="first-fail-label">First listed participant who fails an exit test in this baseline. Roster order, not a ranking of who will act.</p>' : ''}
-      <details class="participant-details"${participantDetailsOpen(index) ? ' open' : ''}>
+      <details class="participant-details"${participantDetailsOpen(index) ? ' open' : ''} data-participant-index="${index}">
         <summary id="participant-${index}-title">Participant ${index + 1}: ${escapeAttribute(participant.name)}</summary>
         <div class="field-grid">
         ${field({ label: 'Name', path: `participants.${index}.name`, value: participant.name, wide: true, type: 'text', title: 'Display name, 1 through 80 characters after trimming spaces.' })}
@@ -2533,9 +2599,13 @@ function inputPanel(result) {
         ${field({ label: 'Minimum commitment', path: `participants.${index}.minimumCommitment`, value: participant.minimumCommitment, optional: true, step: '1', title: 'Leave blank for no commitment. Blank and zero are equivalent here.' })}
         ${field({ label: 'Risk cost / month', path: `participants.${index}.riskCost`, value: participant.riskCost, step: '0.01', wide: true })}
       </div>
-      <div class="button-row"><button type="button"${index === 0 ? ' id="share-hold-jump"' : ''} data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
+      <div class="button-row"><button type="button"${index === firstVisibleIndex ? ' id="share-hold-jump"' : ''} data-action="solve-share-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum share to hold</button><button type="button" data-action="solve-volume-hold" data-participant-id="${escapeAttribute(participant.id)}">Solve minimum volume to hold</button></div>
       </details>
-    </section>`).join('');
+    </section>`;
+  }).join('');
+  const rosterFilterNote = hideHoldingParticipants
+    ? `${hiddenHoldCount} participant${hiddenHoldCount === 1 ? '' : 's'} who currently hold ${hiddenHoldCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
+    : 'Hide participants who currently hold to filter this roster display only. Expand restores them. Counts stay the same.';
 
   return `
     <aside class="panel inputs" aria-label="Deal inputs">
@@ -2553,6 +2623,7 @@ function inputPanel(result) {
             ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, max: 100, step: '0.1', title: 'Baseline volume reduction, 0 through 100. There is no separate churn field.' })}
             ${field({ label: 'Deal notes', path: 'deal.notes', value: state.deal.notes ?? '', optional: true, wide: true, type: 'textarea', maxLength: 500, title: 'Optional notes, 1 through 500 characters after trimming. Leave blank to omit. Shown in reports and print.' })}
           </div>
+          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button></div>
         </section>
         <section class="input-section" aria-labelledby="stress-inputs-title">
           <h2 id="stress-inputs-title">Compound stress settings</h2>
@@ -2575,8 +2646,10 @@ function inputPanel(result) {
           <h2 id="participant-inputs-title">Participants</h2>
           <p class="notice">Shares must add to exactly 1. Leave capacity blank for no limit; a capacity of zero forbids any volume. Minimum commitment may be left blank; blank and zero are equivalent. Removing a participant reallocates that share across whoever remains. The last two participants cannot be removed.</p>
           ${duplicateNameWarning()}
-          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div><p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
-          ${participantForms}
+          <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability.</p>
+          <div class="button-row"><button type="button" data-action="hide-holding-participants" aria-pressed="${hideHoldingParticipants}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants who currently hold</button><button type="button" data-action="show-holding-participants" ${hideHoldingParticipants ? '' : 'disabled'}>Show holding participants</button></div>
+          <p class="notice">${rosterFilterNote}</p>
+          ${participantForms || (hideHoldingParticipants ? `<p class="notice">${firstVisibleIndex === -1 ? '<span id="share-hold-jump" tabindex="-1"></span>' : ''}Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>` : '')}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
           <textarea id="roster-paste" data-action="roster-paste" rows="6">${escapeAttribute(rosterPasteText)}</textarea>
@@ -2590,7 +2663,7 @@ function inputPanel(result) {
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
           <p class="notice">Import a JSON case exported by this workbench. Files must be 250 KB or smaller. Empty files, invalid JSON, and failed validation name the parse or field cause. Compare imported JSON shows honest diffs against the current draft without replacing it. Participant CSV replaces the roster only after every row validates; deal terms stay unchanged. Export participant CSV uses those same columns and formula-safe cells.</p>
           <div class="button-row">
-            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="print-redacted">Print redacted</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="copy-visible-csv">Copy visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
+            <button type="button" data-action="export">Export JSON</button><button type="button" data-action="export-redacted">Export redacted JSON (names replaced, title cleared)</button><button type="button" data-action="print-report">Print report</button><button type="button" data-action="print-redacted">Print redacted</button><button type="button" data-action="export-report">Export decision report</button><button type="button" data-action="copy-brief">Copy negotiation brief</button><button type="button" data-action="copy-deal-notes">Copy deal notes</button>${standaloneFileMode ? '' : '<button type="button" data-action="copy-share-url">Copy share URL</button>'}<button type="button" data-action="export-csv">Export stress CSV</button><button type="button" data-action="export-visible-csv">Export visible stress CSV</button><button type="button" data-action="copy-visible-csv">Copy visible stress CSV</button><button type="button" data-action="export-participants-csv">Export participant CSV</button>
             <label class="file-button">Import JSON<input type="file" data-action="import" accept="application/json,.json" /></label>
             <label class="file-button">Compare imported JSON<input type="file" data-action="compare-import" accept="application/json,.json" /></label>
             <label class="file-button">Import participant CSV<input type="file" data-action="import-participants-csv" accept="text/csv,.csv" /></label>
@@ -2617,7 +2690,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -2657,6 +2730,9 @@ function resultsPanel(result) {
     ${volumeHoldPreviewSection()}
     ${briefCopySection()}
     ${csvCopySection()}
+    ${breakpointCopySection()}
+    ${shareHoldCopySection()}
+    ${notesCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -2833,49 +2909,77 @@ function tornadoSection(result) {
   return `<section class="panel print-keep"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
 }
 
-function waterfallSection(result) {
-  const charts = result.participants.map((participant, index) => {
-    const minimum = state.participants[index].minimumAcceptableProfit;
-    const afterVariable = participant.revenue - participant.variableCost;
-    const afterFixed = afterVariable - participant.fixedCost;
-    const columns = [
-      { label: 'Revenue', start: 0, end: participant.revenue, fill: '#1558d6' },
-      { label: 'Variable', start: participant.revenue, end: afterVariable, fill: '#d94f3d' },
-      { label: 'Fixed', start: afterVariable, end: afterFixed, fill: '#d94f3d' },
-      { label: 'Risk', start: afterFixed, end: participant.monthlyProfit, fill: '#d94f3d' },
-      { label: 'Profit', start: 0, end: participant.monthlyProfit, fill: participant.monthlyProfit + 1e-9 >= minimum ? '#0b5c78' : '#d94f3d' },
-    ];
-    const peaks = [0, participant.revenue, afterVariable, afterFixed, participant.monthlyProfit, minimum];
-    const yMin = Math.min(...peaks);
-    const yMax = Math.max(...peaks, 1);
-    const width = 640;
-    const height = 220;
-    const margin = { top: 18, right: 12, bottom: 36, left: 8 };
-    const innerW = width - margin.left - margin.right;
-    const innerH = height - margin.top - margin.bottom;
-    const y = (value) => margin.top + innerH * (1 - (value - yMin) / (yMax - yMin || 1));
-    const gap = 10;
-    const colW = (innerW - gap * (columns.length - 1)) / columns.length;
-    const rects = columns.map((column, columnIndex) => {
-      const x = margin.left + columnIndex * (colW + gap);
-      const top = y(Math.max(column.start, column.end));
-      const bottom = y(Math.min(column.start, column.end));
-      return `<rect x="${x}" y="${top}" width="${colW}" height="${Math.max(1, bottom - top)}" fill="${column.fill}"></rect>
+function waterfallChart(participant) {
+  const minimum = participant.minimumAcceptableProfit;
+  const afterVariable = participant.revenue - participant.variableCost;
+  const afterFixed = afterVariable - participant.fixedCost;
+  const columns = [
+    { label: 'Revenue', start: 0, end: participant.revenue, fill: '#1558d6' },
+    { label: 'Variable', start: participant.revenue, end: afterVariable, fill: '#d94f3d' },
+    { label: 'Fixed', start: afterVariable, end: afterFixed, fill: '#d94f3d' },
+    { label: 'Risk', start: afterFixed, end: participant.monthlyProfit, fill: '#d94f3d' },
+    { label: 'Profit', start: 0, end: participant.monthlyProfit, fill: participant.monthlyProfit + 1e-9 >= minimum ? '#0b5c78' : '#d94f3d' },
+  ];
+  const peaks = [0, participant.revenue, afterVariable, afterFixed, participant.monthlyProfit, minimum];
+  const yMin = Math.min(...peaks);
+  const yMax = Math.max(...peaks, 1);
+  const width = 640;
+  const height = 220;
+  const margin = { top: 18, right: 12, bottom: 36, left: 8 };
+  const innerW = width - margin.left - margin.right;
+  const innerH = height - margin.top - margin.bottom;
+  const y = (value) => margin.top + innerH * (1 - (value - yMin) / (yMax - yMin || 1));
+  const gap = 10;
+  const colW = (innerW - gap * (columns.length - 1)) / columns.length;
+  const rects = columns.map((column, columnIndex) => {
+    const x = margin.left + columnIndex * (colW + gap);
+    const top = y(Math.max(column.start, column.end));
+    const bottom = y(Math.min(column.start, column.end));
+    return `<rect x="${x}" y="${top}" width="${colW}" height="${Math.max(1, bottom - top)}" fill="${column.fill}"></rect>
         <text x="${x + colW / 2}" y="${height - 14}" text-anchor="middle" font-size="11" fill="#1f2328">${column.label}</text>`;
-    }).join('');
-    const zeroY = y(0);
-    const minY = y(minimum);
-    const connectors = columns.slice(0, 4).map((column, columnIndex) => {
-      const x1 = margin.left + columnIndex * (colW + gap) + colW;
-      const x2 = x1 + gap;
-      const y1 = y(column.end);
-      return `<line x1="${x1}" x2="${x2}" y1="${y1}" y2="${y1}" stroke="#5b6269"></line>`;
-    }).join('');
-    const svg = `<svg class="chart-svg" role="img" aria-label="Contribution waterfall for ${escapeAttribute(participant.name)} showing revenue, costs, profit, and the minimum acceptable profit. The table lists the same values." viewBox="0 0 ${width} ${height}" width="100%">
-      <line x1="${margin.left}" x2="${width - margin.right}" y1="${zeroY}" y2="${zeroY}" stroke="#1f2328"></line>
+  }).join('');
+  const zeroY = y(0);
+  const minY = y(minimum);
+  const connectors = columns.slice(0, 4).map((column, columnIndex) => {
+    const x1 = margin.left + columnIndex * (colW + gap) + colW;
+    const x2 = x1 + gap;
+    const y1 = y(column.end);
+    return `<line x1="${x1}" x2="${x2}" y1="${y1}" y2="${y1}" stroke="#5b6269"></line>`;
+  }).join('');
+  const inner = `<line x1="${margin.left}" x2="${width - margin.right}" y1="${zeroY}" y2="${zeroY}" stroke="#1f2328"></line>
       <line x1="${margin.left}" x2="${width - margin.right}" y1="${minY}" y2="${minY}" stroke="#8a5a05" stroke-dasharray="4 3"></line>
       <text x="${width - margin.right}" y="${minY - 4}" text-anchor="end" font-size="10" fill="#8a5a05">Minimum ${escapeAttribute(formatMoney(minimum))}</text>
-      ${connectors}${rects}
+      ${connectors}${rects}`;
+  return { name: participant.name, width, height, inner, minimum };
+}
+
+function waterfallSvgMarkup(result, { standalone = false } = {}) {
+  const charts = result.participants.map((participant) => waterfallChart(participant));
+  const titleBand = 28;
+  const gap = 16;
+  const width = 640;
+  let offset = 0;
+  const groups = charts.map((chart) => {
+    const block = `<text x="8" y="${offset + 18}" font-size="14" fill="#1f2328">${escapeAttribute(chart.name)}</text>
+      <g transform="translate(0 ${offset + titleBand})">${chart.inner}</g>`;
+    offset += titleBand + chart.height + gap;
+    return block;
+  }).join('');
+  const height = Math.max(1, offset - gap);
+  const xmlns = standalone ? ' xmlns="http://www.w3.org/2000/svg"' : '';
+  const role = standalone ? '' : ' class="chart-svg" role="img" aria-label="Contribution waterfall charts for every participant, stacked from revenue through costs to profit. Each on-screen chart has its own table."';
+  return `<svg${xmlns}${role} viewBox="0 0 ${width} ${height}" width="${standalone ? width : '100%'}" height="${standalone ? height : Math.min(height, 720)}">${groups}</svg>`;
+}
+
+function waterfallSvgFile(result) {
+  return `<?xml version="1.0" encoding="UTF-8"?>\n${waterfallSvgMarkup(result, { standalone: true })}\n`;
+}
+
+function waterfallSection(result) {
+  const charts = result.participants.map((participant) => {
+    const chart = waterfallChart(participant);
+    const svg = `<svg class="chart-svg" role="img" aria-label="Contribution waterfall for ${escapeAttribute(participant.name)} showing revenue, costs, profit, and the minimum acceptable profit. The table lists the same values." viewBox="0 0 ${chart.width} ${chart.height}" width="100%">
+      ${chart.inner}
     </svg>`;
     return `<section class="input-section"><h3>${escapeAttribute(participant.name)}</h3>${svg}
       <div class="table-wrap" tabindex="0" role="region" aria-label="Waterfall values for ${escapeAttribute(participant.name)}"><table><caption>Text equivalent for ${escapeAttribute(participant.name)}</caption><thead><tr><th scope="col">Step</th><th scope="col">Amount</th></tr></thead><tbody>
@@ -2884,10 +2988,10 @@ function waterfallSection(result) {
         <tr><th scope="row">Fixed cost</th><td>${formatMoney(participant.fixedCost)}</td></tr>
         <tr><th scope="row">Risk cost</th><td>${formatMoney(participant.riskCost)}</td></tr>
         <tr><th scope="row">Monthly profit</th><td>${formatMoney(participant.monthlyProfit)}</td></tr>
-        <tr><th scope="row">Minimum acceptable profit</th><td>${formatMoney(minimum)}</td></tr>
+        <tr><th scope="row">Minimum acceptable profit</th><td>${formatMoney(chart.minimum)}</td></tr>
       </tbody></table></div></section>`;
   }).join('');
-  return `<section class="panel print-keep"><div class="panel-heading"><h2>Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p>${charts}</div></section>`;
+  return `<section class="panel print-keep"><div class="panel-heading"><h2>Contribution waterfall</h2><span class="optional">revenue to profit</span></div><div class="panel-body"><p>Each chart steps from fee revenue through variable, fixed, and risk cost to monthly profit. The dashed line is the entered minimum acceptable profit. The participant ledger remains the full numeric record.</p><div class="button-row"><button type="button" data-action="export-waterfall-svg">Download waterfall SVG</button></div>${charts}</div></section>`;
 }
 
 function sensitivityGrid() {
@@ -3035,9 +3139,8 @@ function attachEvents() {
     }
     if (action === 'close-help') { closeHelp(); return; }
     if (action === 'print-report') {
-      if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
-      printRedacted = false;
-      window.print(); return;
+      printOnePager();
+      return;
     }
     if (action === 'print-redacted') {
       if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing a redacted report.'); return; }
@@ -3058,6 +3161,9 @@ function attachEvents() {
     if (action === 'close-volume-hold') { volumeHoldPreview = null; render(); return; }
     if (action === 'close-brief-copy') { briefCopyText = ''; render(); return; }
     if (action === 'close-csv-copy') { csvCopyText = ''; render(); return; }
+    if (action === 'close-breakpoint-copy') { breakpointCopyText = ''; render(); return; }
+    if (action === 'close-share-hold-copy') { shareHoldCopyText = ''; render(); return; }
+    if (action === 'close-notes-copy') { notesCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -3074,11 +3180,29 @@ function attachEvents() {
     }
     if (action === 'collapse-all-hold-cases') {
       collapseAllHoldCases = true;
+      writeCollapsePreference();
+      saveState();
       render();
       return;
     }
     if (action === 'expand-all-hold-cases') {
       collapseAllHoldCases = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-holding-participants') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding participants who currently hold.');
+        return;
+      }
+      hideHoldingParticipants = true;
+      render();
+      return;
+    }
+    if (action === 'show-holding-participants') {
+      hideHoldingParticipants = false;
       render();
       return;
     }
@@ -3107,6 +3231,7 @@ function attachEvents() {
       checkpoint();
       activePreset = button.dataset.preset;
       state = withStress(clonePreset(activePreset));
+      readCollapsePreference();
       refresh(`${PRESETS[activePreset].name} loaded.`);
     }
     if (action === 'add-participant' && state.participants.length < MAX_PARTICIPANTS) {
@@ -3138,6 +3263,15 @@ function attachEvents() {
       activePreset = '';
       refresh(direction === 'up' ? 'Participant moved up. Shares are unchanged.' : 'Participant moved down. Shares are unchanged.');
     }
+    if (action === 'swap-participant-next') {
+      const next = swapAdjacentParticipants(state.participants, Number(button.dataset.index));
+      const unchanged = next.every((item, index) => item.id === state.participants[index].id);
+      if (unchanged) return;
+      checkpoint();
+      state.participants = next;
+      activePreset = '';
+      refresh('Adjacent participants swapped. Identifiers and shares stayed with each participant.');
+    }
     if (action === 'remove-participant' && state.participants.length > 2) {
       try {
         const removed = state.participants[Number(button.dataset.index)];
@@ -3157,6 +3291,9 @@ function attachEvents() {
     if (action === 'export-redacted') exportRedactedFile();
     if (action === 'export-report') exportReport();
     if (action === 'copy-brief') copyNegotiationBrief();
+    if (action === 'copy-first-breakpoint') copyFirstBreakpoint();
+    if (action === 'copy-share-hold') copyShareHoldPreview();
+    if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-share-url') copyShareUrl();
     if (action === 'export-csv') exportStressCsv(false);
     if (action === 'export-visible-csv') exportStressCsv(true);
@@ -3164,11 +3301,13 @@ function attachEvents() {
     if (action === 'export-participants-csv') exportParticipantsCsv();
     if (action === 'import-roster-paste') importPastedRoster();
     if (action === 'export-tornado-svg') exportTornadoSvg();
+    if (action === 'export-waterfall-svg') exportWaterfallSvg();
     if (action === 'apply-stress-proposal') {
       try {
         const proposal = applyStressProposal(state);
         checkpoint();
         state = proposal;
+        writeCollapsePreference();
         activePreset = '';
         refresh('Tested revenue split applied. Every selected compound case was rechecked.');
       } catch (error) {
@@ -3180,6 +3319,7 @@ function attachEvents() {
       checkpoint();
       activePreset = 'balanced';
       state = withStress(clonePreset('balanced'));
+      readCollapsePreference();
       refresh('Reset to Balanced.');
     }
   });
@@ -3187,6 +3327,12 @@ function attachEvents() {
 
 function caseExportTitle() {
   return typeof state.deal.title === 'string' ? state.deal.title : '';
+}
+
+function printOnePager() {
+  if (!validateConfiguration(state).valid) { setNotice('Resolve invalid inputs before printing.'); return; }
+  printRedacted = false;
+  window.print();
 }
 
 function exportFile() {
@@ -3240,6 +3386,7 @@ function importFile(file) {
       if (!validation.valid) throw new ValidationError(validation.errors);
       checkpoint();
       state = withStress(candidate);
+      readCollapsePreference();
       activePreset = '';
       refresh('JSON imported.');
     } catch (error) {
@@ -3452,6 +3599,14 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'c' || event.key === 'C') {
+    const target = document.querySelector('#imported-compare-title')
+      ?? document.querySelector('#comparison-title')
+      ?? document.querySelector('#three-compare-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'p' || event.key === 'P') printOnePager();
 });
 
 window.addEventListener('resize', () => {
@@ -3471,10 +3626,12 @@ window.addEventListener('hashchange', () => {
   importSequence += 1;
   checkpoint();
   state = withStress(shared.config);
+  readCollapsePreference();
   activePreset = '';
   refresh('Shared case loaded.');
 });
 
+readCollapsePreference();
 render();
 
 function comparisonSection(current) {
@@ -3728,6 +3885,186 @@ function copyNegotiationBrief() {
   showBriefCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
 }
 
+function firstBreakpointMarkdown(result) {
+  const breakpoint = result.firstBreakpoint;
+  const lines = ['# First breakpoint', ''];
+  if (!breakpoint?.participant) {
+    lines.push('No bounded adverse shock is available in the current inputs.');
+  } else {
+    const units = shockUnits(breakpoint.kind);
+    const magnitude = breakpoint.status === 'already-failing' || breakpoint.status === 'at-breakpoint' || !breakpoint.shock
+      ? compactShock(breakpoint.shock ?? { status: breakpoint.status, change: null, changePct: null }, units)
+      : compactShock(breakpoint.shock, units);
+    lines.push('Participant: ' + reportText(breakpoint.participant.name));
+    lines.push('Shock axis: ' + shockLabel(breakpoint.kind));
+    lines.push('Magnitude: ' + magnitude);
+  }
+  lines.push('');
+  lines.push('This ranks the smallest percentage movement from the current scenario. It is a comparison aid, not a probability forecast.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showBreakpointCopyFallback(text, message) {
+  breakpointCopyText = text;
+  render();
+  document.querySelector('#breakpoint-copy-text')?.focus();
+  setNotice(message);
+}
+
+function breakpointCopySection() {
+  if (!breakpointCopyText) return '';
+  return `<section class="panel" aria-labelledby="breakpoint-copy-title"><div class="panel-heading"><h2 id="breakpoint-copy-title">First breakpoint Markdown</h2><button type="button" data-action="close-breakpoint-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is the displayed ranking, not a forecast.</p><label class="brief-copy-label" for="breakpoint-copy-text">First breakpoint Markdown</label><textarea id="breakpoint-copy-text" readonly rows="10">${escapeAttribute(breakpointCopyText)}</textarea></div></section>`;
+}
+
+function copyFirstBreakpoint() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the first breakpoint. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = firstBreakpointMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          breakpointCopyText = '';
+          render();
+          setNotice('First breakpoint copied as Markdown. It is a comparison aid, not a forecast.');
+        }).catch(() => {
+          showBreakpointCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+        });
+        return;
+      }
+      breakpointCopyText = '';
+      render();
+      setNotice('First breakpoint copied as Markdown. It is a comparison aid, not a forecast.');
+      return;
+    } catch {
+      showBreakpointCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+      return;
+    }
+  }
+  showBreakpointCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+}
+
+function shareHoldPreviewMarkdown(solved) {
+  const target = state.participants.find((item) => item.id === solved.participantId);
+  const name = reportText(target?.name ?? solved.participantId);
+  const lines = ['# Share-to-hold preview', '', 'Participant: ' + name, 'Status: ' + solved.status];
+  if (solved.status === 'possible' && solved.proposal) {
+    lines.push('Minimum revenue share: ' + formatPct(solved.share * 100));
+    lines.push('');
+    lines.push('Current versus proposed shares:');
+    for (const item of solved.proposal) {
+      const current = state.participants.find((participant) => participant.id === item.id);
+      const currentText = current ? formatPct(current.revenueShare * 100) : 'n/a';
+      lines.push('- ' + reportText(item.name) + ': ' + currentText + ' to ' + formatPct(item.revenueShare * 100));
+    }
+  }
+  lines.push('');
+  lines.push(solved.reason);
+  lines.push('');
+  lines.push('This is a deterministic solvability result, not a probability that the participant will stay.');
+  lines.push('');
+  return lines.join('\n');
+}
+
+function showShareHoldCopyFallback(text, message) {
+  shareHoldCopyText = text;
+  render();
+  document.querySelector('#share-hold-copy-text')?.focus();
+  setNotice(message);
+}
+
+function shareHoldCopySection() {
+  if (!shareHoldCopyText) return '';
+  return `<section class="panel" aria-labelledby="share-hold-copy-title"><div class="panel-heading"><h2 id="share-hold-copy-title">Share-to-hold Markdown</h2><button type="button" data-action="close-share-hold-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is a solvability result, not a probability.</p><label class="brief-copy-label" for="share-hold-copy-text">Share-to-hold preview Markdown</label><textarea id="share-hold-copy-text" readonly rows="12">${escapeAttribute(shareHoldCopyText)}</textarea></div></section>`;
+}
+
+function copyShareHoldPreview() {
+  if (!shareHoldPreview) {
+    setNotice('Open a share-to-hold preview before copying it.');
+    return;
+  }
+  const text = shareHoldPreviewMarkdown(shareHoldPreview);
+  const clipboard = globalThis.navigator?.clipboard;
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          shareHoldCopyText = '';
+          render();
+          setNotice('Share-to-hold preview copied as Markdown. It is a solvability result, not a probability.');
+        }).catch(() => {
+          showShareHoldCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+        });
+        return;
+      }
+      shareHoldCopyText = '';
+      render();
+      setNotice('Share-to-hold preview copied as Markdown. It is a solvability result, not a probability.');
+      return;
+    } catch {
+      showShareHoldCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+      return;
+    }
+  }
+  showShareHoldCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+}
+
+function dealNotesMarkdown() {
+  const notes = typeof state.deal.notes === 'string' && state.deal.notes.trim()
+    ? state.deal.notes
+    : 'No deal notes were entered.';
+  return ['# Deal notes', '', notes, '', 'These are user-entered notes. They are not a probability or forecast.', ''].join('\n');
+}
+
+function showNotesCopyFallback(text, message) {
+  notesCopyText = text;
+  render();
+  document.querySelector('#notes-copy-text')?.focus();
+  setNotice(message);
+}
+
+function notesCopySection() {
+  if (!notesCopyText) return '';
+  return `<section class="panel" aria-labelledby="notes-copy-title"><div class="panel-heading"><h2 id="notes-copy-title">Deal notes Markdown</h2><button type="button" data-action="close-notes-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. These are user-entered notes, not a forecast.</p><label class="brief-copy-label" for="notes-copy-text">Deal notes Markdown</label><textarea id="notes-copy-text" readonly rows="10">${escapeAttribute(notesCopyText)}</textarea></div></section>`;
+}
+
+function copyDealNotes() {
+  const text = dealNotesMarkdown();
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Deal notes copied as Markdown. They are user-entered notes, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          notesCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showNotesCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      notesCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showNotesCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showNotesCopyFallback(text, fallbackNote);
+}
+
 function exportTornadoSvg() {
   const validation = validateConfiguration(state);
   if (!validation.valid) {
@@ -3737,6 +4074,17 @@ function exportTornadoSvg() {
   const result = calculatePartnership(state);
   downloadText(tornadoSvgFile(result), 'image/svg+xml;charset=utf-8', exportDownloadName('tornado', caseExportTitle()));
   setNotice('Tornado SVG downloaded. It ranks displayed movements and does not assign probability.');
+}
+
+function exportWaterfallSvg() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before downloading the waterfall SVG. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const result = calculatePartnership(state);
+  downloadText(waterfallSvgFile(result), 'image/svg+xml;charset=utf-8', exportDownloadName('waterfall', caseExportTitle()));
+  setNotice('Waterfall SVG downloaded. It shows contribution steps and does not assign probability.');
 }
 
 function exportParticipantsCsv() {
@@ -3810,7 +4158,7 @@ function stressCasePreview(stress) {
 function applyInspectedStressCase() {
   try {
     const candidate = materializeStressCase(state, stressPreviewId);
-    checkpoint(); state = withStress(candidate); activePreset = '';
+    checkpoint(); state = withStress(candidate); readCollapsePreference(); activePreset = '';
     refresh('Inspected stress case applied as the new baseline. Undo restores the prior inputs.');
   } catch (error) {
     if (!(error instanceof ValidationError)) throw error;
@@ -3891,14 +4239,15 @@ function shareHoldPreviewSection() {
   const solved = shareHoldPreview;
   const target = state.participants.find((item) => item.id === solved.participantId);
   const name = escapeAttribute(target?.name ?? solved.participantId);
+  const copyButton = '<div class="button-row"><button type="button" data-action="copy-share-hold">Copy share-to-hold preview</button></div>';
   if (solved.status === 'impossible') {
-    return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p>${escapeAttribute(solved.reason)}</p><p class="output-note">This is a deterministic solvability result, not a probability that the participant will stay.</p></div></section>`;
+    return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p>${escapeAttribute(solved.reason)}</p><p class="output-note">This is a deterministic solvability result, not a probability that the participant will stay.</p>${copyButton}</div></section>`;
   }
-  const rows = solved.proposal.map((item, index) => {
+  const rows = solved.proposal.map((item) => {
     const current = state.participants.find((participant) => participant.id === item.id);
     return `<tr><th scope="row">${escapeAttribute(item.name)}</th><td>${current ? formatPct(current.revenueShare * 100) : 'n/a'}</td><td>${formatPct(item.revenueShare * 100)}</td></tr>`;
   }).join('');
-  return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p><strong>${name}</strong> holds at a minimum revenue share of <strong>${formatPct(solved.share * 100)}</strong>. Remaining participants keep their relative shares of the leftover. Apply is required; the current case is unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Proposed hold shares"><table><caption>Current shares versus proposed hold split</caption><thead><tr><th scope="col">Participant</th><th scope="col">Current share</th><th scope="col">Proposed share</th></tr></thead><tbody>${rows}</tbody></table></div><div class="panel-body"><div class="button-row"><button type="button" class="primary" data-action="apply-share-hold">Apply minimum hold share</button><button type="button" data-action="close-share-hold">Keep current shares</button></div></div></section>`;
+  return `<section class="panel" aria-labelledby="share-hold-title"><div class="panel-heading"><h2 id="share-hold-title" tabindex="-1">Share-to-hold preview</h2><button type="button" data-action="close-share-hold">Close preview</button></div><div class="panel-body"><p><strong>${name}</strong> holds at a minimum revenue share of <strong>${formatPct(solved.share * 100)}</strong>. Remaining participants keep their relative shares of the leftover. Apply is required; the current case is unchanged until then.</p><p>${escapeAttribute(solved.reason)}</p></div><div class="table-wrap" tabindex="0" role="region" aria-label="Proposed hold shares"><table><caption>Current shares versus proposed hold split</caption><thead><tr><th scope="col">Participant</th><th scope="col">Current share</th><th scope="col">Proposed share</th></tr></thead><tbody>${rows}</tbody></table></div><div class="panel-body"><div class="button-row"><button type="button" class="primary" data-action="apply-share-hold">Apply minimum hold share</button><button type="button" data-action="close-share-hold">Keep current shares</button><button type="button" data-action="copy-share-hold">Copy share-to-hold preview</button></div></div></section>`;
 }
 
 function previewFeeHold() {
@@ -4013,6 +4362,8 @@ function helpDialog() {
         <li><kbd>g</kbd> Jump to the results nav or the first results heading</li>
         <li><kbd>n</kbd> Focus Add participant, or add one if that control is missing</li>
         <li><kbd>s</kbd> Jump to share-to-hold (preview if open, otherwise the first solver)</li>
+        <li><kbd>c</kbd> Jump to snapshot or imported JSON compare heading</li>
+        <li><kbd>p</kbd> Print the one-pager when the case is valid</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
