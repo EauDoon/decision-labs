@@ -394,3 +394,57 @@ test('404 Copy first workbench heading does not expand PUBLIC_PATHS or connect-s
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(serve, /hosted API/i);
 });
+
+test('catalog keys dollar caret and backtick stay distinct from asterisk ampersand percent and quote', () => {
+  assert.match(html, /event\.key === '\$'/);
+  assert.match(html, /event\.key === '\^'/);
+  assert.equal(html.includes("event.key === '`'"), true);
+  assert.match(html, /event\.key === '\*'/);
+  assert.match(html, /event\.key === '&'/);
+  assert.match(html, /event\.key === '%'/);
+  assert.match(html, /event\.key === '"'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="\$"/);
+  assert.match(html, /id="copy-last-workbench"/);
+  assert.match(html, />Copy last workbench heading</);
+  assert.match(html, /id="copy-last-trust"/);
+  assert.match(html, />Copy last Trust item</);
+  assert.notEqual(html.match(/event\.key === '\$'/)?.[0], html.match(/event\.key === '\*'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '\^'/)?.[0], html.match(/event\.key === '&'/)?.[0]);
+  assert.notEqual(html.includes("event.key === '`'"), false);
+  assert.match(html, /lastWorkbenchBtn\?\.click\(\)/);
+  assert.match(html, /lastTrustBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-last-workbench'\) \|\| document\.getElementById\('workbenches-title'\)/);
+  assert.match(html, /getElementById\('copy-last-trust'\) \|\| document\.getElementById\('trust-title'\)/);
+});
+
+test('print CSS hides copy last workbench heading tools like other copy tools', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-last-workbench-tools, \.copy-last-workbench-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-first-workbench-tools, \.copy-first-workbench-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+});
+
+test('404 Copy last workbench heading does not expand PUBLIC_PATHS or connect-src', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  assert.match(serve, /request\.method !== 'GET' && request\.method !== 'HEAD'/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-last-workbench"/);
+  assert.match(page, />Copy last workbench heading</);
+  assert.match(page, /lastWorkbenchMarkdown/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /Weekend Gap/);
+  assert.match(page, /id="copy-first-workbench"/);
+  assert.match(page, />Copy first workbench heading</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(serve, /hosted API/i);
+});
