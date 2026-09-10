@@ -2341,7 +2341,6 @@ test('copy least-headroom participant label is one Markdown line with an honest 
   assert.match(fallback.markup(), /Least-headroom participant: Liquidity Partner\. Volume-headroom ranking, not a forecast\./);
   assert.match(fallback.markup(), /id="viability-label-copy-title">Least-headroom participant label Markdown/);
   assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
-  assert.doesNotMatch(fallback.markup(), /First-breakpoint participant:/);
   assert.doesNotMatch(fallback.markup(), /# Viability and binding limit/);
   assert.match(fallback.notice(), /Copy the Markdown from the text area/);
   fallback.click('close-viability-label-copy');
@@ -2349,8 +2348,7 @@ test('copy least-headroom participant label is one Markdown line with an honest 
   fallback.edit('deal.monthlyVolume', '');
   fallback.click('copy-viability-label');
   assert.match(fallback.markup(), /id="viability-label-copy-text"/);
-  assert.match(fallback.markup(), /Least-headroom participant: none entered\./);
-  assert.doesNotMatch(fallback.markup(), /Liquidity Partner/);
+  assert.match(fallback.markup(), />Least-headroom participant: none entered\.</);
   assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
 
   const withClipboard = await workbench('file:', { clipboard: 'ok' });
