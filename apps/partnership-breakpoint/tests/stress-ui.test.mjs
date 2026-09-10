@@ -2473,11 +2473,13 @@ test('hide-zero-share preference round-trips on saved JSON and defaults to shown
   assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
   assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
   assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
   const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
   app.click('hide-zero-share-participants');
   assert.equal(app.saved().hideZeroShareParticipants, true);
   assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
   assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
   assert.equal(forms(), 3);
   app.click('export');
   const hidden = JSON.parse(await app.downloads()[0].blob.text());
@@ -2512,6 +2514,101 @@ test('hide-zero-share preference round-trips on saved JSON and defaults to shown
 
   const unknown = clonePreset('balanced');
   unknown.hideZeroShareParticipants = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
+test('hiding participants over listed capacity is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-over-capacity-participants"/);
+  app.click('hide-over-capacity-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /0 participants whose volume is above listed capacity are hidden from this roster display/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  app.click('show-over-capacity-participants');
+  app.edit('deal.monthlyVolume', '116000');
+  assert.equal(forms(), 3);
+  const beforeHide = holdCount();
+  assert.ok(beforeHide);
+  app.click('hide-over-capacity-participants');
+  assert.equal(forms(), 2);
+  assert.match(app.markup(), /1 participant whose volume is above listed capacity is hidden from this roster display/);
+  assert.match(app.markup(), /Tested-case and model counts are unchanged/);
+  assert.doesNotMatch(app.markup(), /Participant 3: Liquidity Partner/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  assert.equal(holdCount(), beforeHide);
+  app.click('export');
+  const exported = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(exported.participants.length, 3);
+  assert.equal(exported.deal.monthlyVolume, 116000);
+  assert.equal(exported.hideParticipantsOverCapacity, true);
+  assert.equal(Object.hasOwn(exported, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(exported, 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(exported, 'hideAllHoldLedger'), false);
+  app.click('show-over-capacity-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /Liquidity Partner/);
+  assert.equal(holdCount(), beforeHide);
+  app.edit('deal.monthlyVolume', '');
+  app.click('hide-over-capacity-participants');
+  assert.match(app.notice(), /Resolve invalid inputs before hiding participants whose volume is above listed capacity/);
+});
+
+test('hide-over-capacity preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  app.click('hide-over-capacity-participants');
+  assert.equal(app.saved().hideParticipantsOverCapacity, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(forms(), 3);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideParticipantsOverCapacity, true);
+  assert.equal(hidden.participants.length, 3);
+  assert.equal(Object.hasOwn(hidden, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideZeroShareParticipants'), false);
+  app.click('show-over-capacity-participants');
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideParticipantsOverCapacity'), false);
+  assert.equal(forms(), 3);
+
+  const imported = clonePreset('balanced');
+  imported.hideParticipantsOverCapacity = true;
+  app.import(imported);
+  assert.equal(app.saved().hideParticipantsOverCapacity, true);
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  assert.equal(forms(), 3);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideParticipantsOverCapacity = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+  assert.equal(forms(), 3);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideParticipantsOverCapacity = true;
   unknown.unexpected = true;
   app.import(unknown);
   assert.match(app.notice(), /unknown field: unexpected/);

@@ -85,6 +85,7 @@ let collapseAllHoldCases = false;
 let hideHoldingParticipants = false;
 let hideAllCompoundHolders = false;
 let hideZeroShareParticipants = false;
+let hideParticipantsOverCapacity = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -243,6 +244,7 @@ function readCollapsePreference() {
   hideHoldingParticipants = state.hideHoldingParticipants === true;
   hideAllCompoundHolders = state.hideAllHoldLedger === true;
   hideZeroShareParticipants = state.hideZeroShareParticipants === true;
+  hideParticipantsOverCapacity = state.hideParticipantsOverCapacity === true;
 }
 
 function writeCollapsePreference() {
@@ -254,6 +256,8 @@ function writeCollapsePreference() {
   else delete state.hideAllHoldLedger;
   if (hideZeroShareParticipants) state.hideZeroShareParticipants = true;
   else delete state.hideZeroShareParticipants;
+  if (hideParticipantsOverCapacity) state.hideParticipantsOverCapacity = true;
+  else delete state.hideParticipantsOverCapacity;
 }
 
 function compactErrorMessage(error) {
@@ -478,9 +482,19 @@ function participantHasZeroShare(participant) {
   return Number.isFinite(participant.revenueShare) && Math.abs(participant.revenueShare) <= 1e-9;
 }
 
+function participantOverListedCapacity(result, participant) {
+  if (!result) return false;
+  const capacity = participant.capacity;
+  if (capacity == null || !Number.isFinite(capacity)) return false;
+  const volume = result.effectiveVolume;
+  if (!Number.isFinite(volume)) return false;
+  return volume > capacity + 1e-9;
+}
+
 function participantHiddenFromRoster(result, participant) {
   if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
   if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
+  if (hideParticipantsOverCapacity && participantOverListedCapacity(result, participant)) return true;
   return false;
 }
 
@@ -491,6 +505,9 @@ function inputPanel(result) {
     : 0;
   const hiddenZeroCount = hideZeroShareParticipants
     ? state.participants.filter((participant) => participantHasZeroShare(participant)).length
+    : 0;
+  const hiddenOverCount = hideParticipantsOverCapacity && result
+    ? state.participants.filter((participant) => participantOverListedCapacity(result, participant)).length
     : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
   const participantForms = state.participants.map((participant, index) => {
@@ -530,14 +547,20 @@ function inputPanel(result) {
   const zeroShareFilterNote = hideZeroShareParticipants
     ? `${hiddenZeroCount} participant${hiddenZeroCount === 1 ? '' : 's'} with zero revenue share ${hiddenZeroCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
     : 'Hide participants with zero revenue share to filter this roster display only. Expand restores them. Counts stay the same.';
+  const overCapacityFilterNote = hideParticipantsOverCapacity
+    ? `${hiddenOverCount} participant${hiddenOverCount === 1 ? '' : 's'} whose volume is above listed capacity ${hiddenOverCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
+    : 'Hide participants whose volume is above listed capacity to filter this roster display only. Expand restores them. Counts stay the same.';
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
-    ? hideHoldingParticipants && !hideZeroShareParticipants
+    ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-      : hideZeroShareParticipants && !hideHoldingParticipants
+      : rosterFilterCount === 1 && hideZeroShareParticipants
         ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has a zero revenue share. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-        : hideHoldingParticipants || hideZeroShareParticipants
-          ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-          : ''
+        : rosterFilterCount === 1 && hideParticipantsOverCapacity
+          ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has volume above listed capacity. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+          : rosterFilterCount > 0
+            ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+            : ''
     : '';
 
   return `
@@ -584,6 +607,8 @@ function inputPanel(result) {
           <p class="notice">${rosterFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-zero-share-participants" aria-pressed="${hideZeroShareParticipants}">Hide participants with zero revenue share</button><button type="button" data-action="show-zero-share-participants" ${hideZeroShareParticipants ? '' : 'disabled'}>Show zero-share participants</button></div>
           <p class="notice">${zeroShareFilterNote}</p>
+          <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button></div>
+          <p class="notice">${overCapacityFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
@@ -1219,6 +1244,24 @@ function attachEvents() {
     }
     if (action === 'show-zero-share-participants') {
       hideZeroShareParticipants = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-over-capacity-participants') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding participants whose volume is above listed capacity.');
+        return;
+      }
+      hideParticipantsOverCapacity = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-over-capacity-participants') {
+      hideParticipantsOverCapacity = false;
       writeCollapsePreference();
       saveState();
       render();
