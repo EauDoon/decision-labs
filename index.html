@@ -406,7 +406,7 @@
   </style>
 </head>
 <body>
-  <nav class="skips" aria-label="Skip">
+  <nav class="skips" id="skips" tabindex="-1" aria-label="Skip">
     <a class="skip" href="#whats-new">Skip to what's new</a>
     <a class="skip" href="#workbenches">Skip to workbenches</a>
     <a class="skip" href="#how-it-works">Skip to How it works</a>
@@ -441,6 +441,10 @@
       <h2 id="whats-new-title" tabindex="-1">What's new</h2>
       <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank. Catalog cards list each workbench version next to its job.</p>
       <ul class="whats-new-list">
+        <li>
+          <h3 tabindex="-1">First What's new copy, intro jump, and skip-link jump</h3>
+          <p>The catalog can copy the first What's new heading as one Markdown line, jump to the Copy catalog intro control, and jump to the Copy skip links control. Copy first What's new heading through close-paren as Markdown, jump to Copy catalog intro with keyboard at, and jump to Copy skip links with keyboard hash. The branded 404 page can copy the first printed What's new heading without adding a public path. These are in-page catalog tools. They do not change workbench versions and they do not call a live product feed.</p>
+        </li>
         <li>
           <h3 tabindex="-1">Last What's new copy, last-news jump, and first-news jump</h3>
           <p>The catalog can copy the last What's new heading as one Markdown line, jump to the Copy last What's new heading control, and jump to the Copy first What's new heading control. Copy last What's new heading through tilde as Markdown, jump with keyboard exclamation, and jump to Copy first What's new heading with keyboard open-paren. The branded 404 page can copy the last printed What's new heading without adding a public path. These are in-page catalog tools. They do not change workbench versions and they do not call a live product feed.</p>
@@ -731,7 +735,7 @@
         </li>
       </ul>
       <p class="copy-first-whats-new-tools" id="copy-first-whats-new-tools">
-        <button type="button" class="copy-first-whats-new" id="copy-first-whats-new">Copy first What's new heading</button>
+        <button type="button" class="copy-first-whats-new" id="copy-first-whats-new" aria-keyshortcuts=")">Copy first What's new heading</button>
         <span class="copy-first-whats-new-status" id="copy-first-whats-new-status" role="status"></span>
       </p>
       <textarea id="copy-first-whats-new-fallback" class="copy-first-whats-new-fallback" hidden readonly rows="2" aria-label="First What's new heading as Markdown"></textarea>
@@ -749,7 +753,7 @@
         <li data-app="smallest-agreement">1.5.12</li>
         <li data-app="weekend-gap">1.5.12</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>/</kbd> to focus the first Trust and limits list item. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>;</kbd> to copy the first workbench job. Press <kbd>}</kbd> to copy the last workbench job. Press <kbd>~</kbd> to copy the last What's new heading. Press <kbd>!</kbd> to focus Copy last What's new heading. Press <kbd>(</kbd> to focus Copy first What's new heading. Press <kbd>|</kbd> to focus Copy first job. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>-</kbd> to copy the first How it works list item. Press <kbd>&lt;</kbd> to copy the last How it works list item. Press <kbd>=</kbd> to focus Copy How it works. Press <kbd>&gt;</kbd> to focus Copy last How it works item. Press <kbd>_</kbd> to focus Copy first How it works item. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>.</kbd> to focus Skip to catalog versions. Press <kbd>'</kbd> to focus Skip to Trust and limits. Press <kbd>[</kbd> to focus Copy version line. Press <kbd>]</kbd> to focus the last Open workbench link. Press <kbd>+</kbd> to focus Copy last job. Press <kbd>:</kbd> to copy the first Trust and limits list item. Press <kbd>"</kbd> to copy the last Trust and limits list item. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>/</kbd> to focus the first Trust and limits list item. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>@</kbd> to focus Copy catalog intro. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>;</kbd> to copy the first workbench job. Press <kbd>}</kbd> to copy the last workbench job. Press <kbd>~</kbd> to copy the last What's new heading. Press <kbd>!</kbd> to focus Copy last What's new heading. Press <kbd>(</kbd> to focus Copy first What's new heading. Press <kbd>)</kbd> to copy the first What's new heading. Press <kbd>|</kbd> to focus Copy first job. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>-</kbd> to copy the first How it works list item. Press <kbd>&lt;</kbd> to copy the last How it works list item. Press <kbd>=</kbd> to focus Copy How it works. Press <kbd>&gt;</kbd> to focus Copy last How it works item. Press <kbd>_</kbd> to focus Copy first How it works item. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>#</kbd> to focus Copy skip links. Press <kbd>.</kbd> to focus Skip to catalog versions. Press <kbd>'</kbd> to focus Skip to Trust and limits. Press <kbd>[</kbd> to focus Copy version line. Press <kbd>]</kbd> to focus the last Open workbench link. Press <kbd>+</kbd> to focus Copy last job. Press <kbd>:</kbd> to copy the first Trust and limits list item. Press <kbd>"</kbd> to copy the last Trust and limits list item. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -776,6 +780,7 @@
           <dt><kbd>p</kbd></dt><dd>Print this catalog page. This prints the page in the browser, not a live product sheet.</dd>
           <dt><kbd>c</kbd></dt><dd>Copy catalog address when this page is served over http</dd>
           <dt><kbd>e</kbd></dt><dd>Copy the catalog heading and lede as Markdown from this catalog page, not a live product feed. Clipboard write uses the visible text box when the clipboard API is unavailable. If those nodes are missing, this copies an empty string.</dd>
+          <dt><kbd>@</kbd></dt><dd>Focus the Copy catalog intro control, or the catalog heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>e</kbd>, which copies the catalog heading and lede.</dd>
           <dt><kbd>v</kbd></dt><dd>Copy workbench names and versions as Markdown from this catalog page, not a live product version</dd>
           <dt><kbd>,</kbd></dt><dd>Copy the footer version line as one Markdown line from this catalog page, not a live product version. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
           <dt><kbd>[</kbd></dt><dd>Focus the Copy version line control, or the footer version line if that control is missing. This key moves focus; it does not open a workbench. It does not copy.</dd>
@@ -786,6 +791,7 @@
           <dt><kbd>~</kbd></dt><dd>Copy the last What's new heading as one Markdown line from this catalog page, not a live product feed. If that heading is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>g</kbd>, which focuses the first What's new heading, and from <kbd>n</kbd>, which focuses What's new.</dd>
           <dt><kbd>!</kbd></dt><dd>Focus the Copy last What's new heading control, or the What's new heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>g</kbd>, which focuses the first What's new heading, and from <kbd>n</kbd>, which focuses What's new.</dd>
           <dt><kbd>(</kbd></dt><dd>Focus the Copy first What's new heading control, or the What's new heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>g</kbd>, which focuses the first What's new heading itself, and from <kbd>~</kbd>, which copies the last What's new heading.</dd>
+          <dt><kbd>)</kbd></dt><dd>Copy the first What's new heading as one Markdown line from this catalog page, not a live product feed. If that heading is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>~</kbd>, which copies the last What's new heading, from <kbd>g</kbd>, which focuses the first What's new heading, and from <kbd>(</kbd>, which focuses Copy first What's new heading.</dd>
           <dt><kbd>|</kbd></dt><dd>Focus the Copy first job control, or the workbenches heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>;</kbd>, which copies the first workbench job, and from <kbd>}</kbd>, which copies the last workbench job.</dd>
           <dt><kbd>:</kbd></dt><dd>Copy the first Trust and limits list item as one Markdown line from this catalog page, not a live policy feed. If that item is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>i</kbd>, which copies the full Trust and limits list, and from <kbd>;</kbd>, which copies the first workbench job.</dd>
           <dt><kbd>"</kbd></dt><dd>Copy the last Trust and limits list item as one Markdown line from this catalog page, not a live policy feed. If that item is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>:</kbd>, which copies the first Trust and limits list item, and from <kbd>i</kbd>, which copies the full Trust and limits list.</dd>
@@ -798,6 +804,7 @@
           <dt><kbd>_</kbd></dt><dd>Focus the Copy first How it works item control, or the How it works heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>-</kbd>, which copies the first How it works list item, and from <kbd>d</kbd>, which focuses the first How it works list item.</dd>
           <dt><kbd>y</kbd></dt><dd>Copy the last-launched workbench name and one-sentence job as Markdown from this-browser storage, or an empty line if none is stored. This is not a cloud recency. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
           <dt><kbd>z</kbd></dt><dd>Copy the six skip-link targets as a Markdown list of skip-link text and hash hrefs from the skip links on this page. This is in-page navigation copy, not a sitemap API. Clipboard write uses the visible text box when the clipboard API is unavailable.</dd>
+          <dt><kbd>#</kbd></dt><dd>Focus the Copy skip links control, or the skip-link row or catalog heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>z</kbd>, which copies skip-link targets.</dd>
           <dt><kbd>.</kbd></dt><dd>Focus Skip to catalog versions. This key moves focus; it does not open a workbench.</dd>
           <dt><kbd>'</kbd></dt><dd>Focus Skip to Trust and limits. This key moves focus; it does not open a workbench.</dd>
           <dt><kbd>l</kbd></dt><dd>Focus the last-launched workbench card, or the workbenches heading if none is stored. This is storage in this browser, not a cloud recency.</dd>
@@ -1720,6 +1727,11 @@
           ledeBtn?.click();
           return;
         }
+        if (event.key === '@') {
+          event.preventDefault();
+          (document.getElementById('copy-lede') || document.getElementById('catalog-heading'))?.focus();
+          return;
+        }
         if (event.key === 'v') {
           event.preventDefault();
           versionsBtn?.click();
@@ -1768,6 +1780,11 @@
         if (event.key === '(') {
           event.preventDefault();
           (document.getElementById('copy-first-whats-new') || document.getElementById('whats-new-title') || document.getElementById('whats-new'))?.focus();
+          return;
+        }
+        if (event.key === ')') {
+          event.preventDefault();
+          firstWhatsNewBtn?.click();
           return;
         }
         if (event.key === '|') {
@@ -1828,6 +1845,11 @@
         if (event.key === 'z') {
           event.preventDefault();
           skipsBtn?.click();
+          return;
+        }
+        if (event.key === '#') {
+          event.preventDefault();
+          (document.getElementById('copy-skips') || document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
           return;
         }
         if (event.key === '.') {
