@@ -222,6 +222,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="copy-veto-group-count-button"/u);
   assert.match(html, /Copy veto-group count/u);
   assert.match(html, /id="veto-group-count-fallback"/u);
+  assert.match(html, /id="copy-first-non-veto-group-button"/u);
+  assert.match(html, /Copy first non-veto group/u);
+  assert.match(html, /id="first-non-veto-group-fallback"/u);
   assert.match(html, /id="copy-change-cost-button"/u);
   assert.match(html, /Copy change-cost table/u);
   assert.match(html, /id="change-cost-csv-fallback"/u);
@@ -494,6 +497,7 @@ async function savedWorkbench(storage, hash = "") {
     thresholdGroupCount: () => element("#threshold-group-count-fallback").value,
     firstVetoGroup: () => element("#first-veto-group-fallback").value,
     vetoGroupCount: () => element("#veto-group-count-fallback").value,
+    firstNonVetoGroup: () => element("#first-non-veto-group-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
     compareFiles: async (left, right) => {
@@ -1568,7 +1572,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, \.first-locked-option-fallback-label, #first-locked-option-fallback, #first-locked-option-fallback-note, \.below-floor-count-fallback-label, #below-floor-count-fallback, #below-floor-count-fallback-note, \.first-below-floor-group-fallback-label, #first-below-floor-group-fallback, #first-below-floor-group-fallback-note, \.threshold-group-count-fallback-label, #threshold-group-count-fallback, #threshold-group-count-fallback-note, \.first-veto-group-fallback-label, #first-veto-group-fallback, #first-veto-group-fallback-note, \.veto-group-count-fallback-label, #veto-group-count-fallback, #veto-group-count-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /\.veto-group-count-fallback-label, #veto-group-count-fallback, #veto-group-count-fallback-note, \.first-non-veto-group-fallback-label, #first-non-veto-group-fallback, #first-non-veto-group-fallback-note, \.change-cost-csv-fallback-label/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, \.hide-locked-clauses-filter, #hide-locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /\.hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note/u);
@@ -4705,6 +4709,55 @@ test("copy veto-group count writes one-line Markdown with a clipboard fallback",
   assert.doesNotMatch(labelled.clipboardText(), /First veto group/u);
   assert.doesNotMatch(labelled.clipboardText(), /Groups meeting the approval threshold/u);
   assert.match(labelled.message(), /not a legal right/u);
+});
+
+test("copy first non-veto group writes one-line Markdown with a clipboard fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-first-non-veto-group-button"/u);
+  assert.match(html, /Copy first non-veto group/u);
+  assert.match(html, /id="first-non-veto-group-fallback"/u);
+  assert.match(html, /not a legal identity/u);
+  const app = await savedWorkbench(new Map());
+  assert.equal(app.firstNonVetoGroup(), "First non-veto group: Residents. A veto is a number you entered, not a legal right. The label is not a legal identity.\n");
+  assert.doesNotMatch(app.firstNonVetoGroup(), /First veto group/u);
+  assert.doesNotMatch(app.firstNonVetoGroup(), /Veto groups:/u);
+  await app.click("#copy-first-non-veto-group-button");
+  assert.equal(app.clipboardText(), app.firstNonVetoGroup());
+  assert.match(app.message(), /not a legal right/u);
+  assert.match(app.message(), /not a legal identity/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-first-non-veto-group-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#first-non-veto-group-fallback");
+  assert.match(blocked.firstNonVetoGroup(), /First non-veto group: Residents/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a legal identity/u);
+  const labelled = await savedWorkbench(new Map());
+  labelled.field("#preset-select", "club-constitution");
+  labelled.click("#load-preset");
+  assert.equal(labelled.firstNonVetoGroup(), "First non-veto group: Members. A veto is a number you entered, not a legal right. The label is not a legal identity.\n");
+  await labelled.click("#copy-first-non-veto-group-button");
+  assert.equal(labelled.clipboardText(), "First non-veto group: Members. A veto is a number you entered, not a legal right. The label is not a legal identity.\n");
+  assert.doesNotMatch(labelled.clipboardText(), /First veto group/u);
+  assert.doesNotMatch(labelled.clipboardText(), /Veto groups:/u);
+  assert.doesNotMatch(labelled.clipboardText(), /Officers/u);
+  assert.match(labelled.message(), /not a legal identity/u);
+  const none = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify({
+    title: "Only veto groups workshop",
+    threshold: 70,
+    groups: [{ id: "veto", name: "Veto bloc", weight: 1, veto: true }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { veto: 90 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { veto: 80 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { veto: 70 } },
+    ] }],
+  })]]));
+  assert.equal(none.firstNonVetoGroup(), "No non-veto group is marked, so there is no first non-veto group label to copy. A veto is a number you entered, not a legal right. The label is not a legal identity.\n");
+  await none.click("#copy-first-non-veto-group-button");
+  assert.equal(none.clipboardText(), none.firstNonVetoGroup());
+  assert.match(none.message(), /honest empty/u);
+  assert.match(none.message(), /not a legal identity/u);
 });
 
 test("copy current locks writes Markdown with a textarea fallback and is not a legal hold", async () => {
