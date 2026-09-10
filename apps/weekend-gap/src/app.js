@@ -1874,6 +1874,15 @@ function jumpToHideIssuerClosedFilter() {
   }
   return jumpToGantt();
 }
+function jumpToHidePayoutClosedFilter() {
+  const control = document.querySelector("#gantt-hide-payout-closed");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
 });
@@ -2166,6 +2175,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "{") {
     event.preventDefault();
     jumpToHideIssuerClosedFilter();
+    return;
+  }
+  if (event.key === "|") {
+    event.preventDefault();
+    jumpToHidePayoutClosedFilter();
     return;
   }
   if (event.key === "n" || event.key === "N") {
