@@ -1744,6 +1744,114 @@ test('keyboard comma copies the footer version line through the same control', (
   assert.equal(clicks.versionLine, 1);
 });
 
+test('left bracket focuses Copy version line when focus is not in an input', () => {
+  assert.match(html, /event\.key === '\['/);
+  assert.match(html, /getElementById\('copy-version-line'\) \|\| document\.getElementById\('version-line'\)/);
+  assert.match(html, /id="copy-version-line"/);
+  assert.match(html, /id="version-line" tabindex="-1"/);
+  assert.match(html, /<kbd>\[<\/kbd><\/dt><dd>Focus the Copy version line control, or the footer version line if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Press <kbd>\[<\/kbd> to focus Copy version line/);
+  assert.match(html, /This key moves focus; it does not open a workbench/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Key `\[` focuses the Copy version line control/);
+  assert.match(readme, /Press `\[` to focus the Copy version line control/);
+  const focused = [];
+  const clicks = { versionLine: 0 };
+  const assigned = [];
+  let keydown = null;
+  const copyControl = { focus() { focused.push('copy-version-line'); }, click() { clicks.versionLine += 1; }, addEventListener() {} };
+  const versionLine = { focus() { focused.push('version-line'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-version-line') return copyControl;
+      if (id === 'version-line') return versionLine;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('[', input);
+  fire('[', textarea);
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.versionLine, 0);
+  assert.deepEqual(assigned, []);
+  fire('[', body);
+  assert.deepEqual(focused, ['copy-version-line']);
+  assert.equal(clicks.versionLine, 0);
+  assert.deepEqual(assigned, []);
+});
+
+test('left bracket focuses the footer version line when Copy version line is missing', () => {
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const versionLine = { focus() { focused.push('version-line'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-version-line') return null;
+      if (id === 'version-line') return versionLine;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '[',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['version-line']);
+  assert.deepEqual(assigned, []);
+});
+
 test('copy version line markdown is the footer text, or empty if missing', async () => {
   let copied = '';
   let clickLine = null;
