@@ -67,6 +67,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'print-report', 'print-one-pager-title',
         'remaining-copy-text', 'copy-first-breakpoint-remaining',
         'volume-copy-text', 'copy-first-breakpoint-volume',
+        'over-capacity-count-copy-text', 'copy-over-capacity-count',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -2853,6 +2854,57 @@ test('copy first-breakpoint volume-to-hold is one Markdown line with an honest e
   already.import(failing);
   already.click('copy-first-breakpoint-volume');
   assert.equal(already.copied().at(-1), 'First-breakpoint volume-to-hold: 585,000 txn for Liquidity Partner. Synthetic ranking, not a forecast.');
+});
+
+test('copy over-capacity participant count is one Markdown line with an honest zero', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-over-capacity-count"/);
+  assert.match(fallback.markup(), /data-action="copy-over-capacity-count"/);
+  fallback.click('copy-over-capacity-count');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="over-capacity-count-copy-text"/);
+  assert.match(fallback.markup(), /Over-capacity participant count: 0\. Count of roster rows currently over listed capacity\. Not a forecast\./);
+  assert.match(fallback.markup(), /id="over-capacity-count-copy-title">Over-capacity participant count Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="volume-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-over-capacity-count-copy');
+  assert.doesNotMatch(fallback.markup(), /id="over-capacity-count-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-over-capacity-count');
+  assert.match(fallback.markup(), /id="over-capacity-count-copy-text"/);
+  assert.match(fallback.markup(), />Over-capacity participant count: none entered\.</);
+  assert.doesNotMatch(fallback.markup(), /id="volume-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="remaining-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-over-capacity-count');
+  assert.equal(withClipboard.copied().length, 1);
+  const text = withClipboard.copied()[0];
+  assert.equal(text.split('\n').length, 1);
+  assert.equal(text, 'Over-capacity participant count: 0. Count of roster rows currently over listed capacity. Not a forecast.');
+  assert.doesNotMatch(text, /First-breakpoint volume-to-hold/);
+  assert.doesNotMatch(text, /First-breakpoint remaining-to-hold/);
+  assert.doesNotMatch(text, /Least-headroom participant/);
+  assert.doesNotMatch(text, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="over-capacity-count-copy-text"/);
+  withClipboard.edit('deal.monthlyVolume', '');
+  withClipboard.click('copy-over-capacity-count');
+  assert.equal(withClipboard.copied()[1], 'Over-capacity participant count: none entered.');
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-over-capacity-count');
+  assert.match(denied.markup(), /id="over-capacity-count-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const over = await workbench('file:', { clipboard: 'ok' });
+  over.edit('deal.monthlyVolume', '116000');
+  over.click('copy-over-capacity-count');
+  assert.equal(over.copied().at(-1), 'Over-capacity participant count: 1. Count of roster rows currently over listed capacity. Not a forecast.');
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
