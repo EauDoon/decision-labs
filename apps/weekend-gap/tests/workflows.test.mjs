@@ -1044,6 +1044,24 @@ test("keyboard pipe jumps to the hide-payout-closed filter and ignores the key w
   assert.equal(ui.nodes.get("gantt-hide-payout-closed").focused, false);
 });
 
+test("keyboard at-sign jumps to the hide-FX-closed filter and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("@");
+  assert.equal(ui.nodes.get("gantt-hide-fx-closed").focused, true);
+  ui.nodes.get("gantt-hide-fx-closed").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("@", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-hide-fx-closed").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("@", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-hide-fx-closed").focused, false);
+  await ui.keydown("@", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-hide-fx-closed").focused, false);
+  await ui.keydown("|");
+  assert.equal(ui.nodes.get("gantt-hide-payout-closed").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-fx-closed").focused, false);
+});
+
 test("keyboard left brace jumps to the hide-issuer-closed filter and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("{");

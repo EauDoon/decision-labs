@@ -1912,6 +1912,15 @@ function jumpToHidePayoutClosedFilter() {
   }
   return jumpToGantt();
 }
+function jumpToHideFxClosedFilter() {
+  const control = document.querySelector("#gantt-hide-fx-closed");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 document.querySelector("#jump-monday").addEventListener("click",()=>{
   selectedHour=65;setPlaying(false);render();saveWorkspace();
 });
@@ -2220,6 +2229,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "|") {
     event.preventDefault();
     jumpToHidePayoutClosedFilter();
+    return;
+  }
+  if (event.key === "@") {
+    event.preventDefault();
+    jumpToHideFxClosedFilter();
     return;
   }
   if (event.key === "n" || event.key === "N") {
