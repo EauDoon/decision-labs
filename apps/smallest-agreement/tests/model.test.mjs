@@ -2197,7 +2197,12 @@ test("groupsBelowApprovalThreshold lists groups below the numeric threshold", ()
   assert.deepEqual(belowMid.groups.map((group) => group.id), ["open"]);
   assert.equal(belowMid.groups[0].required, 70);
   assert.equal(groupsBelowApprovalThreshold(input, []).status, "invalid");
-  assert.deepEqual(findSmallestAgreement(input).status, findSmallestAgreement(JSON.parse(before)).status);
+  const meeting = groupsMeetingApprovalThreshold(input, originals);
+  assert.deepEqual(meeting.groups.map((group) => group.id), ["open"]);
+  const belowFloor = groupsBelowDeclaredSupportFloor(input, originals);
+  assert.deepEqual(belowFloor.groups.map((group) => group.id), ["floored"]);
+  const baseline = findSmallestAgreement(input);
+  assert.deepEqual(findSmallestAgreement(JSON.parse(before)), baseline);
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -2432,6 +2437,31 @@ test("first below-floor group label Markdown is one line, honest when none, and 
   assert.match(missing.text, /not a legal identity/u);
   assert.equal(missing.text.trim().includes("\n"), false);
   assert.equal(formatFirstBelowSupportFloorGroupLabelMarkdown({ title: "" }).status, "invalid");
+});
+
+test("first below-floor group label Markdown escapes the group name and is not a legal identity", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floor*group [A]", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", original: true, label: "Keep", changeCost: 0, support: { floored: 40, open: 90 } },
+      { id: "mid", original: false, label: "Mid", changeCost: 1, support: { floored: 85, open: 40 } },
+      { id: "high", original: false, label: "High", changeCost: 2, support: { floored: 90, open: 80 } },
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatFirstBelowSupportFloorGroupLabelMarkdown(input, getOriginalOptions(input));
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.label, "Floor*group [A]");
+  assert.equal(copied.text, "First below-floor group: Floor\\*group \\[A\\]. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.doesNotMatch(copied.text, /Groups below their support floor/u);
+  assert.doesNotMatch(copied.text, /legal identity of/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
 });
 
 test("formatRecommendedChangeCostCsv writes formula-safe original vs recommended costs", () => {
