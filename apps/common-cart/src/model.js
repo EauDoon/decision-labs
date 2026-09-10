@@ -329,6 +329,23 @@ export const presets = Object.freeze({
       offer("O02", "Track Salad Run", "Athletics lunch pack", "Track salad", 8, 8, 4, 24, 2),
       { ...offer("O03", "Hall Athletics Pickup", "Athletics lunch pack", "Track water", 6, 8, 1, 30, 5), fulfillment: "pickup" }
     ]
+  },
+  cricketCarnivalLunch: {
+    title: "Cricket carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Pitch crate", "Cricket lunch pack", 9, 17, 4, ["Cricket pie", "Pitch salad"]),
+      buyer("B02", "Crease bench", "Cricket lunch pack", 13, 13, 3, ["Cricket pie"]),
+      buyer("B03", "Umpire hamper", "Cricket lunch pack", 7, 15, 5, ["Pitch salad", "Pitch water"]),
+      buyer("B04", "Boundary cooler", "Cricket lunch pack", 6, 11, 2, ["Pitch water"]),
+      buyer("B05", "Pavilion trolley", "Cricket lunch pack", 10, 16, 4, ["Cricket pie", "Pitch water"]),
+      buyer("B06", "Scorer table", "Cricket lunch pack", 8, 14, 3, ["Pitch salad", "Cricket pie"])
+    ],
+    offers: [
+      offer("O01", "Pitch-side Cricket Delivery", "Cricket lunch pack", "Cricket pie", 11, 11, 3, 42, 3),
+      offer("O02", "Pitch Salad Run", "Cricket lunch pack", "Pitch salad", 9, 9, 4, 26, 2),
+      { ...offer("O03", "Hall Cricket Pickup", "Cricket lunch pack", "Pitch water", 7, 8, 1, 32, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -370,7 +387,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -483,7 +500,15 @@ export function validateWorkspace(candidate) {
     }
     hideLeftoverFillBuyers = hideBuyersFilledByLeftoverFill;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers };
+  const hideLastBuyerFilledByLeftoverFill = own(candidate, "hideLastBuyerFilledByLeftoverFill");
+  let hideLastLeftoverFillBuyer = false;
+  if (hideLastBuyerFilledByLeftoverFill !== undefined) {
+    if (hideLastBuyerFilledByLeftoverFill !== true && hideLastBuyerFilledByLeftoverFill !== false) {
+      throw new ScenarioError("Hide last leftover-fill buyer must be true or false.");
+    }
+    hideLastLeftoverFillBuyer = hideLastBuyerFilledByLeftoverFill;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -720,6 +745,25 @@ export function filterBuyerIdsHidingBuyersFilledByLeftoverFill(rawScenario, hide
   return scenario.buyers.filter((buyer) => {
     if (winnerIds.has(buyer.id)) return true;
     return !leftoverFillIds.has(buyer.id);
+  }).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides only the last leftover-fill selectedBuyerIds entry. Winner-allocated, unserved, and other leftover-fill buyers stay visible. */
+export function filterBuyerIdsHidingLastBuyerFilledByLeftoverFill(rawScenario, hideLastBuyerFilledByLeftoverFill) {
+  if (hideLastBuyerFilledByLeftoverFill !== true && hideLastBuyerFilledByLeftoverFill !== false) {
+    throw new ScenarioError("Hide last leftover-fill buyer must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideLastBuyerFilledByLeftoverFill) return scenario.buyers.map((buyer) => buyer.id);
+  const market = evaluateMarket(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  const leftoverFillIds = coverage.secondary?.selectedBuyerIds ?? [];
+  const lastId = leftoverFillIds.length > 0 ? leftoverFillIds[leftoverFillIds.length - 1] : null;
+  const winnerIds = new Set(market.winner?.selectedBuyerIds ?? []);
+  return scenario.buyers.filter((buyer) => {
+    if (winnerIds.has(buyer.id)) return true;
+    if (lastId && buyer.id === lastId) return false;
+    return true;
   }).map((buyer) => buyer.id);
 }
 
@@ -1684,6 +1728,15 @@ export function createLeftoverFillPickupMarkdown(rawScenario) {
     return "Common Cart leftover fill pickup (organizer private): none. Not a merchant export.\n";
   }
   return `Common Cart leftover fill pickup (organizer private): ${leftoverOffer.deliveryDays}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover fill offer label. Merchant and variant only. Not a merchant export. */
+export function createLeftoverFillLabelMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  if (!coverage.secondary) {
+    return "Common Cart leftover fill label (organizer private): none. Not a merchant export.\n";
+  }
+  return `Common Cart leftover fill label (organizer private): ${coverage.secondary.merchant} / ${coverage.secondary.variant}. Not a merchant export.\n`;
 }
 
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
