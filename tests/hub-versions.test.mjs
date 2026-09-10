@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -87,6 +87,9 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, /id="copy-last-review"/);
   assert.match(page, />Copy last review path</);
   assert.match(page, /lastReviewMarkdown/);
+  assert.match(page, /id="copy-first-review"/);
+  assert.match(page, />Copy first review path</);
+  assert.match(page, /firstReviewMarkdown/);
 });
 
 test('404 catalog jobs match the four catalog cards', () => {
@@ -158,6 +161,22 @@ test('404 last workbench heading matches the last catalog workbench card heading
   assert.match(page, /id="workbenches"/);
   assert.match(page, /id="copy-first-workbench"/);
   assert.match(page, />Copy first workbench heading</);
+});
+
+test('404 first review path matches the first catalog workbench review path', () => {
+  const path = catalogFirstReviewPath();
+  assert.match(path, /Review constraints and negotiation room/);
+  assert.equal(html.includes('Review constraints and negotiation room'), true, 'first review path missing from catalog');
+  assert.notEqual(path, catalogFirstWorkbenchHeading());
+  assert.notEqual(path, catalogLastReviewPath());
+  const page = notFoundPage();
+  assert.equal(page.includes(path), true, 'first review path missing from 404 page');
+  assert.match(page, /id="copy-first-review"/);
+  assert.match(page, />Copy first review path</);
+  assert.match(page, /querySelector\('#workbenches article\.workbench \.review-path'\)/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /id="copy-last-review"/);
+  assert.match(page, />Copy last review path</);
 });
 
 test('404 last review path matches the last catalog workbench review path', () => {
