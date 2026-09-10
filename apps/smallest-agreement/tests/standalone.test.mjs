@@ -2205,6 +2205,33 @@ test("hide-groups-below-threshold hides groups below the numeric threshold witho
   assert.match(empty.groups(), /No groups remain after hiding groups whose average is below the numeric approval threshold/u);
 });
 
+test("keyboard y reveals a veto group hidden by hide-groups-below-threshold", async () => {
+  const draft = {
+    title: "Veto below threshold workshop",
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { majority: 90, minority: 10 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { majority: 88, minority: 20 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { majority: 85, minority: 30 } },
+    ] }],
+  };
+  const storage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]);
+  const app = await savedWorkbench(storage);
+  app.filterHideGroupsBelowThreshold(true);
+  assert.doesNotMatch(app.groups(), /data-group-id="minority"/u);
+  assert.match(app.groups(), /Majority/u);
+  app.clearFocus();
+  app.keydown("y");
+  assert.equal(app.focused(), '[data-field="group-name"][data-group-id="minority"]');
+  assert.match(app.groups(), /Minority/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideGroupsBelowThreshold, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[1].name, "Minority");
+});
+
 test("veto-only group filter hides non-veto cards without changing the stored draft", async () => {
   const html = await standaloneBytes();
   assert.match(html, /id="veto-groups-status"[^>]*role="status"/u);
