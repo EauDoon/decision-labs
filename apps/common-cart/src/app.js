@@ -41,6 +41,8 @@ import {
   redactBuyerLabels,
   createOrganizerBriefing,
   createWinnerAggregatesMarkdown,
+  leftoverCoverageRows,
+  createLeftoverCoverageMarkdown,
   createOfferIdentityCompareMarkdown,
   decodeScenario,
   duplicateEntry,
@@ -292,6 +294,14 @@ function bindStaticEvents() {
       downloadFile(markdown, "common-cart-winner-aggregates.md", "text/markdown;charset=utf-8");
       setStatus("Winner aggregates downloaded as Markdown. Counts and totals only.", true);
     } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#copy-leftover-coverage").addEventListener("click", () => {
+    try {
+      copyTextWithFallback(
+        createLeftoverCoverageMarkdown(scenario),
+        "Leftover coverage copied as organizer-private Markdown. Buyer counts and units only. This is not a merchant export."
+      );
+    } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#copy-exclusion-counts").addEventListener("click", () => {
     try {
@@ -1167,8 +1177,10 @@ function refresh() {
       residualEmpty.textContent = "Residual coverage will appear once every field is valid.";
       residualSummary.append(residualEmpty);
     }
-    const residualNote = document.querySelector("#residual-note");
-    if (residualNote) residualNote.textContent = "";
+    const leftoverRows = document.querySelector("#leftover-coverage-rows");
+    if (leftoverRows) leftoverRows.replaceChildren();
+    const leftoverFallback = document.querySelector("#clipboard-fallback");
+    if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
     const demandNote = document.createElement("p");
     demandNote.className = "canvas-note";
@@ -1390,6 +1402,7 @@ function renderResidualCoverage(rawScenario) {
     appendDetail(list, "Unfilled buyers", coverage.unfilledBuyerCount);
     appendDetail(list, "Unfilled units", coverage.unfilledUnits);
     summary.replaceChildren(list);
+    renderLeftoverCoverageTable(rawScenario);
     return;
   }
   appendDetail(list, "Winning offer", `${coverage.primary.merchant} / ${coverage.primary.variant}`);
@@ -1418,6 +1431,27 @@ function renderResidualCoverage(rawScenario) {
   leftoverNote.className = "canvas-note";
   leftoverNote.textContent = leftover.note;
   summary.replaceChildren(list, leftoverNote);
+  renderLeftoverCoverageTable(rawScenario);
+}
+
+function leftoverRowCells(row) {
+  const element = document.createElement("tr");
+  element.id = row.id;
+  element.dataset.stage = row.id;
+  if (row.uncovered) element.classList.add("leftover-uncovered");
+  element.tabIndex = -1;
+  addCell(element, row.stage);
+  addCell(element, row.merchant);
+  addCell(element, String(row.buyerCount));
+  addCell(element, String(row.units));
+  return element;
+}
+
+function renderLeftoverCoverageTable(rawScenario) {
+  const body = document.querySelector("#leftover-coverage-rows");
+  if (!body) return;
+  const rows = leftoverCoverageRows(rawScenario);
+  body.replaceChildren(...rows.map(leftoverRowCells));
 }
 
 function renderInspector(market) {
@@ -1937,6 +1971,36 @@ function exportScenario() {
   } catch (error) {
     setStatus(`Export failed: ${messageOf(error)}`);
   }
+}
+
+function copyTextWithFallback(text, successMessage) {
+  const wrap = document.querySelector("#clipboard-fallback");
+  const area = document.querySelector("#clipboard-fallback-text");
+  const hideFallback = () => {
+    if (wrap) wrap.hidden = true;
+  };
+  const showFallback = () => {
+    if (!wrap || !area) {
+      setStatus("Clipboard was blocked. The leftover Markdown could not be copied automatically.");
+      return;
+    }
+    area.value = text;
+    wrap.hidden = false;
+    area.focus();
+    area.select();
+    setStatus("Clipboard was blocked. The organizer-private leftover Markdown is in the textarea so you can copy it from there.");
+  };
+  if (navigator.clipboard?.writeText) {
+    navigator.clipboard.writeText(text).then(
+      () => {
+        hideFallback();
+        setStatus(successMessage, true);
+      },
+      showFallback
+    );
+    return;
+  }
+  showFallback();
 }
 
 function downloadFile(content, filename, type) {

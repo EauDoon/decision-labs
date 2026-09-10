@@ -379,6 +379,19 @@ export function createOfferCsv(rawScenario: unknown): string;
 export function redactBuyerLabels(rawScenario: unknown): Scenario;
 export function createOrganizerBriefing(rawScenario: unknown): string;
 export function createWinnerAggregatesMarkdown(rawScenario: unknown): string;
+export interface LeftoverCoverageRow {
+  id: "leftover-after-winner" | "leftover-fill" | "tertiary-fill" | "uncovered-leftover";
+  stage: string;
+  /** Winner or leftover-fill merchant label only. Never a buyer label. */
+  merchant: string;
+  buyerCount: number;
+  units: number;
+  uncovered: boolean;
+}
+/** Organizer leftover table. Counts and merchant labels only. */
+export function leftoverCoverageRows(rawScenario: unknown): LeftoverCoverageRow[];
+/** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
+export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];

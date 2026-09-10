@@ -22,7 +22,9 @@ import {
   createOfferCsv,
   createOrganizerBuyerCsv,
   createCartReviewPacket,
-  analyzeCartReview
+  analyzeCartReview,
+  leftoverCoverageRows,
+  createLeftoverCoverageMarkdown
 } from "../src/model.js";
 
 const PRIVATE_BUYER_MARKERS = ["SECRET_LABEL", "SECRET_ID", "SECRET_STUDIO", "987654.32", "maxUnitPrice", "leftoverBuyerIds", '"selectedBuyerIds":', '"allocations":'];
@@ -128,6 +130,16 @@ test("exclusion counts markdown omits buyer labels, ids, budgets, and allocation
   const markdown = createExclusionCountsMarkdown(scenario, scenario.offers[1].id);
   assertOmitsPrivateBuyers(markdown, ["SECRET_TITLE"]);
   assert.match(markdown, /omit private buyer labels, IDs, budgets, and allocations/);
+});
+
+test("leftover coverage Markdown omits buyer labels, ids, budgets, and allocations", () => {
+  const scenario = secretNeighbourhood();
+  const markdown = createLeftoverCoverageMarkdown(scenario);
+  assertOmitsPrivateBuyers(markdown, ["SECRET_TITLE"]);
+  assert.match(markdown, /organizer private/);
+  assert.match(markdown, /not a merchant export/);
+  const json = JSON.stringify(leftoverCoverageRows(scenario));
+  assertOmitsPrivateBuyers(json, ["SECRET_TITLE"]);
 });
 
 test("merchant-facing 1.4.1 surfaces omit buyer labels, ids, budgets, and allocations", () => {

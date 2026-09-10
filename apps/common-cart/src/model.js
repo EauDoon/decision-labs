@@ -1044,6 +1044,74 @@ export function createWinnerAggregatesMarkdown(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Organizer leftover table. Counts and merchant labels only. No buyer IDs, labels, budgets, or allocations. */
+export function leftoverCoverageRows(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  return [
+    {
+      id: "leftover-after-winner",
+      stage: "Leftover after winner",
+      merchant: coverage.primary?.merchant ?? "None",
+      buyerCount: coverage.leftoverBuyerCount,
+      units: coverage.leftoverUnits,
+      uncovered: false
+    },
+    {
+      id: "leftover-fill",
+      stage: "Leftover fill",
+      merchant: coverage.secondary?.merchant ?? "None",
+      buyerCount: coverage.secondary ? coverage.secondary.deliveredBuyers : 0,
+      units: coverage.secondary ? coverage.secondary.fulfilledUnits : 0,
+      uncovered: false
+    },
+    {
+      id: "tertiary-fill",
+      stage: "Tertiary fill",
+      merchant: coverage.tertiary?.merchant ?? "None",
+      buyerCount: coverage.tertiary ? coverage.tertiary.deliveredBuyers : 0,
+      units: coverage.tertiary ? coverage.tertiary.fulfilledUnits : 0,
+      uncovered: false
+    },
+    {
+      id: "uncovered-leftover",
+      stage: "Uncovered leftover",
+      merchant: "None",
+      buyerCount: coverage.unfilledBuyerCount,
+      units: coverage.unfilledUnits,
+      uncovered: coverage.leftoverBuyerCount > 0
+    }
+  ];
+}
+
+/** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
+export function createLeftoverCoverageMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const rows = leftoverCoverageRows(rawScenario);
+  const lines = [
+    `# Common Cart leftover residual coverage (organizer private)`,
+    ``,
+    `This Markdown is organizer-private. It is not a merchant export.`,
+    ``,
+    `- Winning merchant: ${coverage.primary?.merchant ?? "None unlocked"}`,
+    `- Leftover after winner: ${coverage.leftoverBuyerCount} buyers, ${coverage.leftoverUnits} units.`,
+    coverage.secondary
+      ? `- Leftover fill: ${coverage.secondary.merchant} / ${coverage.secondary.variant}, ${coverage.secondary.fulfilledUnits} units, ${coverage.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    coverage.tertiary
+      ? `- Tertiary fill: ${coverage.tertiary.merchant} / ${coverage.tertiary.variant}, ${coverage.tertiary.fulfilledUnits} units, ${coverage.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
+    `- Still unfilled: ${coverage.unfilledBuyerCount} buyers, ${coverage.unfilledUnits} units.`,
+    `- ${coverage.note}`,
+    ``,
+    `| Stage | Merchant | Buyers | Units |`,
+    `| --- | --- | --- | --- |`,
+    ...rows.map((row) => `| ${markdownTableCell(row.stage)} | ${markdownTableCell(row.merchant)} | ${row.buyerCount} | ${row.units} |`),
+    ``,
+    `Buyer counts and units only. Labels, IDs, budgets, and allocations are omitted.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 export function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {
