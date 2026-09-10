@@ -782,6 +782,13 @@ test("duplicateParticipantGroup copies weight, constraints, and support keys wit
   assert.equal(copy.weight, 1);
   assert.equal(copy.minSupport, 60);
   assert.equal(copy.veto, true);
+  const second = duplicateParticipantGroup(duplicated.proposal, "minority");
+  assert.equal(second.status, "ok");
+  const secondCopy = second.proposal.groups.find((group) => group.id === second.groupId);
+  assert.equal(secondCopy.name, "Minority (copy 2)");
+  assert.equal(secondCopy.id === copy.id, false);
+  const names = second.proposal.groups.map((group) => group.name);
+  assert.equal(new Set(names).size, names.length);
   for (const option of duplicated.proposal.clauses[0].options) {
     assert.equal(option.support[copy.id], option.support.minority);
     assert.equal(Object.hasOwn(option.support, copy.id), true);

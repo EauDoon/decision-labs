@@ -973,6 +973,12 @@ test("duplicate group copies weight and support scores with a unique id and supp
   assert.equal(copy.weight, source.weight);
   assert.equal(after.clauses[0].options[0].support[copy.id], before.clauses[0].options[0].support[source.id]);
   assert.match(app.groups(), /Duplicate group/u);
+  app.clickAction("duplicate-group", { groupId: source.id });
+  const names = JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.map((group) => group.name);
+  assert.equal(names.includes(`${source.name} (copy)`), true);
+  assert.equal(names.includes(`${source.name} (copy 2)`), true);
+  assert.equal(new Set(names).size, names.length);
+  app.click("#undo-button");
   app.click("#undo-button");
   assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups.length, before.groups.length);
 });

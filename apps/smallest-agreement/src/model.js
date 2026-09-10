@@ -831,7 +831,8 @@ export function applyRenormalizedWeights(proposal) {
 
 /**
  * Copy a participant group, including weight, optional floor, veto, and every option's support score.
- * The copy receives a unique id. The solver still treats it as a separate supplied group.
+ * The copy receives a unique id and a unique copy name. Invalid at the group cap.
+ * The solver still treats it as a separate supplied group.
  */
 export function duplicateParticipantGroup(proposal, groupId) {
   const validation = validateProposal(proposal);
@@ -854,9 +855,10 @@ export function duplicateParticipantGroup(proposal, groupId) {
     serial += 1;
     copyId = `group-copy-${serial}`;
   }
+  const usedNames = new Set(next.groups.map((group) => group.name));
   const copy = {
     id: copyId,
-    name: source.name.length + 7 > 80 ? `${source.name.slice(0, 73)} (copy)` : `${source.name} (copy)`,
+    name: uniqueCopyLabel(source.name, usedNames, 80),
     weight: source.weight,
     ...(source.minSupport !== undefined ? { minSupport: source.minSupport } : {}),
     ...(source.veto === true ? { veto: true } : {}),
