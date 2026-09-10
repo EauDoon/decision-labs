@@ -148,6 +148,10 @@
     #shortcuts:focus-visible,
     #trust:focus,
     #trust:focus-visible,
+    #trust-title:focus,
+    #trust-title:focus-visible,
+    #trust li:focus,
+    #trust li:focus-visible,
     #main:focus,
     #main:focus-visible,
     #whats-new-title:focus,
@@ -607,7 +611,7 @@
         <li data-app="smallest-agreement">1.5.6</li>
         <li data-app="weekend-gap">1.5.6</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>.</kbd> to focus Skip to catalog versions. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>/</kbd> to focus the first Trust and limits list item. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>.</kbd> to focus Skip to catalog versions. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -623,6 +627,7 @@
           <dt><kbd>k</kbd></dt><dd>Focus How it works</dd>
           <dt><kbd>d</kbd></dt><dd>Focus the first How it works list item, or the How it works heading if none. This key moves focus; it does not open a workbench.</dd>
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
+          <dt><kbd>/</kbd></dt><dd>Focus the first Trust and limits list item, or the Trust and limits heading if none. This key moves focus; it does not open a workbench. Shift+/ stays <kbd>?</kbd>.</dd>
           <dt><kbd>s</kbd></dt><dd>Focus the first Open workbench link. This key moves focus; it does not open the workbench.</dd>
           <dt><kbd>a</kbd></dt><dd>Focus the first workbench article. This key moves focus to the card; it does not open the workbench.</dd>
           <dt><kbd>b</kbd></dt><dd>Focus the last workbench card. This key moves focus; it does not open the workbench.</dd>
@@ -717,6 +722,7 @@
       <p>This page is a catalog. Each Open workbench link loads one generated file from this repository. You can also open that file from disk. Node.js is only required if you want the loopback launcher or to run tests.</p>
       <ul>
         <li tabindex="-1"><strong>How-it-works jump.</strong> Key d focuses the first How it works list item, or the How it works heading if none. It moves focus only. It does not open a workbench.</li>
+        <li tabindex="-1"><strong>Trust-item jump.</strong> Key slash focuses the first Trust and limits list item, or the Trust and limits heading if none. It moves focus only. It does not open a workbench. Shift+/ still opens the shortcut list.</li>
         <li tabindex="-1"><strong>Standalone files.</strong> Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</li>
         <li tabindex="-1"><strong>Loopback catalog address.</strong> When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</li>
         <li tabindex="-1"><strong>Catalog print.</strong> Print this catalog prints the page in the browser. It is not a live product sheet.</li>
@@ -738,14 +744,14 @@
       <textarea id="copy-how-fallback" class="copy-how-fallback" hidden readonly rows="8" aria-label="How it works as Markdown"></textarea>
     </section>
     <section class="trust" id="trust" tabindex="-1" aria-labelledby="trust-title">
-      <h2 id="trust-title">Trust and limits</h2>
+      <h2 id="trust-title" tabindex="-1">Trust and limits</h2>
       <p>This catalog and the four workbenches are local-first decision aids. They help you inspect a bounded case. They do not make the decision, execute a transaction, or speak for a counterparty.</p>
       <ul>
-        <li><strong>Local-first.</strong> Pages run in your browser. The optional launcher binds loopback only. Nothing here calls a remote API or loads live market, merchant, or account data.</li>
-        <li><strong>No account.</strong> There is no sign-in, cloud save, or hosted workspace. Browser storage stays on this device. Clear the site data and those drafts are gone unless you exported JSON.</li>
-        <li><strong>Deterministic math.</strong> The same valid inputs produce the same outputs. The models do not sample, forecast, or assign probabilities, prices, fairness, or legitimacy.</li>
-        <li><strong>Not a decision maker.</strong> A ranked shock, a pooled offer, a clause package, or a weekend queue is evidence for a conversation. People keep judgment, governing rules, and accountability.</li>
-        <li><strong>Model notes live in each workbench.</strong> Formulas, units, and non-goals are documented beside the tool that uses them. This launcher does not serve those files; open the workbench when you need the exact conventions.</li>
+        <li tabindex="-1"><strong>Local-first.</strong> Pages run in your browser. The optional launcher binds loopback only. Nothing here calls a remote API or loads live market, merchant, or account data.</li>
+        <li tabindex="-1"><strong>No account.</strong> There is no sign-in, cloud save, or hosted workspace. Browser storage stays on this device. Clear the site data and those drafts are gone unless you exported JSON.</li>
+        <li tabindex="-1"><strong>Deterministic math.</strong> The same valid inputs produce the same outputs. The models do not sample, forecast, or assign probabilities, prices, fairness, or legitimacy.</li>
+        <li tabindex="-1"><strong>Not a decision maker.</strong> A ranked shock, a pooled offer, a clause package, or a weekend queue is evidence for a conversation. People keep judgment, governing rules, and accountability.</li>
+        <li tabindex="-1"><strong>Model notes live in each workbench.</strong> Formulas, units, and non-goals are documented beside the tool that uses them. This launcher does not serve those files; open the workbench when you need the exact conventions.</li>
       </ul>
       <p class="copy-trust-tools" id="copy-trust-tools">
         <button type="button" class="copy-trust" id="copy-trust" aria-keyshortcuts="i">Copy Trust and limits</button>
@@ -1163,6 +1169,12 @@
         if (event.key === 't') {
           event.preventDefault();
           document.getElementById('trust')?.focus();
+          return;
+        }
+        if (event.key === '/') {
+          event.preventDefault();
+          const firstTrust = document.querySelector('#trust li');
+          (firstTrust || document.getElementById('trust-title') || document.getElementById('trust'))?.focus();
           return;
         }
         if (event.key === 's') {
