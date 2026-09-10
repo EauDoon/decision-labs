@@ -732,6 +732,10 @@ SOFTWARE.
                 <input id="gantt-hide-issuer-open" type="checkbox" aria-keyshortcuts="`">
                 Hide hours where the issuer gate is open
               </label>
+              <label class="checkbox-label" for="gantt-hide-weekend-issuer-open">
+                <input id="gantt-hide-weekend-issuer-open" type="checkbox" aria-keyshortcuts="7">
+                Hide weekend hours where the issuer gate is open
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
@@ -893,6 +897,7 @@ SOFTWARE.
           <li><kbd>#</kbd> Jump to the hide-payout-open Gantt filter</li>
           <li><kbd>%</kbd> Jump to the hide-FX-open Gantt filter</li>
           <li><kbd>`</kbd> Jump to the hide-issuer-open Gantt filter</li>
+          <li><kbd>7</kbd> Jump to the hide-weekend-issuer-open Gantt filter</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>
