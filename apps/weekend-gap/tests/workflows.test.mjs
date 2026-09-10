@@ -32,7 +32,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -395,6 +395,20 @@ test("every-gate-closed Gantt filter persists in workspace JSON and older files 
   assert.equal(legacy.nodes.get("gantt-every-closed").checked, false);
 });
 
+test("hide-weekend Gantt filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("gantt-hide-weekends").checked = true;
+  await ui.nodes.get("gantt-hide-weekends").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).hideWeekendGanttHours, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-hide-weekends").checked, true);
+  assert.match(restored.nodes.get("gantt-filter-note").textContent, /Saturday and Sunday hours are hidden/);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.hideWeekendGanttHours;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-hide-weekends").checked, false);
+});
+
 test("hide-open Gantt filter persists in workspace JSON and older files restore all hours", async () => {
   const ui = await boot();
   ui.nodes.get("gantt-hide-open").checked = true;
@@ -459,6 +473,23 @@ test("keyboard c copies the selected Gantt hour Markdown and ignores the key whi
   assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, true);
   await ui.keydown("c", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("gantt-hour-copy-fallback").hidden, true);
+});
+
+test("keyboard z copies remaining-reserve Markdown and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("z");
+  assert.equal(ui.nodes.get("remaining-reserve-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("remaining-reserve-copy-fallback").value, /Remaining reserve:/);
+  assert.match(ui.nodes.get("remaining-reserve-copy-fallback").value, /Queued AUD:/);
+  assert.match(ui.nodes.get("remaining-reserve-copy-fallback").value, /Synthetic educational snapshot/);
+  ui.nodes.get("remaining-reserve-copy-fallback").hidden = true;
+  ui.nodes.get("remaining-reserve-copy-fallback").value = "";
+  await ui.keydown("Z", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("remaining-reserve-copy-fallback").hidden, true);
+  await ui.keydown("z", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("remaining-reserve-copy-fallback").hidden, true);
+  await ui.keydown("z", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("remaining-reserve-copy-fallback").hidden, true);
 });
 
 test("keyboard v copies selected versus peak-queue hour Markdown and ignores the key while typing", async () => {
@@ -556,6 +587,22 @@ test("keyboard o jumps to the Payout Gantt row and to the Gantt heading when fil
   assert.equal(ui.nodes.get("gantt-payout-row").focused, false);
   await ui.keydown("o", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("gantt-payout-row").focused, false);
+});
+
+test("keyboard y jumps to the hours-to-first-settlement line and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("y");
+  assert.equal(ui.nodes.get("hours-to-first-settlement-line").focused, true);
+  assert.equal(ui.nodes.get("hours-to-first-settlement-line").attributes.tabindex, "-1");
+  ui.nodes.get("hours-to-first-settlement-line").focused = false;
+  ui.nodes.get("outcome-title").focused = false;
+  await ui.keydown("Y", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-line").focused, false);
+  assert.equal(ui.nodes.get("outcome-title").focused, false);
+  await ui.keydown("y", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-line").focused, false);
+  await ui.keydown("y", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-line").focused, false);
 });
 
 test("keyboard k jumps to the hours-to-clear line and ignores the key while typing", async () => {
