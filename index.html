@@ -252,7 +252,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-last-job, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -266,19 +266,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-first-job:hover, .copy-last-job:hover, .copy-first-trust:hover, .copy-first-how:hover, .copy-last-how:hover, .copy-last-trust:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .copy-version-line:hover, .print-catalog:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-first-job:focus-visible, .copy-last-job:focus-visible, .copy-first-trust:focus-visible, .copy-first-how:focus-visible, .copy-last-how:focus-visible, .copy-last-trust:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .copy-version-line:focus-visible, .print-catalog:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-first-job:hover, .copy-last-job:hover, .copy-last-whats-new:hover, .copy-first-whats-new:hover, .copy-first-trust:hover, .copy-first-how:hover, .copy-last-how:hover, .copy-last-trust:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .copy-version-line:hover, .print-catalog:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-first-job:focus-visible, .copy-last-job:focus-visible, .copy-last-whats-new:focus-visible, .copy-first-whats-new:focus-visible, .copy-first-trust:focus-visible, .copy-first-how:focus-visible, .copy-last-how:focus-visible, .copy-last-trust:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .copy-version-line:focus-visible, .print-catalog:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-first-job-status, .copy-last-job-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-trust-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status, .copy-version-line-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-first-job-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-trust-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status, .copy-version-line-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools, .copy-first-job-tools, .copy-last-job-tools, .copy-first-trust-tools, .copy-first-how-tools, .copy-last-how-tools, .copy-last-trust-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .copy-version-line-tools, .print-catalog-tools { margin: 12px 0 0; }
-    .copy-versions-fallback, .copy-jobs-fallback, .copy-first-job-fallback, .copy-last-job-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-trust-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback, .copy-version-line-fallback {
+    .copy-versions-tools, .copy-jobs-tools, .copy-first-job-tools, .copy-last-job-tools, .copy-last-whats-new-tools, .copy-first-whats-new-tools, .copy-first-trust-tools, .copy-first-how-tools, .copy-last-how-tools, .copy-last-trust-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .copy-version-line-tools, .print-catalog-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback, .copy-first-job-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-trust-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback, .copy-version-line-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -291,7 +291,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-first-job-fallback[hidden], .copy-last-job-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-trust-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-first-job-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-trust-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -333,7 +333,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-last-job, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-first-job, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-trust, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -369,6 +369,8 @@
       .copy-version-line-tools, .copy-version-line-fallback { display: none !important; }
       .copy-first-job-tools, .copy-first-job-fallback { display: none !important; }
       .copy-last-job-tools, .copy-last-job-fallback { display: none !important; }
+      .copy-last-whats-new-tools, .copy-last-whats-new-fallback { display: none !important; }
+      .copy-first-whats-new-tools, .copy-first-whats-new-fallback { display: none !important; }
       .copy-first-trust-tools, .copy-first-trust-fallback { display: none !important; }
       .copy-first-how-tools, .copy-first-how-fallback { display: none !important; }
       .copy-last-how-tools, .copy-last-how-fallback { display: none !important; }
@@ -439,6 +441,10 @@
       <h2 id="whats-new-title" tabindex="-1">What's new</h2>
       <p>These tools ship inside the four local workbenches. They run in your browser on the case you opened. They do not call a live partnership, merchant, vote, or bank. Catalog cards list each workbench version next to its job.</p>
       <ul class="whats-new-list">
+        <li>
+          <h3 tabindex="-1">Last What's new copy, last-news jump, and first-news jump</h3>
+          <p>The catalog can copy the last What's new heading as one Markdown line, jump to the Copy last What's new heading control, and jump to the Copy first What's new heading control. Copy last What's new heading through tilde as Markdown, jump with keyboard exclamation, and jump to Copy first What's new heading with keyboard open-paren. The branded 404 page can copy the last printed What's new heading without adding a public path. These are in-page catalog tools. They do not change workbench versions and they do not call a live product feed.</p>
+        </li>
         <li>
           <h3 tabindex="-1">Last-job copy, last-job jump, and first-job jump</h3>
           <p>The catalog can copy the last workbench job as one Markdown line, jump to the Copy last job control, and jump to the Copy first job control. Copy last job through } as Markdown, jump with keyboard +, and jump to Copy first job with keyboard |. The branded 404 page can copy the last printed workbench job without adding a public path. These are in-page catalog tools. They do not change workbench versions and they do not call a live product feed.</p>
@@ -526,6 +532,10 @@
         <li>
           <h3>Netball carnival, over-capacity copy, and first-breakpoint hide in Partnership Breakpoint 1.5.11</h3>
           <p>Copy over-capacity participant count through quote as Markdown, jump with keyboard underscore and open-brace, hide the first-breakpoint participant on screen, and start from a Netball carnival split case. Counts remain counts. The ranking is not a forecast of who will exit.</p>
+        </li>
+        <li>
+          <h3>Swimming carnival, over-capacity label copy, and first-over-capacity hide in Partnership Breakpoint 1.5.12</h3>
+          <p>Copy first over-capacity participant label through close-brace as Markdown, jump with keyboard plus and pipe, hide the first over-capacity participant on screen, and start from a Swimming carnival split case. Counts remain counts. The ranking is not a forecast of who will exit.</p>
         </li>
         <li>
           <h3>Residual coverage in Common Cart</h3>
@@ -708,16 +718,26 @@
           <p>Copy first closed payout hour through quote as Markdown, jump with keyboard underscore and open-brace, hide Gantt hours where the payout gate is closed on screen, and start from a Sunday late payout close case. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue.</p>
         </li>
       </ul>
+      <p class="copy-first-whats-new-tools" id="copy-first-whats-new-tools">
+        <button type="button" class="copy-first-whats-new" id="copy-first-whats-new">Copy first What's new heading</button>
+        <span class="copy-first-whats-new-status" id="copy-first-whats-new-status" role="status"></span>
+      </p>
+      <textarea id="copy-first-whats-new-fallback" class="copy-first-whats-new-fallback" hidden readonly rows="2" aria-label="First What's new heading as Markdown"></textarea>
+      <p class="copy-last-whats-new-tools" id="copy-last-whats-new-tools">
+        <button type="button" class="copy-last-whats-new" id="copy-last-whats-new" aria-keyshortcuts="~">Copy last What's new heading</button>
+        <span class="copy-last-whats-new-status" id="copy-last-whats-new-status" role="status"></span>
+      </p>
+      <textarea id="copy-last-whats-new-fallback" class="copy-last-whats-new-fallback" hidden readonly rows="2" aria-label="Last What's new heading as Markdown"></textarea>
     </section>
     <section id="workbenches" tabindex="-1" aria-labelledby="workbenches-title">
       <h2 id="workbenches-title">The workbenches</h2>
       <ul id="workbench-versions" hidden>
-        <li data-app="partnership-breakpoint">1.5.11</li>
+        <li data-app="partnership-breakpoint">1.5.12</li>
         <li data-app="common-cart">1.4.11</li>
         <li data-app="smallest-agreement">1.5.11</li>
         <li data-app="weekend-gap">1.5.11</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>/</kbd> to focus the first Trust and limits list item. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>;</kbd> to copy the first workbench job. Press <kbd>}</kbd> to copy the last workbench job. Press <kbd>|</kbd> to focus Copy first job. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>-</kbd> to copy the first How it works list item. Press <kbd>&lt;</kbd> to copy the last How it works list item. Press <kbd>=</kbd> to focus Copy How it works. Press <kbd>&gt;</kbd> to focus Copy last How it works item. Press <kbd>_</kbd> to focus Copy first How it works item. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>.</kbd> to focus Skip to catalog versions. Press <kbd>'</kbd> to focus Skip to Trust and limits. Press <kbd>[</kbd> to focus Copy version line. Press <kbd>]</kbd> to focus the last Open workbench link. Press <kbd>+</kbd> to focus Copy last job. Press <kbd>:</kbd> to copy the first Trust and limits list item. Press <kbd>"</kbd> to copy the last Trust and limits list item. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>g</kbd> to focus the first What's new heading. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>d</kbd> to focus the first How it works list item. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>/</kbd> to focus the first Trust and limits list item. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>a</kbd> to focus the first workbench article. Press <kbd>b</kbd> to focus the last workbench card. Press <kbd>r</kbd> to focus the first review path. Press <kbd>f</kbd> to focus the footer version line. Press <kbd>p</kbd> to print this catalog. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>e</kbd> to copy the catalog heading and lede. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>,</kbd> to copy the footer version line. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>q</kbd> to copy catalog jobs through the same control. Press <kbd>;</kbd> to copy the first workbench job. Press <kbd>}</kbd> to copy the last workbench job. Press <kbd>~</kbd> to copy the last What's new heading. Press <kbd>!</kbd> to focus Copy last What's new heading. Press <kbd>(</kbd> to focus Copy first What's new heading. Press <kbd>|</kbd> to focus Copy first job. Press <kbd>i</kbd> to copy Trust and limits. Press <kbd>u</kbd> to copy How it works. Press <kbd>-</kbd> to copy the first How it works list item. Press <kbd>&lt;</kbd> to copy the last How it works list item. Press <kbd>=</kbd> to focus Copy How it works. Press <kbd>&gt;</kbd> to focus Copy last How it works item. Press <kbd>_</kbd> to focus Copy first How it works item. Press <kbd>y</kbd> to copy the last-launched job. Press <kbd>z</kbd> to copy skip-link targets. Press <kbd>.</kbd> to focus Skip to catalog versions. Press <kbd>'</kbd> to focus Skip to Trust and limits. Press <kbd>[</kbd> to focus Copy version line. Press <kbd>]</kbd> to focus the last Open workbench link. Press <kbd>+</kbd> to focus Copy last job. Press <kbd>:</kbd> to copy the first Trust and limits list item. Press <kbd>"</kbd> to copy the last Trust and limits list item. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -751,6 +771,9 @@
           <dt><kbd>q</kbd></dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed. This key uses the same Copy jobs control as <kbd>j</kbd>. It does not fork that Markdown.</dd>
           <dt><kbd>;</kbd></dt><dd>Copy the first workbench name and one-sentence job as one Markdown line from this catalog page, not a live product feed. If that card is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>j</kbd> and <kbd>q</kbd>, which copy all four jobs, and from <kbd>y</kbd>, which copies the last-launched job.</dd>
           <dt><kbd>}</kbd></dt><dd>Copy the last workbench name and one-sentence job as one Markdown line from this catalog page, not a live product feed. If that card is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>;</kbd>, which copies the first workbench job, and from <kbd>j</kbd> and <kbd>q</kbd>, which copy all four jobs.</dd>
+          <dt><kbd>~</kbd></dt><dd>Copy the last What's new heading as one Markdown line from this catalog page, not a live product feed. If that heading is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>g</kbd>, which focuses the first What's new heading, and from <kbd>n</kbd>, which focuses What's new.</dd>
+          <dt><kbd>!</kbd></dt><dd>Focus the Copy last What's new heading control, or the What's new heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>g</kbd>, which focuses the first What's new heading, and from <kbd>n</kbd>, which focuses What's new.</dd>
+          <dt><kbd>(</kbd></dt><dd>Focus the Copy first What's new heading control, or the What's new heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>g</kbd>, which focuses the first What's new heading itself, and from <kbd>~</kbd>, which copies the last What's new heading.</dd>
           <dt><kbd>|</kbd></dt><dd>Focus the Copy first job control, or the workbenches heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>;</kbd>, which copies the first workbench job, and from <kbd>}</kbd>, which copies the last workbench job.</dd>
           <dt><kbd>:</kbd></dt><dd>Copy the first Trust and limits list item as one Markdown line from this catalog page, not a live policy feed. If that item is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>i</kbd>, which copies the full Trust and limits list, and from <kbd>;</kbd>, which copies the first workbench job.</dd>
           <dt><kbd>"</kbd></dt><dd>Copy the last Trust and limits list item as one Markdown line from this catalog page, not a live policy feed. If that item is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>:</kbd>, which copies the first Trust and limits list item, and from <kbd>i</kbd>, which copies the full Trust and limits list.</dd>
@@ -778,7 +801,7 @@
         <span class="index" aria-hidden="true">1</span>
         <div>
           <h3>Partnership Breakpoint</h3>
-          <p class="version">Version <span data-app-version="partnership-breakpoint">1.5.11</span></p>
+          <p class="version">Version <span data-app-version="partnership-breakpoint">1.5.12</span></p>
           <p class="last-launched" data-last-workbench="1" hidden>Last launched in this browser. Stored only on this device, not a cloud recency.</p>
           <p class="review-path" tabindex="-1"><strong>Review constraints and negotiation room.</strong> Check cost allowances, feasible volume and operational conflicts before exporting a review packet.</p>
           <p class="job">Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move.</p>
@@ -841,6 +864,10 @@
       <p><strong>Replay without replacing your draft.</strong> Export review packet saves the inputs and calculated table. Inspect review packet recomputes them and rejects a mismatch while keeping your working case. Use the same workbench to inspect its packet. Packets may contain private names, constraints and notes; they are unsigned consistency records, not authenticated evidence.</p>
       <p>This page is a catalog. Each Open workbench link loads one generated file from this repository. You can also open that file from disk. Node.js is only required if you want the loopback launcher or to run tests.</p>
       <ul>
+        <li tabindex="-1"><strong>First-news jump.</strong> Key open-paren focuses the Copy first What's new heading control, or the What's new heading if that control is missing. It moves focus only. It does not open a workbench. It does not copy. It is distinct from key g, which focuses the first What's new heading itself, and from key tilde, which copies the last What's new heading.</li>
+        <li tabindex="-1"><strong>Last-news jump.</strong> Key exclamation focuses the Copy last What's new heading control, or the What's new heading if that control is missing. It moves focus only. It does not open a workbench. It does not copy. It is distinct from key g, which focuses the first What's new heading, and from key n, which focuses What's new.</li>
+        <li tabindex="-1"><strong>Last What's new heading.</strong> Copy last What's new heading copies the last What's new heading already printed on this page as one Markdown line. If that heading is missing, it copies an empty string. It reads this catalog page. It is not a live product feed. It is distinct from Copy last job, which copies the last workbench job, and from Copy last How it works item.</li>
+        <li tabindex="-1"><strong>First What's new heading.</strong> Copy first What's new heading copies the first What's new heading already printed on this page as one Markdown line. If that heading is missing, it copies an empty string. It reads this catalog page. It is not a live product feed. It is distinct from Copy last What's new heading, which copies the last heading, and from key g, which focuses the first heading itself.</li>
         <li tabindex="-1"><strong>First-job jump.</strong> Key pipe focuses the Copy first job control, or the workbenches heading if that control is missing. It moves focus only. It does not open a workbench. It does not copy. It is distinct from key semicolon, which copies the first workbench job, and from key close-brace, which copies the last workbench job.</li>
         <li tabindex="-1"><strong>Last-job jump.</strong> Key plus focuses the Copy last job control, or the workbenches heading if that control is missing. It moves focus only. It does not open a workbench. It does not copy. It is distinct from key s, which focuses the first Open workbench link, and from key right bracket, which focuses the last Open workbench link.</li>
         <li tabindex="-1"><strong>Last catalog job.</strong> Copy last job copies the last workbench name and one-sentence job already printed on this page as one Markdown line. If that card is missing, it copies an empty string. It reads this catalog page. It is not a live product feed. It is distinct from Copy first job, which copies the first card, and from Copy jobs, which copies all four jobs.</li>
@@ -915,7 +942,7 @@
     </section>
   </main>
   <footer class="shell site-footer">
-    <p id="version-line" tabindex="-1" class="version-line">Partnership Breakpoint 1.5.11, Common Cart 1.4.11, The Smallest Agreement 1.5.11, Weekend Gap 1.5.11. Each workbench versions itself.</p>
+    <p id="version-line" tabindex="-1" class="version-line">Partnership Breakpoint 1.5.12, Common Cart 1.4.11, The Smallest Agreement 1.5.11, Weekend Gap 1.5.11. Each workbench versions itself.</p>
     <p class="print-catalog-tools" id="print-catalog-tools">
       <button type="button" class="print-catalog" id="print-catalog" aria-keyshortcuts="p">Print this catalog</button>
     </p>
@@ -1206,6 +1233,77 @@
             lastJobStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. Last workbench card was missing. This is catalog copy, not a live product feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last catalog job, not a live product feed.';
+          }
+        }
+      });
+      const lastWhatsNewBtn = document.getElementById('copy-last-whats-new');
+      const lastWhatsNewStatus = document.getElementById('copy-last-whats-new-status');
+      const lastWhatsNewFallback = document.getElementById('copy-last-whats-new-fallback');
+      const lastWhatsNewMarkdown = () => {
+        const headings = document.querySelectorAll('#whats-new h3');
+        const heading = headings[headings.length - 1];
+        const text = heading?.textContent.trim() ?? '';
+        if (!text) return '';
+        return `- ${text}`;
+      };
+      lastWhatsNewBtn?.addEventListener('click', async () => {
+        const markdown = lastWhatsNewMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastWhatsNewFallback) lastWhatsNewFallback.hidden = true;
+          if (lastWhatsNewStatus) {
+            lastWhatsNewStatus.textContent = empty
+              ? 'Last What\'s new heading was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the last What\'s new heading from this catalog page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (lastWhatsNewFallback) {
+            lastWhatsNewFallback.hidden = false;
+            lastWhatsNewFallback.value = markdown;
+            lastWhatsNewFallback.focus();
+            lastWhatsNewFallback.select();
+          }
+          if (lastWhatsNewStatus) {
+            lastWhatsNewStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last What\'s new heading was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last What\'s new heading, not a live product feed.';
+          }
+        }
+      });
+      const firstWhatsNewBtn = document.getElementById('copy-first-whats-new');
+      const firstWhatsNewStatus = document.getElementById('copy-first-whats-new-status');
+      const firstWhatsNewFallback = document.getElementById('copy-first-whats-new-fallback');
+      const firstWhatsNewMarkdown = () => {
+        const heading = document.querySelector('#whats-new h3');
+        const text = heading?.textContent.trim() ?? '';
+        if (!text) return '';
+        return `- ${text}`;
+      };
+      firstWhatsNewBtn?.addEventListener('click', async () => {
+        const markdown = firstWhatsNewMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstWhatsNewFallback) firstWhatsNewFallback.hidden = true;
+          if (firstWhatsNewStatus) {
+            firstWhatsNewStatus.textContent = empty
+              ? 'First What\'s new heading was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the first What\'s new heading from this catalog page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (firstWhatsNewFallback) {
+            firstWhatsNewFallback.hidden = false;
+            firstWhatsNewFallback.value = markdown;
+            firstWhatsNewFallback.focus();
+            firstWhatsNewFallback.select();
+          }
+          if (firstWhatsNewStatus) {
+            firstWhatsNewStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First What\'s new heading was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first What\'s new heading, not a live product feed.';
           }
         }
       });
@@ -1643,6 +1741,21 @@
         if (event.key === '}') {
           event.preventDefault();
           lastJobBtn?.click();
+          return;
+        }
+        if (event.key === '~') {
+          event.preventDefault();
+          lastWhatsNewBtn?.click();
+          return;
+        }
+        if (event.key === '!') {
+          event.preventDefault();
+          (document.getElementById('copy-last-whats-new') || document.getElementById('whats-new-title') || document.getElementById('whats-new'))?.focus();
+          return;
+        }
+        if (event.key === '(') {
+          event.preventDefault();
+          (document.getElementById('copy-first-whats-new') || document.getElementById('whats-new-title') || document.getElementById('whats-new'))?.focus();
           return;
         }
         if (event.key === '|') {
