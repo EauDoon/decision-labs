@@ -1230,6 +1230,7 @@ test('pop-up cinema split preset loads from the starting-point buttons', async (
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'presenter,station,underwriter');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'concert-venue,pta,ticketing');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'carnival-committee,ride-operator,ticket-booth');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'netball-committee,canteen,first-aid');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
@@ -1260,6 +1261,7 @@ test('community radio split preset loads from the starting-point buttons', async
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'cinema-venue,projectionist,ticket-desk');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'concert-venue,pta,ticketing');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'carnival-committee,ride-operator,ticket-booth');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'netball-committee,canteen,first-aid');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
 });
@@ -1292,6 +1294,7 @@ test('school concert split preset loads from the starting-point buttons', async 
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'carnival-committee,ride-operator,ticket-booth');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'netball-committee,canteen,first-aid');
 });
 
 test('sports carnival split preset loads from the starting-point buttons', async () => {
@@ -1322,6 +1325,7 @@ test('sports carnival split preset loads from the starting-point buttons', async
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'concert-venue,pta,ticketing');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'netball-committee,canteen,first-aid');
 });
 
 test('netball carnival split preset loads from the starting-point buttons', async () => {
