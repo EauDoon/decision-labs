@@ -517,6 +517,17 @@ test('copy catalog address control exists and stays hidden off http', () => {
   assert.match(html, /The control stays hidden if you open the page from a file/);
 });
 
+test('print CSS hides copy how tools like copy trust and keeps How it works', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-how-tools, \.copy-how-fallback, \.copy-last-tools, \.copy-last-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-trust-tools, \.copy-trust-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.version-line/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+  assert.match(html, /id="copy-how"/);
+  assert.match(html, /id="copy-how-fallback"/);
+});
+
 test('print CSS hides copy jobs tools and keeps How it works and versions', () => {
   const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
   assert.match(print, /\.copy-jobs-tools, \.copy-jobs-fallback, \.copy-trust-tools, \.copy-trust-fallback \{ display: none !important; \}/);
