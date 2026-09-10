@@ -146,6 +146,7 @@ export const presets: Readonly<{
   theatreWardrobe: Scenario;
   choirFolders: Scenario;
   scoutCamp: Scenario;
+  schoolExcursionLunch: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -268,7 +269,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -313,6 +314,8 @@ export function filterBuyerIdsHidingExcluded(rawScenario: unknown, offerId: stri
 export function filterBuyerIdsHidingFullyFilled(rawScenario: unknown, hideFullyFilled: boolean): string[];
 /** Display-only. Matching is unchanged. Inverse of hide fully filled. When hideBuyersWithLeftover is false, every buyer id is returned. */
 export function filterBuyerIdsHidingBuyersWithLeftover(rawScenario: unknown, hideBuyersWithLeftover: boolean): string[];
+/** Display-only. Matching is unchanged. Hides buyers with zero allocated units after the winner. When hideUnservedBuyers is false, every buyer id is returned. */
+export function filterBuyerIdsHidingUnservedBuyers(rawScenario: unknown, hideUnservedBuyers: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
@@ -430,6 +433,8 @@ export function createLeftoverFillMarkdown(rawScenario: unknown): string;
 export function createLeftoverFillUnitCountMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill merchant label. Merchant label only. Not a merchant export. */
 export function createLeftoverFillMerchantLabelMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover fill remaining capacity. Count only. Not a merchant export. */
+export function createLeftoverFillRemainingCapacityMarkdown(rawScenario: unknown): string;
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
 export function createWinningRemainingCapacityMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line requested units. Count only. Not a merchant export. */
