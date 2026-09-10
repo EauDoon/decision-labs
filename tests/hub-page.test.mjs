@@ -89,6 +89,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Trust-item jump, first-job copy, and 404 Copy version line/);
   assert.match(html, /Version-line jump, last-open jump, and 404 Copy first Trust item/);
   assert.match(html, /First How-it-works copy, How copy jump, and last Trust copy/);
+  assert.match(html, /Last How copy, last-How jump, and first-How jump/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -206,6 +207,8 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(readme, /trust-item jump, first-job copy, and 404 Copy version line/);
   assert.match(readme, /version-line jump, last-open jump, and 404 Copy first Trust item/);
+  assert.match(readme, /first How-it-works copy, How copy jump, and last Trust copy/);
+  assert.match(readme, /last How-it-works copy, last-How jump, and first-How jump/);
   assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
@@ -217,6 +220,8 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy catalog intro on that 404 page copies/);
   assert.match(readme, /Copy version line on that 404 page copies/);
   assert.match(readme, /Copy first Trust item on that 404 page copies/);
+  assert.match(readme, /Copy first How it works item on\s+that 404 page copies/);
+  assert.match(readme, /Copy last How it works item on\s+that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -2115,6 +2120,38 @@ test('What\'s new and README name this hub-only wave without changing workbench 
   assert.match(readme, /Copy first How it works item on\s+that 404 page copies/);
   assert.doesNotMatch(html, /hosted API/i);
   assert.doesNotMatch(html, /live service/i);
+});
+
+test('What\'s new and README name last How copy and jumps without changing workbench versions', () => {
+  assert.match(html, /Last How copy, last-How jump, and first-How jump/);
+  assert.match(html, /Copy last How it works item through less-than as Markdown/);
+  assert.match(html, /jump with keyboard greater-than/);
+  assert.match(html, /jump to Copy first How it works item with keyboard underscore/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /without adding a public path/);
+  assert.match(readme, /last How-it-works copy, last-How jump, and first-How jump/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy last How it works item on\s+that 404 page copies/);
+  assert.match(readme, /Copy last How it works item copies the last How it works list item/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+});
+
+test('shortcuts panel lists less-than greater-than underscore with honest limits', () => {
+  assert.match(html, /<kbd>&lt;<\/kbd><\/dt><dd>Copy the last How it works list item as one Markdown line from this catalog page, not a live policy feed/);
+  assert.match(html, /<kbd>&gt;<\/kbd><\/dt><dd>Focus the Copy last How it works item control, or the How it works heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /<kbd>_<\/kbd><\/dt><dd>Focus the Copy first How it works item control, or the How it works heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Shortcuts are ignored while focus is in an input, textarea, or select/);
+  assert.match(html, /not a live policy feed/);
+  assert.match(html, /id="copy-last-how"/);
+  assert.match(html, /id="copy-first-how"/);
+  assert.match(html, /id="copy-how"/);
+  assert.match(html, /Press <kbd>&lt;<\/kbd> to copy the last How it works list item/);
+  assert.match(html, /Press <kbd>&gt;<\/kbd> to focus Copy last How it works item/);
+  assert.match(html, /Press <kbd>_<\/kbd> to focus Copy first How it works item/);
+  assert.match(readme, /Press `<` to copy the last How it works list item/);
+  assert.match(readme, /Press `>` to focus the Copy last How it works item control/);
+  assert.match(readme, /Press `_` to focus the Copy first How it works item control/);
 });
 
 test('shortcuts panel lists slash semicolon apostrophe with honest limits', () => {
