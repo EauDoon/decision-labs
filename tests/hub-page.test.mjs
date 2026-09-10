@@ -4094,3 +4094,180 @@ test('equals focuses the How it works heading when Copy How it works is missing'
   assert.deepEqual(assigned, []);
 });
 
+test('copy last Trust item copies the last Trust list item as one Markdown line with a visible fallback', () => {
+  assert.match(html, /id="copy-last-trust"/);
+  assert.match(html, />Copy last Trust item</);
+  assert.match(html, /aria-keyshortcuts='"'/);
+  assert.match(html, /id="copy-last-trust-fallback"/);
+  assert.match(html, /class="copy-last-trust-fallback"/);
+  assert.match(html, /textarea id="copy-last-trust-fallback"/);
+  assert.match(html, /lastTrustMarkdown/);
+  assert.match(html, /querySelectorAll\('#trust li'\)/);
+  assert.match(html, /items\[items\.length - 1\]/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /lastTrustFallback\.hidden = false/);
+  assert.match(html, /lastTrustFallback\.select\(\)/);
+  assert.match(html, /Not a live policy feed/);
+  assert.match(html, /This is the last Trust and limits item, not a live policy feed/);
+  assert.match(html, /Copied an empty string/);
+  assert.match(html, /This is distinct from <kbd>:<\/kbd>, which copies the first Trust and limits list item/);
+  assert.match(html, /from <kbd>i<\/kbd>, which copies the full Trust and limits list/);
+  assert.match(html, /@media print[\s\S]*\.copy-last-trust-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-last-trust-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy last Trust item copies the last Trust and limits list item/);
+  assert.match(readme, /Press `"` to copy the last Trust and limits list item/);
+});
+
+test('keyboard quote copies the last Trust item through its own control', () => {
+  assert.match(html, /event\.key === '"'/);
+  assert.match(html, /lastTrustBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts='"'/);
+  assert.match(html, /<kbd>"<\/kbd><\/dt><dd>Copy the last Trust and limits list item as one Markdown line from this catalog page, not a live policy feed/);
+  assert.match(html, /Press <kbd>"<\/kbd> to copy the last Trust and limits list item/);
+  assert.match(html, /If that item is missing, this copies an empty string/);
+  assert.match(html, /This is distinct from <kbd>:<\/kbd>, which copies the first Trust and limits list item/);
+  assert.match(html, /from <kbd>i<\/kbd>, which copies the full Trust and limits list/);
+  assert.match(readme, /Press `"` to copy the last Trust and limits list item/);
+  const clicks = { lastTrust: 0, firstTrust: 0, trust: 0 };
+  const focused = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-trust') return { click() { clicks.lastTrust += 1; }, addEventListener() {} };
+      if (id === 'copy-first-trust') return { click() { clicks.firstTrust += 1; }, addEventListener() {} };
+      if (id === 'copy-trust') return { click() { clicks.trust += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === 'a.skip[href="#trust"]' ? { focus() { focused.push('skip-trust'); } } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('"', input, true);
+  fire('"', textarea, true);
+  assert.equal(clicks.lastTrust, 0);
+  assert.equal(clicks.firstTrust, 0);
+  assert.equal(clicks.trust, 0);
+  fire('"', body, true);
+  assert.equal(clicks.lastTrust, 1);
+  assert.equal(clicks.firstTrust, 0);
+  assert.equal(clicks.trust, 0);
+  fire(':', body, true);
+  assert.equal(clicks.firstTrust, 1);
+  fire('i', body);
+  assert.equal(clicks.trust, 1);
+  fire("'", body);
+  assert.deepEqual(focused, ['skip-trust']);
+  assert.equal(clicks.lastTrust, 1);
+});
+
+test('copy last Trust item markdown is the last Trust list item, or empty if missing', async () => {
+  let copied = '';
+  let clickLast = null;
+  let items = [
+    { textContent: 'Local-first. Pages run in your browser.' },
+    { textContent: 'Model notes live in each workbench. Open the workbench for conventions.' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-trust') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-trust-status') return { textContent: '' };
+      if (id === 'copy-last-trust-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#trust li' ? items : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- Model notes live in each workbench. Open the workbench for conventions.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /## Trust and limits/);
+  assert.doesNotMatch(copied, /Local-first/);
+  assert.doesNotMatch(copied, /live policy feed/);
+  items = [];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
+});
+
+test('copy last Trust item shows a visible textarea when clipboard is unavailable', async () => {
+  let clickLast = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-trust') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-trust-status') return status;
+      if (id === 'copy-last-trust-fallback') return fallback;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#trust li' ? [{ textContent: 'Model notes live in each workbench.' }] : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickLast();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Model notes live in each workbench.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live policy feed/);
+});
+
+test('print CSS hides copy last Trust tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-last-trust-tools, \.copy-last-trust-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-first-trust-tools, \.copy-first-trust-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
