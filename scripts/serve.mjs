@@ -64,7 +64,7 @@ export function notFoundPage() {
     a:hover { text-decoration-thickness: 2px; }
     a:focus-visible, button:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
     .copy-versions-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust {
+    .copy-versions, .copy-trust, .copy-how {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -77,8 +77,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -88,11 +88,11 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden] { display: none; }
-    .trust { margin: 28px 0 8px; padding-top: 8px; }
-    .trust ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
-    .trust li { margin: 8px 0; }
-    .copy-trust-tools { margin: 16px 0 0; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden] { display: none; }
+    .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
+    .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
+    .trust li, .guide li { margin: 8px 0; }
+    .copy-trust-tools, .copy-how-tools { margin: 16px 0 0; }
   </style>
 </head>
 <body>
@@ -106,6 +106,19 @@ export function notFoundPage() {
       <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
     </p>
     <textarea id="copy-versions-fallback" class="copy-versions-fallback" hidden readonly rows="4" aria-label="Workbench versions as Markdown"></textarea>
+    <section class="guide" id="how-it-works">
+      <h2 id="how-title">How it works</h2>
+      <ul>
+        <li><strong>Local catalog.</strong> The launcher serves only the catalog page and the four workbenches. It does not serve source, notes, or drafts.</li>
+        <li><strong>Standalone files.</strong> Every workbench ships interface, styles, and model in one document. The file makes no requests to Decision Labs or to anyone else.</li>
+        <li><strong>Independent workbenches.</strong> The four tools do not share drafts, storage keys, or versions. This catalog is not a fifth product.</li>
+      </ul>
+    </section>
+    <p class="copy-how-tools">
+      <button type="button" class="copy-how" id="copy-how">Copy How it works</button>
+      <span class="copy-how-status" id="copy-how-status" role="status"></span>
+    </p>
+    <textarea id="copy-how-fallback" class="copy-how-fallback" hidden readonly rows="8" aria-label="How it works as Markdown"></textarea>
     <section class="trust" id="trust">
       <h2 id="trust-title">Trust and limits</h2>
       <ul>
@@ -175,6 +188,32 @@ export function notFoundPage() {
             trustFallback.select();
           }
           if (trustStatus) trustStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog Trust and limits list, not a live policy feed.';
+        }
+      });
+      const howBtn = document.getElementById('copy-how');
+      const howStatus = document.getElementById('copy-how-status');
+      const howFallback = document.getElementById('copy-how-fallback');
+      const howMarkdown = () => {
+        const section = document.getElementById('how-it-works');
+        const heading = section?.querySelector('h2')?.textContent.trim() ?? '';
+        const items = [...(section?.querySelectorAll('ul li') ?? [])].map((item) => '- ' + item.textContent.trim()).filter((line) => line !== '- ');
+        return ['## ' + heading, ...items].join('\\n');
+      };
+      howBtn?.addEventListener('click', async () => {
+        const markdown = howMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (howFallback) howFallback.hidden = true;
+          if (howStatus) howStatus.textContent = 'Copied How it works from this catalog page as Markdown. Not a live policy feed.';
+        } catch {
+          if (howFallback) {
+            howFallback.hidden = false;
+            howFallback.value = markdown;
+            howFallback.focus();
+            howFallback.select();
+          }
+          if (howStatus) howStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog How it works list, not a live policy feed.';
         }
       });
     })();

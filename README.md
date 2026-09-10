@@ -35,13 +35,19 @@ Every workbench:
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
 What's new section. Skip links jump to What's new, workbenches, How it works,
-keyboard shortcuts, and Trust and limits. Catalog keys `w`, `k`, `n`, and `c`
+keyboard shortcuts, Trust and limits, and catalog versions. Catalog keys `w`, `k`, `n`, and `c`
 focus the workbenches, How it works, What's new, or copy the catalog address on
 http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
-workbench link without opening it. Keys `v` and `j` copy the printed version list and one-sentence jobs.
+workbench link without opening it. Key `a` focuses the first workbench article
+without opening it. Key `f` focuses the footer version line. That key does not
+open a workbench. Key `p` prints this catalog page. It is not a live product
+sheet. Keys `v` and `j` copy the printed version list and one-sentence jobs.
 Key `i` copies Trust and limits from this page as Markdown. That list is not a
-live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
-browser. Key `x` clears that last-launched marker in this browser. That recency
+live policy feed. Key `u` copies How it works from this page as Markdown. That
+list is not a live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
+browser. Key `x` clears that last-launched marker in this browser. Key `y`
+copies the last-launched workbench name and one-sentence job from this-browser
+storage, or an empty line if none is stored. That recency
 is this-browser storage, not a cloud recency. Key `o` assigns a location like keys 1 to 4. It does not claim a
 copy succeeded on a file URL. Copy versions copies the four names and versions printed on this page as
 Markdown. That list is not a live product version and it does not call a
@@ -123,7 +129,11 @@ an input. Press `h` to focus the catalog heading. Press `m` to focus the
 main catalog content. Press `n` to focus What's
 new. Press `w` to focus the workbenches. Press `k` to focus How it works.
 Press `t` to focus Trust and limits. Press `s` to focus the first Open
-workbench link. Press `c` to copy the catalog address
+workbench link. Press `a` to focus the first workbench article without opening
+it. That key is distinct from `s`, which focuses the first Open workbench link.
+Press `f` to focus the footer version line. That key does
+not open a workbench. Press `p` to print this catalog. That key prints this
+page in the browser. It is not a live product sheet. Press `c` to copy the catalog address
 when this page is served over http. On a file URL that key does not claim a
 copy succeeded. Press `v` to copy catalog versions from this page. That key
 uses the same Copy versions control, including the visible text box when the
@@ -143,6 +153,8 @@ Smallest Agreement, and Weekend Gap. Copy versions on that 404 page copies
 the printed catalog version line as Markdown. It does not fetch a package
 file or add another public path. Copy Trust and limits on that 404 page copies
 the printed Trust and limits heading and list as Markdown. It does not fetch a
+policy file or add another public path. Copy How it works on that 404 page copies
+the printed How it works heading and list as Markdown. It does not fetch a
 policy file or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
@@ -157,6 +169,14 @@ already printed on this catalog page as Markdown. It uses the browser
 clipboard when that API is available, and shows a visible text box if it is
 not. That list is not a live policy feed.
 Press `i` to copy Trust and limits through that same control.
+Press `u` to copy How it works through that same control.
+Press `y` to copy the last-launched workbench name and one-sentence job from
+this-browser storage. If none is stored, that key copies an empty line. This is
+not a cloud recency.
+Copy How it works copies the How it works heading and list items already
+printed on this catalog page as Markdown. It uses the browser clipboard when
+that API is available, and shows a visible text box if it is not. That list
+is not a live policy feed.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
