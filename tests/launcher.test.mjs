@@ -3,6 +3,7 @@ import assert from 'node:assert/strict';
 import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
+import vm from 'node:vm';
 import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
@@ -193,6 +194,34 @@ test('launcher port rejects ambiguous, empty and out-of-range values', () => {
   for (const raw of ['', '0', '65536', '-1', '1.5', '0x1000', ' 4170', 'NaN']) {
     assert.throws(() => parsePort(raw), /PORT/);
   }
+});
+
+test('404 copy versions markdown comes from the printed catalog line', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  const versionLine = { textContent: `Current catalog: ${catalogVersionLine()}.` };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-versions') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-versions-status') return { textContent: '' };
+      if (id === 'copy-versions-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '.version-line' ? versionLine : null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  const expected = catalogVersionLine().split(', ').map((part) => `- ${part}`).join('\n');
+  assert.equal(copied, expected);
+  assert.doesNotMatch(copied, /Current catalog/);
+  assert.equal(PUBLIC_PATHS.length, 6);
 });
 
 test('404 copy-versions script parses as classic browser JavaScript', () => {
