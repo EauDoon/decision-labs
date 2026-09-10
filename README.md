@@ -38,10 +38,16 @@ What's new section. Skip links jump to What's new, workbenches, How it works,
 keyboard shortcuts, Trust and limits, and catalog versions. Catalog keys `w`, `k`, `n`, and `c`
 focus the workbenches, How it works, What's new, or copy the catalog address on
 http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
-workbench link without opening it. Keys `v` and `j` copy the printed version list and one-sentence jobs.
+workbench link without opening it. Key `a` focuses the first workbench article
+without opening it. Key `f` focuses the footer version line. That key does not
+open a workbench. Key `p` prints this catalog page. It is not a live product
+sheet. Keys `v` and `j` copy the printed version list and one-sentence jobs.
 Key `i` copies Trust and limits from this page as Markdown. That list is not a
-live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
-browser. Key `x` clears that last-launched marker in this browser. That recency
+live policy feed. Key `u` copies How it works from this page as Markdown. That
+list is not a live policy feed. Keys `l` and `o` focus or open the last-launched workbench stored in this
+browser. Key `x` clears that last-launched marker in this browser. Key `y`
+copies the last-launched workbench name and one-sentence job from this-browser
+storage, or an empty line if none is stored. That recency
 is this-browser storage, not a cloud recency. Key `o` assigns a location like keys 1 to 4. It does not claim a
 copy succeeded on a file URL. Copy versions copies the four names and versions printed on this page as
 Markdown. That list is not a live product version and it does not call a
