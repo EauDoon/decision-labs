@@ -17,6 +17,7 @@ test("print operations brief hides coach and help and keeps dashboard, Gantt and
   assert.match(html, /id="first-closed-issuer-hour-line"/);
   assert.match(html, /id="first-closed-payout-hour-line"/);
   assert.match(html, /id="first-open-payout-hour-line"/);
+  assert.match(html, /id="first-open-fx-hour-line"/);
   assert.match(html, /id="peak-queue-hour-value"/);
   assert.match(html, /id="coach-overlay"/);
   assert.match(html, /id="coach-overlay"/);
