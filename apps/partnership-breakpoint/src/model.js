@@ -192,6 +192,15 @@ export const PRESETS = Object.freeze({
       { id: 'ticket-desk', name: 'Ticket desk', revenueShare: 0.25, variableCostPerTransaction: 0.95, fixedMonthlyCost: 1300, minimumAcceptableProfit: 1600, capacity: 2400, minimumCommitment: 0, riskCost: 280 },
     ],
   },
+  communityRadioSplit: {
+    name: 'Community radio split',
+    deal: { monthlyVolume: 3200, feePerTransaction: 11, addressableVolume: 4800, volumeShockPct: 0 },
+    participants: [
+      { id: 'presenter', name: 'Presenter', revenueShare: 0.44, variableCostPerTransaction: 1.7, fixedMonthlyCost: 2400, minimumAcceptableProfit: 2800, capacity: 4000, minimumCommitment: 400, riskCost: 500 },
+      { id: 'station', name: 'Station', revenueShare: 0.36, variableCostPerTransaction: 0.5, fixedMonthlyCost: 3600, minimumAcceptableProfit: 1800, capacity: 5200, minimumCommitment: 0, riskCost: 700 },
+      { id: 'underwriter', name: 'Underwriter', revenueShare: 0.2, variableCostPerTransaction: 1.05, fixedMonthlyCost: 800, minimumAcceptableProfit: 1100, capacity: 3500, minimumCommitment: 0, riskCost: 260 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
