@@ -56,12 +56,12 @@ npm run check
 
 - A deterministic 72-hour Friday-to-Monday simulation.
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
-- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), Payday Friday burst (synthetic), Public-holiday Monday (synthetic), and Saturday market burst (synthetic) presets.
+- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), Payday Friday burst (synthetic), Public-holiday Monday (synthetic), Saturday market burst (synthetic), and Sunday stall close (synthetic) presets.
 - Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, hours to first settlement, and hours to clear the queue.
 - An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains). Copy dashboard numbers as Markdown, copy hours to clear as one line, or export a one-row dashboard CSV.
-- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, selected Gantt hour, Bank Gantt row, compare Gantt, peak queue, selected Gantt hour copy, closed-hours copy, timing review, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
+- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, selected Gantt hour, hours to clear, first-payout marker, analysis export, Bank Gantt row, FX Gantt row, compare Gantt, peak queue, selected Gantt hour copy, closed-hours copy, timing review, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
 - Canvas chart with a printable SVG queue path that can be downloaded as a file, a formula-safe hourly queue CSV, and a text-equivalent data table.
-- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, an every-gate-closed display filter, a single-gate display filter, copy of the selected hour, copy of the peak-queue hour, copy of closed hours, copy of FX hours, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
+- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, an every-gate-closed display filter, a Saturday-and-Sunday-hours display filter, a single-gate display filter, copy of the selected hour, copy of remaining reserve at that hour, copy of the peak-queue hour, copy of closed hours, copy of FX hours, copy of weekend FX hour counts, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
 ## Scenario comparison and reserve planner
@@ -123,6 +123,21 @@ scripts/dev-server.mjs Dependency-free local development server
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## New in v1.5.4: Sunday stall close, reserve copy and weekend Gantt filter
+
+1. Press `K` to jump to the hours-to-clear line. The key is ignored while typing in an input, textarea or select.
+2. Press `N` to jump to the first-payout Gantt marker. If no payout window exists, the Gantt heading is used. The key is ignored while typing.
+3. Press `A` to jump to analysis and export controls. The key is ignored while typing.
+4. Press `W` to jump to the FX Gantt row. If that row is filtered away, the Gantt heading is used. Distinct from Bank `B`. The key is ignored while typing.
+5. Copy remaining reserve and queued AUD at the selected Gantt hour as one-line Markdown, with a synthetic-not-live notice. Distinct from hours-to-clear copy and selected-hour copy. Clipboard write has a textarea fallback.
+6. Use the Sunday stall close (synthetic) preset. It keeps the same 72-hour calendar as Normal Friday, uses a Sunday late redemption burst, and closes payouts earlier. It is distinct from Saturday market burst, Payday Friday burst, Public-holiday Monday, Long-weekend Friday start, Compressed Friday close, Weekend Rush, Market Stress, and Thin FX, Tight Windows. It is not a live queue.
+7. Filter the Gantt to Saturday and Sunday hours. Display only. The model still contains 72 hours. Workspace JSON stores the optional boolean `hideWeekdayGanttHours`. Older files restore all hours. Unknown keys are rejected. Every-gate-closed and single-gate filters still compose.
+8. Print and print redacted include the selected Gantt hour label line. The saved scenario is unchanged.
+9. Copy compact weekend FX open and closed hour counts as Markdown. These are counts of modeled hours, not a bank calendar. Clipboard write has a textarea fallback.
+10. Analysis JSON still has no timestamps.
+
+v1.5.3 hours-to-clear copy, Saturday market and hour persist remain below.
 
 ## New in v1.5.3: hours-to-clear copy, Saturday market and hour persist
 
@@ -242,7 +257,7 @@ v1.3.0 repeatable-experiment workflows remain: demand timing, pinned baselines, 
 | Export | Contents | Importable here |
 | --- | --- | --- |
 | Scenario JSON / share link | Current editable scenario | Scenario import / URL hash |
-| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour, Gantt density, selected chart, closed-hours Gantt filter | Workspace import |
+| Workspace JSON | Current and baseline scenarios, notes, target, deadline, selected hour, Gantt density, selected chart, closed-hours Gantt filter, weekend-hours Gantt filter | Workspace import |
 | Analysis JSON | Both scenarios, results, reserve plan and hourly comparison | No, report only |
 | Hourly CSV | All 73 checkpoints, prior-interval flows and next-hour capacity | No, spreadsheet data |
 | Queue CSV | Hour label and queue size at every checkpoint, formula-safe cells | No, spreadsheet data |
