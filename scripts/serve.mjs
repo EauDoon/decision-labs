@@ -54,9 +54,19 @@ export function catalogJobs() {
   return cards;
 }
 
+export function catalogLastWhatsNewHeading() {
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  const start = html.indexOf('id="whats-new"');
+  const end = html.indexOf('id="workbenches"', start);
+  const section = start >= 0 && end > start ? html.slice(start, end) : '';
+  const headings = [...section.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1].trim());
+  return headings[headings.length - 1] ?? '';
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
+  const lastWhatsNew = catalogLastWhatsNewHeading();
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -89,8 +99,9 @@ export function notFoundPage() {
     .copy-first-how-tools { margin: 16px 0 0; }
     .copy-last-how-tools { margin: 16px 0 0; }
     .copy-last-job-tools { margin: 16px 0 0; }
+    .copy-last-whats-new-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -103,8 +114,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -114,7 +125,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -157,6 +168,17 @@ export function notFoundPage() {
       <span class="copy-last-job-status" id="copy-last-job-status" role="status"></span>
     </p>
     <textarea id="copy-last-job-fallback" class="copy-last-job-fallback" hidden readonly rows="2" aria-label="Last workbench job as Markdown"></textarea>
+    <section class="whats-new" id="whats-new">
+      <h2 id="whats-new-title">What's new</h2>
+      <ul class="whats-new-list">
+        <li><h3>${escapeHtml(lastWhatsNew)}</h3></li>
+      </ul>
+    </section>
+    <p class="copy-last-whats-new-tools">
+      <button type="button" class="copy-last-whats-new" id="copy-last-whats-new">Copy last What's new heading</button>
+      <span class="copy-last-whats-new-status" id="copy-last-whats-new-status" role="status"></span>
+    </p>
+    <textarea id="copy-last-whats-new-fallback" class="copy-last-whats-new-fallback" hidden readonly rows="2" aria-label="Last What's new heading as Markdown"></textarea>
     <section class="guide" id="how-it-works">
       <h2 id="how-title">How it works</h2>
       <ul>
@@ -354,6 +376,42 @@ export function notFoundPage() {
             lastJobStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. Last workbench job was missing. This is catalog copy, not a live product feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last catalog job, not a live product feed.';
+          }
+        }
+      });
+      const lastWhatsNewBtn = document.getElementById('copy-last-whats-new');
+      const lastWhatsNewStatus = document.getElementById('copy-last-whats-new-status');
+      const lastWhatsNewFallback = document.getElementById('copy-last-whats-new-fallback');
+      const lastWhatsNewMarkdown = () => {
+        const headings = document.querySelectorAll('#whats-new h3');
+        const heading = headings[headings.length - 1];
+        const text = heading?.textContent.trim() ?? '';
+        if (!text) return '';
+        return '- ' + text;
+      };
+      lastWhatsNewBtn?.addEventListener('click', async () => {
+        const markdown = lastWhatsNewMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastWhatsNewFallback) lastWhatsNewFallback.hidden = true;
+          if (lastWhatsNewStatus) {
+            lastWhatsNewStatus.textContent = empty
+              ? "Last What's new heading was missing. Copied an empty string. This is catalog copy, not a live product feed."
+              : "Copied the last What's new heading from this page as Markdown. Not a live product feed.";
+          }
+        } catch {
+          if (lastWhatsNewFallback) {
+            lastWhatsNewFallback.hidden = false;
+            lastWhatsNewFallback.value = markdown;
+            lastWhatsNewFallback.focus();
+            lastWhatsNewFallback.select();
+          }
+          if (lastWhatsNewStatus) {
+            lastWhatsNewStatus.textContent = empty
+              ? "Clipboard unavailable. Copy the empty string from the text box. Last What's new heading was missing. This is catalog copy, not a live product feed."
+              : "Clipboard unavailable. Copy the Markdown from the text box. This is the last What's new heading, not a live product feed.";
           }
         }
       });
