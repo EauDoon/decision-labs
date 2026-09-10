@@ -1187,6 +1187,27 @@ test("keyboard caret jumps to the first-open-issuer copy control and ignores the
   assert.equal(ui.nodes.get("first-open-issuer-copy-fallback").hidden, true);
 });
 
+test("keyboard 6 jumps to the last-open-issuer copy control and does not copy", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("6");
+  assert.equal(ui.nodes.get("copy-last-open-issuer").focused, true);
+  assert.equal(ui.nodes.get("last-open-issuer-copy-fallback").hidden, true);
+  ui.nodes.get("copy-last-open-issuer").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("6", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-last-open-issuer").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("6", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-last-open-issuer").focused, false);
+  await ui.keydown("6", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-last-open-issuer").focused, false);
+  await ui.keydown("^");
+  assert.equal(ui.nodes.get("copy-first-open-issuer").focused, true);
+  assert.equal(ui.nodes.get("copy-last-open-issuer").focused, false);
+  assert.equal(ui.nodes.get("last-open-issuer-copy-fallback").hidden, true);
+  assert.equal(ui.nodes.get("first-open-issuer-copy-fallback").hidden, true);
+});
+
 test("keyboard underscore jumps to the first-closed-payout copy control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("_");
