@@ -1217,6 +1217,12 @@ export function ganttHourClosedOnAnyGate(point) {
   return !point.issuerOpen || !point.bankOpen || !point.payoutOpen || !point.fxWeekday;
 }
 
+/** True when issuer, bank and payout are closed, and FX is weekend-thinned. */
+export function ganttHourClosedOnEveryGate(point) {
+  if (!point || typeof point !== "object") return false;
+  return !point.issuerOpen && !point.bankOpen && !point.payoutOpen && !point.fxWeekday;
+}
+
 export const GANTT_GATE_FILTERS = Object.freeze(["all", "issuer", "bank", "payout", "fx"]);
 
 /** Light, print-friendly SVG of 72 operating hours plus a selected-hour marker. */
@@ -1224,6 +1230,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const schedule = buildGateSchedule(input);
   const markerHour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
   const closedOnly = options.closedOnly === true;
+  const everyClosedOnly = options.everyClosedOnly === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -1245,6 +1252,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   rows.forEach((row, rowIndex) => {
     const y = top + rowIndex * rowHeight;
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
+      if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[2](hour);
       const x = labelWidth + hour * hourWidth;
