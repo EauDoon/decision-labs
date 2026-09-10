@@ -90,4 +90,5 @@ test('standalone retains 1.5.10 review tools and 1.5.11 copy controls', async ()
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
+  assert.match(html, /hideFirstOverCapacityParticipant/);
 });

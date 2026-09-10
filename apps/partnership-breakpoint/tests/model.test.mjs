@@ -1165,6 +1165,48 @@ test('optional hideFirstBreakpointParticipant is a boolean and older files omit 
   both.hideParticipantsAtLeastHeadroom = true;
   both.hideParticipantsWithinCapacity = true;
   both.hideFirstBreakpointParticipant = true;
+  both.hideFirstOverCapacityParticipant = true;
+  assert.equal(validateConfiguration(both).valid, true);
+});
+
+test('optional hideFirstOverCapacityParticipant is a boolean and older files omit it', () => {
+  const omitted = clonePreset('balanced');
+  assert.equal(Object.hasOwn(omitted, 'hideFirstOverCapacityParticipant'), false);
+  assert.equal(validateConfiguration(omitted).valid, true);
+
+  const hidden = clonePreset('balanced');
+  hidden.hideFirstOverCapacityParticipant = true;
+  assert.equal(validateConfiguration(hidden).valid, true);
+
+  const shown = clonePreset('balanced');
+  shown.hideFirstOverCapacityParticipant = false;
+  assert.equal(validateConfiguration(shown).valid, true);
+
+  for (const value of ['true', 1, 0, null, 'yes', {}]) {
+    const config = clonePreset('balanced');
+    config.hideFirstOverCapacityParticipant = value;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(value));
+    assert.match(validation.errors.join(' '), /boolean/);
+  }
+
+  const extra = clonePreset('balanced');
+  extra.hideFirstOverCapacityParticipant = true;
+  extra.unexpected = true;
+  assert.match(validateConfiguration(extra).errors.join(' '), /unknown field: unexpected/);
+
+  const both = clonePreset('balanced');
+  both.hideHoldingParticipants = true;
+  both.hideAllHoldLedger = true;
+  both.hideZeroShareParticipants = true;
+  both.hideParticipantsOverCapacity = true;
+  both.hideParticipantsAtHold = true;
+  both.hideParticipantsWithoutCapacity = true;
+  both.hideParticipantsWithSpareCapacity = true;
+  both.hideParticipantsAtLeastHeadroom = true;
+  both.hideParticipantsWithinCapacity = true;
+  both.hideFirstBreakpointParticipant = true;
+  both.hideFirstOverCapacityParticipant = true;
   assert.equal(validateConfiguration(both).valid, true);
 });
 
