@@ -4271,3 +4271,164 @@ test('print CSS hides copy last Trust tools and keeps How it works and versions'
   assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
 });
 
+test('shortcuts panel lists minus equals quote with honest limits', () => {
+  assert.match(html, /<kbd>-<\/kbd><\/dt><dd>Copy the first How it works list item as one Markdown line from this catalog page, not a live policy feed/);
+  assert.match(html, /<kbd>=<\/kbd><\/dt><dd>Focus the Copy How it works control, or the How it works heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /<kbd>"<\/kbd><\/dt><dd>Copy the last Trust and limits list item as one Markdown line from this catalog page, not a live policy feed/);
+  assert.match(html, /Shortcuts are ignored while focus is in an input, textarea, or select/);
+  assert.match(html, /not a live policy feed/);
+  assert.match(html, /id="copy-first-how"/);
+  assert.match(html, /id="copy-how"/);
+  assert.match(html, /id="copy-last-trust"/);
+  assert.match(html, /Press <kbd>-<\/kbd> to copy the first How it works list item/);
+  assert.match(html, /Press <kbd>=<\/kbd> to focus Copy How it works/);
+  assert.match(html, /Press <kbd>"<\/kbd> to copy the last Trust and limits list item/);
+  assert.match(readme, /Press `-` to copy the first How it works list item/);
+  assert.match(readme, /Press `=` to focus the Copy How it works control/);
+  assert.match(readme, /Press `"` to copy the last Trust and limits list item/);
+});
+
+test('keyboard minus equals quote are ignored in inputs using the same inEditable helper as c', () => {
+  assert.match(html, /const inEditable = \(node\) =>/);
+  assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /event\.key === '-'/);
+  assert.match(html, /event\.key === '='/);
+  assert.match(html, /event\.key === '"'/);
+  const clicks = { firstHow: 0, lastTrust: 0, how: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const copyHow = { focus() { focused.push('copy-how'); }, click() { clicks.how += 1; }, addEventListener() {} };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-how') return { click() { clicks.firstHow += 1; }, addEventListener() {} };
+      if (id === 'copy-last-trust') return { click() { clicks.lastTrust += 1; }, addEventListener() {} };
+      if (id === 'copy-how') return copyHow;
+      if (id === 'how-title') return { focus() { focused.push('how-title'); } };
+      if (id === 'how-it-works') return { focus() { focused.push('how-it-works'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  for (const target of [input, textarea, select]) {
+    fire('-', target);
+    fire('=', target);
+    fire('"', target, true);
+    fire('c', target);
+  }
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.firstHow, 0);
+  assert.equal(clicks.lastTrust, 0);
+  assert.equal(clicks.how, 0);
+  assert.deepEqual(assigned, []);
+  fire('-', body);
+  fire('=', body);
+  fire('"', body, true);
+  assert.deepEqual(focused, ['copy-how']);
+  assert.equal(clicks.firstHow, 1);
+  assert.equal(clicks.lastTrust, 1);
+  assert.equal(clicks.how, 0);
+  assert.deepEqual(assigned, []);
+});
+
+test('minus equals quote do not steal How copy, How jump, or first Trust copy', () => {
+  assert.match(html, /event\.key === '-'/);
+  assert.match(html, /event\.key === '='/);
+  assert.match(html, /event\.key === '"'/);
+  assert.match(html, /event\.key === 'u'/);
+  assert.match(html, /event\.key === 'd'/);
+  assert.match(html, /event\.key === 'k'/);
+  assert.match(html, /event\.key === ':'/);
+  assert.match(html, /firstHowBtn\?\.click\(\)/);
+  assert.match(html, /howBtn\?\.click\(\)/);
+  assert.match(html, /lastTrustBtn\?\.click\(\)/);
+  assert.match(html, /firstTrustBtn\?\.click\(\)/);
+  const clicks = { firstHow: 0, how: 0, lastTrust: 0, firstTrust: 0 };
+  const focused = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-how') return { click() { clicks.firstHow += 1; }, addEventListener() {} };
+      if (id === 'copy-how') return { click() { clicks.how += 1; }, addEventListener() {}, focus() { focused.push('copy-how'); } };
+      if (id === 'copy-last-trust') return { click() { clicks.lastTrust += 1; }, addEventListener() {} };
+      if (id === 'copy-first-trust') return { click() { clicks.firstTrust += 1; }, addEventListener() {} };
+      if (id === 'how-title') return { focus() { focused.push('how-title'); } };
+      if (id === 'how-it-works') return { focus() { focused.push('how-it-works'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#how-it-works li' ? { focus() { focused.push('how-li'); } } : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, shiftKey = false) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  fire('u');
+  fire('d');
+  fire('k');
+  fire(':', true);
+  fire('-');
+  fire('=');
+  fire('"', true);
+  assert.equal(clicks.how, 1);
+  assert.equal(clicks.firstHow, 1);
+  assert.equal(clicks.lastTrust, 1);
+  assert.equal(clicks.firstTrust, 1);
+  assert.deepEqual(focused, ['how-li', 'how-it-works', 'copy-how']);
+});
+
