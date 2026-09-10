@@ -10,6 +10,8 @@ test("print operations brief hides coach and help and keeps dashboard, Gantt and
   assert.match(html, /class="outcome-card card print-keep"/);
   assert.match(html, /class="planning-card card gantt-card print-keep"/);
   assert.match(html, /id="queue-clear-value"/);
+  assert.match(html, /id="peak-queue-hour-value"/);
+  assert.match(html, /id="coach-overlay"/);
   assert.match(html, /id="coach-overlay"/);
   assert.match(html, /id="shortcut-overlay"/);
   assert.match(printBlock, /#coach-overlay/);

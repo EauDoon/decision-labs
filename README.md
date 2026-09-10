@@ -30,14 +30,17 @@ Every workbench:
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.1 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.1 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.1 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | 1.5.1 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
+| [Weekend Gap](apps/weekend-gap/) | 1.5.2 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
 What's new section. Skip links jump to What's new, workbenches, How it works,
 keyboard shortcuts, and Trust and limits. Catalog keys `w`, `k`, `n`, and `c`
 focus the workbenches, How it works, What's new, or copy the catalog address on
-http. Copy versions copies the four names and versions printed on this page as
+http. Keys `v` and `j` copy the printed version list and one-sentence jobs.
+Keys `l` and `o` focus or open the last-launched workbench stored in this
+browser. Key `o` assigns a location like keys 1 to 4. It does not claim a
+copy succeeded on a file URL. Copy versions copies the four names and versions printed on this page as
 Markdown. That list is not a live product version and it does not call a
 registry. What's new names current in-workbench tools (share-to-hold,
 residual coverage, veto groups, and the gate Gantt) without implying live
@@ -61,7 +64,9 @@ recommended versus pinned copy. Common Cart 1.4.1 also names organizer buyer
 CSV, leftover jump, and the community garden start. Partnership Breakpoint 1.5.1
 also names waterfall SVG download, compare and print keys, and the Licensor
 and distributor start. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
-Payday Friday burst, and one-row dashboard CSV. These are
+Payday Friday burst, and one-row dashboard CSV. Weekend Gap 1.5.2 also names
+peak-queue hour copy, Public-holiday Monday, and the single-gate Gantt filter.
+These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
 loopback launcher does not serve those markdown files; open the app folder or
@@ -104,15 +109,28 @@ an input. Press `h` to focus the catalog heading. Press `n` to focus What's
 new. Press `w` to focus the workbenches. Press `k` to focus How it works.
 Press `t` to focus Trust and limits. Press `c` to copy the catalog address
 when this page is served over http. On a file URL that key does not claim a
-copy succeeded. Press `?` on the catalog for the in-page shortcut list. The branded 404
+copy succeeded. Press `v` to copy catalog versions from this page. That key
+uses the same Copy versions control, including the visible text box when the
+clipboard API is unavailable. Press `l` to focus the workbench card that is
+Last launched in this browser, or the workbenches heading if none is stored.
+That recency is storage in this browser, not a cloud recency. Press `o` to
+open that last-launched workbench. The key assigns `location` the same way
+keys 1 to 4 do, including writing last-launched storage. If none is stored,
+it focuses the workbenches and does not navigate. It does not copy, including
+on a file URL. Press `?` on the catalog for the in-page shortcut list. The branded 404
 page still returns HTTP 404, lists current catalog versions, and links
 back to the catalog by name for Partnership Breakpoint, Common Cart, The
-Smallest Agreement, and Weekend Gap. When the catalog is served over http,
+Smallest Agreement, and Weekend Gap. Copy versions on that 404 page copies
+the printed catalog version line as Markdown. It does not fetch a package
+file or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
 this catalog page as Markdown. It uses the browser clipboard when that API is
 available, and shows a visible text box if it is not. This is the catalog list,
-not a live product version.
+not a live product version. Copy jobs copies the four workbench names and
+one-sentence jobs from the catalog cards as Markdown, with the same clipboard
+and visible text box fallback. That list is not a live product feed.
+Press `j` to copy catalog jobs through that same control.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
@@ -219,4 +237,4 @@ repository-wide and component issues in the
 
 MIT. See [LICENSE](LICENSE) and each app's retained `LICENSE` file.
 
-The local last-launched marker updates from both the Open workbench links and keys 1 to 4. Storage failure does not prevent opening an app.
+The local last-launched marker updates from both the Open workbench links and keys 1 to 4. Storage failure does not prevent opening an app. Missing or unreadable last-launched storage is silent: no recency note appears.

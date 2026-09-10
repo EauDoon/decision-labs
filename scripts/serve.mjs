@@ -62,7 +62,33 @@ export function notFoundPage() {
       text-underline-offset: 3px;
     }
     a:hover { text-decoration-thickness: 2px; }
-    a:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
+    a:focus-visible, button:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
+    .copy-versions-tools { margin: 16px 0 0; }
+    .copy-versions {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px;
+      padding: 8px 14px;
+      border: 1px solid #0f5a4b;
+      border-radius: 4px;
+      background: #ffffff;
+      color: #0a4439;
+      font: inherit;
+      font-weight: 650;
+      cursor: pointer;
+    }
+    .copy-versions-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback {
+      display: block;
+      width: 100%;
+      margin-top: 10px;
+      min-height: 6rem;
+      padding: 10px 12px;
+      font: 15px/1.5 ui-monospace, monospace;
+      border: 1px solid #c3d0d3;
+      border-radius: 4px;
+    }
+    .copy-versions-fallback[hidden] { display: none; }
   </style>
 </head>
 <body>
@@ -71,8 +97,43 @@ export function notFoundPage() {
     <h1>This path is not in the catalog</h1>
     <p>The local launcher serves only the Decision Labs catalog page and the four workbenches. It does not serve source, notes, or drafts.</p>
     <p class="version-line">Current catalog: ${versions}.</p>
+    <p class="copy-versions-tools">
+      <button type="button" class="copy-versions" id="copy-versions">Copy versions</button>
+      <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
+    </p>
+    <textarea id="copy-versions-fallback" class="copy-versions-fallback" hidden readonly rows="4" aria-label="Workbench versions as Markdown"></textarea>
     <p><a href="/">Open the Decision Labs catalog for Partnership Breakpoint, Common Cart, The Smallest Agreement, and Weekend Gap</a></p>
   </main>
+  <script>
+    (function () {
+      const versionsBtn = document.getElementById('copy-versions');
+      const versionsStatus = document.getElementById('copy-versions-status');
+      const versionsFallback = document.getElementById('copy-versions-fallback');
+      const versionsMarkdown = () => {
+        const line = document.querySelector('.version-line')?.textContent ?? '';
+        const listed = line.replace(/^\\s*Current catalog:\\s*/i, '').replace(/\\.\\s*$/, '');
+        const parts = listed.split(',').map((part) => part.trim()).filter(Boolean);
+        return parts.map((part) => '- ' + part).join('\\n');
+      };
+      versionsBtn?.addEventListener('click', async () => {
+        const markdown = versionsMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (versionsFallback) versionsFallback.hidden = true;
+          if (versionsStatus) versionsStatus.textContent = 'Copied names and versions from this catalog list as Markdown. Not a live product version.';
+        } catch {
+          if (versionsFallback) {
+            versionsFallback.hidden = false;
+            versionsFallback.value = markdown;
+            versionsFallback.focus();
+            versionsFallback.select();
+          }
+          if (versionsStatus) versionsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product version.';
+        }
+      });
+    })();
+  </script>
 </body>
 </html>`;
 }
