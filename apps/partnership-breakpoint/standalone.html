@@ -4963,7 +4963,7 @@ function copyOverCapacityCount() {
   const result = validation.valid ? calculatePartnership(state) : null;
   const text = overCapacityCountMarkdown(result);
   const clipboard = globalThis.navigator?.clipboard;
-  const copiedNote = 'Over-capacity participant count copied as Markdown. Count of roster rows currently over listed capacity. Not a forecast.';
+  const copiedNote = 'Over-capacity participant count copied as Markdown. Count of roster rows currently over listed capacity. It is not a forecast.';
   const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
   if (clipboard && typeof clipboard.writeText === 'function') {
     try {
