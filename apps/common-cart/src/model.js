@@ -261,6 +261,23 @@ export const presets = Object.freeze({
       offer("O02", "Groundsheet Run", "Scout camp pack", "Groundsheet", 16, 8, 6, 24, 3),
       { ...offer("O03", "Scout-hall Kit Pickup", "Scout camp pack", "Mess-tin", 14, 8, 2, 30, 6), fulfillment: "pickup" }
     ]
+  },
+  schoolExcursionLunch: {
+    title: "School excursion lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Year three crate", "Excursion lunch pack", 8, 18, 4, ["Mixed sandwich", "Fruit cup"]),
+      buyer("B02", "Year five crate", "Excursion lunch pack", 12, 14, 3, ["Mixed sandwich"]),
+      buyer("B03", "Bus cooler", "Excursion lunch pack", 6, 16, 5, ["Fruit cup", "Water crate"]),
+      buyer("B04", "Staff hamper", "Excursion lunch pack", 5, 12, 2, ["Water crate"]),
+      buyer("B05", "Spare hamper", "Excursion lunch pack", 9, 17, 4, ["Mixed sandwich", "Water crate"]),
+      buyer("B06", "Hall trolley", "Excursion lunch pack", 7, 15, 3, ["Fruit cup", "Mixed sandwich"])
+    ],
+    offers: [
+      offer("O01", "Coach-stop Lunch Delivery", "Excursion lunch pack", "Mixed sandwich", 11, 10, 3, 40, 3),
+      offer("O02", "Fruit Cup Run", "Excursion lunch pack", "Fruit cup", 9, 8, 4, 24, 2),
+      { ...offer("O03", "Hall Lunch Pickup", "Excursion lunch pack", "Water crate", 7, 8, 1, 30, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
