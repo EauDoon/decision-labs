@@ -1989,6 +1989,21 @@ export function formatRemainingChangeBudgetMarkdown(proposal, result = findSmall
 }
 
 /**
+ * One-line Markdown of the approval threshold for clipboard handoff.
+ * A threshold is a number you entered, not a legal quorum.
+ * Distinct from remaining change-budget copy and recommended-package copy.
+ */
+export function formatApprovalThresholdMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  return {
+    status: "ok",
+    text: `Approval threshold: ${formatPercent(p.threshold)}. This is a number you entered, not a legal quorum.\n`,
+  };
+}
+
+/**
  * Compact formula-safe CSV of recommended versus original option labels and cost delta.
  * Unavailable when there is no recommended package.
  */

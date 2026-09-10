@@ -31,6 +31,7 @@ import {
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
+  formatApprovalThresholdMarkdown,
   formatRecommendedChangeCostCsv,
   parseClauseOptionsCsv,
   formatClauseOptionsCsv,
@@ -1624,6 +1625,36 @@ test("remaining change-budget Markdown is one line, honest when exhausted, and n
   assert.match(none.text, /No recommended package is available/u);
   assert.match(none.text, /not a legal appropriation/u);
   assert.equal(formatRemainingChangeBudgetMarkdown({ title: "" }).status, "invalid");
+});
+
+test("approval threshold Markdown is one line and is not a legal quorum", () => {
+  const input = proposal({
+    threshold: 70,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatApprovalThresholdMarkdown(input);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Approval threshold: 70.0%. This is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(copied.text, /leftover change-budget/u);
+  assert.doesNotMatch(copied.text, /^# Recommended package/u);
+  assert.doesNotMatch(copied.text, /\| Group \| Weight \| Average support \|/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const neighbourhood = formatApprovalThresholdMarkdown({
+    title: "Neighbourhood Plan: the shared green",
+    threshold: 68,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  assert.match(neighbourhood.text, /^Approval threshold: 68\.0%\. This is a number you entered, not a legal quorum\.\n$/u);
+  assert.equal(formatApprovalThresholdMarkdown({ title: "" }).status, "invalid");
 });
 
 test("pinned package Markdown table lists original, recommended, and pinned labels without recording a vote", () => {
