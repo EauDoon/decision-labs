@@ -158,7 +158,7 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 ## Redacted export
 
-`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case. Print one-pager includes the least-headroom participant line, an allocation-balance line, a deal title line, and a currency code line when the case is valid. The saved case is unchanged.
+`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case. Print one-pager includes the least-headroom participant line, an allocation-balance line, a deal title line, a currency code line, and the first-breakpoint participant label line when the case is valid. The saved case is unchanged.
 
 ## Participant CSV import
 
@@ -213,6 +213,8 @@ Optional `hideZeroShareParticipants` on a saved case is a boolean roster display
 Optional `hideParticipantsOverCapacity` on a saved case is a boolean roster display preference. Older files omit it and default to showing roster rows whose volume is above listed capacity. Present non-boolean values are rejected. Hiding those rows filters the roster cards only. Tested-case and model counts stay unchanged. The solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, and `hideZeroShareParticipants` remain independent flags.
 
 Optional `hideParticipantsAtHold` on a saved case is a boolean roster display preference. Older files omit it and default to showing roster rows whose current volume headroom is at or above a hold with no listed capacity breach. Present non-boolean values are rejected. Hiding those rows filters the roster cards only. Tested-case and model counts stay unchanged. The solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, and `hideParticipantsOverCapacity` remain independent flags.
+
+Optional `hideParticipantsWithoutCapacity` on a saved case is a boolean roster display preference. Older files omit it and default to showing roster rows whose capacity is unbounded or omitted. Present non-boolean values are rejected. Hiding those rows filters the roster cards only. Tested-case and model counts stay unchanged. The solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, `hideParticipantsOverCapacity`, and `hideParticipantsAtHold` remain independent flags.
 
 ### Feasible effective volume interval
 
