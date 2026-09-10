@@ -242,6 +242,52 @@ test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(readme, /Skip links jump to What's new, workbenches, How it works,\s+keyboard shortcuts, and Trust and limits/);
 });
 
+test('s focuses the first Open workbench link when focus is not in an input', () => {
+  assert.match(html, /event\.key === 's'/);
+  assert.match(html, /querySelector\('#workbenches a\.open'\)\?\.focus\(\)/);
+  assert.match(html, /<kbd>s<\/kbd><\/dt><dd>Focus the first Open workbench link/);
+  assert.match(html, /Press <kbd>s<\/kbd> to focus the first Open workbench link/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `s` to focus the first Open\s+workbench link/);
+  const focused = [];
+  let keydown = null;
+  const firstOpen = { focus() { focused.push('open'); } };
+  const document = {
+    getElementById: () => null,
+    querySelector(selector) {
+      return selector === '#workbenches a.open' ? firstOpen : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('s', input);
+  assert.deepEqual(focused, []);
+  fire('s', body);
+  assert.deepEqual(focused, ['open']);
+});
+
 test('catalog does not use CSS animation', () => {
   const style = html.match(/<style>([\s\S]*?)<\/style>/)?.[1] ?? '';
   assert.doesNotMatch(style, /@keyframes/);

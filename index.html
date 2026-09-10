@@ -505,7 +505,7 @@
         <li data-app="smallest-agreement">1.5.2</li>
         <li data-app="weekend-gap">1.5.2</li>
       </ul>
-      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>i</kbd> to copy Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
+      <p class="keys-note">Keys <kbd>1</kbd> to <kbd>4</kbd> open a workbench when focus is not in an input. Press <kbd>?</kbd> for the shortcut list. Press <kbd>h</kbd> to focus the catalog heading. Press <kbd>m</kbd> to focus the main catalog. Press <kbd>n</kbd> to focus What's new. Press <kbd>w</kbd> to focus the workbenches. Press <kbd>k</kbd> to focus How it works. Press <kbd>t</kbd> to focus Trust and limits. Press <kbd>s</kbd> to focus the first Open workbench link. Press <kbd>c</kbd> to copy the catalog address on http. Press <kbd>v</kbd> to copy catalog versions. Press <kbd>l</kbd> to focus the last-launched workbench. Press <kbd>o</kbd> to open it. Press <kbd>x</kbd> to clear last-launched in this browser. Press <kbd>j</kbd> to copy catalog jobs. Press <kbd>i</kbd> to copy Trust and limits. <button type="button" class="shortcuts-open" id="shortcuts-open" aria-expanded="false" aria-controls="shortcuts">Keyboard shortcuts</button></p>
       <aside id="shortcuts" class="shortcuts" hidden tabindex="-1" aria-labelledby="shortcuts-title">
         <h3 id="shortcuts-title">Keyboard shortcuts</h3>
         <dl>
@@ -519,6 +519,7 @@
           <dt><kbd>w</kbd></dt><dd>Focus the workbenches</dd>
           <dt><kbd>k</kbd></dt><dd>Focus How it works</dd>
           <dt><kbd>t</kbd></dt><dd>Focus Trust and limits</dd>
+          <dt><kbd>s</kbd></dt><dd>Focus the first Open workbench link</dd>
           <dt><kbd>c</kbd></dt><dd>Copy catalog address when this page is served over http</dd>
           <dt><kbd>v</kbd></dt><dd>Copy workbench names and versions as Markdown from this catalog page, not a live product version</dd>
           <dt><kbd>j</kbd></dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed</dd>
@@ -833,6 +834,11 @@
         if (event.key === 't') {
           event.preventDefault();
           document.getElementById('trust')?.focus();
+          return;
+        }
+        if (event.key === 's') {
+          event.preventDefault();
+          document.querySelector('#workbenches a.open')?.focus();
           return;
         }
         if (event.key === 'c') {
