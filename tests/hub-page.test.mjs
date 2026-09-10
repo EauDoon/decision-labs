@@ -113,6 +113,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Gantt hour copy, payday burst, and dashboard CSV in Weekend Gap 1\.5\.1/);
   assert.match(html, /Peak-hour copy, holiday Monday, and gate filter in Weekend Gap 1\.5\.2/);
   assert.match(html, /Hours-to-clear copy, Saturday market, and hour persist in Weekend Gap 1\.5\.3/);
+  assert.match(html, /Sunday stall close, reserve copy, and weekend Gantt filter in Weekend Gap 1\.5\.4/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
   assert.match(html, /Catalog cards list each workbench version next to its job/);
   assert.match(html, /not checkout, inventory, or a second live order/);
@@ -151,6 +152,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Gantt hour Markdown copy,\s+Payday Friday burst/);
   assert.match(readme, /peak-queue hour copy, Public-holiday Monday/);
   assert.match(readme, /hours-to-clear Markdown copy, Saturday market\s+burst/);
+  assert.match(readme, /remaining\s+reserve copy, Sunday stall close/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
   assert.match(readme, /Catalog keys `w`, `k`, `n`, and `c`/);
