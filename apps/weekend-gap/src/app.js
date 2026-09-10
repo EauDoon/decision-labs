@@ -20,11 +20,17 @@ import {
   analysisToJSON,
   analyzeTimeline,
   attributeBottlenecks,
+  bottleneckCountsToMarkdown,
   previewWindowShift,
   compareDemandProfiles,
   previewDemandProfileStep,
   buildGateGanttSvg,
   ganttToCSV,
+  selectedGanttHourToMarkdown,
+  firstClosedGanttHour,
+  ganttHourClosedOnAnyGate,
+  gateDisplayLabels,
+  GENERIC_GATE_LABELS,
   buildGateSchedule,
   compareGateSchedules,
   buildComparisonGanttSvg,
@@ -41,11 +47,13 @@ import {
   reportToHTML,
   reportToMarkdown,
   dashboardToMarkdown,
-  compareScenarioFiles
+  dashboardToCSV,
+  compareScenarioFiles,
+  compareThreeScenarioFiles
 } from "./model.js";
 
 let workspaceReady = false;
-let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, selectedChart: "queue" };
+let lastValidPlan = { targetPercent: 100, deadlineHour: 72, ganttDensity: "snapshots", selectedHour: 0, selectedChart: "queue", ganttClosedOnly: false };
 const WORKSPACE_KEY = "weekend-gap:workspace:v1";
 const STORAGE_KEY = "weekend-gap:scenario:v1";
 const standaloneMode = document.documentElement.dataset.weekendGapStandalone === "true";
@@ -202,6 +210,16 @@ function setScenario(nextScenario, { normaliseForm = true, message = "", preserv
   if (workspaceReady) saveWorkspace();
 }
 
+function applyGateDisplayLabels(redacted = false) {
+  const labels = gateDisplayLabels(scenario, redacted);
+  for (const key of Object.keys(GENERIC_GATE_LABELS)) {
+    const live = document.querySelector(`#${key}-live-label`);
+    const gantt = document.querySelector(`#${key}-gantt-live-label`);
+    if (live) live.textContent = labels[key];
+    if (gantt) gantt.textContent = labels[key];
+  }
+}
+
 function gateText(open) {
   return open ? "Open" : "Closed";
 }
@@ -281,6 +299,7 @@ function render() {
   applyGateState(elements.issuerGate, point.issuerOpen);
   applyGateState(elements.bankGate, point.bankOpen);
   applyGateState(elements.payoutGate, point.payoutOpen);
+  applyGateDisplayLabels(false);
   elements.fxGate.textContent = point.weekend
     ? `${scenario.mondayHoliday && point.timeLabel.startsWith("Mon") ? "Holiday Monday" : scenario.saturdayHoliday && point.timeLabel.startsWith("Sat") ? "Holiday Saturday" : "Weekend"}: depth ÷ ${scenario.weekendFxMultiplier.toFixed(1)}, spread × ${scenario.weekendFxMultiplier.toFixed(1)}`
     : `${Math.round(point.fxSpreadBps)} bps weekday spread`;
@@ -352,12 +371,21 @@ function renderTable() {
 }
 
 function renderGantt() {
-  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour);
+  const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly });
   const schedule = buildGateSchedule(scenario);
   const mode = document.querySelector("#gantt-density")?.value || "snapshots";
-  const rowIndexes = new Set([0, selectedHour, SIMULATION_HOURS]);
+  const rowIndexes = new Set([selectedHour]);
+  if (!closedOnly) {
+    rowIndexes.add(0);
+    rowIndexes.add(SIMULATION_HOURS);
+  }
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
     const point = schedule.hours[hour];
+    if (closedOnly) {
+      if (ganttHourClosedOnAnyGate(point)) rowIndexes.add(hour);
+      continue;
+    }
     if (mode === "all" || (mode === "snapshots" && hour % 6 === 0) || (mode === "open" && (point.issuerOpen || point.bankOpen || point.payoutOpen))) {
       rowIndexes.add(hour);
     }
@@ -385,6 +413,13 @@ function renderGantt() {
   document.querySelector("#gantt-payout-note").textContent = firstOpen === null
     ? "No first payout window was found in the modeled search period."
     : `First payout window: ${formatTime(firstOpen)} (hour ${firstOpen}). The dashed green marker on the Gantt uses this hour.`;
+  const filterNote = document.querySelector("#gantt-filter-note");
+  if (filterNote) {
+    const closedCount = schedule.hours.filter((point) => point.hour < SIMULATION_HOURS && ganttHourClosedOnAnyGate(point)).length;
+    filterNote.textContent = closedOnly
+      ? `Showing hours closed on at least one gate (${closedCount} of ${SIMULATION_HOURS} chart hours). The model still contains ${SIMULATION_HOURS} hours. This table and chart are a local drawing.`
+      : `All ${SIMULATION_HOURS} model hours remain available. Use the closed-hours filter to hide fully open hours in this local drawing.`;
+  }
 }
 
 function gateCellLabel(open, fx = false) {
@@ -683,6 +718,53 @@ document.querySelector("#compare-scenario-files").addEventListener("click", asyn
     status.textContent = `Compared ${leftName} (file A) with ${rightName} (file B). Mixed settlement or queue-clear hours stay not comparable. This is not a ranking of issuers.`;
   } catch {
     status.textContent = "Compare failed. Choose two readable scenario JSON files.";
+    body.replaceChildren();
+  }
+});
+
+document.querySelector("#compare-three-scenario-files").addEventListener("click", async () => {
+  const baselineFile = document.querySelector("#compare-file-baseline").files?.[0];
+  const currentFile = document.querySelector("#compare-file-current").files?.[0];
+  const importedFile = document.querySelector("#compare-file-imported").files?.[0];
+  const status = document.querySelector("#three-file-compare-status");
+  const body = document.querySelector("#three-file-compare-rows");
+  if (!baselineFile || !currentFile || !importedFile) {
+    status.textContent = "Choose three scenario JSON files before comparing.";
+    return;
+  }
+  if (baselineFile.size > 250000 || currentFile.size > 250000 || importedFile.size > 250000) {
+    status.textContent = "Compare failed. Each scenario file must be 250 KB or smaller.";
+    body.replaceChildren();
+    return;
+  }
+  try {
+    const result = compareThreeScenarioFiles(await baselineFile.text(), await currentFile.text(), await importedFile.text());
+    if (!result.runs) {
+      status.textContent = "Compare failed: " + result.errors.join(" ");
+      body.replaceChildren();
+      return;
+    }
+    const peakHour = (run) => run.peakQueueHour === null ? "" : formatTime(run.peakQueueHour);
+    body.replaceChildren(...[
+      ["Name", result.runs[0].name, result.runs[1].name, result.runs[2].name],
+      ["Peak queue", planningAud(result.runs[0].peakQueuedAud), planningAud(result.runs[1].peakQueuedAud), planningAud(result.runs[2].peakQueuedAud)],
+      ["Remaining queue", planningAud(result.runs[0].finalQueuedAud), planningAud(result.runs[1].finalQueuedAud), planningAud(result.runs[2].finalQueuedAud)],
+      ["Settled total", planningAud(result.runs[0].totalSettledAud), planningAud(result.runs[1].totalSettledAud), planningAud(result.runs[2].totalSettledAud)],
+      ["Hours to first settlement", formatHoursToFirstSettlement(result.runs[0].hoursToFirstSettlement), formatHoursToFirstSettlement(result.runs[1].hoursToFirstSettlement), formatHoursToFirstSettlement(result.runs[2].hoursToFirstSettlement)],
+      ["Hours to clear queue", formatHoursToClearQueue(result.runs[0].hoursToClearQueue, result.runs[0].peakQueuedAud), formatHoursToClearQueue(result.runs[1].hoursToClearQueue, result.runs[1].peakQueuedAud), formatHoursToClearQueue(result.runs[2].hoursToClearQueue, result.runs[2].peakQueuedAud)],
+      ["Peak queue hour", peakHour(result.runs[0]), peakHour(result.runs[1]), peakHour(result.runs[2])]
+    ].map((cells) => {
+      const row = document.createElement("tr");
+      for (const value of cells) {
+        const cell = document.createElement("td");
+        cell.textContent = value;
+        row.append(cell);
+      }
+      return row;
+    }));
+    status.textContent = `Compared ${result.runs[0].name}, ${result.runs[1].name} and ${result.runs[2].name}. The open scenario was not replaced. Null queue or settlement hours stay empty rather than treated as zero.`;
+  } catch {
+    status.textContent = "Compare failed. Choose three readable scenario JSON files.";
     body.replaceChildren();
   }
 });
@@ -1075,7 +1157,8 @@ function currentWorkspace() {
   return workspaceToJSON(scenario,baselineScenario,{ targetPercent:document.querySelector("#reserve-target").valueAsNumber,
     deadlineHour:document.querySelector("#reserve-deadline").valueAsNumber, selectedHour, notes:document.querySelector("#workspace-notes").value,
     ganttDensity: document.querySelector("#gantt-density").value,
-    selectedChart: document.querySelector("#selected-chart").value });
+    selectedChart: document.querySelector("#selected-chart").value,
+    ganttClosedOnly: Boolean(document.querySelector("#gantt-closed-only")?.checked) });
 }
 function saveWorkspace() {
   if(!workspaceReady) return;
@@ -1085,7 +1168,7 @@ function saveWorkspace() {
     try {
       serialized = currentWorkspace();
       const saved = JSON.parse(serialized);
-      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, selectedChart: saved.selectedChart };
+      lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity, selectedHour: saved.selectedHour, selectedChart: saved.selectedChart, ganttClosedOnly: saved.ganttClosedOnly === true };
     } catch {
       controlsValid = false;
       serialized = workspaceToJSON(scenario, baselineScenario, { ...lastValidPlan, selectedHour, notes: document.querySelector("#workspace-notes").value });
@@ -1097,13 +1180,14 @@ function saveWorkspace() {
   } catch { document.querySelector("#workspace-status").textContent="Workspace could not be saved. Edits remain in this tab; export a valid workspace to keep them."; }
 }
 function applyWorkspace(saved) {
-  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue" };
+  lastValidPlan = { targetPercent: saved.targetPercent, deadlineHour: saved.deadlineHour, ganttDensity: saved.ganttDensity || "snapshots", selectedHour: saved.selectedHour ?? 0, selectedChart: saved.selectedChart || "queue", ganttClosedOnly: saved.ganttClosedOnly === true };
   baselineScenario={...saved.baseline}; selectedHour=saved.selectedHour ?? 0;setPlaying(false);
   document.querySelector("#reserve-target").value=String(saved.targetPercent);
   document.querySelector("#reserve-deadline").value=String(saved.deadlineHour);
   document.querySelector("#workspace-notes").value=saved.notes;
   document.querySelector("#gantt-density").value = saved.ganttDensity || "snapshots";
   document.querySelector("#selected-chart").value = saved.selectedChart || "queue";
+  document.querySelector("#gantt-closed-only").checked = saved.ganttClosedOnly === true;
   setScenario(saved.current,{message:"Workspace restored with its baseline, notes and reserve target."});
 }
 function downloadText(text,filename,type) {
@@ -1156,6 +1240,10 @@ document.querySelector("#gantt-density").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
 });
+document.querySelector("#gantt-closed-only").addEventListener("change",()=>{
+  renderGantt();
+  saveWorkspace();
+});
 document.querySelector("#selected-chart").addEventListener("change",()=>{
   const view = document.querySelector("#selected-chart").value;
   saveWorkspace();
@@ -1169,6 +1257,40 @@ document.querySelector("#export-gantt").addEventListener("click",()=>{
 document.querySelector("#export-gantt-csv").addEventListener("click",()=>{
   downloadText(ganttToCSV(scenario),"weekend-gap-gantt.csv","text/csv;charset=utf-8");
   setMessage("Gantt CSV downloaded. Open and closed hours match the 72 chart cells.");
+});
+async function copyTextWithFallback(text, fallbackId, successMessage) {
+  const fallback = document.querySelector(fallbackId);
+  try {
+    const clipboard = globalThis.navigator?.clipboard;
+    if (clipboard && typeof clipboard.writeText === "function") {
+      await clipboard.writeText(text);
+      if (fallback) {
+        fallback.hidden = true;
+        fallback.value = "";
+      }
+      setMessage(successMessage);
+      return;
+    }
+    throw new Error("Clipboard unavailable");
+  } catch {
+    if (fallback) {
+      fallback.hidden = false;
+      fallback.value = text;
+      fallback.focus();
+      if (typeof fallback.select === "function") fallback.select();
+      setMessage("Clipboard unavailable. Copy the Markdown from the text box.");
+      return;
+    }
+    setMessage("Clipboard unavailable. Markdown could not be copied.");
+  }
+}
+document.querySelector("#copy-gantt-hour").addEventListener("click", async () => {
+  const text = selectedGanttHourToMarkdown(scenario, selectedHour);
+  await copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
+});
+document.querySelector("#copy-bottleneck-markdown").addEventListener("click", async () => {
+  const text = bottleneckCountsToMarkdown(scenario);
+  await copyTextWithFallback(text, "#bottleneck-copy-fallback", "Limiting-gate counts copied as Markdown. These are observation counts, not a causal ranking.");
 });
 document.querySelector("#export-queue-svg").addEventListener("click",()=>{
   downloadText(buildQueueChartSvg(scenario,baselineScenario,selectedHour),"weekend-gap-queue.svg","image/svg+xml;charset=utf-8");
@@ -1201,6 +1323,27 @@ function jumpToFirstSettlement() {
 document.querySelector("#jump-first-settlement").addEventListener("click",()=>{
   jumpToFirstSettlement();
 });
+function jumpToFirstClosedBank() {
+  const hour = firstClosedGanttHour(scenario);
+  if (hour === null) {
+    setMessage("No closed bank or gate hour in this 72-hour calendar.");
+    return false;
+  }
+  selectedHour = hour;
+  setPlaying(false);
+  render();
+  saveWorkspace();
+  setMessage(`Jumped to the first closed bank hour at ${formatTime(hour)} (hour ${hour}).`);
+  return true;
+}
+function jumpToScenarioInputs() {
+  const heading = document.querySelector("#assumptions-title");
+  if (!heading) return false;
+  heading.setAttribute("tabindex", "-1");
+  heading.focus();
+  heading.scrollIntoView?.({ block: "start" });
+  return true;
+}
 function jumpToDashboard() {
   const heading = document.querySelector("#outcome-title");
   if (!heading) return false;
@@ -1248,6 +1391,17 @@ document.querySelector("#export-report").addEventListener("click",()=>{
     document.querySelector("#workspace-status").textContent="Report exported. Open the HTML file offline and use your browser Print command. Editable state is in the separate workspace export.";
   } catch(error) { document.querySelector("#workspace-status").textContent=error.message; }
 });
+document.querySelector("#print-redacted").addEventListener("click", () => {
+  document.body.classList.add("print-redacted");
+  applyGateDisplayLabels(true);
+  const closedOnly = Boolean(document.querySelector("#gantt-closed-only")?.checked);
+  document.querySelector("#gate-gantt").innerHTML = buildGateGanttSvg(scenario, selectedHour, { closedOnly, redacted: true });
+  window.print();
+  document.body.classList.remove("print-redacted");
+  applyGateDisplayLabels(false);
+  renderGantt();
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. The saved scenario was not changed.";
+});
 document.querySelector("#copy-dashboard-markdown").addEventListener("click", async () => {
   try {
     const text = dashboardToMarkdown(scenario);
@@ -1262,6 +1416,10 @@ document.querySelector("#copy-dashboard-markdown").addEventListener("click", asy
   } catch (error) {
     document.querySelector("#workspace-status").textContent = error.message;
   }
+});
+document.querySelector("#export-dashboard-csv").addEventListener("click", () => {
+  downloadText(dashboardToCSV(scenario), "weekend-gap-dashboard.csv", "text/csv;charset=utf-8");
+  setMessage("Dashboard CSV downloaded. Hours to clear and first settlement are empty when those events never occur. Cells are formula-safe and have no timestamps.");
 });
 document.querySelector("#copy-markdown-report").addEventListener("click", async () => {
   try {
@@ -1356,6 +1514,16 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "j" || event.key === "J") {
     event.preventDefault();
     jumpToFirstSettlement();
+    return;
+  }
+  if (event.key === "f" || event.key === "F") {
+    event.preventDefault();
+    jumpToFirstClosedBank();
+    return;
+  }
+  if (event.key === "s" || event.key === "S") {
+    event.preventDefault();
+    jumpToScenarioInputs();
     return;
   }
   if (event.key === "d" || event.key === "D") {

@@ -32,7 +32,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -94,11 +94,19 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   assert.match(ui.nodes.get("peak-queue-row-note").textContent, /peak queue checkpoint/);
   await ui.edit("gantt-density", "all", "change");
   assert.equal(ui.nodes.get("gantt-table").children.length, 73);
+  ui.nodes.get("gantt-closed-only").checked = true;
+  await ui.nodes.get("gantt-closed-only").emit("change");
+  assert.ok(ui.nodes.get("gantt-table").children.length < 73);
+  assert.match(ui.nodes.get("gantt-filter-note").textContent, /model still contains 72 hours/);
+  ui.nodes.get("gantt-closed-only").checked = false;
+  await ui.nodes.get("gantt-closed-only").emit("change");
+  assert.equal(ui.nodes.get("gantt-table").children.length, 73);
   await ui.edit("timeline-range", 65);
   const persisted = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
   assert.equal(persisted.current.name, "Market Stress"); assert.equal(persisted.selectedHour, 65);
   assert.equal(persisted.ganttDensity, "all");
   assert.equal(persisted.selectedChart, "queue");
+  assert.equal(persisted.ganttClosedOnly, false);
   const reloaded = await boot(ui.storage);
   assert.equal(reloaded.nodes.get("scenario-title").textContent, "Market Stress");
   assert.equal(reloaded.nodes.get("baseline-name").textContent, "Normal Friday");
@@ -106,6 +114,7 @@ test("source mode runs library, sensitivity, undo, hourly table and workspace re
   assert.equal(reloaded.nodes.get("timeline-range").value, "65");
   assert.equal(reloaded.nodes.get("gantt-density").value, "all");
   assert.equal(reloaded.nodes.get("selected-chart").value, "queue");
+  assert.equal(reloaded.nodes.get("gantt-closed-only").checked, false);
   assert.equal(reloaded.nodes.get("scenario-library").children.length, 1);
 });
 
@@ -237,6 +246,22 @@ test("keyboard p jumps to peak queue and is a no-op when demand never queues", a
   assert.equal(ui.nodes.get("jump-peak").disabled, true);
 });
 
+test("keyboard s jumps to the scenario inputs and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("coach-overlay").hidden, true);
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  await ui.keydown("s");
+  assert.equal(ui.nodes.get("assumptions-title").focused, true);
+  assert.equal(ui.nodes.get("assumptions-title").attributes.tabindex, "-1");
+  ui.nodes.get("assumptions-title").focused = false;
+  await ui.keydown("S", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("assumptions-title").focused, false);
+  await ui.keydown("s", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("assumptions-title").focused, false);
+  await ui.keydown("s", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("assumptions-title").focused, false);
+});
+
 test("keyboard d jumps to the outcome summary and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);
@@ -295,6 +320,19 @@ test("selected chart persists in workspace JSON and restores", async () => {
   assert.equal(legacy.nodes.get("selected-chart").value, "queue");
 });
 
+test("closed-hours Gantt filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("gantt-closed-only").checked = true;
+  await ui.nodes.get("gantt-closed-only").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).ganttClosedOnly, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-closed-only").checked, true);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.ganttClosedOnly;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-closed-only").checked, false);
+});
+
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);
@@ -316,6 +354,21 @@ test("keyboard j jumps to first settlement and ignores the key while typing", as
   assert.equal(ui.nodes.get("timeline-range").value, "12");
 });
 
+test("keyboard f jumps to the first closed bank hour and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.edit("timeline-range", 0);
+  await ui.keydown("f");
+  assert.equal(ui.nodes.get("timeline-range").value, "2");
+  assert.match(ui.nodes.get("input-message").textContent, /first closed bank hour/);
+  await ui.edit("timeline-range", 40);
+  await ui.keydown("F", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+  await ui.keydown("f", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+  await ui.keydown("f", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("timeline-range").value, "40");
+});
+
 test("comparing two scenario JSON files shows queue diffs and honest null settlement hours", async () => {
   const { scenarioToJSON, DEFAULT_SCENARIO, PRESETS } = await import(new URL("../src/model.js", import.meta.url));
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
@@ -330,6 +383,26 @@ test("comparing two scenario JSON files shows queue diffs and honest null settle
   assert.match(ui.nodes.get("file-compare-status").textContent, /Closed payout/);
   const hourRow = ui.nodes.get("file-compare-rows").children[3];
   assert.match(hourRow.children[3].textContent, /Not comparable/);
+});
+
+test("comparing three scenario JSON files keeps honest nulls and does not replace the open scenario", async () => {
+  const { scenarioToJSON, DEFAULT_SCENARIO, PRESETS } = await import(new URL("../src/model.js", import.meta.url));
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  const openName = ui.nodes.get("scenario-title").textContent;
+  const baseline = scenarioToJSON(DEFAULT_SCENARIO);
+  const closed = scenarioToJSON({ ...DEFAULT_SCENARIO, payoutThroughputAudPerHour: 0, name: "Closed payout" });
+  const empty = scenarioToJSON({ ...DEFAULT_SCENARIO, redemptionDemandAud: 0, name: "No demand" });
+  ui.nodes.get("compare-file-baseline").files = [{ size: baseline.length, text: async () => baseline }];
+  ui.nodes.get("compare-file-current").files = [{ size: closed.length, text: async () => closed }];
+  ui.nodes.get("compare-file-imported").files = [{ size: empty.length, text: async () => empty }];
+  await ui.nodes.get("compare-three-scenario-files").click();
+  assert.equal(ui.nodes.get("scenario-title").textContent, openName);
+  assert.equal(ui.nodes.get("three-file-compare-rows").children.length, 7);
+  assert.match(ui.nodes.get("three-file-compare-status").textContent, /was not replaced/);
+  const settleRow = ui.nodes.get("three-file-compare-rows").children[4];
+  assert.match(settleRow.children[2].textContent, /No settlement in 72h/);
+  const peakHourRow = ui.nodes.get("three-file-compare-rows").children[6];
+  assert.equal(peakHourRow.children[3].textContent, "");
 });
 
 test("demand timing earlier and later previews apply without randomness", async () => {

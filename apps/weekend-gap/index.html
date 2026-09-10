@@ -84,6 +84,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="thinFxTightWindows">Thin FX, Tight Windows (synthetic)</button>
               <button type="button" class="preset-button" data-preset="longWeekendFridayStart">Long-weekend Friday start (synthetic)</button>
               <button type="button" class="preset-button" data-preset="compressedFridayClose">Compressed Friday close (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="paydayFridayBurst">Payday Friday burst (synthetic)</button>
             </div>
           </fieldset>
 
@@ -92,6 +93,28 @@ SOFTWARE.
               <label for="name">Scenario name</label>
               <input id="name" name="name" aria-describedby="input-message" data-field="name" maxlength="80" type="text" autocomplete="off">
             </div>
+            <fieldset>
+              <legend>Gate display names</legend>
+              <p>Optional labels for the dashboard and Gantt. They do not change the math. Print redacted replaces custom names with Issuer, Bank, Payout and FX.</p>
+              <div class="input-grid">
+                <div class="input-group">
+                  <label for="issuerLabel">Issuer label</label>
+                  <input id="issuerLabel" name="issuerLabel" data-field="issuerLabel" maxlength="40" type="text" autocomplete="off">
+                </div>
+                <div class="input-group">
+                  <label for="bankLabel">Bank label</label>
+                  <input id="bankLabel" name="bankLabel" data-field="bankLabel" maxlength="40" type="text" autocomplete="off">
+                </div>
+                <div class="input-group">
+                  <label for="payoutLabel">Payout label</label>
+                  <input id="payoutLabel" name="payoutLabel" data-field="payoutLabel" maxlength="40" type="text" autocomplete="off">
+                </div>
+                <div class="input-group">
+                  <label for="fxLabel">FX label</label>
+                  <input id="fxLabel" name="fxLabel" data-field="fxLabel" maxlength="40" type="text" autocomplete="off">
+                </div>
+              </div>
+            </fieldset>
 
             <fieldset>
               <legend>Liquidity base</legend>
@@ -263,6 +286,7 @@ SOFTWARE.
               <div class="planning-actions">
                 <p id="outcome-summary" class="gate-summary">Calculating</p>
                 <button id="copy-dashboard-markdown" type="button">Copy dashboard numbers</button>
+                <button id="export-dashboard-csv" type="button">Export dashboard CSV</button>
               </div>
             </div>
             <dl class="outcome-grid">
@@ -281,6 +305,11 @@ SOFTWARE.
             <p id="diagnostic-summary"></p><ul id="bottleneck-list"></ul><p id="milestone-summary"></p>
             <h3 id="attribution-title">Hourly limiting gate</h3>
             <p id="bottleneck-explanation">Each of the 72 hours is tagged with the single limitingGate value at the start of the interval. Closed issuer, bank or payout gates are named first. This is a count of observations, not a ranking of which change would raise settlement.</p>
+            <div class="planning-actions">
+              <button id="copy-bottleneck-markdown" type="button">Copy limiting-gate counts</button>
+            </div>
+            <label class="sr-only" for="bottleneck-copy-fallback">Limiting-gate Markdown fallback</label>
+            <textarea id="bottleneck-copy-fallback" rows="10" hidden readonly></textarea>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Hourly limiting gate counts">
               <table>
                 <caption>Hours limited by each named gate versus none. Shares are hours divided by 72.</caption>
@@ -300,7 +329,7 @@ SOFTWARE.
               <button id="analysis-export" type="button">Export analysis JSON</button>
             </div>
             <label for="workspace-notes">Experiment notes</label><textarea id="workspace-notes" rows="3" maxlength="4000" placeholder="What assumption are you testing, and why?"></textarea>
-            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="copy-markdown-report" type="button">Copy Markdown report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
+            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="print-redacted" type="button">Print redacted</button><button id="copy-markdown-report" type="button">Copy Markdown report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
             <p id="workspace-status" role="status">Workspace autosave includes the current scenario, pinned baseline, reserve target, notes and selected hour. Share links contain only a scenario and take priority on reload.</p>
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
@@ -323,6 +352,23 @@ SOFTWARE.
                 <caption>Queue and settlement differences. Mixed settlement or queue-clear hours are not subtracted.</caption>
                 <thead><tr><th scope="col">Metric</th><th scope="col">File A</th><th scope="col">File B</th><th scope="col">Change</th></tr></thead>
                 <tbody id="file-compare-rows"></tbody>
+              </table>
+            </div>
+            <h3 id="three-file-compare-title">Compare three scenario files</h3>
+            <p>Baseline, current and imported files are summarised side by side. Hours stay blank when a run never queues or never settles. This does not replace the open scenario.</p>
+            <label for="compare-file-baseline">Baseline scenario file</label>
+            <input id="compare-file-baseline" type="file" accept="application/json,.json">
+            <label for="compare-file-current">Current scenario file</label>
+            <input id="compare-file-current" type="file" accept="application/json,.json">
+            <label for="compare-file-imported">Imported scenario file</label>
+            <input id="compare-file-imported" type="file" accept="application/json,.json">
+            <div class="planning-actions"><button id="compare-three-scenario-files" type="button">Compare three scenario files</button></div>
+            <p id="three-file-compare-status" role="status">Choose three scenario JSON files. The open scenario stays unchanged.</p>
+            <div class="table-scroll" tabindex="0" role="region" aria-label="Three scenario file comparison">
+              <table>
+                <caption>Queue and settlement observations for three synthetic files. Null hours are not filled with zero.</caption>
+                <thead><tr><th scope="col">Metric</th><th scope="col">Baseline</th><th scope="col">Current</th><th scope="col">Imported</th></tr></thead>
+                <tbody id="three-file-compare-rows"></tbody>
               </table>
             </div>
           </article>
@@ -474,10 +520,10 @@ SOFTWARE.
               <p class="eyebrow">Settlement chain</p>
               <h2 id="chain-title">Current gate state</h2>
               <dl class="gate-list">
-                <div><dt>Issuer redemption</dt><dd id="issuer-gate">Closed</dd></div>
-                <div><dt>Bank settlement</dt><dd id="bank-gate">Closed</dd></div>
-                <div><dt>Australian payout</dt><dd id="payout-gate">Closed</dd></div>
-                <div><dt>FX condition</dt><dd id="fx-gate">Normal</dd></div>
+                <div><dt><span class="gate-live-label" id="issuer-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></dt><dd id="issuer-gate">Closed</dd></div>
+                <div><dt><span class="gate-live-label" id="bank-live-label">Bank</span><span class="gate-redacted-label">Bank</span></dt><dd id="bank-gate">Closed</dd></div>
+                <div><dt><span class="gate-live-label" id="payout-live-label">Payout</span><span class="gate-redacted-label">Payout</span></dt><dd id="payout-gate">Closed</dd></div>
+                <div><dt><span class="gate-live-label" id="fx-live-label">FX</span><span class="gate-redacted-label">FX</span></dt><dd id="fx-gate">Normal</dd></div>
               </dl>
             </article>
           </div>
@@ -487,6 +533,7 @@ SOFTWARE.
             <h2 id="gantt-title" tabindex="-1">72-hour gate Gantt</h2>
             <p>Issuer, bank and payout rows show open (solid) versus closed (hatched) for each hour. Color is extra; the hatch marks closed hours. FX shows weekday depth (solid) versus weekend thinning (hatched). The solid vertical line is the timeline slider hour. The dashed marker is the first payout window. A table follows.</p>
             <p id="gantt-payout-note"></p>
+            <p id="gantt-filter-note" role="status"></p>
             <div class="planning-actions">
               <label for="gantt-density">Show Gantt rows</label>
               <select id="gantt-density">
@@ -494,14 +541,21 @@ SOFTWARE.
                 <option value="all">Every hour</option>
                 <option value="open">Hours with any gate open</option>
               </select>
+              <label class="checkbox-label" for="gantt-closed-only">
+                <input id="gantt-closed-only" type="checkbox">
+                Show only hours closed on at least one gate
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
+              <button id="copy-gantt-hour" type="button">Copy selected hour</button>
             </div>
+            <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
+            <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Gate Gantt table fallback">
               <table>
                 <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
-                <thead><tr><th scope="col">Time</th><th scope="col">Issuer</th><th scope="col">Bank</th><th scope="col">Payout</th><th scope="col">FX</th></tr></thead>
+                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
                 <tbody id="gantt-table"></tbody>
               </table>
             </div>
@@ -571,6 +625,8 @@ SOFTWARE.
           <li><kbd>?</kbd> Open or close this help</li>
           <li><kbd>Space</kbd> Play or pause the timeline</li>
           <li><kbd>J</kbd> Jump the timeline to the first settlement</li>
+          <li><kbd>F</kbd> Jump the timeline to the first closed bank hour</li>
+          <li><kbd>S</kbd> Jump to the scenario inputs</li>
           <li><kbd>D</kbd> Jump to the dashboard outcome summary</li>
           <li><kbd>Q</kbd> Jump to the queue chart</li>
           <li><kbd>G</kbd> Jump to the gate Gantt</li>
