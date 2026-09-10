@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.7 - 2026-09-10
+
+A workshop follow-up on 1.5.6. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `;` copies the current lock count through the existing lock-count copy control (same one-line Markdown). Ignored while typing.
+- Keyboard `[` jumps to the lock-count copy control, or the locks heading if that control is missing. Ignored while typing.
+- Keyboard `]` jumps to Print facilitator pack, or the facilitator pack heading if that control is missing. Ignored while typing.
+- Shared laundry hours preset: synthetic tenants, neighbours (a veto group), and building managers scoring wash hours, dryer noise, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, and Community garden watering. Not a recorded vote.
+- Hide locked clauses. Hidden locked clauses still count in the model. The solver is unchanged. Distinct from lockedClausesOnly, hideUnlockedClauses, leftover-budget, and at-floor filters. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all.
+- Print facilitator pack includes remaining change-budget as one line. Print redacted still uses Group 1 through Group N. The leftover is a draft accounting line, not a legal appropriation. The saved draft is unchanged.
+- Copy first locked clause option label as one-line Markdown, with a clipboard fallback. Honest when no clause is locked. Distinct from lock-count copy and current-locks copy. Locks are draft choices, not a legal hold.
+
 ## 1.5.6 - 2026-09-10
 
 A workshop follow-up on 1.5.5. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
