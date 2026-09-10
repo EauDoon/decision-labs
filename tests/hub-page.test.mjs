@@ -14,6 +14,7 @@ test('catalog page keeps language, landmarks, skip, and focus contract', () => {
   assert.match(html, /class="skip" href="#how-it-works">Skip to How it works/);
   assert.match(html, /href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts/);
   assert.match(html, /class="skip" href="#trust">Skip to Trust and limits/);
+  assert.match(html, /class="skip" href="#version-line">Skip to catalog versions/);
   assert.match(html, /id="how-it-works" tabindex="-1"/);
   assert.match(html, /id="catalog-heading" tabindex="-1"/);
   assert.match(html, /<header class="shell hero">/);
@@ -188,6 +189,15 @@ test('question-mark shortcut toggles an in-page panel and skips inputs', () => {
   assert.match(html, /@media print[\s\S]*\.shortcuts, \.shortcuts-open \{ display: none !important; \}/);
 });
 
+test('skip link reaches catalog versions without a public path', () => {
+  assert.match(html, /class="skip" href="#version-line">Skip to catalog versions/);
+  assert.match(html, /id="version-line" tabindex="-1"/);
+  assert.match(html, /\.version-line:focus-visible/);
+  assert.match(html, /href="#version-line">Versions/);
+  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts', '#version-line'\]/);
+  assert.match(readme, /catalog versions/);
+});
+
 test('skip link reaches How it works and the section can take focus', () => {
   assert.match(html, /class="skip" href="#how-it-works">Skip to How it works/);
   assert.match(html, /id="how-it-works" tabindex="-1"/);
@@ -256,7 +266,7 @@ test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(html, /#trust:focus-visible/);
   assert.match(html, /@media print[\s\S]*\.trust \{ display: block !important; \}/);
   assert.match(readme, /Press `t` to focus Trust and\s+limits/);
-  assert.match(readme, /Skip links jump to What's new, workbenches, How it works,\s+keyboard shortcuts, and Trust and limits/);
+  assert.match(readme, /Skip links jump to What's new, workbenches, How it works,\s+keyboard shortcuts, Trust and limits, and catalog versions/);
 });
 
 test('a focuses the first workbench article when focus is not in an input', () => {
@@ -598,7 +608,7 @@ test('keys 1-4 remember last launched workbench in this browser', () => {
 });
 
 test('load focuses skip-link hash targets', () => {
-  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'\]/);
+  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts', '#version-line'\]/);
   assert.match(html, /hashTargets\.includes\(location\.hash\)/);
   assert.match(html, /location\.hash\.slice\(1\)/);
   assert.match(html, /if \(id === 'shortcuts'\) setOpen\(true, \{ focus: false \}\)/);
@@ -608,6 +618,7 @@ test('load focuses skip-link hash targets', () => {
   assert.match(html, /id="how-it-works" tabindex="-1"/);
   assert.match(html, /id="trust" tabindex="-1"/);
   assert.match(html, /id="shortcuts"[^>]*tabindex="-1"/);
+  assert.match(html, /id="version-line" tabindex="-1"/);
 });
 
 test('copy jobs copies catalog names and jobs as Markdown with a visible fallback', () => {
@@ -1026,7 +1037,7 @@ test('keyboard x stays silent when last-launched storage throws', () => {
 });
 
 test('hash trust still focuses Trust and limits after copy trust tools', () => {
-  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'\]/);
+  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts', '#version-line'\]/);
   assert.match(html, /id="trust" tabindex="-1"/);
   assert.match(html, /getElementById\('trust'\)\?\.focus\(\)/);
   assert.match(html, /event\.key === 't'/);
@@ -1056,7 +1067,7 @@ test('hash trust still focuses Trust and limits after copy trust tools', () => {
 });
 
 test('hash shortcuts still focuses the shortcuts panel', () => {
-  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'\]/);
+  assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts', '#version-line'\]/);
   assert.match(html, /if \(id === 'shortcuts'\) setOpen\(true, \{ focus: false \}\)/);
   const focused = [];
   const shortcuts = { hidden: true, tabindex: '-1', focus() { focused.push('shortcuts'); } };

@@ -386,6 +386,7 @@
     <a class="skip" href="#how-it-works">Skip to How it works</a>
     <a class="skip" href="#shortcuts" id="skip-shortcuts">Skip to keyboard shortcuts</a>
     <a class="skip" href="#trust">Skip to Trust and limits</a>
+    <a class="skip" href="#version-line">Skip to catalog versions</a>
   </nav>
   <header class="shell hero">
     <p class="eyebrow">Local catalog of four workbenches</p>
@@ -402,6 +403,7 @@
     <a href="#workbenches">Workbenches</a>
     <a href="#how-it-works">How it works</a>
     <a href="#trust">Trust and limits</a>
+    <a href="#version-line">Versions</a>
   </nav>
   <main class="shell" id="main" tabindex="-1">
     <section class="whats-new" id="whats-new" tabindex="-1" aria-labelledby="whats-new-title">
@@ -902,7 +904,7 @@
       document.getElementById('skip-shortcuts')?.addEventListener('click', () => {
         setOpen(true, { focus: false });
       });
-      const hashTargets = ['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'];
+      const hashTargets = ['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts', '#version-line'];
       if (hashTargets.includes(location.hash)) {
         const id = location.hash.slice(1);
         if (id === 'shortcuts') setOpen(true, { focus: false });

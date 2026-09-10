@@ -35,7 +35,7 @@ Every workbench:
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
 What's new section. Skip links jump to What's new, workbenches, How it works,
-keyboard shortcuts, and Trust and limits. Catalog keys `w`, `k`, `n`, and `c`
+keyboard shortcuts, Trust and limits, and catalog versions. Catalog keys `w`, `k`, `n`, and `c`
 focus the workbenches, How it works, What's new, or copy the catalog address on
 http. Key `m` focuses the main catalog content. Key `s` focuses the first Open
 workbench link without opening it. Keys `v` and `j` copy the printed version list and one-sentence jobs.
