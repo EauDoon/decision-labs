@@ -94,6 +94,7 @@ const elements = {
   firstSettlement: document.querySelector("#first-settlement-value"),
   queueClear: document.querySelector("#queue-clear-value"),
   selectedGanttHour: document.querySelector("#selected-gantt-hour-value"),
+  remainingReserve: document.querySelector("#remaining-reserve-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -289,6 +290,9 @@ function render() {
   elements.queueClear.textContent = formatHoursToClearQueue(hoursToClearQueue, peakQueuedAud);
   if (elements.selectedGanttHour) {
     elements.selectedGanttHour.textContent = `${point.timeLabel} (hour ${selectedHour})`;
+  }
+  if (elements.remainingReserve) {
+    elements.remainingReserve.textContent = formatAud(point.reserveRemainingAud);
   }
   const jumpFirst = document.querySelector("#jump-first-settlement");
   if (jumpFirst) {
@@ -1643,7 +1647,7 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue and the selected Gantt hour stay on the printed brief. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue, the selected Gantt hour, and remaining reserve at that hour stay on the printed brief. The saved scenario was not changed.";
 });
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();
