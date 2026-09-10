@@ -143,7 +143,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Print redacted/u);
   assert.match(html, /id="print-redacted-button"/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count/u);
+  assert.match(html, /a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count, and the first below-floor group label as one line/u);
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
   assert.match(html, /Duplicate group/u);
@@ -1579,6 +1579,50 @@ test("print facilitator pack includes below-floor group count as one line withou
   assert.match(countedApp.ballot(), /Groups below their support floor: 1/u);
   assert.doesNotMatch(countedApp.ballot(), /Residents/u);
   assert.equal(JSON.parse(countedStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+});
+
+test("print facilitator pack includes the first below-floor group label as one line without changing the saved draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /the first below-floor group label as one line/u);
+  assert.match(html, /not a legal quorum/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for first below-floor print");
+  assert.match(app.ballot(), /No group is below its support floor, so there is no first below-floor group label to copy/u);
+  assert.match(app.ballot(), /not a legal quorum/u);
+  assert.match(app.ballot(), /not a legal identity/u);
+  assert.match(app.ballot(), /Participant groups: Residents, Shopkeepers, Park stewards/u);
+  app.click("#print-button");
+  assert.equal(app.printCalls(), 1);
+  assert.match(app.ballot(), /No group is below its support floor/u);
+  app.click("#print-redacted-button");
+  assert.equal(app.printCalls(), 2);
+  assert.match(app.ballot(), /Participant groups: Group 1, Group 2, Group 3/u);
+  assert.match(app.ballot(), /No group is below its support floor/u);
+  assert.doesNotMatch(app.ballot(), /Residents/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+
+  const labelled = {
+    title: "Print first below-floor group workshop",
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Residents", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "Hours", options: [
+      { id: "original", label: "Keep original hours", original: true, changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 50, open: 40 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 50, open: 80 } },
+    ] }],
+  };
+  const labelledStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(labelled)]]);
+  const labelledApp = await savedWorkbench(labelledStorage);
+  assert.match(labelledApp.ballot(), /First below-floor group: Residents\. A floor is a number you entered, not a legal quorum\. The label is not a legal identity/u);
+  labelledApp.click("#print-redacted-button");
+  assert.match(labelledApp.ballot(), /Participant groups: Group 1, Group 2/u);
+  assert.match(labelledApp.ballot(), /First below-floor group: Group 1/u);
+  assert.doesNotMatch(labelledApp.ballot(), /Residents/u);
+  assert.equal(JSON.parse(labelledStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
 });
 
 test("print facilitator pack includes the numeric approval threshold without changing the saved draft", async () => {
