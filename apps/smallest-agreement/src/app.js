@@ -3425,6 +3425,15 @@ function jumpToThresholdGroupCountCopy() {
   heading?.focus?.();
 }
 
+function jumpToHideVetoGroups() {
+  const control = $("#hide-veto-groups");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -3652,6 +3661,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "+") {
     event.preventDefault();
     jumpToThresholdGroupCountCopy();
+  } else if (event.key === "|") {
+    event.preventDefault();
+    jumpToHideVetoGroups();
   }
 });
 

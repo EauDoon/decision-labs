@@ -161,7 +161,7 @@ SOFTWARE.
           <p id="hide-groups-meeting-threshold-filter-note" class="field-note">Hides groups whose average support on the inspected package currently meets the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hide-at-floor, hide-without-floors, leftover-budget, locked-clause, hide-unlocked, and hide-locked filters.</p>
           <label class="hide-groups-below-threshold-filter" for="hide-groups-below-threshold"><input id="hide-groups-below-threshold" type="checkbox" aria-keyshortcuts="{"> Hide groups currently below the approval threshold</label>
           <p id="hide-groups-below-threshold-filter-note" class="field-note">Hides groups whose average support on the inspected package is below the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, below-floor, leftover-budget, and locked-clause filters.</p>
-          <label class="hide-veto-groups-filter" for="hide-veto-groups"><input id="hide-veto-groups" type="checkbox"> Hide veto groups</label>
+          <label class="hide-veto-groups-filter" for="hide-veto-groups"><input id="hide-veto-groups" type="checkbox" aria-keyshortcuts="|"> Hide veto groups</label>
           <p id="hide-veto-groups-filter-note" class="field-note">Hides groups marked as a veto group. Hidden groups still count in the model. The solver is unchanged. Distinct from Show veto groups only, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, hideGroupsBelowThreshold, leftover-budget, and locked-clause filters. A veto is a number you entered, not a legal right.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
@@ -446,6 +446,7 @@ SOFTWARE.
           <li><kbd>{</kbd> Jump to the hide-groups-below-threshold control, or the groups heading</li>
           <li><kbd>}</kbd> Copy the groups-meeting-threshold count as one-line Markdown</li>
           <li><kbd>+</kbd> Jump to the threshold-group count copy control, or the groups or results heading</li>
+          <li><kbd>|</kbd> Jump to the hide-veto-groups control, or the groups heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
