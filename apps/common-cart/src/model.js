@@ -1129,6 +1129,25 @@ export function createLeftoverCoverageMarkdown(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
+export function organizerLeftoverRows(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const coverage = computeResidualCoverage(rawScenario);
+  const buyers = new Map(scenario.buyers.map((buyer) => [buyer.id, buyer]));
+  const secondary = new Set(coverage.secondary?.selectedBuyerIds ?? []);
+  const tertiary = new Set(coverage.tertiary?.selectedBuyerIds ?? []);
+  return coverage.leftoverBuyerIds.map((id) => {
+    const buyer = buyers.get(id);
+    if (secondary.has(id)) {
+      return { label: buyer.label, quantity: buyer.quantity, status: "Leftover fill", uncovered: false };
+    }
+    if (tertiary.has(id)) {
+      return { label: buyer.label, quantity: buyer.quantity, status: "Tertiary fill", uncovered: false };
+    }
+    return { label: buyer.label, quantity: buyer.quantity, status: "Uncovered leftover", uncovered: true };
+  });
+}
+
 export function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {

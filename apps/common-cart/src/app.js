@@ -43,6 +43,7 @@ import {
   createWinnerAggregatesMarkdown,
   leftoverCoverageRows,
   createLeftoverCoverageMarkdown,
+  organizerLeftoverRows,
   createOfferIdentityCompareMarkdown,
   decodeScenario,
   duplicateEntry,
@@ -756,6 +757,11 @@ function handleShortcut(event) {
     focusVariantOverlap();
     return;
   }
+  if (key === "j") {
+    event.preventDefault();
+    focusUncoveredLeftover();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -794,6 +800,22 @@ function focusVariantOverlap() {
   const merchantTab = document.querySelector("#merchant-tab");
   if (merchantTab) activateTab(merchantTab);
   document.querySelector("#variant-overlap-region")?.focus();
+}
+
+function focusUncoveredLeftover() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const uncoveredBuyer = document.querySelector("#leftover-buyer-rows .leftover-uncovered");
+  if (uncoveredBuyer) {
+    uncoveredBuyer.focus();
+    return;
+  }
+  const leftoverExists = document.querySelector("#leftover-buyer-rows tr") || document.querySelector("#uncovered-leftover.leftover-uncovered");
+  if (leftoverExists) {
+    document.querySelector("#uncovered-leftover")?.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
 }
 
 function focusOffersList() {
@@ -1198,6 +1220,8 @@ function refresh() {
     }
     const leftoverRows = document.querySelector("#leftover-coverage-rows");
     if (leftoverRows) leftoverRows.replaceChildren();
+    const leftoverBuyers = document.querySelector("#leftover-buyer-rows");
+    if (leftoverBuyers) leftoverBuyers.replaceChildren();
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -1478,6 +1502,25 @@ function renderLeftoverCoverageTable(rawScenario) {
       ? `Winner merchant: ${coverage.primary.merchant}`
       : "Winner merchant: None unlocked";
   }
+  renderOrganizerLeftoverRows(rawScenario);
+}
+
+function renderOrganizerLeftoverRows(rawScenario) {
+  const body = document.querySelector("#leftover-buyer-rows");
+  if (!body) return;
+  const coverage = computeResidualCoverage(rawScenario);
+  const rows = organizerLeftoverRows(rawScenario);
+  body.replaceChildren(...rows.map((entry, index) => {
+    const row = document.createElement("tr");
+    row.tabIndex = -1;
+    row.dataset.index = String(index);
+    if (entry.uncovered) row.classList.add("leftover-uncovered");
+    const buyer = scenario.buyers.find((item) => item.id === coverage.leftoverBuyerIds[index]);
+    addCell(row, buyer ? buyerDisplayLabel(buyer) : entry.label);
+    addCell(row, String(entry.quantity));
+    addCell(row, entry.status);
+    return row;
+  }));
 }
 
 function renderInspector(market) {

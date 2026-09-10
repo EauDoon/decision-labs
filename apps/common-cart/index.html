@@ -73,6 +73,7 @@ SOFTWARE.
         <li><kbd>l</kbd> Focus leftover residual coverage</li>
         <li><kbd>p</kbd> Print an organizer leftover one-pager</li>
         <li><kbd>v</kbd> Focus the variant overlap region</li>
+        <li><kbd>j</kbd> Focus the first uncovered leftover row</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -360,6 +361,13 @@ SOFTWARE.
                 <caption>Organizer leftover coverage. Buyer counts and units after the winner, including leftover fill and tertiary fill. Merchant labels only. This table is organizer-private.</caption>
                 <thead><tr><th scope="col">Stage</th><th scope="col">Merchant</th><th scope="col">Buyers</th><th scope="col">Units</th></tr></thead>
                 <tbody id="leftover-coverage-rows"></tbody>
+              </table>
+            </div>
+            <div id="leftover-buyer-list" class="table-shell compact print-private">
+              <table>
+                <caption>Organizer leftover buyers after the winner. Private labels. This list is organizer-private and is not a merchant export.</caption>
+                <thead><tr><th scope="col">Private label</th><th scope="col">Units</th><th scope="col">Coverage</th></tr></thead>
+                <tbody id="leftover-buyer-rows"></tbody>
               </table>
             </div>
             <button id="copy-leftover-coverage" class="print-chrome" type="button">Copy leftover coverage (organizer private)</button>

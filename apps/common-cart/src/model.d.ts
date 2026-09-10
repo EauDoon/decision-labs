@@ -393,6 +393,14 @@ export interface LeftoverCoverageRow {
 export function leftoverCoverageRows(rawScenario: unknown): LeftoverCoverageRow[];
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
 export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
+export interface OrganizerLeftoverRow {
+  label: string;
+  quantity: number;
+  status: "Leftover fill" | "Tertiary fill" | "Uncovered leftover";
+  uncovered: boolean;
+}
+/** Organizer leftover buyer rows after the winner. Private labels. Not a merchant export. */
+export function organizerLeftoverRows(rawScenario: unknown): OrganizerLeftoverRow[];
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];
