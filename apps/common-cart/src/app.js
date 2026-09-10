@@ -994,6 +994,11 @@ function handleShortcut(event) {
     focusLeftoverFillUnitCountCopy();
     return;
   }
+  if (key === ">") {
+    event.preventDefault();
+    focusHideFullyFilledBuyers();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1164,6 +1169,17 @@ function focusLeftoverFillUnitCountCopy() {
     return;
   }
   document.querySelector("#residual-title")?.focus();
+}
+
+function focusHideFullyFilledBuyers() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const hide = document.querySelector("#hide-fully-filled-buyers");
+  if (hide) {
+    hide.focus();
+    return;
+  }
+  document.querySelector("#buyers-list")?.focus();
 }
 
 function focusLeftoverPrintControl() {
