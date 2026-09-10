@@ -295,6 +295,23 @@ export const presets = Object.freeze({
       offer("O02", "Salad Cart Run", "Canteen lunch pack", "Garden salad", 8, 8, 4, 24, 2),
       { ...offer("O03", "Hall Canteen Pickup", "Canteen lunch pack", "Still water", 6, 8, 1, 30, 5), fulfillment: "pickup" }
     ]
+  },
+  swimmingCarnivalLunch: {
+    title: "Swimming carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Lane crate", "Carnival lunch pack", 8, 16, 4, ["Carnival pie", "Lane salad"]),
+      buyer("B02", "Dive bench", "Carnival lunch pack", 12, 12, 3, ["Carnival pie"]),
+      buyer("B03", "Marshal hamper", "Carnival lunch pack", 6, 14, 5, ["Lane salad", "Pool water"]),
+      buyer("B04", "Pool cooler", "Carnival lunch pack", 5, 10, 2, ["Pool water"]),
+      buyer("B05", "Grandstand trolley", "Carnival lunch pack", 9, 15, 4, ["Carnival pie", "Pool water"]),
+      buyer("B06", "Timekeeper table", "Carnival lunch pack", 7, 13, 3, ["Lane salad", "Carnival pie"])
+    ],
+    offers: [
+      offer("O01", "Pool-deck Carnival Delivery", "Carnival lunch pack", "Carnival pie", 10, 10, 3, 40, 3),
+      offer("O02", "Lane Salad Run", "Carnival lunch pack", "Lane salad", 8, 8, 4, 24, 2),
+      { ...offer("O03", "Hall Carnival Pickup", "Carnival lunch pack", "Pool water", 6, 8, 1, 30, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -336,7 +353,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -433,7 +450,15 @@ export function validateWorkspace(candidate) {
     }
     hideLeftoverOnly = hideLeftoverOnlyBuyers;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly };
+  const hideWinnerAllocatedBuyers = own(candidate, "hideWinnerAllocatedBuyers");
+  let hideWinnerAllocated = false;
+  if (hideWinnerAllocatedBuyers !== undefined) {
+    if (hideWinnerAllocatedBuyers !== true && hideWinnerAllocatedBuyers !== false) {
+      throw new ScenarioError("Hide winner-allocated buyers must be true or false.");
+    }
+    hideWinnerAllocated = hideWinnerAllocatedBuyers;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -642,6 +667,18 @@ export function filterBuyerIdsHidingLeftoverOnlyBuyers(rawScenario, hideLeftover
     const leftoverOnly = !winnerIds.has(buyer.id) && (leftoverFillIds.has(buyer.id) || tertiaryIds.has(buyer.id));
     return !leftoverOnly;
   }).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides organizer buyer rows that received winner units. Leftover-only and unserved buyers stay visible. */
+export function filterBuyerIdsHidingWinnerAllocatedBuyers(rawScenario, hideWinnerAllocatedBuyers) {
+  if (hideWinnerAllocatedBuyers !== true && hideWinnerAllocatedBuyers !== false) {
+    throw new ScenarioError("Hide winner-allocated buyers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideWinnerAllocatedBuyers) return scenario.buyers.map((buyer) => buyer.id);
+  const market = evaluateMarket(scenario);
+  const winnerIds = new Set(market.winner?.selectedBuyerIds ?? []);
+  return scenario.buyers.filter((buyer) => !winnerIds.has(buyer.id)).map((buyer) => buyer.id);
 }
 
 /** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
@@ -1579,6 +1616,18 @@ export function createLeftoverFillFulfillmentMarkdown(rawScenario) {
   const leftoverOffer = scenario.offers.find((offer) => offer.id === coverage.secondary.offerId);
   const mode = leftoverOffer?.fulfillment === "pickup" ? "pickup" : "shipping";
   return `Common Cart leftover fill fulfillment (organizer private): ${mode}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover fill delivery days. Count only. Not a merchant export. */
+export function createLeftoverFillDeliveryMarkdown(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const coverage = computeResidualCoverage(scenario);
+  if (!coverage.secondary) {
+    return "Common Cart leftover fill delivery (organizer private): none. Not a merchant export.\n";
+  }
+  const leftoverOffer = scenario.offers.find((offer) => offer.id === coverage.secondary.offerId);
+  const days = leftoverOffer ? leftoverOffer.deliveryDays : 0;
+  return `Common Cart leftover fill delivery (organizer private): ${days}. Not a merchant export.\n`;
 }
 
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */

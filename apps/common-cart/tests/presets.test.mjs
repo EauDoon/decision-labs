@@ -105,7 +105,7 @@ test("office fruit box is distinct synthetic weekly fruit for an office", () => 
 });
 
 test("new presets survive validation and keep a deterministic winner", () => {
-  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit", "libraryPaper", "sportsKit", "surfFirstAid", "theatreWardrobe", "choirFolders", "scoutCamp", "schoolExcursionLunch", "netballCanteen"]) {
+  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit", "libraryPaper", "sportsKit", "surfFirstAid", "theatreWardrobe", "choirFolders", "scoutCamp", "schoolExcursionLunch", "netballCanteen", "swimmingCarnivalLunch"]) {
     const first = evaluateMarket(clonePreset(name));
     const second = evaluateMarket(validateScenario(clonePreset(name)));
     assert.equal(first.winner.offer.id, second.winner.offer.id);
@@ -536,4 +536,70 @@ test("the example bar includes the netball canteen lunch preset", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /data-preset="netballCanteen"/u);
   assert.match(html, /Netball canteen/u);
+});
+
+test("swimming carnival lunch is distinct synthetic mixed carnival lunch", () => {
+  const carnival = evaluateMarket(clonePreset("swimmingCarnivalLunch"));
+  const coffee = evaluateMarket(clonePreset("neighbourhood"));
+  const studio = evaluateMarket(clonePreset("studio"));
+  const pantry = evaluateMarket(clonePreset("pantry"));
+  const office = evaluateMarket(clonePreset("officePantry"));
+  const hardware = evaluateMarket(clonePreset("hardware"));
+  const garden = evaluateMarket(clonePreset("garden"));
+  const fete = evaluateMarket(clonePreset("schoolFete"));
+  const fruit = evaluateMarket(clonePreset("officeFruit"));
+  const paper = evaluateMarket(clonePreset("libraryPaper"));
+  const sports = evaluateMarket(clonePreset("sportsKit"));
+  const surf = evaluateMarket(clonePreset("surfFirstAid"));
+  const theatre = evaluateMarket(clonePreset("theatreWardrobe"));
+  const choir = evaluateMarket(clonePreset("choirFolders"));
+  const scout = evaluateMarket(clonePreset("scoutCamp"));
+  const lunch = evaluateMarket(clonePreset("schoolExcursionLunch"));
+  const canteen = evaluateMarket(clonePreset("netballCanteen"));
+  const ladder = evaluateMarket(clonePreset("tiers"));
+  assert.ok(carnival.winner);
+  assert.equal(carnival.scenario.title, "Swimming carnival lunch");
+  assert.equal(carnival.scenario.buyers[0].category, "Carnival lunch pack");
+  assert.notEqual(carnival.scenario.buyers[0].category, coffee.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, studio.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, pantry.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, office.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, hardware.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, garden.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, fete.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, fruit.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, paper.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, sports.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, surf.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, theatre.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, choir.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, scout.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, lunch.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.buyers[0].category, canteen.scenario.buyers[0].category);
+  assert.notEqual(carnival.scenario.title, ladder.scenario.title);
+  assert.notEqual(carnival.scenario.title, lunch.scenario.title);
+  assert.notEqual(carnival.scenario.title, canteen.scenario.title);
+  assert.notEqual(carnival.scenario.title, fete.scenario.title);
+  assert.ok(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Carnival pie")));
+  assert.ok(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Lane salad")));
+  assert.ok(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Pool water")));
+  assert.equal(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Meat pie")), false);
+  assert.equal(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Garden salad")), false);
+  assert.equal(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Still water")), false);
+  assert.equal(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Mixed sandwich")), false);
+  assert.ok(carnival.results.some((result) => result.offer.merchant === "Pool-deck Carnival Delivery" && result.offer.fulfillment === "shipping"));
+  assert.ok(carnival.results.some((result) => result.offer.merchant === "Hall Carnival Pickup" && result.offer.fulfillment === "pickup"));
+  const quantities = carnival.scenario.buyers.map((buyer) => buyer.quantity);
+  assert.equal(new Set(quantities).size > 1, true);
+  const first = evaluateMarket(clonePreset("swimmingCarnivalLunch"));
+  const second = evaluateMarket(validateScenario(clonePreset("swimmingCarnivalLunch")));
+  assert.equal(first.winner.offer.id, second.winner.offer.id);
+  assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
+});
+
+test("the example bar includes the swimming carnival lunch preset", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /data-preset="swimmingCarnivalLunch"/u);
+  assert.match(html, /Swimming carnival/u);
 });

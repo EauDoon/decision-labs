@@ -713,6 +713,81 @@ test("keyboard handler jumps to hide unserved buyers when not typing", async () 
   assert.match(app, /if \(key === "\{"\) \{\s*event\.preventDefault\(\);\s*focusHideOffersWithRemainingCapacity\(\);/u);
 });
 
+test("shortcut help documents leftover fill fulfillment copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>~<\/kbd> Copy leftover fill fulfillment \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-fill-fulfillment"/u);
+  assert.match(html, /id="copy-leftover-fill-fulfillment"[^>]*aria-keyshortcuts="~"/u);
+});
+
+test("keyboard handler copies leftover fill fulfillment with tilde when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /if \(key === "~"\)/u);
+  assert.match(app, /function copyLeftoverFillFulfillment\(/u);
+  assert.match(app, /createLeftoverFillFulfillmentMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-leftover-fill-fulfillment/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.doesNotMatch(app, /if \(key === "~"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillRemainingCapacity/u);
+  assert.doesNotMatch(app, /if \(key === "~"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMerchantLabel/u);
+  assert.match(app, /if \(key === "\}"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillRemainingCapacity\(\);/u);
+  assert.match(app, /if \(key === '"'\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMerchantLabel\(\);/u);
+});
+
+test("tilde leftover fill fulfillment copy uses the existing leftover-fill fulfillment control", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "~"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment\(\);/u);
+  assert.match(app, /function copyLeftoverFillFulfillment\(/u);
+  assert.match(app, /createLeftoverFillFulfillmentMarkdown\(scenario\)/u);
+  assert.match(html, /id="copy-leftover-fill-fulfillment"/u);
+  assert.match(html, /aria-keyshortcuts="~"/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "~"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+  assert.match(app, /if \(key === "y" \|\| key === ";"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+});
+
+test("shortcut help documents leftover fill fulfillment copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>!<\/kbd> Focus the leftover-fill fulfillment copy control, or leftover heading if missing/u);
+  assert.match(html, /id="copy-leftover-fill-fulfillment"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to leftover fill fulfillment copy when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "!"\)/u);
+  assert.match(app, /function focusLeftoverFillFulfillmentCopy\(/u);
+  assert.match(app, /#copy-leftover-fill-fulfillment/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "!"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment/u);
+  assert.doesNotMatch(app, /if \(key === "!"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverFillRemainingCopy/u);
+  assert.match(app, /if \(key === "~"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment\(\);/u);
+});
+
+test("shortcut help documents hide leftover-only buyers jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>@<\/kbd> Focus hide leftover-only buyers, or the buyer list if missing/u);
+  assert.match(html, /id="hide-leftover-only-buyers"/u);
+  assert.match(html, /id="hide-leftover-only-buyers"[^>]*aria-keyshortcuts="@"/u);
+  assert.match(html, /id="buyers-list"/u);
+});
+
+test("keyboard handler jumps to hide leftover-only buyers when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "@"\)/u);
+  assert.match(app, /function focusHideLeftoverOnlyBuyers\(/u);
+  assert.match(app, /#hide-leftover-only-buyers/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "@"\) \{\s*event\.preventDefault\(\);\s*focusHideUnservedBuyers/u);
+  assert.match(app, /if \(key === "\|"\) \{\s*event\.preventDefault\(\);\s*focusHideUnservedBuyers\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
