@@ -1238,6 +1238,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>j<\/kbd> Copy capacity utilization as Markdown/);
   assert.match(app.markup(), /<kbd>q<\/kbd> Jump to Equal split or Normalize current shares/);
   assert.match(app.markup(), /<kbd>x<\/kbd> Jump to the first roster row over listed capacity, or the Participants heading if none/);
+  assert.match(app.markup(), /<kbd>y<\/kbd> Copy deal notes as one-line Markdown/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1642,6 +1643,52 @@ test('keyboard x jumps to the first over-capacity roster row unless a field is f
   app.keydown('x');
   assert.ok(app.focused().includes('#participant-inputs-title'));
   assert.doesNotMatch(app.markup(), /id="over-capacity-participant"/);
+});
+
+test('keyboard y copies deal notes as one-line Markdown and ignores focused inputs', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  fallback.keydown('y');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="notes-copy-text"/);
+  assert.match(fallback.markup(), /Deal notes: none entered\./);
+  assert.doesNotMatch(fallback.markup(), /# Deal notes/);
+  assert.match(fallback.markup(), /not a forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-notes-copy');
+  assert.doesNotMatch(fallback.markup(), /id="notes-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown('y', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('y', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.notes', '  Review the capacity clause.  ', { type: 'text', optional: 'true' });
+  fallback.keydown('y');
+  assert.match(fallback.markup(), /Deal notes: Review the capacity clause\./);
+  assert.doesNotMatch(fallback.markup(), /Deal notes: none entered\./);
+  assert.doesNotMatch(fallback.markup(), /# Deal notes/);
+  fallback.click('close-notes-copy');
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown('y');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'Deal notes: none entered.');
+  assert.match(withClipboard.notice(), /one-line Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  withClipboard.edit('deal.notes', 'Harbor counterparty wants a 90-day review.', { type: 'text', optional: 'true' });
+  withClipboard.keydown('y');
+  assert.equal(withClipboard.copied()[1], 'Deal notes: Harbor counterparty wants a 90-day review.');
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown('y', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.edit('deal.notes', 'Keep the fee floor in view.', { type: 'text', optional: 'true' });
+  denied.keydown('y');
+  assert.match(denied.markup(), /id="notes-copy-text"/);
+  assert.match(denied.markup(), /Deal notes: Keep the fee floor in view\./);
+  assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
 test('keyboard i jumps to inspect or compare cases unless a field is focused', async () => {

@@ -1798,6 +1798,7 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'y' || event.key === 'Y') copyDealNotesLine();
 });
 
 window.addEventListener('resize', () => {
@@ -2278,6 +2279,14 @@ function dealNotesMarkdown() {
   return ['# Deal notes', '', notes, '', 'These are user-entered notes. They are not a probability or forecast.', ''].join('\n');
 }
 
+function dealNotesLineMarkdown() {
+  const notes = typeof state.deal.notes === 'string' && state.deal.notes.trim()
+    ? reportText(state.deal.notes.trim().replace(/\s+/g, ' '))
+    : '';
+  if (!notes) return 'Deal notes: none entered.';
+  return 'Deal notes: ' + notes;
+}
+
 function showNotesCopyFallback(text, message) {
   notesCopyText = text;
   render();
@@ -2291,10 +2300,23 @@ function notesCopySection() {
 }
 
 function copyDealNotes() {
-  const text = dealNotesMarkdown();
+  copyDealNotesText(
+    dealNotesMarkdown(),
+    'Deal notes copied as Markdown. They are user-entered notes, not a forecast.',
+    'Clipboard unavailable. Copy the Markdown from the text area.',
+  );
+}
+
+function copyDealNotesLine() {
+  copyDealNotesText(
+    dealNotesLineMarkdown(),
+    'Deal notes copied as one-line Markdown. They are user-entered notes, not a forecast.',
+    'Clipboard unavailable. Copy the Markdown from the text area.',
+  );
+}
+
+function copyDealNotesText(text, copiedNote, fallbackNote) {
   const clipboard = globalThis.navigator?.clipboard;
-  const copiedNote = 'Deal notes copied as Markdown. They are user-entered notes, not a forecast.';
-  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
   if (clipboard && typeof clipboard.writeText === 'function') {
     try {
       const written = clipboard.writeText(text);
@@ -3136,6 +3158,7 @@ function helpDialog() {
         <li><kbd>j</kbd> Copy capacity utilization as Markdown</li>
         <li><kbd>q</kbd> Jump to Equal split or Normalize current shares</li>
         <li><kbd>x</kbd> Jump to the first roster row over listed capacity, or the Participants heading if none</li>
+        <li><kbd>y</kbd> Copy deal notes as one-line Markdown</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
