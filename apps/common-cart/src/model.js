@@ -278,6 +278,23 @@ export const presets = Object.freeze({
       offer("O02", "Fruit Cup Run", "Excursion lunch pack", "Fruit cup", 9, 8, 4, 24, 2),
       { ...offer("O03", "Hall Lunch Pickup", "Excursion lunch pack", "Water crate", 7, 8, 1, 30, 5), fulfillment: "pickup" }
     ]
+  },
+  netballCanteen: {
+    title: "Netball canteen lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Firsts bench", "Canteen lunch pack", 8, 16, 4, ["Meat pie", "Garden salad"]),
+      buyer("B02", "Juniors crate", "Canteen lunch pack", 12, 12, 3, ["Meat pie"]),
+      buyer("B03", "Umpire hamper", "Canteen lunch pack", 6, 14, 5, ["Garden salad", "Still water"]),
+      buyer("B04", "Gate cooler", "Canteen lunch pack", 5, 10, 2, ["Still water"]),
+      buyer("B05", "Clubhouse trolley", "Canteen lunch pack", 9, 15, 4, ["Meat pie", "Still water"]),
+      buyer("B06", "Score table", "Canteen lunch pack", 7, 13, 3, ["Garden salad", "Meat pie"])
+    ],
+    offers: [
+      offer("O01", "Gate Canteen Delivery", "Canteen lunch pack", "Meat pie", 10, 10, 3, 40, 3),
+      offer("O02", "Salad Cart Run", "Canteen lunch pack", "Garden salad", 8, 8, 4, 24, 2),
+      { ...offer("O03", "Hall Canteen Pickup", "Canteen lunch pack", "Still water", 6, 8, 1, 30, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
