@@ -54,6 +54,7 @@ SOFTWARE.
             <option value="street-stall-lighting">Street stall lighting</option>
             <option value="hall-hire-hours">Hall hire hours</option>
             <option value="community-garden-watering">Community garden watering</option>
+            <option value="shared-laundry-hours">Shared laundry hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -83,6 +84,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-lock-count-button">Copy lock count</button>
+        <button class="button button-secondary" type="button" id="copy-first-locked-option-button">Copy first locked option</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -184,6 +186,8 @@ SOFTWARE.
           <p id="locked-clauses-filter-note" class="field-note">The filter hides unlocked clause cards. Every clause still participates in search and export. A lock is a draft choice, not a recorded vote.</p>
           <label class="hide-unlocked-clauses-filter" for="hide-unlocked-clauses"><input id="hide-unlocked-clauses" type="checkbox"> Hide unlocked clauses</label>
           <p id="hide-unlocked-clauses-filter-note" class="field-note">Hides clause cards that currently have no lock. Hidden cards still count in the model. The solver is unchanged. Distinct from Show locked clauses only. A lock is a draft choice, not a legal hold.</p>
+          <label class="hide-locked-clauses-filter" for="hide-locked-clauses"><input id="hide-locked-clauses" type="checkbox"> Hide locked clauses</label>
+          <p id="hide-locked-clauses-filter-note" class="field-note">Hides clause cards that currently have a lock. Hidden locked clauses still count in the model. The solver is unchanged. Distinct from Show locked clauses only, Hide unlocked clauses, leftover-budget, and at-floor filters. A lock is a draft choice, not a legal hold.</p>
           <label class="changed-clauses-filter" for="changed-clauses-only"><input id="changed-clauses-only" type="checkbox"> Show clauses that differ from the recommendation</label>
           <p id="changed-clauses-filter-note" class="field-note">Shows clause cards whose original option is not the recommended option. Hidden cards still count in the model. The solver is unchanged.</p>
           <label class="over-budget-clauses-filter" for="over-budget-clauses-only"><input id="over-budget-clauses-only" type="checkbox"> Show clauses whose cheapest remaining change exceeds remaining budget</label>
@@ -196,7 +200,7 @@ SOFTWARE.
               <option value="compact">Compact</option>
             </select>
           </label>
-          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that have no lock when Hide unlocked clauses is on, that match the original when Show clauses that differ from the recommendation is on, whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on, or that still have a cheaper remaining option than the recommendation when that filter is on. When the budget is exhausted, the leftover-budget filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that have no lock when Hide unlocked clauses is on, that have a lock when Hide locked clauses is on, that match the original when Show clauses that differ from the recommendation is on, whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on, or that still have a cheaper remaining option than the recommendation when that filter is on. When the budget is exhausted, the leftover-budget filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
           <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
@@ -210,7 +214,8 @@ SOFTWARE.
             <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading" tabindex="-1">The smallest agreement</h2></div>
             <p id="search-meta" class="search-meta"></p>
           </div>
-          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.</p>
+          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.</p>
+          <h2 id="print-heading" class="visually-hidden" tabindex="-1">Facilitator pack</h2>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
           <section class="result-card" aria-labelledby="side-by-side-heading">
@@ -238,12 +243,16 @@ SOFTWARE.
             <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
             <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
             <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
+            <h3 id="locks-heading" tabindex="-1">Locks</h3>
             <label class="locks-markdown-fallback-label" for="locks-markdown-fallback">Current locks Markdown</label>
             <textarea id="locks-markdown-fallback" readonly rows="8" spellcheck="false" aria-describedby="locks-markdown-fallback-note"></textarea>
             <p id="locks-markdown-fallback-note" class="field-note">Each clause title is followed by the locked option label, or Unlocked. It is a draft choice list, not a legal hold. If the clipboard is blocked, copy from this box.</p>
             <label class="lock-count-fallback-label" for="lock-count-fallback">Current lock count Markdown</label>
             <textarea id="lock-count-fallback" readonly rows="3" spellcheck="false" aria-describedby="lock-count-fallback-note"></textarea>
             <p id="lock-count-fallback-note" class="field-note">One line of the current clause lock count. Locks are draft choices, not a legal hold. If the clipboard is blocked, copy from this box.</p>
+            <label class="first-locked-option-fallback-label" for="first-locked-option-fallback">First locked option Markdown</label>
+            <textarea id="first-locked-option-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-locked-option-fallback-note"></textarea>
+            <p id="first-locked-option-fallback-note" class="field-note">One line of the first locked clause option label, or an honest empty line when none. Distinct from lock-count copy and current-locks copy. Locks are draft choices, not a legal hold. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
@@ -402,6 +411,9 @@ SOFTWARE.
           <li><kbd>z</kbd> Jump to the numeric approval threshold field, or the method heading</li>
           <li><kbd>,</kbd> Copy the recommended package option count as one-line Markdown</li>
           <li><kbd>.</kbd> Jump to the first locked clause card, or the clauses heading</li>
+          <li><kbd>;</kbd> Copy the current lock count as one-line Markdown</li>
+          <li><kbd>[</kbd> Jump to the lock-count copy control, or the locks heading</li>
+          <li><kbd>]</kbd> Jump to Print facilitator pack, or the facilitator pack heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>

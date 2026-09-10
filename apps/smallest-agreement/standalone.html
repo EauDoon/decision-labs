@@ -101,9 +101,9 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
 .package-table-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #package-table-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
-.locks-markdown-fallback-label, .change-cost-csv-fallback-label, .package-markdown-fallback-label, .group-support-fallback-label, .option-count-fallback-label, .lock-count-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
+.locks-markdown-fallback-label, .change-cost-csv-fallback-label, .package-markdown-fallback-label, .group-support-fallback-label, .option-count-fallback-label, .lock-count-fallback-label, .first-locked-option-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #locks-markdown-fallback, #change-cost-csv-fallback, #package-markdown-fallback, #group-support-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
-#option-count-fallback, #lock-count-fallback { width: 100%; min-height: 3rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
+#option-count-fallback, #lock-count-fallback, #first-locked-option-fallback { width: 100%; min-height: 3rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .clause-paste-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #clause-paste { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .constraint-card { margin-bottom: 1rem; }
@@ -119,6 +119,8 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .locked-clauses-filter input { width: auto; }
 .hide-unlocked-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
 .hide-unlocked-clauses-filter input { width: auto; }
+.hide-locked-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
+.hide-locked-clauses-filter input { width: auto; }
 .changed-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
 .changed-clauses-filter input { width: auto; }
 .over-budget-clauses-filter { display: flex; align-items: center; gap: .5rem; margin: .35rem 0 0; font-size: .82rem; }
@@ -207,7 +209,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, .hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note, .hide-groups-without-floors-filter, #hide-groups-without-floors-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, .option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, .original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, .group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, .remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, .approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, .hide-locked-clauses-filter, #hide-locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, .hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note, .hide-groups-without-floors-filter, #hide-groups-without-floors-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, #locks-heading, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, .first-locked-option-fallback-label, #first-locked-option-fallback, #first-locked-option-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, .option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, .original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, .group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, .remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, .approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -268,6 +270,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="street-stall-lighting">Street stall lighting</option>
             <option value="hall-hire-hours">Hall hire hours</option>
             <option value="community-garden-watering">Community garden watering</option>
+            <option value="shared-laundry-hours">Shared laundry hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -297,6 +300,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="copy-packages-table-button">Copy package table</button>
         <button class="button button-secondary" type="button" id="copy-locks-button">Copy current locks</button>
         <button class="button button-secondary" type="button" id="copy-lock-count-button">Copy lock count</button>
+        <button class="button button-secondary" type="button" id="copy-first-locked-option-button">Copy first locked option</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -398,6 +402,8 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <p id="locked-clauses-filter-note" class="field-note">The filter hides unlocked clause cards. Every clause still participates in search and export. A lock is a draft choice, not a recorded vote.</p>
           <label class="hide-unlocked-clauses-filter" for="hide-unlocked-clauses"><input id="hide-unlocked-clauses" type="checkbox"> Hide unlocked clauses</label>
           <p id="hide-unlocked-clauses-filter-note" class="field-note">Hides clause cards that currently have no lock. Hidden cards still count in the model. The solver is unchanged. Distinct from Show locked clauses only. A lock is a draft choice, not a legal hold.</p>
+          <label class="hide-locked-clauses-filter" for="hide-locked-clauses"><input id="hide-locked-clauses" type="checkbox"> Hide locked clauses</label>
+          <p id="hide-locked-clauses-filter-note" class="field-note">Hides clause cards that currently have a lock. Hidden locked clauses still count in the model. The solver is unchanged. Distinct from Show locked clauses only, Hide unlocked clauses, leftover-budget, and at-floor filters. A lock is a draft choice, not a legal hold.</p>
           <label class="changed-clauses-filter" for="changed-clauses-only"><input id="changed-clauses-only" type="checkbox"> Show clauses that differ from the recommendation</label>
           <p id="changed-clauses-filter-note" class="field-note">Shows clause cards whose original option is not the recommended option. Hidden cards still count in the model. The solver is unchanged.</p>
           <label class="over-budget-clauses-filter" for="over-budget-clauses-only"><input id="over-budget-clauses-only" type="checkbox"> Show clauses whose cheapest remaining change exceeds remaining budget</label>
@@ -410,7 +416,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
               <option value="compact">Compact</option>
             </select>
           </label>
-          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that have no lock when Hide unlocked clauses is on, that match the original when Show clauses that differ from the recommendation is on, whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on, or that still have a cheaper remaining option than the recommendation when that filter is on. When the budget is exhausted, the leftover-budget filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that have no lock when Hide unlocked clauses is on, that have a lock when Hide locked clauses is on, that match the original when Show clauses that differ from the recommendation is on, whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on, or that still have a cheaper remaining option than the recommendation when that filter is on. When the budget is exhausted, the leftover-budget filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
           <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
@@ -424,7 +430,8 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <div><p class="eyebrow">Agreement readout</p><h2 id="results-heading" tabindex="-1">The smallest agreement</h2></div>
             <p id="search-meta" class="search-meta"></p>
           </div>
-          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.</p>
+          <p class="print-only facilitator-pack-kicker">Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.</p>
+          <h2 id="print-heading" class="visually-hidden" tabindex="-1">Facilitator pack</h2>
           <div id="result-alert" class="result-alert" role="status" aria-live="polite"></div>
           <div id="result-summary" class="result-summary"></div>
           <section class="result-card" aria-labelledby="side-by-side-heading">
@@ -452,12 +459,16 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <label class="package-table-fallback-label" for="package-table-fallback">Package table Markdown</label>
             <textarea id="package-table-fallback" readonly rows="8" spellcheck="false" aria-describedby="package-table-fallback-note"></textarea>
             <p id="package-table-fallback-note" class="field-note">The table lists clause titles and option labels for the original, recommended, and pinned packages. It is a decision aid, not a recorded vote. If the clipboard is blocked, copy from this box.</p>
+            <h3 id="locks-heading" tabindex="-1">Locks</h3>
             <label class="locks-markdown-fallback-label" for="locks-markdown-fallback">Current locks Markdown</label>
             <textarea id="locks-markdown-fallback" readonly rows="8" spellcheck="false" aria-describedby="locks-markdown-fallback-note"></textarea>
             <p id="locks-markdown-fallback-note" class="field-note">Each clause title is followed by the locked option label, or Unlocked. It is a draft choice list, not a legal hold. If the clipboard is blocked, copy from this box.</p>
             <label class="lock-count-fallback-label" for="lock-count-fallback">Current lock count Markdown</label>
             <textarea id="lock-count-fallback" readonly rows="3" spellcheck="false" aria-describedby="lock-count-fallback-note"></textarea>
             <p id="lock-count-fallback-note" class="field-note">One line of the current clause lock count. Locks are draft choices, not a legal hold. If the clipboard is blocked, copy from this box.</p>
+            <label class="first-locked-option-fallback-label" for="first-locked-option-fallback">First locked option Markdown</label>
+            <textarea id="first-locked-option-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-locked-option-fallback-note"></textarea>
+            <p id="first-locked-option-fallback-note" class="field-note">One line of the first locked clause option label, or an honest empty line when none. Distinct from lock-count copy and current-locks copy. Locks are draft choices, not a legal hold. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
@@ -616,6 +627,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>z</kbd> Jump to the numeric approval threshold field, or the method heading</li>
           <li><kbd>,</kbd> Copy the recommended package option count as one-line Markdown</li>
           <li><kbd>.</kbd> Jump to the first locked clause card, or the clauses heading</li>
+          <li><kbd>;</kbd> Copy the current lock count as one-line Markdown</li>
+          <li><kbd>[</kbd> Jump to the lock-count copy control, or the locks heading</li>
+          <li><kbd>]</kbd> Jump to Print facilitator pack, or the facilitator pack heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
@@ -2546,6 +2560,33 @@ function formatCurrentLockCountMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the first locked clause option label for clipboard handoff.
+ * Honest when no clause is locked. Distinct from lock-count copy and current-locks copy.
+ * Locks are draft choices, not a legal hold.
+ */
+function formatFirstLockedClauseOptionLabelMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const disclaimer = "Locks are draft choices, not a legal hold.";
+  const first = p.clauses.find((clause) => clause.lockedOptionId !== undefined);
+  if (!first) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No clause is locked, so there is no first locked option label to copy. ${disclaimer}\n`,
+    };
+  }
+  const locked = first.options.find((option) => option.id === first.lockedOptionId);
+  return {
+    status: "ok",
+    empty: false,
+    label: locked.label,
+    text: `First locked clause option: ${briefText(locked.label)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2823,6 +2864,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideGroupsWithoutFloors",
   "noCheaperRemainingClausesOnly",
   "hideUnlockedClauses",
+  "hideLockedClauses",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2836,6 +2878,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideGroupsWithoutFloors",
   "noCheaperRemainingClausesOnly",
   "hideUnlockedClauses",
+  "hideLockedClauses",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2885,6 +2928,8 @@ function formatWorkspaceJson(proposal, prefs = {}) {
   if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   const hideUnlockedClauses = readWorkspaceBoolean(prefs, "hideUnlockedClauses");
   if (hideUnlockedClauses.error) return { status: "invalid", errors: [hideUnlockedClauses.error] };
+  const hideLockedClauses = readWorkspaceBoolean(prefs, "hideLockedClauses");
+  if (hideLockedClauses.error) return { status: "invalid", errors: [hideLockedClauses.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2897,6 +2942,7 @@ function formatWorkspaceJson(proposal, prefs = {}) {
     hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     hideUnlockedClauses: hideUnlockedClauses.value,
+    hideLockedClauses: hideLockedClauses.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2910,6 +2956,7 @@ function formatWorkspaceJson(proposal, prefs = {}) {
       hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
       noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
       hideUnlockedClauses: hideUnlockedClauses.value,
+      hideLockedClauses: hideLockedClauses.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2936,6 +2983,7 @@ function parseWorkspaceJson(text) {
       hideGroupsWithoutFloors: null,
       noCheaperRemainingClausesOnly: null,
       hideUnlockedClauses: null,
+      hideLockedClauses: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2970,6 +3018,8 @@ function parseWorkspaceJson(text) {
   if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   const hideUnlockedClauses = readWorkspaceBoolean(raw, "hideUnlockedClauses");
   if (hideUnlockedClauses.error) return { status: "invalid", errors: [hideUnlockedClauses.error] };
+  const hideLockedClauses = readWorkspaceBoolean(raw, "hideLockedClauses");
+  if (hideLockedClauses.error) return { status: "invalid", errors: [hideLockedClauses.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2984,6 +3034,7 @@ function parseWorkspaceJson(text) {
     hideGroupsWithoutFloors: hideGroupsWithoutFloors.value,
     noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     hideUnlockedClauses: hideUnlockedClauses.value,
+    hideLockedClauses: hideLockedClauses.value,
   };
 }
 
@@ -3861,6 +3912,39 @@ const presets = {
       },
     ],
   },
+  "shared-laundry-hours": {
+    title: "Shared laundry hours: wash hours, dryer noise, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "tenants", name: "Tenants", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "managers", name: "Building managers", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "wash", title: "Wash hours", options: [
+          { id: "wash-original", original: true, label: "Keep the laundry room locked from 21:00 to 07:00", changeCost: 0, support: { tenants: 38, neighbours: 88, managers: 76 } },
+          { id: "wash-late", original: false, label: "Allow washing until 22:00 with a posted rota", changeCost: 2, support: { tenants: 86, neighbours: 62, managers: 72 } },
+          { id: "wash-dawn", original: false, label: "Allow dawn washing from 06:00 with a shared booking card", changeCost: 3, support: { tenants: 78, neighbours: 70, managers: 74 } },
+        ],
+      },
+      {
+        id: "dryer", title: "Dryer noise", options: [
+          { id: "dryer-original", original: true, label: "No posted dryer quiet hours", changeCost: 0, support: { tenants: 84, neighbours: 26, managers: 46 } },
+          { id: "dryer-quiet", original: false, label: "Switch dryers off at 20:00 and finish loads by air-dry", changeCost: 2, support: { tenants: 68, neighbours: 84, managers: 78 } },
+          { id: "dryer-cover", original: false, label: "Fit a noise cover on each dryer and keep evening hours", changeCost: 4, support: { tenants: 80, neighbours: 72, managers: 70 } },
+        ],
+      },
+      {
+        id: "laundry-lockup", title: "Laundry lock-up", options: [
+          { id: "laundry-lockup-original", original: true, label: "Leave the laundry door on a shared key hook", changeCost: 0, support: { tenants: 36, neighbours: 56, managers: 62 } },
+          { id: "laundry-lockup-fob", original: false, label: "Issue tenant fobs for the laundry door", changeCost: 2, support: { tenants: 86, neighbours: 74, managers: 82 } },
+          { id: "laundry-lockup-timer", original: false, label: "Add a timed lock on the laundry door", changeCost: 3, support: { tenants: 74, neighbours: 70, managers: 76 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -3874,6 +3958,7 @@ let clauseDensity = "comfortable";
 let vetoGroupsOnly = false;
 let lockedClausesOnly = false;
 let hideUnlockedClauses = false;
+let hideLockedClauses = false;
 let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
 let hideGroupsAtFloor = false;
@@ -3904,8 +3989,8 @@ function renderPrintKicker() {
   const kicker = $(".facilitator-pack-kicker");
   if (!kicker) return;
   kicker.textContent = printRedacted
-    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote."
-    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.";
+    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote."
+    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.";
 }
 
 function renderCopyFallbacks(result) {
@@ -3928,6 +4013,11 @@ function renderCopyFallbacks(result) {
   if (lockCountBox) {
     const counted = formatCurrentLockCountMarkdown(state.proposal);
     lockCountBox.value = counted.status === "ok" ? counted.text : "";
+  }
+  const firstLockedBox = $("#first-locked-option-fallback");
+  if (firstLockedBox) {
+    const listed = formatFirstLockedClauseOptionLabelMarkdown(state.proposal);
+    firstLockedBox.value = listed.status === "ok" ? listed.text : "";
   }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
@@ -3969,6 +4059,7 @@ function loadWorkspacePrefs() {
     vetoGroupsOnly = parsed?.vetoGroupsOnly === true;
     lockedClausesOnly = parsed?.lockedClausesOnly === true;
     hideUnlockedClauses = parsed?.hideUnlockedClauses === true;
+    hideLockedClauses = parsed?.hideLockedClauses === true;
     changedClausesOnly = parsed?.changedClausesOnly === true;
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
     overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
@@ -3982,7 +4073,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -4280,6 +4371,8 @@ function renderClauses() {
   if (checkbox) checkbox.checked = lockedClausesOnly;
   const hideUnlockedCheckbox = $("#hide-unlocked-clauses");
   if (hideUnlockedCheckbox) hideUnlockedCheckbox.checked = hideUnlockedClauses;
+  const hideLockedCheckbox = $("#hide-locked-clauses");
+  if (hideLockedCheckbox) hideLockedCheckbox.checked = hideLockedClauses;
   const changedCheckbox = $("#changed-clauses-only");
   if (changedCheckbox) changedCheckbox.checked = changedClausesOnly;
   const overBudgetCheckbox = $("#over-budget-clauses-only");
@@ -4296,13 +4389,14 @@ function renderClauses() {
   const visible = state.proposal.clauses.filter((clause) => {
     if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
     if (hideUnlockedClauses && clause.lockedOptionId === undefined) return false;
+    if (hideLockedClauses && clause.lockedOptionId !== undefined) return false;
     if (changedClausesOnly && !changedIds.has(clause.id)) return false;
     if (overBudgetClausesOnly && !overBudgetIds.has(clause.id)) return false;
     if (noCheaperRemainingClausesOnly && !noCheaperIds.has(clause.id)) return false;
     return clauseMatchesFilter(clause, query);
   });
   const status = $("#clause-filter-status");
-  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !hideUnlockedClauses && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
+  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !hideUnlockedClauses && !hideLockedClauses && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
   if (!visible.length) {
     const message = noCheaperRemainingClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly
       ? "No clauses lack a remaining cheaper option than the recommendation. Hidden cards still count in the model."
@@ -4312,6 +4406,8 @@ function renderClauses() {
       ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
       : hideUnlockedClauses && query === ""
         ? "No clauses remain after hiding unlocked clauses. Hidden cards still count in the model."
+      : hideLockedClauses && query === ""
+        ? "No clauses remain after hiding locked clauses. Hidden cards still count in the model."
       : lockedClausesOnly && query === ""
         ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
         : "No clauses match this filter. Clear the search to see every clause. Hidden cards still count in the model.";
@@ -4411,6 +4507,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-packages-table-button").disabled = result.status === "invalid";
   $("#copy-locks-button").disabled = result.status === "invalid";
   $("#copy-lock-count-button").disabled = result.status === "invalid";
+  $("#copy-first-locked-option-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -5026,6 +5123,17 @@ function setHideUnlockedClauses(next) {
 $("#hide-unlocked-clauses").addEventListener("change", (event) => {
   setHideUnlockedClauses(event.target.checked === true);
 });
+function setHideLockedClauses(next) {
+  hideLockedClauses = next === true;
+  const checkbox = $("#hide-locked-clauses");
+  if (checkbox) checkbox.checked = hideLockedClauses;
+  persistWorkspacePrefs();
+  renderClauses();
+  applyClauseDensity();
+}
+$("#hide-locked-clauses").addEventListener("change", (event) => {
+  setHideLockedClauses(event.target.checked === true);
+});
 $("#changed-clauses-only").addEventListener("change", (event) => {
   changedClausesOnly = event.target.checked === true;
   persistWorkspacePrefs();
@@ -5450,7 +5558,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, hideUnlockedClauses, hideLockedClauses, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -5762,6 +5870,22 @@ async function copyLockCount() {
   }
 }
 $("#copy-lock-count-button").addEventListener("click", copyLockCount);
+async function copyFirstLockedOption() {
+  const listed = formatFirstLockedClauseOptionLabelMarkdown(state.proposal);
+  if (listed.status !== "ok") return notifyDraft("Fix the draft before copying the first locked option label.");
+  const fallback = $("#first-locked-option-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft(listed.empty
+      ? "No clause is locked. Copied an honest empty first-locked-option line. Locks are draft choices, not a legal hold."
+      : "First locked option label copied as Markdown. Locks are draft choices, not a legal hold.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the first locked option label from the Markdown box. Locks are draft choices, not a legal hold.");
+  }
+}
+$("#copy-first-locked-option-button").addEventListener("click", copyFirstLockedOption);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -5815,6 +5939,7 @@ $("#import-file").addEventListener("change", async (event) => {
       vetoGroupsOnly = workspace.vetoGroupsOnly === true;
       lockedClausesOnly = workspace.lockedClausesOnly === true;
       hideUnlockedClauses = workspace.hideUnlockedClauses === true;
+      hideLockedClauses = workspace.hideLockedClauses === true;
       changedClausesOnly = workspace.changedClausesOnly === true;
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
@@ -5967,11 +6092,21 @@ function jumpToLocks() {
     return;
   }
   const query = clauseFilter.trim().toLowerCase();
+  let needsRender = false;
   if (!clauseMatchesFilter(firstLocked, query)) {
     clauseFilter = "";
     const filter = $("#clause-filter");
     if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (hideLockedClauses) {
+    hideLockedClauses = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (needsRender) {
     renderClauses();
+    applyClauseDensity();
   }
   const selector = `[data-field="clause-lock"][data-clause-id="${firstLocked.id}"]`;
   const target = $(selector);
@@ -6000,6 +6135,11 @@ function jumpToLockedClauseCard() {
     clauseFilter = "";
     const filter = $("#clause-filter");
     if (filter) filter.value = "";
+    needsRender = true;
+  }
+  if (hideLockedClauses) {
+    hideLockedClauses = false;
+    persistWorkspacePrefs();
     needsRender = true;
   }
   if (changedClausesOnly && !changedIds.has(firstLocked.id)) {
@@ -6264,6 +6404,11 @@ function jumpToChangedClause() {
     persistWorkspacePrefs();
     needsRender = true;
   }
+  if (hideLockedClauses && first.lockedOptionId !== undefined) {
+    hideLockedClauses = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
   if (overBudgetClausesOnly && !overBudgetIds.has(first.id)) {
     overBudgetClausesOnly = false;
     persistWorkspacePrefs();
@@ -6299,6 +6444,24 @@ function jumpToNumericThreshold() {
   jumpToMethod();
 }
 
+function jumpToLockCountCopy() {
+  const control = $("#copy-lock-count-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#locks-heading")?.focus?.();
+}
+
+function jumpToPrintPack() {
+  const control = $("#print-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#print-heading")?.focus?.();
+}
+
 function jumpToRecommendedOption() {
   const result = currentResult();
   const recommended = result.agreement?.options;
@@ -6329,6 +6492,11 @@ function jumpToRecommendedOption() {
   }
   if (clause && hideUnlockedClauses && clause.lockedOptionId === undefined) {
     hideUnlockedClauses = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (clause && hideLockedClauses && clause.lockedOptionId !== undefined) {
+    hideLockedClauses = false;
     persistWorkspacePrefs();
     needsRender = true;
   }
@@ -6470,6 +6638,15 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "." && !event.shiftKey) {
     event.preventDefault();
     jumpToLockedClauseCard();
+  } else if (event.key === ";") {
+    event.preventDefault();
+    copyLockCount();
+  } else if (event.key === "[") {
+    event.preventDefault();
+    jumpToLockCountCopy();
+  } else if (event.key === "]") {
+    event.preventDefault();
+    jumpToPrintPack();
   }
 });
 
