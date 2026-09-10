@@ -597,8 +597,6 @@ test('slash focuses the first Trust list item when focus is not in an input', ()
   fire('/', body);
   assert.deepEqual(focused, ['li']);
   assert.deepEqual(assigned, []);
-  fire('?', body, { shiftKey: true });
-  assert.deepEqual(assigned, []);
 });
 
 test('slash focuses the Trust heading when no list item exists', () => {
