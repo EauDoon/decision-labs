@@ -522,7 +522,7 @@ test('community hall split preset is a distinct venue promoter sound starting po
   assert.notEqual(hall.participants[1].variableCostPerTransaction, hall.participants[2].variableCostPerTransaction);
   assert.notEqual(hall.participants[0].fixedMonthlyCost, hall.participants[1].fixedMonthlyCost);
   assert.notEqual(hall.participants[1].fixedMonthlyCost, hall.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'festivalStallSplit', 'popupCinemaSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'festivalStallSplit', 'popupCinemaSplit', 'communityRadioSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(hall.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -548,7 +548,7 @@ test('festival stall split preset is a distinct stallholder site ticket starting
   assert.notEqual(stall.participants[1].variableCostPerTransaction, stall.participants[2].variableCostPerTransaction);
   assert.notEqual(stall.participants[0].fixedMonthlyCost, stall.participants[1].fixedMonthlyCost);
   assert.notEqual(stall.participants[1].fixedMonthlyCost, stall.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'popupCinemaSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'popupCinemaSplit', 'communityRadioSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(stall.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -574,7 +574,7 @@ test('pop-up cinema split preset is a distinct venue projectionist ticket starti
   assert.notEqual(cinema.participants[1].variableCostPerTransaction, cinema.participants[2].variableCostPerTransaction);
   assert.notEqual(cinema.participants[0].fixedMonthlyCost, cinema.participants[1].fixedMonthlyCost);
   assert.notEqual(cinema.participants[1].fixedMonthlyCost, cinema.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'communityRadioSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(cinema.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -582,6 +582,32 @@ test('pop-up cinema split preset is a distinct venue projectionist ticket starti
     assert.notEqual(JSON.stringify(cinema.participants.map((item) => item.variableCostPerTransaction)), JSON.stringify(other.participants.map((item) => item.variableCostPerTransaction)), key);
   }
   const result = calculatePartnership(cinema);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.viable));
+  assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
+});
+
+test('community radio split preset is a distinct presenter station underwriter starting point', () => {
+  const radio = clonePreset('communityRadioSplit');
+  assert.equal(PRESETS.communityRadioSplit.name, 'Community radio split');
+  assert.equal(radio.participants.length, 3);
+  assert.deepEqual(radio.participants.map((item) => item.id), ['presenter', 'station', 'underwriter']);
+  assert.deepEqual(radio.participants.map((item) => item.name), ['Presenter', 'Station', 'Underwriter']);
+  assert.deepEqual(radio.participants.map((item) => item.revenueShare), [0.44, 0.36, 0.2]);
+  assert.equal(radio.deal.monthlyVolume, 3200);
+  assert.equal(radio.deal.feePerTransaction, 11);
+  assert.notEqual(radio.participants[0].variableCostPerTransaction, radio.participants[1].variableCostPerTransaction);
+  assert.notEqual(radio.participants[1].variableCostPerTransaction, radio.participants[2].variableCostPerTransaction);
+  assert.notEqual(radio.participants[0].fixedMonthlyCost, radio.participants[1].fixedMonthlyCost);
+  assert.notEqual(radio.participants[1].fixedMonthlyCost, radio.participants[2].fixedMonthlyCost);
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit', 'festivalStallSplit', 'popupCinemaSplit'];
+  for (const key of others) {
+    const other = clonePreset(key);
+    assert.notEqual(radio.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
+    assert.notEqual(JSON.stringify(radio.deal), JSON.stringify(other.deal), key);
+    assert.notEqual(JSON.stringify(radio.participants.map((item) => item.variableCostPerTransaction)), JSON.stringify(other.participants.map((item) => item.variableCostPerTransaction)), key);
+  }
+  const result = calculatePartnership(radio);
   assert.equal(result.viable, true);
   assert.ok(result.participants.every((item) => item.viable));
   assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
