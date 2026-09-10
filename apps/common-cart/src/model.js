@@ -1225,6 +1225,22 @@ export function createWinnerInspectorSummaryMarkdown(rawScenario) {
   return `${lines.join("\n")}\n`;
 }
 
+/** Organizer-private uncovered leftover Markdown. Counts and units only. */
+export function createUncoveredLeftoverCountsMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const lines = [
+    `# Common Cart uncovered leftover (organizer private)`,
+    ``,
+    `This Markdown is organizer-private. It is not a merchant export.`,
+    ``,
+    `- Uncovered leftover buyers: ${coverage.unfilledBuyerCount}`,
+    `- Uncovered leftover units: ${coverage.unfilledUnits}`,
+    ``,
+    `Counts and units only. Labels, IDs, budgets, and allocations are omitted.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 export function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {

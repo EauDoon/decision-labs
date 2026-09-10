@@ -46,6 +46,7 @@ import {
   createLeftoverCoverageMarkdown,
   organizerLeftoverRows,
   createWinnerInspectorSummaryMarkdown,
+  createUncoveredLeftoverCountsMarkdown,
   createOfferIdentityCompareMarkdown,
   decodeScenario,
   duplicateEntry,
@@ -293,6 +294,7 @@ function bindStaticEvents() {
     } catch (error) { setStatus(`Winner copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#copy-leftover-coverage").addEventListener("click", copyLeftoverCoverage);
+  document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
     try {
       copyTextWithFallback(
@@ -2137,6 +2139,16 @@ function copyLeftoverCoverage() {
       "Clipboard was blocked. Organizer-private leftover Markdown is in the textarea. Buyer counts and units only. This is not a merchant export."
     );
   } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
+}
+
+function copyUncoveredLeftoverCounts() {
+  try {
+    copyTextWithFallback(
+      createUncoveredLeftoverCountsMarkdown(scenario),
+      "Uncovered leftover counts copied as organizer-private Markdown. Counts and units only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private uncovered leftover Markdown is in the textarea. Counts and units only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Uncovered leftover copy failed: ${messageOf(error)}`); }
 }
 
 function copyTextWithFallback(text, successMessage, fallbackMessage) {

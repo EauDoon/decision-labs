@@ -406,6 +406,8 @@ export interface OrganizerLeftoverRow {
 export function organizerLeftoverRows(rawScenario: unknown): OrganizerLeftoverRow[];
 /** Organizer-private winner inspector Markdown. Winning offer label, leftover counts, and residual coverage. */
 export function createWinnerInspectorSummaryMarkdown(rawScenario: unknown): string;
+/** Organizer-private uncovered leftover Markdown. Counts and units only. */
+export function createUncoveredLeftoverCountsMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];

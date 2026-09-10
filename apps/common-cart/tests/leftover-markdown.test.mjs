@@ -3,8 +3,9 @@ import assert from "node:assert/strict";
 import { readFile } from "node:fs/promises";
 import {
   clonePreset,
-  leftoverCoverageRows,
   createLeftoverCoverageMarkdown,
+  createUncoveredLeftoverCountsMarkdown,
+  leftoverCoverageRows,
   computeResidualCoverage,
   evaluateMarket,
   validateScenario
@@ -79,6 +80,48 @@ test("leftover coverage Markdown is organizer-private counts after the winner", 
   assert.equal(markdown.includes("leftoverBuyerIds"), false);
   assert.equal(markdown.includes('"selectedBuyerIds":'), false);
   assert.equal(markdown.includes('"allocations":'), false);
+});
+
+test("uncovered leftover Markdown is organizer-private counts and units only", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  scenario.offers[1].minimumUnits = 40;
+  const markdown = createUncoveredLeftoverCountsMarkdown(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  assert.match(markdown, /organizer private/);
+  assert.match(markdown, /not a merchant export/);
+  assert.match(markdown, new RegExp(`Uncovered leftover buyers: ${coverage.unfilledBuyerCount}`));
+  assert.match(markdown, new RegExp(`Uncovered leftover units: ${coverage.unfilledUnits}`));
+  assert.match(markdown, /Counts and units only/);
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes('"selectedBuyerIds":'), false);
+  assert.equal(markdown.includes('"allocations":'), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+  assert.equal(markdown.includes("Leaf Collective"), false);
+  assert.equal(markdown.includes("Coffee annex"), false);
+});
+
+test("the buyer room copies uncovered leftover counts with a textarea fallback", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-uncovered-leftover"/u);
+  assert.match(buyerPanel, /Copy uncovered leftover counts \(organizer private\)/u);
+  assert.match(buyerPanel, /Uncovered leftover copy is counts and units only/u);
+  assert.equal(merchantPanel.includes("copy-uncovered-leftover"), false);
+  assert.match(app, /createUncoveredLeftoverCountsMarkdown\(/u);
+  assert.match(app, /function copyUncoveredLeftoverCounts\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.match(app, /This is not a merchant export/u);
 });
 
 test("the buyer room copies leftover coverage with a textarea fallback", async () => {
