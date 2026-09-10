@@ -706,6 +706,21 @@ test('shortcuts panel lists v l o j with honest limits', () => {
   assert.match(readme, /It does not claim a\s+copy succeeded on a file URL/);
 });
 
+test('shortcuts panel lists f p a u y with honest limits', () => {
+  assert.match(html, /<kbd>f<\/kbd><\/dt><dd>Focus the footer version line. This key does not open a workbench./);
+  assert.match(html, /<kbd>p<\/kbd><\/dt><dd>Print this catalog page. This prints the page in the browser, not a live product sheet./);
+  assert.match(html, /<kbd>a<\/kbd><\/dt><dd>Focus the first workbench article. This key moves focus to the card; it does not open the workbench./);
+  assert.match(html, /<kbd>u<\/kbd><\/dt><dd>Copy How it works as Markdown from this catalog page, not a live policy feed. Clipboard write uses the visible text box when the clipboard API is unavailable./);
+  assert.match(html, /<kbd>y<\/kbd><\/dt><dd>Copy the last-launched workbench name and one-sentence job as Markdown from this-browser storage, or an empty line if none is stored. This is not a cloud recency. Clipboard write uses the visible text box when the clipboard API is unavailable./);
+  assert.match(html, /id="print-catalog"/);
+  assert.match(html, /id="copy-how"/);
+  assert.match(html, /id="copy-last"/);
+  assert.match(html, /Shortcuts are ignored while focus is in an input, textarea, or select/);
+  assert.match(html, /not a live product sheet/);
+  assert.match(html, /not a live policy feed/);
+  assert.match(html, /not a cloud recency/);
+});
+
 test('shortcuts panel lists m x i s with honest limits', () => {
   assert.match(html, /<kbd>m<\/kbd><\/dt><dd>Focus the main catalog content. This key does not open a workbench./);
   assert.match(html, /<kbd>x<\/kbd><\/dt><dd>Clear last-launched storage in this browser and hide the recency notes. This is this-browser storage, not a cloud recency. A storage write failure stays silent and does not clear drafts./);
