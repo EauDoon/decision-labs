@@ -989,6 +989,11 @@ function handleShortcut(event) {
     copyLeftoverFillUnitCount();
     return;
   }
+  if (key === "<") {
+    event.preventDefault();
+    focusLeftoverFillUnitCountCopy();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1148,6 +1153,17 @@ function focusLeftoverFillCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#copy-leftover-fill")?.focus();
+}
+
+function focusLeftoverFillUnitCountCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-fill-units");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
 }
 
 function focusLeftoverPrintControl() {
