@@ -27,6 +27,8 @@ import {
   overBudgetClauseIds,
   formatCurrentLocksMarkdown,
   formatGroupSupportMarkdown,
+  remainingChangeBudget,
+  formatRemainingChangeBudgetMarkdown,
   formatRecommendedChangeCostCsv,
   parseClauseOptionsCsv,
   formatClauseOptionsCsv,
@@ -1516,6 +1518,72 @@ test("group support Markdown table lists name, weight, and average without claim
   assert.equal(JSON.stringify(input), before);
   assert.equal(formatGroupSupportMarkdown({ title: "" }, originals).status, "invalid");
   assert.equal(formatGroupSupportMarkdown(input, null).status, "unavailable");
+});
+
+test("remaining change-budget Markdown is one line, honest when exhausted, and not a legal appropriation", () => {
+  const unlimited = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const beforeUnlimited = JSON.stringify(unlimited);
+  const unlimitedCopy = formatRemainingChangeBudgetMarkdown(unlimited);
+  assert.equal(unlimitedCopy.status, "ok");
+  assert.equal(unlimitedCopy.text.includes("\n"), true);
+  assert.equal(unlimitedCopy.text.trim().includes("\n"), false);
+  assert.match(unlimitedCopy.text, /leftover change-budget is unlimited/u);
+  assert.match(unlimitedCopy.text, /not a legal appropriation/u);
+  assert.doesNotMatch(unlimitedCopy.text, /^# Recommended package/u);
+  assert.doesNotMatch(unlimitedCopy.text, /\| Group \| Weight \| Average support \|/u);
+  assert.doesNotMatch(unlimitedCopy.text, /[\u2014\u2013]/u);
+  assert.equal(remainingChangeBudget(unlimited).unlimited, true);
+  assert.equal(JSON.stringify(unlimited), beforeUnlimited);
+
+  const leftover = proposal({
+    threshold: 70,
+    clauses: [
+      { id: "keep", title: "Keep", options: [
+        option("keep-original", true, { g: 90 }), option("keep-alt", false, { g: 40 }, 5), option("keep-other", false, { g: 20 }, 8),
+      ] },
+      { id: "spend", title: "Spend", options: [
+        option("spend-original", true, { g: 40 }), option("spend-alt", false, { g: 90 }, 2), option("spend-other", false, { g: 20 }, 8),
+      ] },
+    ],
+  });
+  leftover.maxChangeCost = 3;
+  const leftoverResult = findSmallestAgreement(leftover);
+  assert.equal(leftoverResult.status, "found");
+  const leftoverCopy = formatRemainingChangeBudgetMarkdown(leftover, leftoverResult);
+  assert.equal(leftoverCopy.status, "ok");
+  assert.match(leftoverCopy.text, /^Remaining change-budget: 1\.0\. This leftover is a draft accounting line, not a legal appropriation\.\n$/u);
+  assert.equal(remainingChangeBudget(leftover, leftoverResult).remaining, 1);
+  assert.equal(remainingChangeBudget(leftover, leftoverResult).exhausted, false);
+
+  const exhausted = proposal({
+    threshold: 70,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 40 }), option("alt", false, { g: 90 }, 2), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  exhausted.maxChangeCost = 2;
+  const spent = formatRemainingChangeBudgetMarkdown(exhausted, findSmallestAgreement(exhausted));
+  assert.equal(spent.status, "ok");
+  assert.match(spent.text, /Remaining change-budget is exhausted \(0\.0 leftover\)/u);
+  assert.match(spent.text, /not a legal appropriation/u);
+  assert.equal(remainingChangeBudget(exhausted).exhausted, true);
+
+  const missing = proposal({
+    threshold: 95,
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 10 }), option("alt", false, { g: 20 }, 1), option("other", false, { g: 30 }, 2),
+    ] }],
+  });
+  missing.maxChangeCost = 0;
+  const none = formatRemainingChangeBudgetMarkdown(missing);
+  assert.equal(none.status, "unavailable");
+  assert.match(none.text, /No recommended package is available/u);
+  assert.match(none.text, /not a legal appropriation/u);
+  assert.equal(formatRemainingChangeBudgetMarkdown({ title: "" }).status, "invalid");
 });
 
 test("pinned package Markdown table lists original, recommended, and pinned labels without recording a vote", () => {

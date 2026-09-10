@@ -1842,6 +1842,57 @@ export function formatGroupSupportMarkdown(proposal, options) {
 }
 
 /**
+ * Leftover change-budget on the recommended package.
+ * Display-only accounting. It is not a legal appropriation.
+ */
+export function remainingChangeBudget(proposal, result = findSmallestAgreement(proposal)) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || result.status === "invalid") {
+    return { status: "invalid", errors: result?.errors ?? ["No result was available."] };
+  }
+  if (!Object.hasOwn(proposal, "maxChangeCost")) {
+    return { status: "ok", unlimited: true, exhausted: false, remaining: null, used: result.agreement?.changeCost ?? null };
+  }
+  if (!isFiniteNumber(proposal.maxChangeCost)) {
+    return { status: "invalid", errors: [`maxChangeCost must be from 0 through ${MAX_CHANGE_COST * MAX_CLAUSES}, or omitted.`] };
+  }
+  if (!result.agreement) {
+    return { status: "unavailable", unlimited: false, exhausted: false, remaining: null, used: null, budget: proposal.maxChangeCost };
+  }
+  const remaining = proposal.maxChangeCost - result.agreement.changeCost;
+  return {
+    status: "ok",
+    unlimited: false,
+    exhausted: remaining <= EPSILON,
+    remaining,
+    used: result.agreement.changeCost,
+    budget: proposal.maxChangeCost,
+  };
+}
+
+/**
+ * One-line Markdown of leftover change-budget for clipboard handoff.
+ * Honest when the budget is exhausted. Not a legal appropriation.
+ * Distinct from recommended-package copy and the group-support table.
+ */
+export function formatRemainingChangeBudgetMarkdown(proposal, result = findSmallestAgreement(proposal)) {
+  const listed = remainingChangeBudget(proposal, result);
+  if (listed.status === "invalid") return listed;
+  const disclaimer = "This leftover is a draft accounting line, not a legal appropriation.";
+  if (listed.status === "unavailable") {
+    return { status: "unavailable", text: `No recommended package is available, so leftover change-budget cannot be copied. ${disclaimer}\n` };
+  }
+  if (listed.unlimited) {
+    return { status: "ok", text: `No change-budget is set, so leftover change-budget is unlimited. ${disclaimer}\n` };
+  }
+  if (listed.exhausted) {
+    return { status: "ok", text: `Remaining change-budget is exhausted (${listed.remaining.toFixed(1)} leftover). ${disclaimer}\n` };
+  }
+  return { status: "ok", text: `Remaining change-budget: ${listed.remaining.toFixed(1)}. ${disclaimer}\n` };
+}
+
+/**
  * Compact formula-safe CSV of recommended versus original option labels and cost delta.
  * Unavailable when there is no recommended package.
  */
