@@ -80,6 +80,7 @@ const elements = {
   settledTotal: document.querySelector("#settled-total-value"),
   finalQueue: document.querySelector("#final-queue-value"),
   peakQueue: document.querySelector("#peak-queue-value"),
+  peakQueueHour: document.querySelector("#peak-queue-hour-value"),
   backlogHours: document.querySelector("#backlog-hours-value"),
   firstSettlement: document.querySelector("#first-settlement-value"),
   queueClear: document.querySelector("#queue-clear-value"),
@@ -268,6 +269,9 @@ function render() {
   elements.settledTotal.textContent = formatAud(totalSettledAud, false);
   elements.finalQueue.textContent = formatAud(finalQueuedAud, false);
   elements.peakQueue.textContent = formatAud(peakQueuedAud, false);
+  elements.peakQueueHour.textContent = peakQueuedAud > 0
+    ? `${formatTime(peakQueueHour)} (hour ${peakQueueHour})`
+    : "No queue in 72h";
   elements.backlogHours.textContent = `${hoursWithQueue} of ${SIMULATION_HOURS}`;
   elements.firstSettlement.textContent = hoursToFirstSettlement === null
     ? "No settlement in 72h"
