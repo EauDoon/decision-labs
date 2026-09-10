@@ -126,6 +126,8 @@ The catalog also names skip-link copy, last-card focus, and 404 Copy jobs.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names trust-item jump, first-job copy, and 404 Copy version line.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names version-line jump, last-open jump, and 404 Copy first Trust item.
+That What's new entry is hub-only. It does not change workbench versions.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
