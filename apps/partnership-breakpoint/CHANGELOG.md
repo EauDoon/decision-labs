@@ -1,5 +1,16 @@
 # Changelog
 
+## 1.5.6
+
+- Keeps the 1.5.0 constraint review and 1.5.1/1.5.2/1.5.3/1.5.4/1.5.5 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, waterfall SVG, copy waterfall, persisted hide holders, Talent/agent/platform, ledger all-hold filter, Three-party joint venture, Podcast host and network, first-breakpoint snapshot, Community hall split, and keys `f` `w` `l` `b` `c` `p` `t` `d` `k` `h` `a` `m` `v` `i` `o` `j` `q`.
+- Press `x` to jump to the first roster row currently over listed capacity, or the Participants heading if none, when no field is focused. Shortcuts stay ignored while a field is focused.
+- Press `y` to copy deal notes as one-line Markdown, or an honest empty line when notes are omitted. Clipboard falls back to a textarea. It is not a forecast.
+- Press `z` to jump to Copy deal title and currency, or the Shared deal heading if that control is missing, when no field is focused.
+- Added the Festival stall split starting point, a three-party stallholder plus site manager plus ticket office with different cost bases, distinct from Balanced, Thin Margin, Growth at a Cost, Creator take-rate, Three-party JV, Two-party 50/50 studio, Four-party marketplace, Licensor and distributor, Talent, agent, and platform, Three-party joint venture, Podcast host and network, and Community hall split. It is a synthetic starting point, not a live roster.
+- Hide participants whose current volume headroom is at or above a hold with no listed capacity breach now travels on saved case JSON as optional `hideParticipantsAtHold`. Older files omit it and default to showing those roster rows. Unknown sibling fields are still rejected. Display only; the solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, and `hideParticipantsOverCapacity` stay available.
+- Print one-pager includes a currency code line when the case is valid. The saved case is unchanged.
+- Copy first-breakpoint participant label copies a one-line Markdown name with a synthetic-not-forecast notice. Clipboard falls back to a textarea. It is distinct from capacity utilization and allocation-balance copy.
+
 ## 1.5.5
 
 - Keeps the 1.5.0 constraint review and 1.5.1/1.5.2/1.5.3/1.5.4 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, waterfall SVG, copy waterfall, persisted hide holders, Talent/agent/platform, ledger all-hold filter, Three-party joint venture, Podcast host and network, first-breakpoint snapshot, and keys `f` `w` `l` `b` `c` `p` `t` `d` `k` `h` `a` `m` `v`.
