@@ -238,6 +238,8 @@ Optional `hideFirstWithinCapacityParticipant` on a saved case is a boolean roste
 
 Optional `hideLastSpareCapacityParticipant` on a saved case is a boolean roster display preference. Older files omit it and default to showing the last roster row that currently has unused listed capacity (`capacity - volume > 1e-9`), using roster order. Present non-boolean values are rejected. Hiding that row filters only that last spare-capacity roster card. Hidden rows still count. It is distinct from `hideParticipantsWithSpareCapacity`, which hides every unused-capacity row, and from `hideLastWithinCapacityParticipant`, which hides the last within-capacity row. Tested-case and model counts stay unchanged. The solver is unchanged. Matching and ranking are unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, `hideParticipantsOverCapacity`, `hideParticipantsAtHold`, `hideParticipantsWithoutCapacity`, `hideParticipantsWithSpareCapacity`, `hideParticipantsAtLeastHeadroom`, `hideParticipantsWithinCapacity`, `hideFirstBreakpointParticipant`, `hideFirstOverCapacityParticipant`, `hideLastOverCapacityParticipant`, `hideLastBreakpointParticipant`, `hideLastWithinCapacityParticipant`, and `hideFirstWithinCapacityParticipant` remain independent flags.
 
+Volleyball carnival split is a synthetic three-party carnival committee, court hire, and first-aid starting point. Counts remain counts. Ranking is not a forecast of who will exit.
+
 ### Feasible effective volume interval
 
 The optional review can intersect participant profit, commitment, capacity and demand limits. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
