@@ -29,7 +29,7 @@ body {
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible,
-#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus {
+#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus, #leftover-coverage-rows tr:focus, #uncovered-leftover:focus, #variant-overlap-region:focus, #paste-buyers:focus {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
 }
@@ -344,6 +344,45 @@ footer {
   [role="tabpanel"] { break-before: auto; }
   #merchant-result-rows, #variant-overlap-rows, #demand-groups, #residual-summary {
     break-inside: avoid;
+  }
+  body.print-leftover .skip-link,
+  body.print-leftover .header-actions,
+  body.print-leftover .preset-bar,
+  body.print-leftover .hero,
+  body.print-leftover .masthead,
+  body.print-leftover .status-line,
+  body.print-leftover #save-state,
+  body.print-leftover .snapshot-bar,
+  body.print-leftover .tabs,
+  body.print-leftover .print-chrome,
+  body.print-leftover .print-private,
+  body.print-leftover #method-panel,
+  body.print-leftover #merchant-panel,
+  body.print-leftover .result-grid,
+  body.print-leftover .section-heading,
+  body.print-leftover #buyers-list,
+  body.print-leftover #empty-buyer-recovery,
+  body.print-leftover #variants-help,
+  body.print-leftover footer,
+  body.print-leftover .cart-review,
+  body.print-leftover #coach-dialog,
+  body.print-leftover #shortcut-help,
+  body.print-leftover .scoreboard .metric:not(.feature),
+  body.print-leftover #inspector-rows,
+  body.print-leftover #exclusion-groups,
+  body.print-leftover #capacity-bar,
+  body.print-leftover #next-tier-summary,
+  body.print-leftover #delivery-heatmap,
+  body.print-leftover .demand-grid,
+  body.print-leftover #inspector-summary,
+  body.print-leftover .privacy-panel {
+    display: none !important;
+  }
+  body.print-leftover .print-leftover-keep,
+  body.print-leftover .residual-panel,
+  body.print-leftover #leftover-coverage,
+  body.print-leftover .scoreboard .metric.feature {
+    display: block !important;
   }
 }
 

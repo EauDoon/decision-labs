@@ -751,6 +751,12 @@ function handleShortcut(event) {
   if (key === "l") {
     event.preventDefault();
     focusResidualCoverage();
+    return;
+  }
+  if (key === "p") {
+    event.preventDefault();
+    printLeftoverOnePager();
+    return;
   }
 }
 
@@ -775,6 +781,15 @@ function focusResidualCoverage() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   document.querySelector("#residual-title")?.focus();
+}
+
+function printLeftoverOnePager() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.body.classList.add("print-leftover");
+  const cleanup = () => document.body.classList.remove("print-leftover");
+  window.addEventListener("afterprint", cleanup, { once: true });
+  window.print();
 }
 
 function focusOffersList() {
@@ -1452,6 +1467,13 @@ function renderLeftoverCoverageTable(rawScenario) {
   if (!body) return;
   const rows = leftoverCoverageRows(rawScenario);
   body.replaceChildren(...rows.map(leftoverRowCells));
+  const winner = document.querySelector("#leftover-print-winner");
+  if (winner) {
+    const coverage = computeResidualCoverage(rawScenario);
+    winner.textContent = coverage.primary
+      ? `Winner merchant: ${coverage.primary.merchant}`
+      : "Winner merchant: None unlocked";
+  }
 }
 
 function renderInspector(market) {

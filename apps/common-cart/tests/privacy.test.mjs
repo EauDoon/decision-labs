@@ -142,6 +142,20 @@ test("leftover coverage Markdown omits buyer labels, ids, budgets, and allocatio
   assertOmitsPrivateBuyers(json, ["SECRET_TITLE"]);
 });
 
+test("leftover print one-pager uses merchant labels and omits private buyer rows", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const leftover = html.slice(html.indexOf('id="leftover-print-winner"'), html.indexOf('id="copy-leftover-coverage"'));
+  assert.match(leftover, /Winner merchant:/u);
+  assert.match(leftover, /Merchant labels only/u);
+  assert.equal(leftover.includes("Private label"), false);
+  assert.equal(leftover.includes("maxUnitPrice"), false);
+  assert.match(css, /body\.print-leftover \.print-private/u);
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.equal(merchantPanel.includes("leftover-coverage-rows"), false);
+  assert.equal(merchantPanel.includes("leftover-print-winner"), false);
+});
+
 test("merchant-facing 1.4.1 surfaces omit buyer labels, ids, budgets, and allocations", () => {
   const left = secretNeighbourhood();
   const right = clonePreset("studio");
