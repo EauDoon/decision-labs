@@ -108,6 +108,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Community radio, least-headroom copy, and print jump in Partnership Breakpoint 1\.5\.8/);
   assert.match(html, /School concert, remaining-to-hold copy, and least-headroom hide in Partnership Breakpoint 1\.5\.9/);
   assert.match(html, /Sports carnival, volume-to-hold copy, and within-capacity hide in Partnership Breakpoint 1\.5\.10/);
+  assert.match(html, /Netball carnival, over-capacity copy, and first-breakpoint hide in Partnership Breakpoint 1\.5\.11/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -188,6 +189,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /least-headroom copy shortcut, the Community radio split start/);
   assert.match(readme, /remaining-to-hold copy shortcut, the School concert split start/);
   assert.match(readme, /volume-to-hold copy shortcut, the Sports carnival split start/);
+  assert.match(readme, /over-capacity count copy shortcut, the Netball carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
