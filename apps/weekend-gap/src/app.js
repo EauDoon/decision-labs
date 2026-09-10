@@ -89,6 +89,7 @@ const elements = {
   backlogHours: document.querySelector("#backlog-hours-value"),
   firstSettlement: document.querySelector("#first-settlement-value"),
   queueClear: document.querySelector("#queue-clear-value"),
+  selectedGanttHour: document.querySelector("#selected-gantt-hour-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -282,6 +283,9 @@ function render() {
     ? "No settlement in 72h"
     : `${hoursToFirstSettlement} hour${hoursToFirstSettlement === 1 ? "" : "s"}`;
   elements.queueClear.textContent = formatHoursToClearQueue(hoursToClearQueue, peakQueuedAud);
+  if (elements.selectedGanttHour) {
+    elements.selectedGanttHour.textContent = `${point.timeLabel} (hour ${selectedHour})`;
+  }
   const jumpFirst = document.querySelector("#jump-first-settlement");
   if (jumpFirst) {
     jumpFirst.disabled = hoursToFirstSettlement === null;
@@ -1585,7 +1589,7 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue stay on the printed brief. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue and the selected Gantt hour stay on the printed brief. The saved scenario was not changed.";
 });
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();
