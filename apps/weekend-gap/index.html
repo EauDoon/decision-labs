@@ -95,6 +95,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="sundayStallClose">Sunday stall close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="thinSaturdayFx">Thin Saturday FX (synthetic)</button>
               <button type="button" class="preset-button" data-preset="earlyMondayBankOpen">Early Monday bank open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="fridayLateFxClose">Friday late FX close (synthetic)</button>
             </div>
           </fieldset>
 
@@ -230,6 +231,13 @@ SOFTWARE.
               <p id="weekend-overlap-notice" role="status" hidden></p>
               <p id="monday-saturday-holiday-notice" role="status" hidden></p>
             </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="fridayFxLateClose">
+                <input id="fridayFxLateClose" name="fridayFxLateClose" data-field="fridayFxLateClose" type="checkbox">
+                Close Friday FX one hour later
+              </label>
+              <p>When selected, Saturday 00:00 keeps weekday FX depth. Issuer, bank and payout windows stay closed that hour. Older scenario files omit this field and start weekend FX thinning at Saturday 00:00.</p>
+            </div>
           </form>
 
           <section class="library-controls" aria-labelledby="library-title">
@@ -323,6 +331,7 @@ SOFTWARE.
               <div id="hours-to-clear-line"><dt>Hours to clear queue</dt><dd id="queue-clear-value">Calculating</dd></div>
               <div id="selected-gantt-hour-line"><dt>Selected Gantt hour</dt><dd id="selected-gantt-hour-value">Calculating</dd></div>
               <div id="remaining-reserve-line"><dt>Remaining reserve at selected hour</dt><dd id="remaining-reserve-value">Calculating</dd></div>
+              <div id="first-closed-fx-hour-line"><dt>First closed FX hour</dt><dd id="first-closed-fx-hour-value">Calculating</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -603,6 +612,10 @@ SOFTWARE.
                 <input id="gantt-hide-open" type="checkbox">
                 Hide hours that are open on every gate
               </label>
+              <label class="checkbox-label" for="gantt-hide-closed">
+                <input id="gantt-hide-closed" type="checkbox">
+                Hide hours that are closed on every gate
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
@@ -708,6 +721,9 @@ SOFTWARE.
           <li><kbd>K</kbd> Jump to the hours-to-clear line</li>
           <li><kbd>Y</kbd> Jump to the hours-to-first-settlement line</li>
           <li><kbd>L</kbd> Copy hours to first settlement as Markdown</li>
+          <li><kbd>,</kbd> Copy hours to first settlement as Markdown</li>
+          <li><kbd>.</kbd> Jump to the first-closed-FX-hour copy control</li>
+          <li><kbd>/</kbd> Jump to the remaining-reserve copy control</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>

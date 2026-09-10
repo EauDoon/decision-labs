@@ -110,6 +110,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Library paper preset, leftover headroom copy, and uncovered jump in Common Cart 1\.4\.4/);
   assert.match(html, /Leftover fill copy, sports kit, and remaining capacity in Common Cart 1\.4\.5/);
   assert.match(html, /Surf club kit, remaining-capacity jump, and leftover-fill copy in Common Cart 1\.4\.6/);
+  assert.match(html, /Theatre wardrobe, leftover-fill units, and print jump in Common Cart 1\.4\.7/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -129,6 +130,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Sunday stall close, reserve copy, and weekend Gantt filter in Weekend Gap 1\.5\.4/);
   assert.match(html, /Thin Saturday FX, settlement copy, and issuer jump in Weekend Gap 1\.5\.5/);
   assert.match(html, /Early Monday bank, settlement jump, and weekend Gantt hide in Weekend Gap 1\.5\.6/);
+  assert.match(html, /Late FX close, settlement copy, and closed Gantt hide in Weekend Gap 1\.5\.7/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
   assert.match(html, /Catalog cards list each workbench version next to its job/);
   assert.match(html, /not checkout, inventory, or a second live order/);
@@ -154,6 +156,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /leftover headroom copy, the Library photocopy paper start/);
   assert.match(readme, /leftover fill copy, the Sports club match-day kit start/);
   assert.match(readme, /remaining-capacity jump, the Surf club first-aid kit start/);
+  assert.match(readme, /leftover-fill unit-count copy, the Theatre wardrobe kit start/);
   assert.match(readme, /waterfall SVG download, compare and print keys/);
   assert.match(readme, /waterfall\s+Markdown copy, the Talent, agent, and platform start/);
   assert.match(readme, /tornado Markdown copy, the\s+Three-party joint venture start/);
@@ -180,6 +183,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /remaining\s+reserve copy, Sunday stall close/);
   assert.match(readme, /hours-to-first-settlement Markdown copy, Thin Saturday FX/);
   assert.match(readme, /first-settlement jump, Early Monday bank open/);
+  assert.match(readme, /first-settlement copy shortcut, Friday late FX close/);
   assert.match(readme, /how-it-works jump, version-line copy, and skip-link focus/);
   assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(readme, /trust-item jump, first-job copy, and 404 Copy version line/);

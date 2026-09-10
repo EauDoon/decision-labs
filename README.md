@@ -28,9 +28,9 @@ Every workbench:
 | Workbench | Version | Job to be done | Built-in synthetic example |
 | --- | --- | --- | --- |
 | [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.7 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
-| [Common Cart](apps/common-cart/) | 1.4.6 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
+| [Common Cart](apps/common-cart/) | 1.4.7 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.7 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
-| [Weekend Gap](apps/weekend-gap/) | 1.5.6 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
+| [Weekend Gap](apps/weekend-gap/) | 1.5.7 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
 
 Open [index.html](index.html) for the product home: one-sentence jobs, Open
 workbench / How it works actions, in-page trust notes, card versions, and a
@@ -101,7 +101,7 @@ Common Cart 1.4.1 also names organizer buyer
 CSV, leftover jump, and the community garden start. Common Cart 1.4.2 also names
 organizer leftover copy, school fete catering, and overlap Markdown. Common Cart 1.4.3 also names
 uncovered leftover counts, the Office fruit box start, and leftover review jumps. Common Cart 1.4.4 also names
-leftover headroom copy, the Library photocopy paper start, and uncovered leftover jumps. Common Cart 1.4.5 also names leftover fill copy, the Sports club match-day kit start, and remaining-capacity copy. Common Cart 1.4.6 also names remaining-capacity jump, the Surf club first-aid kit start, and leftover-fill copy jump. Partnership Breakpoint 1.5.1
+leftover headroom copy, the Library photocopy paper start, and uncovered leftover jumps. Common Cart 1.4.5 also names leftover fill copy, the Sports club match-day kit start, and remaining-capacity copy. Common Cart 1.4.6 also names remaining-capacity jump, the Surf club first-aid kit start, and leftover-fill copy jump. Common Cart 1.4.7 also names leftover-fill unit-count copy, the Theatre wardrobe kit start, and leftover print jump. Partnership Breakpoint 1.5.1
 also names waterfall SVG download, compare and print keys, and the Licensor
 and distributor start. Partnership Breakpoint 1.5.2 also names waterfall
 Markdown copy, the Talent, agent, and platform start, and the all-hold ledger
@@ -114,7 +114,7 @@ Payday Friday burst, and one-row dashboard CSV. Weekend Gap 1.5.2 also names
 peak-queue hour copy, Public-holiday Monday, and the single-gate Gantt filter.
 Weekend Gap 1.5.3 also names hours-to-clear Markdown copy, Saturday market
 burst, and selected Gantt hour persist. Weekend Gap 1.5.4 also names remaining
-reserve copy, Sunday stall close, and the weekend-hours Gantt filter. Weekend Gap 1.5.5 also names hours-to-first-settlement Markdown copy, Thin Saturday FX, and the hide-open Gantt filter. Weekend Gap 1.5.6 also names first-settlement jump, Early Monday bank open, and the hide-weekend Gantt filter.
+reserve copy, Sunday stall close, and the weekend-hours Gantt filter. Weekend Gap 1.5.5 also names hours-to-first-settlement Markdown copy, Thin Saturday FX, and the hide-open Gantt filter. Weekend Gap 1.5.6 also names first-settlement jump, Early Monday bank open, and the hide-weekend Gantt filter. Weekend Gap 1.5.7 also names first-settlement copy shortcut, Friday late FX close, and the hide-closed Gantt filter.
 The catalog also names how-it-works jump, version-line copy, and skip-link focus.
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names skip-link copy, last-card focus, and 404 Copy jobs.

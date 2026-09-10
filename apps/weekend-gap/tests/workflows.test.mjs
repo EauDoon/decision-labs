@@ -32,7 +32,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen", "fridayLateFxClose"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -423,6 +423,20 @@ test("hide-open Gantt filter persists in workspace JSON and older files restore 
   assert.equal(legacy.nodes.get("gantt-hide-open").checked, false);
 });
 
+test("hide-closed Gantt filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("gantt-hide-closed").checked = true;
+  await ui.nodes.get("gantt-hide-closed").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).hideClosedGanttHours, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-hide-closed").checked, true);
+  assert.match(restored.nodes.get("gantt-filter-note").textContent, /closed on every gate/);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.hideClosedGanttHours;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-hide-closed").checked, false);
+});
+
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);
@@ -634,6 +648,80 @@ test("keyboard l copies hours-to-first-settlement Markdown and ignores the key w
   assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
   await ui.keydown("l", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
+});
+
+test("keyboard comma copies hours-to-first-settlement Markdown through the existing control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown(",");
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("hours-to-first-settlement-copy-fallback").value, /Hours to first settlement:/);
+  assert.match(ui.nodes.get("hours-to-first-settlement-copy-fallback").value, /Synthetic educational snapshot/);
+  assert.doesNotMatch(ui.nodes.get("hours-to-first-settlement-copy-fallback").value, /Hours to clear queue/);
+  ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden = true;
+  ui.nodes.get("hours-to-first-settlement-copy-fallback").value = "";
+  await ui.keydown(",", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
+  await ui.keydown(",", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
+  await ui.keydown(",", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
+});
+
+test("keyboard period jumps to the first-closed-FX copy control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown(".");
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, true);
+  ui.nodes.get("copy-first-closed-fx").focused = false;
+  ui.nodes.get("gantt-fx-row").focused = false;
+  ui.nodes.get("outcome-title").focused = false;
+  await ui.keydown(".", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, false);
+  assert.equal(ui.nodes.get("gantt-fx-row").focused, false);
+  assert.equal(ui.nodes.get("outcome-title").focused, false);
+  await ui.keydown(".", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, false);
+  await ui.keydown(".", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-first-closed-fx").focused, false);
+});
+
+test("keyboard slash jumps to remaining-reserve copy and shift-slash stays help", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  await ui.keydown("/");
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, true);
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  ui.nodes.get("copy-remaining-reserve").focused = false;
+  ui.nodes.get("outcome-title").focused = false;
+  await ui.keydown("?", { tagName: "BODY" });
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, false);
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, false);
+  ui.nodes.get("shortcut-overlay").hidden = true;
+  await ui.keydown("/", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, false);
+  assert.equal(ui.nodes.get("outcome-title").focused, false);
+  await ui.keydown("/", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, false);
+  await ui.keydown("/", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, false);
+  await ui.keydown("z");
+  assert.equal(ui.nodes.get("remaining-reserve-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("remaining-reserve-copy-fallback").value, /Remaining reserve:/);
+});
+
+test("copy hours-to-clear button uses the one-line helper with an honest empty", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.nodes.get("copy-hours-to-clear").click();
+  assert.equal(ui.nodes.get("hours-to-clear-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("hours-to-clear-copy-fallback").value, /Hours to clear queue:/);
+  assert.match(ui.nodes.get("hours-to-clear-copy-fallback").value, /Synthetic educational snapshot/);
+  ui.nodes.get("redemptionDemandAud").value = "0";
+  await ui.nodes.get("scenario-form").emit("change");
+  ui.nodes.get("hours-to-clear-copy-fallback").hidden = true;
+  ui.nodes.get("hours-to-clear-copy-fallback").value = "";
+  await ui.nodes.get("copy-hours-to-clear").click();
+  assert.equal(ui.nodes.get("hours-to-clear-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("hours-to-clear-copy-fallback").value, /No queue in 72h/);
+  assert.doesNotMatch(ui.nodes.get("hours-to-clear-copy-fallback").value, /Hours to clear queue: \./);
 });
 
 test("keyboard h jumps to the selected Gantt hour table and ignores the key while typing", async () => {

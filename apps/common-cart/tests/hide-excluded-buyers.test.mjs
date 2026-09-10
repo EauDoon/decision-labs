@@ -42,5 +42,5 @@ test("the organizer hide-excluded filter is not on the merchant table", async ()
   assert.match(app, /filterBuyerIdsHidingExcluded\(/u);
   assert.match(app, /hideExcludedBuyers/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
-  assert.match(html, /Older workspace files without it still show every buyer/u);
+  assert.match(html, /Older workspace files without them still show every buyer/u);
 });
