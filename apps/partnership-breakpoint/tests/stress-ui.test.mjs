@@ -56,10 +56,12 @@ async function workbench(protocol = 'file:', options = {}) {
         'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
         'viability-copy-text', 'viability-heading', 'utilization-copy-text', 'participant-ledger-title',
         'tornado-title', 'tornado-copy-text', 'deal-inputs-title', 'operating-copy-text',
+        'operating-region-title',
         'compound-title', 'inspect-cases-title', 'split-copy-text',
         'least-headroom-participant', 'participant-inputs-title',
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
-        'breakpoint-snapshot-copy-text',
+        'breakpoint-snapshot-copy-text', 'equal-split', 'normalize-shares',
+        'title-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -163,7 +165,7 @@ test('standalone displays the complete compound grid with accessible controls an
   assert.match(app.markup(), /1 of 27 tested cases hold/);
   assert.match(app.markup(), /aria-labelledby="stress-inputs-title"/);
   assert.match(app.markup(), /data-path="stress.volumeDropPct"/);
-  assert.match(app.markup(), /<summary id="inspect-cases-title">Inspect all 27 compound cases<\/summary>/);
+  assert.match(app.markup(), /<summary id="inspect-cases-title" tabindex="-1">Inspect all 27 compound cases<\/summary>/);
   assert.match(app.markup(), /tabindex="0" role="region" aria-label="Compound case evidence/);
   assert.match(app.markup(), /data-action="apply-stress-proposal" disabled/);
 });
@@ -673,7 +675,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, and allocation balance', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, and deal title', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -683,6 +685,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /Adverse-shock tornado/);
   assert.match(app.markup(), /Contribution waterfall/);
   assert.match(app.markup(), /class="print-only print-keep"/);
+  assert.match(app.markup(), /<h2>Deal title<\/h2><p>No deal title was entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Deal notes<\/h2>/);
   assert.match(app.markup(), /<h2>Least headroom<\/h2><p>Liquidity Partner has the least volume headroom to its minimum acceptable profit limit\.<\/p>/);
   assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
@@ -690,7 +693,14 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   app.click('print-report');
   assert.equal(app.prints(), 1);
   assert.equal(JSON.stringify(app.saved()), before);
+  assert.match(app.lastPrint(), /<h2>Deal title<\/h2><p>No deal title was entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
+  app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  const titled = JSON.stringify(app.saved());
+  app.click('print-report');
+  assert.equal(app.prints(), 2);
+  assert.equal(JSON.stringify(app.saved()), titled);
+  assert.match(app.lastPrint(), /<h2>Deal title<\/h2><p>Harbor JV<\/p>/);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
   assert.match(html, /\.panel:not\(\.print-keep\)/);
@@ -1097,6 +1107,31 @@ test('podcast host and network preset loads from the starting-point buttons', as
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
 });
 
+test('community hall split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="communityHallSplit"/);
+  assert.match(app.markup(), /Community hall split/);
+  app.click('preset', { preset: 'communityHallSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['venue', 'promoter', 'sound']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Venue', 'Promoter', 'Sound']);
+  assert.equal(app.saved().deal.feePerTransaction, 28);
+  assert.equal(app.saved().deal.monthlyVolume, 2000);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.match(app.notice(), /Community hall split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'platform,distributor,liquidity-partner');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'production-studio,distribution-studio');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'marketplace,seller,logistics,payments');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'ip-licensor,territory-distributor');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'talent,booking-agent,booking-platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'synthetic-operator,capital-partner,operator-talent');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'podcast-host,podcast-network');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'operator,capital,ip-owner');
+});
+
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
   const app = await workbench();
   assert.match(app.markup(), /data-preset="talentAgentPlatform"/);
@@ -1198,6 +1233,10 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>a<\/kbd> Jump to Add participant/);
   assert.match(app.markup(), /<kbd>m<\/kbd> Jump to deal notes/);
   assert.match(app.markup(), /<kbd>v<\/kbd> Jump to the viability card/);
+  assert.match(app.markup(), /<kbd>i<\/kbd> Jump to the inspect or compare cases heading/);
+  assert.match(app.markup(), /<kbd>o<\/kbd> Jump to the Operating region heading/);
+  assert.match(app.markup(), /<kbd>j<\/kbd> Copy capacity utilization as Markdown/);
+  assert.match(app.markup(), /<kbd>q<\/kbd> Jump to Equal split or Normalize current shares/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1503,6 +1542,104 @@ test('keyboard h jumps to the least-headroom participant card unless a field is 
   assert.ok(app.focused().includes('#participant-inputs-title'));
   assert.ok(app.focused().includes('scroll:#participant-inputs-title'));
   assert.doesNotMatch(app.markup(), /id="least-headroom-participant"/);
+});
+
+test('keyboard q jumps to Equal split or Normalize unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="equal-split"/);
+  assert.match(app.markup(), /id="normalize-shares"/);
+  app.keydown('q');
+  assert.ok(app.focused().includes('#equal-split'));
+  assert.ok(app.focused().includes('scroll:#equal-split'));
+  const before = app.focused().length;
+  app.keydown('q', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('q', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('q');
+  assert.ok(app.focused().includes('#equal-split'));
+  assert.ok(app.focused().includes('scroll:#equal-split'));
+});
+
+test('keyboard j copies capacity utilization as Markdown and ignores focused inputs', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  fallback.keydown('j');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="utilization-copy-text"/);
+  assert.match(fallback.markup(), /# Capacity utilization/);
+  assert.match(fallback.markup(), /Platform \| 100,000 \/ 130,000 \(76\.9% of capacity\)/);
+  assert.match(fallback.markup(), /not a probability/);
+  assert.match(fallback.markup(), /not a forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-utilization-copy');
+  assert.doesNotMatch(fallback.markup(), /id="utilization-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown('j', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('j', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown('j');
+  assert.doesNotMatch(fallback.markup(), /id="utilization-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying capacity utilization/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown('j');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.match(withClipboard.copied()[0], /# Capacity utilization/);
+  assert.match(withClipboard.copied()[0], /not a probability/);
+  assert.match(withClipboard.copied()[0], /not a forecast/);
+  assert.doesNotMatch(withClipboard.copied()[0], /forecast of/);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown('j', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+});
+
+test('keyboard o jumps to the Operating region heading unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="operating-region-title" tabindex="-1"/);
+  app.keydown('o');
+  assert.ok(app.focused().includes('#operating-region-title'));
+  assert.ok(app.focused().includes('scroll:#operating-region-title'));
+  const before = app.focused().length;
+  app.keydown('o', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('o', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('o');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="operating-region-title"/);
+});
+
+test('keyboard i jumps to inspect or compare cases unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="inspect-cases-title" tabindex="-1"/);
+  app.keydown('i');
+  assert.ok(app.focused().includes('#inspect-cases-title'));
+  assert.ok(app.focused().includes('scroll:#inspect-cases-title'));
+  const before = app.focused().length;
+  app.keydown('i', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('i', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('i');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="inspect-cases-title"/);
+  const other = clonePreset('balanced');
+  other.participants[0].fixedMonthlyCost = 1900;
+  app.compareImport(other, undefined, false, { name: 'alt.json' });
+  app.keydown('i');
+  assert.ok(app.focused().includes('#imported-compare-title'));
+  assert.ok(app.focused().includes('scroll:#imported-compare-title'));
 });
 
 test('keyboard w jumps to the Contribution waterfall heading unless a field is focused', async () => {
@@ -1930,6 +2067,58 @@ test('negotiation brief copies Markdown or keeps a visible textarea fallback', a
   assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
+test('copy deal title and currency is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-deal-title"/);
+  fallback.click('copy-deal-title');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="title-copy-text"/);
+  assert.match(fallback.markup(), /Deal title and currency: none entered\./);
+  assert.match(fallback.markup(), /not a forecast/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-title-copy');
+  assert.doesNotMatch(fallback.markup(), /id="title-copy-text"/);
+
+  fallback.edit('deal.title', '  Harbor JV  ', { type: 'text' });
+  fallback.click('copy-deal-title');
+  assert.match(fallback.markup(), /Deal title: Harbor JV\. Currency: none\./);
+  assert.doesNotMatch(fallback.markup(), /Deal title and currency: none entered\./);
+  fallback.click('close-title-copy');
+  fallback.edit('deal.currency', 'USD', { type: 'text' });
+  fallback.click('copy-deal-title');
+  assert.match(fallback.markup(), /Deal title: Harbor JV\. Currency: USD\./);
+  fallback.click('close-title-copy');
+  fallback.edit('deal.title', '', { type: 'text', optional: 'true' });
+  fallback.click('copy-deal-title');
+  assert.match(fallback.markup(), /Deal title: none\. Currency: USD\./);
+  fallback.click('close-title-copy');
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-deal-title');
+  assert.match(fallback.markup(), /id="title-copy-text"/);
+  assert.match(fallback.markup(), /Deal title: none\. Currency: USD\./);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-deal-title');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'Deal title and currency: none entered.');
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="title-copy-text"/);
+  withClipboard.edit('deal.title', 'Harbor JV', { type: 'text' });
+  withClipboard.edit('deal.currency', 'USD', { type: 'text' });
+  withClipboard.click('copy-deal-title');
+  assert.equal(withClipboard.copied()[1], 'Deal title: Harbor JV. Currency: USD.');
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.edit('deal.title', 'North Hall', { type: 'text' });
+  denied.click('copy-deal-title');
+  assert.match(denied.markup(), /id="title-copy-text"/);
+  assert.match(denied.markup(), /Deal title: North Hall\. Currency: none\./);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
 test('copy deal notes uses Markdown and a clipboard fallback', async () => {
   const fallback = await workbench();
   fallback.click('dismiss-coach');
@@ -2345,11 +2534,13 @@ test('hide-zero-share preference round-trips on saved JSON and defaults to shown
   assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
   assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
   assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
   const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
   app.click('hide-zero-share-participants');
   assert.equal(app.saved().hideZeroShareParticipants, true);
   assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
   assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
   assert.equal(forms(), 3);
   app.click('export');
   const hidden = JSON.parse(await app.downloads()[0].blob.text());
@@ -2384,6 +2575,101 @@ test('hide-zero-share preference round-trips on saved JSON and defaults to shown
 
   const unknown = clonePreset('balanced');
   unknown.hideZeroShareParticipants = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
+test('hiding participants over listed capacity is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-over-capacity-participants"/);
+  app.click('hide-over-capacity-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /0 participants whose volume is above listed capacity are hidden from this roster display/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  app.click('show-over-capacity-participants');
+  app.edit('deal.monthlyVolume', '116000');
+  assert.equal(forms(), 3);
+  const beforeHide = holdCount();
+  assert.ok(beforeHide);
+  app.click('hide-over-capacity-participants');
+  assert.equal(forms(), 2);
+  assert.match(app.markup(), /1 participant whose volume is above listed capacity is hidden from this roster display/);
+  assert.match(app.markup(), /Tested-case and model counts are unchanged/);
+  assert.doesNotMatch(app.markup(), /Participant 3: Liquidity Partner/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  assert.equal(holdCount(), beforeHide);
+  app.click('export');
+  const exported = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(exported.participants.length, 3);
+  assert.equal(exported.deal.monthlyVolume, 116000);
+  assert.equal(exported.hideParticipantsOverCapacity, true);
+  assert.equal(Object.hasOwn(exported, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(exported, 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(exported, 'hideAllHoldLedger'), false);
+  app.click('show-over-capacity-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /Liquidity Partner/);
+  assert.equal(holdCount(), beforeHide);
+  app.edit('deal.monthlyVolume', '');
+  app.click('hide-over-capacity-participants');
+  assert.match(app.notice(), /Resolve invalid inputs before hiding participants whose volume is above listed capacity/);
+});
+
+test('hide-over-capacity preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  app.click('hide-over-capacity-participants');
+  assert.equal(app.saved().hideParticipantsOverCapacity, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(forms(), 3);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideParticipantsOverCapacity, true);
+  assert.equal(hidden.participants.length, 3);
+  assert.equal(Object.hasOwn(hidden, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideZeroShareParticipants'), false);
+  app.click('show-over-capacity-participants');
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideParticipantsOverCapacity'), false);
+  assert.equal(forms(), 3);
+
+  const imported = clonePreset('balanced');
+  imported.hideParticipantsOverCapacity = true;
+  app.import(imported);
+  assert.equal(app.saved().hideParticipantsOverCapacity, true);
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  assert.equal(forms(), 3);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideParticipantsOverCapacity = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+  assert.equal(forms(), 3);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideParticipantsOverCapacity = true;
   unknown.unexpected = true;
   app.import(unknown);
   assert.match(app.notice(), /unknown field: unexpected/);
