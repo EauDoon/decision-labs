@@ -500,7 +500,12 @@ SOFTWARE.
             Hide offers that cannot currently win
           </label>
           <button id="restore-unwinnable-offers" type="button">Restore unwinnable offers</button>
-          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last fulfillment and hide-unwinnable choices are kept in this browser's workspace file. Older workspace files without it still open. Hide-unwinnable is display only. Merchant views still show counts only.</p>
+          <label class="checkbox-field">
+            <input id="hide-zero-remaining-capacity-offers" type="checkbox">
+            Hide offers with no remaining capacity after the winner
+          </label>
+          <button id="restore-zero-remaining-capacity-offers" type="button">Restore remaining-capacity offers</button>
+          <p id="offer-filter-note">The filter hides rows on screen. Saved offers and matching stay unchanged. The last fulfillment, hide-unwinnable, and hide-zero-remaining-capacity choices are kept in this browser's workspace file. Older workspace files without it still open. Hide-unwinnable and hide-zero-remaining-capacity are display only. Merchant views still show counts only.</p>
         </div>
         <div class="snapshot-bar print-chrome" aria-label="Offer list order">
           <label>Sort offers

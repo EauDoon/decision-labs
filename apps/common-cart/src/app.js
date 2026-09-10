@@ -13,6 +13,7 @@ import {
   applyOfferSort,
   filterOfferIdsByFulfillment,
   filterOfferIdsHidingUnwinnable,
+  filterOfferIdsHidingZeroRemainingCapacity,
   acceptedVariantFilterOptions,
   filterBuyerIdsByAcceptedVariant,
   filterBuyerIdsHidingExcluded,
@@ -122,6 +123,7 @@ let hideUnwinnableOffers = false;
 let hideCoveredLeftoverRows = false;
 let hideTertiaryLeftoverRow = false;
 let hideLeftoverFillRow = false;
+let hideZeroRemainingCapacityOffers = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -141,6 +143,7 @@ function loadWorkspace() {
     hideCoveredLeftoverRows = workspace.hideCoveredLeftoverRows;
     hideTertiaryLeftoverRow = workspace.hideTertiaryLeftoverRow;
     hideLeftoverFillRow = workspace.hideLeftoverFillRow;
+    hideZeroRemainingCapacityOffers = workspace.hideZeroRemainingCapacityOffers;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -183,7 +186,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -612,6 +615,30 @@ function bindStaticEvents() {
     try {
       applyOfferFulfillmentFilter();
       setStatus("Restored unwinnable offers on screen. Saved offers and matching stay unchanged. Merchant views still show counts only.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#hide-zero-remaining-capacity-offers").addEventListener("change", (event) => {
+    hideZeroRemainingCapacityOffers = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyOfferFulfillmentFilter();
+      setStatus(hideZeroRemainingCapacityOffers
+        ? "Hiding offers with no remaining capacity after the winner. Display only. Saved offers and matching stay unchanged. Merchant views still show counts only."
+        : "Showing zero remaining-capacity offers again. Saved offers and matching stay unchanged.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#restore-zero-remaining-capacity-offers").addEventListener("click", () => {
+    hideZeroRemainingCapacityOffers = false;
+    persistWorkspaceDisplaySettings();
+    const hideControl = document.querySelector("#hide-zero-remaining-capacity-offers");
+    if (hideControl) hideControl.checked = false;
+    try {
+      applyOfferFulfillmentFilter();
+      setStatus("Restored remaining-capacity offers on screen. Saved offers and matching stay unchanged. Merchant views still show counts only.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -1229,6 +1256,14 @@ function applyOfferFulfillmentFilter() {
       visibleIds = new Set();
     }
   }
+  if (hideZeroRemainingCapacityOffers) {
+    try {
+      const remaining = new Set(filterOfferIdsHidingZeroRemainingCapacity(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => remaining.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
   elements.offerRows.querySelectorAll("tr[data-id]").forEach((row) => {
     row.hidden = !visibleIds.has(row.dataset.id);
   });
@@ -1246,6 +1281,10 @@ function applyOfferFulfillmentFilter() {
   if (hideControl) hideControl.checked = hideUnwinnableOffers;
   const restore = document.querySelector("#restore-unwinnable-offers");
   if (restore) restore.disabled = !hideUnwinnableOffers;
+  const hideRemainingControl = document.querySelector("#hide-zero-remaining-capacity-offers");
+  if (hideRemainingControl) hideRemainingControl.checked = hideZeroRemainingCapacityOffers;
+  const restoreRemaining = document.querySelector("#restore-zero-remaining-capacity-offers");
+  if (restoreRemaining) restoreRemaining.disabled = !hideZeroRemainingCapacityOffers;
   const note = document.querySelector("#offer-filter-note");
   if (!note) return;
   const hiddenCount = scenario.offers.length - visibleIds.size;
