@@ -48,6 +48,7 @@
  * @property {boolean} [hideLastBreakpointParticipant] Optional roster display preference. Omitted files default to showing the last first-breakpoint roster row.
  * @property {boolean} [hideLastWithinCapacityParticipant] Optional roster display preference. Omitted files default to showing the last within-capacity roster row.
  * @property {boolean} [hideFirstWithinCapacityParticipant] Optional roster display preference. Omitted files default to showing the first within-capacity roster row.
+ * @property {boolean} [hideLastSpareCapacityParticipant] Optional roster display preference. Omitted files default to showing the last roster row that currently has unused listed capacity.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -61,7 +62,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant', 'hideLastSpareCapacityParticipant']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -282,6 +283,15 @@ export const PRESETS = Object.freeze({
       { id: 'basketball-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 0.73, fixedMonthlyCost: 970, minimumAcceptableProfit: 390, capacity: 3350, minimumCommitment: 0, riskCost: 175 },
     ],
   },
+  volleyballCarnivalSplit: {
+    name: 'Volleyball carnival split',
+    deal: { monthlyVolume: 3300, feePerTransaction: 9.5, addressableVolume: 4500, volumeShockPct: 0 },
+    participants: [
+      { id: 'volleyball-committee', name: 'Carnival committee', revenueShare: 0.36, variableCostPerTransaction: 1.18, fixedMonthlyCost: 3180, minimumAcceptableProfit: 1220, capacity: 3900, minimumCommitment: 0, riskCost: 455 },
+      { id: 'volleyball-court-hire', name: 'Court hire', revenueShare: 0.39, variableCostPerTransaction: 2.22, fixedMonthlyCost: 1820, minimumAcceptableProfit: 840, capacity: 5100, minimumCommitment: 250, riskCost: 285 },
+      { id: 'volleyball-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 0.76, fixedMonthlyCost: 940, minimumAcceptableProfit: 370, capacity: 3550, minimumCommitment: 0, riskCost: 165 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -427,6 +437,12 @@ export function validateConfiguration(config) {
     const hideFirstWithin = own(config, 'hideFirstWithinCapacityParticipant');
     if (hideFirstWithin !== true && hideFirstWithin !== false) {
       errors.push('Hide first within-capacity participant must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideLastSpareCapacityParticipant')) {
+    const hideLastSpare = own(config, 'hideLastSpareCapacityParticipant');
+    if (hideLastSpare !== true && hideLastSpare !== false) {
+      errors.push('Hide last spare-capacity participant must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
