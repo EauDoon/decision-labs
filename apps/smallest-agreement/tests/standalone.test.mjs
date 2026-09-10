@@ -2833,6 +2833,52 @@ test("keyboard colon copies the below-floor group count unless an input is activ
   assert.equal(blocked.focused(), "");
 });
 
+test("keyboard quote copies the first below-floor group unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>"<\/kbd> Copy the first below-floor group label as one-line Markdown/u);
+  assert.match(html, /id="copy-first-below-floor-group-button"/u);
+  assert.match(html, /id="copy-first-below-floor-group-button"[^>]*aria-keyshortcuts='"'/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("\"");
+  assert.equal(app.clipboardText(), "No group is below its support floor, so there is no first below-floor group label to copy. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.equal(app.clipboardText(), app.firstBelowFloorGroup());
+  assert.doesNotMatch(app.clipboardText(), /Groups below their support floor/u);
+  assert.doesNotMatch(app.clipboardText(), /Current lock count/u);
+  assert.doesNotMatch(app.clipboardText(), /First locked clause option/u);
+  assert.match(app.message(), /honest empty/u);
+  assert.match(app.message(), /not a legal quorum/u);
+  assert.match(app.message(), /not a legal identity/u);
+  app.clearFocus();
+  app.keydown("\"", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("\"", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const draft = {
+    title: "Quote first below-floor group workshop",
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 50, open: 40 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 50, open: 80 } },
+    ] }],
+  };
+  const labelled = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  labelled.keydown("\"");
+  assert.equal(labelled.clipboardText(), "First below-floor group: Floored. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.doesNotMatch(labelled.clipboardText(), /Groups below their support floor/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-first-below-floor-group-button");
+  assert.equal(blocked.focused(), "#first-below-floor-group-fallback");
+  blocked.clearFocus();
+  blocked.keydown("\"", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(blocked.focused(), "");
+});
+
 test("keyboard hyphen jumps to the below-floor count copy control unless an input is active", async () => {
   const html = await standaloneBytes();
   assert.match(html, /<kbd>-<\/kbd> Jump to the below-floor group count copy control, or the groups heading/u);
