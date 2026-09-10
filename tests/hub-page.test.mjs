@@ -1228,6 +1228,65 @@ test('keyboard l focuses the last-launched workbench card in this browser', () =
   assert.match(readme, /not a cloud recency/);
 });
 
+test('keyboard q copies catalog jobs through the same Copy jobs control', () => {
+  assert.match(html, /event\.key === 'q'/);
+  assert.match(html, /jobsBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /<kbd>q<\/kbd><\/dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed/);
+  assert.match(html, /This key uses the same Copy jobs control as <kbd>j<\/kbd>/);
+  assert.match(html, /It does not fork that Markdown/);
+  assert.match(html, /Press <kbd>q<\/kbd> to copy catalog jobs through the same control/);
+  assert.match(readme, /Press `q` to copy catalog jobs through that same Copy jobs control/);
+  assert.match(readme, /does not fork that Markdown/);
+  const clicks = { jobs: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-jobs') return { click() { clicks.jobs += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('q', input);
+  fire('q', textarea);
+  fire('q', select);
+  assert.equal(clicks.jobs, 0);
+  fire('q', body);
+  assert.equal(clicks.jobs, 1);
+  fire('j', body);
+  assert.equal(clicks.jobs, 2);
+});
+
 test('keyboard j copies catalog jobs through the same control', () => {
   assert.match(html, /event\.key === 'j'/);
   assert.match(html, /jobsBtn\?\.click\(\)/);
