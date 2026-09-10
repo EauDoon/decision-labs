@@ -2880,6 +2880,41 @@ test("keyboard quote copies the first below-floor group unless an input is activ
   assert.equal(blocked.focused(), "");
 });
 
+test("keyboard underscore jumps to the first below-floor group copy control unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>_<\/kbd> Jump to the first below-floor group copy control, or the groups heading/u);
+  assert.match(html, /id="copy-first-below-floor-group-button"/u);
+  assert.match(html, /id="groups-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("_");
+  assert.equal(app.focused(), "#copy-first-below-floor-group-button");
+  app.clearFocus();
+  app.keydown("_", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("_", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("_", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+});
+
+test("keyboard brace jumps to hide-groups-below-threshold unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>\{<\/kbd> Jump to the hide-groups-below-threshold control, or the groups heading/u);
+  assert.match(html, /id="hide-groups-below-threshold"/u);
+  assert.match(html, /id="hide-groups-below-threshold"[^>]*aria-keyshortcuts="\{"/u);
+  assert.match(html, /id="groups-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("{");
+  assert.equal(app.focused(), "#hide-groups-below-threshold");
+  app.clearFocus();
+  app.keydown("{", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("{", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("{", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+});
+
 test("keyboard hyphen jumps to the below-floor count copy control unless an input is active", async () => {
   const html = await standaloneBytes();
   assert.match(html, /<kbd>-<\/kbd> Jump to the below-floor group count copy control, or the groups heading/u);
