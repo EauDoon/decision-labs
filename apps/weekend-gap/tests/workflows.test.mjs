@@ -32,7 +32,7 @@ async function boot(storage = new Map(), { blockedStorage = false, hash = "", re
     nodes.set(match[1], node);
   }
   for (const match of html.matchAll(/<select\b[^>]*id="([^"]+)"[^>]*>\s*<option value="([^"]*)"/g)) nodes.get(match[1]).value = match[2];
-  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen", "fridayLateFxClose", "mondayLateIssuerOpen", "saturdayEarlyFxOpen"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
+  const presets = ["normal", "weekendRush", "marketStress", "thinFxTightWindows", "longWeekendFridayStart", "compressedFridayClose", "paydayFridayBurst", "publicHolidayMonday", "saturdayMarketBurst", "sundayStallClose", "thinSaturdayFx", "earlyMondayBankOpen", "fridayLateFxClose", "mondayLateIssuerOpen", "saturdayEarlyFxOpen", "sundayLateBankClose"].map(key => { const element = new Element(); element.dataset.preset = key; return element; });
   const document = {
     documentElement: { dataset: {} }, body: new Element(),
     handlers: {},
@@ -465,6 +465,20 @@ test("hide-bank-closed Gantt filter persists in workspace JSON and older files r
   assert.equal(legacy.nodes.get("gantt-hide-bank-closed").checked, false);
 });
 
+test("hide-issuer-closed Gantt filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("gantt-hide-issuer-closed").checked = true;
+  await ui.nodes.get("gantt-hide-issuer-closed").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).hideIssuerClosedGanttHours, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-hide-issuer-closed").checked, true);
+  assert.match(restored.nodes.get("gantt-filter-note").textContent, /issuer gate is closed/);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.hideIssuerClosedGanttHours;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-hide-issuer-closed").checked, false);
+});
+
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);
@@ -783,6 +797,27 @@ test("keyboard slash jumps to remaining-reserve copy and shift-slash stays help"
   assert.match(ui.nodes.get("remaining-reserve-copy-fallback").value, /Remaining reserve:/);
 });
 
+test("keyboard colon copies first closed issuer hour through the existing control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown(":");
+  assert.equal(ui.nodes.get("first-closed-issuer-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-issuer-copy-fallback").value, /First closed issuer hour:/);
+  assert.match(ui.nodes.get("first-closed-issuer-copy-fallback").value, /Counts of modeled hours, not a bank calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-closed-issuer-copy-fallback").value, /First closed bank hour:/);
+  ui.nodes.get("first-closed-issuer-copy-fallback").hidden = true;
+  ui.nodes.get("first-closed-issuer-copy-fallback").value = "";
+  await ui.keydown(":", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("first-closed-issuer-copy-fallback").hidden, true);
+  await ui.keydown(":", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("first-closed-issuer-copy-fallback").hidden, true);
+  await ui.keydown(":", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("first-closed-issuer-copy-fallback").hidden, true);
+  await ui.keydown("'");
+  assert.equal(ui.nodes.get("first-closed-bank-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-bank-copy-fallback").value, /First closed bank hour:/);
+  assert.notEqual(ui.nodes.get("first-closed-issuer-copy-fallback").value, ui.nodes.get("first-closed-bank-copy-fallback").value);
+});
+
 test("keyboard apostrophe copies first closed bank hour through the existing control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("'");
@@ -798,6 +833,39 @@ test("keyboard apostrophe copies first closed bank hour through the existing con
   assert.equal(ui.nodes.get("first-closed-bank-copy-fallback").hidden, true);
   await ui.keydown("'", { tagName: "SELECT" });
   assert.equal(ui.nodes.get("first-closed-bank-copy-fallback").hidden, true);
+});
+
+test("keyboard hyphen jumps to the first-closed-issuer copy control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("-");
+  assert.equal(ui.nodes.get("copy-first-closed-issuer").focused, true);
+  ui.nodes.get("copy-first-closed-issuer").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("-", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-first-closed-issuer").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("-", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-first-closed-issuer").focused, false);
+  await ui.keydown("-", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-first-closed-issuer").focused, false);
+});
+
+test("keyboard equals jumps to the hide-bank-closed filter and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("=");
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, true);
+  ui.nodes.get("gantt-hide-bank-closed").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("=", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("=", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, false);
+  await ui.keydown("=", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, false);
+  await ui.keydown(">");
+  assert.equal(ui.nodes.get("gantt-hide-zero-queue").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-bank-closed").focused, false);
 });
 
 test("keyboard less-than jumps to the first-closed-bank copy control and ignores the key while typing", async () => {
@@ -869,6 +937,19 @@ test("copy first closed issuer hour uses one-line Markdown distinct from FX and 
   assert.doesNotMatch(ui.nodes.get("first-closed-issuer-copy-fallback").value, /First closed bank hour:/);
   await ui.nodes.get("copy-first-closed-bank").click();
   assert.notEqual(ui.nodes.get("first-closed-issuer-copy-fallback").value, ui.nodes.get("first-closed-bank-copy-fallback").value);
+});
+
+test("copy first closed payout hour uses one-line Markdown distinct from FX, bank and issuer", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.nodes.get("copy-first-closed-payout").click();
+  assert.equal(ui.nodes.get("first-closed-payout-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-closed-payout-copy-fallback").value, /First closed payout hour:/);
+  assert.match(ui.nodes.get("first-closed-payout-copy-fallback").value, /Counts of modeled hours, not a bank calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-closed-payout-copy-fallback").value, /First closed FX hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-closed-payout-copy-fallback").value, /First closed bank hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-closed-payout-copy-fallback").value, /First closed issuer hour:/);
+  await ui.nodes.get("copy-first-closed-issuer").click();
+  assert.notEqual(ui.nodes.get("first-closed-payout-copy-fallback").value, ui.nodes.get("first-closed-issuer-copy-fallback").value);
 });
 
 test("keyboard h jumps to the selected Gantt hour table and ignores the key while typing", async () => {

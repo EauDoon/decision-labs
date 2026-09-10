@@ -222,6 +222,8 @@ Optional `hideParticipantsWithSpareCapacity` on a saved case is a boolean roster
 
 Optional `hideParticipantsAtLeastHeadroom` on a saved case is a boolean roster display preference. Older files omit it and default to showing the least-headroom roster row. Present non-boolean values are rejected. Hiding that row filters the roster cards only. Tested-case and model counts stay unchanged. The solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, `hideParticipantsOverCapacity`, `hideParticipantsAtHold`, `hideParticipantsWithoutCapacity`, and `hideParticipantsWithSpareCapacity` remain independent flags.
 
+Optional `hideParticipantsWithinCapacity` on a saved case is a boolean roster display preference. Older files omit it and default to showing roster rows that are within listed capacity (not over capacity). Present non-boolean values are rejected. Hiding those rows filters the roster cards only. Tested-case and model counts stay unchanged. The solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, `hideParticipantsOverCapacity`, `hideParticipantsAtHold`, `hideParticipantsWithoutCapacity`, `hideParticipantsWithSpareCapacity`, and `hideParticipantsAtLeastHeadroom` remain independent flags.
+
 ### Feasible effective volume interval
 
 The optional review can intersect participant profit, commitment, capacity and demand limits. It uses only the current validated inputs and changes no terms. The table explains units, unavailable cases and the assumptions held fixed.
