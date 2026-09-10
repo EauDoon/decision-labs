@@ -160,6 +160,8 @@
     .guide { margin: 40px 0 12px; max-width: 720px; }
     .guide p { color: var(--muted); }
     .guide h3 { font-size: 18px; margin: 20px 0 6px; }
+    .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: var(--muted); }
+    .guide li { margin: 8px 0; }
     code { font-family: ui-monospace, monospace; font-size: 0.92em; }
     .trust { margin: 28px 0 8px; padding: 28px 0 8px; border-top: 1px solid var(--line); max-width: 760px; }
     .trust ul { margin: 12px 0 0; padding-left: 1.2rem; color: var(--muted); }
@@ -236,7 +238,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .print-catalog {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .print-catalog {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -250,19 +252,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover, .print-catalog:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible, .print-catalog:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover, .copy-how:hover, .print-catalog:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .print-catalog:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-trust-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-trust-status, .copy-how-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools, .print-catalog-tools { margin: 12px 0 0; }
-    .copy-versions-fallback, .copy-jobs-fallback, .copy-trust-fallback {
+    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools, .copy-how-tools, .print-catalog-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback, .copy-trust-fallback, .copy-how-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -275,7 +277,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-trust-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -317,7 +319,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .print-catalog { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .print-catalog { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -621,22 +623,21 @@
       <p><strong>Review one question at a time.</strong> Inside a workbench, open its optional review panel, choose a question, and run it on the current inputs. Each table explains its assumptions and bounds. Editing inputs clears the review.</p>
       <p><strong>Replay without replacing your draft.</strong> Export review packet saves the inputs and calculated table. Inspect review packet recomputes them and rejects a mismatch while keeping your working case. Use the same workbench to inspect its packet. Packets may contain private names, constraints and notes; they are unsigned consistency records, not authenticated evidence.</p>
       <p>This page is a catalog. Each Open workbench link loads one generated file from this repository. You can also open that file from disk. Node.js is only required if you want the loopback launcher or to run tests.</p>
-      <h3>Standalone files</h3>
-      <p>Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</p>
-      <h3>Loopback catalog address</h3>
-      <p>When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</p>
-      <h3>Catalog print</h3>
-      <p>Print this catalog prints the page in the browser. It is not a live product sheet.</p>
-      <h3>Catalog versions</h3>
-      <p>Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</p>
-      <h3>Catalog jobs</h3>
-      <p>Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</p>
-      <h3>Catalog trust</h3>
-      <p>Copy Trust and limits copies the heading and list items already printed in Trust and limits as Markdown. It reads this catalog page. It is not a live policy feed.</p>
-      <h3>JSON export</h3>
-      <p>Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</p>
-      <h3>Independent workbenches</h3>
-      <p>The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository. Keys 1 to 4 can leave a Last launched in this browser note on that card. The note is storage in this browser, not a cloud recency. Last-launched storage that is missing or unreadable is silent: the catalog shows no recency note. Press x to clear that marker in this browser and hide the notes. That clear is this-browser storage, not a cloud recency.</p>
+      <ul>
+        <li><strong>Standalone files.</strong> Every workbench ships <code>standalone.html</code>: interface, styles, and model in one document. Opening it from this launcher or by double-clicking the file does not require a network connection. The file makes no requests to Decision Labs or to anyone else.</li>
+        <li><strong>Loopback catalog address.</strong> When this catalog is served over http from the local launcher, a control copies the loopback address. The control stays hidden if you open the page from a file.</li>
+        <li><strong>Catalog print.</strong> Print this catalog prints the page in the browser. It is not a live product sheet.</li>
+        <li><strong>Catalog versions.</strong> Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</li>
+        <li><strong>Catalog jobs.</strong> Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</li>
+        <li><strong>Catalog trust.</strong> Copy Trust and limits copies the heading and list items already printed in Trust and limits as Markdown. It reads this catalog page. It is not a live policy feed.</li>
+        <li><strong>JSON export.</strong> Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</li>
+        <li><strong>Independent workbenches.</strong> The four tools do not share drafts, storage keys, or versions. A partnership case cannot open in Common Cart. Closing this catalog does not close a workbench you already opened. Treat each app as its own product that happens to live in the same repository. Keys 1 to 4 can leave a Last launched in this browser note on that card. The note is storage in this browser, not a cloud recency. Last-launched storage that is missing or unreadable is silent: the catalog shows no recency note. Press x to clear that marker in this browser and hide the notes. That clear is this-browser storage, not a cloud recency.</li>
+      </ul>
+      <p class="copy-how-tools" id="copy-how-tools">
+        <button type="button" class="copy-how" id="copy-how" aria-keyshortcuts="u">Copy How it works</button>
+        <span class="copy-how-status" id="copy-how-status" role="status"></span>
+      </p>
+      <textarea id="copy-how-fallback" class="copy-how-fallback" hidden readonly rows="8" aria-label="How it works as Markdown"></textarea>
     </section>
     <section class="trust" id="trust" tabindex="-1" aria-labelledby="trust-title">
       <h2 id="trust-title">Trust and limits</h2>
@@ -807,6 +808,32 @@
             trustFallback.select();
           }
           if (trustStatus) trustStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog Trust and limits list, not a live policy feed.';
+        }
+      });
+      const howBtn = document.getElementById('copy-how');
+      const howStatus = document.getElementById('copy-how-status');
+      const howFallback = document.getElementById('copy-how-fallback');
+      const howMarkdown = () => {
+        const section = document.getElementById('how-it-works');
+        const heading = section?.querySelector('h2')?.textContent.trim() ?? '';
+        const items = [...(section?.querySelectorAll('ul li') ?? [])].map((item) => `- ${item.textContent.trim()}`).filter((line) => line !== '- ');
+        return [`## ${heading}`, ...items].join('\n');
+      };
+      howBtn?.addEventListener('click', async () => {
+        const markdown = howMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (howFallback) howFallback.hidden = true;
+          if (howStatus) howStatus.textContent = 'Copied How it works from this catalog page as Markdown. Not a live policy feed.';
+        } catch {
+          if (howFallback) {
+            howFallback.hidden = false;
+            howFallback.value = markdown;
+            howFallback.focus();
+            howFallback.select();
+          }
+          if (howStatus) howStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog How it works list, not a live policy feed.';
         }
       });
       const setOpen = (open, options = {}) => {
