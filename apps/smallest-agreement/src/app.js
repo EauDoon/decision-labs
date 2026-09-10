@@ -2552,6 +2552,10 @@ function jumpToBelowFloor() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToMethod() {
+  $("#method-heading")?.focus?.();
+}
+
 function jumpToRecommendedOption() {
   const result = currentResult();
   const recommended = result.agreement?.options;
@@ -2697,6 +2701,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "x" || event.key === "X") {
     event.preventDefault();
     $("#export-button")?.focus?.();
+  } else if (event.key === "h" || event.key === "H") {
+    event.preventDefault();
+    jumpToMethod();
   }
 });
 

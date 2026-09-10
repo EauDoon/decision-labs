@@ -319,8 +319,8 @@ SOFTWARE.
         <section class="method-grid" aria-label="Method and limits">
           <article>
             <p class="eyebrow">Method</p>
-            <h2>Count what changes</h2>
-            <p>For each combination of one option per clause, the workshop computes a weighted average of the group support scores. It selects a passing combination by lowest change cost, then fewest changed clauses, then higher approval, then option ID order.</p>
+            <h2 id="method-heading" tabindex="-1">How it works</h2>
+            <p>Count what changes. For each combination of one option per clause, the workshop computes a weighted average of the group support scores. It selects a passing combination by lowest change cost, then fewest changed clauses, then higher approval, then option ID order.</p>
             <p>Only combinations meeting every support floor, cost budget, veto, and clause lock can pass. Near misses meet those constraints but miss the overall threshold.</p>
             <p>The search is exhaustive only up to 50,000 lock-permitted combinations. Above that, it stops and tells you to reduce the choice set. The workshop also enumerates passing alternatives for comparison, even when the original already passes.</p>
           </article>
@@ -373,6 +373,7 @@ SOFTWARE.
           <li><kbd>o</kbd> Jump to the first recommended-package option card, or the clauses heading</li>
           <li><kbd>j</kbd> Copy remaining change-budget as one-line Markdown</li>
           <li><kbd>x</kbd> Focus the JSON export control</li>
+          <li><kbd>h</kbd> Jump to the workshop method / How it works heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
