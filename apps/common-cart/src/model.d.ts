@@ -148,6 +148,7 @@ export const presets: Readonly<{
   scoutCamp: Scenario;
   schoolExcursionLunch: Scenario;
   netballCanteen: Scenario;
+  swimmingCarnivalLunch: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
