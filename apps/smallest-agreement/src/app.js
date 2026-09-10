@@ -3636,6 +3636,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "{") {
     event.preventDefault();
     jumpToHideGroupsBelowThreshold();
+  } else if (event.key === "}") {
+    event.preventDefault();
+    copyThresholdGroupCount();
   }
 });
 
