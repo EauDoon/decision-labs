@@ -135,6 +135,11 @@ test("the organizer hide leftover-fill buyers filter is not on the merchant tabl
   assert.match(app, /filterBuyerIdsHidingBuyersFilledByLeftoverFill\(/u);
   assert.match(app, /hideBuyersFilledByLeftoverFill/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
+  assert.match(app, /function focusHideBuyersFilledByLeftoverFill\(/u);
+  assert.match(app, /#hide-buyers-filled-by-leftover-fill/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /if \(key === "%"\)/u);
+  assert.match(html, /aria-keyshortcuts="%"/u);
   assert.match(html, /hide-buyers-filled-by-leftover-fill choices are kept/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
 });

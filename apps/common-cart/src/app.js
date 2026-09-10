@@ -1198,6 +1198,11 @@ function handleShortcut(event) {
     focusLeftoverFillPickupCopy();
     return;
   }
+  if (key === "%") {
+    event.preventDefault();
+    focusHideBuyersFilledByLeftoverFill();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1494,6 +1499,22 @@ function focusHideWinnerAllocatedBuyers() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const hide = document.querySelector("#hide-winner-allocated-buyers");
+  if (hide) {
+    hide.focus();
+    return;
+  }
+  const heading = document.querySelector("#buyers-list");
+  if (heading) {
+    heading.focus();
+    return;
+  }
+  document.querySelector("#buyer-tab")?.focus();
+}
+
+function focusHideBuyersFilledByLeftoverFill() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const hide = document.querySelector("#hide-buyers-filled-by-leftover-fill");
   if (hide) {
     hide.focus();
     return;
