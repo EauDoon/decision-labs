@@ -529,8 +529,8 @@ function renderPrintKicker() {
   const kicker = $(".facilitator-pack-kicker");
   if (!kicker) return;
   kicker.textContent = printRedacted
-    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, remaining change-budget, the numeric approval threshold, and a one-line lock count stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote."
-    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, the numeric approval threshold, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.";
+    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count stay on the worksheet. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote."
+    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count on the worksheet. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. This is a decision aid, not a recorded vote.";
 }
 
 function renderCopyFallbacks(result) {
@@ -929,13 +929,13 @@ function renderClauses() {
   const status = $("#clause-filter-status");
   const clauseFiltersIdle = query === "" && !lockedClausesOnly && !hideUnlockedClauses && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
   if (!visible.length) {
-    const message = noCheaperRemainingClausesOnly && query === "" && !lockedClausesOnly && !hideUnlockedClauses && !changedClausesOnly && !overBudgetClausesOnly
+    const message = noCheaperRemainingClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly
       ? "No clauses lack a remaining cheaper option than the recommendation. Hidden cards still count in the model."
-      : overBudgetClausesOnly && query === "" && !lockedClausesOnly && !hideUnlockedClauses && !changedClausesOnly
+      : overBudgetClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly
       ? "No clauses have a cheapest remaining change that exceeds the remaining budget. Hidden cards still count in the model."
-      : changedClausesOnly && query === "" && !lockedClausesOnly && !hideUnlockedClauses
+      : changedClausesOnly && query === "" && !lockedClausesOnly
       ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
-      : hideUnlockedClauses && query === "" && !lockedClausesOnly
+      : hideUnlockedClauses && query === ""
         ? "No clauses remain after hiding unlocked clauses. Hidden cards still count in the model."
       : lockedClausesOnly && query === ""
         ? "No locked clauses match this filter. Clear it to see every clause. Hidden cards still count in the model."
@@ -2267,9 +2267,9 @@ async function copyRecommendedOptionCount() {
   if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the recommended package option count.");
   const fallback = $("#option-count-fallback");
   if (fallback) fallback.value = listed.text;
+  notifyDraft("Recommended package option count copied as Markdown. It is a decision aid, not a recorded vote.");
   try {
     await navigator.clipboard.writeText(listed.text);
-    notifyDraft("Recommended package option count copied as Markdown. It is a decision aid, not a recorded vote.");
   } catch {
     fallback?.focus?.();
     notifyDraft("Clipboard is blocked. Copy the recommended package option count from the Markdown box. It is not a recorded vote.");

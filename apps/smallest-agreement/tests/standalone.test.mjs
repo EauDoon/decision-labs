@@ -409,6 +409,7 @@ async function savedWorkbench(storage, hash = "") {
         ctrlKey: false,
         metaKey: false,
         altKey: false,
+        shiftKey: false,
         preventDefault() {},
         target,
       });
@@ -1105,7 +1106,7 @@ test("print facilitator pack includes recommended package option labels", async 
 
 test("print facilitator pack includes remaining change-budget without changing the saved draft", async () => {
   const html = await standaloneBytes();
-  assert.match(html, /remaining change-budget, the numeric approval threshold, and a one-line lock count on the worksheet/u);
+  assert.match(html, /remaining change-budget, the numeric approval threshold on the worksheet, and a one-line lock count/u);
   assert.match(html, /not a legal appropriation/u);
   const storage = new Map();
   const app = await savedWorkbench(storage);
