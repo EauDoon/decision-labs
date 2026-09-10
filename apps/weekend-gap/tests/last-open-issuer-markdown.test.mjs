@@ -58,3 +58,18 @@ test("last open issuer hour Markdown uses none when no modeled hour is open", as
   assert.match(body, /Last open issuer hour: none\. Counts of modeled hours, not a bank calendar\./);
   assert.doesNotMatch(model, /Date\.now/);
 });
+
+test("copy last open issuer hour uses clipboard and a textarea fallback", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="copy-last-open-issuer"/);
+  assert.match(html, /Copy last open issuer hour/);
+  assert.match(html, /id="last-open-issuer-copy-fallback"/);
+  assert.match(html, /id="copy-first-open-issuer"/);
+  assert.match(app, /lastOpenIssuerHourToMarkdown\(scenario\)/);
+  assert.match(app, /last-open-issuer-copy-fallback/);
+  assert.match(app, /copyTextWithFallback/);
+  assert.match(app, /synthetic label, not live issuer data/);
+  assert.match(app, /Clipboard unavailable\. Copy the Markdown from the text box\./);
+  assert.notEqual(app.match(/function copyLastOpenIssuerHourMarkdown/)?.[0], app.match(/function copyFirstOpenIssuerHourMarkdown/)?.[0]);
+});
