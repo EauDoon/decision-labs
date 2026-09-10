@@ -606,6 +606,7 @@ function resultsPanel(result) {
       <a href="#three-compare-title">Three-snapshot compare</a>
       ${importedCompare ? '<a href="#imported-compare-title">Imported JSON compare</a>' : ''}
       <a href="#charts-title">Charts</a>
+      <a href="#tornado-title">Tornado</a>
       <a href="#waterfall-title">Waterfall</a>
       <a href="#compound-title">Compound stress</a>
       <a href="#participant-ledger">Participant ledger</a>
@@ -827,7 +828,7 @@ function tornadoSvgFile(result) {
 
 function tornadoSection(result) {
   const chart = tornadoChart(result);
-  return `<section class="panel print-keep"><div class="panel-heading"><h2>Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
+  return `<section class="panel print-keep"><div class="panel-heading"><h2 id="tornado-title" tabindex="-1">Adverse-shock tornado</h2><span class="optional">percentage movement</span></div><div class="panel-body"><p>Each bar is that participant's smallest bounded adverse percentage shock in one direction. Unbounded and already-failing cases have no bar. This ranks displayed movements; it does not assign probability.</p><div class="button-row"><button type="button" data-action="export-tornado-svg">Download tornado SVG</button></div><div class="chart-frame">${tornadoSvgMarkup(result)}</div></div><div class="table-wrap" tabindex="0" role="region" aria-label="Tornado values, text equivalent"><table class="tornado-table"><caption>Text equivalent of the tornado chart</caption><thead><tr><th scope="col">Participant</th><th scope="col">Shock</th><th scope="col">Adverse movement</th></tr></thead><tbody>${chart.tableRows}</tbody></table></div></section>`;
 }
 
 function waterfallChart(participant) {
@@ -1569,6 +1570,11 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === 'b' || event.key === 'B') {
     const target = document.querySelector('#viability-heading');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 't' || event.key === 'T') {
+    const target = document.querySelector('#tornado-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -2517,6 +2523,7 @@ function helpDialog() {
         <li><kbd>w</kbd> Jump to the Contribution waterfall heading</li>
         <li><kbd>l</kbd> Jump to the Participant ledger heading</li>
         <li><kbd>b</kbd> Jump to the viability and binding-limit card heading</li>
+        <li><kbd>t</kbd> Jump to the tornado chart heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>
