@@ -39,4 +39,9 @@ test('404 catalog version line matches each app package.json', () => {
   const page = notFoundPage();
   assert.match(page, /Current catalog:/);
   assert.equal(page.includes(line), true, '404 page should include the catalog version line');
+  assert.match(page, /id="copy-versions"/);
+  assert.match(page, />Copy versions</);
+  assert.match(page, /querySelector\('\.version-line'\)/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
 });
