@@ -395,6 +395,20 @@ test("every-gate-closed Gantt filter persists in workspace JSON and older files 
   assert.equal(legacy.nodes.get("gantt-every-closed").checked, false);
 });
 
+test("hide-weekend Gantt filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("gantt-hide-weekends").checked = true;
+  await ui.nodes.get("gantt-hide-weekends").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).hideWeekendGanttHours, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-hide-weekends").checked, true);
+  assert.match(restored.nodes.get("gantt-filter-note").textContent, /Saturday and Sunday hours are hidden/);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.hideWeekendGanttHours;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-hide-weekends").checked, false);
+});
+
 test("hide-open Gantt filter persists in workspace JSON and older files restore all hours", async () => {
   const ui = await boot();
   ui.nodes.get("gantt-hide-open").checked = true;
