@@ -96,6 +96,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="thinSaturdayFx">Thin Saturday FX (synthetic)</button>
               <button type="button" class="preset-button" data-preset="earlyMondayBankOpen">Early Monday bank open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="fridayLateFxClose">Friday late FX close (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="mondayLateIssuerOpen">Monday late issuer open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -365,7 +366,8 @@ SOFTWARE.
               <button id="analysis-export" type="button">Export analysis JSON</button>
             </div>
             <label for="workspace-notes">Experiment notes</label><textarea id="workspace-notes" rows="3" maxlength="4000" placeholder="What assumption are you testing, and why?"></textarea>
-            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="print-redacted" type="button">Print redacted</button><button id="copy-markdown-report" type="button">Copy Markdown report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
+            <h3 id="print-heading">Print / one-pager</h3>
+            <div class="planning-actions"><button id="export-workspace" type="button">Export workspace</button><button id="export-report" type="button">Export printable report</button><button id="print" type="button">Print</button><button id="print-redacted" type="button">Print redacted</button><button id="copy-markdown-report" type="button">Copy Markdown report</button><button id="import-workspace" type="button">Import workspace</button><input id="workspace-file" type="file" accept="application/json,.json" hidden></div>
             <p id="workspace-status" role="status">Workspace autosave includes the current scenario, pinned baseline, reserve target, notes and selected hour. Share links contain only a scenario and take priority on reload.</p>
             <p id="changed-assumptions"></p>
             <div class="table-scroll" tabindex="0" role="region" aria-label="Scenario comparison">
@@ -616,6 +618,10 @@ SOFTWARE.
                 <input id="gantt-hide-closed" type="checkbox">
                 Hide hours that are closed on every gate
               </label>
+              <label class="checkbox-label" for="gantt-hide-zero-queue">
+                <input id="gantt-hide-zero-queue" type="checkbox">
+                Hide hours whose synthetic queue is zero
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
@@ -624,6 +630,7 @@ SOFTWARE.
               <button id="copy-fx-hours" type="button">Copy FX hours</button>
               <button id="copy-weekend-fx-counts" type="button">Copy weekend FX counts</button>
               <button id="copy-first-closed-fx" type="button">Copy first closed FX hour</button>
+              <button id="copy-first-closed-bank" type="button">Copy first closed bank hour</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
@@ -637,6 +644,8 @@ SOFTWARE.
             <textarea id="weekend-fx-counts-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="first-closed-fx-copy-fallback">First closed FX hour Markdown fallback</label>
             <textarea id="first-closed-fx-copy-fallback" rows="2" hidden readonly></textarea>
+            <label class="sr-only" for="first-closed-bank-copy-fallback">First closed bank hour Markdown fallback</label>
+            <textarea id="first-closed-bank-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -722,6 +731,9 @@ SOFTWARE.
           <li><kbd>Y</kbd> Jump to the hours-to-first-settlement line</li>
           <li><kbd>L</kbd> Copy hours to first settlement as Markdown</li>
           <li><kbd>,</kbd> Copy hours to first settlement as Markdown</li>
+          <li><kbd>;</kbd> Copy hours to clear as Markdown</li>
+          <li><kbd>[</kbd> Jump to the hours-to-clear copy control</li>
+          <li><kbd>]</kbd> Jump to Print</li>
           <li><kbd>.</kbd> Jump to the first-closed-FX-hour copy control</li>
           <li><kbd>/</kbd> Jump to the remaining-reserve copy control</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>

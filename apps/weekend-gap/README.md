@@ -56,12 +56,12 @@ npm run check
 
 - A deterministic 72-hour Friday-to-Monday simulation.
 - Editable AUD liquidity, reserve, issuer, bank, FX, payout and demand assumptions.
-- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), Payday Friday burst (synthetic), Public-holiday Monday (synthetic), Saturday market burst (synthetic), Sunday stall close (synthetic), Thin Saturday FX (synthetic), Early Monday bank open (synthetic), and Friday late FX close (synthetic) presets.
+- Normal Friday, Weekend Rush, Market Stress, Thin FX, Tight Windows (synthetic), Long-weekend Friday start (synthetic), Compressed Friday close (synthetic), Payday Friday burst (synthetic), Public-holiday Monday (synthetic), Saturday market burst (synthetic), Sunday stall close (synthetic), Thin Saturday FX (synthetic), Early Monday bank open (synthetic), Friday late FX close (synthetic), and Monday late issuer open (synthetic) presets.
 - Immediate redeemable AUD, queued demand, effective liquidity ratio, estimated synthetic discount or slippage, next payout time, hours to first settlement, and hours to clear the queue.
 - An outcome summary showing total settled demand, the queue remaining at Monday 15:00, the peak queue timestamp, backlog interval count, hours to first settlement (or no settlement in 72 hours), and hours to clear the queue (or queue remains). Copy dashboard numbers as Markdown, copy hours to clear as one line, copy hours to first settlement as one line, or export a one-row dashboard CSV.
-- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, selected Gantt hour, hours to clear, hours to first settlement line, hours to first settlement copy, comma hours-to-first-settlement copy, first-payout marker, Payout Gantt row, analysis export, Bank Gantt row, Issuer Gantt row, FX Gantt row, first-closed-FX copy jump, remaining-reserve copy jump, compare Gantt, peak queue, selected Gantt hour copy, remaining-reserve copy, selected versus peak-queue hour copy, closed-hours copy, timing review, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
+- Play, pause and keyboard-accessible timeline scrubber, plus shortcuts for help, dashboard, queue chart, Gantt, selected Gantt hour, hours to clear, hours to first settlement line, hours to first settlement copy, comma hours-to-first-settlement copy, semicolon hours-to-clear copy, hours-to-clear copy jump, Print jump, first-payout marker, Payout Gantt row, analysis export, Bank Gantt row, Issuer Gantt row, FX Gantt row, first-closed-FX copy jump, remaining-reserve copy jump, compare Gantt, peak queue, selected Gantt hour copy, remaining-reserve copy, selected versus peak-queue hour copy, closed-hours copy, timing review, first settlement, first closed bank hour, scenario inputs, undo, redo and export.
 - Canvas chart with a printable SVG queue path that can be downloaded as a file, a formula-safe hourly queue CSV, and a text-equivalent data table.
-- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, an every-gate-closed display filter, a Saturday-and-Sunday-hours display filter, a hide-weekend-hours display filter, a hide-open-hours display filter, a hide-closed-hours display filter, a single-gate display filter, copy of the selected hour, copy of remaining reserve at that hour, copy of the peak-queue hour, copy of selected versus peak-queue hour, copy of closed hours, copy of FX hours, copy of weekend FX hour counts, copy of the first closed FX hour label, copy of the next-payout hour label, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
+- A 72-hour gate Gantt (SVG plus table) with hatch marks for closed hours, a closed-hours-only display filter, an every-gate-closed display filter, a Saturday-and-Sunday-hours display filter, a hide-weekend-hours display filter, a hide-open-hours display filter, a hide-closed-hours display filter, a hide-zero-queue-hours display filter, a single-gate display filter, copy of the selected hour, copy of remaining reserve at that hour, copy of the peak-queue hour, copy of selected versus peak-queue hour, copy of closed hours, copy of FX hours, copy of weekend FX hour counts, copy of the first closed FX hour label, copy of the first closed bank hour label, copy of the next-payout hour label, the current hour and first payout window marked, plus a paired-row baseline versus current Gantt.
 - Import and export of scenario JSON, server-mode URL-hash sharing, reset and safe local autosave.
 
 ## Scenario comparison and reserve planner
@@ -124,6 +124,20 @@ CHANGELOG.md        Version history
 ## License
 
 MIT. See [LICENSE](LICENSE).
+
+## New in v1.5.8: Monday late issuer, hours-to-clear semicolon copy and zero-queue Gantt hide
+
+1. Press `;` to copy hours to clear through the existing copy control, using the same Markdown. The empty line is honest when there is no queue. The key is ignored while typing.
+2. Press `[` to jump to the hours-to-clear copy control. If that control is missing, the dashboard heading is used. The key is ignored while typing.
+3. Press `]` to jump to Print. If that control is missing, the print / one-pager heading is used. The key is ignored while typing.
+4. Use the Monday late issuer open (synthetic) preset. It keeps the same 72-hour calendar as Normal Friday and opens the Monday issuer window one hour later. It is distinct from Payday Friday burst, Public-holiday Monday, Saturday market burst, Sunday stall close, Thin Saturday FX, Thin FX, Tight Windows, Long-weekend Friday start, Compressed Friday close, Early Monday bank open, and Friday late FX close. It is not a live queue.
+5. Hide Gantt hours whose synthetic queue is zero. Display only. The model still contains 72 hours. Workspace JSON stores the optional boolean `hideZeroQueueGanttHours`. Older files restore all hours. Unknown keys are rejected. Distinct from hide-open, hide-closed, hide-weekend, hide-weekday, every-gate-closed, and single-gate filters.
+6. Print and print redacted include the hours-to-clear line when a queue exists, with an honest empty when none. These are counts of modeled hours, not a bank calendar. The saved scenario is unchanged.
+7. Copy the first closed bank hour label as one-line Markdown, with an honest empty when none exists. Clipboard write has a textarea fallback. Distinct from first-closed-FX copy. These are counts of modeled hours, not a bank calendar.
+8. Analysis JSON still has no timestamps. Hatched Gantt cells remain a local drawing.
+9. Timing review packets from 1.5.0 stay in place.
+
+v1.5.7 Friday late FX close, settlement comma copy and closed Gantt hide remain below.
 
 ## New in v1.5.7: Friday late FX close, settlement comma copy and closed Gantt hide
 
