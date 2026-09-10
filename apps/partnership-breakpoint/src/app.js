@@ -87,6 +87,7 @@ let hideHoldingParticipants = false;
 let hideAllCompoundHolders = false;
 let hideZeroShareParticipants = false;
 let hideParticipantsOverCapacity = false;
+let hideParticipantsAtHold = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -248,6 +249,7 @@ function readCollapsePreference() {
   hideAllCompoundHolders = state.hideAllHoldLedger === true;
   hideZeroShareParticipants = state.hideZeroShareParticipants === true;
   hideParticipantsOverCapacity = state.hideParticipantsOverCapacity === true;
+  hideParticipantsAtHold = state.hideParticipantsAtHold === true;
 }
 
 function writeCollapsePreference() {
@@ -261,6 +263,8 @@ function writeCollapsePreference() {
   else delete state.hideZeroShareParticipants;
   if (hideParticipantsOverCapacity) state.hideParticipantsOverCapacity = true;
   else delete state.hideParticipantsOverCapacity;
+  if (hideParticipantsAtHold) state.hideParticipantsAtHold = true;
+  else delete state.hideParticipantsAtHold;
 }
 
 function compactErrorMessage(error) {
@@ -494,10 +498,20 @@ function participantOverListedCapacity(result, participant) {
   return volume > capacity + 1e-9;
 }
 
+function participantAtHoldNoCapacityBreach(result, participant) {
+  if (!result) return false;
+  const row = result.participants.find((item) => item.id === participant.id);
+  if (!row) return false;
+  if (participantOverListedCapacity(result, participant)) return false;
+  if (row.headroomToExit === null) return false;
+  return row.headroomToExit >= -1e-9;
+}
+
 function participantHiddenFromRoster(result, participant) {
   if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
   if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
   if (hideParticipantsOverCapacity && participantOverListedCapacity(result, participant)) return true;
+  if (hideParticipantsAtHold && participantAtHoldNoCapacityBreach(result, participant)) return true;
   return false;
 }
 
@@ -511,6 +525,9 @@ function inputPanel(result) {
     : 0;
   const hiddenOverCount = hideParticipantsOverCapacity && result
     ? state.participants.filter((participant) => participantOverListedCapacity(result, participant)).length
+    : 0;
+  const hiddenAtHoldCount = hideParticipantsAtHold && result
+    ? state.participants.filter((participant) => participantAtHoldNoCapacityBreach(result, participant)).length
     : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
   const firstOverCapacityId = result
@@ -557,7 +574,10 @@ function inputPanel(result) {
   const overCapacityFilterNote = hideParticipantsOverCapacity
     ? `${hiddenOverCount} participant${hiddenOverCount === 1 ? '' : 's'} whose volume is above listed capacity ${hiddenOverCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
     : 'Hide participants whose volume is above listed capacity to filter this roster display only. Expand restores them. Counts stay the same.';
-  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity].filter(Boolean).length;
+  const atHoldFilterNote = hideParticipantsAtHold
+    ? `${hiddenAtHoldCount} participant${hiddenAtHoldCount === 1 ? '' : 's'} whose volume headroom is at or above a hold with no listed capacity breach ${hiddenAtHoldCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
+    : 'Hide participants whose current volume headroom is at or above a hold with no listed capacity breach to filter this roster display only. Expand restores them. Counts stay the same.';
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
     ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
@@ -565,9 +585,11 @@ function inputPanel(result) {
         ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has a zero revenue share. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
         : rosterFilterCount === 1 && hideParticipantsOverCapacity
           ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has volume above listed capacity. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-          : rosterFilterCount > 0
-            ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-            : ''
+          : rosterFilterCount === 1 && hideParticipantsAtHold
+            ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has volume headroom at or above a hold with no listed capacity breach. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+            : rosterFilterCount > 0
+              ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+              : ''
     : '';
 
   return `
@@ -616,6 +638,8 @@ function inputPanel(result) {
           <p class="notice">${zeroShareFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button></div>
           <p class="notice">${overCapacityFilterNote}</p>
+          <div class="button-row"><button type="button" data-action="hide-at-hold-participants" aria-pressed="${hideParticipantsAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants at hold with no listed capacity breach</button><button type="button" data-action="show-at-hold-participants" ${hideParticipantsAtHold ? '' : 'disabled'}>Show at-hold participants</button></div>
+          <p class="notice">${atHoldFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
@@ -1272,6 +1296,24 @@ function attachEvents() {
     }
     if (action === 'show-over-capacity-participants') {
       hideParticipantsOverCapacity = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-at-hold-participants') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding participants at hold with no listed capacity breach.');
+        return;
+      }
+      hideParticipantsAtHold = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-at-hold-participants') {
+      hideParticipantsAtHold = false;
       writeCollapsePreference();
       saveState();
       render();

@@ -2795,6 +2795,113 @@ test('hide-over-capacity preference round-trips on saved JSON and defaults to sh
   assert.match(app.notice(), /unknown field: unexpected/);
 });
 
+test('hiding participants at hold with no capacity breach is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-at-hold-participants"/);
+  assert.match(app.markup(), /data-action="hide-holding-participants"/);
+  assert.match(app.markup(), /data-action="hide-over-capacity-participants"/);
+  app.click('hide-at-hold-participants');
+  assert.equal(forms(), 0);
+  assert.match(app.markup(), /3 participants whose volume headroom is at or above a hold with no listed capacity breach are hidden from this roster display/);
+  assert.match(app.markup(), /Every displayed participant has volume headroom at or above a hold with no listed capacity breach/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  assert.equal(app.saved().hideParticipantsAtHold, true);
+  app.click('show-at-hold-participants');
+  assert.equal(forms(), 3);
+  app.edit('deal.monthlyVolume', '116000');
+  assert.equal(forms(), 3);
+  const beforeHide = holdCount();
+  assert.ok(beforeHide);
+  app.click('hide-at-hold-participants');
+  assert.equal(forms(), 1);
+  assert.match(app.markup(), /2 participants whose volume headroom is at or above a hold with no listed capacity breach are hidden from this roster display/);
+  assert.match(app.markup(), /Tested-case and model counts are unchanged/);
+  assert.match(app.markup(), /Participant 3: Liquidity Partner/);
+  assert.doesNotMatch(app.markup(), /Participant 1: Platform/);
+  assert.match(app.markup(), /participant-live-name">Platform/);
+  assert.equal(holdCount(), beforeHide);
+  app.click('export');
+  const exported = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(exported.participants.length, 3);
+  assert.equal(exported.deal.monthlyVolume, 116000);
+  assert.equal(exported.hideParticipantsAtHold, true);
+  assert.equal(Object.hasOwn(exported, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(exported, 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(exported, 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(exported, 'hideParticipantsOverCapacity'), false);
+  app.click('show-at-hold-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /Platform/);
+  assert.equal(holdCount(), beforeHide);
+  app.edit('deal.monthlyVolume', '');
+  app.click('hide-at-hold-participants');
+  assert.match(app.notice(), /Resolve invalid inputs before hiding participants at hold with no listed capacity breach/);
+});
+
+test('hide-at-hold preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsAtHold'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  app.click('hide-at-hold-participants');
+  assert.equal(app.saved().hideParticipantsAtHold, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsOverCapacity'), false);
+  assert.equal(forms(), 0);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideParticipantsAtHold, true);
+  assert.equal(hidden.participants.length, 3);
+  assert.equal(Object.hasOwn(hidden, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideAllHoldLedger'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideParticipantsOverCapacity'), false);
+  app.click('show-at-hold-participants');
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsAtHold'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideParticipantsAtHold'), false);
+  assert.equal(forms(), 3);
+
+  const imported = clonePreset('balanced');
+  imported.hideParticipantsAtHold = true;
+  app.import(imported);
+  assert.equal(app.saved().hideParticipantsAtHold, true);
+  assert.equal(forms(), 0);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideParticipantsAtHold'), false);
+  assert.equal(forms(), 3);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideParticipantsAtHold = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+  assert.equal(forms(), 3);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideParticipantsAtHold = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
 test('collapse all-hold preference round-trips on saved JSON and defaults to expanded', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
