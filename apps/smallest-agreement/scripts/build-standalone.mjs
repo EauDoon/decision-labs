@@ -47,6 +47,7 @@ const appImport = `import {
   formatDiscussionWorksheet,
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
+  formatOriginalVersusRecommendedMarkdown,
   formatVetoBlockersMarkdown,
   formatPinnedPackagesMarkdown,
   formatCurrentLocksMarkdown,

@@ -131,6 +131,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="copy-remaining-budget-button"/u);
   assert.match(html, /Copy remaining budget/u);
   assert.match(html, /id="remaining-budget-fallback"/u);
+  assert.match(html, /id="copy-original-versus-recommended-button"/u);
+  assert.match(html, /Copy original versus recommended/u);
+  assert.match(html, /id="original-versus-recommended-fallback"/u);
   assert.match(html, /id="package-markdown-fallback"/u);
   assert.match(html, /id="copy-locks-button"/u);
   assert.match(html, /Copy current locks/u);
@@ -351,6 +354,7 @@ async function savedWorkbench(storage, hash = "") {
     packageMarkdown: () => element("#package-markdown-fallback").value,
     groupSupport: () => element("#group-support-fallback").value,
     remainingBudget: () => element("#remaining-budget-fallback").value,
+    originalVersusRecommended: () => element("#original-versus-recommended-fallback").value,
     locksMarkdown: () => element("#locks-markdown-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
@@ -928,7 +932,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /\.hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note/u);
@@ -1946,6 +1950,48 @@ test("copy group support writes a Markdown table and is not a legal right", asyn
   assert.match(blocked.groupSupport(), /\| Group \| Weight \| Average support \|/u);
   assert.match(blocked.message(), /Clipboard is blocked/u);
   assert.match(blocked.message(), /not a legal right/u);
+});
+
+test("copy original versus recommended writes compact Markdown of labels and costs with a clipboard fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-original-versus-recommended-button"/u);
+  assert.match(html, /Copy original versus recommended/u);
+  assert.match(html, /id="original-versus-recommended-fallback"/u);
+  assert.match(html, /option labels and costs only/u);
+  assert.match(html, /not a recorded vote/u);
+  const app = await savedWorkbench(new Map());
+  assert.match(app.originalVersusRecommended(), /^# Original versus recommended package/u);
+  assert.match(app.originalVersusRecommended(), /option labels and costs only/u);
+  assert.match(app.originalVersusRecommended(), /not a recorded vote/u);
+  assert.match(app.originalVersusRecommended(), /\(cost 0\.0\) versus /u);
+  assert.doesNotMatch(app.originalVersusRecommended(), /^# Recommended package/u);
+  await app.click("#copy-original-versus-recommended-button");
+  assert.equal(app.clipboardText(), app.originalVersusRecommended());
+  assert.match(app.message(), /not a recorded vote/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-original-versus-recommended-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#original-versus-recommended-fallback");
+  assert.match(blocked.originalVersusRecommended(), /^# Original versus recommended package/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a recorded vote/u);
+  const draft = {
+    title: "No recommendation versus workshop",
+    threshold: 95,
+    maxChangeCost: 0,
+    groups: [{ id: "g", name: "Group", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { g: 10 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { g: 90 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { g: 90 } },
+    ] }],
+  };
+  const missing = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  assert.match(missing.originalVersusRecommended(), /No recommended package is available/u);
+  await missing.click("#copy-original-versus-recommended-button");
+  assert.match(missing.clipboardText(), /No recommended package is available/u);
+  assert.match(missing.message(), /not a recorded vote/u);
 });
 
 test("copy remaining budget writes one-line Markdown distinct from package and group-support copy", async () => {

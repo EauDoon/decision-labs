@@ -33,6 +33,7 @@ import {
   formatDiscussionWorksheet,
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
+  formatOriginalVersusRecommendedMarkdown,
   formatVetoBlockersMarkdown,
   formatPinnedPackagesMarkdown,
   formatCurrentLocksMarkdown,
@@ -487,6 +488,11 @@ function renderCopyFallbacks(result) {
     const remaining = formatRemainingChangeBudgetMarkdown(state.proposal, result ?? currentResult());
     remainingBox.value = remaining.status === "ok" || remaining.status === "unavailable" ? remaining.text : "";
   }
+  const versusBox = $("#original-versus-recommended-fallback");
+  if (versusBox) {
+    const versus = formatOriginalVersusRecommendedMarkdown(state.proposal, result ?? currentResult());
+    versusBox.value = versus.status === "ok" || versus.status === "unavailable" ? versus.text : "";
+  }
 }
 
 function firstProposalError(proposal) {
@@ -914,6 +920,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#worksheet-button").disabled = result.status === "invalid";
   $("#worksheet-csv-button").disabled = result.status === "invalid";
   $("#copy-package-button").disabled = result.status === "invalid";
+  $("#copy-original-versus-recommended-button").disabled = result.status === "invalid";
   $("#copy-group-support-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#copy-remaining-budget-button").disabled = result.status === "invalid";
   $("#copy-packages-table-button").disabled = result.status === "invalid";
@@ -2122,6 +2129,20 @@ $("#copy-package-button").addEventListener("click", async () => {
     notifyDraft("Clipboard is blocked. Copy the recommended package from the Markdown box. It is not a recorded vote.");
   }
 });
+async function copyOriginalVersusRecommended() {
+  const listed = formatOriginalVersusRecommendedMarkdown(state.proposal, currentResult());
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying original versus recommended labels and costs.");
+  const fallback = $("#original-versus-recommended-fallback");
+  if (fallback) fallback.value = listed.text;
+  try {
+    await navigator.clipboard.writeText(listed.text);
+    notifyDraft("Original versus recommended labels and costs copied as Markdown. It is a decision aid, not a recorded vote.");
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy original versus recommended labels and costs from the Markdown box. It is not a recorded vote.");
+  }
+}
+$("#copy-original-versus-recommended-button").addEventListener("click", copyOriginalVersusRecommended);
 $("#copy-group-support-button").addEventListener("click", async () => {
   const listed = formatGroupSupportMarkdown(state.proposal, inspectedPackage(currentResult()));
   if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the group support table.");
