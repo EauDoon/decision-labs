@@ -189,6 +189,9 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /id="copy-first-trust"/);
   assert.match(missing.body, />Copy first Trust item</);
   assert.match(missing.body, /firstTrustMarkdown/);
+  assert.match(missing.body, /id="copy-first-how"/);
+  assert.match(missing.body, />Copy first How it works item</);
+  assert.match(missing.body, /firstHowMarkdown/);
   assert.doesNotMatch(missing.body, /\bfetch\s*\(/);
   assert.doesNotMatch(missing.body, /XMLHttpRequest/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
@@ -1175,6 +1178,217 @@ test('404 copy first Trust item stays GET HEAD only with connect-src none', asyn
       hostname: '127.0.0.1',
       port,
       path: '/no-copy-first-trust-path',
+      method: 'HEAD',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(head.status, 404);
+  assert.equal(head.body, '');
+});
+
+test('404 copy first How it works item markdown is the first printed How list item', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  const item = { textContent: 'Local catalog. The launcher serves only the catalog page and the four workbenches.' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-how') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-how-status') return { textContent: '' };
+      if (id === 'copy-first-how-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#how-it-works li' ? item : null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '- Local catalog. The launcher serves only the catalog page and the four workbenches.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /## How it works/);
+  assert.doesNotMatch(copied, /live policy feed/);
+  item.textContent = '   ';
+  copied = 'stale';
+  await click();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first How it works item is distinct from Copy How it works', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let lastCopied = '';
+  let clickHow = null;
+  let clickFirst = null;
+  const heading = { textContent: 'How it works' };
+  const items = [
+    { textContent: 'Local catalog. The launcher serves only the catalog page and the four workbenches.' },
+    { textContent: 'Standalone files. Every workbench ships interface, styles, and model in one document.' },
+  ];
+  const section = {
+    querySelector(selector) {
+      return selector === 'h2' ? heading : null;
+    },
+    querySelectorAll(selector) {
+      return selector === 'ul li' ? items : [];
+    },
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-how') return { addEventListener(name, handler) { if (name === 'click') clickHow = handler; } };
+      if (id === 'copy-how-status') return { textContent: '' };
+      if (id === 'copy-how-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-first-how') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-how-status') return { textContent: '' };
+      if (id === 'copy-first-how-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'how-it-works') return section;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#how-it-works li' ? items[0] : null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { lastCopied = text; } } },
+  });
+  await clickHow();
+  const list = lastCopied;
+  await clickFirst();
+  const line = lastCopied;
+  assert.match(list, /## How it works/);
+  assert.match(list, /\n/);
+  assert.equal(line, '- Local catalog. The launcher serves only the catalog page and the four workbenches.');
+  assert.notEqual(line, list);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first How it works item uses the printed list without extra public paths', () => {
+  const page = notFoundPage();
+  assert.match(page, /id="copy-first-how"/);
+  assert.match(page, />Copy first How it works item</);
+  assert.match(page, /id="copy-first-how-fallback"/);
+  assert.match(page, /textarea id="copy-first-how-fallback"/);
+  assert.match(page, /firstHowMarkdown/);
+  assert.match(page, /querySelector\('#how-it-works li'\)/);
+  assert.match(page, /id="how-it-works"/);
+  assert.match(page, /Local catalog/);
+  assert.match(page, /Not a live policy feed/);
+  assert.match(page, /id="copy-how"/);
+  assert.match(page, />Copy How it works</);
+  assert.match(page, /id="copy-first-trust"/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy-first-how script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /firstHowMarkdown/);
+  assert.match(source, /Not a live policy feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first How it works item shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-how') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-first-how-status') return status;
+      if (id === 'copy-first-how-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#how-it-works li' ? { textContent: 'Local catalog. The launcher serves only the catalog page.' } : null;
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Local catalog. The launcher serves only the catalog page.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live policy feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first How it works item stays GET HEAD only with connect-src none', async (t) => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-how-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /id="copy-first-how"/);
+  assert.match(missing.body, />Copy first How it works item</);
+  assert.match(missing.body, /id="how-it-works"/);
+  assert.match(missing.body, /Local catalog/);
+  assert.match(missing.body, /Not a live policy feed/);
+  assert.match(missing.body, /id="copy-how"/);
+  assert.doesNotMatch(missing.body, /Copy last Trust item/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+  const head = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-first-how-path',
       method: 'HEAD',
       headers: { host: `127.0.0.1:${port}` },
     }, (res) => {

@@ -63,6 +63,9 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, /id="copy-first-trust"/);
   assert.match(page, />Copy first Trust item</);
   assert.match(page, /firstTrustMarkdown/);
+  assert.match(page, /id="copy-first-how"/);
+  assert.match(page, />Copy first How it works item</);
+  assert.match(page, /firstHowMarkdown/);
 });
 
 test('404 catalog jobs match the four catalog cards', () => {
