@@ -75,6 +75,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>'<\/kbd> Copy the first locked clause option label as one-line Markdown/u);
   assert.match(html, /<kbd>&lt;<\/kbd> Jump to the first-locked-option copy control, or the clauses heading/u);
   assert.match(html, /<kbd>&gt;<\/kbd> Jump to the hide-locked-clauses control, or the clauses heading/u);
+  assert.match(html, /<kbd>:<\/kbd> Copy the below-floor group count as one-line Markdown/u);
+  assert.match(html, /<kbd>-<\/kbd> Jump to the below-floor group count copy control, or the groups heading/u);
+  assert.match(html, /<kbd>=<\/kbd> Jump to the hide-groups-meeting-threshold control, or the groups heading/u);
   assert.match(html, /id="locks-heading"/u);
   assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
@@ -99,6 +102,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /community-garden-watering/u);
   assert.match(html, /shared-laundry-hours/u);
   assert.match(html, /rooftop-bbq-hours/u);
+  assert.match(html, /school-disco-hours/u);
   assert.match(html, /id="clause-filter"/u);
   assert.match(html, /id="clause-filter-status"/u);
   assert.match(html, /id="veto-groups-only"/u);
@@ -123,6 +127,8 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Hide groups that have no support floor/u);
   assert.match(html, /id="hide-groups-meeting-threshold"/u);
   assert.match(html, /Hide groups currently meeting the approval threshold/u);
+  assert.match(html, /id="hide-groups-below-threshold"/u);
+  assert.match(html, /Hide groups currently below the approval threshold/u);
   assert.match(html, /id="veto-groups-status"/u);
   assert.match(html, /aria-live="polite"/u);
   assert.match(html, /id="support-drop-range"/u);
@@ -131,7 +137,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Print redacted/u);
   assert.match(html, /id="print-redacted-button"/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /a one-line lock count, and the first locked clause option label as one line on the worksheet/u);
+  assert.match(html, /a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count/u);
   assert.match(html, /Discussion worksheet/u);
   assert.match(html, /Facilitator note \(optional\)/u);
   assert.match(html, /Duplicate group/u);
@@ -180,6 +186,9 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /id="copy-below-floor-count-button"/u);
   assert.match(html, /Copy below-floor group count/u);
   assert.match(html, /id="below-floor-count-fallback"/u);
+  assert.match(html, /id="copy-first-below-floor-group-button"/u);
+  assert.match(html, /Copy first below-floor group/u);
+  assert.match(html, /id="first-below-floor-group-fallback"/u);
   assert.match(html, /id="copy-change-cost-button"/u);
   assert.match(html, /Copy change-cost table/u);
   assert.match(html, /id="change-cost-csv-fallback"/u);
@@ -381,6 +390,11 @@ async function savedWorkbench(storage, hash = "") {
       target.checked = checked;
       target.events.get("change")({ target: { checked } });
     },
+    filterHideGroupsBelowThreshold: (checked) => {
+      const target = element("#hide-groups-below-threshold");
+      target.checked = checked;
+      target.events.get("change")({ target: { checked } });
+    },
     ballot: () => element("#ballot-body").innerHTML,
     shares: () => element("#weight-shares").innerHTML,
     coalition: () => element("#coalition-table").innerHTML,
@@ -423,6 +437,7 @@ async function savedWorkbench(storage, hash = "") {
     lockCount: () => element("#lock-count-fallback").value,
     firstLockedOption: () => element("#first-locked-option-fallback").value,
     belowFloorCount: () => element("#below-floor-count-fallback").value,
+    firstBelowFloorGroup: () => element("#first-below-floor-group-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
     compareFiles: async (left, right) => {
@@ -1099,6 +1114,57 @@ test("rooftop BBQ hours preset loads a distinct synthetic rooftop workshop", asy
   assert.doesNotMatch(app.groups(), /Garden committee/u);
   assert.doesNotMatch(app.groups(), /Hirers/u);
   assert.doesNotMatch(app.groups(), /Hall committee/u);
+  assert.doesNotMatch(app.title(), /School disco hours/u);
+  assert.doesNotMatch(app.clauses(), /Finish time/u);
+  assert.doesNotMatch(app.clauses(), /Bass/u);
+  assert.doesNotMatch(app.groups(), /Students/u);
+  assert.doesNotMatch(app.groups(), /P&C/u);
+});
+
+test("school disco hours preset loads a distinct synthetic disco workshop", async () => {
+  const app = await savedWorkbench(new Map());
+  app.field("#preset-select", "school-disco-hours");
+  app.click("#load-preset");
+  assert.match(app.title(), /School disco hours: finish time, bass, and lock-up/u);
+  assert.equal(app.disabled("#export-button"), false);
+  assert.doesNotMatch(app.alert(), /Fix the proposal/u);
+  assert.match(app.clauses(), /Finish time/u);
+  assert.match(app.clauses(), /Bass/u);
+  assert.match(app.clauses(), /Hall lock-up/u);
+  assert.match(app.groups(), /Students/u);
+  assert.match(app.groups(), /Neighbours/u);
+  assert.match(app.groups(), /P&amp;C/u);
+  assert.doesNotMatch(app.title(), /Rooftop BBQ hours/u);
+  assert.doesNotMatch(app.title(), /Shared laundry hours/u);
+  assert.doesNotMatch(app.title(), /Community garden watering/u);
+  assert.doesNotMatch(app.title(), /Hall hire hours/u);
+  assert.doesNotMatch(app.title(), /Street stall lighting/u);
+  assert.doesNotMatch(app.title(), /Market stall hours/u);
+  assert.doesNotMatch(app.title(), /Shared bike shed/u);
+  assert.doesNotMatch(app.title(), /Sports Fixture Night/u);
+  assert.doesNotMatch(app.title(), /Neighbourhood Plan/u);
+  assert.doesNotMatch(app.title(), /Library Quiet Hours/u);
+  assert.doesNotMatch(app.clauses(), /Cook hours/u);
+  assert.doesNotMatch(app.clauses(), /Smoke/u);
+  assert.doesNotMatch(app.clauses(), /Rooftop lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Wash hours/u);
+  assert.doesNotMatch(app.clauses(), /Dryer noise/u);
+  assert.doesNotMatch(app.clauses(), /Laundry lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Watering hours/u);
+  assert.doesNotMatch(app.clauses(), /Close time/u);
+  assert.doesNotMatch(app.clauses(), /PA volume/u);
+  assert.doesNotMatch(app.clauses(), /Lighting hours/u);
+  assert.doesNotMatch(app.clauses(), /Access hours/u);
+  assert.doesNotMatch(app.clauses(), /Stall open hours/u);
+  assert.doesNotMatch(app.clauses(), /Match end-time/u);
+  assert.doesNotMatch(app.clauses(), /Park access hours/u);
+  assert.doesNotMatch(app.clauses(), /Evening hours/u);
+  assert.doesNotMatch(app.groups(), /Residents/u);
+  assert.doesNotMatch(app.groups(), /Building committee/u);
+  assert.doesNotMatch(app.groups(), /Tenants/u);
+  assert.doesNotMatch(app.groups(), /Building managers/u);
+  assert.doesNotMatch(app.groups(), /Hirers/u);
+  assert.doesNotMatch(app.groups(), /Hall committee/u);
 });
 
 test("keyboard f focuses the clause filter unless an input is active", async () => {
@@ -1193,12 +1259,13 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, \.first-locked-option-fallback-label, #first-locked-option-fallback, #first-locked-option-fallback-note, \.below-floor-count-fallback-label, #below-floor-count-fallback, #below-floor-count-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
+  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, \.first-locked-option-fallback-label, #first-locked-option-fallback, #first-locked-option-fallback-note, \.below-floor-count-fallback-label, #below-floor-count-fallback, #below-floor-count-fallback-note, \.first-below-floor-group-fallback-label, #first-below-floor-group-fallback, #first-below-floor-group-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, \.option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, \.original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, \.group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, \.remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, \.approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, \.hide-locked-clauses-filter, #hide-locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note, \.over-budget-clauses-filter, #over-budget-clauses-filter-note, \.no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /\.hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note/u);
   assert.match(html, /\.hide-groups-without-floors-filter, #hide-groups-without-floors-filter-note/u);
   assert.match(html, /\.hide-groups-meeting-threshold-filter, #hide-groups-meeting-threshold-filter-note/u);
+  assert.match(html, /\.hide-groups-below-threshold-filter, #hide-groups-below-threshold-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
   const storage = new Map();
   const app = await savedWorkbench(storage);
@@ -1402,6 +1469,49 @@ test("print facilitator pack includes the first locked option label as one line 
   assert.doesNotMatch(lockedApp.ballot(), /Residents/u);
   assert.equal(JSON.parse(lockedStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
   assert.equal(JSON.parse(lockedStorage.get("smallest-agreement:proposal:v1")).clauses[0].lockedOptionId, "one-alt");
+});
+
+test("print facilitator pack includes below-floor group count as one line without changing the saved draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /plus a one-line below-floor group count/u);
+  assert.match(html, /not a legal quorum/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  app.setTitle("Workshop draft for below-floor print");
+  assert.match(app.ballot(), /Groups below their support floor: 0/u);
+  assert.match(app.ballot(), /not a legal quorum/u);
+  assert.match(app.ballot(), /Participant groups: Residents, Shopkeepers, Park stewards/u);
+  app.click("#print-button");
+  assert.equal(app.printCalls(), 1);
+  assert.match(app.ballot(), /Groups below their support floor: 0/u);
+  app.click("#print-redacted-button");
+  assert.equal(app.printCalls(), 2);
+  assert.match(app.ballot(), /Participant groups: Group 1, Group 2, Group 3/u);
+  assert.match(app.ballot(), /Groups below their support floor: 0/u);
+  assert.doesNotMatch(app.ballot(), /Residents/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+
+  const counted = {
+    title: "Print below-floor count workshop",
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Residents", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "Hours", options: [
+      { id: "original", label: "Keep original hours", original: true, changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 50, open: 40 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 50, open: 80 } },
+    ] }],
+  };
+  const countedStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(counted)]]);
+  const countedApp = await savedWorkbench(countedStorage);
+  assert.match(countedApp.ballot(), /Groups below their support floor: 1\. A floor is a number you entered, not a legal quorum/u);
+  countedApp.click("#print-redacted-button");
+  assert.match(countedApp.ballot(), /Participant groups: Group 1, Group 2/u);
+  assert.match(countedApp.ballot(), /Groups below their support floor: 1/u);
+  assert.doesNotMatch(countedApp.ballot(), /Residents/u);
+  assert.equal(JSON.parse(countedStorage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
 });
 
 test("print facilitator pack includes the numeric approval threshold without changing the saved draft", async () => {
@@ -2041,6 +2151,87 @@ test("hide-groups-meeting-threshold hides groups that meet the numeric threshold
   assert.match(empty.groups(), /No groups remain after hiding groups that currently meet the numeric approval threshold/u);
 });
 
+test("hide-groups-below-threshold hides groups below the numeric threshold without changing the stored draft", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="hide-groups-below-threshold"/u);
+  assert.match(html, /Hide groups currently below the approval threshold/u);
+  const storage = new Map();
+  const app = await savedWorkbench(storage);
+  const before = storage.get("smallest-agreement:proposal:v1");
+  app.filterHideGroupsBelowThreshold(true);
+  assert.equal(storage.get("smallest-agreement:proposal:v1"), before);
+  const draft = {
+    title: "Hide below threshold workshop",
+    threshold: 70,
+    groups: [
+      { id: "cleared", name: "Cleared", weight: 1 },
+      { id: "short", name: "Short", weight: 1 },
+      { id: "floored", name: "Floored", weight: 1, minSupport: 90 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { cleared: 90, short: 20, floored: 20 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { cleared: 80, short: 30, floored: 30 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { cleared: 70, short: 40, floored: 40 } },
+    ] }],
+  };
+  const filteredStorage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]);
+  const filtered = await savedWorkbench(filteredStorage);
+  filtered.filterHideGroupsBelowThreshold(true);
+  assert.doesNotMatch(filtered.groups(), /data-group-id="short"/u);
+  assert.doesNotMatch(filtered.groups(), /data-group-id="floored"/u);
+  assert.match(filtered.groups(), /Cleared/u);
+  assert.match(filtered.shares(), /Short/u);
+  assert.match(filtered.vetoGroupsStatus(), /Showing 1 of 3 groups/u);
+  filtered.filterHideGroupsMeetingThreshold(true);
+  assert.match(filtered.groups(), /No groups remain after hiding groups that currently meet the numeric approval threshold or are below the numeric approval threshold/u);
+  assert.match(filtered.shares(), /Cleared/u);
+  filtered.filterHideGroupsMeetingThreshold(false);
+  assert.equal(JSON.parse(filteredStorage.get("smallest-agreement:proposal:v1")).title, "Hide below threshold workshop");
+  assert.equal(JSON.parse(filteredStorage.get("smallest-agreement:workspace:v1")).hideGroupsBelowThreshold, true);
+  assert.equal(Object.hasOwn(JSON.parse(filteredStorage.get("smallest-agreement:proposal:v1")), "hideGroupsBelowThreshold"), false);
+  filtered.filterHideGroupsBelowThreshold(false);
+  assert.match(filtered.groups(), /Short/u);
+  const empty = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify({
+    title: "All groups are below threshold",
+    threshold: 95,
+    groups: [{ id: "g", name: "Open", weight: 1 }],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { g: 40 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { g: 30 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { g: 20 } },
+    ] }],
+  })]]));
+  empty.filterHideGroupsBelowThreshold(true);
+  assert.match(empty.groups(), /No groups remain after hiding groups whose average is below the numeric approval threshold/u);
+});
+
+test("keyboard y reveals a veto group hidden by hide-groups-below-threshold", async () => {
+  const draft = {
+    title: "Veto below threshold workshop",
+    threshold: 80,
+    groups: [
+      { id: "majority", name: "Majority", weight: 9 },
+      { id: "minority", name: "Minority", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { majority: 90, minority: 10 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { majority: 88, minority: 20 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { majority: 85, minority: 30 } },
+    ] }],
+  };
+  const storage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]);
+  const app = await savedWorkbench(storage);
+  app.filterHideGroupsBelowThreshold(true);
+  assert.doesNotMatch(app.groups(), /data-group-id="minority"/u);
+  assert.match(app.groups(), /Majority/u);
+  app.clearFocus();
+  app.keydown("y");
+  assert.equal(app.focused(), '[data-field="group-name"][data-group-id="minority"]');
+  assert.match(app.groups(), /Minority/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideGroupsBelowThreshold, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[1].name, "Minority");
+});
+
 test("veto-only group filter hides non-veto cards without changing the stored draft", async () => {
   const html = await standaloneBytes();
   assert.match(html, /id="veto-groups-status"[^>]*role="status"/u);
@@ -2480,7 +2671,7 @@ test("keyboard semicolon copies the current lock count unless an input is active
   assert.equal(app.focused(), "");
   const shifted = await savedWorkbench(new Map());
   shifted.keydown(":");
-  assert.equal(shifted.clipboardText(), "");
+  assert.doesNotMatch(shifted.clipboardText(), /Current lock count/u);
   const locked = await savedWorkbench(new Map());
   locked.clickAction("toggle-clause-lock", { clauseId: "hours", optionId: "hours-pilot" });
   locked.clearFocus();
@@ -2596,6 +2787,87 @@ test("keyboard > jumps to the hide-locked-clauses control unless an input is act
   app.keydown(">", { tagName: "TEXTAREA", isContentEditable: false });
   assert.equal(app.focused(), "");
   app.keydown(">", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+});
+
+test("keyboard colon copies the below-floor group count unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>:<\/kbd> Copy the below-floor group count as one-line Markdown/u);
+  assert.match(html, /id="copy-below-floor-count-button"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown(":");
+  assert.equal(app.clipboardText(), "Groups below their support floor: 0. A floor is a number you entered, not a legal quorum.\n");
+  assert.equal(app.clipboardText(), app.belowFloorCount());
+  assert.doesNotMatch(app.clipboardText(), /Current lock count/u);
+  assert.doesNotMatch(app.clipboardText(), /First locked clause option/u);
+  assert.doesNotMatch(app.clipboardText(), /First below-floor group/u);
+  assert.match(app.message(), /honest zero/u);
+  assert.match(app.message(), /not a legal quorum/u);
+  app.clearFocus();
+  app.keydown(":", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown(":", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const draft = {
+    title: "Colon below-floor count workshop",
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 50, open: 40 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 50, open: 80 } },
+    ] }],
+  };
+  const counted = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  counted.keydown(":");
+  assert.equal(counted.clipboardText(), "Groups below their support floor: 1. A floor is a number you entered, not a legal quorum.\n");
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-below-floor-count-button");
+  assert.equal(blocked.focused(), "#below-floor-count-fallback");
+  blocked.clearFocus();
+  blocked.keydown(":", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(blocked.focused(), "");
+});
+
+test("keyboard hyphen jumps to the below-floor count copy control unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>-<\/kbd> Jump to the below-floor group count copy control, or the groups heading/u);
+  assert.match(html, /id="copy-below-floor-count-button"/u);
+  assert.match(html, /id="groups-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("-");
+  assert.equal(app.focused(), "#copy-below-floor-count-button");
+  app.clearFocus();
+  app.keydown("-", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("-", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("-", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("_");
+  assert.equal(app.focused(), "");
+});
+
+test("keyboard equals jumps to hide-groups-meeting-threshold unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>=<\/kbd> Jump to the hide-groups-meeting-threshold control, or the groups heading/u);
+  assert.match(html, /id="hide-groups-meeting-threshold"/u);
+  assert.match(html, /id="groups-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("=");
+  assert.equal(app.focused(), "#hide-groups-meeting-threshold");
+  app.clearFocus();
+  app.keydown("=", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("=", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("=", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("+");
   assert.equal(app.focused(), "");
 });
 
@@ -3109,6 +3381,53 @@ test("copy below-floor group count writes one-line Markdown with a clipboard fal
   assert.match(counted.message(), /not a legal quorum/u);
 });
 
+test("copy first below-floor group writes one-line Markdown with a clipboard fallback", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-first-below-floor-group-button"/u);
+  assert.match(html, /Copy first below-floor group/u);
+  assert.match(html, /id="first-below-floor-group-fallback"/u);
+  assert.match(html, /not a legal identity/u);
+  const app = await savedWorkbench(new Map());
+  assert.equal(app.firstBelowFloorGroup(), "No group is below its support floor, so there is no first below-floor group label to copy. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.doesNotMatch(app.firstBelowFloorGroup(), /Groups below their support floor/u);
+  assert.doesNotMatch(app.firstBelowFloorGroup(), /Current lock count/u);
+  assert.doesNotMatch(app.firstBelowFloorGroup(), /First locked clause option/u);
+  await app.click("#copy-first-below-floor-group-button");
+  assert.equal(app.clipboardText(), app.firstBelowFloorGroup());
+  assert.match(app.message(), /honest empty/u);
+  assert.match(app.message(), /not a legal quorum/u);
+  assert.match(app.message(), /not a legal identity/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-first-below-floor-group-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#first-below-floor-group-fallback");
+  assert.match(blocked.firstBelowFloorGroup(), /No group is below its support floor/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a legal identity/u);
+  const draft = {
+    title: "First below-floor group workshop",
+    threshold: 70,
+    groups: [
+      { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
+      { id: "open", name: "Open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { floored: 50, open: 90 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 50, open: 40 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 50, open: 80 } },
+    ] }],
+  };
+  const labelled = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
+  assert.equal(labelled.firstBelowFloorGroup(), "First below-floor group: Floored. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  await labelled.click("#copy-first-below-floor-group-button");
+  assert.equal(labelled.clipboardText(), "First below-floor group: Floored. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.doesNotMatch(labelled.clipboardText(), /Groups below their support floor/u);
+  assert.doesNotMatch(labelled.clipboardText(), /Current lock count/u);
+  assert.doesNotMatch(labelled.clipboardText(), /Later floor/u);
+  assert.match(labelled.message(), /not a legal identity/u);
+});
+
 test("copy current locks writes Markdown with a textarea fallback and is not a legal hold", async () => {
   const html = await standaloneBytes();
   assert.match(html, /id="copy-locks-button"/u);
@@ -3394,6 +3713,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(Object.hasOwn(proposal, "hideUnlockedClauses"), false);
   assert.equal(Object.hasOwn(proposal, "hideLockedClauses"), false);
   assert.equal(Object.hasOwn(proposal, "hideGroupsMeetingThreshold"), false);
+  assert.equal(Object.hasOwn(proposal, "hideGroupsBelowThreshold"), false);
   assert.equal(Object.hasOwn(proposal, "noCheaperRemainingClausesOnly"), false);
   assert.equal(proposal.clauses.length, 3);
   assert.match(app.groups(), /No veto groups match this filter/u);
@@ -3408,6 +3728,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   app.filterHideUnlockedClauses(true);
   app.filterHideLockedClauses(true);
   app.filterHideGroupsMeetingThreshold(true);
+  app.filterHideGroupsBelowThreshold(true);
   const nextPrefs = JSON.parse(storage.get("smallest-agreement:workspace:v1"));
   assert.equal(nextPrefs.changedClausesOnly, true);
   assert.equal(nextPrefs.belowFloorGroupsOnly, true);
@@ -3418,6 +3739,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(nextPrefs.hideUnlockedClauses, true);
   assert.equal(nextPrefs.hideLockedClauses, true);
   assert.equal(nextPrefs.hideGroupsMeetingThreshold, true);
+  assert.equal(nextPrefs.hideGroupsBelowThreshold, true);
   app.filterVetoGroups(false);
   app.filterLockedClauses(false);
   await app.importJson(JSON.stringify({
@@ -3444,6 +3766,7 @@ test("workspace JSON persists veto-only and locked-clause filters that the solve
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideUnlockedClauses, false);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideLockedClauses, false);
   assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideGroupsMeetingThreshold, false);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:workspace:v1")).hideGroupsBelowThreshold, false);
   await app.importJson(JSON.stringify({
     format: "smallest-agreement-workspace",
     version: 1,
