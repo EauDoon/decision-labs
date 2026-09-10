@@ -88,9 +88,9 @@ test("the buyer room copies leftover coverage with a textarea fallback", async (
   const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
   assert.match(buyerPanel, /id="copy-leftover-coverage"/u);
   assert.match(buyerPanel, /Copy leftover coverage \(organizer private\)/u);
-  assert.match(buyerPanel, /id="clipboard-fallback-text"/u);
   assert.match(buyerPanel, /id="leftover-coverage-rows"/u);
   assert.match(buyerPanel, /organizer-private/u);
+  assert.match(html, /id="clipboard-fallback-text"/u);
   assert.equal(merchantPanel.includes("copy-leftover-coverage"), false);
   assert.equal(merchantPanel.includes("clipboard-fallback-text"), false);
   assert.match(app, /createLeftoverCoverageMarkdown\(/u);

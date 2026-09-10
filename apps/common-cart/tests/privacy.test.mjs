@@ -123,6 +123,8 @@ test("variant overlap Markdown omits buyer labels, ids, budgets, and allocations
   assert.equal(markdown.includes("leftoverBuyerIds"), false);
   assert.equal(markdown.includes('"selectedBuyerIds":'), false);
   assert.equal(markdown.includes('"allocations":'), false);
+  assert.match(markdown, /Labels, IDs, budgets, and allocations are omitted/);
+  assert.doesNotMatch(markdown, /North block|Garden row|Library crew|Station flats|West court/u);
 });
 
 test("exclusion counts markdown omits buyer labels, ids, budgets, and allocations", () => {

@@ -263,19 +263,11 @@ function bindStaticEvents() {
   });
   document.querySelector("#overlap-markdown").addEventListener("click", () => {
     try {
-      const markdown = createVariantOverlapMarkdown(scenario);
-      if (navigator.clipboard?.writeText) {
-        navigator.clipboard.writeText(markdown).then(
-          () => setStatus("Overlap Markdown copied. It contains buyer counts only. Labels, IDs, budgets, and allocations are omitted.", true),
-          () => {
-            downloadFile(markdown, "common-cart-variant-overlap.md", "text/markdown;charset=utf-8");
-            setStatus("Clipboard was blocked, so the overlap Markdown was downloaded instead. Counts only.", true);
-          }
-        );
-        return;
-      }
-      downloadFile(markdown, "common-cart-variant-overlap.md", "text/markdown;charset=utf-8");
-      setStatus("Overlap Markdown downloaded. It contains buyer counts only.", true);
+      copyTextWithFallback(
+        createVariantOverlapMarkdown(scenario),
+        "Overlap Markdown copied. It contains buyer counts only. Labels, IDs, budgets, and allocations are omitted.",
+        "Clipboard was blocked. Overlap Markdown is in the textarea. Counts only. Labels, IDs, budgets, and allocations are omitted."
+      );
     } catch (error) { setStatus(`Overlap Markdown copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#copy-winner-aggregates").addEventListener("click", () => {
@@ -299,7 +291,8 @@ function bindStaticEvents() {
     try {
       copyTextWithFallback(
         createLeftoverCoverageMarkdown(scenario),
-        "Leftover coverage copied as organizer-private Markdown. Buyer counts and units only. This is not a merchant export."
+        "Leftover coverage copied as organizer-private Markdown. Buyer counts and units only. This is not a merchant export.",
+        "Clipboard was blocked. Organizer-private leftover Markdown is in the textarea. Buyer counts and units only. This is not a merchant export."
       );
     } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
   });
@@ -2006,7 +1999,7 @@ function exportScenario() {
   }
 }
 
-function copyTextWithFallback(text, successMessage) {
+function copyTextWithFallback(text, successMessage, fallbackMessage) {
   const wrap = document.querySelector("#clipboard-fallback");
   const area = document.querySelector("#clipboard-fallback-text");
   const hideFallback = () => {
@@ -2014,14 +2007,14 @@ function copyTextWithFallback(text, successMessage) {
   };
   const showFallback = () => {
     if (!wrap || !area) {
-      setStatus("Clipboard was blocked. The leftover Markdown could not be copied automatically.");
+      setStatus("Clipboard was blocked. The text could not be copied automatically.");
       return;
     }
     area.value = text;
     wrap.hidden = false;
     area.focus();
     area.select();
-    setStatus("Clipboard was blocked. The organizer-private leftover Markdown is in the textarea so you can copy it from there.");
+    setStatus(fallbackMessage);
   };
   if (navigator.clipboard?.writeText) {
     navigator.clipboard.writeText(text).then(

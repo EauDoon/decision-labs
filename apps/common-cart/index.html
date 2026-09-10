@@ -134,6 +134,11 @@ SOFTWARE.
     </section>
 
     <div class="status-line" id="status" role="status" aria-live="polite"></div>
+    <div id="clipboard-fallback" class="print-chrome" hidden>
+      <label>Clipboard was blocked. Copy this text
+        <textarea id="clipboard-fallback-text" rows="10" readonly spellcheck="false"></textarea>
+      </label>
+    </div>
     <p id="entry-cap-warning" class="status-short print-chrome" hidden></p>
     <p id="save-state" class="canvas-note" role="status" aria-live="polite"></p>
     <section class="snapshot-bar print-chrome" aria-label="Saved room workspace">
@@ -359,11 +364,6 @@ SOFTWARE.
             </div>
             <button id="copy-leftover-coverage" class="print-chrome" type="button">Copy leftover coverage (organizer private)</button>
             <p class="canvas-note print-chrome">Organizer-private Markdown of leftover buyer counts and units. Clipboard copies when allowed; otherwise a textarea is shown. This is not a merchant export.</p>
-            <div id="clipboard-fallback" class="print-chrome" hidden>
-              <label>Clipboard was blocked. Copy this organizer-private leftover Markdown
-                <textarea id="clipboard-fallback-text" rows="10" readonly spellcheck="false"></textarea>
-              </label>
-            </div>
           </article>
           <button id="buyer-report" class="print-chrome" type="button">Export private buyer report (CSV)</button>
           <button id="organizer-briefing" class="print-chrome" type="button">Export organizer briefing</button>

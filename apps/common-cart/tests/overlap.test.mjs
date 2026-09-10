@@ -103,7 +103,10 @@ test("the merchant table can copy overlap Markdown", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="overlap-markdown"/u);
   assert.match(html, /Copy overlap Markdown/u);
+  assert.match(html, /id="clipboard-fallback-text"/u);
   assert.match(app, /createVariantOverlapMarkdown\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
+  assert.match(app, /clipboard-fallback-text/u);
 });
 
 test("variant overlap region is merchant-facing counts only", async () => {
