@@ -332,11 +332,16 @@ function render() {
 
 function renderTable() {
   const mode = document.querySelector("#table-density").value;
+  const backlogOnly = Boolean(document.querySelector("#queue-backlog-only")?.checked);
   const peakHour = simulation.summary.peakQueueHour;
   const peakQueuedAud = simulation.summary.peakQueuedAud;
   const rowIndexes = new Set([selectedHour]);
   if (peakQueuedAud > 0) rowIndexes.add(peakHour);
   for (let hour = 0; hour <= SIMULATION_HOURS; hour += 1) {
+    if (backlogOnly) {
+      if (simulation.timeline[hour].queuedAud > 0) rowIndexes.add(hour);
+      continue;
+    }
     if(mode === "all" || (mode === "backlog" && simulation.timeline[hour].queuedAud > 0) || (mode === "snapshots" && hour % 6 === 0)) rowIndexes.add(hour);
   }
   const fragment = document.createDocumentFragment();
@@ -370,6 +375,13 @@ function renderTable() {
     note.textContent = peakQueuedAud > 0
       ? `The highlighted row is the peak queue checkpoint at ${formatTime(peakHour)} (hour ${peakHour}).`
       : "No peak queue row is highlighted because demand never queued.";
+  }
+  const filterNote = document.querySelector("#queue-backlog-filter-note");
+  if (filterNote) {
+    const backlogCount = simulation.timeline.filter((point) => point.queuedAud > 0).length;
+    filterNote.textContent = backlogOnly
+      ? `Showing hours with backlog (${backlogCount} of ${SIMULATION_HOURS + 1} checkpoints). Dashboard counts are unchanged.`
+      : `All checkpoints remain available. Use the backlog filter to hide hours with no queue. Dashboard counts are unchanged.`;
   }
 }
 
@@ -1247,6 +1259,7 @@ document.querySelector("#redo-scenario").addEventListener("click",()=>{
 scenarioHistory=createScenarioHistory(scenario);renderHistory();
 
 document.querySelector("#table-density").addEventListener("change",renderTable);
+document.querySelector("#queue-backlog-only").addEventListener("change",renderTable);
 document.querySelector("#gantt-density").addEventListener("change",()=>{
   renderGantt();
   saveWorkspace();
