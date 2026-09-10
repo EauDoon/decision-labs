@@ -89,6 +89,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>@<\/kbd> Jump to the hide-non-veto-groups control, or the groups heading/u);
   assert.match(html, /<kbd>\(<\/kbd> Copy the veto-group count as one-line Markdown/u);
   assert.match(html, /<kbd>\)<\/kbd> Jump to the veto-group count copy control, or the groups heading/u);
+  assert.match(html, /<kbd>#<\/kbd> Jump to the hide-first-veto-group control, or the groups heading/u);
   assert.match(html, /id="locks-heading"/u);
   assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
@@ -3773,6 +3774,29 @@ test("keyboard close-paren jumps to the veto-group count copy control unless an 
   app.clearFocus();
   app.keydown(")");
   assert.equal(app.focused(), "#copy-veto-group-count-button");
+});
+
+test("keyboard hash jumps to hide-first-veto-group unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>#<\/kbd> Jump to the hide-first-veto-group control, or the groups heading/u);
+  assert.match(html, /id="hide-first-veto-group"/u);
+  assert.match(html, /id="hide-first-veto-group"[^>]*aria-keyshortcuts="#"/u);
+  assert.match(html, /id="groups-heading"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("#");
+  assert.equal(app.focused(), "#hide-first-veto-group");
+  app.clearFocus();
+  app.keydown("#", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("#", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("#", { tagName: "SELECT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("@");
+  assert.equal(app.focused(), "#hide-non-veto-groups");
+  app.clearFocus();
+  app.keydown("#");
+  assert.equal(app.focused(), "#hide-first-veto-group");
 });
 
 test("keyboard comma copies the recommended package option count unless an input is active", async () => {
