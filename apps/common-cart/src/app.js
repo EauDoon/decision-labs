@@ -1764,6 +1764,8 @@ function refresh() {
     if (leftoverPrintWinner) leftoverPrintWinner.textContent = "Winner merchant: None unlocked";
     const leftoverPrintFill = document.querySelector("#leftover-print-fill");
     if (leftoverPrintFill) leftoverPrintFill.textContent = "Leftover fill merchant: None";
+    const leftoverPrintFillMerchant = document.querySelector("#leftover-print-fill-merchant");
+    if (leftoverPrintFillMerchant) leftoverPrintFillMerchant.textContent = "Leftover fill merchant label: None";
     const leftoverFallback = document.querySelector("#clipboard-fallback");
     if (leftoverFallback) leftoverFallback.hidden = true;
     elements.demandGroups.replaceChildren();
@@ -2085,6 +2087,13 @@ function renderLeftoverCoverageTable(rawScenario) {
     leftoverFillPrint.textContent = coverage.secondary
       ? `Leftover fill merchant: ${coverage.secondary.merchant}, ${coverage.secondary.fulfilledUnits} units`
       : "Leftover fill merchant: None";
+  }
+  const leftoverFillMerchantPrint = document.querySelector("#leftover-print-fill-merchant");
+  if (leftoverFillMerchantPrint) {
+    const coverage = computeResidualCoverage(rawScenario);
+    leftoverFillMerchantPrint.textContent = coverage.secondary
+      ? `Leftover fill merchant label: ${coverage.secondary.merchant}`
+      : "Leftover fill merchant label: None";
   }
   const uncoveredPrint = document.querySelector("#leftover-print-uncovered");
   if (uncoveredPrint) {
