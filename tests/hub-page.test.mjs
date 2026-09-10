@@ -1387,3 +1387,45 @@ test('copy How it works markdown is the printed heading and list items', async (
   assert.doesNotMatch(copied, /live policy feed/);
 });
 
+test('copy How it works shows a visible textarea when clipboard is unavailable', async () => {
+  let clickHow = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const heading = { textContent: 'How it works' };
+  const items = [{ textContent: 'Standalone files. Every workbench ships standalone.html.' }];
+  const section = {
+    querySelector(selector) {
+      return selector === 'h2' ? heading : null;
+    },
+    querySelectorAll(selector) {
+      return selector === 'ul li' ? items : [];
+    },
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-how') return { addEventListener(name, handler) { if (name === 'click') clickHow = handler; } };
+      if (id === 'copy-how-status') return status;
+      if (id === 'copy-how-fallback') return fallback;
+      if (id === 'how-it-works') return section;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickHow();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '## How it works\n- Standalone files. Every workbench ships standalone.html.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live policy feed/);
+});
+
