@@ -38,6 +38,7 @@ import {
   createLeftoverFillDeliveryMarkdown,
   createLeftoverFillPickupMarkdown,
   createLeftoverFillLabelMarkdown,
+  createLeftoverFillMinimumMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   createUncoveredLeftoverUnitCountMarkdown
@@ -510,6 +511,10 @@ test("merchant surfaces omit leftover fill label copy", async () => {
   assert.match(leftoverFillLabel, /organizer private/);
   assert.match(leftoverFillLabel, /Not a merchant export/);
   assertOmitsPrivateBuyers(leftoverFillLabel, ["SECRET_TITLE"]);
+  const leftoverFillMinimum = createLeftoverFillMinimumMarkdown(secretNeighbourhood());
+  assert.match(leftoverFillMinimum, /organizer private/);
+  assert.match(leftoverFillMinimum, /Not a merchant export/);
+  assertOmitsPrivateBuyers(leftoverFillMinimum, ["SECRET_TITLE"]);
   const left = secretNeighbourhood();
   const merchantSurfaces = [
     JSON.stringify(createMerchantReport(left)),
@@ -560,6 +565,8 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.match(leftover, /Leftover fill pickup days: none/u);
   assert.match(leftover, /leftover-print-fill-label/u);
   assert.match(leftover, /Leftover fill label: none/u);
+  assert.match(leftover, /leftover-print-fill-minimum/u);
+  assert.match(leftover, /Leftover fill minimum: none/u);
   assert.equal(leftover.includes("maxUnitPrice"), false);
   assert.match(css, /body\.print-leftover \.print-private/u);
   const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
@@ -577,9 +584,13 @@ test("leftover print one-pager uses merchant labels and omits private buyer rows
   assert.equal(merchantPanel.includes("leftover-print-fill-delivery"), false);
   assert.equal(merchantPanel.includes("leftover-print-fill-pickup"), false);
   assert.equal(merchantPanel.includes("leftover-print-fill-label"), false);
+  assert.equal(merchantPanel.includes("leftover-print-fill-minimum"), false);
   assert.equal(merchantPanel.includes("hide-first-buyer-filled-by-leftover-fill"), false);
   assert.equal(merchantPanel.includes("hideFirstBuyerFilledByLeftoverFill"), false);
+  assert.equal(merchantPanel.includes("hide-first-buyer-filled-by-tertiary-fill"), false);
+  assert.equal(merchantPanel.includes("hideFirstBuyerFilledByTertiaryFill"), false);
   assert.equal(merchantPanel.includes("copy-leftover-fill-label"), false);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-minimum"), false);
 });
 
 test("merchant-facing 1.4.1 surfaces omit buyer labels, ids, budgets, and allocations", () => {

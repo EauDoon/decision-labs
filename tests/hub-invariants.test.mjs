@@ -448,3 +448,54 @@ test('404 Copy last workbench heading does not expand PUBLIC_PATHS or connect-sr
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(serve, /hosted API/i);
 });
+
+test('catalog keys open-brace 5 and 6 stay distinct from dollar r and the 1-4 opener map', () => {
+  assert.match(html, /event\.key === '\{'/);
+  assert.match(html, /event\.key === '5'/);
+  assert.match(html, /event\.key === '6'/);
+  assert.match(html, /event\.key === '\$'/);
+  assert.match(html, /event\.key === 'r'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="\{"/);
+  assert.match(html, /id="copy-last-review"/);
+  assert.match(html, />Copy last review path</);
+  assert.notEqual(html.match(/event\.key === '\{'/)?.[0], html.match(/event\.key === '\$'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '5'/)?.[0], html.match(/event\.key === 'r'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '6'/)?.[0], html.match(/event\.key === 'r'/)?.[0]);
+  assert.match(html, /lastReviewBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-last-review'\) \|\| document\.getElementById\('workbenches-title'\)/);
+  assert.match(html, /querySelector\('#workbenches article\.workbench:last-of-type \.review-path'\)/);
+  assert.match(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 5:/);
+});
+
+test('print CSS hides copy last review path tools like other copy tools', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-last-review-tools, \.copy-last-review-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-last-workbench-tools, \.copy-last-workbench-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+});
+
+test('404 Copy last review path does not expand PUBLIC_PATHS or connect-src', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  assert.match(serve, /request\.method !== 'GET' && request\.method !== 'HEAD'/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-last-review"/);
+  assert.match(page, />Copy last review path</);
+  assert.match(page, /lastReviewMarkdown/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /Review the timing behind the queue/);
+  assert.match(page, /id="copy-last-workbench"/);
+  assert.match(page, />Copy last workbench heading</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(serve, /hosted API/i);
+});

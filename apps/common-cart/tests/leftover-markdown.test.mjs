@@ -20,6 +20,7 @@ import {
   createLeftoverFillDeliveryMarkdown,
   createLeftoverFillPickupMarkdown,
   createLeftoverFillLabelMarkdown,
+  createLeftoverFillMinimumMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   createUncoveredLeftoverUnitCountMarkdown
@@ -555,6 +556,7 @@ test("leftover fill pickup Markdown is organizer-private count only when leftove
   assert.notEqual(markdown, createLeftoverFillDeliveryMarkdown(scenario));
   assert.notEqual(markdown, createLeftoverFillRemainingCapacityMarkdown(scenario));
   assert.notEqual(markdown, createLeftoverFillLabelMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverFillMinimumMarkdown(scenario));
   assert.notEqual(markdown, createWinningFulfillmentMarkdown(scenario));
 });
 
@@ -601,6 +603,7 @@ test("leftover fill label Markdown is organizer-private merchant and variant onl
   assert.notEqual(markdown, createLeftoverFillUnitCountMarkdown(scenario));
   assert.notEqual(markdown, createLeftoverFillMerchantLabelMarkdown(scenario));
   assert.notEqual(markdown, createLeftoverFillPickupMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverFillMinimumMarkdown(scenario));
   assert.notEqual(markdown, createLeftoverFillDeliveryMarkdown(scenario));
   assert.notEqual(markdown, createWinningMerchantLabelMarkdown(scenario));
 });
@@ -609,6 +612,44 @@ test("leftover fill label Markdown is honest when leftover fill is missing", () 
   const scenario = leftoverFixture();
   scenario.offers[1].minimumUnits = 5000;
   const markdown = createLeftoverFillLabelMarkdown(scenario);
+  assert.match(markdown, /: none\. Not a merchant export\./);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("Leaf Collective"), false);
+  assert.equal(markdown.includes("Harbour Roasters"), false);
+});
+
+test("leftover fill minimum Markdown is organizer-private count only", () => {
+  const scenario = leftoverFixture();
+  scenario.title = "SECRET_TITLE";
+  scenario.buyers[0].id = "SECRET_ID";
+  scenario.buyers[0].maxOrderTotal = 987654.32;
+  const markdown = createLeftoverFillMinimumMarkdown(scenario);
+  const leftoverOffer = scenario.offers.find((offer) => offer.id === computeResidualCoverage(scenario).secondary.offerId);
+  assert.equal(markdown.trim().includes("\n"), false);
+  assert.match(markdown, /organizer private/);
+  assert.match(markdown, /Not a merchant export/);
+  assert.match(markdown, new RegExp(`: ${leftoverOffer.minimumUnits}\\.`));
+  assert.equal(markdown.includes("SECRET_TITLE"), false);
+  assert.equal(markdown.includes("SECRET_LABEL"), false);
+  assert.equal(markdown.includes("SECRET_ID"), false);
+  assert.equal(markdown.includes("987654.32"), false);
+  assert.equal(markdown.includes("maxUnitPrice"), false);
+  assert.equal(markdown.includes("leftoverBuyerIds"), false);
+  assert.equal(markdown.includes("Tea room"), false);
+  assert.equal(markdown.includes("Tertiary"), false);
+  assert.equal(markdown.includes("tertiary"), false);
+  assert.notEqual(markdown, createLeftoverFillMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverFillUnitCountMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverFillMerchantLabelMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverFillLabelMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverFillPickupMarkdown(scenario));
+  assert.notEqual(markdown, createLeftoverFillRemainingCapacityMarkdown(scenario));
+});
+
+test("leftover fill minimum Markdown is honest when leftover fill is missing", () => {
+  const scenario = leftoverFixture();
+  scenario.offers[1].minimumUnits = 5000;
+  const markdown = createLeftoverFillMinimumMarkdown(scenario);
   assert.match(markdown, /: none\. Not a merchant export\./);
   assert.equal(markdown.includes("SECRET_LABEL"), false);
   assert.equal(markdown.includes("Leaf Collective"), false);
@@ -848,6 +889,30 @@ test("the buyer room copies leftover fill label with a textarea fallback", async
   assert.match(app, /function copyLeftoverFillMerchantLabel\(/u);
   assert.match(app, /if \(key === "\$"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillLabel\(\);/u);
   assert.match(html, /aria-keyshortcuts="\$"/u);
+});
+
+test("the buyer room copies leftover fill minimum with a textarea fallback", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-minimum"/u);
+  assert.match(buyerPanel, /Copy leftover fill minimum \(organizer private\)/u);
+  assert.match(buyerPanel, /Leftover fill minimum copy is leftover-fill offer minimum units as a count/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-minimum"), false);
+  assert.equal(merchantPanel.includes("Copy leftover fill minimum"), false);
+  assert.equal(merchantPanel.includes("Leftover fill minimum copy"), false);
+  assert.match(app, /createLeftoverFillMinimumMarkdown\(/u);
+  assert.match(app, /function copyLeftoverFillMinimum\(/u);
+  assert.match(app, /function copyTextWithFallback\(/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.match(app, /This is not a merchant export/u);
+  assert.match(app, /Count only\. This is not a merchant export/u);
+  assert.match(buyerPanel, /id="copy-leftover-fill-label"/u);
+  assert.match(buyerPanel, /id="copy-leftover-fill-pickup"/u);
+  assert.match(app, /if \(key === "5"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMinimum\(\);/u);
+  assert.match(html, /aria-keyshortcuts="5"/u);
+  assert.match(app, /function copyLeftoverFillLabel\(/u);
 });
 
 test("the buyer room copies uncovered leftover unit-count with a textarea fallback", async () => {
