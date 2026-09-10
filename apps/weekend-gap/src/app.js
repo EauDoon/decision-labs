@@ -1633,6 +1633,15 @@ function copyNextPayoutHourMarkdown() {
   const text = nextPayoutHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#next-payout-copy-fallback", "Next-payout hour copied as one-line Markdown. This is a synthetic label, not a live payout time.");
 }
+function jumpToRemainingReserveCopy() {
+  const control = document.querySelector("#copy-remaining-reserve");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToDashboard();
+}
 function copyRemainingReserveMarkdown() {
   const text = remainingReserveAtHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#remaining-reserve-copy-fallback", "Remaining reserve and queued AUD copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
@@ -1871,6 +1880,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === ".") {
     event.preventDefault();
     jumpToFirstClosedFxCopy();
+    return;
+  }
+  if (event.key === "/") {
+    event.preventDefault();
+    jumpToRemainingReserveCopy();
     return;
   }
   if (event.key === "n" || event.key === "N") {

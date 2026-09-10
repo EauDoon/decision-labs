@@ -670,6 +670,30 @@ test("keyboard period jumps to the first-closed-FX copy control and ignores the 
   assert.equal(ui.nodes.get("copy-first-closed-fx").focused, false);
 });
 
+test("keyboard slash jumps to remaining-reserve copy and shift-slash stays help", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  await ui.keydown("/");
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, true);
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, true);
+  ui.nodes.get("copy-remaining-reserve").focused = false;
+  ui.nodes.get("outcome-title").focused = false;
+  await ui.keydown("?", { tagName: "BODY" });
+  assert.equal(ui.nodes.get("shortcut-overlay").hidden, false);
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, false);
+  ui.nodes.get("shortcut-overlay").hidden = true;
+  await ui.keydown("/", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, false);
+  assert.equal(ui.nodes.get("outcome-title").focused, false);
+  await ui.keydown("/", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, false);
+  await ui.keydown("/", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("copy-remaining-reserve").focused, false);
+  await ui.keydown("z");
+  assert.equal(ui.nodes.get("remaining-reserve-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("remaining-reserve-copy-fallback").value, /Remaining reserve:/);
+});
+
 test("keyboard h jumps to the selected Gantt hour table and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("h");
