@@ -417,6 +417,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
  * @property {boolean} [hideAllHoldLedger] Optional ledger display preference. Omitted files default to showing all-hold rows.
  * @property {boolean} [hideZeroShareParticipants] Optional roster display preference. Omitted files default to showing zero-share rows.
  * @property {boolean} [hideParticipantsOverCapacity] Optional roster display preference. Omitted files default to showing rows whose volume is above listed capacity.
+ * @property {boolean} [hideParticipantsAtHold] Optional roster display preference. Omitted files default to showing rows whose volume headroom is at or above a hold with no listed capacity breach.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -430,7 +431,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
 const EPSILON = 1e-9;
 const MAX_PARTICIPANTS = 24;
 const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -552,6 +553,15 @@ const PRESETS = Object.freeze({
       { id: 'sound', name: 'Sound', revenueShare: 0.2, variableCostPerTransaction: 2.8, fixedMonthlyCost: 1800, minimumAcceptableProfit: 2000, capacity: 2800, minimumCommitment: 0, riskCost: 400 },
     ],
   },
+  festivalStallSplit: {
+    name: 'Festival stall split',
+    deal: { monthlyVolume: 2400, feePerTransaction: 18, addressableVolume: 3600, volumeShockPct: 0 },
+    participants: [
+      { id: 'stallholder', name: 'Stallholder', revenueShare: 0.48, variableCostPerTransaction: 4.2, fixedMonthlyCost: 1800, minimumAcceptableProfit: 4500, capacity: 3200, minimumCommitment: 400, riskCost: 500 },
+      { id: 'site-manager', name: 'Site manager', revenueShare: 0.32, variableCostPerTransaction: 0.6, fixedMonthlyCost: 4200, minimumAcceptableProfit: 2800, capacity: 4000, minimumCommitment: 0, riskCost: 800 },
+      { id: 'ticket-office', name: 'Ticket office', revenueShare: 0.2, variableCostPerTransaction: 1.4, fixedMonthlyCost: 900, minimumAcceptableProfit: 1200, capacity: 2800, minimumCommitment: 0, riskCost: 200 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -631,6 +641,12 @@ function validateConfiguration(config) {
     const hideOver = own(config, 'hideParticipantsOverCapacity');
     if (hideOver !== true && hideOver !== false) {
       errors.push('Hide participants over capacity must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideParticipantsAtHold')) {
+    const hideAtHold = own(config, 'hideParticipantsAtHold');
+    if (hideAtHold !== true && hideAtHold !== false) {
+      errors.push('Hide participants at hold must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
@@ -2268,6 +2284,7 @@ let operatingCopyText = '';
 let splitCopyText = '';
 let allocationCopyText = '';
 let titleCopyText = '';
+let breakpointLabelCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -2280,6 +2297,7 @@ let hideHoldingParticipants = false;
 let hideAllCompoundHolders = false;
 let hideZeroShareParticipants = false;
 let hideParticipantsOverCapacity = false;
+let hideParticipantsAtHold = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -2304,6 +2322,7 @@ function checkpoint() {
   splitCopyText = '';
   allocationCopyText = '';
   titleCopyText = '';
+  breakpointLabelCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -2335,6 +2354,7 @@ function travelHistory(direction) {
   splitCopyText = '';
   allocationCopyText = '';
   titleCopyText = '';
+  breakpointLabelCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -2441,6 +2461,7 @@ function readCollapsePreference() {
   hideAllCompoundHolders = state.hideAllHoldLedger === true;
   hideZeroShareParticipants = state.hideZeroShareParticipants === true;
   hideParticipantsOverCapacity = state.hideParticipantsOverCapacity === true;
+  hideParticipantsAtHold = state.hideParticipantsAtHold === true;
 }
 
 function writeCollapsePreference() {
@@ -2454,6 +2475,8 @@ function writeCollapsePreference() {
   else delete state.hideZeroShareParticipants;
   if (hideParticipantsOverCapacity) state.hideParticipantsOverCapacity = true;
   else delete state.hideParticipantsOverCapacity;
+  if (hideParticipantsAtHold) state.hideParticipantsAtHold = true;
+  else delete state.hideParticipantsAtHold;
 }
 
 function compactErrorMessage(error) {
@@ -2636,7 +2659,7 @@ function shockUnits(kind) {
 }
 
 function copyFirstBreakpointButton() {
-  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button></div>`;
+  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button><button type="button" data-action="copy-first-breakpoint-label">Copy first-breakpoint participant label</button></div>`;
 }
 
 function breakpointSection(result) {
@@ -2687,10 +2710,20 @@ function participantOverListedCapacity(result, participant) {
   return volume > capacity + 1e-9;
 }
 
+function participantAtHoldNoCapacityBreach(result, participant) {
+  if (!result) return false;
+  const row = result.participants.find((item) => item.id === participant.id);
+  if (!row) return false;
+  if (participantOverListedCapacity(result, participant)) return false;
+  if (row.headroomToExit === null) return false;
+  return row.headroomToExit >= -1e-9;
+}
+
 function participantHiddenFromRoster(result, participant) {
   if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
   if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
   if (hideParticipantsOverCapacity && participantOverListedCapacity(result, participant)) return true;
+  if (hideParticipantsAtHold && participantAtHoldNoCapacityBreach(result, participant)) return true;
   return false;
 }
 
@@ -2705,12 +2738,19 @@ function inputPanel(result) {
   const hiddenOverCount = hideParticipantsOverCapacity && result
     ? state.participants.filter((participant) => participantOverListedCapacity(result, participant)).length
     : 0;
+  const hiddenAtHoldCount = hideParticipantsAtHold && result
+    ? state.participants.filter((participant) => participantAtHoldNoCapacityBreach(result, participant)).length
+    : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
+  const firstOverCapacityId = result
+    ? (state.participants.find((participant) => participantOverListedCapacity(result, participant))?.id ?? null)
+    : null;
   const participantForms = state.participants.map((participant, index) => {
     if (participantHiddenFromRoster(result, participant)) return '';
     const leastHeadroom = result?.weakestParticipant?.id === participant.id;
+    const firstOverCapacity = firstOverCapacityId === participant.id;
     return `
-    <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}"${leastHeadroom ? ' id="least-headroom-participant" tabindex="-1"' : ''} aria-labelledby="participant-${index}-title">
+    <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}"${leastHeadroom ? ' id="least-headroom-participant" tabindex="-1"' : ''} aria-labelledby="participant-${index}-title">${firstOverCapacity ? '<span id="over-capacity-participant" tabindex="-1"></span>' : ''}
       <div class="participant-toolbar">
         <div class="button-row participant-roster">
           <button type="button" data-action="duplicate-participant" data-index="${index}" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Duplicate</button>
@@ -2746,7 +2786,10 @@ function inputPanel(result) {
   const overCapacityFilterNote = hideParticipantsOverCapacity
     ? `${hiddenOverCount} participant${hiddenOverCount === 1 ? '' : 's'} whose volume is above listed capacity ${hiddenOverCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
     : 'Hide participants whose volume is above listed capacity to filter this roster display only. Expand restores them. Counts stay the same.';
-  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity].filter(Boolean).length;
+  const atHoldFilterNote = hideParticipantsAtHold
+    ? `${hiddenAtHoldCount} participant${hiddenAtHoldCount === 1 ? '' : 's'} whose volume headroom is at or above a hold with no listed capacity breach ${hiddenAtHoldCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
+    : 'Hide participants whose current volume headroom is at or above a hold with no listed capacity breach to filter this roster display only. Expand restores them. Counts stay the same.';
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
     ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
@@ -2754,9 +2797,11 @@ function inputPanel(result) {
         ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has a zero revenue share. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
         : rosterFilterCount === 1 && hideParticipantsOverCapacity
           ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has volume above listed capacity. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-          : rosterFilterCount > 0
-            ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
-            : ''
+          : rosterFilterCount === 1 && hideParticipantsAtHold
+            ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has volume headroom at or above a hold with no listed capacity breach. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+            : rosterFilterCount > 0
+              ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+              : ''
     : '';
 
   return `
@@ -2775,7 +2820,7 @@ function inputPanel(result) {
             ${field({ label: 'Volume shock %', path: 'deal.volumeShockPct', value: state.deal.volumeShockPct ?? 0, min: 0, max: 100, step: '0.1', title: 'Baseline volume reduction, 0 through 100. There is no separate churn field.' })}
             ${field({ label: 'Deal notes', path: 'deal.notes', value: state.deal.notes ?? '', optional: true, wide: true, type: 'textarea', maxLength: 500, title: 'Optional notes, 1 through 500 characters after trimming. Leave blank to omit. Shown in reports and print.' })}
           </div>
-          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button><button type="button" data-action="copy-deal-title">Copy deal title and currency</button></div>
+          <div class="button-row"><button type="button" data-action="copy-deal-notes">Copy deal notes</button><button type="button" id="copy-deal-title" data-action="copy-deal-title">Copy deal title and currency</button></div>
         </section>
         <section class="input-section" aria-labelledby="stress-inputs-title">
           <h2 id="stress-inputs-title">Compound stress settings</h2>
@@ -2805,6 +2850,8 @@ function inputPanel(result) {
           <p class="notice">${zeroShareFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button></div>
           <p class="notice">${overCapacityFilterNote}</p>
+          <div class="button-row"><button type="button" data-action="hide-at-hold-participants" aria-pressed="${hideParticipantsAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants at hold with no listed capacity breach</button><button type="button" data-action="show-at-hold-participants" ${hideParticipantsAtHold ? '' : 'disabled'}>Show at-hold participants</button></div>
+          <p class="notice">${atHoldFilterNote}</p>
           ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
@@ -2846,7 +2893,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -2869,6 +2916,7 @@ function resultsPanel(result) {
       <div class="metric"><span>Capacity ceiling</span><strong>${formatVolume(result.capacityCeiling)}</strong></div>
     </section>
     <section class="print-only print-keep"><h2>Deal title</h2><p>${state.deal.title ? escapeAttribute(state.deal.title) : 'No deal title was entered.'}</p></section>
+    <section class="print-only print-keep"><h2>Currency code</h2><p>${currencyPrefix() ? escapeAttribute(currencyPrefix()) : 'No currency code was entered.'}</p></section>
     <section class="print-only print-keep"><h2>Least headroom</h2><p>${escapeAttribute(result.weakestParticipant.name)} has the least volume headroom to its ${escapeAttribute(result.weakestParticipant.bindingConstraint.label)} limit.</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
@@ -2904,6 +2952,7 @@ function resultsPanel(result) {
     ${allocationCopySection()}
     ${breakpointSnapshotCopySection()}
     ${titleCopySection()}
+    ${breakpointLabelCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -3388,6 +3437,7 @@ function attachEvents() {
     if (action === 'close-split-copy') { splitCopyText = ''; render(); return; }
     if (action === 'close-allocation-copy') { allocationCopyText = ''; render(); return; }
     if (action === 'close-title-copy') { titleCopyText = ''; render(); return; }
+    if (action === 'close-breakpoint-label-copy') { breakpointLabelCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -3461,6 +3511,24 @@ function attachEvents() {
     }
     if (action === 'show-over-capacity-participants') {
       hideParticipantsOverCapacity = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-at-hold-participants') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding participants at hold with no listed capacity breach.');
+        return;
+      }
+      hideParticipantsAtHold = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-at-hold-participants') {
+      hideParticipantsAtHold = false;
       writeCollapsePreference();
       saveState();
       render();
@@ -3585,6 +3653,7 @@ function attachEvents() {
     if (action === 'copy-brief') copyNegotiationBrief();
     if (action === 'copy-first-breakpoint') copyFirstBreakpoint();
     if (action === 'copy-first-breakpoint-snapshot') copyFirstBreakpointSnapshot();
+    if (action === 'copy-first-breakpoint-label') copyFirstBreakpointLabel();
     if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-waterfall') copyContributionWaterfall();
@@ -3979,6 +4048,17 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'j' || event.key === 'J') copyCapacityUtilization();
   if (event.key === 'q' || event.key === 'Q') {
     const target = document.querySelector('#equal-split') ?? document.querySelector('#normalize-shares');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'x' || event.key === 'X') {
+    const target = document.querySelector('#over-capacity-participant') ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'y' || event.key === 'Y') copyDealNotesLine();
+  if (event.key === 'z' || event.key === 'Z') {
+    const target = document.querySelector('#copy-deal-title') ?? document.querySelector('#deal-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
@@ -4389,6 +4469,61 @@ function copyFirstBreakpointSnapshot() {
   showBreakpointSnapshotCopyFallback(text, fallbackNote);
 }
 
+function firstBreakpointLabelMarkdown(result) {
+  const breakpoint = result.firstBreakpoint;
+  const name = breakpoint?.participant
+    ? reportText(breakpoint.participant.name)
+    : 'none';
+  return 'First-breakpoint participant: ' + name + '. Synthetic ranking, not a forecast.';
+}
+
+function showBreakpointLabelCopyFallback(text, message) {
+  breakpointLabelCopyText = text;
+  render();
+  document.querySelector('#breakpoint-label-copy-text')?.focus();
+  setNotice(message);
+}
+
+function breakpointLabelCopySection() {
+  if (!breakpointLabelCopyText) return '';
+  return `<section class="panel" aria-labelledby="breakpoint-label-copy-title"><div class="panel-heading"><h2 id="breakpoint-label-copy-title">First-breakpoint participant label Markdown</h2><button type="button" data-action="close-breakpoint-label-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is a synthetic ranking, not a forecast.</p><label class="brief-copy-label" for="breakpoint-label-copy-text">First-breakpoint participant label Markdown</label><textarea id="breakpoint-label-copy-text" readonly rows="4">${escapeAttribute(breakpointLabelCopyText)}</textarea></div></section>`;
+}
+
+function copyFirstBreakpointLabel() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the first-breakpoint participant label. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = firstBreakpointLabelMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'First-breakpoint participant label copied as Markdown. Synthetic ranking, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          breakpointLabelCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showBreakpointLabelCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      breakpointLabelCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showBreakpointLabelCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showBreakpointLabelCopyFallback(text, fallbackNote);
+}
+
 function shareHoldPreviewMarkdown(solved) {
   const target = state.participants.find((item) => item.id === solved.participantId);
   const name = reportText(target?.name ?? solved.participantId);
@@ -4462,6 +4597,14 @@ function dealNotesMarkdown() {
   return ['# Deal notes', '', notes, '', 'These are user-entered notes. They are not a probability or forecast.', ''].join('\n');
 }
 
+function dealNotesLineMarkdown() {
+  const notes = typeof state.deal.notes === 'string' && state.deal.notes.trim()
+    ? reportText(state.deal.notes.trim().replace(/\s+/g, ' '))
+    : '';
+  if (!notes) return 'Deal notes: none entered.';
+  return 'Deal notes: ' + notes;
+}
+
 function showNotesCopyFallback(text, message) {
   notesCopyText = text;
   render();
@@ -4475,10 +4618,23 @@ function notesCopySection() {
 }
 
 function copyDealNotes() {
-  const text = dealNotesMarkdown();
+  copyDealNotesText(
+    dealNotesMarkdown(),
+    'Deal notes copied as Markdown. They are user-entered notes, not a forecast.',
+    'Clipboard unavailable. Copy the Markdown from the text area.',
+  );
+}
+
+function copyDealNotesLine() {
+  copyDealNotesText(
+    dealNotesLineMarkdown(),
+    'Deal notes copied as one-line Markdown. They are user-entered notes, not a forecast.',
+    'Clipboard unavailable. Copy the Markdown from the text area.',
+  );
+}
+
+function copyDealNotesText(text, copiedNote, fallbackNote) {
   const clipboard = globalThis.navigator?.clipboard;
-  const copiedNote = 'Deal notes copied as Markdown. They are user-entered notes, not a forecast.';
-  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
   if (clipboard && typeof clipboard.writeText === 'function') {
     try {
       const written = clipboard.writeText(text);
@@ -5319,6 +5475,9 @@ function helpDialog() {
         <li><kbd>o</kbd> Jump to the Operating region heading</li>
         <li><kbd>j</kbd> Copy capacity utilization as Markdown</li>
         <li><kbd>q</kbd> Jump to Equal split or Normalize current shares</li>
+        <li><kbd>x</kbd> Jump to the first roster row over listed capacity, or the Participants heading if none</li>
+        <li><kbd>y</kbd> Copy deal notes as one-line Markdown</li>
+        <li><kbd>z</kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

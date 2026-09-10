@@ -522,7 +522,7 @@ test('community hall split preset is a distinct venue promoter sound starting po
   assert.notEqual(hall.participants[1].variableCostPerTransaction, hall.participants[2].variableCostPerTransaction);
   assert.notEqual(hall.participants[0].fixedMonthlyCost, hall.participants[1].fixedMonthlyCost);
   assert.notEqual(hall.participants[1].fixedMonthlyCost, hall.participants[2].fixedMonthlyCost);
-  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork'];
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'festivalStallSplit'];
   for (const key of others) {
     const other = clonePreset(key);
     assert.notEqual(hall.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
@@ -530,6 +530,32 @@ test('community hall split preset is a distinct venue promoter sound starting po
     assert.notEqual(JSON.stringify(hall.participants.map((item) => item.variableCostPerTransaction)), JSON.stringify(other.participants.map((item) => item.variableCostPerTransaction)), key);
   }
   const result = calculatePartnership(hall);
+  assert.equal(result.viable, true);
+  assert.ok(result.participants.every((item) => item.viable));
+  assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
+});
+
+test('festival stall split preset is a distinct stallholder site ticket starting point', () => {
+  const stall = clonePreset('festivalStallSplit');
+  assert.equal(PRESETS.festivalStallSplit.name, 'Festival stall split');
+  assert.equal(stall.participants.length, 3);
+  assert.deepEqual(stall.participants.map((item) => item.id), ['stallholder', 'site-manager', 'ticket-office']);
+  assert.deepEqual(stall.participants.map((item) => item.name), ['Stallholder', 'Site manager', 'Ticket office']);
+  assert.deepEqual(stall.participants.map((item) => item.revenueShare), [0.48, 0.32, 0.2]);
+  assert.equal(stall.deal.monthlyVolume, 2400);
+  assert.equal(stall.deal.feePerTransaction, 18);
+  assert.notEqual(stall.participants[0].variableCostPerTransaction, stall.participants[1].variableCostPerTransaction);
+  assert.notEqual(stall.participants[1].variableCostPerTransaction, stall.participants[2].variableCostPerTransaction);
+  assert.notEqual(stall.participants[0].fixedMonthlyCost, stall.participants[1].fixedMonthlyCost);
+  assert.notEqual(stall.participants[1].fixedMonthlyCost, stall.participants[2].fixedMonthlyCost);
+  const others = ['balanced', 'thinMargin', 'growthAtCost', 'creatorTakeRate', 'threePartyJv', 'twoPartyStudio', 'fourPartyMarketplace', 'licensorDistributor', 'talentAgentPlatform', 'threePartyJointVenture', 'podcastHostNetwork', 'communityHallSplit'];
+  for (const key of others) {
+    const other = clonePreset(key);
+    assert.notEqual(stall.participants.map((item) => item.id).join(','), other.participants.map((item) => item.id).join(','), key);
+    assert.notEqual(JSON.stringify(stall.deal), JSON.stringify(other.deal), key);
+    assert.notEqual(JSON.stringify(stall.participants.map((item) => item.variableCostPerTransaction)), JSON.stringify(other.participants.map((item) => item.variableCostPerTransaction)), key);
+  }
+  const result = calculatePartnership(stall);
   assert.equal(result.viable, true);
   assert.ok(result.participants.every((item) => item.viable));
   assert.equal(new Set(result.participants.map((item) => item.id)).size, 3);
@@ -746,6 +772,41 @@ test('optional hideParticipantsOverCapacity is a boolean and older files omit it
   both.hideAllHoldLedger = true;
   both.hideZeroShareParticipants = true;
   both.hideParticipantsOverCapacity = true;
+  assert.equal(validateConfiguration(both).valid, true);
+});
+
+test('optional hideParticipantsAtHold is a boolean and older files omit it', () => {
+  const omitted = clonePreset('balanced');
+  assert.equal(Object.hasOwn(omitted, 'hideParticipantsAtHold'), false);
+  assert.equal(validateConfiguration(omitted).valid, true);
+
+  const hidden = clonePreset('balanced');
+  hidden.hideParticipantsAtHold = true;
+  assert.equal(validateConfiguration(hidden).valid, true);
+
+  const shown = clonePreset('balanced');
+  shown.hideParticipantsAtHold = false;
+  assert.equal(validateConfiguration(shown).valid, true);
+
+  for (const value of ['true', 1, 0, null, 'yes', {}]) {
+    const config = clonePreset('balanced');
+    config.hideParticipantsAtHold = value;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(value));
+    assert.match(validation.errors.join(' '), /boolean/);
+  }
+
+  const extra = clonePreset('balanced');
+  extra.hideParticipantsAtHold = true;
+  extra.unexpected = true;
+  assert.match(validateConfiguration(extra).errors.join(' '), /unknown field: unexpected/);
+
+  const both = clonePreset('balanced');
+  both.hideHoldingParticipants = true;
+  both.hideAllHoldLedger = true;
+  both.hideZeroShareParticipants = true;
+  both.hideParticipantsOverCapacity = true;
+  both.hideParticipantsAtHold = true;
   assert.equal(validateConfiguration(both).valid, true);
 });
 

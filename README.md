@@ -27,7 +27,7 @@ Every workbench:
 
 | Workbench | Version | Job to be done | Built-in synthetic example |
 | --- | --- | --- | --- |
-| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.5 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
+| [Partnership Breakpoint](apps/partnership-breakpoint/) | 1.5.6 | Find which participant in a revenue split reaches an exit threshold first when volume, fees, or costs move. | **Balanced** starting point |
 | [Common Cart](apps/common-cart/) | 1.4.6 | Pool buyer constraints and compare conditional merchant offers without exposing individual buyer records to the merchant view. | **Coffee** scenario (Neighbourhood coffee run) |
 | [The Smallest Agreement](apps/smallest-agreement/) | 1.5.5 | Find the lowest-cost set of clause changes that still crosses an approval threshold while respecting support floors, locks, and a change budget. | **Neighbourhood Plan** |
 | [Weekend Gap](apps/weekend-gap/) | 1.5.6 | Follow synthetic AUD redemption demand from Friday to Monday when reserves and settlement windows do not fully overlap. | **Normal Friday** (72-hour case) |
@@ -102,7 +102,7 @@ filter. Partnership Breakpoint 1.5.3 also names tornado Markdown copy, the
 Three-party joint venture start, and the all-hold ledger persist / unbounded
 tornado filter. Partnership Breakpoint 1.5.4 also names allocation-balance
 Markdown copy, the Podcast host and network start, and the zero-share roster
-filter. Partnership Breakpoint 1.5.5 also names capacity-utilization Markdown copy, the Community hall split start, and the over-capacity roster filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
+filter. Partnership Breakpoint 1.5.5 also names capacity-utilization Markdown copy, the Community hall split start, and the over-capacity roster filter. Partnership Breakpoint 1.5.6 also names first-breakpoint participant copy, the Festival stall split start, and the at-hold roster filter. Weekend Gap 1.5.1 also names Gantt hour Markdown copy,
 Payday Friday burst, and one-row dashboard CSV. Weekend Gap 1.5.2 also names
 peak-queue hour copy, Public-holiday Monday, and the single-gate Gantt filter.
 Weekend Gap 1.5.3 also names hours-to-clear Markdown copy, Saturday market
