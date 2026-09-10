@@ -83,6 +83,7 @@ const mutedStressIds = new Set();
 let collapseAllHoldCases = false;
 let hideHoldingParticipants = false;
 let hideAllCompoundHolders = false;
+let hideZeroShareParticipants = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -238,6 +239,7 @@ function readCollapsePreference() {
   collapseAllHoldCases = state.collapseAllHoldCases === true;
   hideHoldingParticipants = state.hideHoldingParticipants === true;
   hideAllCompoundHolders = state.hideAllHoldLedger === true;
+  hideZeroShareParticipants = state.hideZeroShareParticipants === true;
 }
 
 function writeCollapsePreference() {
@@ -247,6 +249,8 @@ function writeCollapsePreference() {
   else delete state.hideHoldingParticipants;
   if (hideAllCompoundHolders) state.hideAllHoldLedger = true;
   else delete state.hideAllHoldLedger;
+  if (hideZeroShareParticipants) state.hideZeroShareParticipants = true;
+  else delete state.hideZeroShareParticipants;
 }
 
 function compactErrorMessage(error) {
@@ -467,14 +471,27 @@ function participantCurrentlyHolds(result, participantId) {
   return Boolean(result?.participants.find((item) => item.id === participantId)?.viable);
 }
 
+function participantHasZeroShare(participant) {
+  return Number.isFinite(participant.revenueShare) && Math.abs(participant.revenueShare) <= 1e-9;
+}
+
+function participantHiddenFromRoster(result, participant) {
+  if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
+  if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
+  return false;
+}
+
 function inputPanel(result) {
   const firstFailId = result?.participants.find((participant) => !participant.viable)?.id ?? null;
   const hiddenHoldCount = hideHoldingParticipants && result
     ? state.participants.filter((participant) => participantCurrentlyHolds(result, participant.id)).length
     : 0;
-  const firstVisibleIndex = state.participants.findIndex((participant) => !(hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)));
+  const hiddenZeroCount = hideZeroShareParticipants
+    ? state.participants.filter((participant) => participantHasZeroShare(participant)).length
+    : 0;
+  const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
   const participantForms = state.participants.map((participant, index) => {
-    if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return '';
+    if (participantHiddenFromRoster(result, participant)) return '';
     const leastHeadroom = result?.weakestParticipant?.id === participant.id;
     return `
     <section class="participant-form${firstFailId === participant.id ? ' first-fail' : ''}"${leastHeadroom ? ' id="least-headroom-participant" tabindex="-1"' : ''} aria-labelledby="participant-${index}-title">
@@ -507,6 +524,18 @@ function inputPanel(result) {
   const rosterFilterNote = hideHoldingParticipants
     ? `${hiddenHoldCount} participant${hiddenHoldCount === 1 ? '' : 's'} who currently hold ${hiddenHoldCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
     : 'Hide participants who currently hold to filter this roster display only. Expand restores them. Counts stay the same.';
+  const zeroShareFilterNote = hideZeroShareParticipants
+    ? `${hiddenZeroCount} participant${hiddenZeroCount === 1 ? '' : 's'} with zero revenue share ${hiddenZeroCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
+    : 'Hide participants with zero revenue share to filter this roster display only. Expand restores them. Counts stay the same.';
+  const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
+    ? hideHoldingParticipants && !hideZeroShareParticipants
+      ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+      : hideZeroShareParticipants && !hideHoldingParticipants
+        ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant has a zero revenue share. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+        : hideHoldingParticipants || hideZeroShareParticipants
+          ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+          : ''
+    : '';
 
   return `
     <aside class="panel inputs" aria-label="Deal inputs">
@@ -550,7 +579,9 @@ function inputPanel(result) {
           <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="copy-allocation-balance">Copy allocation balance</button><button type="button" data-action="equal-shares">Split equally</button><button type="button" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability. Copy allocation balance names missing or excess share. It is not a negotiated allocation.</p>
           <div class="button-row"><button type="button" data-action="hide-holding-participants" aria-pressed="${hideHoldingParticipants}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants who currently hold</button><button type="button" data-action="show-holding-participants" ${hideHoldingParticipants ? '' : 'disabled'}>Show holding participants</button></div>
           <p class="notice">${rosterFilterNote}</p>
-          ${participantForms || (hideHoldingParticipants ? `<p class="notice">${firstVisibleIndex === -1 ? '<span id="share-hold-jump" tabindex="-1"></span>' : ''}Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>` : '')}
+          <div class="button-row"><button type="button" data-action="hide-zero-share-participants" aria-pressed="${hideZeroShareParticipants}">Hide participants with zero revenue share</button><button type="button" data-action="show-zero-share-participants" ${hideZeroShareParticipants ? '' : 'disabled'}>Show zero-share participants</button></div>
+          <p class="notice">${zeroShareFilterNote}</p>
+          ${participantForms || rosterEmptyNotice}
           <div class="button-row"><button type="button" id="add-participant" data-action="add-participant" ${state.participants.length >= MAX_PARTICIPANTS ? 'disabled title="Participant limit reached"' : ''}>Add participant</button></div>
           <label class="roster-paste-label" for="roster-paste">Paste participant CSV or TSV</label>
           <textarea id="roster-paste" data-action="roster-paste" rows="6">${escapeAttribute(rosterPasteText)}</textarea>
@@ -1168,6 +1199,20 @@ function attachEvents() {
     }
     if (action === 'show-holding-participants') {
       hideHoldingParticipants = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-zero-share-participants') {
+      hideZeroShareParticipants = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-zero-share-participants') {
+      hideZeroShareParticipants = false;
       writeCollapsePreference();
       saveState();
       render();

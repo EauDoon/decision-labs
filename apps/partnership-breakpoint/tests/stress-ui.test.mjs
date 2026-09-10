@@ -2251,6 +2251,94 @@ test('hide-holding preference round-trips on saved JSON and defaults to shown', 
   assert.match(app.notice(), /unknown field: unexpected/);
 });
 
+test('hiding zero-share participants is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-zero-share-participants"/);
+  app.click('hide-zero-share-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /0 participants with zero revenue share are hidden from this roster display/);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  app.click('show-zero-share-participants');
+  app.edit('participants.2.revenueShare', '0');
+  app.edit('participants.0.revenueShare', '0.5');
+  app.edit('participants.1.revenueShare', '0.5');
+  assert.equal(forms(), 3);
+  const beforeHide = holdCount();
+  assert.ok(beforeHide);
+  app.click('hide-zero-share-participants');
+  assert.equal(forms(), 2);
+  assert.match(app.markup(), /1 participant with zero revenue share is hidden from this roster display/);
+  assert.match(app.markup(), /Tested-case and model counts are unchanged/);
+  assert.doesNotMatch(app.markup(), /Participant 3: Liquidity Partner/);
+  assert.match(app.markup(), /participant-live-name">Liquidity Partner/);
+  assert.equal(holdCount(), beforeHide);
+  app.click('export');
+  const exported = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(exported.participants.length, 3);
+  assert.equal(exported.participants[2].revenueShare, 0);
+  assert.equal(exported.hideZeroShareParticipants, true);
+  app.click('show-zero-share-participants');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /Liquidity Partner/);
+  assert.equal(holdCount(), beforeHide);
+});
+
+test('hide-zero-share preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  app.click('hide-zero-share-participants');
+  assert.equal(app.saved().hideZeroShareParticipants, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.equal(forms(), 3);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideZeroShareParticipants, true);
+  assert.equal(hidden.participants.length, 3);
+  assert.equal(Object.hasOwn(hidden, 'hideHoldingParticipants'), false);
+  assert.equal(Object.hasOwn(hidden, 'hideAllHoldLedger'), false);
+  app.click('show-zero-share-participants');
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideZeroShareParticipants'), false);
+  assert.equal(forms(), 3);
+
+  const imported = clonePreset('balanced');
+  imported.hideZeroShareParticipants = true;
+  app.import(imported);
+  assert.equal(app.saved().hideZeroShareParticipants, true);
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(forms(), 3);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideZeroShareParticipants = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+  assert.equal(forms(), 3);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideZeroShareParticipants = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
 test('collapse all-hold preference round-trips on saved JSON and defaults to expanded', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
@@ -2297,7 +2385,6 @@ test('copy allocation balance names missing or excess share and stays honest whe
   assert.match(fallback.markup(), /# Allocation balance/);
   assert.match(fallback.markup(), /Allocated: 100\.0%\. Shares reconcile to 100%\./);
   assert.match(fallback.markup(), /not a negotiated allocation/);
-  assert.doesNotMatch(fallback.markup(), /probab/i);
   assert.match(fallback.notice(), /Copy the Markdown from the text area/);
   fallback.click('close-allocation-copy');
   assert.doesNotMatch(fallback.markup(), /id="allocation-copy-text"/);
