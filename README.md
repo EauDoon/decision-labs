@@ -180,7 +180,9 @@ file or add another public path. Copy Trust and limits on that 404 page copies
 the printed Trust and limits heading and list as Markdown. It does not fetch a
 policy file or add another public path. Copy How it works on that 404 page copies
 the printed How it works heading and list as Markdown. It does not fetch a
-policy file or add another public path. When the catalog is served over http,
+policy file or add another public path. Copy jobs on that 404 page copies the
+printed workbench names and one-sentence jobs as Markdown. It does not fetch a
+product feed or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
 this catalog page as Markdown. It uses the browser clipboard when that API is

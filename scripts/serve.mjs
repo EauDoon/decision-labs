@@ -35,8 +35,28 @@ export function catalogVersionLine() {
   }).join(', ');
 }
 
+function escapeHtml(value) {
+  return String(value)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+export function catalogJobs() {
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  const cards = [];
+  const re = /<article class="workbench"[^>]*>[\s\S]*?<h3>([^<]+)<\/h3>[\s\S]*?<p class="job">([^<]+)<\/p>/g;
+  let match;
+  while ((match = re.exec(html))) {
+    cards.push({ name: match[1].trim(), job: match[2].trim() });
+  }
+  return cards;
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
+  const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
   return `<!doctype html>
 <html lang="en">
 <head>
@@ -64,7 +84,7 @@ export function notFoundPage() {
     a:hover { text-decoration-thickness: 2px; }
     a:focus-visible, button:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
     .copy-versions-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -77,8 +97,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -88,11 +108,13 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
-    .copy-trust-tools, .copy-how-tools { margin: 16px 0 0; }
+    .copy-trust-tools, .copy-how-tools, .copy-jobs-tools { margin: 16px 0 0; }
+    #catalog-jobs { margin: 16px 0 0; padding-left: 1.2rem; color: #1e3a42; }
+    #catalog-jobs li { margin: 8px 0; }
   </style>
 </head>
 <body>
@@ -106,6 +128,14 @@ export function notFoundPage() {
       <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
     </p>
     <textarea id="copy-versions-fallback" class="copy-versions-fallback" hidden readonly rows="4" aria-label="Workbench versions as Markdown"></textarea>
+    <ul id="catalog-jobs">
+      ${jobsList}
+    </ul>
+    <p class="copy-jobs-tools">
+      <button type="button" class="copy-jobs" id="copy-jobs">Copy jobs</button>
+      <span class="copy-jobs-status" id="copy-jobs-status" role="status"></span>
+    </p>
+    <textarea id="copy-jobs-fallback" class="copy-jobs-fallback" hidden readonly rows="4" aria-label="Workbench jobs as Markdown"></textarea>
     <section class="guide" id="how-it-works">
       <h2 id="how-title">How it works</h2>
       <ul>
@@ -162,6 +192,27 @@ export function notFoundPage() {
             versionsFallback.select();
           }
           if (versionsStatus) versionsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product version.';
+        }
+      });
+      const jobsBtn = document.getElementById('copy-jobs');
+      const jobsStatus = document.getElementById('copy-jobs-status');
+      const jobsFallback = document.getElementById('copy-jobs-fallback');
+      const jobsMarkdown = () => [...document.querySelectorAll('#catalog-jobs li')].map((item) => '- ' + item.textContent.trim()).filter((line) => line !== '- ').join('\\n');
+      jobsBtn?.addEventListener('click', async () => {
+        const markdown = jobsMarkdown();
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (jobsFallback) jobsFallback.hidden = true;
+          if (jobsStatus) jobsStatus.textContent = 'Copied names and jobs from this catalog list as Markdown. Not a live product feed.';
+        } catch {
+          if (jobsFallback) {
+            jobsFallback.hidden = false;
+            jobsFallback.value = markdown;
+            jobsFallback.focus();
+            jobsFallback.select();
+          }
+          if (jobsStatus) jobsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product feed.';
         }
       });
       const trustBtn = document.getElementById('copy-trust');

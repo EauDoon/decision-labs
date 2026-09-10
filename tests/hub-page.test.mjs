@@ -163,6 +163,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy versions on that 404 page copies/);
   assert.match(readme, /Copy Trust and limits on that 404 page copies/);
   assert.match(readme, /Copy How it works on that 404 page copies/);
+  assert.match(readme, /Copy jobs on that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
