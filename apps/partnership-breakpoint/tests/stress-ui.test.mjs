@@ -2055,6 +2055,51 @@ test('keyboard apostrophe copies first-breakpoint remaining-to-hold through the 
   assert.match(denied.notice(), /Clipboard unavailable/);
 });
 
+test('keyboard colon copies first-breakpoint volume-to-hold through the same control', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  fallback.keydown(':');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="volume-copy-text"/);
+  assert.match(fallback.markup(), /First-breakpoint volume-to-hold: 90,000 txn for Liquidity Partner\. Synthetic ranking, not a forecast\./);
+  assert.match(fallback.markup(), /id="volume-copy-title">First-breakpoint volume-to-hold Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="viability-label-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-volume-copy');
+  assert.doesNotMatch(fallback.markup(), /id="volume-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown(':', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown(':', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown(':');
+  assert.match(fallback.markup(), /id="volume-copy-text"/);
+  assert.match(fallback.markup(), />First-breakpoint volume-to-hold: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown(':');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'First-breakpoint volume-to-hold: 90,000 txn for Liquidity Partner. Synthetic ranking, not a forecast.');
+  assert.doesNotMatch(withClipboard.copied()[0], /First-breakpoint remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /First-breakpoint participant: Liquidity Partner/);
+  assert.doesNotMatch(withClipboard.copied()[0], /Least-headroom participant/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown(':', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.keydown(':');
+  assert.match(denied.markup(), /id="volume-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+});
+
 test('keyboard < jumps to Copy first-breakpoint remaining-to-hold unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
