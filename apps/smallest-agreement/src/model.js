@@ -1905,6 +1905,23 @@ export function formatCurrentLocksMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the current clause lock count for clipboard handoff.
+ * Locks are draft choices, not a legal hold.
+ * Distinct from current-locks copy and recommended-package option count.
+ */
+export function formatCurrentLockCountMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const count = p.clauses.filter((clause) => clause.lockedOptionId !== undefined).length;
+  return {
+    status: "ok",
+    count,
+    text: `Current lock count: ${count}. Locks are draft choices, not a legal hold.\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
