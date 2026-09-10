@@ -1,5 +1,20 @@
 # Changelog
 
+## 1.5.2
+
+- Keeps the 1.5.0 constraint review and 1.5.1 review UI: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, `analyzePartnershipReview`, exact recompute, stale-read cancel, and no replacement of the working case.
+- Press `f` to jump to the First breakpoint heading when no field is focused. Shortcuts stay ignored while a field is focused.
+- Copy contribution waterfall copies each participant, contribution per transaction, and revenue share as Markdown. Clipboard falls back to a textarea. It is a comparison aid, not a forecast.
+- Press `w` to jump to the Contribution waterfall heading when no field is focused.
+- Copy the viability card copies the least-headroom participant, headroom, and binding limit as Markdown. Clipboard falls back to a textarea. Counts are counts. It is not a probability.
+- Hide participants who currently hold now travels on saved case JSON as optional `hideHoldingParticipants`. Older files omit it and default to showing holders. Unknown sibling fields are still rejected. Display only; counts stay unchanged.
+- Added the Talent, agent, and platform starting point, a three-party talent plus booking agent plus platform with different cost bases, distinct from Balanced, Two-party 50/50 studio, Four-party marketplace, and Licensor and distributor. It is a synthetic starting point, not a live roster.
+- Copy capacity utilization copies volume over capacity, or Unbounded, as Markdown. Clipboard falls back to a textarea. Display only. It is not a probability.
+- Hide participants who hold in every tested compound case filters the participant ledger display only. Expand restores them. Grid counts stay unchanged. Model math is unchanged.
+- Press `l` to jump to the Participant ledger heading when no field is focused.
+- Press `b` to jump to the viability and binding-limit card heading when no field is focused.
+- Results jump nav includes Viability and Waterfall in-page links with visible focus.
+
 ## 1.5.1
 
 - Keeps the 1.5.0 constraint review: `createPartnershipReviewPacket`, `replayPartnershipReviewPacket`, `PARTNERSHIP_REVIEW_TOOLS`, exact recompute, stale-read cancel, and no replacement of the working case.

@@ -196,13 +196,17 @@ Between 2 and 24 data rows are required. Revenue shares must sum to 1. Validatio
 
 ## Charts
 
-The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. Download tornado SVG writes that same chart as a standalone SVG file with an XML declaration and SVG namespace. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Download waterfall SVG writes every participant chart in one namespaced SVG file with the same XML declaration. Both charts ship with text-equivalent tables. Neither assigns probability.
+The tornado chart plots each participant's smallest bounded adverse percentage shock for volume down, volume up, fee down, and variable-cost up. Unbounded and already-failing cases have no bar. Download tornado SVG writes that same chart as a standalone SVG file with an XML declaration and SVG namespace. The contribution waterfall steps from revenue through variable, fixed, and risk cost to monthly profit, with a dashed minimum-profit line. Download waterfall SVG writes every participant chart in one namespaced SVG file with the same XML declaration. Copy contribution waterfall copies each participant, contribution per transaction, and revenue share as Markdown. Both charts ship with text-equivalent tables. Neither assigns probability.
 
 ## Display-only stress mute
 
 Hiding a participant row in the stress ledger is a display filter. Case counts, hold counts, worst profit gaps, operational failures, and any tested proposal still include that participant. Showing the row again does not recalculate the grid.
 
+Hiding participants who hold in every tested compound case filters the participant ledger table only. Expand restores the rows. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking.
+
 Collapsing cases every participant holds hides those case-evidence rows from the inspect table only. Expand restores them. `passCount`, `caseCount`, and any proposal stay unchanged. This is a display filter, not a likelihood ranking. Optional `collapseAllHoldCases` on a saved case is a boolean. Older files omit it and default to expanded. Present non-boolean values are rejected. Unknown sibling fields are still rejected.
+
+Optional `hideHoldingParticipants` on a saved case is a boolean roster display preference. Older files omit it and default to showing holders. Present non-boolean values are rejected. Hiding holders filters the roster cards only. Tested-case and model counts stay unchanged.
 
 ### Feasible effective volume interval
 

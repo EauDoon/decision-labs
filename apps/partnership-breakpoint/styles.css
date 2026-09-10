@@ -142,6 +142,7 @@ button.danger:hover { background: var(--coral); color: white; }
 .status-card.viable { border-left: 6px solid var(--cobalt); }
 .status-card.fragile { border-left: 6px solid var(--coral); }
 .eyebrow { display: block; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: .72rem; margin-bottom: .35rem; }
+.status-card h2.eyebrow { margin: 0 0 .35rem; font-weight: 650; }
 .status-card h1 { font-size: clamp(1.25rem, 2vw, 1.8rem); margin: 0; line-height: 1.05; }
 .status-card p { color: var(--muted); margin: .45rem 0 0; max-width: 50rem; }
 .score { text-align: right; }

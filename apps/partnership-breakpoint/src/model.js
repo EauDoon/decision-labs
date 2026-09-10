@@ -33,6 +33,7 @@
  * @property {ParticipantInput[]} participants
  * @property {StressSettings} [stress] Optional. Legacy cases omit this object.
  * @property {boolean} [collapseAllHoldCases] Optional display preference. Omitted files default to expanded.
+ * @property {boolean} [hideHoldingParticipants] Optional roster display preference. Omitted files default to showing holders.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -46,7 +47,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -133,6 +134,15 @@ export const PRESETS = Object.freeze({
       { id: 'territory-distributor', name: 'Territory distributor', revenueShare: 0.6, variableCostPerTransaction: 6.5, fixedMonthlyCost: 14000, minimumAcceptableProfit: 9000, capacity: 11000, minimumCommitment: 2500, riskCost: 2800 },
     ],
   },
+  talentAgentPlatform: {
+    name: 'Talent, agent, and platform',
+    deal: { monthlyVolume: 7500, feePerTransaction: 24, addressableVolume: 11000, volumeShockPct: 0 },
+    participants: [
+      { id: 'talent', name: 'Talent', revenueShare: 0.62, variableCostPerTransaction: 1.2, fixedMonthlyCost: 10000, minimumAcceptableProfit: 25000, capacity: null, minimumCommitment: 0, riskCost: 2500 },
+      { id: 'booking-agent', name: 'Booking agent', revenueShare: 0.18, variableCostPerTransaction: 0.35, fixedMonthlyCost: 2500, minimumAcceptableProfit: 4000, capacity: 10000, minimumCommitment: 2000, riskCost: 400 },
+      { id: 'booking-platform', name: 'Platform', revenueShare: 0.2, variableCostPerTransaction: 0.9, fixedMonthlyCost: 5000, minimumAcceptableProfit: 3000, capacity: 12000, minimumCommitment: 0, riskCost: 700 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -188,6 +198,12 @@ export function validateConfiguration(config) {
     const collapse = own(config, 'collapseAllHoldCases');
     if (collapse !== true && collapse !== false) {
       errors.push('Collapse all-hold cases must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideHoldingParticipants')) {
+    const hideHolders = own(config, 'hideHoldingParticipants');
+    if (hideHolders !== true && hideHolders !== false) {
+      errors.push('Hide holding participants must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
