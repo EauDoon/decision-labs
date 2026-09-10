@@ -44,6 +44,7 @@ import {
   leftoverCoverageRows,
   createLeftoverCoverageMarkdown,
   organizerLeftoverRows,
+  createWinnerInspectorSummaryMarkdown,
   createOfferIdentityCompareMarkdown,
   decodeScenario,
   duplicateEntry,
@@ -296,6 +297,15 @@ function bindStaticEvents() {
         "Clipboard was blocked. Organizer-private leftover Markdown is in the textarea. Buyer counts and units only. This is not a merchant export."
       );
     } catch (error) { setStatus(`Leftover copy failed: ${messageOf(error)}`); }
+  });
+  document.querySelector("#copy-winner-inspector").addEventListener("click", () => {
+    try {
+      copyTextWithFallback(
+        createWinnerInspectorSummaryMarkdown(scenario),
+        "Winner inspector summary copied as organizer-private Markdown. Winning offer label, leftover counts, and residual coverage. Buyer identities omitted.",
+        "Clipboard was blocked. Organizer-private winner inspector Markdown is in the textarea. Buyer identities omitted."
+      );
+    } catch (error) { setStatus(`Winner inspector copy failed: ${messageOf(error)}`); }
   });
   document.querySelector("#copy-exclusion-counts").addEventListener("click", () => {
     try {

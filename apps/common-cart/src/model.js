@@ -1148,6 +1148,46 @@ export function organizerLeftoverRows(rawScenario) {
   });
 }
 
+/** Organizer-private winner inspector Markdown. Winning offer label, leftover counts, and residual coverage. */
+export function createWinnerInspectorSummaryMarkdown(rawScenario) {
+  const market = evaluateMarket(rawScenario);
+  const coverage = computeResidualCoverage(rawScenario);
+  const winner = market.winner;
+  const lines = [
+    `# Common Cart winner inspector summary (organizer private)`,
+    ``,
+    `This Markdown is organizer-private. It is not a merchant export.`,
+    ``,
+    `## Winning offer`,
+    winner
+      ? [
+        `- Offer: ${winner.offer.merchant} / ${winner.offer.variant}`,
+        `- Fulfilled units: ${winner.fulfilledUnits}`,
+        `- Included buyers: ${winner.deliveredBuyers}`,
+        `- Fulfillment: ${winner.offer.fulfillment}`
+      ].join("\n")
+      : `- No qualifying offer.`,
+    ``,
+    `## Leftover after winner`,
+    `- Leftover buyers: ${coverage.leftoverBuyerCount}`,
+    `- Leftover units: ${coverage.leftoverUnits}`,
+    `- Still unfilled buyers: ${coverage.unfilledBuyerCount}`,
+    `- Still unfilled units: ${coverage.unfilledUnits}`,
+    ``,
+    `## Residual coverage`,
+    `- ${coverage.note}`,
+    coverage.secondary
+      ? `- Leftover fill: ${coverage.secondary.merchant} / ${coverage.secondary.variant}, ${coverage.secondary.fulfilledUnits} units, ${coverage.secondary.deliveredBuyers} buyers.`
+      : `- Leftover fill: none.`,
+    coverage.tertiary
+      ? `- Tertiary fill: ${coverage.tertiary.merchant} / ${coverage.tertiary.variant}, ${coverage.tertiary.fulfilledUnits} units, ${coverage.tertiary.deliveredBuyers} buyers.`
+      : `- Tertiary fill: none.`,
+    ``,
+    `Buyer identities, IDs, budgets, and allocations are omitted.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 export function redactBuyerLabels(rawScenario) {
   const scenario = validateScenario(rawScenario);
   return {
