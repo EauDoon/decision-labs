@@ -60,6 +60,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>m<\/kbd> Jump to remaining change-budget or cost margin/u);
   assert.match(html, /<kbd>d<\/kbd> Jump to the first group below its support floor, or the groups heading/u);
   assert.match(html, /<kbd>o<\/kbd> Jump to the first recommended-package option card, or the clauses heading/u);
+  assert.match(html, /<kbd>j<\/kbd> Copy remaining change-budget as one-line Markdown/u);
   assert.match(html, /id="find-agreement"/u);
   assert.match(html, /Side-by-side package/u);
   assert.match(html, /Lock recommended package/u);
@@ -1490,6 +1491,31 @@ test("keyboard o jumps to the first recommended-package option unless an input i
   const missing = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
   missing.keydown("o");
   assert.equal(missing.focused(), "#clauses-heading");
+});
+
+test("keyboard j copies remaining change-budget unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>j<\/kbd> Copy remaining change-budget as one-line Markdown/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("j");
+  assert.match(app.clipboardText(), /leftover change-budget is unlimited/u);
+  assert.match(app.clipboardText(), /not a legal appropriation/u);
+  assert.doesNotMatch(app.clipboardText(), /^# Recommended package/u);
+  app.clearFocus();
+  app.keydown("j", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("j", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const again = await savedWorkbench(new Map());
+  again.keydown("J");
+  assert.match(again.clipboardText(), /leftover change-budget is unlimited/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-remaining-budget-button");
+  assert.equal(blocked.focused(), "#remaining-budget-fallback");
+  blocked.clearFocus();
+  blocked.keydown("j", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(blocked.focused(), "");
 });
 
 test("side-by-side pins original, solver, and custom package columns", async () => {

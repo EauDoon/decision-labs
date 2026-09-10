@@ -2580,6 +2580,9 @@ document.addEventListener("keydown", (event) => {
   } else if (event.key === "o" || event.key === "O") {
     event.preventDefault();
     jumpToRecommendedOption();
+  } else if (event.key === "j" || event.key === "J") {
+    event.preventDefault();
+    copyRemainingBudget();
   }
 });
 
