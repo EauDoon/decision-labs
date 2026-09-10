@@ -27,6 +27,7 @@ import {
   buildGateGanttSvg,
   ganttToCSV,
   selectedGanttHourToMarkdown,
+  remainingReserveAtHourToMarkdown,
   peakQueueHourToMarkdown,
   closedGanttHoursToMarkdown,
   fxGanttHoursToMarkdown,
@@ -1344,6 +1345,9 @@ async function copyTextWithFallback(text, fallbackId, successMessage) {
 document.querySelector("#copy-gantt-hour").addEventListener("click", async () => {
   await copySelectedGanttHourMarkdown();
 });
+document.querySelector("#copy-remaining-reserve").addEventListener("click", async () => {
+  await copyRemainingReserveMarkdown();
+});
 document.querySelector("#copy-peak-hour").addEventListener("click", async () => {
   const text = peakQueueHourToMarkdown(scenario);
   await copyTextWithFallback(text, "#peak-hour-copy-fallback", "Peak-queue hour copied as Markdown. This is a synthetic snapshot, not a live bank or payout queue.");
@@ -1528,6 +1532,10 @@ function jumpToTimingReview() {
 function copySelectedGanttHourMarkdown() {
   const text = selectedGanttHourToMarkdown(scenario, selectedHour);
   return copyTextWithFallback(text, "#gantt-hour-copy-fallback", "Selected Gantt hour copied as Markdown. This is a synthetic calendar, not a live bank or payout queue.");
+}
+function copyRemainingReserveMarkdown() {
+  const text = remainingReserveAtHourToMarkdown(scenario, selectedHour);
+  return copyTextWithFallback(text, "#remaining-reserve-copy-fallback", "Remaining reserve and queued AUD copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
 }
 function copyClosedHoursMarkdown() {
   const text = closedGanttHoursToMarkdown(scenario);

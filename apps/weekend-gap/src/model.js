@@ -1329,6 +1329,14 @@ export function selectedGanttHourToMarkdown(input, selectedHour = 0) {
   ].join("\n");
 }
 
+/** One-line remaining reserve and queued AUD at the selected Gantt hour. Synthetic snapshot, not live. */
+export function remainingReserveAtHourToMarkdown(input, selectedHour = 0) {
+  const result = runSimulation(input);
+  const hour = clamp(Math.round(finiteNumber(selectedHour, 0)), 0, SIMULATION_HOURS);
+  const point = result.timeline[hour];
+  return "Remaining reserve: " + point.reserveRemainingAud + " AUD. Queued AUD: " + point.queuedAud + ". Hour: " + point.timeLabel + " (hour " + point.hour + "). Synthetic educational snapshot, not live market data.";
+}
+
 /** Markdown for the peak-queue checkpoint. Synthetic snapshot, not a live queue. */
 export function peakQueueHourToMarkdown(input) {
   const result = runSimulation(input);
