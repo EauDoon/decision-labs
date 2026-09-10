@@ -81,6 +81,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /<kbd>"<\/kbd> Copy the first below-floor group label as one-line Markdown/u);
   assert.match(html, /<kbd>_<\/kbd> Jump to the first below-floor group copy control, or the groups heading/u);
   assert.match(html, /<kbd>\{<\/kbd> Jump to the hide-groups-below-threshold control, or the groups heading/u);
+  assert.match(html, /<kbd>\}<\/kbd> Copy the groups-meeting-threshold count as one-line Markdown/u);
   assert.match(html, /id="locks-heading"/u);
   assert.match(html, /id="print-heading"/u);
   assert.match(html, /id="method-heading"/u);
@@ -3086,6 +3087,49 @@ test("keyboard brace jumps to hide-groups-below-threshold unless an input is act
   assert.equal(app.focused(), "");
   app.keydown("{", { tagName: "SELECT", isContentEditable: false });
   assert.equal(app.focused(), "");
+});
+
+test("keyboard close-brace copies the threshold-group count unless an input is active", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /<kbd>\}<\/kbd> Copy the groups-meeting-threshold count as one-line Markdown/u);
+  assert.match(html, /id="copy-threshold-group-count-button"/u);
+  assert.match(html, /id="copy-threshold-group-count-button"[^>]*aria-keyshortcuts="\}"/u);
+  const app = await savedWorkbench(new Map());
+  app.keydown("}");
+  assert.equal(app.clipboardText(), app.thresholdGroupCount());
+  assert.match(app.clipboardText(), /Groups meeting the approval threshold/u);
+  assert.doesNotMatch(app.clipboardText(), /First below-floor group/u);
+  assert.doesNotMatch(app.clipboardText(), /Groups below their support floor/u);
+  assert.match(app.message(), /not a legal quorum/u);
+  app.clearFocus();
+  app.keydown("}", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  app.keydown("}", { tagName: "TEXTAREA", isContentEditable: false });
+  assert.equal(app.focused(), "");
+  const passing = {
+    title: "Close-brace threshold-group count workshop",
+    threshold: 70,
+    groups: [
+      { id: "cleared", name: "Cleared", weight: 1 },
+      { id: "short", name: "Short", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      { id: "original", label: "Keep original", original: true, changeCost: 0, support: { cleared: 90, short: 20 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { cleared: 80, short: 30 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { cleared: 70, short: 40 } },
+    ] }],
+  };
+  const counted = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(passing)]]));
+  counted.keydown("}");
+  assert.equal(counted.clipboardText(), "Groups meeting the approval threshold: 1. A threshold is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(counted.clipboardText(), /First below-floor group/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-threshold-group-count-button");
+  assert.equal(blocked.focused(), "#threshold-group-count-fallback");
+  blocked.clearFocus();
+  blocked.keydown("}", { tagName: "INPUT", isContentEditable: false });
+  assert.equal(blocked.focused(), "");
 });
 
 test("keyboard hyphen jumps to the below-floor count copy control unless an input is active", async () => {
