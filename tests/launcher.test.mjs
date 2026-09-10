@@ -172,6 +172,9 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, />Copy Trust and limits</);
   assert.match(missing.body, /id="trust"/);
   assert.match(missing.body, /Not a live policy feed/);
+  assert.match(missing.body, /id="copy-how"/);
+  assert.match(missing.body, />Copy How it works</);
+  assert.match(missing.body, /id="how-it-works"/);
   assert.doesNotMatch(missing.body, /\bfetch\s*\(/);
   assert.doesNotMatch(missing.body, /XMLHttpRequest/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
@@ -226,6 +229,50 @@ test('404 copy versions markdown comes from the printed catalog line', async () 
   const expected = catalogVersionLine().split(', ').map((part) => `- ${part}`).join('\n');
   assert.equal(copied, expected);
   assert.doesNotMatch(copied, /Current catalog/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy How it works markdown comes from the printed heading and list', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  const heading = { textContent: 'How it works' };
+  const items = [
+    { textContent: 'Local catalog. The launcher serves only the catalog page and the four workbenches.' },
+    { textContent: 'Standalone files. Every workbench ships interface, styles, and model in one document.' },
+  ];
+  const section = {
+    querySelector(selector) {
+      return selector === 'h2' ? heading : null;
+    },
+    querySelectorAll(selector) {
+      return selector === 'ul li' ? items : [];
+    },
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-versions') return { addEventListener() {} };
+      if (id === 'copy-versions-status') return { textContent: '' };
+      if (id === 'copy-versions-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-trust') return { addEventListener() {} };
+      if (id === 'copy-trust-status') return { textContent: '' };
+      if (id === 'copy-trust-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'copy-how') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-how-status') return { textContent: '' };
+      if (id === 'copy-how-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'how-it-works') return section;
+      return null;
+    },
+    querySelector() { return null; },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  assert.equal(copied, '## How it works\n- Local catalog. The launcher serves only the catalog page and the four workbenches.\n- Standalone files. Every workbench ships interface, styles, and model in one document.');
+  assert.doesNotMatch(copied, /live policy feed/);
   assert.equal(PUBLIC_PATHS.length, 6);
 });
 
@@ -297,6 +344,32 @@ test('404 copy versions uses the printed catalog line without extra public paths
   assert.match(page, /querySelector\('\.version-line'\)/);
   assert.match(page, /Current catalog:/);
   assert.match(page, /Not a live product version/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy How it works uses the printed heading and list without extra public paths', () => {
+  const page = notFoundPage();
+  assert.match(page, /id="copy-how"/);
+  assert.match(page, />Copy How it works</);
+  assert.match(page, /id="copy-how-fallback"/);
+  assert.match(page, /textarea id="copy-how-fallback"/);
+  assert.match(page, /howMarkdown/);
+  assert.match(page, /id="how-it-works"/);
+  assert.match(page, /id="how-title">How it works/);
+  assert.match(page, /Local catalog/);
+  assert.match(page, /not a fifth product/);
+  assert.match(page, /Not a live policy feed/);
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(page, /XMLHttpRequest/);
   assert.equal(PUBLIC_PATHS.length, 6);
