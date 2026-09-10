@@ -126,6 +126,11 @@ test("the organizer hide-leftover-only-buyers filter is not on the merchant tabl
   assert.match(app, /filterBuyerIdsHidingLeftoverOnlyBuyers\(/u);
   assert.match(app, /hideLeftoverOnlyBuyers/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
+  assert.match(app, /function focusHideLeftoverOnlyBuyers\(/u);
+  assert.match(app, /#hide-leftover-only-buyers/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /if \(key === "@"\)/u);
+  assert.match(html, /aria-keyshortcuts="@"/u);
   assert.match(html, /hide-leftover-only-buyers choices are kept/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
 });

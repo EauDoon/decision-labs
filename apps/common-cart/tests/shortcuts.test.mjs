@@ -768,6 +768,26 @@ test("keyboard handler jumps to leftover fill fulfillment copy when not typing",
   assert.match(app, /if \(key === "~"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillFulfillment\(\);/u);
 });
 
+test("shortcut help documents hide leftover-only buyers jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>@<\/kbd> Focus hide leftover-only buyers, or the buyer list if missing/u);
+  assert.match(html, /id="hide-leftover-only-buyers"/u);
+  assert.match(html, /id="hide-leftover-only-buyers"[^>]*aria-keyshortcuts="@"/u);
+  assert.match(html, /id="buyers-list"/u);
+});
+
+test("keyboard handler jumps to hide leftover-only buyers when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "@"\)/u);
+  assert.match(app, /function focusHideLeftoverOnlyBuyers\(/u);
+  assert.match(app, /#hide-leftover-only-buyers/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "@"\) \{\s*event\.preventDefault\(\);\s*focusHideUnservedBuyers/u);
+  assert.match(app, /if \(key === "\|"\) \{\s*event\.preventDefault\(\);\s*focusHideUnservedBuyers\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

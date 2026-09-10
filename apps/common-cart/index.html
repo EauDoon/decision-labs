@@ -107,6 +107,7 @@ SOFTWARE.
         <li><kbd>|</kbd> Focus hide unserved buyers, or the buyer list if missing</li>
         <li><kbd>~</kbd> Copy leftover fill fulfillment (organizer private)</li>
         <li><kbd>!</kbd> Focus the leftover-fill fulfillment copy control, or leftover heading if missing</li>
+        <li><kbd>@</kbd> Focus hide leftover-only buyers, or the buyer list if missing</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -292,7 +293,7 @@ SOFTWARE.
             Hide buyers with zero allocated units after the winner
           </label>
           <label class="checkbox-field">
-            <input id="hide-leftover-only-buyers" type="checkbox">
+            <input id="hide-leftover-only-buyers" type="checkbox" aria-keyshortcuts="@">
             Hide leftover-only buyers
           </label>
           <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, and hide-leftover-only-buyers choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
