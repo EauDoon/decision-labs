@@ -193,6 +193,23 @@ export const presets = Object.freeze({
       offer("O02", "Pitch Shorts Co", "Match-day kit pack", "Training shorts", 18, 10, 6, 24, 2),
       { ...offer("O03", "Clubhouse Kit Pickup", "Match-day kit pack", "Water crate", 14, 6, 2, 20, 8), fulfillment: "pickup" }
     ]
+  },
+  surfFirstAid: {
+    title: "Surf club first-aid kit",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Patrol shed", "Surf first-aid kit", 6, 18, 7, ["Crepe bandage", "Ice pack"]),
+      buyer("B02", "Nippers tent", "Surf first-aid kit", 10, 14, 5, ["Crepe bandage"]),
+      buyer("B03", "First-aid room", "Surf first-aid kit", 8, 20, 8, ["Saline rinse"]),
+      buyer("B04", "Beach tower", "Surf first-aid kit", 4, 12, 4, ["Ice pack"]),
+      buyer("B05", "IRB crew", "Surf first-aid kit", 7, 16, 6, ["Crepe bandage", "Saline rinse"]),
+      buyer("B06", "Clubhouse desk", "Surf first-aid kit", 5, 15, 3, ["Ice pack", "Saline rinse"])
+    ],
+    offers: [
+      offer("O01", "Beach Kit Delivery", "Surf first-aid kit", "Crepe bandage", 11, 12, 4, 40, 3),
+      offer("O02", "Ice Pack Run", "Surf first-aid kit", "Ice pack", 9, 8, 5, 24, 2),
+      { ...offer("O03", "Clubhouse First-Aid Pickup", "Surf first-aid kit", "Saline rinse", 8, 6, 2, 20, 6), fulfillment: "pickup" }
+    ]
   }
 });
 
