@@ -71,16 +71,24 @@ export function catalogLastWhatsNewHeading() {
   return headings[headings.length - 1] ?? '';
 }
 
-export function catalogFirstWorkbenchHeading() {
+function catalogWorkbenchHeadings() {
   const html = readFileSync(new URL('index.html', root), 'utf8');
   const start = html.indexOf('id="workbenches"');
-  if (start < 0) return '';
+  if (start < 0) return [];
   const how = html.indexOf('id="how-it-works"', start);
   const section = how > start ? html.slice(start, how) : html.slice(start);
-  const card = section.match(/<article class="workbench"[^>]*>[\s\S]*?<h3>([^<]+)<\/h3>/);
-  if (card) return card[1].trim();
-  const heading = section.match(/<article[^>]*class="workbench"[^>]*>[\s\S]*?<h3>([^<]+)<\/h3>/);
-  return heading?.[1].trim() ?? '';
+  const cards = [...section.matchAll(/<article class="workbench"[^>]*>[\s\S]*?<h3>([^<]+)<\/h3>/g)].map((match) => match[1].trim());
+  if (cards.length) return cards;
+  return [...section.matchAll(/<article[^>]*class="workbench"[^>]*>[\s\S]*?<h3>([^<]+)<\/h3>/g)].map((match) => match[1].trim());
+}
+
+export function catalogFirstWorkbenchHeading() {
+  return catalogWorkbenchHeadings()[0] ?? '';
+}
+
+export function catalogLastWorkbenchHeading() {
+  const headings = catalogWorkbenchHeadings();
+  return headings[headings.length - 1] ?? '';
 }
 
 export function notFoundPage() {
