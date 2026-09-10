@@ -5678,3 +5678,110 @@ test('close-brace plus pipe do not steal semicolon jobs last-How first-How or eq
   assert.equal(clicks.lastJob, 1);
   assert.deepEqual(focused, ['copy-last-how', 'copy-first-how', 'copy-how', 'copy-last-job', 'copy-first-job']);
 });
+
+test('copy last What\'s new heading control is distinct from Copy last job and Copy last How it works item', () => {
+  assert.match(html, /id="copy-last-whats-new"/);
+  assert.match(html, />Copy last What's new heading</);
+  assert.match(html, /aria-keyshortcuts="~"/);
+  assert.match(html, /id="copy-last-whats-new-fallback"/);
+  assert.match(html, /class="copy-last-whats-new-fallback"/);
+  assert.match(html, /textarea id="copy-last-whats-new-fallback"/);
+  assert.match(html, /id="copy-last-job"/);
+  assert.match(html, />Copy last job</);
+  assert.match(html, /id="copy-last-how"/);
+  assert.match(html, />Copy last How it works item</);
+  assert.notEqual(html.match(/id="copy-last-whats-new"/)?.[0], html.match(/id="copy-last-job"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-whats-new"/)?.[0], html.match(/id="copy-last-how"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-whats-new"/)?.[0], html.match(/id="copy-last"/)?.[0]);
+  assert.match(html, /@media print[\s\S]*\.copy-last-whats-new-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-last-whats-new-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('copy last What\'s new heading markdown is the last #whats-new h3, or empty if missing', async () => {
+  assert.match(html, /lastWhatsNewMarkdown/);
+  assert.match(html, /querySelectorAll\('#whats-new h3'\)/);
+  assert.match(html, /headings\[headings\.length - 1\]/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /lastWhatsNewFallback\.hidden = false/);
+  assert.match(html, /lastWhatsNewFallback\.select\(\)/);
+  assert.match(html, /Not a live product feed/);
+  assert.match(html, /This is the last What\\'s new heading, not a live product feed/);
+  assert.match(html, /Copied an empty string/);
+  let copied = '';
+  let clickLast = null;
+  let headings = [
+    { textContent: 'Last-job copy, last-job jump, and first-job jump' },
+    { textContent: 'Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11' },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-whats-new') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-whats-new-status') return { textContent: '' };
+      if (id === 'copy-last-whats-new-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#whats-new h3' ? headings : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Last-job copy/);
+  assert.doesNotMatch(copied, /live product feed/);
+  headings = [];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
+});
+
+test('copy last What\'s new heading shows a visible textarea when clipboard is unavailable', async () => {
+  let clickLast = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-whats-new') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-whats-new-status') return status;
+      if (id === 'copy-last-whats-new-fallback') return fallback;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#whats-new h3' ? [{ textContent: 'Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11' }] : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickLast();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Sunday late payout, payout-hour copy, and payout-closed hide in Weekend Gap 1.5.11');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+});
+
+test('print CSS hides copy last What\'s new heading tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-last-whats-new-tools, \.copy-last-whats-new-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-last-job-tools, \.copy-last-job-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
