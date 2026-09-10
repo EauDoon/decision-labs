@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.11 - 2026-09-10
+
+A workshop follow-up on 1.5.10. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `}` copies the groups-meeting-threshold count through the existing `#copy-threshold-group-count-button` (same one-line Markdown). Ignored while typing. Distinct from `"` first below-floor group copy and `:` below-floor count copy.
+- Keyboard `+` (event.key plus, not equals) jumps to that threshold-group count copy control, or the groups or results heading if missing. Ignored while typing.
+- Keyboard `|` jumps to the hide-veto-groups control, or the groups heading if missing. Ignored while typing. Distinct from `{` hide-groups-below-threshold.
+- Netball training hours preset: synthetic students, neighbours (a veto group), and P&C scoring start time, court lights, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, Rooftop BBQ hours, School disco hours, and Sports day hours. Not a recorded vote.
+- Hide non-veto groups on screen. Hidden groups still count in the model. The solver is unchanged. Distinct from hideVetoGroups, vetoGroupsOnly, hideGroupsAtFloor, hideGroupsWithoutFloors, hideGroupsMeetingThreshold, and hideGroupsBelowThreshold. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all. If both hide-veto and hide-non-veto are on, the empty-groups notice is honest and model counts stay the same. A veto is a number you entered, not a legal right.
+- Print facilitator pack includes the threshold-group count as one line when the case is valid. Print redacted still uses Group 1 through Group N. Honest zero. A threshold is a number you entered, not a legal quorum. The saved draft is unchanged.
+- Copy the first veto group label as one-line Markdown, with a clipboard fallback. Honest when none. Distinct from first below-floor group copy and threshold-group count copy. A veto is a number you entered, not a legal right. Do not treat the label as a legal identity.
+
 ## 1.5.10 - 2026-09-10
 
 A workshop follow-up on 1.5.9. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
