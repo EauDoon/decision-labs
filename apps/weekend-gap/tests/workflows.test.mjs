@@ -563,6 +563,20 @@ test("hide-issuer-open Gantt filter persists in workspace JSON and older files r
   assert.equal(legacy.nodes.get("gantt-hide-issuer-open").checked, false);
 });
 
+test("hide-weekend-issuer-open Gantt filter persists in workspace JSON and older files restore all hours", async () => {
+  const ui = await boot();
+  ui.nodes.get("gantt-hide-weekend-issuer-open").checked = true;
+  await ui.nodes.get("gantt-hide-weekend-issuer-open").emit("change");
+  assert.equal(JSON.parse(ui.storage.get("weekend-gap:workspace:v1")).hideWeekendIssuerOpenGanttHours, true);
+  const restored = await boot(ui.storage);
+  assert.equal(restored.nodes.get("gantt-hide-weekend-issuer-open").checked, true);
+  assert.match(restored.nodes.get("gantt-filter-note").textContent, /Weekend hours where the issuer gate is open/);
+  const raw = JSON.parse(ui.storage.get("weekend-gap:workspace:v1"));
+  delete raw.hideWeekendIssuerOpenGanttHours;
+  const legacy = await boot(new Map([["weekend-gap:workspace:v1", JSON.stringify(raw)]]));
+  assert.equal(legacy.nodes.get("gantt-hide-weekend-issuer-open").checked, false);
+});
+
 test("keyboard j jumps to first settlement and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   assert.equal(ui.nodes.get("coach-overlay").hidden, true);
@@ -1347,6 +1361,25 @@ test("keyboard backtick jumps to the hide-issuer-open filter and ignores the key
   await ui.keydown("%");
   assert.equal(ui.nodes.get("gantt-hide-fx-open").focused, true);
   assert.equal(ui.nodes.get("gantt-hide-issuer-open").focused, false);
+});
+
+test("keyboard 7 jumps to the hide-weekend-issuer-open filter and does not copy", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("7");
+  assert.equal(ui.nodes.get("gantt-hide-weekend-issuer-open").focused, true);
+  assert.equal(ui.nodes.get("last-open-issuer-copy-fallback").hidden, true);
+  ui.nodes.get("gantt-hide-weekend-issuer-open").focused = false;
+  ui.nodes.get("gantt-title").focused = false;
+  await ui.keydown("7", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-hide-weekend-issuer-open").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("7", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-hide-weekend-issuer-open").focused, false);
+  await ui.keydown("7", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-hide-weekend-issuer-open").focused, false);
+  await ui.keydown("`");
+  assert.equal(ui.nodes.get("gantt-hide-issuer-open").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-weekend-issuer-open").focused, false);
 });
 
 test("keyboard left brace jumps to the hide-issuer-closed filter and ignores the key while typing", async () => {

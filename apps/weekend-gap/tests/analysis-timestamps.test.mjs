@@ -20,6 +20,8 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   assert.equal(sundayEarly, analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayEarlyPayoutOpen, 80, 70));
   const sundayIssuer = analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayLateIssuerClose, 80, 70);
   assert.equal(sundayIssuer, analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayLateIssuerClose, 80, 70));
+  const sundayEarlyIssuer = analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayEarlyIssuerOpen, 80, 70);
+  assert.equal(sundayEarlyIssuer, analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayEarlyIssuerOpen, 80, 70));
   const report = JSON.parse(output);
   const payoutReport = JSON.parse(payout);
   const saturdayReport = JSON.parse(saturday);
@@ -27,6 +29,7 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   const saturdayLateReport = JSON.parse(saturdayLate);
   const sundayEarlyReport = JSON.parse(sundayEarly);
   const sundayIssuerReport = JSON.parse(sundayIssuer);
+  const sundayEarlyIssuerReport = JSON.parse(sundayEarlyIssuer);
   for (const key of TIMESTAMP_KEYS) {
     assert.equal(Object.prototype.hasOwnProperty.call(report, key), false, `analysis JSON must not include ${key}`);
     assert.equal(Object.prototype.hasOwnProperty.call(payoutReport, key), false, `analysis JSON must not include ${key}`);
@@ -35,6 +38,7 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
     assert.equal(Object.prototype.hasOwnProperty.call(saturdayLateReport, key), false, `analysis JSON must not include ${key}`);
     assert.equal(Object.prototype.hasOwnProperty.call(sundayEarlyReport, key), false, `analysis JSON must not include ${key}`);
     assert.equal(Object.prototype.hasOwnProperty.call(sundayIssuerReport, key), false, `analysis JSON must not include ${key}`);
+    assert.equal(Object.prototype.hasOwnProperty.call(sundayEarlyIssuerReport, key), false, `analysis JSON must not include ${key}`);
   }
   assert.doesNotMatch(output, /"timestamp"\s*:/);
   assert.doesNotMatch(output, /"createdAt"\s*:/);
@@ -62,6 +66,10 @@ test("analysis JSON remains timestamp-free for identical inputs", () => {
   assert.doesNotMatch(sundayIssuer, /"createdAt"\s*:/);
   assert.doesNotMatch(sundayIssuer, /"exportedAt"\s*:/);
   assert.doesNotMatch(sundayIssuer, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  assert.doesNotMatch(sundayEarlyIssuer, /"timestamp"\s*:/);
+  assert.doesNotMatch(sundayEarlyIssuer, /"createdAt"\s*:/);
+  assert.doesNotMatch(sundayEarlyIssuer, /"exportedAt"\s*:/);
+  assert.doesNotMatch(sundayEarlyIssuer, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
 });
 
 test("analysis JSON for Saturday early payout open still has no timestamps", () => {
@@ -143,6 +151,25 @@ test("analysis JSON for Sunday early payout open still has no timestamps", () =>
 test("analysis JSON for Sunday late issuer close still has no timestamps", () => {
   const output = analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayLateIssuerClose, 75, 72);
   assert.equal(output, analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayLateIssuerClose, 75, 72));
+  assert.doesNotMatch(output, /timestamp|createdAt|exportedAt|generatedAt|created_at|exported_at/i);
+  assert.doesNotMatch(output, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
+  const walk = (value) => {
+    if (Array.isArray(value)) {
+      value.forEach(walk);
+      return;
+    }
+    if (!value || typeof value !== "object") return;
+    for (const key of Object.keys(value)) {
+      assert.equal(TIMESTAMP_KEYS.includes(key), false, `analysis JSON must not include ${key}`);
+      walk(value[key]);
+    }
+  };
+  walk(JSON.parse(output));
+});
+
+test("analysis JSON for Sunday early issuer open still has no timestamps", () => {
+  const output = analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayEarlyIssuerOpen, 75, 72);
+  assert.equal(output, analysisToJSON(DEFAULT_SCENARIO, PRESETS.sundayEarlyIssuerOpen, 75, 72));
   assert.doesNotMatch(output, /timestamp|createdAt|exportedAt|generatedAt|created_at|exported_at/i);
   assert.doesNotMatch(output, /\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}/);
   const walk = (value) => {
