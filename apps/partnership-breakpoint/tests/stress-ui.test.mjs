@@ -675,7 +675,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, and deal title', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, and currency code', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -686,6 +686,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /Contribution waterfall/);
   assert.match(app.markup(), /class="print-only print-keep"/);
   assert.match(app.markup(), /<h2>Deal title<\/h2><p>No deal title was entered\.<\/p>/);
+  assert.match(app.markup(), /<h2>Currency code<\/h2><p>No currency code was entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Deal notes<\/h2>/);
   assert.match(app.markup(), /<h2>Least headroom<\/h2><p>Liquidity Partner has the least volume headroom to its minimum acceptable profit limit\.<\/p>/);
   assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
@@ -694,13 +695,16 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.equal(app.prints(), 1);
   assert.equal(JSON.stringify(app.saved()), before);
   assert.match(app.lastPrint(), /<h2>Deal title<\/h2><p>No deal title was entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Currency code<\/h2><p>No currency code was entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   app.edit('deal.title', 'Harbor JV', { type: 'text' });
+  app.edit('deal.currency', 'USD', { type: 'text' });
   const titled = JSON.stringify(app.saved());
   app.click('print-report');
   assert.equal(app.prints(), 2);
   assert.equal(JSON.stringify(app.saved()), titled);
   assert.match(app.lastPrint(), /<h2>Deal title<\/h2><p>Harbor JV<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Currency code<\/h2><p>USD<\/p>/);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
   assert.match(html, /\.panel:not\(\.print-keep\)/);
