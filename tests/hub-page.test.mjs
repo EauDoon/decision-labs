@@ -808,6 +808,106 @@ test('keyboard j copies catalog jobs through the same control', () => {
   assert.match(html, /jobsFallback\.hidden = false/);
 });
 
+test('keyboard y copies the last-launched job from this-browser storage', () => {
+  assert.match(html, /event\.key === 'y'/);
+  assert.match(html, /lastBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="y"/);
+  assert.match(html, /id="copy-last"/);
+  assert.match(html, />Copy last launched</);
+  assert.match(html, /id="copy-last-fallback"/);
+  assert.match(html, /lastLaunchedMarkdown/);
+  assert.match(html, /return '\\n'/);
+  assert.match(html, /<kbd>y<\/kbd><\/dt><dd>Copy the last-launched workbench name and one-sentence job as Markdown from this-browser storage, or an empty line if none is stored. This is not a cloud recency./);
+  assert.match(html, /Press <kbd>y<\/kbd> to copy the last-launched job/);
+  assert.match(html, /not a cloud recency/);
+  assert.match(readme, /Press `y` to copy the last-launched workbench name/);
+  assert.match(readme, /copies an empty line/);
+  const clicks = { last: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last') return { click() { clicks.last += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('y', input);
+  assert.equal(clicks.last, 0);
+  fire('y', body);
+  assert.equal(clicks.last, 1);
+});
+
+test('copy last launched markdown is the stored name and job or an empty line', async () => {
+  let copied = '';
+  let clickLast = null;
+  const card = {
+    querySelector(sel) {
+      if (sel === 'h3') return { textContent: 'Common Cart' };
+      if (sel === 'p.job') return { textContent: 'Pool buyer constraints.' };
+      return null;
+    },
+  };
+  const stored = { value: '2' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-status') return { textContent: '' };
+      if (id === 'copy-last-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return String(selector).includes('data-workbench="2"') ? card : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: {
+      getItem() { return stored.value; },
+      setItem() {},
+    },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- Common Cart: Pool buyer constraints.');
+  stored.value = null;
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '\n');
+});
+
 test('keyboard u copies How it works through the same control', () => {
   assert.match(html, /event\.key === 'u'/);
   assert.match(html, /howBtn\?\.click\(\)/);
