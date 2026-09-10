@@ -471,7 +471,7 @@ function shockUnits(kind) {
 }
 
 function copyFirstBreakpointButton() {
-  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button><button type="button" id="copy-first-breakpoint-label" data-action="copy-first-breakpoint-label">Copy first-breakpoint participant label</button><button type="button" id="copy-first-breakpoint-remaining" data-action="copy-first-breakpoint-remaining">Copy first-breakpoint remaining-to-hold</button><button type="button" id="copy-first-breakpoint-volume" data-action="copy-first-breakpoint-volume">Copy first-breakpoint volume-to-hold</button></div>`;
+  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button><button type="button" id="copy-first-breakpoint-label" data-action="copy-first-breakpoint-label">Copy first-breakpoint participant label</button><button type="button" id="copy-first-breakpoint-remaining" data-action="copy-first-breakpoint-remaining">Copy first-breakpoint remaining-to-hold</button><button type="button" id="copy-first-breakpoint-volume" data-action="copy-first-breakpoint-volume" aria-keyshortcuts=":">Copy first-breakpoint volume-to-hold</button></div>`;
 }
 
 function breakpointSection(result) {
@@ -1992,6 +1992,7 @@ window.addEventListener('keydown', (event) => {
   if (event.key === ',') copyFirstBreakpointLabel();
   if (event.key === ';') copyLeastHeadroomLabel();
   if (event.key === "'") copyFirstBreakpointRemainingToHold();
+  if (event.key === ':') copyFirstBreakpointVolumeToHold();
   if (event.key === '.') {
     const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
     target?.focus?.({ preventScroll: false });
@@ -3619,6 +3620,7 @@ function helpDialog() {
         <li><kbd>[</kbd> Jump to Copy least-headroom participant label, or the First breakpoint or results heading if missing</li>
         <li><kbd>]</kbd> Jump to Print one-pager, or the print / one-pager heading if missing</li>
         <li><kbd>'</kbd> Copy first-breakpoint remaining-to-hold as Markdown</li>
+        <li><kbd>:</kbd> Copy first-breakpoint volume-to-hold as Markdown</li>
         <li><kbd>&lt;</kbd> Jump to Copy first-breakpoint remaining-to-hold, or the First breakpoint heading if missing</li>
         <li><kbd>&gt;</kbd> Jump to Hide participants with unused listed capacity, or the Participants heading if missing</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
