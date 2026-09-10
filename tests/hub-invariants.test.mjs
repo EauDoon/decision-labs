@@ -266,7 +266,30 @@ test('404 Copy last What\'s new heading does not expand PUBLIC_PATHS or connect-
   assert.match(page, /id="whats-new"/);
   assert.match(page, /id="copy-last-job"/);
   assert.match(page, />Copy last job</);
-  assert.doesNotMatch(page, /id="copy-first-whats-new"/);
+  assert.match(page, /id="copy-first-whats-new"/);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(serve, /hosted API/i);
+});
+
+test('404 Copy first What\'s new heading does not expand PUBLIC_PATHS or connect-src', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  assert.match(serve, /request\.method !== 'GET' && request\.method !== 'HEAD'/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-first-whats-new"/);
+  assert.match(page, />Copy first What's new heading</);
+  assert.match(page, /firstWhatsNewMarkdown/);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /id="copy-last-whats-new"/);
+  assert.match(page, />Copy last What's new heading</);
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(serve, /hosted API/i);
 });
