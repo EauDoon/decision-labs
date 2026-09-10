@@ -447,6 +447,7 @@ test("the buyer room copies uncovered leftover unit-count with a textarea fallba
   assert.match(app, /This is not a merchant export/u);
   assert.match(app, /function copyUncoveredLeftoverCounts\(/u);
   assert.match(app, /function copyLeftoverFillUnitCount\(/u);
+  assert.match(app, /if \(key === ":"\) \{\s*event\.preventDefault\(\);\s*copyUncoveredLeftoverUnitCount\(\);/u);
 });
 
 test("winning remaining capacity Markdown is remaining units only", () => {

@@ -175,6 +175,7 @@ test("uncovered leftover unit-count copy stays on the organizer leftover control
   assert.match(app, /#copy-uncovered-leftover-units/u);
   assert.match(app, /function copyUncoveredLeftoverCounts\(/u);
   assert.match(app, /function copyLeftoverFillUnitCount\(/u);
+  assert.match(app, /if \(key === ":"\) \{\s*event\.preventDefault\(\);\s*copyUncoveredLeftoverUnitCount\(\);/u);
 });
 
 test("leftover print jump stays on the leftover print control", async () => {

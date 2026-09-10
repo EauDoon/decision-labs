@@ -496,6 +496,37 @@ test("keyboard handler jumps to hide fully filled buyers when not typing", async
   assert.match(app, /function focusWinningRemainingCapacityCopy\(/u);
 });
 
+test("shortcut help documents uncovered leftover unit-count copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>:<\/kbd> Copy uncovered leftover units \(organizer private\)/u);
+  assert.match(html, /id="copy-uncovered-leftover-units"/u);
+});
+
+test("keyboard handler copies uncovered leftover unit-count with colon when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /if \(key === ":"\)/u);
+  assert.match(app, /function copyUncoveredLeftoverUnitCount\(/u);
+  assert.match(app, /createUncoveredLeftoverUnitCountMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-uncovered-leftover-units/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /organizer-private Markdown/u);
+  assert.doesNotMatch(app, /if \(key === ":"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount/u);
+  assert.match(app, /if \(key === "'"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillUnitCount\(\);/u);
+});
+
+test("colon uncovered leftover unit-count copy uses the existing uncovered leftover units control", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(app, /if \(key === ":"\) \{\s*event\.preventDefault\(\);\s*copyUncoveredLeftoverUnitCount\(\);/u);
+  assert.match(app, /function copyUncoveredLeftoverUnitCount\(/u);
+  assert.match(app, /createUncoveredLeftoverUnitCountMarkdown\(scenario\)/u);
+  assert.match(html, /id="copy-uncovered-leftover-units"/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === ":"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+  assert.match(app, /if \(key === "y" \|\| key === ";"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFill\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

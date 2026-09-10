@@ -1016,6 +1016,11 @@ function handleShortcut(event) {
     focusHideFullyFilledBuyers();
     return;
   }
+  if (key === ":") {
+    event.preventDefault();
+    copyUncoveredLeftoverUnitCount();
+    return;
+  }
 }
 
 function focusBuyersList() {
