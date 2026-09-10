@@ -74,6 +74,8 @@ test('standalone retains 1.5.9 review tools and 1.5.10 copy controls', async () 
   assert.match(html, /data-action="hide-spare-capacity-participants"/);
   assert.match(html, /data-action="hide-least-headroom-participants"/);
   assert.match(html, /data-action="hide-within-capacity-participants"/);
+  assert.match(html, /id="hide-within-capacity-participants"/);
+  assert.match(html, /aria-keyshortcuts="\{"/);
   assert.match(html, /id="copy-over-capacity-count"/);
   assert.match(html, /id="copy-over-capacity-count"[^>]*aria-keyshortcuts='"'/);
   assert.match(html, /School concert split/);

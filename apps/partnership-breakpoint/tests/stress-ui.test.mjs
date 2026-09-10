@@ -1444,6 +1444,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>_<\/kbd> Jump to Copy over-capacity participant count, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>-<\/kbd> Jump to Copy first-breakpoint volume-to-hold, or the First breakpoint heading if missing/);
   assert.match(app.markup(), /<kbd>=<\/kbd> Jump to Hide the least-headroom participant, or the Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>\{<\/kbd> Jump to Hide participants who are within listed capacity, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>&lt;<\/kbd> Jump to Copy first-breakpoint remaining-to-hold, or the First breakpoint heading if missing/);
   assert.match(app.markup(), /<kbd>&gt;<\/kbd> Jump to Hide participants with unused listed capacity, or the Participants heading if missing/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
