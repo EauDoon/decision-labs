@@ -98,6 +98,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="fridayLateFxClose">Friday late FX close (synthetic)</button>
               <button type="button" class="preset-button" data-preset="mondayLateIssuerOpen">Monday late issuer open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="saturdayEarlyFxOpen">Saturday early FX open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="sundayLateBankClose">Sunday late bank close (synthetic)</button>
             </div>
           </fieldset>
 
@@ -247,6 +248,13 @@ SOFTWARE.
               </label>
               <p>When selected, Saturday 06:00 to 11:00 keeps weekday FX depth. Issuer, bank and payout windows stay closed those hours. Older scenario files omit this field and keep weekend FX thinning on Saturday morning. This is a synthetic calendar, not a bank feed.</p>
             </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="sundayLateBankClose">
+                <input id="sundayLateBankClose" name="sundayLateBankClose" data-field="sundayLateBankClose" type="checkbox">
+                Keep Sunday bank open 16:00 to 18:00
+              </label>
+              <p>When selected, Sunday 16:00 to 18:00 treats the bank gate as open even though Sunday is not a business day. Issuer, payout and FX stay on their Sunday rules those hours. Older scenario files omit this field and keep Sunday bank closed. This is a synthetic calendar, not a bank feed.</p>
+            </div>
           </form>
 
           <section class="library-controls" aria-labelledby="library-title">
@@ -342,6 +350,7 @@ SOFTWARE.
               <div id="remaining-reserve-line"><dt>Remaining reserve at selected hour</dt><dd id="remaining-reserve-value">Calculating</dd></div>
               <div id="first-closed-fx-hour-line"><dt>First closed FX hour</dt><dd id="first-closed-fx-hour-value">Calculating</dd></div>
               <div id="first-closed-bank-hour-line"><dt>First closed bank hour</dt><dd id="first-closed-bank-hour-value">Calculating</dd></div>
+              <div id="first-closed-issuer-hour-line"><dt>First closed issuer hour</dt><dd id="first-closed-issuer-hour-value">Calculating</dd></div>
             </dl>
             <p id="outcome-explanation">The summary updates when you edit an assumption or choose a preset.</p>
           </article>
@@ -632,8 +641,12 @@ SOFTWARE.
                 Hide hours whose synthetic queue is zero
               </label>
               <label class="checkbox-label" for="gantt-hide-bank-closed">
-                <input id="gantt-hide-bank-closed" type="checkbox">
+                <input id="gantt-hide-bank-closed" type="checkbox" aria-keyshortcuts="=">
                 Hide hours where the bank gate is closed
+              </label>
+              <label class="checkbox-label" for="gantt-hide-issuer-closed">
+                <input id="gantt-hide-issuer-closed" type="checkbox">
+                Hide hours where the issuer gate is closed
               </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
@@ -644,7 +657,8 @@ SOFTWARE.
               <button id="copy-weekend-fx-counts" type="button">Copy weekend FX counts</button>
               <button id="copy-first-closed-fx" type="button">Copy first closed FX hour</button>
               <button id="copy-first-closed-bank" type="button">Copy first closed bank hour</button>
-              <button id="copy-first-closed-issuer" type="button">Copy first closed issuer hour</button>
+              <button id="copy-first-closed-issuer" type="button" aria-keyshortcuts=": -">Copy first closed issuer hour</button>
+              <button id="copy-first-closed-payout" type="button">Copy first closed payout hour</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
@@ -662,6 +676,8 @@ SOFTWARE.
             <textarea id="first-closed-bank-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="first-closed-issuer-copy-fallback">First closed issuer hour Markdown fallback</label>
             <textarea id="first-closed-issuer-copy-fallback" rows="2" hidden readonly></textarea>
+            <label class="sr-only" for="first-closed-payout-copy-fallback">First closed payout hour Markdown fallback</label>
+            <textarea id="first-closed-payout-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -753,8 +769,11 @@ SOFTWARE.
           <li><kbd>.</kbd> Jump to the first-closed-FX-hour copy control</li>
           <li><kbd>/</kbd> Jump to the remaining-reserve copy control</li>
           <li><kbd>'</kbd> Copy first closed bank hour as Markdown</li>
+          <li><kbd>:</kbd> Copy first closed issuer hour as Markdown</li>
           <li><kbd>&lt;</kbd> Jump to the first-closed-bank-hour copy control</li>
+          <li><kbd>-</kbd> Jump to the first-closed-issuer-hour copy control</li>
           <li><kbd>&gt;</kbd> Jump to the hide-zero-queue Gantt filter</li>
+          <li><kbd>=</kbd> Jump to the hide-bank-closed Gantt filter</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>

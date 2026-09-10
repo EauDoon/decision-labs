@@ -105,6 +105,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Cinema split, headroom copy, and breakpoint jump in Partnership Breakpoint 1\.5\.7/);
   assert.match(html, /Community radio, least-headroom copy, and print jump in Partnership Breakpoint 1\.5\.8/);
   assert.match(html, /School concert, remaining-to-hold copy, and least-headroom hide in Partnership Breakpoint 1\.5\.9/);
+  assert.match(html, /Sports carnival, volume-to-hold copy, and within-capacity hide in Partnership Breakpoint 1\.5\.10/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -116,6 +117,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Surf club kit, remaining-capacity jump, and leftover-fill copy in Common Cart 1\.4\.6/);
   assert.match(html, /Theatre wardrobe, leftover-fill units, and print jump in Common Cart 1\.4\.7/);
   assert.match(html, /Choir folders, leftover-units copy, and leftover hide in Common Cart 1\.4\.8/);
+  assert.match(html, /Scout camp, leftover-units copy, and remaining-capacity hide in Common Cart 1\.4\.9/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -140,6 +142,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Late FX close, settlement copy, and closed Gantt hide in Weekend Gap 1\.5\.7/);
   assert.match(html, /Late issuer, hours-to-clear copy, and zero-queue hide in Weekend Gap 1\.5\.8/);
   assert.match(html, /Early Saturday FX, bank-hour copy, and bank-closed hide in Weekend Gap 1\.5\.9/);
+  assert.match(html, /Sunday late bank, issuer-hour copy, and issuer-closed hide in Weekend Gap 1\.5\.10/);
   assert.match(html, /do not call a live partnership, merchant, vote, or bank/);
   assert.match(html, /Catalog cards list each workbench version next to its job/);
   assert.match(html, /not checkout, inventory, or a second live order/);
@@ -167,6 +170,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /remaining-capacity jump, the Surf club first-aid kit start/);
   assert.match(readme, /leftover-fill unit-count copy, the Theatre wardrobe kit start/);
   assert.match(readme, /leftover-fill unit-count copy shortcut, the Community choir folders start/);
+  assert.match(readme, /uncovered leftover unit-count copy shortcut, the Scout camp kit start/);
   assert.match(readme, /waterfall SVG download, compare and print keys/);
   assert.match(readme, /waterfall\s+Markdown copy, the Talent, agent, and platform start/);
   assert.match(readme, /tornado Markdown copy, the\s+Three-party joint venture start/);
@@ -176,6 +180,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /least-headroom participant copy, the Pop-up cinema split start/);
   assert.match(readme, /least-headroom copy shortcut, the Community radio split start/);
   assert.match(readme, /remaining-to-hold copy shortcut, the School concert split start/);
+  assert.match(readme, /volume-to-hold copy shortcut, the Sports carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -200,6 +205,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /first-settlement copy shortcut, Friday late FX close/);
   assert.match(readme, /hours-to-clear copy shortcut, Monday late issuer open/);
   assert.match(readme, /first-closed-bank copy shortcut, Saturday early FX open/);
+  assert.match(readme, /first-closed-issuer copy shortcut, Sunday late bank close/);
   assert.match(readme, /how-it-works jump, version-line copy, and skip-link focus/);
   assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(readme, /trust-item jump, first-job copy, and 404 Copy version line/);
