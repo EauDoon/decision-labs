@@ -204,7 +204,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, .hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, .group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, .remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, .hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, .group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, .remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -389,13 +389,15 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <p id="changed-clauses-filter-note" class="field-note">Shows clause cards whose original option is not the recommended option. Hidden cards still count in the model. The solver is unchanged.</p>
           <label class="over-budget-clauses-filter" for="over-budget-clauses-only"><input id="over-budget-clauses-only" type="checkbox"> Show clauses whose cheapest remaining change exceeds remaining budget</label>
           <p id="over-budget-clauses-filter-note" class="field-note">Shows clause cards whose cheapest remaining change costs more than leftover budget. When the budget is exhausted, every clause card is shown. Hidden cards still count in the model. The solver is unchanged.</p>
+          <label class="no-cheaper-remaining-clauses-filter" for="no-cheaper-remaining-clauses-only"><input id="no-cheaper-remaining-clauses-only" type="checkbox"> Show clauses with no remaining cheaper option than the recommendation</label>
+          <p id="no-cheaper-remaining-clauses-filter-note" class="field-note">Shows clause cards whose other options all cost at least as much as the recommended option. Hidden cards still count in the model. The solver is unchanged. This is not a recorded vote.</p>
           <label class="clause-density-label" for="clause-density">Clause card density
             <select id="clause-density">
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
           </label>
-          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that match the original when Show clauses that differ from the recommendation is on, or whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on. When the budget is exhausted, that last filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that match the original when Show clauses that differ from the recommendation is on, whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on, or that still have a cheaper remaining option than the recommendation when that filter is on. When the budget is exhausted, the leftover-budget filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
           <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>
@@ -1630,6 +1632,36 @@ function overBudgetClauseIds(proposal, result) {
   return { status: "ok", clauseIds, remaining, exhausted: false };
 }
 
+/**
+ * Clause ids whose recommended option has no remaining cheaper alternative.
+ * Remaining cheaper means another option with a strictly lower changeCost.
+ * Empty when there is no recommendation. Display-only. The solver ignores the list.
+ */
+function clausesWithoutCheaperRemainingOption(proposal, result) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const selected = result?.agreement?.options;
+  if (!Array.isArray(selected) || selected.length !== proposal.clauses.length) {
+    return { status: "ok", clauseIds: [] };
+  }
+  const clauseIds = [];
+  for (let index = 0; index < proposal.clauses.length; index += 1) {
+    const clause = proposal.clauses[index];
+    const recommended = clause.options.find((option) => option.id === selected[index]?.id);
+    if (!recommended) continue;
+    let cheaper = false;
+    for (const option of clause.options) {
+      if (option.id === recommended.id) continue;
+      if (recommended.changeCost - option.changeCost > EPSILON) {
+        cheaper = true;
+        break;
+      }
+    }
+    if (!cheaper) clauseIds.push(clause.id);
+  }
+  return { status: "ok", clauseIds };
+}
+
 /** A deterministic downside scenario, not a probability estimate or a new optimization. */
 function stressPackage(proposal, optionIds, supportDrop) {
   if (!Number.isFinite(supportDrop) || supportDrop < 0 || supportDrop > 100) {
@@ -2660,6 +2692,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
   "hideGroupsAtFloor",
+  "noCheaperRemainingClausesOnly",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2670,6 +2703,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
   "hideGroupsAtFloor",
+  "noCheaperRemainingClausesOnly",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2713,6 +2747,8 @@ function formatWorkspaceJson(proposal, prefs = {}) {
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   const hideGroupsAtFloor = readWorkspaceBoolean(prefs, "hideGroupsAtFloor");
   if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
+  const noCheaperRemainingClausesOnly = readWorkspaceBoolean(prefs, "noCheaperRemainingClausesOnly");
+  if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2722,6 +2758,7 @@ function formatWorkspaceJson(proposal, prefs = {}) {
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
     hideGroupsAtFloor: hideGroupsAtFloor.value,
+    noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2732,6 +2769,7 @@ function formatWorkspaceJson(proposal, prefs = {}) {
       belowFloorGroupsOnly: belowFloorGroupsOnly.value,
       overBudgetClausesOnly: overBudgetClausesOnly.value,
       hideGroupsAtFloor: hideGroupsAtFloor.value,
+      noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2755,6 +2793,7 @@ function parseWorkspaceJson(text) {
       belowFloorGroupsOnly: null,
       overBudgetClausesOnly: null,
       hideGroupsAtFloor: null,
+      noCheaperRemainingClausesOnly: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2783,6 +2822,8 @@ function parseWorkspaceJson(text) {
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   const hideGroupsAtFloor = readWorkspaceBoolean(raw, "hideGroupsAtFloor");
   if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
+  const noCheaperRemainingClausesOnly = readWorkspaceBoolean(raw, "noCheaperRemainingClausesOnly");
+  if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2794,6 +2835,7 @@ function parseWorkspaceJson(text) {
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
     hideGroupsAtFloor: hideGroupsAtFloor.value,
+    noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
   };
 }
 
@@ -3621,6 +3663,7 @@ let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
 let hideGroupsAtFloor = false;
 let overBudgetClausesOnly = false;
+let noCheaperRemainingClausesOnly = false;
 let printRedacted = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
@@ -3693,6 +3736,7 @@ function loadWorkspacePrefs() {
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
     overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
     hideGroupsAtFloor = parsed?.hideGroupsAtFloor === true;
+    noCheaperRemainingClausesOnly = parsed?.noCheaperRemainingClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
   }
@@ -3700,7 +3744,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -3993,21 +4037,28 @@ function renderClauses() {
   if (changedCheckbox) changedCheckbox.checked = changedClausesOnly;
   const overBudgetCheckbox = $("#over-budget-clauses-only");
   if (overBudgetCheckbox) overBudgetCheckbox.checked = overBudgetClausesOnly;
+  const noCheaperCheckbox = $("#no-cheaper-remaining-clauses-only");
+  if (noCheaperCheckbox) noCheaperCheckbox.checked = noCheaperRemainingClausesOnly;
   const changed = changedClauseIds(state.proposal, currentResult());
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
   const overBudget = overBudgetClauseIds(state.proposal, currentResult());
   const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, currentResult());
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
   const recommendedIds = new Set((currentResult().agreement?.options ?? []).map((option) => option.id));
   const visible = state.proposal.clauses.filter((clause) => {
     if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
     if (changedClausesOnly && !changedIds.has(clause.id)) return false;
     if (overBudgetClausesOnly && !overBudgetIds.has(clause.id)) return false;
+    if (noCheaperRemainingClausesOnly && !noCheaperIds.has(clause.id)) return false;
     return clauseMatchesFilter(clause, query);
   });
   const status = $("#clause-filter-status");
-  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly;
+  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
   if (!visible.length) {
-    const message = overBudgetClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly
+    const message = noCheaperRemainingClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly
+      ? "No clauses lack a remaining cheaper option than the recommendation. Hidden cards still count in the model."
+      : overBudgetClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly
       ? "No clauses have a cheapest remaining change that exceeds the remaining budget. Hidden cards still count in the model."
       : changedClausesOnly && query === "" && !lockedClausesOnly
       ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
@@ -4714,6 +4765,12 @@ $("#over-budget-clauses-only").addEventListener("change", (event) => {
   renderClauses();
   applyClauseDensity();
 });
+$("#no-cheaper-remaining-clauses-only").addEventListener("change", (event) => {
+  noCheaperRemainingClausesOnly = event.target.checked === true;
+  persistWorkspacePrefs();
+  renderClauses();
+  applyClauseDensity();
+});
 $("#clause-density").addEventListener("change", (event) => {
   clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
   persistWorkspacePrefs();
@@ -5109,7 +5166,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -5421,6 +5478,7 @@ $("#import-file").addEventListener("change", async (event) => {
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
       hideGroupsAtFloor = workspace.hideGroupsAtFloor === true;
+      noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
@@ -5620,6 +5678,8 @@ function jumpToUnlocked() {
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
   const overBudget = overBudgetClauseIds(state.proposal, currentResult());
   const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, currentResult());
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
   let needsRender = false;
   if (!clauseMatchesFilter(firstUnlocked, query)) {
     clauseFilter = "";
@@ -5639,6 +5699,11 @@ function jumpToUnlocked() {
   }
   if (overBudgetClausesOnly && !overBudgetIds.has(firstUnlocked.id)) {
     overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (noCheaperRemainingClausesOnly && !noCheaperIds.has(firstUnlocked.id)) {
+    noCheaperRemainingClausesOnly = false;
     persistWorkspacePrefs();
     needsRender = true;
   }
@@ -5732,6 +5797,8 @@ function jumpToRecommendedOption() {
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
   const overBudget = overBudgetClauseIds(state.proposal, result);
   const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, result);
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
   let needsRender = false;
   if (clause && !clauseMatchesFilter(clause, query)) {
     clauseFilter = "";
@@ -5751,6 +5818,11 @@ function jumpToRecommendedOption() {
   }
   if (clause && overBudgetClausesOnly && !overBudgetIds.has(clause.id)) {
     overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (clause && noCheaperRemainingClausesOnly && !noCheaperIds.has(clause.id)) {
+    noCheaperRemainingClausesOnly = false;
     persistWorkspacePrefs();
     needsRender = true;
   }

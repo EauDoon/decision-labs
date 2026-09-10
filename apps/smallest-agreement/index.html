@@ -178,13 +178,15 @@ SOFTWARE.
           <p id="changed-clauses-filter-note" class="field-note">Shows clause cards whose original option is not the recommended option. Hidden cards still count in the model. The solver is unchanged.</p>
           <label class="over-budget-clauses-filter" for="over-budget-clauses-only"><input id="over-budget-clauses-only" type="checkbox"> Show clauses whose cheapest remaining change exceeds remaining budget</label>
           <p id="over-budget-clauses-filter-note" class="field-note">Shows clause cards whose cheapest remaining change costs more than leftover budget. When the budget is exhausted, every clause card is shown. Hidden cards still count in the model. The solver is unchanged.</p>
+          <label class="no-cheaper-remaining-clauses-filter" for="no-cheaper-remaining-clauses-only"><input id="no-cheaper-remaining-clauses-only" type="checkbox"> Show clauses with no remaining cheaper option than the recommendation</label>
+          <p id="no-cheaper-remaining-clauses-filter-note" class="field-note">Shows clause cards whose other options all cost at least as much as the recommended option. Hidden cards still count in the model. The solver is unchanged. This is not a recorded vote.</p>
           <label class="clause-density-label" for="clause-density">Clause card density
             <select id="clause-density">
               <option value="comfortable">Comfortable</option>
               <option value="compact">Compact</option>
             </select>
           </label>
-          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that match the original when Show clauses that differ from the recommendation is on, or whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on. When the budget is exhausted, that last filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
+          <p id="clause-filter-note" class="field-note">Filtering hides cards whose title or option labels do not match, that have no lock when Show locked clauses only is on, that match the original when Show clauses that differ from the recommendation is on, whose cheapest remaining change fits leftover budget when Show clauses whose cheapest remaining change exceeds remaining budget is on, or that still have a cheaper remaining option than the recommendation when that filter is on. When the budget is exhausted, the leftover-budget filter shows every clause. Every clause still participates in search and export. Move up and down change clause order, which is also the model's tie-breaker order. Locks are draft choices, not recorded votes.</p>
           <p id="clause-filter-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="clause-paste-label" for="clause-paste">Paste clause options TSV or CSV</label>
           <textarea id="clause-paste" rows="8" spellcheck="false" aria-describedby="clause-paste-note"></textarea>

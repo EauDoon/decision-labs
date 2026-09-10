@@ -41,6 +41,7 @@ import {
   groupsBelowSupportRequirement,
   groupsMeetingDeclaredSupportFloor,
   overBudgetClauseIds,
+  clausesWithoutCheaperRemainingOption,
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,
   compareWorkshopFiles,
@@ -431,6 +432,7 @@ let changedClausesOnly = false;
 let belowFloorGroupsOnly = false;
 let hideGroupsAtFloor = false;
 let overBudgetClausesOnly = false;
+let noCheaperRemainingClausesOnly = false;
 let printRedacted = false;
 let nearMissSort = "approval_gap";
 let weightPreview = null;
@@ -503,6 +505,7 @@ function loadWorkspacePrefs() {
     belowFloorGroupsOnly = parsed?.belowFloorGroupsOnly === true;
     overBudgetClausesOnly = parsed?.overBudgetClausesOnly === true;
     hideGroupsAtFloor = parsed?.hideGroupsAtFloor === true;
+    noCheaperRemainingClausesOnly = parsed?.noCheaperRemainingClausesOnly === true;
   } catch {
     /* storage may be unavailable or invalid */
   }
@@ -510,7 +513,7 @@ function loadWorkspacePrefs() {
 
 function persistWorkspacePrefs() {
   try {
-    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor }));
+    localStorage.setItem(WORKSPACE_KEY, JSON.stringify({ clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly }));
   } catch {
     /* storage may be unavailable */
   }
@@ -803,21 +806,28 @@ function renderClauses() {
   if (changedCheckbox) changedCheckbox.checked = changedClausesOnly;
   const overBudgetCheckbox = $("#over-budget-clauses-only");
   if (overBudgetCheckbox) overBudgetCheckbox.checked = overBudgetClausesOnly;
+  const noCheaperCheckbox = $("#no-cheaper-remaining-clauses-only");
+  if (noCheaperCheckbox) noCheaperCheckbox.checked = noCheaperRemainingClausesOnly;
   const changed = changedClauseIds(state.proposal, currentResult());
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
   const overBudget = overBudgetClauseIds(state.proposal, currentResult());
   const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, currentResult());
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
   const recommendedIds = new Set((currentResult().agreement?.options ?? []).map((option) => option.id));
   const visible = state.proposal.clauses.filter((clause) => {
     if (lockedClausesOnly && clause.lockedOptionId === undefined) return false;
     if (changedClausesOnly && !changedIds.has(clause.id)) return false;
     if (overBudgetClausesOnly && !overBudgetIds.has(clause.id)) return false;
+    if (noCheaperRemainingClausesOnly && !noCheaperIds.has(clause.id)) return false;
     return clauseMatchesFilter(clause, query);
   });
   const status = $("#clause-filter-status");
-  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly;
+  const clauseFiltersIdle = query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly && !noCheaperRemainingClausesOnly;
   if (!visible.length) {
-    const message = overBudgetClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly
+    const message = noCheaperRemainingClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly && !overBudgetClausesOnly
+      ? "No clauses lack a remaining cheaper option than the recommendation. Hidden cards still count in the model."
+      : overBudgetClausesOnly && query === "" && !lockedClausesOnly && !changedClausesOnly
       ? "No clauses have a cheapest remaining change that exceeds the remaining budget. Hidden cards still count in the model."
       : changedClausesOnly && query === "" && !lockedClausesOnly
       ? "No clauses differ between the original and recommended packages. Hidden cards still count in the model."
@@ -1524,6 +1534,12 @@ $("#over-budget-clauses-only").addEventListener("change", (event) => {
   renderClauses();
   applyClauseDensity();
 });
+$("#no-cheaper-remaining-clauses-only").addEventListener("change", (event) => {
+  noCheaperRemainingClausesOnly = event.target.checked === true;
+  persistWorkspacePrefs();
+  renderClauses();
+  applyClauseDensity();
+});
 $("#clause-density").addEventListener("change", (event) => {
   clauseDensity = event.target.value === "compact" ? "compact" : "comfortable";
   persistWorkspacePrefs();
@@ -1919,7 +1935,7 @@ $("#export-button").addEventListener("click", () => {
   downloadText("smallest-agreement.json", JSON.stringify(canonicalProposal(state.proposal), null, 2), "application/json");
 });
 $("#export-workspace-button").addEventListener("click", () => {
-  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor });
+  const exported = formatWorkspaceJson(state.proposal, { clauseDensity, vetoGroupsOnly, lockedClausesOnly, changedClausesOnly, belowFloorGroupsOnly, overBudgetClausesOnly, hideGroupsAtFloor, noCheaperRemainingClausesOnly });
   if (exported.status !== "ok") return notifyDraft("Fix the draft before exporting workspace JSON.");
   downloadText("smallest-agreement-workspace.json", exported.json, "application/json");
   notifyDraft("Workspace JSON downloaded with the current draft, clause card density, and display filters. The solver ignores those filters.");
@@ -2231,6 +2247,7 @@ $("#import-file").addEventListener("change", async (event) => {
       belowFloorGroupsOnly = workspace.belowFloorGroupsOnly === true;
       overBudgetClausesOnly = workspace.overBudgetClausesOnly === true;
       hideGroupsAtFloor = workspace.hideGroupsAtFloor === true;
+      noCheaperRemainingClausesOnly = workspace.noCheaperRemainingClausesOnly === true;
       persistWorkspacePrefs();
     } else if (workspace.clauseDensity === "compact" || workspace.clauseDensity === "comfortable") {
       clauseDensity = workspace.clauseDensity;
@@ -2430,6 +2447,8 @@ function jumpToUnlocked() {
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
   const overBudget = overBudgetClauseIds(state.proposal, currentResult());
   const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, currentResult());
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
   let needsRender = false;
   if (!clauseMatchesFilter(firstUnlocked, query)) {
     clauseFilter = "";
@@ -2449,6 +2468,11 @@ function jumpToUnlocked() {
   }
   if (overBudgetClausesOnly && !overBudgetIds.has(firstUnlocked.id)) {
     overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (noCheaperRemainingClausesOnly && !noCheaperIds.has(firstUnlocked.id)) {
+    noCheaperRemainingClausesOnly = false;
     persistWorkspacePrefs();
     needsRender = true;
   }
@@ -2542,6 +2566,8 @@ function jumpToRecommendedOption() {
   const changedIds = new Set(changed.status === "ok" ? changed.clauseIds : []);
   const overBudget = overBudgetClauseIds(state.proposal, result);
   const overBudgetIds = new Set(overBudget.status === "ok" ? overBudget.clauseIds : []);
+  const noCheaper = clausesWithoutCheaperRemainingOption(state.proposal, result);
+  const noCheaperIds = new Set(noCheaper.status === "ok" ? noCheaper.clauseIds : []);
   let needsRender = false;
   if (clause && !clauseMatchesFilter(clause, query)) {
     clauseFilter = "";
@@ -2561,6 +2587,11 @@ function jumpToRecommendedOption() {
   }
   if (clause && overBudgetClausesOnly && !overBudgetIds.has(clause.id)) {
     overBudgetClausesOnly = false;
+    persistWorkspacePrefs();
+    needsRender = true;
+  }
+  if (clause && noCheaperRemainingClausesOnly && !noCheaperIds.has(clause.id)) {
+    noCheaperRemainingClausesOnly = false;
     persistWorkspacePrefs();
     needsRender = true;
   }

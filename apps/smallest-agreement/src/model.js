@@ -2100,6 +2100,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
   "hideGroupsAtFloor",
+  "noCheaperRemainingClausesOnly",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2110,6 +2111,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "belowFloorGroupsOnly",
   "overBudgetClausesOnly",
   "hideGroupsAtFloor",
+  "noCheaperRemainingClausesOnly",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2153,6 +2155,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   const hideGroupsAtFloor = readWorkspaceBoolean(prefs, "hideGroupsAtFloor");
   if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
+  const noCheaperRemainingClausesOnly = readWorkspaceBoolean(prefs, "noCheaperRemainingClausesOnly");
+  if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2162,6 +2166,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
     hideGroupsAtFloor: hideGroupsAtFloor.value,
+    noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2172,6 +2177,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       belowFloorGroupsOnly: belowFloorGroupsOnly.value,
       overBudgetClausesOnly: overBudgetClausesOnly.value,
       hideGroupsAtFloor: hideGroupsAtFloor.value,
+      noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2195,6 +2201,7 @@ export function parseWorkspaceJson(text) {
       belowFloorGroupsOnly: null,
       overBudgetClausesOnly: null,
       hideGroupsAtFloor: null,
+      noCheaperRemainingClausesOnly: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2223,6 +2230,8 @@ export function parseWorkspaceJson(text) {
   if (overBudgetClausesOnly.error) return { status: "invalid", errors: [overBudgetClausesOnly.error] };
   const hideGroupsAtFloor = readWorkspaceBoolean(raw, "hideGroupsAtFloor");
   if (hideGroupsAtFloor.error) return { status: "invalid", errors: [hideGroupsAtFloor.error] };
+  const noCheaperRemainingClausesOnly = readWorkspaceBoolean(raw, "noCheaperRemainingClausesOnly");
+  if (noCheaperRemainingClausesOnly.error) return { status: "invalid", errors: [noCheaperRemainingClausesOnly.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2234,6 +2243,7 @@ export function parseWorkspaceJson(text) {
     belowFloorGroupsOnly: belowFloorGroupsOnly.value,
     overBudgetClausesOnly: overBudgetClausesOnly.value,
     hideGroupsAtFloor: hideGroupsAtFloor.value,
+    noCheaperRemainingClausesOnly: noCheaperRemainingClausesOnly.value,
   };
 }
 

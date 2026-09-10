@@ -55,6 +55,7 @@ const appImport = `import {
   groupsBelowSupportRequirement,
   groupsMeetingDeclaredSupportFloor,
   overBudgetClauseIds,
+  clausesWithoutCheaperRemainingOption,
   formatGroupSupportMarkdown,
   formatRemainingChangeBudgetMarkdown,
   compareWorkshopFiles,
