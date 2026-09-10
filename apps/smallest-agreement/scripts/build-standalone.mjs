@@ -61,6 +61,7 @@ const appImport = `import {
   groupsMeetingDeclaredSupportFloor,
   groupsMeetingApprovalThreshold,
   groupsBelowApprovalThreshold,
+  groupsBelowDeclaredSupportFloor,
   overBudgetClauseIds,
   clausesWithoutCheaperRemainingOption,
   formatGroupSupportMarkdown,

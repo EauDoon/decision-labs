@@ -47,6 +47,7 @@ import {
   groupsMeetingDeclaredSupportFloor,
   groupsMeetingApprovalThreshold,
   groupsBelowApprovalThreshold,
+  groupsBelowDeclaredSupportFloor,
   overBudgetClauseIds,
   clausesWithoutCheaperRemainingOption,
   formatGroupSupportMarkdown,
@@ -670,8 +671,8 @@ function renderPrintKicker() {
   const kicker = $(".facilitator-pack-kicker");
   if (!kicker) return;
   kicker.textContent = printRedacted
-    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, a one-line lock count, and the first locked clause option label as one line stay on the worksheet, plus a one-line below-floor group count. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. A floor is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote."
-    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. A floor is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote.";
+    ? "Facilitator pack with redacted group names. Groups appear as Group 1, Group 2, and so on. Recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, a one-line lock count, and the first locked clause option label as one line stay on the worksheet, plus a one-line below-floor group count, and the first below-floor group label as one line. The saved draft is unchanged. The workshop tour is hidden. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. A floor is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote."
+    : "Facilitator pack. The workshop tour is hidden. Original, solver, and pin columns stay visible, along with facilitator notes, veto highlights, recommended package option labels, a one-line remaining change-budget, the numeric approval threshold on the worksheet, a one-line lock count, and the first locked clause option label as one line on the worksheet, plus a one-line below-floor group count, and the first below-floor group label as one line. This leftover is a draft accounting line, not a legal appropriation. The threshold is a number you entered, not a legal quorum. Locks are draft choices, not a legal hold. A floor is a number you entered, not a legal quorum. This is a decision aid, not a recorded vote.";
 }
 
 function renderCopyFallbacks(result) {
@@ -1226,8 +1227,21 @@ function renderBallot(vetoBlocks = blockingVetoIds(currentResult())) {
   const belowFloorCountLine = belowFloorCount.status === "ok" || belowFloorCount.status === "unavailable"
     ? `<p>${escapeHtml(belowFloorCount.text.trim())}</p>`
     : "";
+  const firstBelowFloor = formatFirstBelowSupportFloorGroupLabelMarkdown(proposal, inspectedPackage(result));
+  let firstBelowFloorLine = "";
+  if (firstBelowFloor.status === "ok" || firstBelowFloor.status === "unavailable") {
+    if (printRedacted && firstBelowFloor.status === "ok" && !firstBelowFloor.empty) {
+      const below = groupsBelowDeclaredSupportFloor(proposal, inspectedPackage(result));
+      const first = below.status === "ok" ? below.groups[0] : null;
+      const group = first ? proposal.groups.find((row) => row.id === first.id) : null;
+      const name = group ? groupDisplayName(group) : "Group";
+      firstBelowFloorLine = `<p>First below-floor group: ${escapeHtml(name)}. A floor is a number you entered, not a legal quorum. The label is not a legal identity.</p>`;
+    } else {
+      firstBelowFloorLine = `<p>${escapeHtml(firstBelowFloor.text.trim())}</p>`;
+    }
+  }
   const groupList = proposal.groups.map((group) => escapeHtml(groupDisplayName(group))).join(", ");
-  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${remainingLine}${thresholdLine}${lockCountLine}${firstLockedLine}${belowFloorCountLine}${vetoNote}${proposal.clauses.map((clause) => {
+  $("#ballot-body").innerHTML = `<p><strong>${escapeHtml(proposal.title || "Untitled proposal")}</strong>. Threshold ${Number.isFinite(proposal.threshold) ? `${proposal.threshold}%` : "invalid"}.</p><p>Participant groups: ${groupList}.</p>${recommendedNote}${remainingLine}${thresholdLine}${lockCountLine}${firstLockedLine}${belowFloorCountLine}${firstBelowFloorLine}${vetoNote}${proposal.clauses.map((clause) => {
     const recommended = clause.options.find((option) => recommendedIds.has(option.id));
     const recommendedLine = recommended ? `<p>Recommended: ${escapeHtml(recommended.label)}</p>` : "";
     return `<section class="ballot-clause"><h3>${escapeHtml(clause.title)}</h3>${clause.note ? `<p>Facilitator note: ${escapeHtml(clause.note)}</p>` : ""}${recommendedLine}<ul>${clause.options.map((option) => `<li><span class="ballot-box" aria-hidden="true"></span>${escapeHtml(option.label)}${option.original ? " (original)" : ""}${recommendedIds.has(option.id) ? " (recommended)" : ""}${option.changeCost ? ` · cost ${option.changeCost}` : ""}</li>`).join("")}</ul></section>`;
