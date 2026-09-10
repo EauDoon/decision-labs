@@ -162,6 +162,25 @@ test('catalog keys tilde exclamation open-paren stay distinct from g n last-job 
   assert.match(html, /lastHowBtn\?\.click\(\)/);
 });
 
+test('catalog keys close-paren stay distinct from tilde open-paren g and n', () => {
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /event\.key === '~'/);
+  assert.match(html, /event\.key === '\('/);
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /event\.key === 'n'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="\)"/);
+  assert.match(html, /id="copy-first-whats-new"/);
+  assert.match(html, />Copy first What's new heading</);
+  assert.match(html, /id="copy-last-whats-new"/);
+  assert.match(html, />Copy last What's new heading</);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === '~'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === '\('/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '\)'/)?.[0], html.match(/event\.key === 'g'/)?.[0]);
+  assert.match(html, /firstWhatsNewBtn\?\.click\(\)/);
+  assert.match(html, /lastWhatsNewBtn\?\.click\(\)/);
+});
+
 test('print CSS hides copy last job tools like other copy tools', () => {
   const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
   assert.match(print, /\.copy-last-job-tools, \.copy-last-job-fallback \{ display: none !important; \}/);
