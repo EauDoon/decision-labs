@@ -808,6 +808,11 @@ function handleShortcut(event) {
     focusTertiaryLeftoverFill();
     return;
   }
+  if (key === "f") {
+    event.preventDefault();
+    focusOfferFulfillmentFilter();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -890,6 +895,12 @@ function focusOffersList() {
   const merchantTab = document.querySelector("#merchant-tab");
   if (merchantTab) activateTab(merchantTab);
   document.querySelector("#offers-list")?.focus();
+}
+
+function focusOfferFulfillmentFilter() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  if (merchantTab) activateTab(merchantTab);
+  document.querySelector("#offer-fulfillment-filter")?.focus();
 }
 
 function focusMerchantInspector() {

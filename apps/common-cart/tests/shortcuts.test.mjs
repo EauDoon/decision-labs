@@ -182,3 +182,19 @@ test("keyboard handler jumps to tertiary leftover fill when not typing", async (
   assert.match(app, /#buyer-tab/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
+
+test("shortcut help documents the offer fulfillment filter jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>f<\/kbd> Focus the offer fulfillment filter/u);
+  assert.match(html, /id="offer-fulfillment-filter"/u);
+});
+
+test("keyboard handler focuses the offer fulfillment filter when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "f"\)/u);
+  assert.match(app, /function focusOfferFulfillmentFilter\(/u);
+  assert.match(app, /#offer-fulfillment-filter/u);
+  assert.match(app, /#merchant-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "g"\)/u);
+});
