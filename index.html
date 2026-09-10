@@ -810,6 +810,7 @@
           <dt><kbd>(</kbd></dt><dd>Focus the Copy first What's new heading control, or the What's new heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>g</kbd>, which focuses the first What's new heading itself, and from <kbd>~</kbd>, which copies the last What's new heading.</dd>
           <dt><kbd>)</kbd></dt><dd>Copy the first What's new heading as one Markdown line from this catalog page, not a live product feed. If that heading is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>~</kbd>, which copies the last What's new heading, from <kbd>g</kbd>, which focuses the first What's new heading, and from <kbd>(</kbd>, which focuses Copy first What's new heading.</dd>
           <dt><kbd>*</kbd></dt><dd>Copy the first workbench heading as one Markdown line from this catalog page, not a live product feed. If that heading is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>~</kbd>, which copies the last What's new heading, from <kbd>)</kbd>, which copies the first What's new heading, from <kbd>e</kbd>, which copies the catalog heading and lede, and from <kbd>j</kbd>, which copies catalog jobs.</dd>
+          <dt><kbd>&amp;</kbd></dt><dd>Focus the Copy first workbench heading control, or the workbenches heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>*</kbd>, which copies the first workbench heading, from <kbd>e</kbd>, which copies the catalog heading and lede, and from <kbd>a</kbd>, which focuses the first workbench article.</dd>
           <dt><kbd>|</kbd></dt><dd>Focus the Copy first job control, or the workbenches heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy. This is distinct from <kbd>;</kbd>, which copies the first workbench job, and from <kbd>}</kbd>, which copies the last workbench job.</dd>
           <dt><kbd>:</kbd></dt><dd>Copy the first Trust and limits list item as one Markdown line from this catalog page, not a live policy feed. If that item is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>i</kbd>, which copies the full Trust and limits list, and from <kbd>;</kbd>, which copies the first workbench job.</dd>
           <dt><kbd>"</kbd></dt><dd>Copy the last Trust and limits list item as one Markdown line from this catalog page, not a live policy feed. If that item is missing, this copies an empty string. Clipboard write uses the visible text box when the clipboard API is unavailable. This is distinct from <kbd>:</kbd>, which copies the first Trust and limits list item, and from <kbd>i</kbd>, which copies the full Trust and limits list.</dd>
@@ -1848,6 +1849,11 @@
         if (event.key === '*') {
           event.preventDefault();
           firstWorkbenchBtn?.click();
+          return;
+        }
+        if (event.key === '&') {
+          event.preventDefault();
+          (document.getElementById('copy-first-workbench') || document.getElementById('workbenches-title') || document.getElementById('workbenches'))?.focus();
           return;
         }
         if (event.key === '|') {
