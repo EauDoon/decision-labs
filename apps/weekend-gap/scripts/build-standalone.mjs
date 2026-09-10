@@ -84,6 +84,7 @@ const appImportMarker = `import {
   reportToHTML,
   reportToMarkdown,
   dashboardToMarkdown,
+  hoursToClearQueueToMarkdown,
   dashboardToCSV,
   compareScenarioFiles,
   compareThreeScenarioFiles
@@ -135,6 +136,7 @@ const exportedNames = Object.freeze([
   "reportToHTML",
   "reportToMarkdown",
   "dashboardToMarkdown",
+  "hoursToClearQueueToMarkdown",
   "dashboardToCSV",
   "BOTTLENECK_LABELS",
   "attributeBottlenecks",

@@ -51,6 +51,7 @@ import {
   reportToHTML,
   reportToMarkdown,
   dashboardToMarkdown,
+  hoursToClearQueueToMarkdown,
   dashboardToCSV,
   compareScenarioFiles,
   compareThreeScenarioFiles
@@ -1467,6 +1468,13 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   renderGantt();
   document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. The saved scenario was not changed.";
 });
+document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
+  await copyHoursToClearMarkdown();
+});
+function copyHoursToClearMarkdown() {
+  const text = hoursToClearQueueToMarkdown(scenario);
+  return copyTextWithFallback(text, "#hours-to-clear-copy-fallback", "Hours to clear copied as one-line Markdown. This is a synthetic snapshot, not live market data.");
+}
 document.querySelector("#copy-dashboard-markdown").addEventListener("click", async () => {
   try {
     const text = dashboardToMarkdown(scenario);

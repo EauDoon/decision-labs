@@ -875,6 +875,13 @@ export function dashboardToMarkdown(input) {
   ].join("\n");
 }
 
+/** One-line Markdown for hours to clear the queue. Synthetic, not live. */
+export function hoursToClearQueueToMarkdown(input) {
+  const result = runSimulation(input);
+  const label = hoursToClearLabel(result.summary.hoursToClearQueue, result.summary.peakQueuedAud);
+  return "Hours to clear queue: " + label + ". Synthetic educational snapshot, not live market data.";
+}
+
 /** One-row formula-safe dashboard CSV. Empty cells mean the queue never cleared or never settled. */
 export function dashboardToCSV(input) {
   const result = runSimulation(input);

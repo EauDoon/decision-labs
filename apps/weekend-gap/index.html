@@ -292,10 +292,13 @@ SOFTWARE.
               <div class="planning-actions">
                 <p id="outcome-summary" class="gate-summary">Calculating</p>
                 <button id="copy-dashboard-markdown" type="button">Copy dashboard numbers</button>
+                <button id="copy-hours-to-clear" type="button">Copy hours to clear</button>
                 <button id="copy-peak-hour" type="button">Copy peak-queue hour</button>
                 <button id="export-dashboard-csv" type="button">Export dashboard CSV</button>
               </div>
             </div>
+            <label class="sr-only" for="hours-to-clear-copy-fallback">Hours-to-clear Markdown fallback</label>
+            <textarea id="hours-to-clear-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="peak-hour-copy-fallback">Peak-queue hour Markdown fallback</label>
             <textarea id="peak-hour-copy-fallback" rows="8" hidden readonly></textarea>
             <dl class="outcome-grid">
