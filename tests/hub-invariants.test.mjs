@@ -181,6 +181,19 @@ test('catalog keys close-paren stay distinct from tilde open-paren g and n', () 
   assert.match(html, /lastWhatsNewBtn\?\.click\(\)/);
 });
 
+test('catalog keys at stay distinct from e and close-paren', () => {
+  assert.match(html, /event\.key === '@'/);
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /event\.key === '\)'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /id="copy-lede"/);
+  assert.match(html, />Copy catalog intro</);
+  assert.match(html, /id="catalog-heading"/);
+  assert.notEqual(html.match(/event\.key === '@'/)?.[0], html.match(/event\.key === 'e'/)?.[0]);
+  assert.match(html, /ledeBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-lede'\) \|\| document\.getElementById\('catalog-heading'\)/);
+});
+
 test('print CSS hides copy last job tools like other copy tools', () => {
   const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
   assert.match(print, /\.copy-last-job-tools, \.copy-last-job-fallback \{ display: none !important; \}/);

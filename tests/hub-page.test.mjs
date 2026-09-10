@@ -1500,6 +1500,120 @@ test('keyboard e copies catalog heading and lede through the same control', () =
   assert.equal(clicks.lede, 1);
 });
 
+test('at focuses Copy catalog intro when focus is not in an input', () => {
+  assert.match(html, /event\.key === '@'/);
+  assert.match(html, /getElementById\('copy-lede'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /id="copy-lede"/);
+  assert.match(html, /id="catalog-heading"/);
+  assert.match(html, /<kbd>@<\/kbd><\/dt><dd>Focus the Copy catalog intro control, or the catalog heading if that control is missing. This key moves focus; it does not open a workbench. It does not copy./);
+  assert.match(html, /Press <kbd>@<\/kbd> to focus Copy catalog intro/);
+  assert.match(html, /This is distinct from <kbd>e<\/kbd>, which copies the catalog heading and lede/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  const focused = [];
+  const clicks = { lede: 0 };
+  const assigned = [];
+  let keydown = null;
+  const copyLede = { focus() { focused.push('copy-lede'); }, click() { clicks.lede += 1; }, addEventListener() {} };
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return copyLede;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('@', input, true);
+  fire('@', textarea, true);
+  fire('@', select, true);
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.lede, 0);
+  assert.deepEqual(assigned, []);
+  fire('@', body, true);
+  assert.deepEqual(focused, ['copy-lede']);
+  assert.equal(clicks.lede, 0);
+  assert.deepEqual(assigned, []);
+  fire('e', body, false);
+  assert.equal(clicks.lede, 1);
+  assert.deepEqual(focused, ['copy-lede']);
+  assert.deepEqual(assigned, []);
+});
+
+test('at focuses the catalog heading when Copy catalog intro is missing', () => {
+  const focused = [];
+  const clicks = { lede: 0 };
+  const assigned = [];
+  let keydown = null;
+  const heading = { focus() { focused.push('catalog-heading'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return null;
+      if (id === 'catalog-heading') return heading;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  keydown({
+    key: '@',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: true,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['catalog-heading']);
+  assert.equal(clicks.lede, 0);
+  assert.deepEqual(assigned, []);
+});
+
 test('copy catalog intro markdown is heading plus lede, or empty if nodes are missing', async () => {
   let copied = '';
   let clickLede = null;
