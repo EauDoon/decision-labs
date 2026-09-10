@@ -83,4 +83,5 @@ test('standalone retains 1.5.9 review tools and 1.5.10 copy controls', async () 
   assert.match(html, /Netball carnival/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
+  assert.match(html, /hideFirstBreakpointParticipant/);
 });
