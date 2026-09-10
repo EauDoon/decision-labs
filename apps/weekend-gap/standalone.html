@@ -940,7 +940,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
                 <caption>Text equivalent of the Gantt. The selected hour is always included. FX weekday means the weekend multiplier is not applied.</caption>
-                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col" id="gantt-bank-row"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
+                <thead><tr><th scope="col">Time</th><th scope="col"><span class="gate-live-label" id="issuer-gantt-live-label">Issuer</span><span class="gate-redacted-label">Issuer</span></th><th scope="col" id="gantt-bank-row"><span class="gate-live-label" id="bank-gantt-live-label">Bank</span><span class="gate-redacted-label">Bank</span></th><th scope="col"><span class="gate-live-label" id="payout-gantt-live-label">Payout</span><span class="gate-redacted-label">Payout</span></th><th scope="col" id="gantt-fx-row"><span class="gate-live-label" id="fx-gantt-live-label">FX</span><span class="gate-redacted-label">FX</span></th></tr></thead>
                 <tbody id="gantt-table"></tbody>
               </table>
             </div>
@@ -1021,6 +1021,7 @@ textarea:focus-visible, select:focus-visible, .table-scroll:focus-visible { outl
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>
           <li><kbd>B</kbd> Jump to the Bank Gantt row</li>
+          <li><kbd>W</kbd> Jump to the FX Gantt row</li>
           <li><kbd>M</kbd> Jump to the compare Gantt</li>
           <li><kbd>P</kbd> Jump the timeline to the peak queue</li>
           <li><kbd>C</kbd> Copy the selected Gantt hour as Markdown</li>
@@ -4191,6 +4192,18 @@ function jumpToGanttBankRow() {
   rememberChart("gantt");
   return true;
 }
+function jumpToGanttFxRow() {
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  if (gateFilter !== "all" && gateFilter !== "fx") return jumpToGantt();
+  const row = document.querySelector("#gantt-fx-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
 function jumpToCompareGantt() {
   const heading = document.querySelector("#compare-gantt-title");
   if (!heading) return jumpToGantt();
@@ -4420,6 +4433,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "b" || event.key === "B") {
     event.preventDefault();
     jumpToGanttBankRow();
+    return;
+  }
+  if (event.key === "w" || event.key === "W") {
+    event.preventDefault();
+    jumpToGanttFxRow();
     return;
   }
   if (event.key === "m" || event.key === "M") {

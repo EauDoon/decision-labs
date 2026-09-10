@@ -1494,6 +1494,18 @@ function jumpToGanttBankRow() {
   rememberChart("gantt");
   return true;
 }
+function jumpToGanttFxRow() {
+  const rawGate = document.querySelector("#gantt-gate-filter")?.value || "all";
+  const gateFilter = GANTT_GATE_FILTERS.includes(rawGate) ? rawGate : "all";
+  if (gateFilter !== "all" && gateFilter !== "fx") return jumpToGantt();
+  const row = document.querySelector("#gantt-fx-row");
+  if (!row) return jumpToGantt();
+  row.setAttribute("tabindex", "-1");
+  row.focus();
+  row.scrollIntoView?.({ block: "start" });
+  rememberChart("gantt");
+  return true;
+}
 function jumpToCompareGantt() {
   const heading = document.querySelector("#compare-gantt-title");
   if (!heading) return jumpToGantt();
@@ -1723,6 +1735,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "b" || event.key === "B") {
     event.preventDefault();
     jumpToGanttBankRow();
+    return;
+  }
+  if (event.key === "w" || event.key === "W") {
+    event.preventDefault();
+    jumpToGanttFxRow();
     return;
   }
   if (event.key === "m" || event.key === "M") {

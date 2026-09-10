@@ -536,6 +536,26 @@ test("keyboard h jumps to the selected Gantt hour table and ignores the key whil
   assert.equal(ui.nodes.get("gantt-hour-row").focused, false);
 });
 
+test("keyboard w jumps to the FX Gantt row and to the Gantt heading when filtered away", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown("w");
+  assert.equal(ui.nodes.get("gantt-fx-row").focused, true);
+  assert.equal(ui.nodes.get("gantt-fx-row").attributes.tabindex, "-1");
+  ui.nodes.get("gantt-fx-row").focused = false;
+  await ui.edit("gantt-gate-filter", "bank", "change");
+  await ui.keydown("w");
+  assert.equal(ui.nodes.get("gantt-title").focused, true);
+  ui.nodes.get("gantt-title").focused = false;
+  ui.nodes.get("gantt-fx-row").focused = false;
+  await ui.keydown("W", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("gantt-fx-row").focused, false);
+  assert.equal(ui.nodes.get("gantt-title").focused, false);
+  await ui.keydown("w", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("gantt-fx-row").focused, false);
+  await ui.keydown("w", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("gantt-fx-row").focused, false);
+});
+
 test("keyboard b jumps to the Bank Gantt row and to the Gantt heading when filtered away", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("b");
