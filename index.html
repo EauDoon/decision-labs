@@ -248,7 +248,7 @@
     }
     .shortcuts-close:hover { background: #e4eeeb; }
     .catalog-url-tools { margin: 16px 0 0; }
-    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .print-catalog {
+    .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -262,19 +262,19 @@
       cursor: pointer;
       transition: background-color 0.16s ease;
     }
-    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .print-catalog:hover { background: #e4eeeb; }
-    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .print-catalog:focus-visible {
+    .copy-catalog-url:hover, .copy-versions:hover, .copy-jobs:hover, .copy-trust:hover, .copy-how:hover, .copy-last:hover, .copy-lede:hover, .copy-skips:hover, .copy-version-line:hover, .print-catalog:hover { background: #e4eeeb; }
+    .copy-catalog-url:focus-visible, .copy-versions:focus-visible, .copy-jobs:focus-visible, .copy-trust:focus-visible, .copy-how:focus-visible, .copy-last:focus-visible, .copy-lede:focus-visible, .copy-skips:focus-visible, .copy-version-line:focus-visible, .print-catalog:focus-visible {
       outline: 3px solid var(--focus);
       outline-offset: 4px;
     }
-    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status {
+    .copy-catalog-status, .copy-versions-status, .copy-jobs-status, .copy-trust-status, .copy-how-status, .copy-last-status, .copy-lede-status, .copy-skips-status, .copy-version-line-status {
       display: inline-block;
       margin-left: 12px;
       font-size: 15px;
       color: var(--muted);
     }
-    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .print-catalog-tools { margin: 12px 0 0; }
-    .copy-versions-fallback, .copy-jobs-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback {
+    .copy-versions-tools, .copy-jobs-tools, .copy-trust-tools, .copy-how-tools, .copy-last-tools, .copy-lede-tools, .copy-skips-tools, .copy-version-line-tools, .print-catalog-tools { margin: 12px 0 0; }
+    .copy-versions-fallback, .copy-jobs-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-last-fallback, .copy-lede-fallback, .copy-skips-fallback, .copy-version-line-fallback {
       display: block;
       width: 100%;
       max-width: 46rem;
@@ -287,7 +287,7 @@
       background: var(--panel);
       color: var(--ink);
     }
-    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-jobs-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-last-fallback[hidden], .copy-lede-fallback[hidden], .copy-skips-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
     @media (max-width: 720px) {
       .whats-new-list { grid-template-columns: 1fr; }
     }
@@ -329,7 +329,7 @@
       border: 2px solid var(--brand-deep);
     }
     @media (prefers-reduced-motion: reduce) {
-      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .print-catalog { transition: none; }
+      .open, .how, .shortcuts-open, .shortcuts-close, .copy-catalog-url, .copy-versions, .copy-jobs, .copy-trust, .copy-how, .copy-last, .copy-lede, .copy-skips, .copy-version-line, .print-catalog { transition: none; }
       html { scroll-behavior: auto; }
     }
     @media (max-width: 720px) {
@@ -362,6 +362,7 @@
       .copy-how-tools, .copy-how-fallback, .copy-last-tools, .copy-last-fallback { display: none !important; }
       .copy-lede-tools, .copy-lede-fallback { display: none !important; }
       .copy-skips-tools, .copy-skips-fallback { display: none !important; }
+      .copy-version-line-tools, .copy-version-line-fallback { display: none !important; }
       .whats-new, .workbench .version, .version-line, .trust { display: block !important; }
       #how-it-works, .guide { display: block !important; }
       #how-it-works, #how-it-works h2, #how-it-works h3, #how-it-works p, #how-it-works li { color: #000; }
@@ -699,6 +700,7 @@
         <li tabindex="-1"><strong>Skip-link targets.</strong> Copy skip links copies the six skip-link labels and hash hrefs already printed in the skip navigation as Markdown. It is in-page navigation copy, not a sitemap API.</li>
         <li tabindex="-1"><strong>Catalog intro.</strong> Copy catalog intro copies the catalog heading and lede paragraph already printed on this page as Markdown. It reads this catalog page. It is not a live product feed. If those nodes are missing, it copies an empty string.</li>
         <li tabindex="-1"><strong>Catalog versions.</strong> Copy versions copies the four workbench names and versions already printed on this page as Markdown. It reads this catalog list. It is not a live product version and it does not call a registry.</li>
+        <li tabindex="-1"><strong>Version line.</strong> Copy version line copies the footer version-line text already printed on this page as one Markdown line. It reads this catalog page. It is not a live product version.</li>
         <li tabindex="-1"><strong>Catalog jobs.</strong> Copy jobs copies the four workbench names and one-sentence jobs already printed on this page as Markdown. It reads this catalog list. It is not a live product feed.</li>
         <li tabindex="-1"><strong>Catalog trust.</strong> Copy Trust and limits copies the heading and list items already printed in Trust and limits as Markdown. It reads this catalog page. It is not a live policy feed.</li>
         <li tabindex="-1"><strong>JSON export.</strong> Valid drafts can autosave in this browser. That storage is not a backup and it does not move with you. Use Export JSON to keep a portable copy, to hand a case to someone else, or to reopen the work after clearing site data. A <code>file://</code> address is a path on your device, not a shareable link, so standalone mode directs sharing through that export.</li>
@@ -738,6 +740,11 @@
       <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
     </p>
     <textarea id="copy-versions-fallback" class="copy-versions-fallback" hidden readonly rows="4" aria-label="Workbench versions as Markdown"></textarea>
+    <p class="copy-version-line-tools" id="copy-version-line-tools">
+      <button type="button" class="copy-version-line" id="copy-version-line" aria-keyshortcuts=",">Copy version line</button>
+      <span class="copy-version-line-status" id="copy-version-line-status" role="status"></span>
+    </p>
+    <textarea id="copy-version-line-fallback" class="copy-version-line-fallback" hidden readonly rows="2" aria-label="Catalog version line as Markdown"></textarea>
     <p class="copy-jobs-tools" id="copy-jobs-tools">
       <button type="button" class="copy-jobs" id="copy-jobs" aria-keyshortcuts="j">Copy jobs</button>
       <span class="copy-jobs-status" id="copy-jobs-status" role="status"></span>
@@ -876,6 +883,36 @@
             versionsFallback.select();
           }
           if (versionsStatus) versionsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product version.';
+        }
+      });
+      const versionLineBtn = document.getElementById('copy-version-line');
+      const versionLineStatus = document.getElementById('copy-version-line-status');
+      const versionLineFallback = document.getElementById('copy-version-line-fallback');
+      const versionLineMarkdown = () => (document.querySelector('.version-line')?.textContent ?? '').trim();
+      versionLineBtn?.addEventListener('click', async () => {
+        const markdown = versionLineMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (versionLineFallback) versionLineFallback.hidden = true;
+          if (versionLineStatus) {
+            versionLineStatus.textContent = empty
+              ? 'Footer version line was missing. Copied an empty string. This is catalog copy, not a live product version.'
+              : 'Copied the footer version line from this catalog page as Markdown. Not a live product version.';
+          }
+        } catch {
+          if (versionLineFallback) {
+            versionLineFallback.hidden = false;
+            versionLineFallback.value = markdown;
+            versionLineFallback.focus();
+            versionLineFallback.select();
+          }
+          if (versionLineStatus) {
+            versionLineStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Footer version line was missing. This is catalog copy, not a live product version.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog version line, not a live product version.';
+          }
         }
       });
       const jobsBtn = document.getElementById('copy-jobs');
