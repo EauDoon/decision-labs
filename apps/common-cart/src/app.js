@@ -957,6 +957,11 @@ function handleShortcut(event) {
     focusLeftoverFillCopy();
     return;
   }
+  if (key === "[") {
+    event.preventDefault();
+    focusRequestedUnitsCopy();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -994,6 +999,22 @@ function focusGroupHeadroom() {
 
 function focusRequestedUnits() {
   document.querySelector("#metric-units")?.focus();
+}
+
+function focusRequestedUnitsCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-requested-units");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  const heading = document.querySelector("#metric-units");
+  if (heading) {
+    heading.focus();
+    return;
+  }
+  buyerTab?.focus();
 }
 
 function focusWinningRemainingCapacityCopy() {

@@ -398,6 +398,25 @@ test("keyboard handler jumps to leftover fill copy with slash without Shift", as
   assert.match(app, /function copyLeftoverFill\(/u);
 });
 
+test("shortcut help documents requested units copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>\[<\/kbd> Focus the requested-units copy control, or requested units heading if missing/u);
+  assert.match(html, /id="copy-requested-units"/u);
+  assert.match(html, /id="metric-units"/u);
+  assert.match(html, /id="buyer-tab"/u);
+});
+
+test("keyboard handler jumps to requested units copy when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "\["\)/u);
+  assert.match(app, /function focusRequestedUnitsCopy\(/u);
+  assert.match(app, /#copy-requested-units/u);
+  assert.match(app, /#metric-units/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "\["\) \{\s*event\.preventDefault\(\);\s*copyRequestedUnits/u);
+});
+
 test("Export private buyer report stays organizer-private in the buyer room", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");

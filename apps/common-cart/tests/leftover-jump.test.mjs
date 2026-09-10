@@ -118,6 +118,21 @@ test("leftover fill copy jump stays on the organizer leftover fill control", asy
   assert.match(app, /if \(key === "\/" && !event\.shiftKey\)/u);
 });
 
+test("requested units copy jump stays on the organizer requested-units control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-requested-units"/u);
+  assert.equal(merchantPanel.includes("copy-requested-units"), false);
+  assert.equal(merchantPanel.includes("focusRequestedUnitsCopy"), false);
+  assert.match(app, /function focusRequestedUnitsCopy\(/u);
+  assert.match(app, /#copy-requested-units/u);
+  assert.match(app, /if \(key === "\["\)/u);
+  assert.match(app, /#metric-units/u);
+  assert.match(app, /#buyer-tab/u);
+});
+
 test("leftover item headroom has a stable organizer focus target", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
