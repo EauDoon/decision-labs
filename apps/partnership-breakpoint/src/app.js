@@ -1728,6 +1728,11 @@ window.addEventListener('keydown', (event) => {
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
   }
+  if (event.key === 'o' || event.key === 'O') {
+    const target = document.querySelector('#operating-region-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
 });
 
 window.addEventListener('resize', () => {
@@ -3011,6 +3016,7 @@ function helpDialog() {
         <li><kbd>m</kbd> Jump to deal notes</li>
         <li><kbd>v</kbd> Jump to the viability card</li>
         <li><kbd>i</kbd> Jump to the inspect or compare cases heading</li>
+        <li><kbd>o</kbd> Jump to the Operating region heading</li>
         <li><kbd>Escape</kbd> Close help or the first-run coach</li>
         <li><kbd>Tab</kbd> Cycle controls inside this dialog</li>
       </ul>

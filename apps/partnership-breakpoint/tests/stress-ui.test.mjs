@@ -56,6 +56,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'notes-copy-text', 'first-breakpoint-title', 'waterfall-copy-text', 'waterfall-title',
         'viability-copy-text', 'viability-heading', 'utilization-copy-text', 'participant-ledger-title',
         'tornado-title', 'tornado-copy-text', 'deal-inputs-title', 'operating-copy-text',
+        'operating-region-title',
         'compound-title', 'inspect-cases-title', 'split-copy-text',
         'least-headroom-participant', 'participant-inputs-title',
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
@@ -1199,6 +1200,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>m<\/kbd> Jump to deal notes/);
   assert.match(app.markup(), /<kbd>v<\/kbd> Jump to the viability card/);
   assert.match(app.markup(), /<kbd>i<\/kbd> Jump to the inspect or compare cases heading/);
+  assert.match(app.markup(), /<kbd>o<\/kbd> Jump to the Operating region heading/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1504,6 +1506,24 @@ test('keyboard h jumps to the least-headroom participant card unless a field is 
   assert.ok(app.focused().includes('#participant-inputs-title'));
   assert.ok(app.focused().includes('scroll:#participant-inputs-title'));
   assert.doesNotMatch(app.markup(), /id="least-headroom-participant"/);
+});
+
+test('keyboard o jumps to the Operating region heading unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="operating-region-title" tabindex="-1"/);
+  app.keydown('o');
+  assert.ok(app.focused().includes('#operating-region-title'));
+  assert.ok(app.focused().includes('scroll:#operating-region-title'));
+  const before = app.focused().length;
+  app.keydown('o', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('o', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('o');
+  assert.equal(app.focused().length, before);
+  assert.doesNotMatch(app.markup(), /id="operating-region-title"/);
 });
 
 test('keyboard i jumps to inspect or compare cases unless a field is focused', async () => {
