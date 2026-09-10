@@ -241,6 +241,31 @@ test("workspace stores hide buyers with leftover and older files default to show
   assert.throws(() => validateWorkspace({ version: 1, rooms: [], extra: true }), /unexpected field/);
 });
 
+test("workspace stores hide unserved buyers and older files default to show-all", () => {
+  const s = clonePreset();
+  const legacy = validateWorkspace({ version: 1, rooms: [s] });
+  assert.equal(Object.hasOwn(legacy, "hideUnservedBuyers"), true);
+  assert.equal(legacy.hideUnservedBuyers, false);
+  assert.equal(legacy.hideBuyersWithLeftover, false);
+  assert.equal(legacy.hideFullyFilledBuyers, false);
+  assert.equal(legacy.hideExcludedBuyers, false);
+  assert.equal(legacy.hideUnwinnableOffers, false);
+  assert.equal(legacy.hideZeroRemainingCapacityOffers, false);
+  assert.equal(legacy.hideLeftoverFillRow, false);
+  const hidden = validateWorkspace({ version: 1, rooms: [s], hideUnservedBuyers: true, hideBuyersWithLeftover: false, hideFullyFilledBuyers: false, hideExcludedBuyers: true, hideUnwinnableOffers: false, hideZeroRemainingCapacityOffers: false });
+  assert.equal(hidden.hideUnservedBuyers, true);
+  assert.equal(hidden.hideBuyersWithLeftover, false);
+  assert.equal(hidden.hideFullyFilledBuyers, false);
+  assert.equal(hidden.hideExcludedBuyers, true);
+  assert.equal(hidden.hideUnwinnableOffers, false);
+  assert.equal(hidden.hideZeroRemainingCapacityOffers, false);
+  const shown = validateWorkspace({ version: 1, rooms: [], hideUnservedBuyers: false });
+  assert.equal(shown.hideUnservedBuyers, false);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideUnservedBuyers: "true" }), /true or false/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideUnservedBuyers: 1 }), /true or false/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], extra: true }), /unexpected field/);
+});
+
 test("workspace stores hide offers with remaining capacity and older files default to show-all", () => {
   const s = clonePreset();
   const legacy = validateWorkspace({ version: 1, rooms: [s] });
