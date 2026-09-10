@@ -389,6 +389,11 @@ function renderPrintKicker() {
 }
 
 function renderCopyFallbacks(result) {
+  const packageBox = $("#package-markdown-fallback");
+  if (packageBox) {
+    const packaged = formatRecommendedPackageMarkdown(state.proposal, result ?? currentResult());
+    packageBox.value = packaged.status === "ok" ? packaged.text : packaged.status === "unavailable" ? packaged.text : "";
+  }
   const locksBox = $("#locks-markdown-fallback");
   if (locksBox) {
     const listed = formatCurrentLocksMarkdown(state.proposal);
@@ -1951,11 +1956,14 @@ $("#copy-package-button").addEventListener("click", async () => {
   const packaged = formatRecommendedPackageMarkdown(state.proposal, currentResult());
   if (packaged.status === "invalid") return notifyDraft("Fix the draft before copying the recommended package.");
   if (packaged.status !== "ok") return notifyDraft(packaged.text.trim());
+  const fallback = $("#package-markdown-fallback");
+  if (fallback) fallback.value = packaged.text;
   try {
     await navigator.clipboard.writeText(packaged.text);
     notifyDraft("Recommended package copied as Markdown. It is a decision aid, not a recorded vote.");
   } catch {
-    notifyDraft("Could not copy to the clipboard. Export the brief instead.");
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the recommended package from the Markdown box. It is not a recorded vote.");
   }
 });
 $("#copy-packages-table-button").addEventListener("click", async () => {

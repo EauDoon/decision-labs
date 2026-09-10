@@ -108,6 +108,7 @@ test("standalone artifact is current, self-contained, and LF-normalized", async 
   assert.match(html, /Copy veto blockers/u);
   assert.match(html, /id="copy-packages-table-button"/u);
   assert.match(html, /Copy package table/u);
+  assert.match(html, /id="package-markdown-fallback"/u);
   assert.match(html, /id="copy-locks-button"/u);
   assert.match(html, /Copy current locks/u);
   assert.match(html, /id="locks-markdown-fallback"/u);
@@ -309,6 +310,7 @@ async function savedWorkbench(storage, hash = "") {
     blockClipboard: () => { clipboard.blocked = true; },
     printCalls: () => printCalls,
     packageTable: () => element("#package-table-fallback").value,
+    packageMarkdown: () => element("#package-markdown-fallback").value,
     locksMarkdown: () => element("#locks-markdown-fallback").value,
     changeCostCsv: () => element("#change-cost-csv-fallback").value,
     fileComparison: () => element("#file-comparison").innerHTML,
@@ -829,7 +831,7 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.match(html, /Print facilitator pack/u);
   assert.match(html, /Print redacted/u);
   assert.match(html, /Facilitator pack\. The workshop tour is hidden/u);
-  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note \{ display: none !important; \}/u);
+  assert.match(html, /\.package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, \.locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, \.change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, \.clause-paste-label, #clause-paste, #clause-paste-note, \.groups-paste-label, #groups-paste, #groups-paste-note, \.package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note \{ display: none !important; \}/u);
   assert.match(html, /\.locked-clauses-filter, #locked-clauses-filter-note, \.changed-clauses-filter, #changed-clauses-filter-note/u);
   assert.match(html, /\.below-floor-groups-filter, #below-floor-groups-filter-note/u);
   assert.match(html, /#side-by-side, #printable-ballot, #constraint-checks, #coalition-table \{ display: block !important; \}/u);
@@ -1340,12 +1342,28 @@ test("veto-blocking groups are highlighted as a numerical constraint, not a legi
 });
 
 test("copy recommended package writes Markdown to the clipboard", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /id="copy-package-button"/u);
+  assert.match(html, /id="package-markdown-fallback"/u);
   const app = await savedWorkbench(new Map());
+  assert.match(app.packageMarkdown(), /^# Recommended package\n/u);
+  assert.match(app.packageMarkdown(), /Park access hours/u);
+  assert.match(app.packageMarkdown(), /not a recorded vote or a claim of legitimacy/u);
   await app.click("#copy-package-button");
+  assert.equal(app.clipboardText(), app.packageMarkdown());
   assert.match(app.clipboardText(), /^# Recommended package\n/u);
   assert.match(app.clipboardText(), /Neighbourhood Plan: the shared green/u);
   assert.match(app.clipboardText(), /not a recorded vote or a claim of legitimacy/u);
   assert.match(app.message(), /Recommended package copied as Markdown/u);
+  assert.match(app.message(), /not a recorded vote/u);
+  const blocked = await savedWorkbench(new Map());
+  blocked.blockClipboard();
+  await blocked.click("#copy-package-button");
+  assert.equal(blocked.clipboardText(), "");
+  assert.equal(blocked.focused(), "#package-markdown-fallback");
+  assert.match(blocked.packageMarkdown(), /Park access hours/u);
+  assert.match(blocked.message(), /Clipboard is blocked/u);
+  assert.match(blocked.message(), /not a recorded vote/u);
 });
 
 test("copy package table writes a Markdown comparison and keeps a textarea fallback", async () => {
