@@ -26,10 +26,10 @@ body {
   line-height: 1.5;
 }
 
-button, input, select { font: inherit; }
+button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
-button:focus-visible, input:focus-visible, select:focus-visible, a:focus-visible,
-#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus {
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible,
+#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
 }
@@ -321,8 +321,12 @@ footer {
 }
  .snapshot-bar { display: flex; flex-wrap: wrap; gap: .75rem; align-items: end; margin-block: 1rem; padding: 1rem; border: 1px solid #b9b0a0; border-radius: 12px; }
  .snapshot-bar label { display: grid; gap: .35rem; min-width: 180px; max-width: 100%; }
+ .snapshot-bar .checkbox-field { display: flex; gap: .45rem; align-items: center; min-width: auto; }
+ .snapshot-bar .checkbox-field input { width: auto; }
  .snapshot-bar select { max-width: 100%; }
  .snapshot-bar p { flex-basis: 100%; margin: 0; font-size: .85rem; }
+ .snapshot-bar textarea { width: min(100%, 48rem); min-height: 7rem; padding: 0.55rem 0.65rem; border: 1px solid #b9b0a0; border-radius: 8px; resize: vertical; }
+ .compare-pre { flex-basis: 100%; margin: 0.35rem 0 0; padding: 0.75rem 0.85rem; overflow: auto; white-space: pre-wrap; border: 1px solid #b9b0a0; border-radius: 8px; background: #fffdf8; font: 0.82rem/1.45 ui-monospace, monospace; }
 
 @media print {
   .skip-link, .header-actions, .preset-bar .button-row, #coach-dialog, #shortcut-help,

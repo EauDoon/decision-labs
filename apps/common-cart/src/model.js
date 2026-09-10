@@ -108,6 +108,23 @@ export const presets = Object.freeze({
       offer("O02", "Inch Works", "Hand tool kit", "Imperial", 156, 6, 10, 12, 10),
       { ...offer("O03", "Yard Pickup Tools", "Hand tool kit", "Metric", 142, 12, 6, 24, 18), fulfillment: "pickup", tiers: [{ minimumUnits: 16, unitPrice: 130 }] }
     ]
+  },
+  garden: {
+    title: "Community garden bulk seed",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Plot twelve", "Garden seed pack", 4, 22, 10, ["Heirloom tomato", "Cover crop"]),
+      buyer("B02", "Allotment row", "Garden seed pack", 8, 18, 8, ["Cover crop"]),
+      buyer("B03", "School beds", "Garden seed pack", 6, 24, 12, ["Heirloom tomato", "Potting soil"]),
+      buyer("B04", "Commons plot", "Garden seed pack", 10, 20, 9, ["Cover crop", "Potting soil"]),
+      buyer("B05", "Raised beds", "Garden seed pack", 3, 16, 6, ["Potting soil"]),
+      buyer("B06", "Volunteer crew", "Garden seed pack", 5, 21, 11, ["Heirloom tomato", "Cover crop", "Potting soil"])
+    ],
+    offers: [
+      offer("O01", "Seed Share Co", "Garden seed pack", "Cover crop", 14, 12, 7, 30, 2),
+      offer("O02", "Heirloom Packet", "Garden seed pack", "Heirloom tomato", 16, 8, 9, 20, 1.5),
+      { ...offer("O03", "Soil Yard Pickup", "Garden seed pack", "Potting soil", 12, 10, 5, 24, 8), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -149,7 +166,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -158,7 +175,15 @@ export function validateWorkspace(candidate) {
     }
     filter = fulfillmentFilter;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter };
+  const hideExcludedBuyers = own(candidate, "hideExcludedBuyers");
+  let hideExcluded = false;
+  if (hideExcludedBuyers !== undefined) {
+    if (hideExcludedBuyers !== true && hideExcludedBuyers !== false) {
+      throw new ScenarioError("Hide excluded buyers must be true or false.");
+    }
+    hideExcluded = hideExcludedBuyers;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -243,6 +268,23 @@ export function filterBuyerIdsByAcceptedVariant(rawScenario, variant) {
   return scenario.buyers
     .filter((buyer) => buyer.allowedVariants.some((entry) => normalizeText(entry) === key))
     .map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. When hideExcluded is false, every buyer id is returned. */
+export function filterBuyerIdsHidingExcluded(rawScenario, offerId, hideExcluded) {
+  if (hideExcluded !== true && hideExcluded !== false) {
+    throw new ScenarioError("Hide excluded buyers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideExcluded) return scenario.buyers.map((buyer) => buyer.id);
+  if (typeof offerId !== "string" || offerId.trim() === "") {
+    throw new ScenarioError("Select an existing offer to hide excluded buyers.");
+  }
+  const result = evaluateOffer(scenario, offerId);
+  const included = new Set(
+    result.buyerOutcomes.filter((outcome) => outcome.status === "included").map((outcome) => outcome.buyerId)
+  );
+  return scenario.buyers.filter((buyer) => included.has(buyer.id)).map((buyer) => buyer.id);
 }
 
 /** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
@@ -448,6 +490,95 @@ function withComparableCost(metrics, comparable) {
   return { ...metrics, cost: comparable ? metrics.cost : null };
 }
 
+function publicOfferIdentitySide(result, includeLanded) {
+  return {
+    offerId: result.offer.id,
+    merchant: result.offer.merchant,
+    category: result.offer.category,
+    variant: result.offer.variant,
+    fulfillment: result.offer.fulfillment,
+    status: result.qualifies ? "Unlocked" : "Locked",
+    fulfilledUnits: result.fulfilledUnits,
+    includedBuyerCount: result.deliveredBuyers,
+    itemPrice: result.effectiveUnitPrice,
+    landedTotal: includeLanded && result.qualifies ? result.totalCost : null
+  };
+}
+
+/**
+ * Merchant-facing compare of two rooms by offer id. Shared ids report
+ * aggregates only. Missing ids are listed and are not filled with zeros.
+ */
+export function compareRoomsByOfferIdentity(leftRaw, rightRaw) {
+  const left = validateScenario(leftRaw);
+  const right = validateScenario(rightRaw);
+  const leftMarket = evaluateMarket(left);
+  const rightMarket = evaluateMarket(right);
+  const currency = landedTotalsComparison(left.currency, right.currency);
+  const leftIds = left.offers.map((offer) => offer.id);
+  const rightIds = right.offers.map((offer) => offer.id);
+  const rightSet = new Set(rightIds);
+  const leftSet = new Set(leftIds);
+  const leftById = new Map(leftMarket.results.map((result) => [result.offer.id, result]));
+  const rightById = new Map(rightMarket.results.map((result) => [result.offer.id, result]));
+  return {
+    leftCurrency: left.currency,
+    rightCurrency: right.currency,
+    leftBuyerCount: leftMarket.buyerCount,
+    rightBuyerCount: rightMarket.buyerCount,
+    leftRequestedUnits: leftMarket.totalRequestedUnits,
+    rightRequestedUnits: rightMarket.totalRequestedUnits,
+    leftOfferCount: left.offers.length,
+    rightOfferCount: right.offers.length,
+    sameCurrency: currency.sameCurrency,
+    currencyWarning: currency.warning,
+    shared: leftIds.filter((id) => rightSet.has(id)).map((id) => ({
+      offerId: id,
+      left: publicOfferIdentitySide(leftById.get(id), currency.comparable),
+      right: publicOfferIdentitySide(rightById.get(id), currency.comparable)
+    })),
+    missingFromRight: leftIds.filter((id) => !rightSet.has(id)),
+    missingFromLeft: rightIds.filter((id) => !leftSet.has(id))
+  };
+}
+
+export function createOfferIdentityCompareMarkdown(leftRaw, rightRaw) {
+  const comparison = compareRoomsByOfferIdentity(leftRaw, rightRaw);
+  const formatSide = (side) => {
+    const landed = side.landedTotal === null ? "landed total omitted" : `landed ${side.landedTotal}`;
+    return `${side.fulfilledUnits} units, ${side.includedBuyerCount} buyers, ${side.status}, ${landed}`;
+  };
+  const sharedLines = comparison.shared.length === 0
+    ? ["- None."]
+    : comparison.shared.map((entry) => `- ${entry.offerId} (${entry.left.merchant} / ${entry.left.variant}): left ${formatSide(entry.left)}; right ${entry.right.merchant} / ${entry.right.variant}, ${formatSide(entry.right)}.`);
+  const missingRight = comparison.missingFromRight.length === 0
+    ? ["- None."]
+    : comparison.missingFromRight.map((id) => `- ${id}`);
+  const missingLeft = comparison.missingFromLeft.length === 0
+    ? ["- None."]
+    : comparison.missingFromLeft.map((id) => `- ${id}`);
+  const lines = [
+    `# Common Cart offer identity compare`,
+    ``,
+    `- Left: ${comparison.leftOfferCount} offers, ${comparison.leftBuyerCount} buyers, ${comparison.leftRequestedUnits} requested units, ${comparison.leftCurrency}.`,
+    `- Right: ${comparison.rightOfferCount} offers, ${comparison.rightBuyerCount} buyers, ${comparison.rightRequestedUnits} requested units, ${comparison.rightCurrency}.`,
+    `- Shared offer ids: ${comparison.shared.length}.`,
+    comparison.currencyWarning ? `- ${comparison.currencyWarning}` : `- Currencies match. Landed totals are shown when an offer unlocks.`,
+    ``,
+    `## Shared offers`,
+    ...sharedLines,
+    ``,
+    `## Missing from right`,
+    ...missingRight,
+    ``,
+    `## Missing from left`,
+    ...missingLeft,
+    ``,
+    `Missing offer ids are listed and are not filled with zeros. These aggregates omit private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 /** Organizer-only sum of unused item-ceiling headroom for buyers included in the winner. */
 export function winnerBudgetLeftover(rawScenario) {
   const market = evaluateMarket(rawScenario);
@@ -556,7 +687,10 @@ export function neutralizeSpreadsheetCell(value) {
   return value;
 }
 
-function parseCsvRows(text) {
+function parseDelimitedRows(text, delimiter) {
+  if (typeof delimiter !== "string" || delimiter.length !== 1) {
+    throw new ScenarioError("Table delimiter must be a single character.");
+  }
   const rows = [];
   let row = [];
   let cell = "";
@@ -577,7 +711,7 @@ function parseCsvRows(text) {
       }
     } else if (character === '"') {
       quoted = true;
-    } else if (character === ",") {
+    } else if (character === delimiter) {
       row.push(cell);
       cell = "";
     } else if (character === "\n") {
@@ -597,10 +731,18 @@ function parseCsvRows(text) {
   return rows.filter((entry) => entry.some((value) => value.trim() !== ""));
 }
 
-export function parseBuyerCsv(text) {
-  if (typeof text !== "string") throw new ScenarioError("Buyer CSV must be text.");
-  if (text.trim() === "") throw new ScenarioError("Buyer CSV is empty.");
-  const rows = parseCsvRows(text);
+function parseCsvRows(text) {
+  return parseDelimitedRows(text, ",");
+}
+
+function buyerTableDelimiter(text) {
+  const source = text.replace(/^\uFEFF/u, "");
+  const end = source.search(/[\r\n]/u);
+  const firstLine = end === -1 ? source : source.slice(0, end);
+  return firstLine.includes("\t") ? "\t" : ",";
+}
+
+function buyersFromCsvRows(rows) {
   if (rows.length < 2) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
   const header = rows[0].map((value) => neutralizeSpreadsheetCell(value).trim().toLowerCase().replaceAll("_", " "));
   const columns = header.map((name) => BUYER_CSV_HEADERS[name] ?? null);
@@ -642,6 +784,19 @@ export function parseBuyerCsv(text) {
   });
 }
 
+export function parseBuyerCsv(text) {
+  if (typeof text !== "string") throw new ScenarioError("Buyer CSV must be text.");
+  if (text.trim() === "") throw new ScenarioError("Buyer CSV is empty.");
+  return buyersFromCsvRows(parseCsvRows(text));
+}
+
+export function parseBuyerTable(text) {
+  if (typeof text !== "string") throw new ScenarioError("Buyer CSV must be text.");
+  if (text.trim() === "") throw new ScenarioError("Buyer CSV is empty.");
+  const delimiter = buyerTableDelimiter(text);
+  return buyersFromCsvRows(parseDelimitedRows(text, delimiter));
+}
+
 export function importBuyersFromCsv(rawScenario, text) {
   const scenario = validateScenario(rawScenario);
   const buyers = parseBuyerCsv(text);
@@ -649,8 +804,33 @@ export function importBuyersFromCsv(rawScenario, text) {
   return validateScenario({ ...scenario, buyers });
 }
 
+export function importBuyersFromTable(rawScenario, text) {
+  const scenario = validateScenario(rawScenario);
+  const buyers = parseBuyerTable(text);
+  if (buyers.length < 1) throw new ScenarioError("Buyer CSV needs a header row and at least one buyer.");
+  return validateScenario({ ...scenario, buyers });
+}
+
 export function buyerCsvTemplate() {
   return "label,category,quantity,max unit price,latest delivery days,variants,max order total\r\n";
+}
+
+/** Organizer-only buyer rows using the same columns as import. Formula-safe. Private labels and budgets included. */
+export function createOrganizerBuyerCsv(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const rows = [["label", "category", "quantity", "max unit price", "latest delivery days", "variants", "max order total"]];
+  for (const buyer of scenario.buyers) {
+    rows.push([
+      buyer.label,
+      buyer.category,
+      buyer.quantity,
+      buyer.maxUnitPrice,
+      buyer.latestDeliveryDays,
+      buyer.allowedVariants.join(", "),
+      Object.hasOwn(buyer, "maxOrderTotal") ? buyer.maxOrderTotal : ""
+    ]);
+  }
+  return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
 }
 
 const OFFER_CSV_HEADERS = {
@@ -1367,6 +1547,45 @@ export function groupExclusionReasons(rawScenario, offerId) {
   return EXCLUSION_CODES.filter((code) => groups.has(code)).map((code) => groups.get(code));
 }
 
+const EXCLUSION_COUNT_TITLES = {
+  price: "Price",
+  delivery: "Delivery",
+  variant: "Variant",
+  category: "Category",
+  budget: "Budget",
+  capacity_leftover: "Capacity leftover",
+  quantity_vs_capacity: "Quantity vs remaining capacity",
+  minimum: "Below minimum"
+};
+
+/** Merchant-safe exclusion reason counts. Counts only. Omits labels, IDs, budgets, and allocations. */
+export function createExclusionCountsMarkdown(rawScenario, offerId) {
+  const result = evaluateOffer(rawScenario, offerId);
+  const groups = groupExclusionReasons(rawScenario, offerId).map((group) => ({
+    code: group.code,
+    count: group.count
+  }));
+  const excludedCount = result.buyerOutcomes.filter((outcome) => outcome.status !== "included").length;
+  const lines = [
+    `# Common Cart exclusion counts`,
+    ``,
+    `- Merchant: ${result.offer.merchant}`,
+    `- Category: ${result.offer.category}`,
+    `- Variant: ${result.offer.variant}`,
+    `- Fulfillment: ${result.offer.fulfillment}`,
+    `- Included buyers: ${result.deliveredBuyers}`,
+    `- Excluded buyers: ${excludedCount}`,
+    ``,
+    `## Reason counts`,
+    ...(groups.length === 0
+      ? ["- No buyers are excluded from this offer."]
+      : groups.map((group) => `- ${EXCLUSION_COUNT_TITLES[group.code] ?? group.code}: ${group.count}`)),
+    ``,
+    `These counts omit private buyer labels, IDs, budgets, and allocations.`
+  ];
+  return `${lines.join("\n")}\n`;
+}
+
 function compareResults(left, right) {
   if (left.qualifies !== right.qualifies) return left.qualifies ? -1 : 1;
   return right.fulfilledUnits - left.fulfilledUnits
@@ -1491,6 +1710,43 @@ export function createVariantOverlapCsv(rawScenario) {
     rows.push([entry.variant, entry.offerCount, entry.buyerCount, entry.units]);
   }
   return `${rows.map((row) => row.map(escapeCsvCell).join(",")).join("\r\n")}\r\n`;
+}
+
+function markdownTableCell(value) {
+  return String(value).replaceAll("|", "\\|").replaceAll("\n", " ");
+}
+
+/** Merchant-facing overlap counts as Markdown. Labels, IDs, budgets, and allocations are omitted. */
+export function createVariantOverlapMarkdown(rawScenario) {
+  const matrix = variantOverlapMatrix(rawScenario);
+  const header = ["Accepted variant", ...matrix.variants.map((entry) => entry.variant)].map(markdownTableCell);
+  const divider = header.map(() => "---");
+  const body = matrix.cells.map((row, index) => [
+    markdownTableCell(matrix.variants[index].variant),
+    ...row.map((cell) => String(cell.buyerCount))
+  ]);
+  const totalsHeader = ["Variant", "Offers", "Buyers", "Units"];
+  const totals = matrix.variants.map((entry) => [
+    markdownTableCell(entry.variant),
+    String(entry.offerCount),
+    String(entry.buyerCount),
+    String(entry.units)
+  ]);
+  const lines = [
+    `# Common Cart variant overlap`,
+    ``,
+    `Buyer counts whose accepted variants include each offered variant. Pairwise cells are overlaps. Labels, IDs, budgets, and allocations are omitted.`,
+    ``,
+    `| ${header.join(" | ")} |`,
+    `| ${divider.join(" | ")} |`,
+    ...body.map((row) => `| ${row.join(" | ")} |`),
+    ``,
+    `| ${totalsHeader.join(" | ")} |`,
+    `| ${totalsHeader.map(() => "---").join(" | ")} |`,
+    ...totals.map((row) => `| ${row.join(" | ")} |`),
+    ``
+  ];
+  return `${lines.join("\n")}\n`;
 }
 
 export function encodeScenario(rawScenario) {

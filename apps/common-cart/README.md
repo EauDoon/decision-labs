@@ -8,7 +8,22 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
-## Changelog (1.4.0)
+## Changelog (1.4.1)
+
+Organizer tools for private buyer tables, leftover jumps, pasted intake, and merchant-safe compares, kept on top of 1.4.0 review packets. This remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap, briefing, winner markdown, print one-pager, and merchant-facing compares still receive aggregates and counts only. Organizer review packets stay private and unsigned.
+
+- **Organizer buyer CSV export.** Write `label, category, quantity, max unit price, latest delivery days, variants`, with optional max order total. Formula prefixes are escaped. This is private organizer data, not a merchant export. The file round-trips through import.
+- **Keyboard leftover jump.** `l` focuses residual coverage when you are not typing. Help lists it.
+- **Paste buyers.** Paste TSV or CSV into a textarea. A tab on the first line is read as TSV. The same checks as buyer CSV import apply. Valid paste replaces buyers, keeps offers, and is undoable.
+- **Offer identity compare.** Compare two room JSON files by offer id. Shared ids report unit and buyer counts. Missing ids are listed and are not filled with zeros. The open room stays in place. Buyer labels stay out.
+- **Hide excluded buyers.** Organizer display filter. Matching stays unchanged. Merchant views still show counts only. The last hide choice is kept in workspace JSON. Older files omit it and show every buyer.
+- **Overlap Markdown copy.** Copy the variant overlap matrix as Markdown. Cells and totals are counts only. CSV copy still exists.
+- **Keyboard add offer.** `a` opens the merchant table and clicks Add offer when you are not typing.
+- **Community garden bulk seed.** A synthetic preset with shared seed and soil variants, mixed quantities, and a pickup offer. Distinct from coffee, office pantry, and hardware tools.
+- **Exclusion counts copy.** Copy the inspected offer's merchant-safe exclusion reason counts as Markdown. Counts only.
+- **1.4.0 review packets kept.** Allocated coverage, sole-offer dependency, unserved reasons, same-cohort alternatives, withdrawal stress, shipping exposure, delivery slack, bounded capacity and minimum previews, and private review packet export/inspect remain.
+
+## Earlier changelog (1.4.0)
 
 The Buyer room now includes an on-demand organizer review flow: allocated coverage, sole-offer dependency, unserved reasons, same-cohort alternatives, withdrawal stress, shipping exposure, delivery slack, and bounded capacity/minimum previews. Export a private review packet and inspect it later without replacing the current room. Its input snapshot and recomputed results must match; it is an unsigned consistency record, not proof of authorship or merchant consent.
 
