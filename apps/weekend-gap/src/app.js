@@ -1897,6 +1897,11 @@ document.addEventListener("keydown", (event) => {
     copyHoursToFirstSettlementMarkdown();
     return;
   }
+  if (event.key === ";") {
+    event.preventDefault();
+    copyHoursToClearMarkdown();
+    return;
+  }
   if (event.key === ".") {
     event.preventDefault();
     jumpToFirstClosedFxCopy();

@@ -650,6 +650,23 @@ test("keyboard l copies hours-to-first-settlement Markdown and ignores the key w
   assert.equal(ui.nodes.get("hours-to-first-settlement-copy-fallback").hidden, true);
 });
 
+test("keyboard semicolon copies hours-to-clear Markdown through the existing control and ignores the key while typing", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.keydown(";");
+  assert.equal(ui.nodes.get("hours-to-clear-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("hours-to-clear-copy-fallback").value, /Hours to clear queue:/);
+  assert.match(ui.nodes.get("hours-to-clear-copy-fallback").value, /Synthetic educational snapshot/);
+  assert.doesNotMatch(ui.nodes.get("hours-to-clear-copy-fallback").value, /Hours to first settlement:/);
+  ui.nodes.get("hours-to-clear-copy-fallback").hidden = true;
+  ui.nodes.get("hours-to-clear-copy-fallback").value = "";
+  await ui.keydown(";", { tagName: "INPUT" });
+  assert.equal(ui.nodes.get("hours-to-clear-copy-fallback").hidden, true);
+  await ui.keydown(";", { tagName: "TEXTAREA" });
+  assert.equal(ui.nodes.get("hours-to-clear-copy-fallback").hidden, true);
+  await ui.keydown(";", { tagName: "SELECT" });
+  assert.equal(ui.nodes.get("hours-to-clear-copy-fallback").hidden, true);
+});
+
 test("keyboard comma copies hours-to-first-settlement Markdown through the existing control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown(",");
