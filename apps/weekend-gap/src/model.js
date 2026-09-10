@@ -1248,6 +1248,42 @@ export function selectedGanttHourToMarkdown(input, selectedHour = 0) {
   ].join("\n");
 }
 
+/** Markdown for the peak-queue checkpoint. Synthetic snapshot, not a live queue. */
+export function peakQueueHourToMarkdown(input) {
+  const result = runSimulation(input);
+  const queuedAud = result.summary.peakQueuedAud;
+  if (!(queuedAud > 0)) {
+    return [
+      "# Weekend Gap peak queue hour",
+      "",
+      "Synthetic educational snapshot. Not a live bank or payout queue.",
+      "",
+      "No queue in 72h",
+      ""
+    ].join("\n");
+  }
+  const hour = result.summary.peakQueueHour;
+  const schedule = buildGateSchedule(result.scenario);
+  const point = schedule.hours[hour];
+  const queued = result.timeline[hour].queuedAud;
+  return [
+    "# Weekend Gap peak queue hour",
+    "",
+    "Synthetic educational snapshot. Not a live bank or payout queue.",
+    "",
+    "Hour: " + point.timeLabel + " (hour " + point.hour + ")",
+    "Queued AUD: " + queued,
+    "",
+    "| Gate | State |",
+    "| --- | --- |",
+    "| Issuer | " + ganttGateStateLabel(point.issuerOpen) + " |",
+    "| Bank | " + ganttGateStateLabel(point.bankOpen) + " |",
+    "| Payout | " + ganttGateStateLabel(point.payoutOpen) + " |",
+    "| FX | " + ganttGateStateLabel(point.fxWeekday, true) + " |",
+    ""
+  ].join("\n");
+}
+
 /** Hourly current versus baseline gate state. Observation only, not a ranking. */
 export function compareGateSchedules(baselineInput, currentInput) {
   const baseline = buildGateSchedule(baselineInput);

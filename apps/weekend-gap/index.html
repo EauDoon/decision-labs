@@ -286,9 +286,12 @@ SOFTWARE.
               <div class="planning-actions">
                 <p id="outcome-summary" class="gate-summary">Calculating</p>
                 <button id="copy-dashboard-markdown" type="button">Copy dashboard numbers</button>
+                <button id="copy-peak-hour" type="button">Copy peak-queue hour</button>
                 <button id="export-dashboard-csv" type="button">Export dashboard CSV</button>
               </div>
             </div>
+            <label class="sr-only" for="peak-hour-copy-fallback">Peak-queue hour Markdown fallback</label>
+            <textarea id="peak-hour-copy-fallback" rows="8" hidden readonly></textarea>
             <dl class="outcome-grid">
               <div><dt>Settled across 72 hours</dt><dd id="settled-total-value">A$0</dd></div>
               <div><dt>Queued at Monday 15:00</dt><dd id="final-queue-value">A$0</dd></div>
