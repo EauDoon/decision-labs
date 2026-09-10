@@ -290,3 +290,30 @@ test("keyboard handler jumps to requested units when not typing", async () => {
   assert.match(app, /#metric-units/u);
   assert.match(app, /isTypingTarget\(event\.target\)/u);
 });
+
+test("shortcut help documents the private buyer report jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>x<\/kbd> Focus Export private buyer report \(organizer private\)/u);
+  assert.match(html, /id="buyer-report"/u);
+});
+
+test("keyboard handler focuses Export private buyer report when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "x"\)/u);
+  assert.match(app, /function focusPrivateBuyerReport\(/u);
+  assert.match(app, /#buyer-report/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+});
+
+test("Export private buyer report stays organizer-private in the buyer room", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  const report = buyerPanel.slice(buyerPanel.indexOf('id="buyer-report"'), buyerPanel.indexOf("Capacity leftover"));
+  assert.match(report, /This export is organizer-private/u);
+  assert.equal(merchantPanel.includes("buyer-report"), false);
+  assert.match(app, /organizer private/u);
+  assert.match(app, /This is not a merchant export/u);
+});

@@ -227,7 +227,7 @@ function bindStaticEvents() {
   document.querySelector("#buyer-report").addEventListener("click", () => {
     try {
       downloadFile(createBuyerCsv(scenario, inspectedOfferId), "common-cart-private-buyer-report.csv", "text/csv;charset=utf-8");
-      setStatus("Private buyer report exported for the inspected offer. It contains labels and individual allocations.", true);
+      setStatus("Private buyer report exported for the inspected offer (organizer private). It contains labels and individual allocations. This is not a merchant export.", true);
     } catch (error) { setStatus(`Report failed: ${messageOf(error)}`); }
   });
   document.querySelector("#organizer-briefing").addEventListener("click", () => {
@@ -862,6 +862,11 @@ function handleShortcut(event) {
     focusRequestedUnits();
     return;
   }
+  if (key === "x") {
+    event.preventDefault();
+    focusPrivateBuyerReport();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -899,6 +904,12 @@ function focusGroupHeadroom() {
 
 function focusRequestedUnits() {
   document.querySelector("#metric-units")?.focus();
+}
+
+function focusPrivateBuyerReport() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  document.querySelector("#buyer-report")?.focus();
 }
 
 function focusCartReview() {
