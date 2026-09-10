@@ -64,6 +64,7 @@ let volumeHoldPreview = null;
 let briefCopyText = '';
 let csvCopyText = '';
 let breakpointCopyText = '';
+let breakpointSnapshotCopyText = '';
 let shareHoldCopyText = '';
 let notesCopyText = '';
 let waterfallCopyText = '';
@@ -97,6 +98,7 @@ function checkpoint() {
   briefCopyText = '';
   csvCopyText = '';
   breakpointCopyText = '';
+  breakpointSnapshotCopyText = '';
   shareHoldCopyText = '';
   notesCopyText = '';
   waterfallCopyText = '';
@@ -126,6 +128,7 @@ function travelHistory(direction) {
   briefCopyText = '';
   csvCopyText = '';
   breakpointCopyText = '';
+  breakpointSnapshotCopyText = '';
   shareHoldCopyText = '';
   notesCopyText = '';
   waterfallCopyText = '';
@@ -433,7 +436,7 @@ function shockUnits(kind) {
 }
 
 function copyFirstBreakpointButton() {
-  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button></div>`;
+  return `<div class="button-row"><button type="button" data-action="copy-first-breakpoint">Copy first breakpoint</button><button type="button" data-action="copy-first-breakpoint-snapshot">Copy first-breakpoint snapshot</button></div>`;
 }
 
 function breakpointSection(result) {
@@ -622,7 +625,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -677,6 +680,7 @@ function resultsPanel(result) {
     ${operatingCopySection()}
     ${splitCopySection()}
     ${allocationCopySection()}
+    ${breakpointSnapshotCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -1150,6 +1154,7 @@ function attachEvents() {
     if (action === 'close-brief-copy') { briefCopyText = ''; render(); return; }
     if (action === 'close-csv-copy') { csvCopyText = ''; render(); return; }
     if (action === 'close-breakpoint-copy') { breakpointCopyText = ''; render(); return; }
+    if (action === 'close-breakpoint-snapshot-copy') { breakpointSnapshotCopyText = ''; render(); return; }
     if (action === 'close-share-hold-copy') { shareHoldCopyText = ''; render(); return; }
     if (action === 'close-notes-copy') { notesCopyText = ''; render(); return; }
     if (action === 'close-waterfall-copy') { waterfallCopyText = ''; render(); return; }
@@ -1337,6 +1342,7 @@ function attachEvents() {
     if (action === 'export-report') exportReport();
     if (action === 'copy-brief') copyNegotiationBrief();
     if (action === 'copy-first-breakpoint') copyFirstBreakpoint();
+    if (action === 'copy-first-breakpoint-snapshot') copyFirstBreakpointSnapshot();
     if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-waterfall') copyContributionWaterfall();
@@ -2055,6 +2061,70 @@ function copyFirstBreakpoint() {
     }
   }
   showBreakpointCopyFallback(text, 'Clipboard unavailable. Copy the Markdown from the text area.');
+}
+
+function firstBreakpointSnapshotMarkdown(result) {
+  const breakpoint = result.firstBreakpoint;
+  let body;
+  if (!breakpoint?.participant) {
+    body = 'No bounded adverse shock is available in the current inputs.';
+  } else if (breakpoint.status === 'already-failing') {
+    body = reportText(breakpoint.participant.name) + ' is already failing an exit criterion.';
+  } else {
+    const units = shockUnits(breakpoint.kind);
+    const magnitude = breakpoint.status === 'at-breakpoint' || !breakpoint.shock
+      ? compactShock(breakpoint.shock ?? { status: breakpoint.status, change: null, changePct: null }, units)
+      : compactShock(breakpoint.shock, units);
+    body = reportText(breakpoint.participant.name) + '; ' + shockLabel(breakpoint.kind) + '; ' + magnitude + '.';
+  }
+  return 'First-breakpoint snapshot: ' + body + ' Synthetic ranking, not a forecast.';
+}
+
+function showBreakpointSnapshotCopyFallback(text, message) {
+  breakpointSnapshotCopyText = text;
+  render();
+  document.querySelector('#breakpoint-snapshot-copy-text')?.focus();
+  setNotice(message);
+}
+
+function breakpointSnapshotCopySection() {
+  if (!breakpointSnapshotCopyText) return '';
+  return `<section class="panel" aria-labelledby="breakpoint-snapshot-copy-title"><div class="panel-heading"><h2 id="breakpoint-snapshot-copy-title">First-breakpoint snapshot Markdown</h2><button type="button" data-action="close-breakpoint-snapshot-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is a synthetic ranking, not a forecast.</p><label class="brief-copy-label" for="breakpoint-snapshot-copy-text">First-breakpoint snapshot Markdown</label><textarea id="breakpoint-snapshot-copy-text" readonly rows="4">${escapeAttribute(breakpointSnapshotCopyText)}</textarea></div></section>`;
+}
+
+function copyFirstBreakpointSnapshot() {
+  const validation = validateConfiguration(state);
+  if (!validation.valid) {
+    setNotice('Resolve invalid inputs before copying the first-breakpoint snapshot. ' + summarizeErrors(validation.errors));
+    return;
+  }
+  const text = firstBreakpointSnapshotMarkdown(calculatePartnership(state));
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'First-breakpoint snapshot copied as Markdown. Synthetic ranking, not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          breakpointSnapshotCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showBreakpointSnapshotCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      breakpointSnapshotCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showBreakpointSnapshotCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showBreakpointSnapshotCopyFallback(text, fallbackNote);
 }
 
 function shareHoldPreviewMarkdown(solved) {

@@ -59,6 +59,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'compound-title', 'inspect-cases-title', 'split-copy-text',
         'least-headroom-participant', 'participant-inputs-title',
         'field-deal-notes', 'viability-card', 'allocation-copy-text',
+        'breakpoint-snapshot-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -1852,6 +1853,52 @@ test('copy first breakpoint uses displayed labels and a clipboard fallback', asy
   already.click('copy-first-breakpoint');
   assert.match(already.markup(), /Participant: Liquidity Partner/);
   assert.match(already.markup(), /Magnitude: Already failing/);
+});
+
+test('copy first-breakpoint snapshot is one Markdown line and not a forecast', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /data-action="copy-first-breakpoint-snapshot"/);
+  fallback.click('copy-first-breakpoint-snapshot');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="breakpoint-snapshot-copy-text"/);
+  assert.match(fallback.markup(), /First-breakpoint snapshot: Liquidity Partner; fee decrease; 0\.0080 units \/ txn, 4\.0%\. Synthetic ranking, not a forecast\./);
+  assert.match(fallback.markup(), /id="breakpoint-snapshot-copy-title">First-breakpoint snapshot Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="tornado-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="waterfall-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="operating-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="allocation-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-breakpoint-snapshot-copy');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-snapshot-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-first-breakpoint-snapshot');
+  assert.doesNotMatch(fallback.markup(), /id="breakpoint-snapshot-copy-text"/);
+  assert.match(fallback.notice(), /Resolve invalid inputs before copying the first-breakpoint snapshot/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-first-breakpoint-snapshot');
+  assert.equal(withClipboard.copied().length, 1);
+  const text = withClipboard.copied()[0];
+  assert.equal(text.split('\n').length, 1);
+  assert.match(text, /^First-breakpoint snapshot: Liquidity Partner; fee decrease; 0\.0080 units \/ txn, 4\.0%\. Synthetic ranking, not a forecast\.$/);
+  assert.doesNotMatch(text, /# Adverse-shock tornado|# Contribution waterfall|# Operating region|# Allocation balance/);
+  assert.doesNotMatch(text, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="breakpoint-snapshot-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-first-breakpoint-snapshot');
+  assert.match(denied.markup(), /id="breakpoint-snapshot-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const failing = clonePreset('balanced');
+  failing.participants[2].minimumAcceptableProfit = 10000;
+  const already = await workbench('file:', { clipboard: 'ok' });
+  already.import(failing);
+  already.click('copy-first-breakpoint-snapshot');
+  assert.match(already.copied().at(-1), /^First-breakpoint snapshot: Liquidity Partner is already failing an exit criterion\. Synthetic ranking, not a forecast\.$/);
 });
 
 test('negotiation brief copies Markdown or keeps a visible textarea fallback', async () => {
