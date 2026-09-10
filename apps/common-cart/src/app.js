@@ -1065,6 +1065,16 @@ function handleShortcut(event) {
     copyLeftoverFillMerchantLabel();
     return;
   }
+  if (key === "_") {
+    event.preventDefault();
+    focusLeftoverFillMerchantCopy();
+    return;
+  }
+  if (key === "{") {
+    event.preventDefault();
+    focusHideOffersWithRemainingCapacity();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1248,6 +1258,17 @@ function focusUncoveredLeftoverUnitCountCopy() {
   document.querySelector("#residual-title")?.focus();
 }
 
+function focusLeftoverFillMerchantCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-fill-merchant");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
 function focusHideFullyFilledBuyers() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
@@ -1268,6 +1289,22 @@ function focusHideBuyersWithLeftover() {
     return;
   }
   document.querySelector("#buyers-list")?.focus();
+}
+
+function focusHideOffersWithRemainingCapacity() {
+  const merchantTab = document.querySelector("#merchant-tab");
+  if (merchantTab) activateTab(merchantTab);
+  const hide = document.querySelector("#hide-offers-with-remaining-capacity");
+  if (hide) {
+    hide.focus();
+    return;
+  }
+  const heading = document.querySelector("#merchant-panel h2");
+  if (heading) {
+    heading.focus();
+    return;
+  }
+  document.querySelector("#offers-list")?.focus();
 }
 
 function focusLeftoverPrintControl() {
