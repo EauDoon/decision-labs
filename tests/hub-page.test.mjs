@@ -105,6 +105,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Cinema split, headroom copy, and breakpoint jump in Partnership Breakpoint 1\.5\.7/);
   assert.match(html, /Community radio, least-headroom copy, and print jump in Partnership Breakpoint 1\.5\.8/);
   assert.match(html, /School concert, remaining-to-hold copy, and least-headroom hide in Partnership Breakpoint 1\.5\.9/);
+  assert.match(html, /Sports carnival, volume-to-hold copy, and within-capacity hide in Partnership Breakpoint 1\.5\.10/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -116,6 +117,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Surf club kit, remaining-capacity jump, and leftover-fill copy in Common Cart 1\.4\.6/);
   assert.match(html, /Theatre wardrobe, leftover-fill units, and print jump in Common Cart 1\.4\.7/);
   assert.match(html, /Choir folders, leftover-units copy, and leftover hide in Common Cart 1\.4\.8/);
+  assert.match(html, /Scout camp, leftover-units copy, and remaining-capacity hide in Common Cart 1\.4\.9/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -127,6 +129,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Garden watering, lock-count copy, and threshold jump in The Smallest Agreement 1\.5\.6/);
   assert.match(html, /Laundry hours, lock-count jump, and locked-clause hide in The Smallest Agreement 1\.5\.7/);
   assert.match(html, /BBQ hours, first-lock copy, and threshold-group hide in The Smallest Agreement 1\.5\.8/);
+  assert.match(html, /School disco, below-floor copy, and below-threshold hide in The Smallest Agreement 1\.5\.9/);
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /Dashboard copy, file compare, and compressed Friday in Weekend Gap 1\.4\.3/);
@@ -166,6 +169,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /remaining-capacity jump, the Surf club first-aid kit start/);
   assert.match(readme, /leftover-fill unit-count copy, the Theatre wardrobe kit start/);
   assert.match(readme, /leftover-fill unit-count copy shortcut, the Community choir folders start/);
+  assert.match(readme, /uncovered leftover unit-count copy shortcut, the Scout camp kit start/);
   assert.match(readme, /waterfall SVG download, compare and print keys/);
   assert.match(readme, /waterfall\s+Markdown copy, the Talent, agent, and platform start/);
   assert.match(readme, /tornado Markdown copy, the\s+Three-party joint venture start/);
@@ -175,6 +179,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /least-headroom participant copy, the Pop-up cinema split start/);
   assert.match(readme, /least-headroom copy shortcut, the Community radio split start/);
   assert.match(readme, /remaining-to-hold copy shortcut, the School concert split start/);
+  assert.match(readme, /volume-to-hold copy shortcut, the Sports carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -186,6 +191,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Community garden watering start,\s+lock-count copy/);
   assert.match(readme, /Shared laundry hours start,\s+first-locked-option copy/);
   assert.match(readme, /Rooftop BBQ hours start,\s+first-locked-option copy shortcut/);
+  assert.match(readme, /School disco hours start, below-floor count copy shortcut/);
   assert.match(readme, /queue-clear hours and Gantt compare/);
   assert.match(readme, /queue CSV export, peak-queue jump/);
   assert.match(readme, /dashboard Markdown copy, two-file compare/);

@@ -145,6 +145,7 @@ export const presets: Readonly<{
   surfFirstAid: Scenario;
   theatreWardrobe: Scenario;
   choirFolders: Scenario;
+  scoutCamp: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -267,7 +268,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -303,6 +304,8 @@ export function filterOfferIdsByFulfillment(rawScenario: unknown, fulfillment: "
 export function filterOfferIdsHidingUnwinnable(rawScenario: unknown, hideUnwinnable: boolean): string[];
 /** Display-only. Matching is unchanged. When hideZeroRemaining is false, every offer id is returned. */
 export function filterOfferIdsHidingZeroRemainingCapacity(rawScenario: unknown, hideZeroRemaining: boolean): string[];
+/** Display-only. Matching is unchanged. Inverse of hide zero remaining capacity. When hideRemaining is false, every offer id is returned. */
+export function filterOfferIdsHidingOffersWithRemainingCapacity(rawScenario: unknown, hideRemaining: boolean): string[];
 export function acceptedVariantFilterOptions(rawScenario: unknown): string[];
 export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: string): string[];
 export function filterBuyerIdsHidingExcluded(rawScenario: unknown, offerId: string, hideExcluded: boolean): string[];
@@ -425,6 +428,8 @@ export function createWinningFulfillmentMarkdown(rawScenario: unknown): string;
 export function createLeftoverFillMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover fill unit-count. Count only. Not a merchant export. */
 export function createLeftoverFillUnitCountMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover fill merchant label. Merchant label only. Not a merchant export. */
+export function createLeftoverFillMerchantLabelMarkdown(rawScenario: unknown): string;
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
 export function createWinningRemainingCapacityMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line requested units. Count only. Not a merchant export. */
