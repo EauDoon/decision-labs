@@ -530,3 +530,124 @@ test('keyboard v and j are ignored in inputs using the same inEditable helper as
   assert.equal(clicks.jobs, 1);
 });
 
+test('keyboard l and o use stored last-launched recency in this browser', () => {
+  const focused = [];
+  const assigned = [];
+  const stored = { value: '2' };
+  const cards = {
+    1: { focus() { focused.push('1'); } },
+    2: { focus() { focused.push('2'); } },
+    3: { focus() { focused.push('3'); } },
+    4: { focus() { focused.push('4'); } },
+  };
+  const workbenches = { focus() { focused.push('workbenches'); } };
+  const opens = [
+    { href: 'apps/partnership-breakpoint/standalone.html' },
+    { href: 'apps/common-cart/standalone.html' },
+    { href: 'apps/smallest-agreement/standalone.html' },
+    { href: 'apps/weekend-gap/standalone.html' },
+  ];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'workbenches') return workbenches;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      const match = String(selector).match(/data-workbench="([1-4])"/);
+      return match ? cards[match[1]] : null;
+    },
+    querySelectorAll(selector) {
+      return selector === '#workbenches a.open' ? opens : [];
+    },
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    window: { location: { assign(href) { assigned.push(href); } } },
+    localStorage: {
+      getItem() { return stored.value; },
+      setItem(key, value) { stored.value = value; },
+    },
+  });
+  const fire = (key, target = { tagName: 'BODY', closest() { return null; } }) => {
+    let prevented = false;
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() { prevented = true; },
+    });
+    return prevented;
+  };
+  assert.equal(fire('l'), true);
+  assert.deepEqual(focused, ['2']);
+  assert.deepEqual(assigned, []);
+  assert.equal(fire('o'), true);
+  assert.deepEqual(assigned, ['apps/common-cart/standalone.html']);
+  assert.equal(stored.value, '2');
+  stored.value = null;
+  focused.length = 0;
+  assigned.length = 0;
+  assert.equal(fire('l'), true);
+  assert.deepEqual(focused, ['workbenches']);
+  assert.equal(fire('o'), true);
+  assert.deepEqual(focused, ['workbenches', 'workbenches']);
+  assert.deepEqual(assigned, []);
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  focused.length = 0;
+  stored.value = '4';
+  fire('l', input);
+  fire('o', input);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+});
+
+test('copy jobs markdown is the four catalog card names and jobs', async () => {
+  let copied = '';
+  let clickJobs = null;
+  const cards = [
+    { querySelector(sel) { return sel === 'h3' ? { textContent: 'Partnership Breakpoint' } : sel === 'p.job' ? { textContent: 'Find which participant in a revenue split.' } : null; } },
+    { querySelector(sel) { return sel === 'h3' ? { textContent: 'Common Cart' } : sel === 'p.job' ? { textContent: 'Pool buyer constraints.' } : null; } },
+    { querySelector(sel) { return sel === 'h3' ? { textContent: 'The Smallest Agreement' } : sel === 'p.job' ? { textContent: 'Find the lowest-cost set of clause changes.' } : null; } },
+    { querySelector(sel) { return sel === 'h3' ? { textContent: 'Weekend Gap' } : sel === 'p.job' ? { textContent: 'Follow synthetic AUD redemption demand.' } : null; } },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-jobs') return { addEventListener(name, handler) { if (name === 'click') clickJobs = handler; } };
+      if (id === 'copy-jobs-status') return { textContent: '' };
+      if (id === 'copy-jobs-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === 'article.workbench' ? cards : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickJobs();
+  assert.equal(
+    copied,
+    '- Partnership Breakpoint: Find which participant in a revenue split.\n- Common Cart: Pool buyer constraints.\n- The Smallest Agreement: Find the lowest-cost set of clause changes.\n- Weekend Gap: Follow synthetic AUD redemption demand.',
+  );
+});
+
