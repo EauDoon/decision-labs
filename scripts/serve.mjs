@@ -84,8 +84,9 @@ export function notFoundPage() {
     a:hover { text-decoration-thickness: 2px; }
     a:focus-visible, button:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
     .copy-versions-tools { margin: 16px 0 0; }
+    .copy-version-line-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -98,8 +99,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -109,7 +110,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -134,6 +135,11 @@ export function notFoundPage() {
       <span class="copy-versions-status" id="copy-versions-status" role="status"></span>
     </p>
     <textarea id="copy-versions-fallback" class="copy-versions-fallback" hidden readonly rows="4" aria-label="Workbench versions as Markdown"></textarea>
+    <p class="copy-version-line-tools">
+      <button type="button" class="copy-version-line" id="copy-version-line">Copy version line</button>
+      <span class="copy-version-line-status" id="copy-version-line-status" role="status"></span>
+    </p>
+    <textarea id="copy-version-line-fallback" class="copy-version-line-fallback" hidden readonly rows="2" aria-label="Catalog version line as Markdown"></textarea>
     <ul id="catalog-jobs">
       ${jobsList}
     </ul>
@@ -235,6 +241,39 @@ export function notFoundPage() {
             versionsFallback.select();
           }
           if (versionsStatus) versionsStatus.textContent = 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog list, not a live product version.';
+        }
+      });
+      const versionLineBtn = document.getElementById('copy-version-line');
+      const versionLineStatus = document.getElementById('copy-version-line-status');
+      const versionLineFallback = document.getElementById('copy-version-line-fallback');
+      const versionLineMarkdown = () => {
+        const line = document.querySelector('.version-line')?.textContent ?? '';
+        return line.replace(/^\\s*Current catalog:\\s*/i, '').replace(/\\.\\s*$/, '').trim();
+      };
+      versionLineBtn?.addEventListener('click', async () => {
+        const markdown = versionLineMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (versionLineFallback) versionLineFallback.hidden = true;
+          if (versionLineStatus) {
+            versionLineStatus.textContent = empty
+              ? 'Catalog version line was missing. Copied an empty string. This is catalog copy, not a live product version.'
+              : 'Copied the catalog version line from this page as Markdown. Not a live product version.';
+          }
+        } catch {
+          if (versionLineFallback) {
+            versionLineFallback.hidden = false;
+            versionLineFallback.value = markdown;
+            versionLineFallback.focus();
+            versionLineFallback.select();
+          }
+          if (versionLineStatus) {
+            versionLineStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Catalog version line was missing. This is catalog copy, not a live product version.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog version line, not a live product version.';
+          }
         }
       });
       const jobsBtn = document.getElementById('copy-jobs');
