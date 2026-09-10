@@ -36,6 +36,7 @@ import {
   formatGroupsBelowSupportFloorCountMarkdown,
   formatFirstBelowSupportFloorGroupLabelMarkdown,
   formatGroupsMeetingApprovalThresholdCountMarkdown,
+  formatFirstVetoGroupLabelMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -2519,6 +2520,69 @@ test("groups-meeting-threshold count Markdown is one line, honest at zero, and n
   assert.match(missing.text, /not a legal quorum/u);
   assert.equal(missing.text.trim().includes("\n"), false);
   assert.equal(formatGroupsMeetingApprovalThresholdCountMarkdown({ title: "" }).status, "invalid");
+});
+
+test("first veto group label Markdown is one line, honest when none, and not a legal right", () => {
+  const input = proposal({
+    groups: [
+      { id: "open", name: "Open", weight: 1 },
+      { id: "veto", name: "Neighbours", weight: 1, veto: true },
+      { id: "later", name: "Later veto", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { open: 50, veto: 50, later: 50 }),
+      option("alt", false, { open: 80, veto: 40, later: 40 }, 1),
+      option("other", false, { open: 70, veto: 30, later: 30 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatFirstVetoGroupLabelMarkdown(input);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.label, "Neighbours");
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "First veto group: Neighbours. A veto is a number you entered, not a legal right.\n");
+  assert.doesNotMatch(copied.text, /First below-floor group/u);
+  assert.doesNotMatch(copied.text, /Groups meeting the approval threshold/u);
+  assert.doesNotMatch(copied.text, /Later veto/u);
+  assert.doesNotMatch(copied.text, /legal right or/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const none = proposal({
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }), option("alt", false, { g: 40 }, 5), option("other", false, { g: 20 }, 8),
+    ] }],
+  });
+  const empty = formatFirstVetoGroupLabelMarkdown(none);
+  assert.equal(empty.status, "ok");
+  assert.equal(empty.empty, true);
+  assert.equal(empty.text, "No veto group is marked, so there is no first veto group label to copy. A veto is a number you entered, not a legal right.\n");
+  assert.equal(empty.text.trim().includes("\n"), false);
+  assert.equal(formatFirstVetoGroupLabelMarkdown({ title: "" }).status, "invalid");
+});
+
+test("first veto group label Markdown escapes the group name and is not a legal right", () => {
+  const input = proposal({
+    groups: [
+      { id: "open", name: "Open", weight: 1 },
+      { id: "veto", name: "Veto*group [A]", weight: 1, veto: true },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { open: 50, veto: 50 }),
+      option("alt", false, { open: 80, veto: 40 }, 1),
+      option("other", false, { open: 70, veto: 30 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatFirstVetoGroupLabelMarkdown(input);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.label, "Veto*group [A]");
+  assert.equal(copied.text, "First veto group: Veto\\*group \\[A\\]. A veto is a number you entered, not a legal right.\n");
+  assert.doesNotMatch(copied.text, /First below-floor group/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
 });
 
 test("formatRecommendedChangeCostCsv writes formula-safe original vs recommended costs", () => {
