@@ -381,6 +381,7 @@ footer {
   body.print-leftover .print-leftover-keep,
   body.print-leftover .residual-panel,
   body.print-leftover #leftover-coverage,
+  body.print-leftover #leftover-print-overlap,
   body.print-leftover .scoreboard .metric.feature {
     display: block !important;
   }
