@@ -572,6 +572,8 @@ test('keyboard x clears last-launched storage in this browser', () => {
     assert.equal(notes[key].hidden, true, `workbench ${key} recency note should hide`);
   }
 });
+
+test('keyboard l focuses the last-launched workbench card in this browser', () => {
   assert.match(html, /event\.key === 'l'/);
   assert.match(html, /inEditable\(event\.target\)/);
   assert.match(html, /data-workbench="1"/);
@@ -716,6 +718,8 @@ test('hash trust still focuses Trust and limits after copy trust tools', () => {
   });
   assert.deepEqual(focused, ['trust']);
 });
+
+test('hash shortcuts still focuses the shortcuts panel', () => {
   assert.match(html, /const hashTargets = \['#whats-new', '#workbenches', '#how-it-works', '#trust', '#shortcuts'\]/);
   assert.match(html, /if \(id === 'shortcuts'\) setOpen\(true, \{ focus: false \}\)/);
   const focused = [];
