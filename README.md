@@ -102,6 +102,8 @@ peak-queue hour copy, Public-holiday Monday, and the single-gate Gantt filter.
 Weekend Gap 1.5.3 also names hours-to-clear Markdown copy, Saturday market
 burst, and selected Gantt hour persist. Weekend Gap 1.5.4 also names remaining
 reserve copy, Sunday stall close, and the weekend-hours Gantt filter.
+The catalog also names skip-link copy, last-card focus, and 404 Copy jobs.
+That What's new entry is hub-only. It does not change workbench versions.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The

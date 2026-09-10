@@ -84,6 +84,7 @@ test('inline catalog script parses as classic browser JavaScript', () => {
 test('catalog names current workbench tools without live services', () => {
   assert.match(html, /id="whats-new"/);
   assert.match(html, /What's new/);
+  assert.match(html, /Skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -157,6 +158,8 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /peak-queue hour copy, Public-holiday Monday/);
   assert.match(readme, /hours-to-clear Markdown copy, Saturday market\s+burst/);
   assert.match(readme, /remaining\s+reserve copy, Sunday stall close/);
+  assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
+  assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
   assert.match(readme, /Catalog keys `w`, `k`, `n`, and `c`/);
