@@ -80,6 +80,7 @@ let remainingCopyText = '';
 let volumeCopyText = '';
 let viabilityLabelCopyText = '';
 let overCapacityCountCopyText = '';
+let firstOverCapacityLabelCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
 let coachVisible = !openedFromShareLink && !coachIsDismissed();
@@ -127,6 +128,7 @@ function checkpoint() {
   volumeCopyText = '';
   viabilityLabelCopyText = '';
   overCapacityCountCopyText = '';
+  firstOverCapacityLabelCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
   if (undoHistory.length > 50) undoHistory.shift();
@@ -163,6 +165,7 @@ function travelHistory(direction) {
   volumeCopyText = '';
   viabilityLabelCopyText = '';
   overCapacityCountCopyText = '';
+  firstOverCapacityLabelCopyText = '';
   importSequence += 1;
   activePreset = '';
   refresh(direction === 'undo' ? 'Previous edit restored.' : 'Edit reapplied.');
@@ -749,7 +752,7 @@ function inputPanel(result) {
           <p class="notice">${rosterFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-zero-share-participants" aria-pressed="${hideZeroShareParticipants}">Hide participants with zero revenue share</button><button type="button" data-action="show-zero-share-participants" ${hideZeroShareParticipants ? '' : 'disabled'}>Show zero-share participants</button></div>
           <p class="notice">${zeroShareFilterNote}</p>
-          <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button><button type="button" id="copy-over-capacity-count" data-action="copy-over-capacity-count" aria-keyshortcuts='"'>Copy over-capacity participant count</button></div>
+          <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button><button type="button" id="copy-over-capacity-count" data-action="copy-over-capacity-count" aria-keyshortcuts='"'>Copy over-capacity participant count</button><button type="button" id="copy-first-over-capacity-label" data-action="copy-first-over-capacity-label">Copy first over-capacity participant label</button></div>
           <p class="notice">${overCapacityFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-at-hold-participants" aria-pressed="${hideParticipantsAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants at hold with no listed capacity breach</button><button type="button" data-action="show-at-hold-participants" ${hideParticipantsAtHold ? '' : 'disabled'}>Show at-hold participants</button></div>
           <p class="notice">${atHoldFilterNote}</p>
@@ -805,7 +808,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -874,6 +877,7 @@ function resultsPanel(result) {
     ${volumeCopySection()}
     ${viabilityLabelCopySection()}
     ${overCapacityCountCopySection()}
+    ${firstOverCapacityLabelCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
     ${importedCompareSection()}
@@ -1363,6 +1367,7 @@ function attachEvents() {
     if (action === 'close-volume-copy') { volumeCopyText = ''; render(); return; }
     if (action === 'close-viability-label-copy') { viabilityLabelCopyText = ''; render(); return; }
     if (action === 'close-over-capacity-count-copy') { overCapacityCountCopyText = ''; render(); return; }
+    if (action === 'close-first-over-capacity-label-copy') { firstOverCapacityLabelCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
     if (action === 'close-fee-hold') { feeHoldPreview = null; render(); return; }
@@ -1668,6 +1673,7 @@ function attachEvents() {
     if (action === 'copy-first-breakpoint-remaining') copyFirstBreakpointRemainingToHold();
     if (action === 'copy-first-breakpoint-volume') copyFirstBreakpointVolumeToHold();
     if (action === 'copy-over-capacity-count') copyOverCapacityCount();
+    if (action === 'copy-first-over-capacity-label') copyFirstOverCapacityLabel();
     if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-deal-notes') copyDealNotes();
     if (action === 'copy-waterfall') copyContributionWaterfall();
@@ -2766,6 +2772,57 @@ function copyOverCapacityCount() {
     }
   }
   showOverCapacityCountCopyFallback(text, fallbackNote);
+}
+
+function firstOverCapacityLabelMarkdown(result) {
+  if (!result) return 'First over-capacity participant: none entered.';
+  const participant = state.participants.find((item) => participantOverListedCapacity(result, item));
+  if (!participant) return 'First over-capacity participant: none entered.';
+  return 'First over-capacity participant: ' + reportText(participant.name) + '. Roster row currently over listed capacity. Not a forecast.';
+}
+
+function showFirstOverCapacityLabelCopyFallback(text, message) {
+  firstOverCapacityLabelCopyText = text;
+  render();
+  document.querySelector('#first-over-capacity-label-copy-text')?.focus();
+  setNotice(message);
+}
+
+function firstOverCapacityLabelCopySection() {
+  if (!firstOverCapacityLabelCopyText) return '';
+  return `<section class="panel" aria-labelledby="first-over-capacity-label-copy-title"><div class="panel-heading"><h2 id="first-over-capacity-label-copy-title">First over-capacity participant label Markdown</h2><button type="button" data-action="close-first-over-capacity-label-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This names the first roster row currently over listed capacity. It is distinct from first-breakpoint label copy, least-headroom copy, and over-capacity count copy. It is not a forecast.</p><label class="brief-copy-label" for="first-over-capacity-label-copy-text">First over-capacity participant label Markdown</label><textarea id="first-over-capacity-label-copy-text" readonly rows="4">${escapeAttribute(firstOverCapacityLabelCopyText)}</textarea></div></section>`;
+}
+
+function copyFirstOverCapacityLabel() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = firstOverCapacityLabelMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'First over-capacity participant label copied as Markdown. Roster row currently over listed capacity. It is not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          firstOverCapacityLabelCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showFirstOverCapacityLabelCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      firstOverCapacityLabelCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showFirstOverCapacityLabelCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showFirstOverCapacityLabelCopyFallback(text, fallbackNote);
 }
 
 function leastHeadroomLabelMarkdown(result) {
