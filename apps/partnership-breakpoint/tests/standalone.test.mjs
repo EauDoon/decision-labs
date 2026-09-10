@@ -61,7 +61,7 @@ test('standalone renderer refuses missing markers and external CSS resources', (
   assert.throws(() => renderStandalone({ html, css: 'body { background: url(image.png); }', model: '', app: appImport }), /URL resource/);
 });
 
-test('standalone retains 1.5.15 review tools and 1.5.16 copy controls', async () => {
+test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async () => {
   const html = await buildStandalone();
   assert.match(html, /createPartnershipReviewPacket/);
   assert.match(html, /replayPartnershipReviewPacket/);
@@ -96,6 +96,9 @@ test('standalone retains 1.5.15 review tools and 1.5.16 copy controls', async ()
   assert.match(html, /id="copy-first-within-capacity-remaining"/);
   assert.match(html, /data-action="copy-first-within-capacity-remaining"/);
   assert.match(html, /id="copy-first-within-capacity-remaining"[^>]*aria-keyshortcuts="\$"/);
+  assert.match(html, /id="copy-last-within-capacity-remaining"/);
+  assert.match(html, /data-action="copy-last-within-capacity-remaining"/);
+  assert.match(html, /id="copy-last-within-capacity-remaining"[^>]*aria-keyshortcuts="5"/);
   assert.match(html, /id="hide-last-over-capacity-participant"[^>]*aria-keyshortcuts="#"/);
   assert.match(html, /id="hide-last-breakpoint-participant"/);
   assert.match(html, /data-action="hide-last-breakpoint-participant"/);
@@ -106,6 +109,9 @@ test('standalone retains 1.5.15 review tools and 1.5.16 copy controls', async ()
   assert.match(html, /id="hide-first-within-capacity-participant"/);
   assert.match(html, /data-action="hide-first-within-capacity-participant"/);
   assert.match(html, /id="hide-first-within-capacity-participant"[^>]*aria-keyshortcuts="\\`"/);
+  assert.match(html, /id="hide-last-spare-capacity-participant"/);
+  assert.match(html, /data-action="hide-last-spare-capacity-participant"/);
+  assert.match(html, /id="hide-last-spare-capacity-participant"[^>]*aria-keyshortcuts="7"/);
   assert.match(html, /School concert split/);
   assert.match(html, /Sports carnival split/);
   assert.match(html, /Netball carnival/);
@@ -114,6 +120,7 @@ test('standalone retains 1.5.15 review tools and 1.5.16 copy controls', async ()
   assert.match(html, /Cricket carnival split/);
   assert.match(html, /Tennis carnival split/);
   assert.match(html, /Basketball carnival split/);
+  assert.match(html, /Volleyball carnival split/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
@@ -122,5 +129,6 @@ test('standalone retains 1.5.15 review tools and 1.5.16 copy controls', async ()
   assert.match(html, /hideLastBreakpointParticipant/);
   assert.match(html, /hideLastWithinCapacityParticipant/);
   assert.match(html, /hideFirstWithinCapacityParticipant/);
+  assert.match(html, /hideLastSpareCapacityParticipant/);
   assert.match(html, /id="hide-last-over-capacity-participant"/);
 });
