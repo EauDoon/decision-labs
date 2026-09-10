@@ -1274,6 +1274,7 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>z<\/kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing/);
   assert.match(app.markup(), /<kbd>,<\/kbd> Copy the first-breakpoint participant label as Markdown/);
   assert.match(app.markup(), /<kbd>\.<\/kbd> Jump to Copy first-breakpoint participant label, or the First breakpoint heading if missing/);
+  assert.match(app.markup(), /<kbd>\/<\/kbd> Jump to Copy deal title and currency, or the Shared deal heading if missing/);
   assert.match(app.markup(), /ignored while a text or number field is focused/);
   app.keydown('Escape');
   assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
@@ -1785,6 +1786,31 @@ test('keyboard period jumps to Copy first-breakpoint participant label unless a 
   assert.equal(app.focused().length, before);
   assert.doesNotMatch(app.markup(), /id="copy-first-breakpoint-label"/);
   assert.doesNotMatch(app.markup(), /id="first-breakpoint-title"/);
+});
+
+test('keyboard slash jumps to Copy deal title and currency while Shift+/ stays help', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-deal-title"/);
+  assert.match(app.markup(), /id="deal-inputs-title" tabindex="-1"/);
+  app.keydown('/');
+  assert.ok(app.focused().includes('#copy-deal-title'));
+  assert.ok(app.focused().includes('scroll:#copy-deal-title'));
+  const before = app.focused().length;
+  app.keydown('/', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('/', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('/');
+  assert.ok(app.focused().includes('#copy-deal-title'));
+  assert.ok(app.focused().includes('scroll:#copy-deal-title'));
+  app.keydown('/', { shiftKey: true });
+  assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
+  app.keydown('Escape');
+  assert.doesNotMatch(app.markup(), /id="help-title">Keyboard shortcuts/);
+  app.keydown('?');
+  assert.match(app.markup(), /id="help-title">Keyboard shortcuts/);
 });
 
 test('keyboard z jumps to Copy deal title and currency unless a field is focused', async () => {
