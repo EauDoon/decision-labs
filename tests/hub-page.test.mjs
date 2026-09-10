@@ -1514,6 +1514,28 @@ test('copy jobs copies catalog names and jobs as Markdown with a visible fallbac
   assert.match(readme, /not a live product feed/);
 });
 
+test('copy first job copies the first card as one Markdown line with a visible fallback', () => {
+  assert.match(html, /id="copy-first-job"/);
+  assert.match(html, />Copy first job</);
+  assert.match(html, /aria-keyshortcuts=";"/);
+  assert.match(html, /id="copy-first-job-fallback"/);
+  assert.match(html, /class="copy-first-job-fallback"/);
+  assert.match(html, /textarea id="copy-first-job-fallback"/);
+  assert.match(html, /firstJobMarkdown/);
+  assert.match(html, /querySelector\('article\.workbench'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /firstJobFallback\.hidden = false/);
+  assert.match(html, /firstJobFallback\.select\(\)/);
+  assert.match(html, /Not a live product feed/);
+  assert.match(html, /This is the first catalog job, not a live product feed/);
+  assert.match(html, /Copied an empty string/);
+  assert.match(html, /This is distinct from <kbd>j<\/kbd> and <kbd>q<\/kbd>/);
+  assert.match(html, /from <kbd>y<\/kbd>, which copies the last-launched job/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-job-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-job-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
 test('copy How it works copies the printed heading and list as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-how"/);
   assert.match(html, />Copy How it works</);
@@ -1718,6 +1740,13 @@ test('print CSS hides copy version line tools like other copy tools', () => {
   const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
   assert.match(print, /\.copy-version-line-tools, \.copy-version-line-fallback \{ display: none !important; \}/);
   assert.match(print, /\.copy-versions-tools, \.copy-versions-fallback/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
+test('print CSS hides copy first job tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-first-job-tools, \.copy-first-job-fallback \{ display: none !important; \}/);
   assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
   assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
 });
@@ -1939,6 +1968,67 @@ test('keyboard j copies catalog jobs through the same control', () => {
   assert.match(readme, /Press `j` to copy catalog jobs/);
   assert.match(html, /jobsMarkdown/);
   assert.match(html, /jobsFallback\.hidden = false/);
+});
+
+test('keyboard semicolon copies the first workbench job through its own control', () => {
+  assert.match(html, /event\.key === ';'/);
+  assert.match(html, /firstJobBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts=";"/);
+  assert.match(html, /<kbd>;<\/kbd><\/dt><dd>Copy the first workbench name and one-sentence job as one Markdown line from this catalog page, not a live product feed/);
+  assert.match(html, /Press <kbd>;<\/kbd> to copy the first workbench job/);
+  assert.match(html, /If that card is missing, this copies an empty string/);
+  assert.match(html, /This is distinct from <kbd>j<\/kbd> and <kbd>q<\/kbd>/);
+  assert.match(html, /from <kbd>y<\/kbd>, which copies the last-launched job/);
+  const clicks = { firstJob: 0, jobs: 0, last: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-job') return { click() { clicks.firstJob += 1; }, addEventListener() {} };
+      if (id === 'copy-jobs') return { click() { clicks.jobs += 1; }, addEventListener() {} };
+      if (id === 'copy-last') return { click() { clicks.last += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire(';', input);
+  fire(';', textarea);
+  assert.equal(clicks.firstJob, 0);
+  assert.equal(clicks.jobs, 0);
+  assert.equal(clicks.last, 0);
+  fire(';', body);
+  assert.equal(clicks.firstJob, 1);
+  assert.equal(clicks.jobs, 0);
+  assert.equal(clicks.last, 0);
 });
 
 test('keyboard y copies the last-launched job from this-browser storage', () => {
@@ -2706,6 +2796,90 @@ test('copy jobs markdown is the four catalog card names and jobs', async () => {
     copied,
     '- Partnership Breakpoint: Find which participant in a revenue split.\n- Common Cart: Pool buyer constraints.\n- The Smallest Agreement: Find the lowest-cost set of clause changes.\n- Weekend Gap: Follow synthetic AUD redemption demand.',
   );
+});
+
+test('copy first job markdown is the first catalog card, or empty if missing', async () => {
+  let copied = '';
+  let clickFirst = null;
+  const firstCard = {
+    querySelector(sel) {
+      if (sel === 'h3') return { textContent: 'Partnership Breakpoint' };
+      if (sel === 'p.job') return { textContent: 'Find which participant in a revenue split.' };
+      return null;
+    },
+  };
+  let card = firstCard;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-job') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-job-status') return { textContent: '' };
+      if (id === 'copy-first-job-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === 'article.workbench' ? card : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickFirst();
+  assert.equal(copied, '- Partnership Breakpoint: Find which participant in a revenue split.');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Common Cart/);
+  assert.doesNotMatch(copied, /live product feed/);
+  card = null;
+  copied = 'stale';
+  await clickFirst();
+  assert.equal(copied, '');
+});
+
+test('copy first job shows a visible textarea when clipboard is unavailable', async () => {
+  let clickFirst = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-job') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-job-status') return status;
+      if (id === 'copy-first-job-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === 'article.workbench') {
+        return {
+          querySelector(sel) {
+            if (sel === 'h3') return { textContent: 'Partnership Breakpoint' };
+            if (sel === 'p.job') return { textContent: 'Find which participant in a revenue split.' };
+            return null;
+          },
+        };
+      }
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickFirst();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Partnership Breakpoint: Find which participant in a revenue split.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
 });
 
 test('copy jobs shows a visible textarea when clipboard is unavailable', async () => {
