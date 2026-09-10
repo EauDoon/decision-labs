@@ -317,6 +317,24 @@ test('404 copy Trust markdown comes from the printed heading and list', async ()
   assert.equal(PUBLIC_PATHS.length, 6);
 });
 
+test('404 copy-how script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /howMarkdown/);
+  assert.match(source, /Not a live policy feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
 test('404 copy-versions script parses as classic browser JavaScript', () => {
   const page = notFoundPage();
   const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
