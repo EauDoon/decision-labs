@@ -158,7 +158,9 @@ Applying a compound case copies its realized volume, shocked fee and participant
 
 ## Redacted export
 
-`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case. Print one-pager includes the least-headroom participant line, an allocation-balance line, a deal title line, a currency code line, and the first-breakpoint participant label line when the case is valid. The saved case is unchanged.
+`redactConfiguration` copies a valid case, deletes `deal.title` and `deal.notes` if present, and replaces each participant `name` with `Participant 1` through `N`. Identifiers, shares, costs, stress settings, and currency are unchanged. This is a sharing aid, not encryption. Print redacted uses the same Participant 1 through N labels on the print path and in the print stylesheet without changing the saved case. Print one-pager includes the least-headroom participant line, an allocation-balance line, a deal title line, a currency code line, the first-breakpoint participant label line, and the first-breakpoint remaining-to-hold line when the case is valid. The remaining-to-hold line is honest when that amount is unavailable. The saved case is unchanged.
+
+Copy first-breakpoint remaining-to-hold copies the volume or share still needed for the first-breakpoint participant as one Markdown line, or an honest empty line when that amount is unavailable. Copy first-breakpoint volume-to-hold copies that participant's exit volume from the same result, or an honest empty line when exit volume is unavailable. Those copy controls are distinct from each other and from least-headroom and first-breakpoint label copy.
 
 ## Participant CSV import
 
@@ -217,6 +219,8 @@ Optional `hideParticipantsAtHold` on a saved case is a boolean roster display pr
 Optional `hideParticipantsWithoutCapacity` on a saved case is a boolean roster display preference. Older files omit it and default to showing roster rows whose capacity is unbounded or omitted. Present non-boolean values are rejected. Hiding those rows filters the roster cards only. Tested-case and model counts stay unchanged. The solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, `hideParticipantsOverCapacity`, and `hideParticipantsAtHold` remain independent flags.
 
 Optional `hideParticipantsWithSpareCapacity` on a saved case is a boolean roster display preference. Older files omit it and default to showing roster rows that still have unused listed capacity. Present non-boolean values are rejected. Hiding those rows filters the roster cards only. Tested-case and model counts stay unchanged. The solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, `hideParticipantsOverCapacity`, `hideParticipantsAtHold`, and `hideParticipantsWithoutCapacity` remain independent flags.
+
+Optional `hideParticipantsAtLeastHeadroom` on a saved case is a boolean roster display preference. Older files omit it and default to showing the least-headroom roster row. Present non-boolean values are rejected. Hiding that row filters the roster cards only. Tested-case and model counts stay unchanged. The solver is unchanged. `hideHoldingParticipants`, `hideAllHoldLedger`, `hideZeroShareParticipants`, `hideParticipantsOverCapacity`, `hideParticipantsAtHold`, `hideParticipantsWithoutCapacity`, and `hideParticipantsWithSpareCapacity` remain independent flags.
 
 ### Feasible effective volume interval
 
