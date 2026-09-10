@@ -54,6 +54,7 @@ test("Sunday late payout close keeps the Normal Friday calendar with a Sunday ev
   assert.notDeepEqual(preset, PRESETS.mondayLateIssuerOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayEarlyFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayLateBankClose);
+  assert.notDeepEqual(preset, PRESETS.saturdayEarlyPayoutOpen);
   const late = runSimulation(preset);
   const normal = runSimulation(DEFAULT_SCENARIO);
   const bank = runSimulation(PRESETS.sundayLateBankClose);
