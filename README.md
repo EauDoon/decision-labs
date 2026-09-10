@@ -65,7 +65,11 @@ list is not a live policy feed. Key `-` copies the first How it works list
 item from this page as one Markdown line. That copy is catalog copy, not a
 live policy feed. If that item is missing, it copies an empty string. That
 key is distinct from `u`, which copies the full How it works list, and from
-`d`, which focuses the first How it works list item. Key `=` focuses the Copy
+`d`, which focuses the first How it works list item. Key `<` copies the last
+How it works list item from this page as one Markdown line. That copy is
+catalog copy, not a live policy feed. If that item is missing, it copies an
+empty string. That key is distinct from `-`, which copies the first How it
+works list item, and from `u`, which copies the full How it works list. Key `=` focuses the Copy
 How it works control, or the How it works heading if that control is missing.
 That key moves focus; it does not open a workbench. It does not copy. That
 key is distinct from `k`, which focuses How it works, and from `u`, which
@@ -305,6 +309,12 @@ including the visible text box when the clipboard API is unavailable. If
 that item is missing, it copies an empty string. This is catalog copy, not a
 live policy feed. It is distinct from `u`, which copies the full How it works
 list, and from `d`.
+Press `<` to copy the last How it works list item from this page as one
+Markdown line. That key uses the same Copy last How it works item control,
+including the visible text box when the clipboard API is unavailable. If
+that item is missing, it copies an empty string. This is catalog copy, not a
+live policy feed. It is distinct from `-`, which copies the first How it
+works list item, and from `u`.
 Press `=` to focus the Copy How it works control, or the How it works heading
 if that control is missing. That key moves focus; it does not open a
 workbench. It does not copy. That key is distinct from `k`, which focuses How
@@ -329,6 +339,12 @@ and visible text box fallback. If that item is missing, it copies an empty
 string. That copy is catalog copy, not a live policy feed. It is distinct
 from Copy How it works, which copies the full list, and from Copy first Trust
 item.
+Copy last How it works item copies the last How it works list item already
+printed on this catalog page as one Markdown line, with the same clipboard
+and visible text box fallback. If that item is missing, it copies an empty
+string. That copy is catalog copy, not a live policy feed. It is distinct
+from Copy How it works, which copies the full list, and from Copy first How
+it works item.
 
 All four apps are static and dependency-free. Pick the mode you want and swap in
 any app folder where you see `apps/partnership-breakpoint`.
