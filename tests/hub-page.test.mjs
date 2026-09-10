@@ -1343,3 +1343,47 @@ test('copy Trust shows a visible textarea when clipboard is unavailable', async 
   assert.match(status.textContent, /not a live policy feed/);
 });
 
+test('copy How it works markdown is the printed heading and list items', async () => {
+  let copied = '';
+  let clickHow = null;
+  const heading = { textContent: 'How it works' };
+  const items = [
+    { textContent: 'Standalone files. Every workbench ships standalone.html.' },
+    { textContent: 'Loopback catalog address. The control stays hidden on a file.' },
+    { textContent: 'Independent workbenches. The four tools do not share drafts.' },
+  ];
+  const section = {
+    querySelector(selector) {
+      return selector === 'h2' ? heading : null;
+    },
+    querySelectorAll(selector) {
+      return selector === 'ul li' ? items : [];
+    },
+  };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-how') return { addEventListener(name, handler) { if (name === 'click') clickHow = handler; } };
+      if (id === 'copy-how-status') return { textContent: '' };
+      if (id === 'copy-how-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'how-it-works') return section;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickHow();
+  assert.equal(
+    copied,
+    '## How it works\n- Standalone files. Every workbench ships standalone.html.\n- Loopback catalog address. The control stays hidden on a file.\n- Independent workbenches. The four tools do not share drafts.',
+  );
+  assert.doesNotMatch(copied, /live policy feed/);
+});
+
