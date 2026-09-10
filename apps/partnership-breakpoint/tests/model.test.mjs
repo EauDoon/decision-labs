@@ -565,6 +565,39 @@ test('optional deal notes persist when valid and reject unknown abuse', () => {
   assert.match(validateConfiguration(unknown).errors.join(' '), /unknown field: memo/);
 });
 
+test('optional hideAllHoldLedger is a boolean and older files omit it', () => {
+  const omitted = clonePreset('balanced');
+  assert.equal(Object.hasOwn(omitted, 'hideAllHoldLedger'), false);
+  assert.equal(validateConfiguration(omitted).valid, true);
+
+  const hidden = clonePreset('balanced');
+  hidden.hideAllHoldLedger = true;
+  assert.equal(validateConfiguration(hidden).valid, true);
+
+  const shown = clonePreset('balanced');
+  shown.hideAllHoldLedger = false;
+  assert.equal(validateConfiguration(shown).valid, true);
+
+  for (const value of ['true', 1, 0, null, 'yes', {}]) {
+    const config = clonePreset('balanced');
+    config.hideAllHoldLedger = value;
+    const validation = validateConfiguration(config);
+    assert.equal(validation.valid, false, String(value));
+    assert.match(validation.errors.join(' '), /boolean/);
+  }
+
+  const extra = clonePreset('balanced');
+  extra.hideAllHoldLedger = true;
+  extra.unexpected = true;
+  assert.match(validateConfiguration(extra).errors.join(' '), /unknown field: unexpected/);
+
+  const both = clonePreset('balanced');
+  both.collapseAllHoldCases = true;
+  both.hideHoldingParticipants = true;
+  both.hideAllHoldLedger = true;
+  assert.equal(validateConfiguration(both).valid, true);
+});
+
 test('optional hideHoldingParticipants is a boolean and older files omit it', () => {
   const omitted = clonePreset('balanced');
   assert.equal(Object.hasOwn(omitted, 'hideHoldingParticipants'), false);

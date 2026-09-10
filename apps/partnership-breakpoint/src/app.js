@@ -230,6 +230,7 @@ function withStress(config) {
 function readCollapsePreference() {
   collapseAllHoldCases = state.collapseAllHoldCases === true;
   hideHoldingParticipants = state.hideHoldingParticipants === true;
+  hideAllCompoundHolders = state.hideAllHoldLedger === true;
 }
 
 function writeCollapsePreference() {
@@ -237,6 +238,8 @@ function writeCollapsePreference() {
   else delete state.collapseAllHoldCases;
   if (hideHoldingParticipants) state.hideHoldingParticipants = true;
   else delete state.hideHoldingParticipants;
+  if (hideAllCompoundHolders) state.hideAllHoldLedger = true;
+  else delete state.hideAllHoldLedger;
 }
 
 function compactErrorMessage(error) {
@@ -1152,11 +1155,15 @@ function attachEvents() {
         return;
       }
       hideAllCompoundHolders = true;
+      writeCollapsePreference();
+      saveState();
       render();
       return;
     }
     if (action === 'show-all-hold-ledger') {
       hideAllCompoundHolders = false;
+      writeCollapsePreference();
+      saveState();
       render();
       return;
     }

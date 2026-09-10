@@ -1944,6 +1944,55 @@ test('collapsing all-hold stress cases is display-only and expand restores the r
   assert.match(app.markup(), /27 of 27 rows are visible/);
 });
 
+test('ledger all-hold preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  app.edit('stress.volumeDropPct', '0');
+  app.edit('stress.volumeGrowthPct', '20');
+  app.edit('stress.feeDropPct', '0');
+  app.edit('stress.variableCostRisePct', '0');
+  assert.match(app.markup(), /1 of 2 tested cases hold/);
+  app.click('hide-all-hold-ledger');
+  assert.equal(app.saved().hideAllHoldLedger, true);
+  assert.match(app.markup(), /2 participants who hold in every tested compound case are hidden from this ledger display/);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideAllHoldLedger, true);
+  assert.equal(hidden.participants.length, 3);
+  assert.match(app.markup(), /1 of 2 tested cases hold/);
+  app.click('show-all-hold-ledger');
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideAllHoldLedger'), false);
+
+  const imported = clonePreset('balanced');
+  imported.stress = { volumeDropPct: 0, volumeGrowthPct: 20, feeDropPct: 0, variableCostRisePct: 0 };
+  imported.hideAllHoldLedger = true;
+  app.import(imported);
+  assert.equal(app.saved().hideAllHoldLedger, true);
+  assert.match(app.markup(), /2 participants who hold in every tested compound case are hidden from this ledger display/);
+  assert.match(app.markup(), /1 of 2 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideAllHoldLedger'), false);
+  assert.match(app.markup(), /participant-live-name">Platform/);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideAllHoldLedger = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideAllHoldLedger = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
 test('hide-holding preference round-trips on saved JSON and defaults to shown', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
