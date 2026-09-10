@@ -125,6 +125,7 @@ function loadWorkspace() {
     const workspace = validateWorkspace(JSON.parse(raw));
     offerFulfillmentFilter = workspace.fulfillmentFilter;
     hideExcludedBuyers = workspace.hideExcludedBuyers;
+    hideUnwinnableOffers = workspace.hideUnwinnableOffers;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -167,7 +168,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -580,6 +581,7 @@ function bindStaticEvents() {
   });
   document.querySelector("#hide-unwinnable-offers").addEventListener("change", (event) => {
     hideUnwinnableOffers = event.target.checked;
+    persistWorkspaceDisplaySettings();
     try {
       applyOfferFulfillmentFilter();
       setStatus(hideUnwinnableOffers
@@ -591,6 +593,7 @@ function bindStaticEvents() {
   });
   document.querySelector("#restore-unwinnable-offers").addEventListener("click", () => {
     hideUnwinnableOffers = false;
+    persistWorkspaceDisplaySettings();
     const hideControl = document.querySelector("#hide-unwinnable-offers");
     if (hideControl) hideControl.checked = false;
     try {

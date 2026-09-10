@@ -261,7 +261,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;

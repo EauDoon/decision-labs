@@ -46,4 +46,5 @@ test("the hide-unwinnable filter is display only and does not leak buyer rows to
   assert.match(app, /filterOfferIdsHidingUnwinnable\(/u);
   assert.match(app, /hideUnwinnableOffers/u);
   assert.match(app, /#restore-unwinnable-offers/u);
+  assert.match(app, /persistWorkspaceDisplaySettings\(/u);
 });
