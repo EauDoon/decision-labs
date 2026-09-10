@@ -119,6 +119,15 @@ export const PRESETS = Object.freeze({
     reserveCashAud: 5900000,
     redemptionDemandAud: 3600000,
     weekendFxMultiplier: 3.1
+  }),
+  sundayStallClose: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Sunday stall close (synthetic)",
+    demandProfile: "sundayBurst",
+    payoutOpenEndHour: 16,
+    reserveCashAud: 5750000,
+    redemptionDemandAud: 3400000,
+    weekendFxMultiplier: 2.9
   })
 });
 
@@ -128,7 +137,7 @@ const FIELD_RULES = Object.freeze({
   bankLabel: { type: "text", maxLength: 40 },
   payoutLabel: { type: "text", maxLength: 40 },
   fxLabel: { type: "text", maxLength: 40 },
-  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush", "saturdayBurst"] },
+  demandProfile: { type: "choice", values: ["flat", "fridayBurst", "mondayRush", "saturdayBurst", "sundayBurst"] },
   nominalLiquidityAud: { min: 10000, max: 5000000000 },
   reserveCashAud: { min: 0, max: 5000000000 },
   issuerThroughputAudPerHour: { min: 0, max: 1000000000 },
@@ -295,10 +304,11 @@ export function getOperationalStatus(scenarioInput, hourOffset) {
 export function buildDemandSchedule(totalDemandAud, hours = SIMULATION_HOURS, profile = "flat") {
   const total = Math.max(0, finiteNumber(totalDemandAud, 0));
   if (!Number.isInteger(hours) || hours < 1 || hours > 720) throw new RangeError("Demand schedule requires 1 to 720 whole hours.");
-  if (!["flat", "fridayBurst", "mondayRush", "saturdayBurst"].includes(profile)) throw new RangeError("Unknown demand profile.");
+  if (!["flat", "fridayBurst", "mondayRush", "saturdayBurst", "sundayBurst"].includes(profile)) throw new RangeError("Unknown demand profile.");
   const weights = Array.from({ length: hours }, (_, hour) =>
     profile === "fridayBurst" && hour < 9 ? 8
       : profile === "saturdayBurst" && hour >= 9 && hour < 33 ? 8
+      : profile === "sundayBurst" && hour >= 48 && hour < 57 ? 8
       : profile === "mondayRush" && hour >= 57 ? 8
       : 1);
   const weightTotal = weights.reduce((sum, weight) => sum + weight, 0);
@@ -1073,6 +1083,7 @@ const DEMAND_PROFILE_LABELS = Object.freeze({
 export function stepDemandProfile(profile, direction) {
   if (direction !== "earlier" && direction !== "later") throw new RangeError("Demand timing steps must be earlier or later.");
   if (profile === "saturdayBurst") return direction === "earlier" ? "fridayBurst" : "flat";
+  if (profile === "sundayBurst") return direction === "earlier" ? "saturdayBurst" : "mondayRush";
   if (!DEMAND_PROFILES.includes(profile)) throw new RangeError("Unknown demand profile.");
   const index = DEMAND_PROFILE_STEP_ORDER.indexOf(profile);
   const nextIndex = direction === "earlier" ? Math.max(0, index - 1) : Math.min(DEMAND_PROFILE_STEP_ORDER.length - 1, index + 1);
