@@ -702,7 +702,7 @@ function inputPanel(result) {
         </section>
         <section class="input-section" aria-labelledby="data-title">
           <h2 id="data-title">Data</h2>
-          <h2 id="print-one-pager-title" class="visually-hidden" tabindex="-1">Print one-pager</h2>
+          <h2 id="print-one-pager-title" tabindex="-1" class="visually-hidden">Print one-pager</h2>
           ${libraryPanel()}
           <div class="button-row"><button type="button" data-action="undo" ${undoHistory.length ? '' : 'disabled'}>Undo</button><button type="button" data-action="redo" ${redoHistory.length ? '' : 'disabled'}>Redo</button><button type="button" data-action="open-help">Keyboard shortcuts</button><button type="button" data-action="show-coach">Show tour</button></div>
           <p class="notice">Undo retains the last 50 edits in this tab, including resets and imports.</p>
