@@ -84,7 +84,8 @@ export function notFoundPage() {
     a:hover { text-decoration-thickness: 2px; }
     a:focus-visible, button:focus-visible { outline: 3px solid #8a3800; outline-offset: 4px; }
     .copy-versions-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs {
+    .copy-lede-tools { margin: 16px 0 0; }
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -97,8 +98,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -108,7 +109,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -121,7 +122,12 @@ export function notFoundPage() {
   <main>
     <p class="eyebrow">Decision Labs</p>
     <h1>This path is not in the catalog</h1>
-    <p>The local launcher serves only the Decision Labs catalog page and the four workbenches. It does not serve source, notes, or drafts.</p>
+    <p class="lede">The local launcher serves only the Decision Labs catalog page and the four workbenches. It does not serve source, notes, or drafts.</p>
+    <p class="copy-lede-tools">
+      <button type="button" class="copy-lede" id="copy-lede">Copy catalog intro</button>
+      <span class="copy-lede-status" id="copy-lede-status" role="status"></span>
+    </p>
+    <textarea id="copy-lede-fallback" class="copy-lede-fallback" hidden readonly rows="4" aria-label="Catalog heading and lede as Markdown"></textarea>
     <p class="version-line">Current catalog: ${versions}.</p>
     <p class="copy-versions-tools">
       <button type="button" class="copy-versions" id="copy-versions">Copy versions</button>
@@ -168,6 +174,43 @@ export function notFoundPage() {
   </main>
   <script>
     (function () {
+      const ledeBtn = document.getElementById('copy-lede');
+      const ledeStatus = document.getElementById('copy-lede-status');
+      const ledeFallback = document.getElementById('copy-lede-fallback');
+      const ledeMarkdown = () => {
+        const heading = document.querySelector('h1')?.textContent.trim() ?? '';
+        const lede = document.querySelector('p.lede')?.textContent.trim() ?? '';
+        if (!heading && !lede) return '';
+        if (!heading) return lede;
+        if (!lede) return '# ' + heading;
+        return '# ' + heading + '\\n\\n' + lede;
+      };
+      ledeBtn?.addEventListener('click', async () => {
+        const markdown = ledeMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (ledeFallback) ledeFallback.hidden = true;
+          if (ledeStatus) {
+            ledeStatus.textContent = empty
+              ? 'Catalog heading and lede were missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the catalog heading and lede from this page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (ledeFallback) {
+            ledeFallback.hidden = false;
+            ledeFallback.value = markdown;
+            ledeFallback.focus();
+            ledeFallback.select();
+          }
+          if (ledeStatus) {
+            ledeStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Catalog heading and lede were missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the catalog heading and lede, not a live product feed.';
+          }
+        }
+      });
       const versionsBtn = document.getElementById('copy-versions');
       const versionsStatus = document.getElementById('copy-versions-status');
       const versionsFallback = document.getElementById('copy-versions-fallback');
