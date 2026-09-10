@@ -506,6 +506,17 @@ export function filterBuyerIdsHidingFullyFilled(rawScenario, hideFullyFilled) {
   return scenario.buyers.filter((buyer) => leftover.has(buyer.id)).map((buyer) => buyer.id);
 }
 
+/** Display-only. Matching is unchanged. Inverse of hide fully filled: hides organizer buyer rows that still have leftover after the winner. */
+export function filterBuyerIdsHidingBuyersWithLeftover(rawScenario, hideBuyersWithLeftover) {
+  if (hideBuyersWithLeftover !== true && hideBuyersWithLeftover !== false) {
+    throw new ScenarioError("Hide buyers with leftover must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideBuyersWithLeftover) return scenario.buyers.map((buyer) => buyer.id);
+  const leftover = new Set(computeResidualCoverage(scenario).leftoverBuyerIds);
+  return scenario.buyers.filter((buyer) => !leftover.has(buyer.id)).map((buyer) => buyer.id);
+}
+
 /** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
 export function organizerBuyerVariantCounts(rawScenario) {
   const scenario = validateScenario(rawScenario);

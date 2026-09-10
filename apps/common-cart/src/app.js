@@ -18,6 +18,7 @@ import {
   filterBuyerIdsByAcceptedVariant,
   filterBuyerIdsHidingExcluded,
   filterBuyerIdsHidingFullyFilled,
+  filterBuyerIdsHidingBuyersWithLeftover,
   organizerBuyerVariantCounts,
   restoreRemovedBuyer,
   restoreExampleOffers,
@@ -128,6 +129,7 @@ let hideTertiaryLeftoverRow = false;
 let hideLeftoverFillRow = false;
 let hideZeroRemainingCapacityOffers = false;
 let hideFullyFilledBuyers = false;
+let hideBuyersWithLeftover = false;
 let lastRemovedBuyer = null;
 let saveTimer;
 renderEditor();
@@ -149,6 +151,7 @@ function loadWorkspace() {
     hideLeftoverFillRow = workspace.hideLeftoverFillRow;
     hideZeroRemainingCapacityOffers = workspace.hideZeroRemainingCapacityOffers;
     hideFullyFilledBuyers = workspace.hideFullyFilledBuyers;
+    hideBuyersWithLeftover = workspace.hideBuyersWithLeftover;
     return workspace.rooms;
   } catch (error) {
     workspaceReadFailed = true;
@@ -191,7 +194,7 @@ function renderWorkspace() {
 }
 
 function storeWorkspace(rooms) {
-  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideFullyFilledBuyers });
+  const clean = validateWorkspace({ version: 1, rooms, fulfillmentFilter: offerFulfillmentFilter, hideExcludedBuyers, hideUnwinnableOffers, hideCoveredLeftoverRows, hideTertiaryLeftoverRow, hideLeftoverFillRow, hideZeroRemainingCapacityOffers, hideFullyFilledBuyers, hideBuyersWithLeftover });
   localStorage.setItem(WORKSPACE_KEY, JSON.stringify(clean));
   savedRooms = clean.rooms;
   renderWorkspace();
@@ -682,6 +685,18 @@ function bindStaticEvents() {
       setStatus(hideFullyFilledBuyers
         ? "Hiding buyers with no leftover after the winner. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
         : "Showing fully filled buyers again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
+    } catch (error) {
+      setStatus(messageOf(error));
+    }
+  });
+  document.querySelector("#hide-buyers-with-leftover").addEventListener("change", (event) => {
+    hideBuyersWithLeftover = event.target.checked;
+    persistWorkspaceDisplaySettings();
+    try {
+      applyBuyerDisplayFilters();
+      setStatus(hideBuyersWithLeftover
+        ? "Hiding buyers that still have leftover after the winner. Display only. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide choice is kept in this browser."
+        : "Showing buyers with leftover again. Saved buyers and matching stay unchanged. The last hide choice is kept in this browser.", true);
     } catch (error) {
       setStatus(messageOf(error));
     }
@@ -1305,6 +1320,8 @@ function renderEditor() {
   if (hideExcluded) hideExcluded.checked = hideExcludedBuyers;
   const hideFullyFilled = document.querySelector("#hide-fully-filled-buyers");
   if (hideFullyFilled) hideFullyFilled.checked = hideFullyFilledBuyers;
+  const hideLeftoverBuyers = document.querySelector("#hide-buyers-with-leftover");
+  if (hideLeftoverBuyers) hideLeftoverBuyers.checked = hideBuyersWithLeftover;
   const restoreRemoved = document.querySelector("#restore-removed-buyer");
   if (restoreRemoved) {
     restoreRemoved.disabled = !lastRemovedBuyer || scenario.buyers.some((buyer) => buyer.id === lastRemovedBuyer.id);
@@ -1437,6 +1454,14 @@ function applyBuyerDisplayFilters() {
     try {
       const leftover = new Set(filterBuyerIdsHidingFullyFilled(scenario, true));
       visibleIds = new Set([...visibleIds].filter((id) => leftover.has(id)));
+    } catch {
+      visibleIds = new Set();
+    }
+  }
+  if (hideBuyersWithLeftover) {
+    try {
+      const filled = new Set(filterBuyerIdsHidingBuyersWithLeftover(scenario, true));
+      visibleIds = new Set([...visibleIds].filter((id) => filled.has(id)));
     } catch {
       visibleIds = new Set();
     }

@@ -308,6 +308,8 @@ export function filterBuyerIdsByAcceptedVariant(rawScenario: unknown, variant: s
 export function filterBuyerIdsHidingExcluded(rawScenario: unknown, offerId: string, hideExcluded: boolean): string[];
 /** Display-only. Matching is unchanged. When hideFullyFilled is false, every buyer id is returned. */
 export function filterBuyerIdsHidingFullyFilled(rawScenario: unknown, hideFullyFilled: boolean): string[];
+/** Display-only. Matching is unchanged. Inverse of hide fully filled. When hideBuyersWithLeftover is false, every buyer id is returned. */
+export function filterBuyerIdsHidingBuyersWithLeftover(rawScenario: unknown, hideBuyersWithLeftover: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
