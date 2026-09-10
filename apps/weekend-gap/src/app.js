@@ -1512,6 +1512,14 @@ function jumpToHoursToClear() {
   line.scrollIntoView?.({ block: "start" });
   return true;
 }
+function jumpToHoursToFirstSettlementLine() {
+  const line = document.querySelector("#hours-to-first-settlement-line");
+  if (!line) return jumpToDashboard();
+  line.setAttribute("tabindex", "-1");
+  line.focus();
+  line.scrollIntoView?.({ block: "start" });
+  return true;
+}
 function jumpToFirstPayoutMarker() {
   const hour = simulation.timeline[0].nextPayoutHour;
   if (hour === null) return jumpToGantt();
@@ -1818,6 +1826,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === "k" || event.key === "K") {
     event.preventDefault();
     jumpToHoursToClear();
+    return;
+  }
+  if (event.key === "y" || event.key === "Y") {
+    event.preventDefault();
+    jumpToHoursToFirstSettlementLine();
     return;
   }
   if (event.key === "l" || event.key === "L") {
