@@ -1482,6 +1482,13 @@ export function firstOpenIssuerGanttHour(input) {
   return open ? open.hour : null;
 }
 
+/** Last chart hour where the issuer gate is open. Honest empty when none of the 72 hours is open. */
+export function lastOpenIssuerGanttHour(input) {
+  const schedule = buildGateSchedule(input);
+  const open = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && point.issuerOpen);
+  return open ? open.hour : null;
+}
+
 /** True when issuer, bank or payout is closed, or FX is weekend-thinned. */
 export function ganttHourClosedOnAnyGate(point) {
   if (!point || typeof point !== "object") return false;
@@ -1888,6 +1895,15 @@ export function firstOpenIssuerHourToMarkdown(input) {
     return "First open issuer hour: none. Counts of modeled hours, not a bank calendar.";
   }
   return "First open issuer hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not a bank calendar.";
+}
+
+/** One-line last open issuer hour label. Honest empty when none exists. Distinct from first-open-issuer copy. */
+export function lastOpenIssuerHourToMarkdown(input) {
+  const hour = lastOpenIssuerGanttHour(input);
+  if (hour === null) {
+    return "Last open issuer hour: none. Counts of modeled hours, not a bank calendar.";
+  }
+  return "Last open issuer hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not a bank calendar.";
 }
 
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
