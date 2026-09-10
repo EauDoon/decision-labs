@@ -4,7 +4,7 @@ import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -175,6 +175,10 @@ test('launcher 404 body names the catalog and still returns 404', async (t) => {
   assert.match(missing.body, /id="copy-how"/);
   assert.match(missing.body, />Copy How it works</);
   assert.match(missing.body, /id="how-it-works"/);
+  assert.match(missing.body, /id="copy-jobs"/);
+  assert.match(missing.body, />Copy jobs</);
+  assert.match(missing.body, /id="catalog-jobs"/);
+  assert.match(missing.body, /Not a live product feed/);
   assert.doesNotMatch(missing.body, /\bfetch\s*\(/);
   assert.doesNotMatch(missing.body, /XMLHttpRequest/);
   assert.doesNotMatch(missing.body, /Four local workbenches you can open today/);
@@ -478,5 +482,142 @@ test('404 page still names the Decision Labs catalog', async (t) => {
   assert.equal(missing.status, 404);
   assert.match(missing.body, /Decision Labs catalog/);
   assert.match(missing.body, /not in the catalog/);
+  assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
+});
+
+test('404 copy jobs markdown comes from the printed catalog jobs list', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let click = null;
+  const items = catalogJobs().map(({ name, job }) => ({ textContent: `${name}: ${job}` }));
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-jobs') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-jobs-status') return { textContent: '' };
+      if (id === 'copy-jobs-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector() { return null; },
+    querySelectorAll(selector) {
+      return selector === '#catalog-jobs li' ? items : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await click();
+  const expected = catalogJobs().map(({ name, job }) => `- ${name}: ${job}`).join('\n');
+  assert.equal(copied, expected);
+  assert.doesNotMatch(copied, /live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy jobs uses the printed names and jobs without extra public paths', () => {
+  const page = notFoundPage();
+  assert.match(page, /id="copy-jobs"/);
+  assert.match(page, />Copy jobs</);
+  assert.match(page, /id="copy-jobs-fallback"/);
+  assert.match(page, /textarea id="copy-jobs-fallback"/);
+  assert.match(page, /jobsMarkdown/);
+  assert.match(page, /id="catalog-jobs"/);
+  assert.match(page, /Not a live product feed/);
+  for (const { name, job } of catalogJobs()) {
+    assert.equal(page.includes(`${name}: ${job}`), true, `${name} job missing from 404 page`);
+  }
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy-jobs script parses as classic browser JavaScript', () => {
+  const page = notFoundPage();
+  const scripts = [...page.matchAll(/<script\b([^>]*)>([\s\S]*?)<\/script>/g)];
+  assert.equal(scripts.length, 1);
+  const [, attributes, source] = scripts[0];
+  assert.equal(attributes.trim(), '');
+  const result = spawnSync(process.execPath, ['--check'], {
+    input: source,
+    encoding: 'utf8',
+  });
+  assert.equal(result.status, 0, result.stderr || result.error?.message);
+  assert.doesNotMatch(source, /\bfetch\s*\(/);
+  assert.doesNotMatch(source, /XMLHttpRequest/);
+  assert.match(source, /jobsMarkdown/);
+  assert.match(source, /Not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy jobs shows a visible textarea when clipboard is unavailable', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let click = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const items = [{ textContent: 'Partnership Breakpoint: Find which participant in a revenue split.' }];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-jobs') return { addEventListener(name, handler) { if (name === 'click') click = handler; } };
+      if (id === 'copy-jobs-status') return status;
+      if (id === 'copy-jobs-fallback') return fallback;
+      return null;
+    },
+    querySelector() { return null; },
+    querySelectorAll(selector) {
+      return selector === '#catalog-jobs li' ? items : [];
+    },
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: {},
+  });
+  await click();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Partnership Breakpoint: Find which participant in a revenue split.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy jobs stays GET HEAD only with connect-src none', async (t) => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  const server = createLauncher();
+  await new Promise((resolve) => server.listen(0, '127.0.0.1', resolve));
+  t.after(() => new Promise((resolve) => server.close(resolve)));
+  const port = server.address().port;
+  const missing = await new Promise((resolve, reject) => {
+    const req = request({
+      hostname: '127.0.0.1',
+      port,
+      path: '/no-copy-jobs-path',
+      method: 'GET',
+      headers: { host: `127.0.0.1:${port}` },
+    }, (res) => {
+      let body = '';
+      res.setEncoding('utf8');
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => resolve({ status: res.statusCode, headers: res.headers, body }));
+    });
+    req.on('error', reject);
+    req.end();
+  });
+  assert.equal(missing.status, 404);
+  assert.match(missing.body, /id="copy-jobs"/);
+  assert.match(missing.body, />Copy jobs</);
+  assert.match(missing.body, /Partnership Breakpoint:/);
+  assert.match(missing.body, /Not a live product feed/);
   assert.equal(missing.headers['content-security-policy'], CONTENT_SECURITY_POLICY);
 });

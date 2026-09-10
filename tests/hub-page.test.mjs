@@ -84,6 +84,7 @@ test('inline catalog script parses as classic browser JavaScript', () => {
 test('catalog names current workbench tools without live services', () => {
   assert.match(html, /id="whats-new"/);
   assert.match(html, /What's new/);
+  assert.match(html, /Skip-link copy, last-card focus, and 404 Copy jobs/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
   assert.match(html, /Veto groups in The Smallest Agreement/);
@@ -165,12 +166,15 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /hours-to-clear Markdown copy, Saturday market\s+burst/);
   assert.match(readme, /remaining\s+reserve copy, Sunday stall close/);
   assert.match(readme, /hours-to-first-settlement Markdown copy, Thin Saturday FX/);
+  assert.match(readme, /skip-link copy, last-card focus, and 404 Copy jobs/);
+  assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
   assert.match(readme, /Catalog keys `w`, `k`, `n`, and `c`/);
   assert.match(readme, /Copy versions on that 404 page copies/);
   assert.match(readme, /Copy Trust and limits on that 404 page copies/);
   assert.match(readme, /Copy How it works on that 404 page copies/);
+  assert.match(readme, /Copy jobs on that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -292,6 +296,230 @@ test('t focuses Trust and limits when focus is not in an input', () => {
   assert.match(html, /@media print[\s\S]*\.trust \{ display: block !important; \}/);
   assert.match(readme, /Press `t` to focus Trust and\s+limits/);
   assert.match(readme, /Skip links jump to What's new, workbenches, How it works,\s+keyboard shortcuts, Trust and limits, and catalog versions/);
+});
+
+test('g focuses the first What\'s new heading when focus is not in an input', () => {
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /querySelector\('#whats-new h3'\)/);
+  assert.match(html, /getElementById\('whats-new-title'\)/);
+  assert.match(html, /id="whats-new-title" tabindex="-1"/);
+  assert.match(html, /#whats-new h3:focus-visible/);
+  assert.match(html, /<kbd>g<\/kbd><\/dt><dd>Focus the first What's new heading/);
+  assert.match(html, /Press <kbd>g<\/kbd> to focus the first What's new heading/);
+  assert.match(html, /This key does not open a workbench/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `g` to focus the first What's new heading/);
+  assert.match(readme, /does not open a workbench/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const firstNews = { focus() { focused.push('h3'); } };
+  const title = { focus() { focused.push('title'); } };
+  const section = { focus() { focused.push('whats-new'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'whats-new-title') return title;
+      if (id === 'whats-new') return section;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#whats-new h3' ? firstNews : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('g', input);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('g', body);
+  assert.deepEqual(focused, ['h3']);
+  assert.deepEqual(assigned, []);
+});
+
+test('g focuses the What\'s new heading when no item heading exists', () => {
+  const focused = [];
+  let keydown = null;
+  const title = { focus() { focused.push('title'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'whats-new-title') return title;
+      if (id === 'whats-new') return { focus() { focused.push('whats-new'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector() { return null; },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  keydown({
+    key: 'g',
+    target: { tagName: 'BODY', closest() { return null; } },
+    defaultPrevented: false,
+    altKey: false,
+    ctrlKey: false,
+    metaKey: false,
+    shiftKey: false,
+    preventDefault() {},
+  });
+  assert.deepEqual(focused, ['title']);
+});
+
+test('r focuses the first review path when focus is not in an input', () => {
+  assert.match(html, /event\.key === 'r'/);
+  assert.match(html, /querySelector\('#workbench-1 \.review-path'\)\?\.focus\(\)/);
+  assert.match(html, /class="review-path" tabindex="-1"/);
+  assert.match(html, /\.review-path:focus-visible/);
+  assert.match(html, /<kbd>r<\/kbd><\/dt><dd>Focus the first review path on the first workbench card/);
+  assert.match(html, /Press <kbd>r<\/kbd> to focus the first review path/);
+  assert.match(html, /This key moves focus; it does not open the workbench/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(readme, /Press `r` to focus the first review/);
+  assert.match(readme, /does not open the workbench/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const review = { focus() { focused.push('review-path'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#workbench-1 .review-path' ? review : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('r', input);
+  fire('r', textarea);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('r', body);
+  assert.deepEqual(focused, ['review-path']);
+  assert.deepEqual(assigned, []);
+});
+
+test('b focuses the last workbench card when focus is not in an input', () => {
+  assert.match(html, /event\.key === 'b'/);
+  assert.match(html, /getElementById\('workbench-4'\)\?\.focus\(\)/);
+  assert.match(html, /id="workbench-4" tabindex="-1"/);
+  assert.match(html, /<kbd>b<\/kbd><\/dt><dd>Focus the last workbench card/);
+  assert.match(html, /Press <kbd>b<\/kbd> to focus the last workbench card/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /This key moves focus; it does not open the workbench/);
+  assert.match(readme, /Press `b` to focus the last workbench card without opening/);
+  assert.match(readme, /does not open the workbench/);
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const article = { focus() { focused.push('workbench-4'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'workbench-4') return article;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('b', input);
+  assert.deepEqual(focused, []);
+  assert.deepEqual(assigned, []);
+  fire('b', body);
+  assert.deepEqual(focused, ['workbench-4']);
+  assert.deepEqual(assigned, []);
 });
 
 test('a focuses the first workbench article when focus is not in an input', () => {
@@ -657,6 +885,316 @@ test('load focuses skip-link hash targets', () => {
   assert.match(html, /id="version-line" tabindex="-1"/);
 });
 
+test('copy catalog intro copies heading and lede as Markdown with a visible fallback', () => {
+  assert.match(html, /id="copy-lede"/);
+  assert.match(html, />Copy catalog intro</);
+  assert.match(html, /aria-keyshortcuts="e"/);
+  assert.match(html, /id="copy-lede-fallback"/);
+  assert.match(html, /class="copy-lede-fallback"/);
+  assert.match(html, /textarea id="copy-lede-fallback"/);
+  assert.match(html, /ledeMarkdown/);
+  assert.match(html, /querySelector\('h1'\)/);
+  assert.match(html, /querySelector\('p\.lede'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /ledeFallback\.hidden = false/);
+  assert.match(html, /ledeFallback\.select\(\)/);
+  assert.match(html, /Not a live product feed/);
+  assert.match(html, /It is not a live product feed/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy catalog intro copies the catalog heading/);
+  assert.match(readme, /not a live product feed/);
+});
+
+test('keyboard e copies catalog heading and lede through the same control', () => {
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /ledeBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="e"/);
+  assert.match(html, /<kbd>e<\/kbd><\/dt><dd>Copy the catalog heading and lede as Markdown from this catalog page, not a live product feed/);
+  assert.match(html, /Press <kbd>e<\/kbd> to copy the catalog heading and lede/);
+  assert.match(html, /If those nodes are missing, this copies an empty string/);
+  assert.match(readme, /Press `e` to copy the catalog heading and lede/);
+  assert.match(readme, /copies an empty string/);
+  const clicks = { lede: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return { click() { clicks.lede += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('e', input);
+  fire('e', textarea);
+  assert.equal(clicks.lede, 0);
+  fire('e', body);
+  assert.equal(clicks.lede, 1);
+});
+
+test('copy catalog intro markdown is heading plus lede, or empty if nodes are missing', async () => {
+  let copied = '';
+  let clickLede = null;
+  const heading = { textContent: 'Decision Labs' };
+  const lede = { textContent: 'Make the assumptions visible.' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return { addEventListener(name, handler) { if (name === 'click') clickLede = handler; } };
+      if (id === 'copy-lede-status') return { textContent: '' };
+      if (id === 'copy-lede-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === 'h1') return heading;
+      if (selector === 'p.lede') return lede;
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLede();
+  assert.equal(copied, '# Decision Labs\n\nMake the assumptions visible.');
+  heading.textContent = '';
+  lede.textContent = '';
+  copied = 'stale';
+  await clickLede();
+  assert.equal(copied, '');
+});
+
+test('copy catalog intro shows a visible textarea when clipboard is unavailable', async () => {
+  let clickLede = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-lede') return { addEventListener(name, handler) { if (name === 'click') clickLede = handler; } };
+      if (id === 'copy-lede-status') return status;
+      if (id === 'copy-lede-fallback') return fallback;
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === 'h1') return { textContent: 'Decision Labs' };
+      if (selector === 'p.lede') return { textContent: 'Make the assumptions visible.' };
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickLede();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '# Decision Labs\n\nMake the assumptions visible.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
+});
+
+test('print CSS hides copy lede tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-lede-tools, \.copy-lede-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
+test('copy skip links copies skip-link text and hash hrefs as Markdown with a visible fallback', () => {
+  assert.match(html, /id="copy-skips"/);
+  assert.match(html, />Copy skip links</);
+  assert.match(html, /aria-keyshortcuts="z"/);
+  assert.match(html, /id="copy-skips-fallback"/);
+  assert.match(html, /class="copy-skips-fallback"/);
+  assert.match(html, /textarea id="copy-skips-fallback"/);
+  assert.match(html, /skipsMarkdown/);
+  assert.match(html, /querySelectorAll\('\.skips a\.skip'\)/);
+  assert.match(html, /navigator\.clipboard\?\.writeText/);
+  assert.match(html, /skipsFallback\.hidden = false/);
+  assert.match(html, /skipsFallback\.select\(\)/);
+  assert.match(html, /not a sitemap API/);
+  assert.match(html, /in-page navigation copy/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.match(readme, /Copy skip links copies the six skip-link labels/);
+  assert.match(readme, /not a sitemap API/);
+});
+
+test('keyboard z copies skip-link targets through the same control', () => {
+  assert.match(html, /event\.key === 'z'/);
+  assert.match(html, /skipsBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="z"/);
+  assert.match(html, /<kbd>z<\/kbd><\/dt><dd>Copy the six skip-link targets as a Markdown list of skip-link text and hash hrefs/);
+  assert.match(html, /This is in-page navigation copy, not a sitemap API/);
+  assert.match(html, /Press <kbd>z<\/kbd> to copy skip-link targets/);
+  assert.match(readme, /Press `z` to copy skip-link targets/);
+  assert.match(readme, /not a sitemap API/);
+  const clicks = { skips: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return { click() { clicks.skips += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('z', input);
+  fire('z', textarea);
+  assert.equal(clicks.skips, 0);
+  fire('z', body);
+  assert.equal(clicks.skips, 1);
+});
+
+test('copy skip links markdown is heading text plus hash hrefs from the skip links', async () => {
+  let copied = '';
+  let clickSkips = null;
+  const links = [
+    { textContent: 'Skip to what\'s new', getAttribute() { return '#whats-new'; } },
+    { textContent: 'Skip to workbenches', getAttribute() { return '#workbenches'; } },
+    { textContent: 'Skip to How it works', getAttribute() { return '#how-it-works'; } },
+    { textContent: 'Skip to keyboard shortcuts', getAttribute() { return '#shortcuts'; } },
+    { textContent: 'Skip to Trust and limits', getAttribute() { return '#trust'; } },
+    { textContent: 'Skip to catalog versions', getAttribute() { return '#version-line'; } },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return { addEventListener(name, handler) { if (name === 'click') clickSkips = handler; } };
+      if (id === 'copy-skips-status') return { textContent: '' };
+      if (id === 'copy-skips-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '.skips a.skip' ? links : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickSkips();
+  assert.equal(
+    copied,
+    "- Skip to what's new (#whats-new)\n- Skip to workbenches (#workbenches)\n- Skip to How it works (#how-it-works)\n- Skip to keyboard shortcuts (#shortcuts)\n- Skip to Trust and limits (#trust)\n- Skip to catalog versions (#version-line)",
+  );
+  assert.doesNotMatch(copied, /sitemap API/);
+});
+
+test('copy skip links shows a visible textarea when clipboard is unavailable', async () => {
+  let clickSkips = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const links = [
+    { textContent: 'Skip to what\'s new', getAttribute() { return '#whats-new'; } },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-skips') return { addEventListener(name, handler) { if (name === 'click') clickSkips = handler; } };
+      if (id === 'copy-skips-status') return status;
+      if (id === 'copy-skips-fallback') return fallback;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '.skips a.skip' ? links : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickSkips();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, "- Skip to what's new (#whats-new)");
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a sitemap API/);
+});
+
+test('print CSS hides copy skip tools and keeps How it works and versions', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-skips-tools, \.copy-skips-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-lede-tools, \.copy-lede-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+  assert.match(print, /\.whats-new, \.workbench \.version, \.version-line, \.trust \{ display: block !important; \}/);
+});
+
 test('copy jobs copies catalog names and jobs as Markdown with a visible fallback', () => {
   assert.match(html, /id="copy-jobs"/);
   assert.match(html, />Copy jobs</);
@@ -737,6 +1275,21 @@ test('copy versions copies catalog names as Markdown with a visible fallback', (
   assert.match(html, /It is not a live product version and it does not call a registry/);
   assert.match(html, /@media print[\s\S]*\.copy-versions-tools/);
   assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('shortcuts panel lists b e g q r z with honest limits', () => {
+  assert.match(html, /<kbd>b<\/kbd><\/dt><dd>Focus the last workbench card. This key moves focus; it does not open the workbench./);
+  assert.match(html, /<kbd>e<\/kbd><\/dt><dd>Copy the catalog heading and lede as Markdown from this catalog page, not a live product feed/);
+  assert.match(html, /<kbd>g<\/kbd><\/dt><dd>Focus the first What's new heading. This key does not open a workbench./);
+  assert.match(html, /<kbd>q<\/kbd><\/dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed. This key uses the same Copy jobs control as <kbd>j<\/kbd>. It does not fork that Markdown./);
+  assert.match(html, /<kbd>r<\/kbd><\/dt><dd>Focus the first review path on the first workbench card. This key moves focus; it does not open the workbench./);
+  assert.match(html, /<kbd>z<\/kbd><\/dt><dd>Copy the six skip-link targets as a Markdown list of skip-link text and hash hrefs from the skip links on this page. This is in-page navigation copy, not a sitemap API./);
+  assert.match(html, /Shortcuts are ignored while focus is in an input, textarea, or select/);
+  assert.match(html, /not a live product feed/);
+  assert.match(html, /not a sitemap API/);
+  assert.match(html, /id="copy-lede"/);
+  assert.match(html, /id="copy-skips"/);
+  assert.match(html, /id="copy-jobs"/);
 });
 
 test('shortcuts panel lists v l o j with honest limits', () => {
@@ -857,6 +1410,65 @@ test('keyboard l focuses the last-launched workbench card in this browser', () =
   assert.match(html, /not a cloud recency/);
   assert.match(readme, /Press `l` to focus the workbench card/);
   assert.match(readme, /not a cloud recency/);
+});
+
+test('keyboard q copies catalog jobs through the same Copy jobs control', () => {
+  assert.match(html, /event\.key === 'q'/);
+  assert.match(html, /jobsBtn\?\.click\(\)/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /<kbd>q<\/kbd><\/dt><dd>Copy workbench names and one-sentence jobs as Markdown from this catalog page, not a live product feed/);
+  assert.match(html, /This key uses the same Copy jobs control as <kbd>j<\/kbd>/);
+  assert.match(html, /It does not fork that Markdown/);
+  assert.match(html, /Press <kbd>q<\/kbd> to copy catalog jobs through the same control/);
+  assert.match(readme, /Press `q` to copy catalog jobs through that same Copy jobs control/);
+  assert.match(readme, /does not fork that Markdown/);
+  const clicks = { jobs: 0 };
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-jobs') return { click() { clicks.jobs += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('q', input);
+  fire('q', textarea);
+  fire('q', select);
+  assert.equal(clicks.jobs, 0);
+  fire('q', body);
+  assert.equal(clicks.jobs, 1);
+  fire('j', body);
+  assert.equal(clicks.jobs, 2);
 });
 
 test('keyboard j copies catalog jobs through the same control', () => {
@@ -1128,6 +1740,95 @@ test('hash shortcuts still focuses the shortcuts panel', () => {
   });
   assert.equal(shortcuts.hidden, false);
   assert.deepEqual(focused, ['shortcuts']);
+});
+
+test('keyboard b e g q r z are ignored in inputs using the same inEditable helper as c', () => {
+  assert.match(html, /const inEditable = \(node\) =>/);
+  assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /event\.key === 'b'/);
+  assert.match(html, /event\.key === 'e'/);
+  assert.match(html, /event\.key === 'g'/);
+  assert.match(html, /event\.key === 'q'/);
+  assert.match(html, /event\.key === 'r'/);
+  assert.match(html, /event\.key === 'z'/);
+  const clicks = { lede: 0, jobs: 0, skips: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const lastCard = { focus() { focused.push('workbench-4'); } };
+  const firstNews = { focus() { focused.push('h3'); } };
+  const review = { focus() { focused.push('review-path'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'workbench-4') return lastCard;
+      if (id === 'copy-lede') return { click() { clicks.lede += 1; }, addEventListener() {} };
+      if (id === 'copy-jobs') return { click() { clicks.jobs += 1; }, addEventListener() {} };
+      if (id === 'copy-skips') return { click() { clicks.skips += 1; }, addEventListener() {} };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === '#whats-new h3') return firstNews;
+      if (selector === '#workbench-1 .review-path') return review;
+      return null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  for (const target of [input, textarea, select]) {
+    fire('b', target);
+    fire('e', target);
+    fire('g', target);
+    fire('q', target);
+    fire('r', target);
+    fire('z', target);
+    fire('c', target);
+  }
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.lede, 0);
+  assert.equal(clicks.jobs, 0);
+  assert.equal(clicks.skips, 0);
+  assert.deepEqual(assigned, []);
+  fire('b', body);
+  fire('g', body);
+  fire('r', body);
+  fire('e', body);
+  fire('q', body);
+  fire('z', body);
+  assert.deepEqual(focused, ['workbench-4', 'h3', 'review-path']);
+  assert.equal(clicks.lede, 1);
+  assert.equal(clicks.jobs, 1);
+  assert.equal(clicks.skips, 1);
+  assert.deepEqual(assigned, []);
 });
 
 test('keyboard v and j are ignored in inputs using the same inEditable helper as c', () => {
