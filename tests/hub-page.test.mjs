@@ -1166,6 +1166,88 @@ test('keyboard v and j are ignored in inputs using the same inEditable helper as
   assert.equal(clicks.jobs, 1);
 });
 
+test('keyboard f p a u y are ignored in inputs using the same inEditable helper as c', () => {
+  assert.match(html, /const inEditable = \(node\) =>/);
+  assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
+  assert.match(html, /event\.key === 'c'/);
+  assert.match(html, /event\.key === 'f'/);
+  assert.match(html, /event\.key === 'p'/);
+  assert.match(html, /event\.key === 'a'/);
+  assert.match(html, /event\.key === 'u'/);
+  assert.match(html, /event\.key === 'y'/);
+  const clicks = { print: 0, how: 0, last: 0 };
+  const focused = [];
+  const prints = [];
+  let keydown = null;
+  const versionLine = { focus() { focused.push('version-line'); } };
+  const article = { focus() { focused.push('workbench-1'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'print-catalog') return { click() { clicks.print += 1; }, addEventListener() {} };
+      if (id === 'copy-how') return { click() { clicks.how += 1; }, addEventListener() {} };
+      if (id === 'copy-last') return { click() { clicks.last += 1; }, addEventListener() {} };
+      if (id === 'workbench-1') return article;
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '.version-line' ? versionLine : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { print() { prints.push('print'); } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const textarea = { tagName: 'TEXTAREA', closest() { return textarea; } };
+  const select = { tagName: 'SELECT', closest() { return select; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  for (const target of [input, textarea, select]) {
+    fire('f', target);
+    fire('p', target);
+    fire('a', target);
+    fire('u', target);
+    fire('y', target);
+    fire('c', target);
+  }
+  assert.deepEqual(focused, []);
+  assert.equal(clicks.print, 0);
+  assert.equal(clicks.how, 0);
+  assert.equal(clicks.last, 0);
+  assert.deepEqual(prints, []);
+  fire('f', body);
+  fire('a', body);
+  fire('p', body);
+  fire('u', body);
+  fire('y', body);
+  assert.deepEqual(focused, ['version-line', 'workbench-1']);
+  assert.equal(clicks.print, 1);
+  assert.equal(clicks.how, 1);
+  assert.equal(clicks.last, 1);
+});
+
 test('keyboard m x i s are ignored in inputs using the same inEditable helper as c', () => {
   assert.match(html, /const inEditable = \(node\) =>/);
   assert.match(html, /if \(inEditable\(event\.target\)\) return;/);
