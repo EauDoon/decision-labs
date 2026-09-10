@@ -2222,6 +2222,34 @@ export function formatLastVetoGroupLabelMarkdown(proposal) {
 }
 
 /**
+ * One-line Markdown of the last group that is not marked as a veto group.
+ * Honest when none. Distinct from last veto group copy and first non-veto group copy.
+ * A veto is a number you entered, not a legal right.
+ * Do not treat the label as a legal identity.
+ */
+export function formatLastNonVetoGroupLabelMarkdown(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const p = canonicalProposal(proposal);
+  const disclaimer = "A veto is a number you entered, not a legal right. The label is not a legal identity.";
+  const nonVetoGroups = p.groups.filter((group) => group.veto !== true);
+  const last = nonVetoGroups[nonVetoGroups.length - 1];
+  if (!last) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No non-veto group is marked, so there is no last non-veto group label to copy. ${disclaimer}\n`,
+    };
+  }
+  return {
+    status: "ok",
+    empty: false,
+    label: last.name,
+    text: `Last non-veto group: ${briefText(last.name)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2508,6 +2536,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideLastVetoGroup",
   "hideFirstNonVetoGroup",
   "hideLastNonVetoGroup",
+  "hideLastGroupBelowThreshold",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2530,6 +2559,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideLastVetoGroup",
   "hideFirstNonVetoGroup",
   "hideLastNonVetoGroup",
+  "hideLastGroupBelowThreshold",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2597,6 +2627,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideFirstNonVetoGroup.error) return { status: "invalid", errors: [hideFirstNonVetoGroup.error] };
   const hideLastNonVetoGroup = readWorkspaceBoolean(prefs, "hideLastNonVetoGroup");
   if (hideLastNonVetoGroup.error) return { status: "invalid", errors: [hideLastNonVetoGroup.error] };
+  const hideLastGroupBelowThreshold = readWorkspaceBoolean(prefs, "hideLastGroupBelowThreshold");
+  if (hideLastGroupBelowThreshold.error) return { status: "invalid", errors: [hideLastGroupBelowThreshold.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2618,6 +2650,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideLastVetoGroup: hideLastVetoGroup.value,
     hideFirstNonVetoGroup: hideFirstNonVetoGroup.value,
     hideLastNonVetoGroup: hideLastNonVetoGroup.value,
+    hideLastGroupBelowThreshold: hideLastGroupBelowThreshold.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2640,6 +2673,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideLastVetoGroup: hideLastVetoGroup.value,
       hideFirstNonVetoGroup: hideFirstNonVetoGroup.value,
       hideLastNonVetoGroup: hideLastNonVetoGroup.value,
+      hideLastGroupBelowThreshold: hideLastGroupBelowThreshold.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2675,6 +2709,7 @@ export function parseWorkspaceJson(text) {
       hideLastVetoGroup: null,
       hideFirstNonVetoGroup: null,
       hideLastNonVetoGroup: null,
+      hideLastGroupBelowThreshold: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2727,6 +2762,8 @@ export function parseWorkspaceJson(text) {
   if (hideFirstNonVetoGroup.error) return { status: "invalid", errors: [hideFirstNonVetoGroup.error] };
   const hideLastNonVetoGroup = readWorkspaceBoolean(raw, "hideLastNonVetoGroup");
   if (hideLastNonVetoGroup.error) return { status: "invalid", errors: [hideLastNonVetoGroup.error] };
+  const hideLastGroupBelowThreshold = readWorkspaceBoolean(raw, "hideLastGroupBelowThreshold");
+  if (hideLastGroupBelowThreshold.error) return { status: "invalid", errors: [hideLastGroupBelowThreshold.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2750,6 +2787,7 @@ export function parseWorkspaceJson(text) {
     hideLastVetoGroup: hideLastVetoGroup.value,
     hideFirstNonVetoGroup: hideFirstNonVetoGroup.value,
     hideLastNonVetoGroup: hideLastNonVetoGroup.value,
+    hideLastGroupBelowThreshold: hideLastGroupBelowThreshold.value,
   };
 }
 
