@@ -1,5 +1,19 @@
 # Changelog
 
+## 1.5.8 - 2026-09-10
+
+A workshop follow-up on 1.5.7. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `'` copies the first locked clause option label through the existing first-locked-option copy control (same one-line Markdown). Ignored while typing.
+- Keyboard `<` jumps to that first-locked-option copy control, or the clauses heading if missing. Ignored while typing.
+- Keyboard `>` jumps to the hide-locked-clauses control, or the clauses heading if missing. Ignored while typing.
+- Rooftop BBQ hours preset: synthetic residents, neighbours (a veto group), and building committee scoring cook hours, smoke, and lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, and Shared laundry hours. Not a recorded vote.
+- Hide groups currently meeting the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsAtFloor, hideGroupsWithoutFloors, leftover-budget, lockedClausesOnly, hideUnlockedClauses, and hideLockedClauses. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all.
+- Print facilitator pack includes the first locked clause option label as one line. Print redacted still uses Group 1 through Group N. Locks remain draft choices. The saved draft is unchanged.
+- Copy a one-line Markdown count of groups currently below their support floor, with a clipboard fallback and an honest zero. Distinct from lock-count copy and remaining change-budget copy. A floor is a number you entered, not a legal quorum.
+
 ## 1.5.7 - 2026-09-10
 
 A workshop follow-up on 1.5.6. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
