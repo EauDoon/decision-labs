@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -78,6 +78,9 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, /id="copy-first-whats-new"/);
   assert.match(page, />Copy first What's new heading</);
   assert.match(page, /firstWhatsNewMarkdown/);
+  assert.match(page, /id="copy-first-workbench"/);
+  assert.match(page, />Copy first workbench heading</);
+  assert.match(page, /firstWorkbenchMarkdown/);
 });
 
 test('404 catalog jobs match the four catalog cards', () => {
@@ -119,6 +122,19 @@ test('404 first What\'s new heading matches the first catalog What\'s new headin
   assert.match(page, /id="copy-last-whats-new"/);
   assert.match(page, />Copy last What's new heading</);
 });
+
+test('404 first workbench heading matches the first catalog workbench card heading', () => {
+  const heading = catalogFirstWorkbenchHeading();
+  assert.equal(heading, 'Partnership Breakpoint');
+  assert.equal(html.includes(`<h3>${heading}</h3>`), true, 'first workbench heading missing from catalog');
+  const page = notFoundPage();
+  assert.equal(page.includes(heading), true, 'first workbench heading missing from 404 page');
+  assert.match(page, /id="copy-first-workbench"/);
+  assert.match(page, />Copy first workbench heading</);
+  assert.match(page, /querySelector\('#workbenches article\.workbench h3'\)/);
+  assert.match(page, /id="workbenches"/);
+});
+
 
 test('catalog versions stay Partnership Breakpoint 1.5.13, Common Cart 1.4.13, The Smallest Agreement 1.5.13, Weekend Gap 1.5.13', () => {
   assert.match(html, /data-app="partnership-breakpoint">\s*1\.5\.13\s*</);
