@@ -153,6 +153,8 @@ The catalog also names version-line jump, last-open jump, and 404 Copy first Tru
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first How-it-works copy, How copy jump, and last Trust copy.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names last How-it-works copy, last-How jump, and first-How jump.
+That What's new entry is hub-only. It does not change workbench versions.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
@@ -252,6 +254,8 @@ file or add another public path. Copy first Trust item on that 404 page copies
 the printed first Trust and limits list item as one Markdown line. It does not
 fetch a policy file or add another public path. Copy first How it works item on
 that 404 page copies the printed first How it works list item as one Markdown
+line. It does not fetch a policy file or add another public path. Copy last How it works item on
+that 404 page copies the printed last How it works list item as one Markdown
 line. It does not fetch a policy file or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
