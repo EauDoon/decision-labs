@@ -210,6 +210,23 @@ export const presets = Object.freeze({
       offer("O02", "Ice Pack Run", "Surf first-aid kit", "Ice pack", 9, 8, 5, 24, 2),
       { ...offer("O03", "Clubhouse First-Aid Pickup", "Surf first-aid kit", "Saline rinse", 8, 6, 2, 20, 6), fulfillment: "pickup" }
     ]
+  },
+  theatreWardrobe: {
+    title: "Theatre wardrobe kit",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Wardrobe truck", "Costume wardrobe pack", 8, 48, 8, ["Period costume", "Rehearsal blacks"]),
+      buyer("B02", "Chorus dressing", "Costume wardrobe pack", 12, 36, 6, ["Rehearsal blacks"]),
+      buyer("B03", "Principal cast", "Costume wardrobe pack", 5, 55, 10, ["Period costume", "Quick-change cloak"]),
+      buyer("B04", "Green room rail", "Costume wardrobe pack", 4, 28, 4, ["Quick-change cloak"]),
+      buyer("B05", "Understudy rail", "Costume wardrobe pack", 7, 44, 7, ["Period costume", "Rehearsal blacks"]),
+      buyer("B06", "Tour crate", "Costume wardrobe pack", 6, 38, 5, ["Rehearsal blacks", "Quick-change cloak"])
+    ],
+    offers: [
+      offer("O01", "Stage-door Costume Delivery", "Costume wardrobe pack", "Period costume", 32, 10, 5, 40, 5),
+      offer("O02", "Blacks Run Co", "Costume wardrobe pack", "Rehearsal blacks", 22, 8, 6, 30, 3),
+      { ...offer("O03", "Green-room Wardrobe Pickup", "Costume wardrobe pack", "Quick-change cloak", 18, 6, 2, 20, 8), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -251,7 +268,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideFullyFilledBuyers"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -308,7 +325,15 @@ export function validateWorkspace(candidate) {
     }
     hideZeroRemaining = hideZeroRemainingCapacityOffers;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining };
+  const hideFullyFilledBuyers = own(candidate, "hideFullyFilledBuyers");
+  let hideFullyFilled = false;
+  if (hideFullyFilledBuyers !== undefined) {
+    if (hideFullyFilledBuyers !== true && hideFullyFilledBuyers !== false) {
+      throw new ScenarioError("Hide fully filled buyers must be true or false.");
+    }
+    hideFullyFilled = hideFullyFilledBuyers;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideFullyFilledBuyers: hideFullyFilled };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -443,6 +468,17 @@ export function filterBuyerIdsHidingExcluded(rawScenario, offerId, hideExcluded)
     result.buyerOutcomes.filter((outcome) => outcome.status === "included").map((outcome) => outcome.buyerId)
   );
   return scenario.buyers.filter((buyer) => included.has(buyer.id)).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides organizer buyer rows whose leftover or unfilled demand after the winner is zero. */
+export function filterBuyerIdsHidingFullyFilled(rawScenario, hideFullyFilled) {
+  if (hideFullyFilled !== true && hideFullyFilled !== false) {
+    throw new ScenarioError("Hide fully filled buyers must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideFullyFilled) return scenario.buyers.map((buyer) => buyer.id);
+  const leftover = new Set(computeResidualCoverage(scenario).leftoverBuyerIds);
+  return scenario.buyers.filter((buyer) => leftover.has(buyer.id)).map((buyer) => buyer.id);
 }
 
 /** Organizer counts of buyers who accept each variant. Labels, IDs, budgets, and allocations are omitted. */
@@ -1342,6 +1378,13 @@ export function createLeftoverFillMarkdown(rawScenario) {
     ? `${coverage.secondary.merchant}, ${coverage.secondary.deliveredBuyers} buyers, ${coverage.secondary.fulfilledUnits} units`
     : "none";
   return `Common Cart leftover fill (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover fill unit-count. Count only. Not a merchant export. */
+export function createLeftoverFillUnitCountMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.secondary ? String(coverage.secondary.fulfilledUnits) : "none";
+  return `Common Cart leftover fill units (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */

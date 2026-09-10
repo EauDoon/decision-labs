@@ -80,6 +80,8 @@ test("print leftover one-pager includes leftover-fill merchant label when leftov
   assert.match(app, /leftover-print-fill/u);
   assert.match(app, /Leftover fill merchant:/u);
   assert.match(app, /coverage\.secondary\.merchant/u);
+  assert.match(app, /coverage\.secondary\.fulfilledUnits/u);
+  assert.match(app, /Leftover fill merchant: \$\{coverage\.secondary\.merchant\}, \$\{coverage\.secondary\.fulfilledUnits\} units/u);
   assert.match(app, /Winner merchant:/u);
   const leftoverPrint = app.slice(app.indexOf("function printLeftoverOnePager"), app.indexOf("function focusVariantOverlap"));
   assert.doesNotMatch(leftoverPrint, /leftoverBuyerIds/u);

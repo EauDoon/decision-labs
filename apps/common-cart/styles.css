@@ -29,7 +29,7 @@ body {
 button, input, select, textarea { font: inherit; }
 button { cursor: pointer; }
 button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible,
-#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus, #leftover-coverage-rows tr:focus, #leftover-buyer-rows tr:focus, #uncovered-leftover:focus, #variant-overlap-region:focus, #paste-buyers:focus {
+#offers-list:focus, #buyers-list:focus, #winner-summary:focus, #inspector-summary:focus, #merchant-inspector-region:focus, #residual-title:focus, #leftover-coverage-rows tr:focus, #leftover-buyer-rows tr:focus, #uncovered-leftover:focus, #variant-overlap-region:focus, #paste-buyers:focus, #leftover-print-fill:focus {
   outline: 3px solid rgba(243, 111, 61, 0.55);
   outline-offset: 2px;
 }
