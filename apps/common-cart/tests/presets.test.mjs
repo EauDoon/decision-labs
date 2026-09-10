@@ -71,8 +71,41 @@ test("school fete catering is distinct synthetic bulk catering", () => {
   assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
 });
 
+test("office fruit box is distinct synthetic weekly fruit for an office", () => {
+  const fruit = evaluateMarket(clonePreset("officeFruit"));
+  const coffee = evaluateMarket(clonePreset("neighbourhood"));
+  const studio = evaluateMarket(clonePreset("studio"));
+  const pantry = evaluateMarket(clonePreset("pantry"));
+  const office = evaluateMarket(clonePreset("officePantry"));
+  const hardware = evaluateMarket(clonePreset("hardware"));
+  const garden = evaluateMarket(clonePreset("garden"));
+  const fete = evaluateMarket(clonePreset("schoolFete"));
+  const ladder = evaluateMarket(clonePreset("tiers"));
+  assert.ok(fruit.winner);
+  assert.equal(fruit.scenario.title, "Office fruit box");
+  assert.equal(fruit.scenario.buyers[0].category, "Office fruit crate");
+  assert.notEqual(fruit.scenario.buyers[0].category, coffee.scenario.buyers[0].category);
+  assert.notEqual(fruit.scenario.buyers[0].category, studio.scenario.buyers[0].category);
+  assert.notEqual(fruit.scenario.buyers[0].category, pantry.scenario.buyers[0].category);
+  assert.notEqual(fruit.scenario.buyers[0].category, office.scenario.buyers[0].category);
+  assert.notEqual(fruit.scenario.buyers[0].category, hardware.scenario.buyers[0].category);
+  assert.notEqual(fruit.scenario.buyers[0].category, garden.scenario.buyers[0].category);
+  assert.notEqual(fruit.scenario.buyers[0].category, fete.scenario.buyers[0].category);
+  assert.notEqual(fruit.scenario.title, ladder.scenario.title);
+  assert.ok(fruit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Citrus mix")));
+  assert.ok(fruit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Apple crate")));
+  assert.ok(fruit.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Mixed seasonal")));
+  assert.ok(fruit.results.some((result) => result.offer.fulfillment === "pickup"));
+  const quantities = fruit.scenario.buyers.map((buyer) => buyer.quantity);
+  assert.equal(new Set(quantities).size > 1, true);
+  const first = evaluateMarket(clonePreset("officeFruit"));
+  const second = evaluateMarket(validateScenario(clonePreset("officeFruit")));
+  assert.equal(first.winner.offer.id, second.winner.offer.id);
+  assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
+});
+
 test("new presets survive validation and keep a deterministic winner", () => {
-  for (const name of ["officePantry", "hardware", "garden", "schoolFete"]) {
+  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit"]) {
     const first = evaluateMarket(clonePreset(name));
     const second = evaluateMarket(validateScenario(clonePreset(name)));
     assert.equal(first.winner.offer.id, second.winner.offer.id);
@@ -92,4 +125,11 @@ test("the example bar includes the community garden bulk seed preset", async () 
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /data-preset="garden"/u);
   assert.match(html, /Garden seed/u);
+});
+
+test("the example bar includes the office fruit box preset", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /data-preset="officeFruit"/u);
+  assert.match(html, /Office fruit/u);
 });

@@ -142,6 +142,23 @@ export const presets = Object.freeze({
       offer("O02", "Bake Share", "Fete catering pack", "Cake stall", 14, 10, 5, 24, 1.5),
       { ...offer("O03", "Hall Pickup Drinks", "Fete catering pack", "Drinks cooler", 11, 12, 3, 30, 6), fulfillment: "pickup" }
     ]
+  },
+  officeFruit: {
+    title: "Office fruit box",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Floor kitchen", "Office fruit crate", 6, 22, 5, ["Citrus mix", "Mixed seasonal"]),
+      buyer("B02", "Design studio", "Office fruit crate", 8, 18, 4, ["Apple crate"]),
+      buyer("B03", "Support pod", "Office fruit crate", 5, 24, 6, ["Citrus mix"]),
+      buyer("B04", "Night shift", "Office fruit crate", 7, 20, 5, ["Citrus mix", "Apple crate"]),
+      buyer("B05", "Front desk", "Office fruit crate", 4, 16, 3, ["Mixed seasonal"]),
+      buyer("B06", "Boardroom", "Office fruit crate", 9, 21, 7, ["Apple crate", "Mixed seasonal"])
+    ],
+    offers: [
+      offer("O01", "Citrus Cart Co", "Office fruit crate", "Citrus mix", 14, 10, 4, 30, 2),
+      offer("O02", "Apple Share", "Office fruit crate", "Apple crate", 15, 8, 5, 24, 1.5),
+      { ...offer("O03", "Lobby Fruit Pickup", "Office fruit crate", "Mixed seasonal", 13, 12, 3, 28, 6), fulfillment: "pickup" }
+    ]
   }
 });
 

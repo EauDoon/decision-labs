@@ -139,6 +139,7 @@ export const presets: Readonly<{
   hardware: Scenario;
   garden: Scenario;
   schoolFete: Scenario;
+  officeFruit: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
