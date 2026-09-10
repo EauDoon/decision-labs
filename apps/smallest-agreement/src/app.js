@@ -452,6 +452,39 @@ const presets = {
       },
     ],
   },
+  "community-garden-watering": {
+    title: "Community garden watering: watering hours, hose noise, and lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "plot-holders", name: "Plot-holders", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "committee", name: "Garden committee", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "watering", title: "Watering hours", options: [
+          { id: "watering-original", original: true, label: "Lock the standpipe from 20:00 to 07:00", changeCost: 0, support: { "plot-holders": 42, neighbours: 86, committee: 74 } },
+          { id: "watering-evening", original: false, label: "Allow watering until 21:00 with a posted rota", changeCost: 2, support: { "plot-holders": 86, neighbours: 64, committee: 72 } },
+          { id: "watering-dawn", original: false, label: "Allow dawn watering from 06:00 with a shared timer", changeCost: 3, support: { "plot-holders": 80, neighbours: 70, committee: 76 } },
+        ],
+      },
+      {
+        id: "hose", title: "Hose noise", options: [
+          { id: "hose-original", original: true, label: "No posted hose quiet hours", changeCost: 0, support: { "plot-holders": 84, neighbours: 28, committee: 48 } },
+          { id: "hose-quiet", original: false, label: "Ban hose use after 20:00 and use watering cans after that", changeCost: 2, support: { "plot-holders": 70, neighbours: 82, committee: 80 } },
+          { id: "hose-drip", original: false, label: "Switch to drip lines and retire the shared hose", changeCost: 4, support: { "plot-holders": 48, neighbours: 88, committee: 68 } },
+        ],
+      },
+      {
+        id: "lockup", title: "Garden lock-up", options: [
+          { id: "lockup-original", original: true, label: "Keep the shared padlock and a paper key list", changeCost: 0, support: { "plot-holders": 40, neighbours: 58, committee: 64 } },
+          { id: "lockup-fob", original: false, label: "Issue plot fobs and retire the padlock", changeCost: 2, support: { "plot-holders": 84, neighbours: 76, committee: 80 } },
+          { id: "lockup-timer", original: false, label: "Add a timed lock on the standpipe cupboard", changeCost: 3, support: { "plot-holders": 72, neighbours: 70, committee: 74 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
