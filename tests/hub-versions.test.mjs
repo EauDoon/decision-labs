@@ -41,7 +41,10 @@ test('404 catalog version line matches each app package.json', () => {
   assert.equal(page.includes(line), true, '404 page should include the catalog version line');
   assert.match(page, /id="copy-versions"/);
   assert.match(page, />Copy versions</);
+  assert.match(page, /id="copy-version-line"/);
+  assert.match(page, />Copy version line</);
   assert.match(page, /querySelector\('\.version-line'\)/);
+  assert.match(page, /versionLineMarkdown/);
   assert.match(page, /id="copy-trust"/);
   assert.match(page, />Copy Trust and limits</);
   assert.match(page, /id="trust"/);
