@@ -1287,6 +1287,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const closedOnly = options.closedOnly === true;
   const everyClosedOnly = options.everyClosedOnly === true;
   const hideWeekdayHours = options.hideWeekdayHours === true;
+  const hideWeekendHours = options.hideWeekendHours === true;
   const hideOpenHours = options.hideOpenHours === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
@@ -1310,6 +1311,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
     const y = top + rowIndex * rowHeight;
     for (let hour = 0; hour < SIMULATION_HOURS; hour += 1) {
       if (hideWeekdayHours && !ganttHourIsWeekend(schedule.hours[hour])) continue;
+      if (hideWeekendHours && ganttHourIsWeekend(schedule.hours[hour])) continue;
       if (hideOpenHours && ganttHourOpenOnEveryGate(schedule.hours[hour])) continue;
       if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
