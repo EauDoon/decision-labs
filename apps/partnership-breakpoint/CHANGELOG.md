@@ -12,6 +12,7 @@
 - Hide participants who hold in every tested compound case filters the participant ledger display only. Expand restores them. Grid counts stay unchanged. Model math is unchanged.
 - Press `l` to jump to the Participant ledger heading when no field is focused.
 - Press `b` to jump to the viability and binding-limit card heading when no field is focused.
+- Results jump nav includes Viability and Waterfall in-page links with visible focus.
 
 ## 1.5.1
 

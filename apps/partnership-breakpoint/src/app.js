@@ -600,11 +600,13 @@ function resultsPanel(result) {
     <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
     <nav class="results-jump" aria-label="Jump in results" id="results-jump" tabindex="-1">
       <span class="eyebrow">Jump in results</span>
+      <a href="#viability-heading">Viability</a>
       <a href="#first-breakpoint">First breakpoint</a>
       <a href="#fee-guidance-title">Fee guide</a>
       <a href="#three-compare-title">Three-snapshot compare</a>
       ${importedCompare ? '<a href="#imported-compare-title">Imported JSON compare</a>' : ''}
       <a href="#charts-title">Charts</a>
+      <a href="#waterfall-title">Waterfall</a>
       <a href="#compound-title">Compound stress</a>
       <a href="#participant-ledger">Participant ledger</a>
     </nav>

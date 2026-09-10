@@ -167,14 +167,18 @@ test('results jump nav is sticky, labeled, and keyboard-focusable via in-page li
   const app = await workbench();
   const html = await buildStandalone();
   assert.match(app.markup(), /<nav class="results-jump" aria-label="Jump in results" id="results-jump" tabindex="-1">/);
+  assert.match(app.markup(), /href="#viability-heading">Viability<\/a>/);
   assert.match(app.markup(), /href="#first-breakpoint">First breakpoint<\/a>/);
   assert.match(app.markup(), /href="#fee-guidance-title">Fee guide<\/a>/);
   assert.match(app.markup(), /href="#charts-title">Charts<\/a>/);
+  assert.match(app.markup(), /href="#waterfall-title">Waterfall<\/a>/);
   assert.match(app.markup(), /href="#compound-title">Compound stress<\/a>/);
   assert.match(app.markup(), /href="#participant-ledger">Participant ledger<\/a>/);
   assert.match(html, /\.results-jump \{[\s\S]*position: sticky;/);
   assert.match(html, /\.results-jump a:focus-visible/);
+  assert.match(app.markup(), /id="viability-heading"/);
   assert.match(app.markup(), /id="first-breakpoint"/);
+  assert.match(app.markup(), /id="waterfall-title"/);
   assert.match(app.markup(), /id="participant-ledger"/);
   assert.match(app.markup(), /id="results-start"/);
 });
