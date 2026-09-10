@@ -125,6 +125,23 @@ export const presets = Object.freeze({
       offer("O02", "Heirloom Packet", "Garden seed pack", "Heirloom tomato", 16, 8, 9, 20, 1.5),
       { ...offer("O03", "Soil Yard Pickup", "Garden seed pack", "Potting soil", 12, 10, 5, 24, 8), fulfillment: "pickup" }
     ]
+  },
+  schoolFete: {
+    title: "School fete catering",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Year three stall", "Fete catering pack", 12, 18, 6, ["Sausage sizzle", "Cake stall"]),
+      buyer("B02", "Cake stall crew", "Fete catering pack", 8, 16, 5, ["Cake stall"]),
+      buyer("B03", "Drinks tent", "Fete catering pack", 10, 20, 7, ["Drinks cooler"]),
+      buyer("B04", "P and C kitchen", "Fete catering pack", 16, 17, 6, ["Sausage sizzle", "Drinks cooler"]),
+      buyer("B05", "Second-hand stall", "Fete catering pack", 6, 15, 4, ["Cake stall", "Drinks cooler"]),
+      buyer("B06", "Sports tent", "Fete catering pack", 9, 19, 8, ["Sausage sizzle"])
+    ],
+    offers: [
+      offer("O01", "Sizzle Supply Co", "Fete catering pack", "Sausage sizzle", 12, 18, 4, 40, 2),
+      offer("O02", "Bake Share", "Fete catering pack", "Cake stall", 14, 10, 5, 24, 1.5),
+      { ...offer("O03", "Hall Pickup Drinks", "Fete catering pack", "Drinks cooler", 11, 12, 3, 30, 6), fulfillment: "pickup" }
+    ]
   }
 });
 
