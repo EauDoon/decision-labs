@@ -139,6 +139,7 @@ export const presets: Readonly<{
   hardware: Scenario;
   garden: Scenario;
   schoolFete: Scenario;
+  officeFruit: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -261,7 +262,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -390,11 +391,17 @@ export interface LeftoverCoverageRow {
   buyerCount: number;
   units: number;
   uncovered: boolean;
+  /** True when this leftover-coverage row is fully covered leftover fill. Display filter only. */
+  covered: boolean;
 }
 /** Organizer leftover table. Counts and merchant labels only. */
 export function leftoverCoverageRows(rawScenario: unknown): LeftoverCoverageRow[];
+/** Display-only leftover table filter. Matching is unchanged. */
+export function filterLeftoverCoverageRowsHidingCovered(rawScenario: unknown, hideCovered: boolean): LeftoverCoverageRow[];
 /** Organizer-private leftover Markdown. Buyer counts and units after the winner, including tertiary fill. */
 export function createLeftoverCoverageMarkdown(rawScenario: unknown): string;
+/** Merchant label only. Honest empty when none unlocked. No buyer data. */
+export function createWinningMerchantLabelMarkdown(rawScenario: unknown): string;
 export interface OrganizerLeftoverRow {
   label: string;
   quantity: number;
@@ -405,6 +412,8 @@ export interface OrganizerLeftoverRow {
 export function organizerLeftoverRows(rawScenario: unknown): OrganizerLeftoverRow[];
 /** Organizer-private winner inspector Markdown. Winning offer label, leftover counts, and residual coverage. */
 export function createWinnerInspectorSummaryMarkdown(rawScenario: unknown): string;
+/** Organizer-private uncovered leftover Markdown. Counts and units only. */
+export function createUncoveredLeftoverCountsMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];

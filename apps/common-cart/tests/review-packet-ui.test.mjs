@@ -21,3 +21,14 @@ test('pending packet imports cannot overwrite newer runs, clears, imports or err
 test('download uses the identical bounded serialized packet representation',()=>{
  const {nodes,context,download}=harness();nodes.get('#cart-review-run').handlers.click();nodes.get('#cart-review-export').handlers.click();assert.equal(download(),JSON.stringify(context.cartReviewPacket));assert.ok(Buffer.byteLength(download())<=1048576);
 });
+test('keyboard k opens the review details and focuses the summary',async()=>{
+ const {readFile}=await import('node:fs/promises');
+ const html=await readFile(new URL('../index.html',import.meta.url),'utf8');
+ const app=await readFile(new URL('../src/app.js',import.meta.url),'utf8');
+ assert.match(html,/id="cart-review"/u);
+ assert.match(html,/createCartReviewPacket|Review buyer coverage/u);
+ assert.match(app,/function focusCartReview\(/u);
+ assert.match(app,/panel\.open = true/u);
+ assert.match(app,/createCartReviewPacket\(/u);
+ assert.match(app,/CART_REVIEW_TOOLS/u);
+});
