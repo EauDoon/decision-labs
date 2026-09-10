@@ -883,6 +883,40 @@ test("print facilitator pack keeps pin columns, notes, and veto highlights while
   assert.equal(app.coachHidden(), false);
 });
 
+test("print facilitator pack includes recommended package option labels", async () => {
+  const html = await standaloneBytes();
+  assert.match(html, /recommended package option labels/u);
+  const draft = {
+    title: "Print labels workshop",
+    threshold: 70,
+    groups: [{ id: "g", name: "Residents", weight: 1 }],
+    clauses: [
+      { id: "one", title: "Hours", options: [
+        { id: "one-original", label: "Keep original hours", original: true, changeCost: 0, support: { g: 40 } },
+        { id: "one-alt", label: "Extend hours", original: false, changeCost: 1, support: { g: 90 } },
+        { id: "one-other", label: "Cut hours", original: false, changeCost: 2, support: { g: 20 } },
+      ] },
+    ],
+  };
+  const storage = new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]);
+  const app = await savedWorkbench(storage);
+  assert.match(app.ballot(), /Recommended: Extend hours/u);
+  assert.match(app.ballot(), /Extend hours \(recommended\)/u);
+  assert.match(app.ballot(), /Keep original hours \(original\)/u);
+  assert.doesNotMatch(app.ballot(), /Keep original hours \(original\) \(recommended\)/u);
+  assert.match(app.ballot(), /Participant groups: Residents/u);
+  app.click("#print-button");
+  assert.equal(app.printCalls(), 1);
+  assert.match(app.ballot(), /Recommended: Extend hours/u);
+  assert.match(app.ballot(), /Participant groups: Residents/u);
+  app.click("#print-redacted-button");
+  assert.equal(app.printCalls(), 2);
+  assert.match(app.ballot(), /Participant groups: Group 1/u);
+  assert.match(app.ballot(), /Recommended: Extend hours/u);
+  assert.doesNotMatch(app.ballot(), /Residents/u);
+  assert.equal(JSON.parse(storage.get("smallest-agreement:proposal:v1")).groups[0].name, "Residents");
+});
+
 test("print redacted replaces group display names without changing the saved draft", async () => {
   const storage = new Map();
   const app = await savedWorkbench(storage);
