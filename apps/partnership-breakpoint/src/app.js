@@ -859,6 +859,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>First-breakpoint remaining-to-hold</h2><p>${escapeAttribute(firstBreakpointRemainingToHoldMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First-breakpoint volume-to-hold</h2><p>${escapeAttribute(firstBreakpointVolumeToHoldMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Over-capacity participant count</h2><p>${escapeAttribute(overCapacityCountMarkdown(result))}</p></section>
+    <section class="print-only print-keep"><h2>First over-capacity participant</h2><p>${escapeAttribute(firstOverCapacityLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
     <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
@@ -2831,7 +2832,8 @@ function firstOverCapacityLabelMarkdown(result) {
   if (!result) return 'First over-capacity participant: none entered.';
   const participant = state.participants.find((item) => participantOverListedCapacity(result, item));
   if (!participant) return 'First over-capacity participant: none entered.';
-  return 'First over-capacity participant: ' + reportText(participant.name) + '. Roster row currently over listed capacity. Not a forecast.';
+  const named = result.participants.find((item) => item.id === participant.id);
+  return 'First over-capacity participant: ' + reportText(named?.name ?? participant.name) + '. Roster row currently over listed capacity. Not a forecast.';
 }
 
 function showFirstOverCapacityLabelCopyFallback(text, message) {
