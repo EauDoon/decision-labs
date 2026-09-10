@@ -1271,6 +1271,42 @@
           }
         }
       });
+      const lastHowBtn = document.getElementById('copy-last-how');
+      const lastHowStatus = document.getElementById('copy-last-how-status');
+      const lastHowFallback = document.getElementById('copy-last-how-fallback');
+      const lastHowMarkdown = () => {
+        const items = document.querySelectorAll('#how-it-works li');
+        const item = items[items.length - 1];
+        const text = item?.textContent.trim() ?? '';
+        if (!text) return '';
+        return `- ${text}`;
+      };
+      lastHowBtn?.addEventListener('click', async () => {
+        const markdown = lastHowMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastHowFallback) lastHowFallback.hidden = true;
+          if (lastHowStatus) {
+            lastHowStatus.textContent = empty
+              ? 'Last How it works list item was missing. Copied an empty string. This is catalog copy, not a live policy feed.'
+              : 'Copied the last How it works list item from this catalog page as Markdown. Not a live policy feed.';
+          }
+        } catch {
+          if (lastHowFallback) {
+            lastHowFallback.hidden = false;
+            lastHowFallback.value = markdown;
+            lastHowFallback.focus();
+            lastHowFallback.select();
+          }
+          if (lastHowStatus) {
+            lastHowStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last How it works list item was missing. This is catalog copy, not a live policy feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last How it works item, not a live policy feed.';
+          }
+        }
+      });
       const lastBtn = document.getElementById('copy-last');
       const lastStatus = document.getElementById('copy-last-status');
       const lastFallback = document.getElementById('copy-last-fallback');
