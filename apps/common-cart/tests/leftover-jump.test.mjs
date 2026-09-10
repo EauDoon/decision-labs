@@ -242,6 +242,22 @@ test("leftover fill remaining capacity copy stays on the organizer leftover cont
   assert.match(html, /aria-keyshortcuts="}"/u);
 });
 
+test("leftover fill remaining capacity copy jump stays on the organizer leftover remaining control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.match(buyerPanel, /id="copy-leftover-fill-remaining"/u);
+  assert.match(buyerPanel, /id="residual-title"/u);
+  assert.equal(merchantPanel.includes("copy-leftover-fill-remaining"), false);
+  assert.equal(merchantPanel.includes("focusLeftoverFillRemainingCopy"), false);
+  assert.match(app, /function focusLeftoverFillRemainingCopy\(/u);
+  assert.match(app, /#copy-leftover-fill-remaining/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /if \(key === "\+"\)/u);
+  assert.doesNotMatch(app, /if \(key === "\+"\) \{\s*event\.preventDefault\(\);\s*focusHideBuyersWithLeftover/u);
+});
+
 test("leftover print jump stays on the leftover print control", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");

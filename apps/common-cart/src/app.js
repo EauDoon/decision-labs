@@ -1097,6 +1097,11 @@ function handleShortcut(event) {
     copyLeftoverFillRemainingCapacity();
     return;
   }
+  if (key === "+") {
+    event.preventDefault();
+    focusLeftoverFillRemainingCopy();
+    return;
+  }
 }
 
 function focusBuyersList() {
@@ -1284,6 +1289,17 @@ function focusLeftoverFillMerchantCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const copy = document.querySelector("#copy-leftover-fill-merchant");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverFillRemainingCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-fill-remaining");
   if (copy) {
     copy.focus();
     return;
