@@ -39,6 +39,7 @@ import {
   formatDiscussionWorksheet,
   formatDiscussionWorksheetCsv,
   formatRecommendedPackageMarkdown,
+  formatOriginalVersusRecommendedMarkdown,
   formatVetoBlockersMarkdown,
   formatPinnedPackagesMarkdown,
   compareWorkshopFiles,
@@ -1492,6 +1493,43 @@ test("recommended package Markdown copies selected options without claiming legi
     ] }],
   });
   assert.equal(formatRecommendedPackageMarkdown(infeasible).status, "unavailable");
+});
+
+test("original versus recommended Markdown lists option labels and costs only and is not a recorded vote", () => {
+  const input = proposal({
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("one-original", true, { g: 50 }),
+      option("one-change", false, { g: 90 }, 2),
+      option("one-other", false, { g: 60 }, 4),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const result = findSmallestAgreement(input);
+  const markdown = formatOriginalVersusRecommendedMarkdown(input, result);
+  assert.equal(markdown.status, "ok");
+  assert.match(markdown.text, /^# Original versus recommended package\n/u);
+  assert.match(markdown.text, /Proposal: Test proposal/u);
+  assert.match(markdown.text, /option labels and costs only/u);
+  assert.match(markdown.text, /not a recorded vote/u);
+  assert.match(markdown.text, /Hours: "one-original" \(cost 0\.0\) versus "one-change" \(cost 2\.0\)/u);
+  assert.doesNotMatch(markdown.text, /^# Recommended package/u);
+  assert.doesNotMatch(markdown.text, /\| Clause \| Original \| Recommended \| Pinned \|/u);
+  assert.doesNotMatch(markdown.text, /original_option/u);
+  assert.doesNotMatch(markdown.text, /[\u2014\u2013]/u);
+  assert.equal(markdown.text, formatOriginalVersusRecommendedMarkdown(input, result).text);
+  assert.equal(JSON.stringify(input), before);
+  assert.equal(formatOriginalVersusRecommendedMarkdown({ title: "" }).status, "invalid");
+  const infeasible = proposal({
+    threshold: 99,
+    clauses: [{ id: "one", title: "Hours", options: [
+      option("one-original", true, { g: 10 }),
+      option("one-change", false, { g: 11 }, 1),
+      option("one-other", false, { g: 12 }, 2),
+    ] }],
+  });
+  assert.equal(formatOriginalVersusRecommendedMarkdown(infeasible).status, "unavailable");
+  assert.match(formatOriginalVersusRecommendedMarkdown(infeasible).text, /No recommended package is available/u);
+  assert.match(formatOriginalVersusRecommendedMarkdown(infeasible).text, /not a recorded vote/u);
 });
 
 test("group support Markdown table lists name, weight, and average without claiming a legal right", () => {

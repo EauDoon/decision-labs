@@ -2369,6 +2369,45 @@ function formatRecommendedPackageMarkdown(proposal, result = findSmallestAgreeme
 }
 
 /**
+ * Compact Markdown of original versus recommended option labels and costs.
+ * Labels and costs only. It is a decision aid, not a recorded vote.
+ */
+function formatOriginalVersusRecommendedMarkdown(proposal, result = findSmallestAgreement(proposal)) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  if (!result || result.status === "invalid") {
+    return { status: "invalid", errors: result?.errors ?? ["No result was available."] };
+  }
+  if (result.status === "too_large") {
+    return { status: "unavailable", text: "The search is over the safety bound, so original versus recommended labels and costs cannot be copied. This is a decision aid, not a recorded vote.\n" };
+  }
+  if (!result.agreement) {
+    return { status: "unavailable", text: "No recommended package is available, so original versus recommended labels and costs cannot be copied. This is a decision aid, not a recorded vote.\n" };
+  }
+  if (!Array.isArray(result.agreement.options) || result.agreement.options.length !== proposal.clauses.length) {
+    return { status: "invalid", errors: ["Select exactly one option for every clause."] };
+  }
+  const p = canonicalProposal(proposal);
+  const originals = getOriginalOptions(p);
+  const lines = [
+    "# Original versus recommended package",
+    "",
+    `Proposal: ${briefText(p.title)}`,
+    "",
+    "This comparison lists option labels and costs only. It is a decision aid, not a recorded vote.",
+    "",
+  ];
+  for (let index = 0; index < p.clauses.length; index += 1) {
+    const clause = p.clauses[index];
+    const original = originals[index];
+    const recommended = result.agreement.options[index];
+    lines.push(`- ${briefText(clause.title)}: ${briefOption(original.label)} (cost ${original.changeCost.toFixed(1)}) versus ${briefOption(recommended.label)} (cost ${recommended.changeCost.toFixed(1)})`);
+  }
+  lines.push("", "Scores, weights, and costs remain human inputs.");
+  return { status: "ok", text: `${lines.join("\n")}\n` };
+}
+
+/**
  * Markdown table of original, recommended, and pinned option labels.
  * This is a decision aid, not a recorded vote or a legitimacy claim.
  */
