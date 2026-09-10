@@ -53,6 +53,8 @@ test('404 catalog version line matches each app package.json', () => {
   assert.match(page, />Copy jobs</);
   assert.match(page, /id="catalog-jobs"/);
   assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-lede"/);
+  assert.match(page, />Copy catalog intro</);
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(page, /XMLHttpRequest/);
 });
