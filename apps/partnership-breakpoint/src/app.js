@@ -108,6 +108,7 @@ let hideFirstOverCapacityParticipant = false;
 let hideLastOverCapacityParticipant = false;
 let hideLastBreakpointParticipant = false;
 let hideLastWithinCapacityParticipant = false;
+let hideFirstWithinCapacityParticipant = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -301,6 +302,7 @@ function readCollapsePreference() {
   hideLastOverCapacityParticipant = state.hideLastOverCapacityParticipant === true;
   hideLastBreakpointParticipant = state.hideLastBreakpointParticipant === true;
   hideLastWithinCapacityParticipant = state.hideLastWithinCapacityParticipant === true;
+  hideFirstWithinCapacityParticipant = state.hideFirstWithinCapacityParticipant === true;
 }
 
 function writeCollapsePreference() {
@@ -334,6 +336,8 @@ function writeCollapsePreference() {
   else delete state.hideLastBreakpointParticipant;
   if (hideLastWithinCapacityParticipant) state.hideLastWithinCapacityParticipant = true;
   else delete state.hideLastWithinCapacityParticipant;
+  if (hideFirstWithinCapacityParticipant) state.hideFirstWithinCapacityParticipant = true;
+  else delete state.hideFirstWithinCapacityParticipant;
 }
 
 function compactErrorMessage(error) {
@@ -662,6 +666,7 @@ function participantHiddenFromRoster(result, participant) {
   if (hideFirstOverCapacityParticipant && participantIsFirstOverCapacity(result, participant)) return true;
   if (hideLastOverCapacityParticipant && participantIsLastOverCapacity(result, participant)) return true;
   if (hideLastWithinCapacityParticipant && participantIsLastWithinCapacity(result, participant)) return true;
+  if (hideFirstWithinCapacityParticipant && participantIsFirstWithinCapacity(result, participant)) return true;
   return false;
 }
 
@@ -705,6 +710,9 @@ function inputPanel(result) {
     : 0;
   const hiddenLastWithinCapacityCount = hideLastWithinCapacityParticipant && result
     ? state.participants.filter((participant) => participantIsLastWithinCapacity(result, participant)).length
+    : 0;
+  const hiddenFirstWithinCapacityCount = hideFirstWithinCapacityParticipant && result
+    ? state.participants.filter((participant) => participantIsFirstWithinCapacity(result, participant)).length
     : 0;
   const firstVisibleIndex = state.participants.findIndex((participant) => !participantHiddenFromRoster(result, participant));
   const firstOverCapacityId = result
@@ -781,7 +789,10 @@ function inputPanel(result) {
   const lastWithinCapacityFilterNote = hideLastWithinCapacityParticipant
     ? `${hiddenLastWithinCapacityCount} last within-capacity participant${hiddenLastWithinCapacityCount === 1 ? '' : 's'} ${hiddenLastWithinCapacityCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores ${hiddenLastWithinCapacityCount === 1 ? 'it' : 'them'}. Tested-case and model counts are unchanged.`
     : 'Hide the last within-capacity roster row to filter this roster display only. Expand restores it. Counts stay the same.';
-  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom, hideParticipantsWithinCapacity, hideFirstBreakpointParticipant, hideLastBreakpointParticipant, hideFirstOverCapacityParticipant, hideLastOverCapacityParticipant, hideLastWithinCapacityParticipant].filter(Boolean).length;
+  const firstWithinCapacityFilterNote = hideFirstWithinCapacityParticipant
+    ? `${hiddenFirstWithinCapacityCount} first within-capacity participant${hiddenFirstWithinCapacityCount === 1 ? '' : 's'} ${hiddenFirstWithinCapacityCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores ${hiddenFirstWithinCapacityCount === 1 ? 'it' : 'them'}. Tested-case and model counts are unchanged.`
+    : 'Hide the first within-capacity roster row to filter this roster display only. Expand restores it. Counts stay the same.';
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom, hideParticipantsWithinCapacity, hideFirstBreakpointParticipant, hideLastBreakpointParticipant, hideFirstOverCapacityParticipant, hideLastOverCapacityParticipant, hideLastWithinCapacityParticipant, hideFirstWithinCapacityParticipant].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
     ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
@@ -809,6 +820,8 @@ function inputPanel(result) {
                             ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the last over-capacity roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
                             : rosterFilterCount === 1 && hideLastWithinCapacityParticipant
                               ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the last within-capacity roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+                              : rosterFilterCount === 1 && hideFirstWithinCapacityParticipant
+                                ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the first within-capacity roster row. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : rosterFilterCount > 0
               ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : ''
@@ -872,7 +885,8 @@ function inputPanel(result) {
           <p class="notice">${withinCapacityFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-last-within-capacity-participant" data-action="hide-last-within-capacity-participant" aria-pressed="${hideLastWithinCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last within-capacity participant</button><button type="button" data-action="show-last-within-capacity-participant" ${hideLastWithinCapacityParticipant ? '' : 'disabled'}>Show the last within-capacity participant</button></div>
           <p class="notice">${lastWithinCapacityFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-first-within-capacity-participant" data-action="hide-first-within-capacity-participant" aria-keyshortcuts="\`" aria-pressed="false" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first within-capacity participant</button><button type="button" data-action="show-first-within-capacity-participant" disabled>Show the first within-capacity participant</button></div>
+          <div class="button-row"><button type="button" id="hide-first-within-capacity-participant" data-action="hide-first-within-capacity-participant" aria-keyshortcuts="\`" aria-pressed="${hideFirstWithinCapacityParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first within-capacity participant</button><button type="button" data-action="show-first-within-capacity-participant" ${hideFirstWithinCapacityParticipant ? '' : 'disabled'}>Show the first within-capacity participant</button></div>
+          <p class="notice">${firstWithinCapacityFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-first-breakpoint-participant" data-action="hide-first-breakpoint-participant" aria-keyshortcuts="|" aria-pressed="${hideFirstBreakpointParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the first-breakpoint participant</button><button type="button" data-action="show-first-breakpoint-participant" ${hideFirstBreakpointParticipant ? '' : 'disabled'}>Show the first-breakpoint participant</button></div>
           <p class="notice">${firstBreakpointFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-last-breakpoint-participant" data-action="hide-last-breakpoint-participant" aria-pressed="${hideLastBreakpointParticipant}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide the last first-breakpoint participant</button><button type="button" data-action="show-last-breakpoint-participant" ${hideLastBreakpointParticipant ? '' : 'disabled'}>Show the last first-breakpoint participant</button><button type="button" id="copy-last-breakpoint-label" data-action="copy-last-breakpoint-label">Copy last first-breakpoint participant label</button></div>
@@ -1747,6 +1761,24 @@ function attachEvents() {
     }
     if (action === 'show-last-within-capacity-participant') {
       hideLastWithinCapacityParticipant = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-first-within-capacity-participant') {
+      if (!validateConfiguration(state).valid) {
+        setNotice('Resolve invalid inputs before hiding the first within-capacity participant.');
+        return;
+      }
+      hideFirstWithinCapacityParticipant = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-first-within-capacity-participant') {
+      hideFirstWithinCapacityParticipant = false;
       writeCollapsePreference();
       saveState();
       render();

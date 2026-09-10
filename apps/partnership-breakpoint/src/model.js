@@ -47,6 +47,7 @@
  * @property {boolean} [hideLastOverCapacityParticipant] Optional roster display preference. Omitted files default to showing the last over-capacity roster row.
  * @property {boolean} [hideLastBreakpointParticipant] Optional roster display preference. Omitted files default to showing the last first-breakpoint roster row.
  * @property {boolean} [hideLastWithinCapacityParticipant] Optional roster display preference. Omitted files default to showing the last within-capacity roster row.
+ * @property {boolean} [hideFirstWithinCapacityParticipant] Optional roster display preference. Omitted files default to showing the first within-capacity roster row.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -60,7 +61,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -420,6 +421,12 @@ export function validateConfiguration(config) {
     const hideLastWithin = own(config, 'hideLastWithinCapacityParticipant');
     if (hideLastWithin !== true && hideLastWithin !== false) {
       errors.push('Hide last within-capacity participant must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideFirstWithinCapacityParticipant')) {
+    const hideFirstWithin = own(config, 'hideFirstWithinCapacityParticipant');
+    if (hideFirstWithin !== true && hideFirstWithin !== false) {
+      errors.push('Hide first within-capacity participant must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
