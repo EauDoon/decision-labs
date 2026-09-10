@@ -1941,6 +1941,15 @@ function jumpToFirstOpenFxCopy() {
   }
   return jumpToGantt();
 }
+function jumpToFirstOpenBankCopy() {
+  const control = document.querySelector("#copy-first-open-bank");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 function jumpToHideZeroQueueFilter() {
   const control = document.querySelector("#gantt-hide-zero-queue");
   if (control) {
@@ -2300,6 +2309,11 @@ document.addEventListener("keydown", (event) => {
   if (event.key === ")") {
     event.preventDefault();
     jumpToFirstOpenFxCopy();
+    return;
+  }
+  if (event.key === "&") {
+    event.preventDefault();
+    jumpToFirstOpenBankCopy();
     return;
   }
   if (event.key === ">") {
