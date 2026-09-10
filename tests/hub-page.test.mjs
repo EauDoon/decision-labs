@@ -260,6 +260,31 @@ test('print CSS keeps How it works and hides skip links', () => {
   assert.match(html, /id="how-it-works"/);
 });
 
+test('invalid last-launched storage stays silent and shows no recency note', () => {
+  const notes = Object.fromEntries(['1', '2', '3', '4'].map((key) => [key, { hidden: true }]));
+  const document = {
+    getElementById: () => null,
+    querySelector(selector) {
+      const match = String(selector).match(/data-last-workbench="([1-4])"/);
+      return match ? notes[match[1]] : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: {
+      getItem() { return 'not-a-workbench'; },
+      setItem() {},
+    },
+  });
+  for (const key of ['1', '2', '3', '4']) {
+    assert.equal(notes[key].hidden, true, `workbench ${key} recency note should stay hidden`);
+  }
+});
+
 test('unreadable last-launched storage stays silent and shows no recency note', () => {
   assert.match(html, /Last-launched storage that is missing or unreadable is silent/);
   assert.match(html, /the catalog shows no recency note/);
@@ -651,5 +676,41 @@ test('copy jobs markdown is the four catalog card names and jobs', async () => {
     copied,
     '- Partnership Breakpoint: Find which participant in a revenue split.\n- Common Cart: Pool buyer constraints.\n- The Smallest Agreement: Find the lowest-cost set of clause changes.\n- Weekend Gap: Follow synthetic AUD redemption demand.',
   );
+});
+
+test('copy jobs shows a visible textarea when clipboard is unavailable', async () => {
+  let clickJobs = null;
+  const fallback = { hidden: true, value: '', focused: false, selected: false, focus() { this.focused = true; }, select() { this.selected = true; } };
+  const status = { textContent: '' };
+  const cards = [
+    { querySelector(sel) { return sel === 'h3' ? { textContent: 'Partnership Breakpoint' } : sel === 'p.job' ? { textContent: 'Find which participant in a revenue split.' } : null; } },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-jobs') return { addEventListener(name, handler) { if (name === 'click') clickJobs = handler; } };
+      if (id === 'copy-jobs-status') return status;
+      if (id === 'copy-jobs-fallback') return fallback;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === 'article.workbench' ? cards : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: {},
+  });
+  await clickJobs();
+  assert.equal(fallback.hidden, false);
+  assert.equal(fallback.focused, true);
+  assert.equal(fallback.selected, true);
+  assert.equal(fallback.value, '- Partnership Breakpoint: Find which participant in a revenue split.');
+  assert.match(status.textContent, /Clipboard unavailable/);
+  assert.match(status.textContent, /not a live product feed/);
 });
 
