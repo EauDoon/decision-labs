@@ -37,6 +37,7 @@ import {
   firstClosedFxHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
+  firstClosedFxGanttHour,
   ganttHourClosedOnAnyGate,
   ganttHourClosedOnEveryGate,
   ganttHourOpenOnEveryGate,
@@ -97,6 +98,7 @@ const elements = {
   queueClear: document.querySelector("#queue-clear-value"),
   selectedGanttHour: document.querySelector("#selected-gantt-hour-value"),
   remainingReserve: document.querySelector("#remaining-reserve-value"),
+  firstClosedFxHour: document.querySelector("#first-closed-fx-hour-value"),
   outcomeExplanation: document.querySelector("#outcome-explanation"),
   gateSummary: document.querySelector("#gate-summary"),
   nextPayout: document.querySelector("#next-payout"),
@@ -295,6 +297,12 @@ function render() {
   }
   if (elements.remainingReserve) {
     elements.remainingReserve.textContent = formatAud(point.reserveRemainingAud);
+  }
+  if (elements.firstClosedFxHour) {
+    const closedFxHour = firstClosedFxGanttHour(scenario);
+    elements.firstClosedFxHour.textContent = closedFxHour === null
+      ? "none"
+      : `${formatTime(closedFxHour)} (hour ${closedFxHour})`;
   }
   const jumpFirst = document.querySelector("#jump-first-settlement");
   if (jumpFirst) {
@@ -1714,7 +1722,7 @@ document.querySelector("#print-redacted").addEventListener("click", () => {
   document.body.classList.remove("print-redacted");
   applyGateDisplayLabels(false);
   renderGantt();
-  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue and the selected Gantt hour stay on the printed brief. Remaining reserve at that hour stays on the printed brief. Hours to first settlement stay on the printed brief. The saved scenario was not changed.";
+  document.querySelector("#workspace-status").textContent = "Print redacted uses generic Issuer, Bank, Payout and FX labels when custom names exist. Hours to clear the queue and the selected Gantt hour stay on the printed brief. Remaining reserve at that hour stays on the printed brief. Hours to first settlement stay on the printed brief. The first closed FX hour label stays on the printed brief. These are counts of modeled hours, not a bank calendar. The saved scenario was not changed.";
 });
 document.querySelector("#copy-hours-to-clear").addEventListener("click", async () => {
   await copyHoursToClearMarkdown();
