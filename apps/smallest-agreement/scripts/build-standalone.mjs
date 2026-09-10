@@ -56,6 +56,7 @@ const appImport = `import {
   formatGroupsBelowSupportFloorCountMarkdown,
   formatFirstBelowSupportFloorGroupLabelMarkdown,
   formatGroupsMeetingApprovalThresholdCountMarkdown,
+  formatFirstVetoGroupLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,

@@ -92,6 +92,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="copy-below-floor-count-button">Copy below-floor group count</button>
         <button class="button button-secondary" type="button" id="copy-first-below-floor-group-button" aria-keyshortcuts='"'>Copy first below-floor group</button>
         <button class="button button-secondary" type="button" id="copy-threshold-group-count-button" aria-keyshortcuts="}">Copy threshold-group count</button>
+        <button class="button button-secondary" type="button" id="copy-first-veto-group-button">Copy first veto group</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -277,6 +278,9 @@ SOFTWARE.
             <label class="threshold-group-count-fallback-label" for="threshold-group-count-fallback">Groups-meeting-threshold count Markdown</label>
             <textarea id="threshold-group-count-fallback" readonly rows="3" spellcheck="false" aria-describedby="threshold-group-count-fallback-note"></textarea>
             <p id="threshold-group-count-fallback-note" class="field-note">One line of the count of groups currently meeting the numeric approval threshold, or an honest zero. Distinct from below-floor count copy and first-below-floor group copy. A threshold is a number you entered, not a legal quorum. If the clipboard is blocked, copy from this box.</p>
+            <label class="first-veto-group-fallback-label" for="first-veto-group-fallback">First veto group Markdown</label>
+            <textarea id="first-veto-group-fallback" readonly rows="3" spellcheck="false" aria-describedby="first-veto-group-fallback-note"></textarea>
+            <p id="first-veto-group-fallback-note" class="field-note">One line of the first group marked as a veto group, or an honest empty line when none. Distinct from first-below-floor group copy and threshold-group count copy. A veto is a number you entered, not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>

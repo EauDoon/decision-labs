@@ -42,6 +42,7 @@ import {
   formatGroupsBelowSupportFloorCountMarkdown,
   formatFirstBelowSupportFloorGroupLabelMarkdown,
   formatGroupsMeetingApprovalThresholdCountMarkdown,
+  formatFirstVetoGroupLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -751,6 +752,11 @@ function renderCopyFallbacks(result) {
     const listed = formatGroupsMeetingApprovalThresholdCountMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     thresholdGroupCountBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
+  const firstVetoGroupBox = $("#first-veto-group-fallback");
+  if (firstVetoGroupBox) {
+    const listed = formatFirstVetoGroupLabelMarkdown(state.proposal);
+    firstVetoGroupBox.value = listed.status === "ok" ? listed.text : "";
+  }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
@@ -1332,6 +1338,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-below-floor-count-button").disabled = result.status === "invalid";
   $("#copy-first-below-floor-group-button").disabled = result.status === "invalid";
   $("#copy-threshold-group-count-button").disabled = result.status === "invalid";
+  $("#copy-first-veto-group-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -2808,6 +2815,22 @@ async function copyThresholdGroupCount() {
   }
 }
 $("#copy-threshold-group-count-button").addEventListener("click", copyThresholdGroupCount);
+async function copyFirstVetoGroup() {
+  const listed = formatFirstVetoGroupLabelMarkdown(state.proposal);
+  if (listed.status !== "ok") return notifyDraft("Fix the draft before copying the first veto group label.");
+  const fallback = $("#first-veto-group-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.empty
+    ? "No veto group is marked. Copied an honest empty first veto group label. A veto is a number you entered, not a legal right."
+    : "First veto group label copied as Markdown. A veto is a number you entered, not a legal right.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the first veto group label from the Markdown box. A veto is a number you entered, not a legal right.");
+  }
+}
+$("#copy-first-veto-group-button").addEventListener("click", copyFirstVetoGroup);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
