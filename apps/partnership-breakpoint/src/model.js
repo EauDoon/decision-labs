@@ -362,6 +362,15 @@ export const PRESETS = Object.freeze({
       { id: 'rowing-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.16, fixedMonthlyCost: 1200, minimumAcceptableProfit: 460, capacity: 4300, minimumCommitment: 0, riskCost: 230 },
     ],
   },
+  sailingCarnivalSplit: {
+    name: 'Sailing carnival split',
+    deal: { monthlyVolume: 4400, feePerTransaction: 8, addressableVolume: 5600, volumeShockPct: 0 },
+    participants: [
+      { id: 'sailing-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.70, fixedMonthlyCost: 3580, minimumAcceptableProfit: 1360, capacity: 5300, minimumCommitment: 0, riskCost: 515 },
+      { id: 'sailing-yacht-hire', name: 'Yacht club hire', revenueShare: 0.38, variableCostPerTransaction: 2.22, fixedMonthlyCost: 2340, minimumAcceptableProfit: 900, capacity: 6400, minimumCommitment: 350, riskCost: 360 },
+      { id: 'sailing-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.20, fixedMonthlyCost: 1230, minimumAcceptableProfit: 470, capacity: 4400, minimumCommitment: 0, riskCost: 240 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
