@@ -1,0 +1,31 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("keyboard ArrowRight is wired to the hide-weekend-payout-closed Gantt filter", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="gantt-hide-weekend-payout-closed"/);
+  assert.match(html, /id="gantt-title"/);
+  assert.match(html, /<kbd>ArrowRight<\/kbd>/);
+  assert.match(html, /Jump to the hide-weekend-payout-closed Gantt filter/);
+  assert.match(html, /id="gantt-hide-weekend-payout-closed"[^>]*aria-keyshortcuts="ArrowRight"/);
+  assert.match(app, /function jumpToHideWeekendPayoutClosedFilter/);
+  assert.match(app, /#gantt-hide-weekend-payout-closed/);
+  assert.match(app, /event\.key === "ArrowRight"/);
+  assert.match(app, /event\.key === "ArrowLeft"/);
+  assert.match(app, /event\.key === "ArrowUp"/);
+  assert.match(app, /function jumpToHideWeekendFxOpenFilter/);
+  assert.match(app, /function jumpToHideWeekendPayoutOpenFilter/);
+  assert.match(app, /function jumpToHidePayoutClosedFilter/);
+  assert.match(app, /function jumpToGantt/);
+  assert.notEqual(app.match(/function jumpToHideWeekendPayoutClosedFilter/)?.[0], app.match(/function jumpToHideWeekendFxOpenFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToHideWeekendPayoutClosedFilter/)?.[0], app.match(/function jumpToHideWeekendPayoutOpenFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToHideWeekendPayoutClosedFilter/)?.[0], app.match(/function jumpToHidePayoutClosedFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToHideWeekendPayoutClosedFilter/)?.[0], app.match(/function jumpToGantt/)?.[0]);
+  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
+  assert.ok(handler.indexOf('event.key === "ArrowRight"') !== handler.indexOf('event.key === "ArrowLeft"'));
+  assert.ok(handler.indexOf('event.key === "ArrowRight"') !== handler.indexOf('event.key === "ArrowUp"'));
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "ArrowRight"'), handler.indexOf('event.key === "ArrowRight"') + 180), /copyLastClosedFxHourMarkdown/);
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "ArrowRight"'), handler.indexOf('event.key === "ArrowRight"') + 180), /copyLastOpenFxHourMarkdown/);
+});
