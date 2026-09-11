@@ -73,6 +73,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'copy-first-over-capacity-remaining', 'first-over-capacity-remaining-copy-text',
         'copy-last-over-capacity-label', 'last-over-capacity-label-copy-text',
         'copy-last-over-capacity-remaining', 'last-over-capacity-remaining-copy-text',
+        'copy-last-over-capacity-volume', 'last-over-capacity-volume-copy-text',
         'copy-first-within-capacity-remaining', 'first-within-capacity-remaining-copy-text',
         'copy-last-within-capacity-remaining', 'last-within-capacity-remaining-copy-text',
         'copy-last-spare-capacity-remaining', 'last-spare-capacity-remaining-copy-text',
@@ -729,7 +730,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, first over-capacity remaining listed capacity, last over-capacity participant, last over-capacity remaining listed capacity, first within-capacity remaining listed capacity, last within-capacity remaining listed capacity, last spare-capacity remaining listed capacity, first spare-capacity remaining listed capacity, last unbounded remaining-to-hold, first unbounded remaining-to-hold, last at-hold remaining-to-hold, first at-hold remaining-to-hold, last zero-share participant, last zero-share remaining-to-hold, last zero-share volume-to-hold, first zero-share remaining-to-hold, first zero-share volume-to-hold, and first zero-share participant', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, first over-capacity remaining listed capacity, last over-capacity participant, last over-capacity remaining listed capacity, last over-capacity volume-to-hold, first within-capacity remaining listed capacity, last within-capacity remaining listed capacity, last spare-capacity remaining listed capacity, first spare-capacity remaining listed capacity, last unbounded remaining-to-hold, first unbounded remaining-to-hold, last at-hold remaining-to-hold, first at-hold remaining-to-hold, last zero-share participant, last zero-share remaining-to-hold, last zero-share volume-to-hold, first zero-share remaining-to-hold, first zero-share volume-to-hold, and first zero-share participant', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -752,6 +753,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Last over-capacity remaining listed capacity<\/h2><p>Last over-capacity remaining listed capacity: none entered\.<\/p>/);
+  assert.match(app.markup(), /<h2>Last over-capacity volume-to-hold<\/h2><p>Last over-capacity volume-to-hold: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>First within-capacity remaining listed capacity<\/h2><p>First within-capacity remaining listed capacity: 30,000 txn remaining for Platform\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>Last within-capacity remaining listed capacity<\/h2><p>Last within-capacity remaining listed capacity: 15,000 txn remaining for Liquidity Partner\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>Last spare-capacity remaining listed capacity<\/h2><p>Last spare-capacity remaining listed capacity: 15,000 txn remaining for Liquidity Partner\. Remaining listed capacity\. Not a forecast\.<\/p>/);
@@ -782,6 +784,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last over-capacity remaining listed capacity<\/h2><p>Last over-capacity remaining listed capacity: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Last over-capacity volume-to-hold<\/h2><p>Last over-capacity volume-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First within-capacity remaining listed capacity<\/h2><p>First within-capacity remaining listed capacity: 30,000 txn remaining for Platform\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last within-capacity remaining listed capacity<\/h2><p>Last within-capacity remaining listed capacity: 15,000 txn remaining for Liquidity Partner\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last spare-capacity remaining listed capacity<\/h2><p>Last spare-capacity remaining listed capacity: 15,000 txn remaining for Liquidity Partner\. Remaining listed capacity\. Not a forecast\.<\/p>/);
@@ -810,6 +813,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last over-capacity remaining listed capacity<\/h2><p>Last over-capacity remaining listed capacity: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Last over-capacity volume-to-hold<\/h2><p>Last over-capacity volume-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First within-capacity remaining listed capacity<\/h2><p>First within-capacity remaining listed capacity: 30,000 txn remaining for Platform\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last within-capacity remaining listed capacity<\/h2><p>Last within-capacity remaining listed capacity: 15,000 txn remaining for Liquidity Partner\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last spare-capacity remaining listed capacity<\/h2><p>Last spare-capacity remaining listed capacity: 15,000 txn remaining for Liquidity Partner\. Remaining listed capacity\. Not a forecast\.<\/p>/);
@@ -834,6 +838,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner\. How far over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: Liquidity Partner\. Roster row currently over listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last over-capacity remaining listed capacity<\/h2><p>Last over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner\. How far over listed capacity\. Not a forecast\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Last over-capacity volume-to-hold<\/h2><p>Last over-capacity volume-to-hold: 90,000 txn for Liquidity Partner\. Volume to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First within-capacity remaining listed capacity<\/h2><p>First within-capacity remaining listed capacity: 14,000 txn remaining for Platform\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last within-capacity remaining listed capacity<\/h2><p>Last within-capacity remaining listed capacity: 4,000 txn remaining for Distributor\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last spare-capacity remaining listed capacity<\/h2><p>Last spare-capacity remaining listed capacity: 4,000 txn remaining for Distributor\. Remaining listed capacity\. Not a forecast\.<\/p>/);
@@ -875,6 +880,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /<h2>First over-capacity remaining listed capacity<\/h2><p>First over-capacity remaining listed capacity: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>Last over-capacity participant<\/h2><p>Last over-capacity participant: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>Last over-capacity remaining listed capacity<\/h2><p>Last over-capacity remaining listed capacity: none entered\.<\/p>/);
+  assert.match(snapshot, /<h2>Last over-capacity volume-to-hold<\/h2><p>Last over-capacity volume-to-hold: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>First within-capacity remaining listed capacity<\/h2><p>First within-capacity remaining listed capacity: 30,000 txn remaining for Participant 1\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>Last within-capacity remaining listed capacity<\/h2><p>Last within-capacity remaining listed capacity: 15,000 txn remaining for Participant 3\. Remaining listed capacity\. Not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>Last spare-capacity remaining listed capacity<\/h2><p>Last spare-capacity remaining listed capacity: 15,000 txn remaining for Participant 3\. Remaining listed capacity\. Not a forecast\.<\/p>/);
@@ -898,6 +904,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.doesNotMatch(snapshot, /First over-capacity participant: Liquidity Partner/);
   assert.doesNotMatch(snapshot, /Last over-capacity participant: Liquidity Partner/);
   assert.doesNotMatch(snapshot, /Last over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner/);
+  assert.doesNotMatch(snapshot, /Last over-capacity volume-to-hold: 90,000 txn for Liquidity Partner/);
   assert.doesNotMatch(snapshot, /First within-capacity remaining listed capacity: 30,000 txn remaining for Platform/);
   assert.doesNotMatch(snapshot, /Last within-capacity remaining listed capacity: 15,000 txn remaining for Liquidity Partner/);
   assert.doesNotMatch(snapshot, /Last spare-capacity remaining listed capacity: 15,000 txn remaining for Liquidity Partner/);
@@ -7045,6 +7052,80 @@ test('copy last over-capacity remaining listed capacity is one Markdown line wit
   assert.equal(lastOfTwoRemaining.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Distributor. How far over listed capacity. Not a forecast.');
 });
 
+test('copy last over-capacity volume-to-hold is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-last-over-capacity-volume"/);
+  assert.match(fallback.markup(), /data-action="copy-last-over-capacity-volume"/);
+  assert.match(fallback.markup(), /id="copy-last-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.doesNotMatch(fallback.markup(), /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  fallback.click('copy-last-over-capacity-volume');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="last-over-capacity-volume-copy-text"/);
+  assert.match(fallback.markup(), /Last over-capacity volume-to-hold: none entered\./);
+  assert.match(fallback.markup(), /id="last-over-capacity-volume-copy-title">Last over-capacity volume-to-hold Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-over-capacity-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-zero-share-volume-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-volume-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="volume-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-last-over-capacity-volume-copy');
+  assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-volume-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-last-over-capacity-volume');
+  assert.match(fallback.markup(), /id="last-over-capacity-volume-copy-text"/);
+  assert.match(fallback.markup(), />Last over-capacity volume-to-hold: none entered\.</);
+  assert.doesNotMatch(fallback.markup(), /id="last-over-capacity-remaining-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-last-over-capacity-volume');
+  assert.equal(withClipboard.copied().length, 1);
+  const empty = withClipboard.copied()[0];
+  assert.equal(empty.split('\n').length, 1);
+  assert.equal(empty, 'Last over-capacity volume-to-hold: none entered.');
+  assert.doesNotMatch(empty, /Last over-capacity remaining listed capacity/);
+  assert.doesNotMatch(empty, /First over-capacity remaining listed capacity/);
+  assert.doesNotMatch(empty, /Last over-capacity participant: none entered/);
+  assert.doesNotMatch(empty, /First zero-share volume-to-hold/);
+  assert.doesNotMatch(empty, /Last zero-share volume-to-hold/);
+  assert.doesNotMatch(empty, /First-breakpoint volume-to-hold/);
+  assert.doesNotMatch(empty, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.match(withClipboard.notice(), /organizer or planner copy/);
+  assert.doesNotMatch(withClipboard.markup(), /id="last-over-capacity-volume-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-last-over-capacity-volume');
+  assert.match(denied.markup(), /id="last-over-capacity-volume-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const over = await workbench('file:', { clipboard: 'ok' });
+  over.edit('deal.monthlyVolume', '116000');
+  over.click('copy-last-over-capacity-volume');
+  assert.equal(over.copied().at(-1), 'Last over-capacity volume-to-hold: 90,000 txn for Liquidity Partner. Volume to hold. Not a forecast.');
+  over.click('copy-last-over-capacity-remaining');
+  assert.equal(over.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
+  over.click('copy-first-over-capacity-remaining');
+  assert.equal(over.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
+  over.click('copy-first-breakpoint-volume');
+  assert.match(over.copied().at(-1), /^First-breakpoint volume-to-hold:/);
+  assert.doesNotMatch(over.copied().at(-1), /Last over-capacity volume-to-hold/);
+  over.click('copy-first-zero-share-volume');
+  assert.equal(over.copied().at(-1), 'First zero-share volume-to-hold: none entered.');
+
+  const lastOfTwoVolume = await workbench('file:', { clipboard: 'ok' });
+  lastOfTwoVolume.edit('deal.monthlyVolume', '121000');
+  lastOfTwoVolume.click('copy-last-over-capacity-volume');
+  assert.equal(lastOfTwoVolume.copied().at(-1), 'Last over-capacity volume-to-hold: 90,000 txn for Liquidity Partner. Volume to hold. Not a forecast.');
+  lastOfTwoVolume.click('copy-first-over-capacity-remaining');
+  assert.equal(lastOfTwoVolume.copied().at(-1), 'First over-capacity remaining listed capacity: 1,000 txn over for Distributor. How far over listed capacity. Not a forecast.');
+  lastOfTwoVolume.click('copy-last-over-capacity-remaining');
+  assert.equal(lastOfTwoVolume.copied().at(-1), 'Last over-capacity remaining listed capacity: 6,000 txn over for Liquidity Partner. How far over listed capacity. Not a forecast.');
+});
+
 test('copy first within-capacity remaining listed capacity is one Markdown line with an honest empty', async () => {
   const fallback = await workbench();
   fallback.click('dismiss-coach');
@@ -7753,7 +7834,8 @@ test('copy first zero-share volume-to-hold is one Markdown line with an honest e
   fallback.click('dismiss-coach');
   assert.match(fallback.markup(), /id="copy-first-zero-share-volume"/);
   assert.match(fallback.markup(), /data-action="copy-first-zero-share-volume"/);
-  assert.match(fallback.markup(), /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.doesNotMatch(fallback.markup(), /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(fallback.markup(), /id="copy-last-over-capacity-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   fallback.click('copy-first-zero-share-volume');
   assert.equal(fallback.downloads().length, 0);
   assert.match(fallback.markup(), /id="first-zero-share-volume-copy-text"/);
