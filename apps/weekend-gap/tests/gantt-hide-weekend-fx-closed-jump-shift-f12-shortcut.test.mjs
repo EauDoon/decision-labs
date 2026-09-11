@@ -2,16 +2,18 @@ import assert from "node:assert/strict";
 import test from "node:test";
 import { readFile } from "node:fs/promises";
 
-test("1.5.29 keeps hide-weekend-FX-closed jump distinct from Shift+F12 weekday-FX-closed hide", async () => {
+test("1.5.30 keeps hide-weekend-FX-closed jump distinct from Shift+F12 weekday-FX-open hide", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   assert.match(html, /id="gantt-hide-weekend-fx-closed"/);
   assert.match(html, /id="gantt-hide-weekday-fx-closed"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-open"/);
   assert.match(html, /id="gantt-title"/);
   assert.match(html, /<kbd>Shift\+F12<\/kbd>/);
-  assert.match(html, /Jump to the hide-weekday-FX-closed Gantt filter/);
+  assert.match(html, /Jump to the hide-weekday-FX-open Gantt filter/);
   assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace"/);
-  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9 Shift\+F12"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-open"[^>]*aria-keyshortcuts="Shift\+F12"/);
   assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
   assert.match(app, /function jumpToHideWeekendFxClosedFilter/);
   assert.match(app, /#gantt-hide-weekend-fx-closed/);
@@ -32,7 +34,7 @@ test("1.5.29 keeps hide-weekend-FX-closed jump distinct from Shift+F12 weekday-F
   assert.ok(unshiftedF12 !== -1);
   assert.ok(shiftF12 < unshiftedF12);
   const shiftSlice = handler.slice(shiftF12, shiftF12 + 180);
-  assert.match(shiftSlice, /jumpToHideWeekdayFxClosedFilter\(\)/);
+  assert.match(shiftSlice, /jumpToHideWeekdayFxOpenFilter\(\)/);
   assert.doesNotMatch(shiftSlice, /jumpToHideWeekendFxClosedFilter/);
   assert.doesNotMatch(shiftSlice, /jumpToHideWeekendFxOpenFilter/);
   const unshiftedSlice = handler.slice(unshiftedF12, unshiftedF12 + 180);

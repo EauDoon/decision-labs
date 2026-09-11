@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.30 - 2026-09-11
+
+Tuesday early FX open, first-weekday-FX-closed copy, and weekday-FX-open hide in Weekend Gap 1.5.30
+
+A workshop follow-up on 1.5.29. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.29 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies first weekday-FX-closed hour through the new first-weekday-FX-closed copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, first-weekday-FX-open copy, last-weekday-FX-open copy, last-weekend-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`.
+- Keyboard `Shift+F11` jumps to the first-weekday-FX-closed-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump. First-weekday-FX-open copy remains as a button.
+- Keyboard `Shift+F12` jumps to the existing hide-weekday-FX-open Gantt filter (`hideWeekdayFxOpenGanttHours`), or the Gantt heading if that control is missing. Ignored while typing. Distinct from unshifted `F12` hide-weekend-FX-open and from hide-weekday-FX-closed jump. `F9` still jumps to hide-weekday-FX-closed. `Backspace` still jumps to hide-weekend-FX-closed.
+- Tuesday early FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Tuesday 08:00 to 10:00 treats FX as weekday-depth / open through `isTuesdayEarlyFxOpenHour`. Distinct from Monday early FX open, Monday late FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. Synthetic. Not an FX feed.
+
 ## 1.5.29 - 2026-09-11
 
 Monday late FX open, first-weekday-FX-open copy, and weekday-FX-closed hide in Weekend Gap 1.5.29

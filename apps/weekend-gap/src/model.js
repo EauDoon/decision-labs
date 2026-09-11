@@ -55,7 +55,8 @@ export const DEFAULT_SCENARIO = Object.freeze({
   sundayLateFxOpen: false,
   sundayEarlyFxOpen: false,
   mondayEarlyFxOpen: false,
-  mondayLateFxOpen: false
+  mondayLateFxOpen: false,
+  tuesdayEarlyFxOpen: false
 });
 
 export const PRESETS = Object.freeze({
@@ -280,6 +281,11 @@ export const PRESETS = Object.freeze({
     ...DEFAULT_SCENARIO,
     name: "Monday late FX open (synthetic)",
     mondayLateFxOpen: true
+  }),
+  tuesdayEarlyFxOpen: Object.freeze({
+    ...DEFAULT_SCENARIO,
+    name: "Tuesday early FX open (synthetic)",
+    tuesdayEarlyFxOpen: true
   })
 });
 
@@ -327,7 +333,8 @@ const FIELD_RULES = Object.freeze({
   sundayLateFxOpen: { type: "boolean" },
   sundayEarlyFxOpen: { type: "boolean" },
   mondayEarlyFxOpen: { type: "boolean" },
-  mondayLateFxOpen: { type: "boolean" }
+  mondayLateFxOpen: { type: "boolean" },
+  tuesdayEarlyFxOpen: { type: "boolean" }
 });
 
 export function finiteNumber(value, fallback) {
@@ -611,10 +618,17 @@ function isMondayLateFxOpenHour(hourOffset, scenario) {
   return dayIndex === 1 && localHour >= 16 && localHour < 18;
 }
 
+/** Tuesday 08:00-10:00 keeps weekday FX depth when Tuesday early FX open is on. Distinct from mondayEarlyFxOpen (Mon 08:00-10:00), mondayLateFxOpen (Mon 16:00-18:00), fridayLateFxOpen (Fri 16:00-18:00), sundayEarlyFxOpen (Sun 08:00-10:00), and saturdayLateFxOpen (Sat 16:00-18:00). */
+function isTuesdayEarlyFxOpenHour(hourOffset, scenario) {
+  if (scenario.tuesdayEarlyFxOpen !== true) return false;
+  const { dayIndex, localHour } = dayAndHourAt(hourOffset);
+  return dayIndex === 2 && localHour >= 8 && localHour < 10;
+}
+
 export function getOperationalStatus(scenarioInput, hourOffset) {
   const { scenario } = sanitizeScenario(scenarioInput);
   const weekend = !isBusinessDay(hourOffset, scenario.mondayHoliday, scenario.saturdayHoliday);
-  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario);
+  const fxWeekday = !weekend || isFridayLateFxHour(hourOffset, scenario) || isSaturdayEarlyFxHour(hourOffset, scenario) || isFridayLateFxOpenHour(hourOffset, scenario) || isSaturdayLateFxOpenHour(hourOffset, scenario) || isSundayLateFxOpenHour(hourOffset, scenario) || isSundayEarlyFxOpenHour(hourOffset, scenario) || isMondayEarlyFxOpenHour(hourOffset, scenario) || isMondayLateFxOpenHour(hourOffset, scenario) || isTuesdayEarlyFxOpenHour(hourOffset, scenario);
   const issuerOpen = isOperational(hourOffset, scenario.issuerOpenStartHour, scenario.issuerOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateIssuerHour(hourOffset, scenario) || isSundayEarlyIssuerHour(hourOffset, scenario) || isSaturdayEarlyIssuerHour(hourOffset, scenario) || isFridayEarlyIssuerHour(hourOffset, scenario);
   const bankOpen = isOperational(hourOffset, scenario.bankOpenStartHour, scenario.bankOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLateBankHour(hourOffset, scenario) || isSaturdayEarlyBankHour(hourOffset, scenario) || isFridayEarlyBankHour(hourOffset, scenario) || isSaturdayLateBankHour(hourOffset, scenario) || isFridayLateBankHour(hourOffset, scenario);
   const payoutOpen = isOperational(hourOffset, scenario.payoutOpenStartHour, scenario.payoutOpenEndHour, scenario.mondayHoliday, scenario.saturdayHoliday) || isSundayLatePayoutHour(hourOffset, scenario) || isSaturdayEarlyPayoutHour(hourOffset, scenario) || isFridayEarlyPayoutHour(hourOffset, scenario) || isSaturdayLatePayoutHour(hourOffset, scenario) || isSundayEarlyPayoutHour(hourOffset, scenario);
@@ -1771,6 +1785,13 @@ export function firstWeekdayFxOpenGanttHour(input) {
   return open ? open.hour : null;
 }
 
+/** First chart hour that is weekday and FX-closed. Honest empty when none of the 72 hours matches. Distinct from last-weekday-FX-closed, first-weekday-FX-open, last-weekday-FX-open and last-weekend-FX-closed. */
+export function firstWeekdayFxClosedGanttHour(input) {
+  const schedule = buildGateSchedule(input);
+  const closed = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && ganttHourWeekdayFxClosed(point));
+  return closed ? closed.hour : null;
+}
+
 /** True when issuer, bank or payout is closed, or FX is weekend-thinned. */
 export function ganttHourClosedOnAnyGate(point) {
   if (!point || typeof point !== "object") return false;
@@ -2364,6 +2385,15 @@ export function firstWeekdayFxOpenHourToMarkdown(input) {
     return "First weekday-FX-open hour: none. Counts of modeled hours, not an FX calendar.";
   }
   return "First weekday-FX-open hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not an FX calendar.";
+}
+
+/** One-line first weekday-FX-closed hour label. Honest empty when none exists. Distinct from last-weekday-FX-closed, first-weekday-FX-open, last-weekday-FX-open and last-weekend-FX-closed copy. */
+export function firstWeekdayFxClosedHourToMarkdown(input) {
+  const hour = firstWeekdayFxClosedGanttHour(input);
+  if (hour === null) {
+    return "First weekday-FX-closed hour: none. Counts of modeled hours, not an FX calendar.";
+  }
+  return "First weekday-FX-closed hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not an FX calendar.";
 }
 
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
