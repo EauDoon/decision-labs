@@ -205,6 +205,8 @@ The catalog also names last-labelled-skip-href copy, last-labelled-skip-href jum
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names last-labelled-skip-text copy, last-labelled-skip-text jump, and last-labelled-skip-link jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names first-labelled-skip-text copy, first-labelled-skip-text jump, and first-labelled-skip-link jump.
+That What's new entry is hub-only. It does not change workbench versions.
 Copy first labelled skip href copies the href of the first skip link whose target has aria-labelledby
 already printed on this page as one Markdown line. If that href is missing, it copies an empty string.
 Copy first labelled skip href on
@@ -226,6 +228,13 @@ that 404 page copies the same labelled skip-link text without adding a public pa
 Key `Shift+Insert` copies the text of the last skip href that has aria-labelledby.
 Key `Shift+ArrowDown` focuses the Copy last labelled skip text control.
 Key `Shift+ArrowLeft` focuses the last labelled skip link.
+Copy first labelled skip text copies the text of the first skip link whose target has aria-labelledby
+already printed on this page as one Markdown line. If that text is missing, it copies an empty string.
+Copy first labelled skip text on
+that 404 page copies the same labelled skip-link text without adding a public path.
+Key `Shift+Delete` copies the text of the first skip href that has aria-labelledby.
+Key `Shift+ArrowUp` focuses the Copy first labelled skip text control.
+Key `Shift+ArrowRight` focuses the first labelled skip link.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
@@ -531,6 +540,22 @@ Press `Shift+ArrowLeft` to focus the last labelled skip link, or the skip-link r
 That key moves focus; it does not open a workbench. It does not copy. That key
 is distinct from `ArrowLeft`, which focuses the last skip link, from `Shift+F1`, which focuses the last labelled skip target, from `Shift+F9`,
 which focuses the last labelled skip label, from `t`, which focuses Trust and limits.
+Press `Shift+Delete` to copy the text of the first skip link whose target has aria-labelledby from this page as one Markdown
+line. That key uses the same Copy first labelled skip text control, including
+the visible text box when the clipboard API is unavailable. If that text is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `Delete`, which copies the first skip-link text, from
+`Shift+Insert`, which copies the last labelled skip text, from `Shift+F2`, which copies the first labelled skip href, and from
+`Shift+F10`, which copies the first labelled skip-target text.
+Press `Shift+ArrowUp` to focus the Copy first labelled skip text control, or the skip-link row
+or catalog heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `ArrowUp`, which
+focuses Copy first skip text, from `Shift+F3`, which focuses Copy first labelled skip href, from
+`F4`, which focuses Copy last skip text, and from `#`, which focuses Copy skip links.
+Press `Shift+ArrowRight` to focus the first labelled skip link, or the skip-link row or catalog heading if that link is missing.
+That key moves focus; it does not open a workbench. It does not copy. That key
+is distinct from `ArrowRight`, which focuses the first skip link, from `Shift+F4`, which focuses the first labelled skip target, from `Shift+F12`,
+which focuses the first labelled skip label, from `n`, which focuses What's new.
 Press `f` to focus the footer version line. That key does
 not open a workbench. Press `p` to print this catalog. That key prints this
 page in the browser. It is not a live product sheet. Press `c` to copy the catalog address
