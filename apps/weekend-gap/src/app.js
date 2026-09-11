@@ -2871,7 +2871,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F10" && event.shiftKey) {
     event.preventDefault();
-    copyFirstWeekdayFxClosedHourMarkdown();
+    copyFirstWeekendFxOpenHourMarkdown();
     return;
   }
   if (event.key === "F10") {
