@@ -526,6 +526,8 @@ export function createLeftoverUncoveredCountMarkdown(rawScenario: unknown): stri
 export function createLeftoverUncoveredLeftoverOnlyCountMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered leftover-only remaining. Leftover-only buyer units after the winner. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered remaining and leftover uncovered leftover-only count. */
 export function createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover uncovered leftover-only maximum. Largest leftover-only buyer quantity. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only remaining, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, uncovered leftover unit-count, leftover-fill remaining, leftover-fill maximum, and tertiary remaining. */
+export function createLeftoverUncoveredLeftoverOnlyMaximumMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];
