@@ -19,6 +19,8 @@ Supply a scenario JSON export through `--input`, or pipe UTF-8 JSON using `-`.
 UTF-8 BOMs are accepted. Input is capped at 1 MiB, including stdin. Malformed
 JSON, invalid model inputs, unknown/duplicate options, device paths, and directory
 inputs fail with exit code 1 and diagnostics on stderr. Exit code 0 means success.
+Windows device aliases, alternate data streams and mixed-separator network paths
+are rejected before opening. Empty option values are errors, not defaults.
 Omitted `--output` or `--output -` writes JSON to stdout. A named output uses
 exclusive creation, so existing files and symlinks are never overwritten. No
 output is created until analysis succeeds. Parent directories must already exist.

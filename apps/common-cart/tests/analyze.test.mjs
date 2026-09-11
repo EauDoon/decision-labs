@@ -193,6 +193,13 @@ test('strict CLI rejects malformed input, options, oversize and invalid UTF-8', 
   fails(['market', '--input', '-'], { ...fixture(), extra: true }, /unexpected field/);
   assert.match(run(['--help']).stdout, /organizer-private/);
 });
+test('safe IO rejects Windows device aliases and mixed-separator network paths before opening', () => {
+  for (const path of ['NUL ', 'NUL .json', 'COM¹', 'LPT².txt', '\\/server/share/file.json', '/\\server/share/file.json', 'file.json:stream']) {
+    fails(['market', '--input', path], fixture(), /ordinary local/);
+    fails(['market', '--input', '-', '--output', path], fixture(), /ordinary local/);
+  }
+  fails(['market', '--input', '-', '--output', ''], fixture(), /must not be empty/);
+});
 test('file input and exclusive output preserve existing input and recover after errors', () => temporary(dir => {
   const input = join(dir, 'input.json'), output = join(dir, 'result.json');
   const bytes = '\uFEFF' + JSON.stringify(fixture()); writeFileSync(input, bytes);

@@ -32,7 +32,7 @@ Results are organizer-private, synthetic planning aids, never orders.
 `;
 
 function localPath(path) {
-  if (!path || /^\\\\|^\/\//.test(path) || path.split(/[\\/]/).some(part => /^(con|prn|aux|nul|com[0-9]|lpt[0-9])(?:\.|$)/i.test(part)) || /:/.test(path.replace(/^[A-Za-z]:[\\/]/, ''))) {
+  if (!path || /^[\\/]{2}/.test(path) || path.split(/[\\/]/).some(part => /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])$/i.test(part.split('.')[0].trimEnd())) || /:/.test(path.replace(/^[A-Za-z]:[\\/]/, ''))) {
     throw new Error('Use an ordinary local file path, not a device, stream, or network path.');
   }
   return path;
@@ -108,6 +108,7 @@ async function main() {
   } });
   const names = tokens.filter(token => token.kind === 'option').map(token => token.name);
   if (new Set(names).size !== names.length) throw new Error('Duplicate options are not allowed.');
+  if (Object.values(values).some(value => value === '')) throw new Error('Option values must not be empty.');
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
   const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against', 'against-room'], sweep: ['offer', 'field', 'values'], batch: [], import: ['kind', 'csv'], rooms: [] };
