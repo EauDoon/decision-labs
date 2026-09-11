@@ -1057,7 +1057,8 @@ const WORKSPACE_KEYS = Object.freeze([
   "hideWeekendFxOpenGanttHours",
   "hideWeekendPayoutClosedGanttHours",
   "hideWeekendFxClosedGanttHours",
-  "hideWeekdayFxClosedGanttHours"
+  "hideWeekdayFxClosedGanttHours",
+  "hideWeekdayFxOpenGanttHours"
 ]);
 
 function assertWorkspaceKeys(raw) {
@@ -1072,7 +1073,7 @@ function assertWorkspaceKeys(raw) {
 
 /** Portable editing state; computed results are always regenerated on restore. */
 export function workspaceToJSON(current, baseline, options = {}) {
-  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false, hideWeekendGanttHours = false, hideOpenGanttHours = false, hideClosedGanttHours = false, hideZeroQueueGanttHours = false, hideBankClosedGanttHours = false, hideIssuerClosedGanttHours = false, hidePayoutClosedGanttHours = false, hideFxClosedGanttHours = false, hidePayoutOpenGanttHours = false, hideFxOpenGanttHours = false, hideBankOpenGanttHours = false, hideIssuerOpenGanttHours = false, hideWeekendIssuerOpenGanttHours = false, hideWeekendIssuerClosedGanttHours = false, hideWeekendBankClosedGanttHours = false, hideWeekendBankOpenGanttHours = false, hideWeekendPayoutOpenGanttHours = false, hideWeekendFxOpenGanttHours = false, hideWeekendPayoutClosedGanttHours = false, hideWeekendFxClosedGanttHours = false, hideWeekdayFxClosedGanttHours = false } = options;
+  const { targetPercent = 100, deadlineHour = 72, selectedHour = 0, notes = "", ganttDensity = "snapshots", selectedChart = "queue", ganttClosedOnly = false, ganttGateFilter = "all", queueBacklogOnly = false, ganttEveryGateClosed = false, hideWeekdayGanttHours = false, hideWeekendGanttHours = false, hideOpenGanttHours = false, hideClosedGanttHours = false, hideZeroQueueGanttHours = false, hideBankClosedGanttHours = false, hideIssuerClosedGanttHours = false, hidePayoutClosedGanttHours = false, hideFxClosedGanttHours = false, hidePayoutOpenGanttHours = false, hideFxOpenGanttHours = false, hideBankOpenGanttHours = false, hideIssuerOpenGanttHours = false, hideWeekendIssuerOpenGanttHours = false, hideWeekendIssuerClosedGanttHours = false, hideWeekendBankClosedGanttHours = false, hideWeekendBankOpenGanttHours = false, hideWeekendPayoutOpenGanttHours = false, hideWeekendFxOpenGanttHours = false, hideWeekendPayoutClosedGanttHours = false, hideWeekendFxClosedGanttHours = false, hideWeekdayFxClosedGanttHours = false, hideWeekdayFxOpenGanttHours = false } = options;
   const ganttHourIndex = options.ganttHourIndex === undefined ? selectedHour : options.ganttHourIndex;
   if (!Number.isFinite(targetPercent) || targetPercent < 0 || targetPercent > 100 || !Number.isInteger(deadlineHour) || deadlineHour < 1 || deadlineHour > 72 || !Number.isInteger(selectedHour) || selectedHour < 0 || selectedHour > 72) throw new RangeError("Workspace target, deadline or selected hour is invalid.");
   if (!Number.isInteger(ganttHourIndex) || ganttHourIndex < 0 || ganttHourIndex > 72) throw new RangeError("Workspace Gantt hour index is invalid.");
@@ -1106,8 +1107,9 @@ export function workspaceToJSON(current, baseline, options = {}) {
   if (hideWeekendPayoutClosedGanttHours !== true && hideWeekendPayoutClosedGanttHours !== false) throw new RangeError("Workspace Gantt weekend-payout-closed-hour filter is invalid.");
   if (hideWeekendFxClosedGanttHours !== true && hideWeekendFxClosedGanttHours !== false) throw new RangeError("Workspace Gantt weekend-FX-closed-hour filter is invalid.");
   if (hideWeekdayFxClosedGanttHours !== true && hideWeekdayFxClosedGanttHours !== false) throw new RangeError("Workspace Gantt weekday-FX-closed-hour filter is invalid.");
+  if (hideWeekdayFxOpenGanttHours !== true && hideWeekdayFxOpenGanttHours !== false) throw new RangeError("Workspace Gantt weekday-FX-open-hour filter is invalid.");
   return JSON.stringify({ format: "weekend-gap-workspace", version: 1, current: sanitizeScenario(current).scenario,
-    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours, hideWeekendGanttHours, hideOpenGanttHours, hideClosedGanttHours, hideZeroQueueGanttHours, hideBankClosedGanttHours, hideIssuerClosedGanttHours, hidePayoutClosedGanttHours, hideFxClosedGanttHours, hidePayoutOpenGanttHours, hideFxOpenGanttHours, hideBankOpenGanttHours, hideIssuerOpenGanttHours, hideWeekendIssuerOpenGanttHours, hideWeekendIssuerClosedGanttHours, hideWeekendBankClosedGanttHours, hideWeekendBankOpenGanttHours, hideWeekendPayoutOpenGanttHours, hideWeekendFxOpenGanttHours, hideWeekendPayoutClosedGanttHours, hideWeekendFxClosedGanttHours, hideWeekdayFxClosedGanttHours }, null, 2);
+    baseline: sanitizeScenario(baseline).scenario, targetPercent, deadlineHour, selectedHour, notes, ganttDensity, selectedChart, ganttClosedOnly, ganttGateFilter, queueBacklogOnly, ganttHourIndex, ganttEveryGateClosed, hideWeekdayGanttHours, hideWeekendGanttHours, hideOpenGanttHours, hideClosedGanttHours, hideZeroQueueGanttHours, hideBankClosedGanttHours, hideIssuerClosedGanttHours, hidePayoutClosedGanttHours, hideFxClosedGanttHours, hidePayoutOpenGanttHours, hideFxOpenGanttHours, hideBankOpenGanttHours, hideIssuerOpenGanttHours, hideWeekendIssuerOpenGanttHours, hideWeekendIssuerClosedGanttHours, hideWeekendBankClosedGanttHours, hideWeekendBankOpenGanttHours, hideWeekendPayoutOpenGanttHours, hideWeekendFxOpenGanttHours, hideWeekendPayoutClosedGanttHours, hideWeekendFxClosedGanttHours, hideWeekdayFxClosedGanttHours, hideWeekdayFxOpenGanttHours }, null, 2);
 }
 export function workspaceFromJSON(text) {
   try {
@@ -1156,7 +1158,8 @@ export function workspaceFromJSON(text) {
       hideWeekendFxOpenGanttHours: raw.hideWeekendFxOpenGanttHours === undefined ? false : raw.hideWeekendFxOpenGanttHours,
       hideWeekendPayoutClosedGanttHours: raw.hideWeekendPayoutClosedGanttHours === undefined ? false : raw.hideWeekendPayoutClosedGanttHours,
       hideWeekendFxClosedGanttHours: raw.hideWeekendFxClosedGanttHours === undefined ? false : raw.hideWeekendFxClosedGanttHours,
-      hideWeekdayFxClosedGanttHours: raw.hideWeekdayFxClosedGanttHours === undefined ? false : raw.hideWeekdayFxClosedGanttHours
+      hideWeekdayFxClosedGanttHours: raw.hideWeekdayFxClosedGanttHours === undefined ? false : raw.hideWeekdayFxClosedGanttHours,
+      hideWeekdayFxOpenGanttHours: raw.hideWeekdayFxOpenGanttHours === undefined ? false : raw.hideWeekdayFxOpenGanttHours
     };
     const workspace = JSON.parse(workspaceToJSON(current.scenario, baseline.scenario, options));
     return { workspace, errors: [...current.errors, ...baseline.errors] };
@@ -1719,6 +1722,13 @@ export function lastWeekdayFxClosedGanttHour(input) {
   return closed ? closed.hour : null;
 }
 
+/** Last chart hour that is weekend and FX-open. Honest empty when none of the 72 hours matches. Distinct from last-weekday-FX-closed, last-weekend-FX-closed and last-closed-FX. */
+export function lastWeekendFxOpenGanttHour(input) {
+  const schedule = buildGateSchedule(input);
+  const open = schedule.hours.findLast((point) => point.hour < SIMULATION_HOURS && ganttHourWeekendFxOpen(point));
+  return open ? open.hour : null;
+}
+
 /** True when issuer, bank or payout is closed, or FX is weekend-thinned. */
 export function ganttHourClosedOnAnyGate(point) {
   if (!point || typeof point !== "object") return false;
@@ -1828,6 +1838,11 @@ export function ganttHourWeekendFxOpen(point) {
   return ganttHourIsWeekend(point) && ganttHourFxOpen(point);
 }
 
+/** True when the hour is a weekday hour and FX is weekday-depth / open. Display filter only. Complementary to weekend-FX-open. Distinct from FX-open and weekday-FX-closed. */
+export function ganttHourWeekdayFxOpen(point) {
+  return !ganttHourIsWeekend(point) && ganttHourFxOpen(point);
+}
+
 /** True when the hour is a weekend hour and the payout gate is closed. Display filter only. Distinct from weekend-FX-open, weekend-payout-open and payout-closed. */
 export function ganttHourWeekendPayoutClosed(point) {
   return ganttHourIsWeekend(point) && ganttHourPayoutClosed(point);
@@ -1873,6 +1888,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
   const hideWeekendPayoutClosedHours = options.hideWeekendPayoutClosedHours === true;
   const hideWeekendFxClosedHours = options.hideWeekendFxClosedHours === true;
   const hideWeekdayFxClosedHours = options.hideWeekdayFxClosedHours === true;
+  const hideWeekdayFxOpenHours = options.hideWeekdayFxOpenHours === true;
   const gateFilter = GANTT_GATE_FILTERS.includes(options.gateFilter) ? options.gateFilter : "all";
   const labelsForChart = gateDisplayLabels(input, options.redacted === true);
   const width = 720;
@@ -1917,6 +1933,7 @@ export function buildGateGanttSvg(input, selectedHour = 0, options = {}) {
       if (hideWeekendPayoutClosedHours && ganttHourWeekendPayoutClosed(schedule.hours[hour]) && hour !== markerHour) continue;
       if (hideWeekendFxClosedHours && ganttHourWeekendFxClosed(schedule.hours[hour]) && hour !== markerHour) continue;
       if (hideWeekdayFxClosedHours && ganttHourWeekdayFxClosed(schedule.hours[hour]) && hour !== markerHour) continue;
+      if (hideWeekdayFxOpenHours && ganttHourWeekdayFxOpen(schedule.hours[hour]) && hour !== markerHour) continue;
       if (everyClosedOnly && !ganttHourClosedOnEveryGate(schedule.hours[hour])) continue;
       if (closedOnly && !ganttHourClosedOnAnyGate(schedule.hours[hour])) continue;
       const open = row[2](hour);
@@ -2278,6 +2295,15 @@ export function lastWeekdayFxClosedHourToMarkdown(input) {
     return "Last weekday-FX-closed hour: none. Counts of modeled hours, not an FX calendar.";
   }
   return "Last weekday-FX-closed hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not an FX calendar.";
+}
+
+/** One-line last weekend-FX-open hour label. Honest empty when none exists. Distinct from last-weekday-FX-closed, last-weekend-FX-closed and last-closed-FX copy. */
+export function lastWeekendFxOpenHourToMarkdown(input) {
+  const hour = lastWeekendFxOpenGanttHour(input);
+  if (hour === null) {
+    return "Last weekend-FX-open hour: none. Counts of modeled hours, not an FX calendar.";
+  }
+  return "Last weekend-FX-open hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not an FX calendar.";
 }
 
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
