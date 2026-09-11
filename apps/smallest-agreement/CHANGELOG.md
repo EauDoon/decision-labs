@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.26 - 2026-09-11
+
+A workshop follow-up on 1.5.25. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `Shift+F10` copies the count of groups without a declared support floor (`minSupport` missing) through the new `#copy-groups-without-floor-count-button` (`formatGroupsWithoutFloorCountMarkdown`). The `shiftKey && F10` branch is handled before unshifted `F10`. Ignored while typing. Distinct from `F10` first-without-floor label copy, `F7` last-without-floor copy, and below-floor count copy. Honest 0 when none. A floor is a number you entered, not a legal quorum.
+- Keyboard `Shift+F11` jumps to that groups-without-floor count copy control, or the groups heading if missing. Ignored while typing. It does not copy. Distinct from `F11` first-without-floor copy jump and `F8` last-without-floor jump.
+- Keyboard `Shift+F12` jumps to the existing hide-first-group-without-floor control, or the groups heading if missing. Ignored while typing. Distinct from unshifted `F12`, which still jumps to the same control, and from `F9` hide-last-group-without-floor. Unshifted `F10`, `F11`, and `F12` stay first-without-floor label copy, first-without-floor copy jump, and hide-first-group-without-floor jump.
+- Canoeing club hours preset: synthetic students, neighbours (a veto group), and P&C scoring canoe shed and paddle-pontoon booking, clubhouse bar, and changing-room lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, Rooftop BBQ hours, School disco hours, Sports day hours, Netball training hours, Swimming club hours, Athletics club hours, Cricket club hours, Tennis club hours, Basketball club hours, Volleyball club hours, Soccer club hours, Hockey club hours, Rugby club hours, Softball club hours, Lacrosse club hours, Water polo club hours, Rowing club hours, and Sailing club hours. Distinct from sailing-club-hours (jetty/yacht), rowing-club-hours (pontoon), water-polo-club-hours (pool), lacrosse-club-hours (field), softball-club-hours (diamond), rugby-club-hours (pitch), and swimming-club-hours (pool open). Not a recorded vote.
+- Copy the count of groups without a declared support floor as one-line Markdown, with a clipboard fallback. Honest 0 when none. Distinct prefix from first group-without-floor label copy and last group-without-floor label copy. A floor is a number you entered, not a legal quorum.
+
 ## 1.5.25 - 2026-09-11
 
 A workshop follow-up on 1.5.24. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.

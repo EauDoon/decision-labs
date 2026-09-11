@@ -2542,7 +2542,8 @@ export function formatLastBelowSupportFloorGroupLabelMarkdown(proposal, options)
  * Uses the same without-floor list as hideLastGroupWithoutFloor.
  * Honest when none or no inspected package is available.
  * Distinct from first at-floor group copy, last at-floor group copy,
- * first-below-floor group copy, last-below-floor group copy, and
+ * first-below-floor group copy, last-below-floor group copy, first
+ * group-without-floor copy, groups-without-floor count copy, and
  * hideGroupsWithoutFloors.
  * A floor is a number you entered, not a legal quorum.
  * Do not treat the label as a legal identity.
@@ -2587,7 +2588,8 @@ export function formatLastGroupWithoutFloorLabelMarkdown(proposal, options) {
  * Honest when none or no inspected package is available.
  * Distinct from last group-without-floor copy, first at-floor group copy,
  * last at-floor group copy, first-below-floor group copy, last-below-floor
- * group copy, hideGroupsWithoutFloors, and hideLastGroupWithoutFloor.
+ * group copy, groups-without-floor count copy, hideGroupsWithoutFloors, and
+ * hideLastGroupWithoutFloor.
  * A floor is a number you entered, not a legal quorum.
  * Do not treat the label as a legal identity.
  */
@@ -2621,6 +2623,43 @@ export function formatFirstGroupWithoutFloorLabelMarkdown(proposal, options) {
     empty: false,
     label: first.name,
     text: `First group without a support floor: ${briefText(first.name)}. ${disclaimer}\n`,
+  };
+}
+
+/**
+ * One-line Markdown count of groups without a declared support floor
+ * (minSupport missing).
+ * Uses the same without-floor list as hideFirstGroupWithoutFloor and
+ * hideLastGroupWithoutFloor.
+ * Honest when the count is zero or no inspected package is available.
+ * Distinct prefix from first group-without-floor label copy and last
+ * group-without-floor label copy.
+ * A floor is a number you entered, not a legal quorum.
+ */
+export function formatGroupsWithoutFloorCountMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      count: 0,
+      text: `No inspected package is available, so there is no groups-without-floor count to copy. ${disclaimer}\n`,
+    };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const listed = groupsWithoutDeclaredSupportFloor(proposal);
+  if (listed.status !== "ok") return listed;
+  const count = listed.groups.length;
+  return {
+    status: "ok",
+    empty: count === 0,
+    count,
+    text: `Groups without a support floor: ${count}. ${disclaimer}\n`,
   };
 }
 
