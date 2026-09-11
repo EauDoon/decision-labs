@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText } from '../scripts/serve.mjs';
 
 test('all analyst commands reject Windows console aliases before opening input', { skip: process.platform !== 'win32' }, () => {
   const commands = [
@@ -3539,6 +3539,86 @@ test('404 copy last skip text markdown is the last printed skip text, or empty i
   skips = [];
   copied = 'stale';
   await clickLast();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first skip target text uses the labelled heading without extra public paths', () => {
+  const page = notFoundPage();
+  const text = catalogFirstSkipTargetText();
+  assert.equal(text, "What's new");
+  assert.equal(page.includes(text), true, '404 page should print the first skip-target text');
+  assert.notEqual(text, catalogFirstSkipText());
+  assert.notEqual(text, catalogFirstSkipHref());
+  assert.notEqual(text, catalogLastSkipText());
+  assert.notEqual(text, catalogFirstWhatsNewHeading());
+  assert.match(page, /id="copy-first-skip-target-text"/);
+  assert.match(page, />Copy first skip target text</);
+  assert.match(page, /id="copy-first-skip-target-text-fallback"/);
+  assert.match(page, /textarea id="copy-first-skip-target-text-fallback"/);
+  assert.match(page, /firstSkipTargetTextMarkdown/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /aria-labelledby="whats-new-title"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-last-skip-text"/);
+  assert.match(page, />Copy last skip text</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy first skip target text markdown is the labelled heading, or empty if missing', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let clickFirst = null;
+  let skip = {
+    getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
+    textContent: "Skip to what's new",
+  };
+  const target = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'whats-new-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Last-skip-text copy, last-skip-text jump, and last-skip-target jump',
+  };
+  const label = { textContent: "What's new", tagName: 'H2' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-skip-target-text') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-skip-target-text-status') return { textContent: '' };
+      if (id === 'copy-first-skip-target-text-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'whats-new') return target;
+      if (id === 'whats-new-title') return label;
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#skips a.skip' ? skip : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickFirst();
+  assert.equal(copied, "- What's new");
+  assert.doesNotMatch(copied, /#whats-new/);
+  assert.doesNotMatch(copied, /Skip to what's new/);
+  assert.doesNotMatch(copied, /Last-skip-text copy/);
+  skip = null;
+  copied = 'stale';
+  await clickFirst();
   assert.equal(copied, '');
   assert.equal(PUBLIC_PATHS.length, 6);
 });

@@ -95,6 +95,8 @@ async function workbench(protocol = 'file:', options = {}) {
         'copy-last-at-hold-remaining', 'last-at-hold-remaining-copy-text',
         'copy-first-at-hold-remaining', 'first-at-hold-remaining-copy-text',
         'hide-first-zero-share-participant',
+        'hide-last-zero-share-participant',
+        'copy-last-zero-share-participant', 'last-zero-share-label-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -721,7 +723,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, first over-capacity remaining listed capacity, last over-capacity participant, last over-capacity remaining listed capacity, first within-capacity remaining listed capacity, last within-capacity remaining listed capacity, last spare-capacity remaining listed capacity, first spare-capacity remaining listed capacity, last unbounded remaining-to-hold, first unbounded remaining-to-hold, last at-hold remaining-to-hold, and first at-hold remaining-to-hold', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, first over-capacity remaining listed capacity, last over-capacity participant, last over-capacity remaining listed capacity, first within-capacity remaining listed capacity, last within-capacity remaining listed capacity, last spare-capacity remaining listed capacity, first spare-capacity remaining listed capacity, last unbounded remaining-to-hold, first unbounded remaining-to-hold, last at-hold remaining-to-hold, first at-hold remaining-to-hold, and last zero-share participant', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -752,6 +754,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /<h2>First unbounded remaining-to-hold<\/h2><p>First unbounded remaining-to-hold: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Platform\. Remaining to hold\. Not a forecast\.<\/p>/);
+  assert.match(app.markup(), /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   const before = JSON.stringify(app.saved());
   app.click('print-report');
@@ -776,6 +779,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>First unbounded remaining-to-hold<\/h2><p>First unbounded remaining-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Platform\. Remaining to hold\. Not a forecast\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   app.edit('deal.title', 'Harbor JV', { type: 'text' });
   app.edit('deal.currency', 'USD', { type: 'text' });
@@ -798,6 +802,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>First unbounded remaining-to-hold<\/h2><p>First unbounded remaining-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Platform\. Remaining to hold\. Not a forecast\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
   app.edit('deal.monthlyVolume', '116000');
   const over = JSON.stringify(app.saved());
   app.click('print-report');
@@ -816,6 +821,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>First unbounded remaining-to-hold<\/h2><p>First unbounded remaining-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Platform\. Remaining to hold\. Not a forecast\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
   assert.match(html, /\.panel:not\(\.print-keep\)/);
@@ -851,6 +857,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /<h2>First unbounded remaining-to-hold<\/h2><p>First unbounded remaining-to-hold: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Participant 3\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Participant 1\. Remaining to hold\. Not a forecast\.<\/p>/);
+  assert.match(snapshot, /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
   assert.doesNotMatch(snapshot, /Least-headroom participant: Liquidity Partner/);
@@ -1956,6 +1963,30 @@ test('water polo carnival split preset loads from the starting-point buttons', a
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
 });
 
+test('rowing carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="rowingCarnivalSplit"/);
+  assert.match(app.markup(), /Rowing carnival split/);
+  app.click('preset', { preset: 'rowingCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['rowing-committee', 'rowing-boat-hire', 'rowing-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Boat hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 8);
+  assert.equal(app.saved().deal.monthlyVolume, 4300);
+  assert.equal(app.saved().deal.addressableVolume, 5500);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [5200, 6300, 4300]);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[0].fixedMonthlyCost, app.saved().participants[1].fixedMonthlyCost);
+  assert.notEqual(app.saved().participants[1].fixedMonthlyCost, app.saved().participants[2].fixedMonthlyCost);
+  assert.match(app.notice(), /Rowing carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'waterpolo-committee,waterpolo-pool-hire,waterpolo-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'lacrosse-committee,lacrosse-ground-hire,lacrosse-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'softball-committee,softball-diamond-hire,softball-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+});
+
 test('lacrosse carnival last-at-hold remaining is 0 for First-aid and first-at-hold hides Carnival committee only', async () => {
   const app = await workbench('file:', { clipboard: 'ok' });
   app.click('dismiss-coach');
@@ -2042,6 +2073,58 @@ test('water polo carnival first-at-hold remaining is 0 for Carnival committee an
   assert.equal(forms(), 3);
   assert.equal(app.saved().hideZeroShareParticipants, true);
   assert.equal(Object.hasOwn(app.saved(), 'hideFirstZeroShareParticipant'), false);
+});
+
+test('rowing carnival last-zero-share label names the last duplicate and last-zero-share hide hides that row only', async () => {
+  const app = await workbench('file:', { clipboard: 'ok' });
+  app.click('dismiss-coach');
+  app.click('preset', { preset: 'rowingCarnivalSplit' });
+  app.click('copy-last-zero-share-participant');
+  assert.equal(app.copied().at(-1), 'Last zero-share participant: none entered.');
+  assert.doesNotMatch(app.copied().at(-1), /First at-hold remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last at-hold remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last unbounded remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /First unbounded remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /probab/i);
+  app.click('copy-first-at-hold-remaining');
+  assert.equal(app.copied().at(-1), 'First at-hold remaining-to-hold: 0 txn remaining for Carnival committee. Remaining to hold. Not a forecast.');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  app.click('duplicate-participant', { index: '0' });
+  assert.equal(forms(), 4);
+  app.click('duplicate-participant', { index: '3' });
+  assert.equal(forms(), 5);
+  app.click('copy-last-zero-share-participant');
+  assert.equal(app.copied().at(-1), 'Last zero-share participant: First-aid copy. Last roster row with zero revenue share. Not a forecast.');
+  assert.doesNotMatch(app.copied().at(-1), /First at-hold remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last at-hold remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last unbounded remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /First unbounded remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /probab/i);
+  const beforeHold = holdCount();
+  assert.ok(beforeHold);
+  app.click('hide-last-zero-share-participant');
+  assert.equal(forms(), 4);
+  assert.match(app.markup(), /Participant 1: Carnival committee/);
+  assert.match(app.markup(), /Participant 2: Carnival committee copy/);
+  assert.doesNotMatch(app.markup(), /Participant 5: First-aid copy/);
+  assert.match(app.markup(), /1 last participant with zero revenue share is hidden from this roster display/);
+  assert.equal(holdCount(), beforeHold);
+  assert.equal(app.saved().hideLastZeroShareParticipant, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideFirstZeroShareParticipant'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  app.click('show-last-zero-share-participant');
+  assert.equal(forms(), 5);
+  app.click('hide-first-zero-share-participant');
+  assert.equal(forms(), 4);
+  assert.doesNotMatch(app.markup(), /Participant 2: Carnival committee copy/);
+  assert.match(app.markup(), /Participant 5: First-aid copy/);
+  app.click('show-first-zero-share-participant');
+  app.click('hide-zero-share-participants');
+  assert.equal(forms(), 3);
+  assert.equal(app.saved().hideZeroShareParticipants, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastZeroShareParticipant'), false);
 });
 
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
@@ -2192,6 +2275,9 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>F2<\/kbd> Jump to Copy first at-hold remaining-to-hold, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>ArrowLeft<\/kbd> Jump to Hide the first participant at hold, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>ArrowRight<\/kbd> Jump to Hide the first participant with zero revenue share, or the Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>F3<\/kbd> Copy last zero-share participant label as Markdown/);
+  assert.match(app.markup(), /<kbd>F4<\/kbd> Jump to Copy last zero-share participant label, or the Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>Backspace<\/kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\+<\/kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>!<\/kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\|<\/kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing/);
@@ -4679,6 +4765,162 @@ test('keyboard ArrowRight jumps to Hide the first participant with zero revenue 
   assert.equal(forms(), 3);
 });
 
+test('keyboard F3 copies last zero-share participant label through the new control', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-last-zero-share-participant"/);
+  assert.match(fallback.markup(), /data-action="copy-last-zero-share-participant"/);
+  assert.match(fallback.markup(), /id="copy-last-zero-share-participant"[^>]*aria-keyshortcuts="F3"/);
+  fallback.keydown('F3');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="last-zero-share-label-copy-text"/);
+  assert.match(fallback.markup(), /Last zero-share participant: none entered\./);
+  assert.match(fallback.markup(), /id="last-zero-share-label-copy-title">Last zero-share participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="first-at-hold-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-at-hold-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-unbounded-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-unbounded-remaining-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-last-zero-share-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-label-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown('F3', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('F3', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('F3', { defaultPrevented: true });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown('F3');
+  assert.match(fallback.markup(), /id="last-zero-share-label-copy-text"/);
+  assert.match(fallback.markup(), />Last zero-share participant: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown('F3');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'Last zero-share participant: none entered.');
+  assert.doesNotMatch(withClipboard.copied()[0], /First at-hold remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /Last at-hold remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /Last unbounded remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /First unbounded remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown('F3', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+  withClipboard.keydown('F3', { defaultPrevented: true });
+  assert.equal(withClipboard.copied().length, copied);
+  withClipboard.keydown('Delete');
+  assert.equal(withClipboard.copied().at(-1), 'First at-hold remaining-to-hold: 0 txn remaining for Platform. Remaining to hold. Not a forecast.');
+  withClipboard.keydown('Insert');
+  assert.equal(withClipboard.copied().at(-1), 'Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner. Remaining to hold. Not a forecast.');
+  withClipboard.keydown('4');
+  assert.equal(withClipboard.copied().at(-1), 'Last unbounded remaining-to-hold: none entered.');
+  withClipboard.keydown('PageUp');
+  assert.equal(withClipboard.copied().at(-1), 'First unbounded remaining-to-hold: none entered.');
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.keydown('F3');
+  assert.match(denied.markup(), /id="last-zero-share-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const talent = await workbench('file:', { clipboard: 'ok' });
+  talent.click('preset', { preset: 'talentAgentPlatform' });
+  talent.keydown('Delete');
+  assert.equal(talent.copied().at(-1), 'First at-hold remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+  talent.keydown('Insert');
+  assert.equal(talent.copied().at(-1), 'Last at-hold remaining-to-hold: 0 txn remaining for Platform. Remaining to hold. Not a forecast.');
+  talent.keydown('PageUp');
+  assert.equal(talent.copied().at(-1), 'First unbounded remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+  talent.keydown('4');
+  assert.equal(talent.copied().at(-1), 'Last unbounded remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+  talent.click('duplicate-participant', { index: '0' });
+  talent.click('duplicate-participant', { index: '3' });
+  talent.keydown('F3');
+  assert.equal(talent.copied().at(-1), 'Last zero-share participant: Platform copy. Last roster row with zero revenue share. Not a forecast.');
+});
+
+test('keyboard F4 jumps to Copy last zero-share participant label unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-last-zero-share-participant"/);
+  assert.match(app.markup(), /id="copy-last-zero-share-participant"[^>]*aria-keyshortcuts="F3"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('F4');
+  assert.ok(app.focused().includes('#copy-last-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#copy-last-zero-share-participant'));
+  assert.ok(!app.focused().includes('#copy-first-at-hold-remaining'));
+  assert.ok(!app.focused().includes('#copy-last-at-hold-remaining'));
+  assert.ok(!app.focused().includes('#copy-last-unbounded-remaining'));
+  assert.ok(!app.focused().includes('#copy-first-unbounded-remaining'));
+  assert.doesNotMatch(app.markup(), /id="last-zero-share-label-copy-text"/);
+  const before = app.focused().length;
+  app.keydown('F4', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('F4', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('F4', { defaultPrevented: true });
+  assert.equal(app.focused().length, before);
+  app.keydown('F2');
+  assert.ok(app.focused().includes('#copy-first-at-hold-remaining'));
+  assert.ok(!app.focused().at(-1)?.includes('copy-last-zero-share-participant'));
+  app.keydown('ArrowDown');
+  assert.ok(app.focused().includes('#copy-last-at-hold-remaining'));
+  app.keydown('Home');
+  assert.ok(app.focused().includes('#copy-last-unbounded-remaining'));
+  app.keydown('PageDown');
+  assert.ok(app.focused().includes('#copy-first-unbounded-remaining'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('F4');
+  assert.ok(app.focused().includes('#copy-last-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#copy-last-zero-share-participant'));
+  assert.match(app.markup(), /id="copy-last-zero-share-participant"/);
+  assert.match(app.markup(), /id="participant-inputs-title"/);
+  assert.doesNotMatch(app.markup(), /id="last-zero-share-label-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('dismiss-coach');
+  withClipboard.keydown('F4');
+  assert.equal(withClipboard.copied().length, 0);
+  assert.ok(withClipboard.focused().includes('#copy-last-zero-share-participant'));
+});
+
+test('keyboard Backspace jumps to Hide the last participant with zero revenue share unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"/);
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*data-action="hide-last-zero-share-participant"/);
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*aria-keyshortcuts="Backspace"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  assert.equal(forms(), 3);
+  app.keydown('Backspace');
+  assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-last-zero-share-participant'));
+  assert.ok(!app.focused().includes('#hide-first-zero-share-participant'));
+  assert.ok(!app.focused().includes('#hide-first-at-hold-participant'));
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*aria-pressed="false"/);
+  const before = app.focused().length;
+  app.keydown('Backspace', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('Backspace', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('Backspace', { defaultPrevented: true });
+  assert.equal(app.focused().length, before);
+  app.keydown('ArrowRight');
+  assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
+  assert.ok(!app.focused().at(-1)?.includes('hide-last-zero-share-participant'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('Backspace');
+  assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-last-zero-share-participant'));
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"/);
+  assert.equal(forms(), 3);
+});
+
 test('Insert ArrowDown and ArrowLeft retain 4 Home End PageUp PageDown and ArrowUp controls', async () => {
   const app = await workbench('file:', { clipboard: 'ok' });
   app.click('dismiss-coach');
@@ -4721,6 +4963,8 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   assert.match(app.markup(), /id="hide-first-at-hold-participant"[^>]*aria-keyshortcuts="ArrowLeft"/);
   assert.match(app.markup(), /id="copy-first-at-hold-remaining"[^>]*aria-keyshortcuts="Delete"/);
   assert.match(app.markup(), /id="hide-first-zero-share-participant"[^>]*aria-keyshortcuts="ArrowRight"/);
+  assert.match(app.markup(), /id="copy-last-zero-share-participant"[^>]*aria-keyshortcuts="F3"/);
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*aria-keyshortcuts="Backspace"/);
   app.keydown('4');
   assert.equal(app.copied().at(-1), 'Last unbounded remaining-to-hold: none entered.');
   app.keydown('PageUp');
@@ -4729,6 +4973,8 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   assert.equal(app.copied().at(-1), 'Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner. Remaining to hold. Not a forecast.');
   app.keydown('Delete');
   assert.equal(app.copied().at(-1), 'First at-hold remaining-to-hold: 0 txn remaining for Platform. Remaining to hold. Not a forecast.');
+  app.keydown('F3');
+  assert.equal(app.copied().at(-1), 'Last zero-share participant: none entered.');
   app.keydown('Home');
   assert.ok(app.focused().includes('#copy-last-unbounded-remaining'));
   app.keydown('PageDown');
@@ -4737,6 +4983,8 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   assert.ok(app.focused().includes('#copy-last-at-hold-remaining'));
   app.keydown('F2');
   assert.ok(app.focused().includes('#copy-first-at-hold-remaining'));
+  app.keydown('F4');
+  assert.ok(app.focused().includes('#copy-last-zero-share-participant'));
   app.keydown('End');
   assert.ok(app.focused().includes('#hide-first-without-capacity-participant'));
   app.keydown('ArrowUp');
@@ -4745,6 +4993,8 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   assert.ok(app.focused().includes('#hide-first-at-hold-participant'));
   app.keydown('ArrowRight');
   assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
+  app.keydown('Backspace');
+  assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
   const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
   assert.equal(forms(), 3);
 });
@@ -6032,6 +6282,65 @@ test('copy first at-hold remaining-to-hold is one Markdown line with an honest e
   assert.equal(talent.copied().at(-1), 'First unbounded remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
   talent.click('copy-last-unbounded-remaining');
   assert.equal(talent.copied().at(-1), 'Last unbounded remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+});
+
+test('copy last zero-share participant label is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-last-zero-share-participant"/);
+  assert.match(fallback.markup(), /data-action="copy-last-zero-share-participant"/);
+  assert.match(fallback.markup(), /id="copy-last-zero-share-participant"[^>]*aria-keyshortcuts="F3"/);
+  fallback.click('copy-last-zero-share-participant');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="last-zero-share-label-copy-text"/);
+  assert.match(fallback.markup(), /Last zero-share participant: none entered\./);
+  assert.match(fallback.markup(), /id="last-zero-share-label-copy-title">Last zero-share participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="first-at-hold-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-at-hold-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-unbounded-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-unbounded-remaining-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-last-zero-share-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-label-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-last-zero-share-participant');
+  assert.match(fallback.markup(), /id="last-zero-share-label-copy-text"/);
+  assert.match(fallback.markup(), />Last zero-share participant: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-last-zero-share-participant');
+  assert.equal(withClipboard.copied().length, 1);
+  const named = withClipboard.copied()[0];
+  assert.equal(named.split('\n').length, 1);
+  assert.equal(named, 'Last zero-share participant: none entered.');
+  assert.doesNotMatch(named, /First at-hold remaining-to-hold/);
+  assert.doesNotMatch(named, /Last at-hold remaining-to-hold/);
+  assert.doesNotMatch(named, /Last unbounded remaining-to-hold/);
+  assert.doesNotMatch(named, /First unbounded remaining-to-hold/);
+  assert.doesNotMatch(named, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="last-zero-share-label-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-last-zero-share-participant');
+  assert.match(denied.markup(), /id="last-zero-share-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const talent = await workbench('file:', { clipboard: 'ok' });
+  talent.click('preset', { preset: 'talentAgentPlatform' });
+  talent.click('copy-first-at-hold-remaining');
+  assert.equal(talent.copied().at(-1), 'First at-hold remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+  talent.click('copy-last-at-hold-remaining');
+  assert.equal(talent.copied().at(-1), 'Last at-hold remaining-to-hold: 0 txn remaining for Platform. Remaining to hold. Not a forecast.');
+  talent.click('copy-first-unbounded-remaining');
+  assert.equal(talent.copied().at(-1), 'First unbounded remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+  talent.click('copy-last-unbounded-remaining');
+  assert.equal(talent.copied().at(-1), 'Last unbounded remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+  talent.click('duplicate-participant', { index: '0' });
+  talent.click('duplicate-participant', { index: '3' });
+  talent.click('copy-last-zero-share-participant');
+  assert.equal(talent.copied().at(-1), 'Last zero-share participant: Platform copy. Last roster row with zero revenue share. Not a forecast.');
 });
 
 test('copy last within-capacity remaining listed capacity is one Markdown line with an honest empty', async () => {
@@ -8873,6 +9182,109 @@ test('hide-first-zero-share preference round-trips on saved JSON and defaults to
 
   const unknown = clonePreset('balanced');
   unknown.hideFirstZeroShareParticipant = true;
+  unknown.unexpected = true;
+  app.import(unknown);
+  assert.match(app.notice(), /unknown field: unexpected/);
+});
+
+test('hiding the last participant with zero revenue share is display-only and expand restores the roster', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 of 27 tested cases hold/);
+  assert.match(app.markup(), /data-action="hide-last-zero-share-participant"/);
+  assert.match(app.markup(), /data-action="show-last-zero-share-participant"/);
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"/);
+  assert.match(app.markup(), /data-action="hide-zero-share-participants"/);
+  assert.match(app.markup(), /id="hide-first-zero-share-participant"/);
+  app.click('hide-last-zero-share-participant');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /0 last participant with zero revenue share are hidden from this roster display/);
+  assert.equal(app.saved().hideLastZeroShareParticipant, true);
+  app.click('show-last-zero-share-participant');
+  app.click('duplicate-participant', { index: '0' });
+  assert.equal(forms(), 4);
+  const beforeHide = holdCount();
+  assert.ok(beforeHide);
+  app.click('hide-last-zero-share-participant');
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /1 last participant with zero revenue share is hidden from this roster display/);
+  assert.match(app.markup(), /Tested-case and model counts are unchanged/);
+  assert.doesNotMatch(app.markup(), /Participant 2: Platform copy/);
+  assert.match(app.markup(), /Participant 1: Platform/);
+  assert.match(app.markup(), /participant-live-name">Platform copy/);
+  assert.equal(holdCount(), beforeHide);
+  assert.equal(app.saved().hideLastZeroShareParticipant, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideFirstZeroShareParticipant'), false);
+  app.click('export');
+  const exported = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(exported.participants.length, 4);
+  assert.equal(exported.hideLastZeroShareParticipant, true);
+  assert.equal(Object.hasOwn(exported, 'hideZeroShareParticipants'), false);
+  app.click('show-last-zero-share-participant');
+  assert.equal(forms(), 4);
+  assert.match(app.markup(), /Participant 2: Platform copy/);
+  app.click('preset', { preset: 'rowingCarnivalSplit' });
+  assert.equal(forms(), 3);
+  app.click('duplicate-participant', { index: '0' });
+  app.click('hide-last-zero-share-participant');
+  assert.equal(forms(), 3);
+  assert.doesNotMatch(app.markup(), /Participant 2: Carnival committee copy/);
+  assert.match(app.markup(), /Participant 1: Carnival committee/);
+  app.click('show-last-zero-share-participant');
+  app.click('hide-zero-share-participants');
+  assert.equal(forms(), 3);
+  assert.equal(app.saved().hideZeroShareParticipants, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastZeroShareParticipant'), false);
+});
+
+test('hide-last-zero-share preference round-trips on saved JSON and defaults to shown', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  app.click('reset');
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastZeroShareParticipant'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideFirstZeroShareParticipant'), false);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  app.click('hide-last-zero-share-participant');
+  assert.equal(app.saved().hideLastZeroShareParticipant, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  assert.equal(forms(), 3);
+  app.click('export');
+  const hidden = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(hidden.hideLastZeroShareParticipant, true);
+  assert.equal(hidden.participants.length, 3);
+  assert.equal(Object.hasOwn(hidden, 'hideZeroShareParticipants'), false);
+  app.click('show-last-zero-share-participant');
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastZeroShareParticipant'), false);
+  app.click('export');
+  const shownFile = JSON.parse(await app.downloads()[1].blob.text());
+  assert.equal(Object.hasOwn(shownFile, 'hideLastZeroShareParticipant'), false);
+  assert.equal(forms(), 3);
+
+  const imported = clonePreset('rowingCarnivalSplit');
+  imported.hideLastZeroShareParticipant = true;
+  app.import(imported);
+  assert.equal(app.saved().hideLastZeroShareParticipant, true);
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /of 27 tested cases hold/);
+
+  const omitted = clonePreset('balanced');
+  app.import(omitted);
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastZeroShareParticipant'), false);
+  assert.equal(forms(), 3);
+
+  const invalid = clonePreset('balanced');
+  invalid.hideLastZeroShareParticipant = 'true';
+  app.import(invalid);
+  assert.match(app.notice(), /boolean/);
+  assert.equal(forms(), 3);
+
+  const unknown = clonePreset('balanced');
+  unknown.hideLastZeroShareParticipant = true;
   unknown.unexpected = true;
   app.import(unknown);
   assert.match(app.notice(), /unknown field: unexpected/);
