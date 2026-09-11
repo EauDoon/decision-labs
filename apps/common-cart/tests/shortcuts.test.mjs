@@ -1298,6 +1298,67 @@ test("keyboard handler jumps to hide last leftover-only buyer with ArrowUp when 
   assert.match(app, /if \(key === "3"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUnservedBuyer\(\);/u);
 });
 
+test("shortcut help documents leftover uncovered maximum copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>Insert<\/kbd> Copy leftover uncovered maximum \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-uncovered-maximum"/u);
+  assert.match(html, /id="copy-leftover-uncovered-maximum"[^>]*aria-keyshortcuts="Insert"/u);
+});
+
+test("keyboard handler copies leftover uncovered maximum with Insert when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(app, /if \(key === "Insert"\)/u);
+  assert.match(app, /function copyLeftoverUncoveredMaximum\(/u);
+  assert.match(app, /createLeftoverUncoveredMaximumMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-leftover-uncovered-maximum/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "Insert"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredRemaining/u);
+  assert.match(app, /if \(key === "PageUp"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredRemaining\(\);/u);
+  assert.match(app, /if \(key === "8"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverFillMaximum\(\);/u);
+});
+
+test("shortcut help documents leftover uncovered maximum copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>ArrowDown<\/kbd> Focus the leftover uncovered maximum copy control, or leftover heading if missing/u);
+  assert.match(html, /id="copy-leftover-uncovered-maximum"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to leftover uncovered maximum copy with ArrowDown when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "ArrowDown"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredMaximumCopy\(\);/u);
+  assert.match(app, /function focusLeftoverUncoveredMaximumCopy\(/u);
+  assert.match(app, /#copy-leftover-uncovered-maximum/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.doesNotMatch(app, /if \(key === "ArrowDown"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredMaximum/u);
+  assert.match(app, /if \(key === "PageDown"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredRemainingCopy\(\);/u);
+});
+
+test("shortcut help documents hide first leftover-only buyer jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>ArrowLeft<\/kbd> Focus hide first leftover-only buyer, or the buyer list if missing/u);
+  assert.match(html, /id="hide-first-leftover-only-buyer"/u);
+  assert.match(html, /id="buyers-list"/u);
+});
+
+test("keyboard handler jumps to hide first leftover-only buyer with ArrowLeft when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "ArrowLeft"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstLeftoverOnlyBuyer\(\);/u);
+  assert.match(app, /function focusHideFirstLeftoverOnlyBuyer\(/u);
+  assert.match(app, /#hide-first-leftover-only-buyer/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.doesNotMatch(app, /if \(key === "ArrowLeft"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer/u);
+  assert.match(app, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+  assert.match(app, /\["ArrowLeft", "ArrowRight", "Home", "End"\]\.includes\(event\.key\)/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
