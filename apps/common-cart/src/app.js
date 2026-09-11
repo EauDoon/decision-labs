@@ -1557,7 +1557,7 @@ function handleShortcut(event) {
   }
   if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyAllocatedCopy();
+    focusLeftoverUncoveredLeftoverOnlyCapacityCopy();
     return;
   }
   if (event.shiftKey && key === "F9") {
@@ -2268,6 +2268,17 @@ function focusLeftoverUncoveredLeftoverOnlyAllocatedCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-allocated");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverUncoveredLeftoverOnlyCapacityCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-capacity");
   if (copy) {
     copy.focus();
     return;
