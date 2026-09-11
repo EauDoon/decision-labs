@@ -32,3 +32,12 @@ offer evaluation, grouped exclusion reasons, next-tier gap and capacity bar.
 Offer IDs are exact and must exist. This organizer-private report explains whole
 orders that cannot fit, deadline/budget exclusions and unreachable price tiers.
 Options for another command are rejected rather than silently ignored.
+
+## Prepare merchant aggregates
+
+`node scripts/analyze.mjs merchant --input scenario.json --output merchant.json`
+uses the existing merchant report and residual report allowlists. It includes
+merchant offer terms, aggregate demand and leftover counts, without room titles,
+buyer labels, identifiers, individual budgets or allocations. Aggregate reports
+are not anonymization guarantees for small groups. Residual fills are planning
+alternatives, not simultaneous purchases or reserved inventory.

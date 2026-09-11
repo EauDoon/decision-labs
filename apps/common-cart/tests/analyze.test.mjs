@@ -43,6 +43,18 @@ test('offer drill-down explains capacity, shipping and exclusion reasons', () =>
   fails(['market', '--input', '-', '--offer', 'O1'], fixture(), /not supported/);
 });
 
+test('merchant export uses aggregate allowlists without private buyer records', () => {
+  const input = fixture(); input.title = 'PRIVATE ROOM'; input.buyers[0].maxOrderTotal = 1234567;
+  const result = ok(['merchant', '--input', '-'], input);
+  assert.equal(result.market.requestedUnits, 2);
+  assert.equal(result.market.offers[0].landedTotal, 13);
+  assert.equal(result.residual.primary.fulfilledUnits, 2);
+  const text = JSON.stringify(result);
+  for (const value of ['private-id', 'Private label', 'PRIVATE ROOM', '1234567', 'buyerId', 'selectedBuyerIds', 'maxOrderTotal', 'maxUnitPrice']) assert.equal(text.includes(value), false, value);
+  input.offers = [];
+  assert.equal(ok(['merchant', '--input', '-'], input).residual.primary, null);
+});
+
 test('market CLI has independent shipping, allocation, and no-winner oracles', () => {
   const result = ok(['market', '--input', '-']);
   assert.equal(result.winner.fulfilledUnits, 2);
