@@ -559,3 +559,66 @@ test('404 Copy last review path does not expand PUBLIC_PATHS or connect-src', ()
   assert.doesNotMatch(page, /\bfetch\s*\(/);
   assert.doesNotMatch(serve, /hosted API/i);
 });
+
+test('catalog keys 0 and backslash stay distinct from last-review first-review last-open and the 1-4 opener map', () => {
+  assert.match(html, /event\.key === '0'/);
+  assert.match(html, /event\.key === '\\\\'/);
+  assert.match(html, /event\.key === 's'/);
+  assert.match(html, /event\.key === '\]'/);
+  assert.match(html, /event\.key === '\{'/);
+  assert.match(html, /event\.key === '5'/);
+  assert.match(html, /event\.key === '6'/);
+  assert.match(html, /event\.key === '7'/);
+  assert.match(html, /event\.key === '8'/);
+  assert.match(html, /event\.key === '9'/);
+  assert.match(html, /inEditable\(event\.target\)/);
+  assert.match(html, /aria-keyshortcuts="0"/);
+  assert.match(html, /id="copy-first-open"/);
+  assert.match(html, />Copy first Open href</);
+  assert.notEqual(html.match(/event\.key === '0'/)?.[0], html.match(/event\.key === '7'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '\\\\'/)?.[0], html.match(/event\.key === '8'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '\\\\'/)?.[0], html.match(/event\.key === '\]'/)?.[0]);
+  assert.notEqual(html.match(/event\.key === '0'/)?.[0], html.match(/event\.key === 's'/)?.[0]);
+  assert.match(html, /firstOpenBtn\?\.click\(\)/);
+  assert.match(html, /firstReviewBtn\?\.click\(\)/);
+  assert.match(html, /lastReviewBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-first-open'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /querySelector\('#workbenches a\.open'\)\?\.focus\(\)/);
+  assert.match(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.match(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 5:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 7:/);
+});
+
+test('print CSS hides copy first Open href tools like other copy tools', () => {
+  const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
+  assert.match(print, /\.copy-first-open-tools, \.copy-first-open-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-first-review-tools, \.copy-first-review-fallback \{ display: none !important; \}/);
+  assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
+});
+
+test('404 Copy first Open href does not expand PUBLIC_PATHS or connect-src', () => {
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.match(CONTENT_SECURITY_POLICY, /connect-src 'none'/);
+  assert.match(serve, /request\.method !== 'GET' && request\.method !== 'HEAD'/);
+  const page = notFoundPage();
+  assert.match(page, /id="copy-first-open"/);
+  assert.match(page, />Copy first Open href</);
+  assert.match(page, /firstOpenMarkdown/);
+  assert.match(page, /id="workbenches"/);
+  assert.match(page, /apps\/partnership-breakpoint\/standalone\.html/);
+  assert.match(page, /id="copy-first-review"/);
+  assert.match(page, />Copy first review path</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(serve, /hosted API/i);
+});
