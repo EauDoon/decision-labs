@@ -12874,3 +12874,290 @@ test('keyboard Shift+F6 focuses Copy last labelled skip href and Shift+F1 focuse
   assert.deepEqual(focused, ['copy-last-labelled-skip-href', 'trust', 'version-line', 'trust', 'whats-new', 'catalog-heading']);
   assert.deepEqual(assigned, []);
 });
+
+test('copy last labelled skip text control is distinct from Copy last skip text, Copy last labelled skip href, and Copy last labelled skip target text', () => {
+  assert.match(html, /id="copy-last-labelled-skip-text"/);
+  assert.match(html, />Copy last labelled skip text</);
+  assert.match(html, /aria-keyshortcuts="Shift\+Insert"/);
+  assert.match(html, /id="copy-last-labelled-skip-text-fallback"/);
+  assert.match(html, /class="copy-last-labelled-skip-text-fallback"/);
+  assert.match(html, /textarea id="copy-last-labelled-skip-text-fallback"/);
+  assert.match(html, /id="copy-last-skip-text"/);
+  assert.match(html, />Copy last skip text</);
+  assert.match(html, /id="copy-last-labelled-skip-href"/);
+  assert.match(html, />Copy last labelled skip href</);
+  assert.match(html, /id="copy-last-labelled-skip-target-text"/);
+  assert.match(html, />Copy last labelled skip target text</);
+  assert.match(html, /lastLabelledSkipTextMarkdown/);
+  assert.notEqual(html.match(/id="copy-last-labelled-skip-text"/)?.[0], html.match(/id="copy-last-skip-text"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-labelled-skip-text"/)?.[0], html.match(/id="copy-last-labelled-skip-href"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-labelled-skip-text"/)?.[0], html.match(/id="copy-last-labelled-skip-target-text"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-labelled-skip-text"/)?.[0], html.match(/id="copy-first-whats-new"/)?.[0]);
+  assert.equal(html.indexOf('id="copy-last-labelled-skip-href"') < html.indexOf('id="copy-last-labelled-skip-text"'), true);
+  assert.equal(html.indexOf('id="copy-last-skip-text"') < html.indexOf('id="copy-last-labelled-skip-text"'), true);
+  assert.match(html, /@media print[\s\S]*\.copy-last-labelled-skip-text-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-last-labelled-skip-text-fallback \{ display: none !important; \}/);
+  assert.match(html, /\.copy-last-labelled-skip-href-tools, \.copy-last-labelled-skip-href-fallback \{ display: none !important; \}/);
+  assert.match(html, /\.copy-last-labelled-skip-text-tools, \.copy-last-labelled-skip-text-fallback \{ display: none !important; \}/);
+  assert.match(html, /Copied the last labelled skip-link text from this catalog page as Markdown/);
+  assert.match(html, /This is the last labelled skip-link text, not a live product feed/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('copy last labelled skip text markdown is the text of the last skip whose target has aria-labelledby, or empty if missing', async () => {
+  assert.match(html, /lastLabelledSkipTextMarkdown/);
+  assert.match(html, /querySelectorAll\('#skips a\.skip'\)/);
+  assert.match(html, /getAttribute\('aria-labelledby'\)/);
+  assert.match(html, /lastLabelledSkipTextFallback\.hidden = false/);
+  assert.match(html, /lastLabelledSkipTextFallback\.select\(\)/);
+  assert.match(html, /This is the last labelled skip-link text, not a live product feed/);
+  assert.match(html, /Copied an empty string/);
+  let copied = '';
+  let clickLast = null;
+  let skips = [
+    {
+      getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
+      textContent: "Skip to what's new",
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#version-line' : null; },
+      textContent: 'Skip to catalog versions',
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#trust' : null; },
+      textContent: 'Skip to Trust and limits',
+    },
+  ];
+  const versionLine = {
+    getAttribute() { return null; },
+    tagName: 'P',
+    textContent: 'Partnership Breakpoint 1.5.27, Common Cart 1.4.27, The Smallest Agreement 1.5.27, Weekend Gap 1.5.27',
+  };
+  const whatsNew = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'whats-new-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Last-labelled-skip-text copy, last-labelled-skip-text jump, and last-labelled-skip-link jump',
+  };
+  const trust = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'trust-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Trust and limits',
+  };
+  const whatsLabel = { textContent: "What's new", tagName: 'H2' };
+  const trustLabel = { textContent: 'Trust and limits', tagName: 'H2' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-labelled-skip-text') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-labelled-skip-text-status') return { textContent: '' };
+      if (id === 'copy-last-labelled-skip-text-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'whats-new') return whatsNew;
+      if (id === 'whats-new-title') return whatsLabel;
+      if (id === 'trust') return trust;
+      if (id === 'trust-title') return trustLabel;
+      if (id === 'version-line') return versionLine;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#skips a.skip' ? skips : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- Skip to Trust and limits');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /#trust/);
+  assert.doesNotMatch(copied, /What's new/);
+  assert.doesNotMatch(copied, /Skip to catalog versions/);
+  assert.doesNotMatch(copied, /Partnership Breakpoint/);
+  assert.notEqual(copied, '- Trust and limits');
+  assert.notEqual(copied, '- #trust');
+  skips = [];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
+});
+
+test('keyboard Shift+Insert copies last labelled skip text when focus is not in an input', () => {
+  assert.match(html, /event\.shiftKey && event\.key === 'Insert'/);
+  assert.match(html, /lastLabelledSkipTextBtn\?\.click\(\)/);
+  assert.equal(html.indexOf("event.shiftKey && event.key === 'Insert'") < html.indexOf("if (event.key === 'Insert')"), true);
+  assert.match(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, Insert:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, Insert:/);
+  const clicks = { lastLabelledSkipText: 0, lastSkip: 0, lastSkipText: 0, lastLabelledSkipHref: 0, lastLabelledSkipTargetText: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-labelled-skip-text') return { click() { clicks.lastLabelledSkipText += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-text'); } };
+      if (id === 'copy-last-skip') return { click() { clicks.lastSkip += 1; }, addEventListener() {}, focus() { focused.push('copy-last-skip'); } };
+      if (id === 'copy-last-skip-text') return { click() { clicks.lastSkipText += 1; }, addEventListener() {}, focus() { focused.push('copy-last-skip-text'); } };
+      if (id === 'copy-last-labelled-skip-href') return { click() { clicks.lastLabelledSkipHref += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-href'); } };
+      if (id === 'copy-last-labelled-skip-target-text') return { click() { clicks.lastLabelledSkipTargetText += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-target-text'); } };
+      if (id === 'version-line') return { focus() { focused.push('version-line'); } };
+      if (id === 'skips') return { focus() { focused.push('skips'); } };
+      if (id === 'catalog-heading') return { focus() { focused.push('catalog-heading'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('Insert', input, true);
+  assert.equal(clicks.lastLabelledSkipText, 0);
+  fire('Insert', body, true);
+  assert.equal(clicks.lastLabelledSkipText, 1);
+  assert.equal(clicks.lastSkip, 0);
+  assert.equal(clicks.lastSkipText, 0);
+  assert.equal(clicks.lastLabelledSkipHref, 0);
+  fire('Insert', body, false);
+  assert.equal(clicks.lastSkip, 1);
+  assert.equal(clicks.lastLabelledSkipText, 1);
+  fire('F5', body, true);
+  assert.equal(clicks.lastLabelledSkipHref, 1);
+  assert.equal(clicks.lastLabelledSkipText, 1);
+  fire('F7', body, true);
+  assert.equal(clicks.lastLabelledSkipTargetText, 1);
+  assert.equal(clicks.lastLabelledSkipText, 1);
+  assert.deepEqual(assigned, []);
+});
+
+test('keyboard Shift+ArrowDown focuses Copy last labelled skip text and Shift+ArrowLeft focuses the last labelled skip link', () => {
+  assert.match(html, /event\.shiftKey && event\.key === 'ArrowDown'/);
+  assert.match(html, /event\.shiftKey && event\.key === 'ArrowLeft'/);
+  assert.equal(html.indexOf("event.shiftKey && event.key === 'ArrowDown'") < html.indexOf("if (event.key === 'ArrowDown')"), true);
+  assert.equal(html.indexOf("event.shiftKey && event.key === 'ArrowLeft'") < html.indexOf("if (event.key === 'ArrowLeft')"), true);
+  assert.match(html, /getElementById\('copy-last-labelled-skip-text'\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /lastLabelledSkipLink\(\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, ArrowDown:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, ArrowLeft:/);
+  const focused = [];
+  const clicks = { lastLabelledSkipText: 0, lastSkip: 0, lastSkipText: 0, lastLabelledSkipHref: 0, lastLabelledSkipTargetText: 0 };
+  const assigned = [];
+  let keydown = null;
+  let skips = [
+    {
+      getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
+      focus() { focused.push('skip-whats-new'); },
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#trust' : null; },
+      focus() { focused.push('skip-trust'); },
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#version-line' : null; },
+      focus() { focused.push('skip-version-line'); },
+    },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-labelled-skip-text') return { click() { clicks.lastLabelledSkipText += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-text'); } };
+      if (id === 'copy-last-skip') return { click() { clicks.lastSkip += 1; }, addEventListener() {}, focus() { focused.push('copy-last-skip'); } };
+      if (id === 'copy-last-skip-text') return { click() { clicks.lastSkipText += 1; }, addEventListener() {}, focus() { focused.push('copy-last-skip-text'); } };
+      if (id === 'copy-last-labelled-skip-href') return { click() { clicks.lastLabelledSkipHref += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-href'); } };
+      if (id === 'copy-last-labelled-skip-target-text') return { click() { clicks.lastLabelledSkipTargetText += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-target-text'); } };
+      if (id === 'whats-new') return {
+        getAttribute(name) { return name === 'aria-labelledby' ? 'whats-new-title' : null; },
+        focus() { focused.push('whats-new'); },
+      };
+      if (id === 'whats-new-title') return { focus() { focused.push('whats-new-title'); } };
+      if (id === 'trust') return {
+        getAttribute(name) { return name === 'aria-labelledby' ? 'trust-title' : null; },
+        focus() { focused.push('trust'); },
+      };
+      if (id === 'trust-title') return { focus() { focused.push('trust-title'); } };
+      if (id === 'version-line') return {
+        getAttribute() { return null; },
+        focus() { focused.push('version-line'); },
+      };
+      if (id === 'skips') return { focus() { focused.push('skips'); } };
+      if (id === 'catalog-heading') return { focus() { focused.push('catalog-heading'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === '#whats-new h3') return { focus() { focused.push('first-h3'); } };
+      return null;
+    },
+    querySelectorAll(selector) {
+      return selector === '#skips a.skip' ? skips : [];
+    },
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, shiftKey = false) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  fire('ArrowDown', true);
+  fire('ArrowLeft', true);
+  assert.equal(clicks.lastLabelledSkipText, 0);
+  assert.equal(clicks.lastSkip, 0);
+  assert.equal(clicks.lastSkipText, 0);
+  assert.equal(clicks.lastLabelledSkipHref, 0);
+  assert.deepEqual(focused, ['copy-last-labelled-skip-text', 'skip-trust']);
+  fire('ArrowDown', false);
+  fire('ArrowLeft', false);
+  fire('F1', true);
+  fire('F9', true);
+  assert.deepEqual(focused, ['copy-last-labelled-skip-text', 'skip-trust', 'copy-last-skip', 'skip-version-line', 'trust', 'trust-title']);
+  skips = [];
+  fire('ArrowLeft', true);
+  assert.deepEqual(focused, ['copy-last-labelled-skip-text', 'skip-trust', 'copy-last-skip', 'skip-version-line', 'trust', 'trust-title', 'skips']);
+  assert.deepEqual(assigned, []);
+});
