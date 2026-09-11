@@ -157,6 +157,10 @@ export function catalogLastSkipHref() {
   return catalogSkipHrefs().at(-1) ?? '';
 }
 
+export function catalogLastSkipText() {
+  return catalogSkipLinks().at(-1)?.text ?? '';
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
