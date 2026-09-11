@@ -9,7 +9,7 @@ test("keyboard Backspace is wired to the hide-weekend-FX-closed Gantt filter", a
   assert.match(html, /id="gantt-title"/);
   assert.match(html, /<kbd>Backspace<\/kbd>/);
   assert.match(html, /Jump to the hide-weekend-FX-closed Gantt filter/);
-  assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace"/);
+  assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace Shift\+F12"/);
   assert.match(app, /function jumpToHideWeekendFxClosedFilter/);
   assert.match(app, /#gantt-hide-weekend-fx-closed/);
   assert.match(app, /event\.key === "Backspace"/);
