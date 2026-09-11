@@ -12,6 +12,8 @@ node scripts/analyze.mjs simulate scenario.json --format markdown
 Use `-` as the input path to consume JSON on stdin. Output goes to stdout and
 errors go to stderr with exit status 1. Success returns status 0. The CLI never
 writes input files. Redirect stdout to a different path to save results.
+If the receiving process closes its pipe, output fails with a controlled error
+and exit status 1 rather than an unhandled stack trace.
 Use `node scripts/analyze.mjs --help` for syntax. Use the direct Node command
 when piping JSON because npm may print its own command header.
 

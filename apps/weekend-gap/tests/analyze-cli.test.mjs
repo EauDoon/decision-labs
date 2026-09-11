@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -236,4 +237,17 @@ test('local-file boundary rejects URI and Windows device or stream inputs', () =
     }
   }
   assert.equal(result(['simulate', '-']).summary.totalDemandAud, 72);
+});
+
+test('closed output pipe produces a controlled error without a stack trace', async () => {
+  const child = spawn(process.execPath, [cli, 'simulate', '-']);
+  let diagnostic = '';
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', chunk => { diagnostic += chunk; });
+  child.stdout.destroy();
+  child.stdin.end(JSON.stringify(fixture()));
+  const [status] = await once(child, 'close');
+  assert.equal(status, 1);
+  assert.match(diagnostic, /Cannot write output/);
+  assert.doesNotMatch(diagnostic, /node:events|Unhandled|at /);
 });

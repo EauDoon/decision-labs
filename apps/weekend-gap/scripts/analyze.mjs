@@ -197,6 +197,11 @@ async function main([command, ...rest]) {
   }
 }
 
+process.stdout.on('error', () => {
+  process.stderr.write('Weekend Gap: Cannot write output. Check the receiving process.\n');
+  process.exitCode = 1;
+});
+
 try {
   const result = await main(process.argv.slice(2));
   process.stdout.write(typeof result === 'string' ? result : JSON.stringify(result, null, 2) + '\n');
