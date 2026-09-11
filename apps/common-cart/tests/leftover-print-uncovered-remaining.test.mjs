@@ -1,0 +1,31 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+
+test("print leftover one-pager includes leftover uncovered remaining when leftover exists", async () => {
+  const css = await readFile(new URL("../styles.css", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="leftover-print-uncovered-remaining"/u);
+  assert.match(html, /Leftover uncovered remaining: none/u);
+  assert.match(html, /id="leftover-print-uncovered-units"/u);
+  assert.match(html, /id="leftover-print-fill-remaining"/u);
+  assert.match(html, /id="leftover-print-tertiary-remaining"/u);
+  assert.match(html, /id="leftover-print-winner"/u);
+  assert.match(html, /Winner merchant:/u);
+  assert.match(css, /body\.print-leftover #leftover-print-uncovered-remaining/u);
+  const leftover = html.slice(html.indexOf('id="leftover-print-uncovered-remaining"'), html.indexOf('id="copy-winning-merchant"'));
+  assert.match(leftover, /print-leftover-keep/u);
+  assert.equal(leftover.includes("maxUnitPrice"), false);
+  assert.equal(leftover.includes("selectedBuyerIds"), false);
+  assert.equal(leftover.includes("leftoverBuyerIds"), false);
+  assert.match(app, /leftover-print-uncovered-remaining/u);
+  assert.match(app, /Leftover uncovered remaining:/u);
+  assert.match(app, /Leftover uncovered remaining: \$\{coverage\.unfilledUnits\} units/u);
+  assert.match(app, /coverage\.leftoverBuyerCount/u);
+  assert.match(app, /Winner merchant:/u);
+  const leftoverPrint = app.slice(app.indexOf("function printLeftoverOnePager"), app.indexOf("function focusVariantOverlap"));
+  assert.doesNotMatch(leftoverPrint, /leftoverBuyerIds/u);
+  const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
+  assert.equal(merchantPanel.includes("leftover-print-uncovered-remaining"), false);
+});

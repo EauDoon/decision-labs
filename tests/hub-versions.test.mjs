@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -186,6 +186,22 @@ test('404 last Open href matches the last catalog Open workbench href', () => {
   assert.match(page, />Copy first Open href</);
 });
 
+test('404 first skip href matches the first catalog skip-link href', () => {
+  const href = catalogFirstSkipHref();
+  assert.equal(href, '#whats-new');
+  assert.equal(html.includes(`href="${href}"`), true, 'first skip href missing from catalog');
+  assert.notEqual(href, catalogFirstOpenHref());
+  assert.notEqual(href, catalogLastOpenHref());
+  const page = notFoundPage();
+  assert.equal(page.includes(href), true, 'first skip href missing from 404 page');
+  assert.match(page, /id="copy-first-skip"/);
+  assert.match(page, />Copy first skip href</);
+  assert.match(page, /querySelector\('#skips a\.skip'\)/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="copy-last-open"/);
+  assert.match(page, />Copy last Open href</);
+});
+
 test('404 first Open href matches the first catalog Open workbench href', () => {
   const href = catalogFirstOpenHref();
   assert.equal(href, 'apps/partnership-breakpoint/standalone.html');
@@ -234,18 +250,18 @@ test('404 last review path matches the last catalog workbench review path', () =
 });
 
 
-test('catalog versions stay Partnership Breakpoint 1.5.19, Common Cart 1.4.19, The Smallest Agreement 1.5.19, Weekend Gap 1.5.19', () => {
-  assert.match(html, /data-app="partnership-breakpoint">\s*1\.5\.19\s*</);
-  assert.match(html, /data-app="common-cart">\s*1\.4\.19\s*</);
+test('catalog versions stay Partnership Breakpoint 1.5.20, Common Cart 1.4.20, The Smallest Agreement 1.5.19, Weekend Gap 1.5.19', () => {
+  assert.match(html, /data-app="partnership-breakpoint">\s*1\.5\.20\s*</);
+  assert.match(html, /data-app="common-cart">\s*1\.4\.20\s*</);
   assert.match(html, /data-app="smallest-agreement">\s*1\.5\.19\s*</);
   assert.match(html, /data-app="weekend-gap">\s*1\.5\.19\s*</);
-  assert.match(html, /data-app-version="partnership-breakpoint">\s*1\.5\.19\s*</);
-  assert.match(html, /data-app-version="common-cart">\s*1\.4\.19\s*</);
+  assert.match(html, /data-app-version="partnership-breakpoint">\s*1\.5\.20\s*</);
+  assert.match(html, /data-app-version="common-cart">\s*1\.4\.20\s*</);
   assert.match(html, /data-app-version="smallest-agreement">\s*1\.5\.19\s*</);
   assert.match(html, /data-app-version="weekend-gap">\s*1\.5\.19\s*</);
-  assert.match(html, /Partnership Breakpoint 1\.5\.19, Common Cart 1\.4\.19, The Smallest Agreement 1\.5\.19, Weekend Gap 1\.5\.19/);
-  assert.match(readme, /\[Partnership Breakpoint\]\(apps\/partnership-breakpoint\/\) \| 1\.5\.19 \|/);
-  assert.match(readme, /\[Common Cart\]\(apps\/common-cart\/\) \| 1\.4\.19 \|/);
+  assert.match(html, /Partnership Breakpoint 1\.5\.20, Common Cart 1\.4\.20, The Smallest Agreement 1\.5\.19, Weekend Gap 1\.5\.19/);
+  assert.match(readme, /\[Partnership Breakpoint\]\(apps\/partnership-breakpoint\/\) \| 1\.5\.20 \|/);
+  assert.match(readme, /\[Common Cart\]\(apps\/common-cart\/\) \| 1\.4\.20 \|/);
   assert.match(readme, /\[The Smallest Agreement\]\(apps\/smallest-agreement\/\) \| 1\.5\.19 \|/);
   assert.match(readme, /\[Weekend Gap\]\(apps\/weekend-gap\/\) \| 1\.5\.19 \|/);
 });
