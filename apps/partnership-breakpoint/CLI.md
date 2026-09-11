@@ -31,3 +31,12 @@ node scripts/analyze.mjs solve scenario.json volume participant-id
 ```
 
 Use a participant's stable `id` from the scenario, not their display name. `fee` holds volume and shares fixed and finds the common fee floor. `share` finds one participant's minimum share while redistributing others' leftover proportionally; this can make another participant fail. `volume` finds that participant's minimum planned monthly volume within demand and capacity limits. These return the existing model's `possible` or `impossible` status and explanation. Impossibility is a valid result with exit 0; no proposal is applied or saved automatically. Capacity and commitment constraints remain visible.
+
+## Compare saved negotiations
+
+```sh
+node scripts/analyze.mjs compare current.json first.json
+node scripts/analyze.mjs compare current.json first.json second.json
+```
+
+Two-case output uses `current` and `imported`; three-case output uses `current`, `first` and `second`. Alignment uses stable participant IDs regardless of roster ordering. Missing participants remain `null` with `rosterMismatch`, never zero profit. At most one scenario may come from stdin. All currency labels must match, including omitted labels. The CLI performs no currency conversion, and matching labels do not certify compatible assumptions.

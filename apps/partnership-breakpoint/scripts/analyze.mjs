@@ -1,6 +1,7 @@
 import { readFileSync } from 'node:fs';
 import { assertValidConfiguration, calculatePartnership, evaluateStressGrid, stressGridCsv } from '../src/model.js';
 import { solveFeeForAllHold, solveMinimumShareToHold, solveMinimumVolumeToHold } from '../src/model.js';
+import { compareImportedCase, compareThreeSnapshots } from '../src/model.js';
 
 const HELP = `Offline Partnership Breakpoint analysis (Node.js 20+)
 Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
@@ -8,6 +9,7 @@ Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
   stress INPUT [--csv] [--failed-only]  Inspect compound cases or export CSV
   solve INPUT fee                Find the common fee floor
   solve INPUT share|volume ID    Find a participant's holding boundary
+  compare CURRENT FIRST [SECOND]  Align two or three scenarios by participant ID
 INPUT is a JSON file or - for standard input. Output is JSON on stdout.
 Errors are JSON on stderr, exit 1. Success is exit 0.
 Results describe declared inputs, not probabilities or financial advice.
@@ -56,6 +58,14 @@ function run(command, args) {
       const config = assertValidConfiguration(readJSON(input));
       return axis === 'fee' ? solveFeeForAllHold(config)
         : axis === 'share' ? solveMinimumShareToHold(config, id) : solveMinimumVolumeToHold(config, id);
+    }
+    case 'compare': {
+      arity(args, 2, 3);
+      if (args.filter(path => path === '-').length > 1) throw new Error('Standard input can supply only one comparison scenario.');
+      const configs = args.map(path => assertValidConfiguration(readJSON(path)));
+      const currency = configs[0].deal.currency ?? '';
+      if (configs.some(config => (config.deal.currency ?? '') !== currency)) throw new Error('Comparison requires matching currency labels; no currency conversion is performed.');
+      return configs.length === 2 ? compareImportedCase(...configs) : compareThreeSnapshots(...configs);
     }
     default: throw new Error('Unknown command. Run with --help for usage.');
   }

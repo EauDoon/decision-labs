@@ -102,3 +102,29 @@ test('solvers expose independently calculated fee, share and volume boundaries',
   assert.equal(output(run(['solve', '-', 'fee'], config)).status, 'impossible');
   assert.equal(output(run(['solve', '-', 'share', p.id], config)).status, 'impossible');
 });
+
+test('compare aligns missing IDs, three snapshots and rejects mixed currency labels', (t) => {
+  const current = clonePreset('balanced');
+  const first = structuredClone(current);
+  first.participants.reverse();
+  first.deal.feePerTransaction *= 2;
+  const second = structuredClone(current);
+  second.participants[0].id = 'replacement';
+  const mixed = structuredClone(current);
+  mixed.deal.currency = 'USD';
+  const [a, b, c, d] = files(t, [current, first, second, mixed]);
+  const pair = output(run(['compare', a, b]));
+  assert.equal(pair.sameRoster, true);
+  for (const row of pair.rows) {
+    const p = current.participants.find(p => p.id === row.id);
+    assert.ok(Math.abs(row.imported.monthlyProfit - row.current.monthlyProfit - 100000 * current.deal.feePerTransaction * p.revenueShare) < 1e-7);
+  }
+  const triple = output(run(['compare', '-', b, c], current));
+  assert.equal(triple.sameRoster, false);
+  const replacement = triple.rows.find(row => row.id === 'replacement');
+  assert.equal(replacement.current, null);
+  assert.equal(replacement.first, null);
+  assert.ok(replacement.second);
+  assert.match(output(run(['compare', a, d]), 1).error, /currency/);
+  assert.match(output(run(['compare', '-', '-'], current), 1).error, /only one/);
+});
