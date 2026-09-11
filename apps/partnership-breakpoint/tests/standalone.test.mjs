@@ -133,6 +133,12 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /id="hide-first-zero-share-participant"/);
   assert.match(html, /data-action="hide-first-zero-share-participant"/);
   assert.match(html, /id="hide-first-zero-share-participant"[^>]*aria-keyshortcuts="ArrowRight"/);
+  assert.match(html, /id="copy-last-zero-share-participant"/);
+  assert.match(html, /data-action="copy-last-zero-share-participant"/);
+  assert.match(html, /id="copy-last-zero-share-participant"[^>]*aria-keyshortcuts="F3"/);
+  assert.match(html, /id="hide-last-zero-share-participant"/);
+  assert.match(html, /data-action="hide-last-zero-share-participant"/);
+  assert.match(html, /id="hide-last-zero-share-participant"[^>]*aria-keyshortcuts="Backspace"/);
   assert.match(html, /id="hide-first-spare-capacity-participant"/);
   assert.match(html, /id="hide-first-spare-capacity-participant"/);
   assert.match(html, /data-action="hide-first-spare-capacity-participant"/);
@@ -158,6 +164,9 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /event\.key === 'Delete'/);
   assert.match(html, /event\.key === 'F2'/);
   assert.match(html, /event\.key === 'ArrowRight'/);
+  assert.match(html, /event\.key === 'F3'/);
+  assert.match(html, /event\.key === 'F4'/);
+  assert.match(html, /event\.key === 'Backspace'/);
   assert.match(html, /if \(event\.defaultPrevented\) return;/);
   assert.doesNotMatch(html, /if \(event\.key\.length !== 1\) return;/);
   assert.match(html, /event\.key === 'u' \|\| event\.key === 'U'/);
@@ -176,6 +185,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /Softball carnival split/);
   assert.match(html, /Lacrosse carnival split/);
   assert.match(html, /Water polo carnival split/);
+  assert.match(html, /Rowing carnival split/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
@@ -191,5 +201,6 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /hideLastParticipantAtHold/);
   assert.match(html, /hideFirstParticipantAtHold/);
   assert.match(html, /hideFirstZeroShareParticipant/);
+  assert.match(html, /hideLastZeroShareParticipant/);
   assert.match(html, /id="hide-last-over-capacity-participant"/);
 });
