@@ -1,4 +1,5 @@
-import { createReadStream } from 'node:fs';
+import { constants } from 'node:fs';
+import { open } from 'node:fs/promises';
 import {
   findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage,
   compareScenarioInputs, createAgreementReviewPacket, replayAgreementReviewPacket,
@@ -19,11 +20,24 @@ const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [argumen
   lock <clause ID> <option ID>
   export <brief|evidence|support|groups|options|worksheet>`;
 
+function localPath(path) {
+  if (!path || /^[\\/]{2}/.test(path) || path.split(/[\\/]/).some(part => /^(con|prn|aux|nul|com[0-9¹²³]|lpt[0-9¹²³])$/i.test(part.split('.')[0].trimEnd())) || /:/.test(path.replace(/^[A-Za-z]:[\\/]/, ''))) {
+    throw new TypeError('Use an ordinary local file path, not a device, stream, or network path.');
+  }
+  return path;
+}
+
 async function readText(path, limit = 262144) {
-  const stream = path === '-' ? process.stdin : createReadStream(path);
   const chunks = [];
   let bytes = 0;
+  let file;
   try {
+    let stream = process.stdin;
+    if (path !== '-') {
+      file = await open(localPath(path), constants.O_RDONLY | constants.O_NONBLOCK);
+      if (!(await file.stat()).isFile()) throw new TypeError('Input must be a regular file.');
+      stream = file.createReadStream({ autoClose: false });
+    }
     for await (const chunk of stream) {
       bytes += chunk.length;
       if (bytes > limit) throw new TypeError(`Input exceeds ${limit / 1024} KiB.`);
@@ -32,7 +46,7 @@ async function readText(path, limit = 262144) {
   } catch (error) {
     if (error instanceof TypeError) throw error;
     throw new TypeError('Cannot read input file or stream.');
-  }
+  } finally { await file?.close(); }
   try { return new TextDecoder('utf-8', { fatal: true }).decode(Buffer.concat(chunks)); }
   catch { throw new TypeError('Input must be UTF-8.'); }
 }

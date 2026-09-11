@@ -238,3 +238,20 @@ test('duplicate JSON members, including escaped-equivalent names, fail before an
   const text = { ...proposal, title: 'Repeated "words", {braces}, [arrays]: remain text' };
   assert.equal(result(['solve', '-'], text).agreement.changeCost, 2);
 });
+
+test('file inputs reject device and network aliases before opening and recover with regular files', () => {
+  for (const path of ['NUL', 'nul.txt', 'CON', 'COM1', 'LPT¹.txt', '\\\\server\\share\\draft.json', '//server/share/draft.json', '\\\\.\\NUL', 'draft.json:extra']) {
+    invalid(['solve', path], proposal, /ordinary local file/);
+  }
+  invalid(['solve', fileURLToPath(new URL('../scripts/', import.meta.url))], proposal, /regular file/);
+  assert.equal(result(['solve', '-']).agreement.changeCost, 2);
+});
+
+test('POSIX FIFO inputs fail without waiting for a writer', { skip: process.platform === 'win32' }, () => {
+  const directory = mkdtempSync(join(tmpdir(), 'agreement-fifo-'));
+  try {
+    const file = join(directory, 'input');
+    assert.equal(spawnSync('mkfifo', [file]).status, 0);
+    invalid(['solve', file], proposal, /regular file/);
+  } finally { rmSync(directory, { recursive: true }); }
+});

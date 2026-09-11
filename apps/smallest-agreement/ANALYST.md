@@ -5,6 +5,10 @@ account, or network is used. Commands read the named local files or UTF-8
 standard input (`-`) and write results to standard output. They never modify
 input files. Output contains the supplied participant data and notes. Review
 it before sharing. Shell redirection is your choice and can overwrite files.
+Named inputs must resolve to regular local files. Network paths, Windows
+device aliases, and alternate streams are rejected before opening. Use `-`
+for intentional piped input. File opens are nonblocking where supported,
+so special files such as POSIX FIFOs are rejected without waiting for a writer.
 
 ```sh
 npm run --silent analyze -- solve proposal.json
