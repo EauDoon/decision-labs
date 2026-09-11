@@ -221,3 +221,20 @@ test('file read errors and invalid UTF-8 emit safe errors and recover', () => {
     assert.equal(JSON.parse(readFileSync(file, 'utf8')).threshold, 60);
   } finally { rmSync(directory, { recursive: true }); }
 });
+
+test('duplicate JSON members, including escaped-equivalent names, fail before analysis or replay', () => {
+  const json = JSON.stringify(proposal);
+  const ambiguous = json.replace('"threshold":60', '"threshold":0,"thres\\u0068old":60');
+  invalid(['solve', '-'], ambiguous, /duplicate JSON member/);
+  invalid(['export', '-', 'brief'], json.replace('"changeCost":2', '"changeCost":999,"changeCost":2'), /duplicate JSON member/);
+  invalid(['solve', '-'], json.replace('"a":60', '"a":0,"\\u0061":60'), /duplicate JSON member/);
+  const packet = run(['review', '-', 'margin']).stdout;
+  invalid(['replay', '-'], packet.replace('"version":1', '"version":2,"version":1'), /duplicate JSON member/);
+  const batch = run(['batch', '-'], ambiguous + '\n' + json);
+  assert.equal(batch.status, 1);
+  const rows = batch.stdout.trim().split('\n').map(line => JSON.parse(line));
+  assert.equal(rows[0].status, 'error');
+  assert.equal(rows[1].result.agreement.changeCost, 2);
+  const text = { ...proposal, title: 'Repeated "words", {braces}, [arrays]: remain text' };
+  assert.equal(result(['solve', '-'], text).agreement.changeCost, 2);
+});

@@ -15,7 +15,9 @@ node scripts/analyze.mjs solve - < proposal.json
 canonicalizes through the existing model, and returns its bounded exhaustive
 result with up to five passing alternatives. Unknown proposal fields are
 discarded by the model. Workspace display preferences are ignored. Input is
-limited to 256 KiB of valid UTF-8; a BOM is accepted. Search is limited to
+limited to 256 KiB of valid UTF-8; a BOM is accepted. Every CLI JSON input
+rejects duplicate object member names, including equivalent escaped names,
+before calculation or packet replay. Search is limited to
 50,000 lock-permitted combinations. `infeasible` and `too_large` are distinct
 successful reports, never fabricated recommendations.
 

@@ -38,8 +38,24 @@ async function readText(path, limit = 262144) {
 }
 
 function parseJson(text) {
-  try { return JSON.parse(text); }
+  let value;
+  try { value = JSON.parse(text); }
   catch { throw new TypeError('Input must contain valid JSON.'); }
+  // Grammar is already valid; inspect member names before last-wins values reach the model.
+  const scopes = [];
+  let lastString;
+  for (const [token] of text.matchAll(/"(?:\\.|[^"\\])*"|\{|\}|\[|\]|:/g)) {
+    if (token === '{') scopes.push(new Set());
+    else if (token === '[') scopes.push(null);
+    else if (token === '}' || token === ']') scopes.pop();
+    else if (token === ':') {
+      const members = scopes.at(-1);
+      const key = JSON.parse(lastString);
+      if (members.has(key)) throw new TypeError('Input contains a duplicate JSON member.');
+      members.add(key);
+    } else lastString = token;
+  }
+  return value;
 }
 
 function checked(value) {
