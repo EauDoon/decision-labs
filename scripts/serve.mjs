@@ -179,8 +179,7 @@ function catalogMarkupText(html, id) {
   return html.slice(found.end + 1, closeLt).trim();
 }
 
-export function catalogFirstSkipTargetText() {
-  const href = catalogFirstSkipHref();
+function catalogSkipTargetText(href) {
   if (!href.startsWith('#') || href.length < 2) return '';
   const html = readFileSync(new URL('index.html', root), 'utf8');
   const found = catalogMarkupTag(html, href.slice(1));
@@ -188,6 +187,19 @@ export function catalogFirstSkipTargetText() {
   const labelled = found.tag.match(/aria-labelledby="([^"]+)"/);
   if (labelled) return catalogMarkupText(html, labelled[1]);
   if (/^<h[1-6]\b/i.test(found.tag)) return catalogMarkupText(html, href.slice(1));
+  return '';
+}
+
+export function catalogFirstSkipTargetText() {
+  return catalogSkipTargetText(catalogFirstSkipHref());
+}
+
+export function catalogLastSkipTargetText() {
+  const links = catalogSkipLinks();
+  for (let i = links.length - 1; i >= 0; i -= 1) {
+    const text = catalogSkipTargetText(links[i].href);
+    if (text) return text;
+  }
   return '';
 }
 
