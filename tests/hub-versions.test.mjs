@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -200,6 +200,23 @@ test('404 first skip href matches the first catalog skip-link href', () => {
   assert.match(page, /id="skips"/);
   assert.match(page, /id="copy-last-open"/);
   assert.match(page, />Copy last Open href</);
+});
+
+test('404 last skip href matches the last catalog skip-link href', () => {
+  const href = catalogLastSkipHref();
+  assert.equal(href, '#version-line');
+  assert.equal(html.includes(`href="${href}"`), true, 'last skip href missing from catalog');
+  assert.notEqual(href, catalogFirstSkipHref());
+  assert.notEqual(href, catalogFirstOpenHref());
+  assert.notEqual(href, catalogLastOpenHref());
+  const page = notFoundPage();
+  assert.equal(page.includes(href), true, 'last skip href missing from 404 page');
+  assert.match(page, /id="copy-last-skip"/);
+  assert.match(page, />Copy last skip href</);
+  assert.match(page, /querySelectorAll\('#skips a\.skip'\)/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="copy-first-skip"/);
+  assert.match(page, />Copy first skip href</);
 });
 
 test('404 first Open href matches the first catalog Open workbench href', () => {
