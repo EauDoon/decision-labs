@@ -398,6 +398,15 @@ export const PRESETS = Object.freeze({
       { id: 'dragonboat-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.32, fixedMonthlyCost: 1320, minimumAcceptableProfit: 500, capacity: 4700, minimumCommitment: 0, riskCost: 270 },
     ],
   },
+  surfCarnivalSplit: {
+    name: 'Surf carnival split',
+    deal: { monthlyVolume: 4800, feePerTransaction: 8, addressableVolume: 6000, volumeShockPct: 0 },
+    participants: [
+      { id: 'surf-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.78, fixedMonthlyCost: 3660, minimumAcceptableProfit: 1400, capacity: 5700, minimumCommitment: 0, riskCost: 535 },
+      { id: 'surf-club-hire', name: 'Surf club hire', revenueShare: 0.38, variableCostPerTransaction: 2.08, fixedMonthlyCost: 2560, minimumAcceptableProfit: 940, capacity: 6800, minimumCommitment: 390, riskCost: 400 },
+      { id: 'surf-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.36, fixedMonthlyCost: 1350, minimumAcceptableProfit: 510, capacity: 4800, minimumCommitment: 0, riskCost: 280 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
