@@ -1272,6 +1272,39 @@ const presets = {
       },
     ],
   },
+  "triathlon-club-hours": {
+    title: "Triathlon club hours: triathlon staging booking, transition-area hours, and bike-bag lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 7 },
+      { id: "neighbours", name: "Neighbours", weight: 6, veto: true },
+      { id: "pandc", name: "P&C", weight: 9 },
+    ],
+    clauses: [
+      {
+        id: "triathlon-staging-booking", title: "Triathlon staging booking", options: [
+          { id: "triathlon-staging-booking-original", original: true, label: "Keep weekday triathlon staging from 11:20 with no posted transition-rack rota", changeCost: 0, support: { students: 6, neighbours: 93, pandc: 58 } },
+          { id: "triathlon-staging-booking-late", original: false, label: "Open weekday triathlon staging at 16:50 with a posted transition-rack rota", changeCost: 2, support: { students: 87, neighbours: 33, pandc: 45 } },
+          { id: "triathlon-staging-booking-weekend", original: false, label: "Hold Saturday morning triathlon staging at 07:20 with a transition-rack booking card", changeCost: 4, support: { students: 72, neighbours: 41, pandc: 53 } },
+        ],
+      },
+      {
+        id: "triathlon-transition-area", title: "Transition-area hours", options: [
+          { id: "triathlon-transition-area-original", original: true, label: "No posted triathlon transition-area hours", changeCost: 0, support: { students: 71, neighbours: 19, pandc: 28 } },
+          { id: "triathlon-transition-area-cap", original: false, label: "Close the triathlon transition area at 18:15 and keep drinks inside the transition tent", changeCost: 1, support: { students: 44, neighbours: 81, pandc: 60 } },
+          { id: "triathlon-transition-area-cut", original: false, label: "Serve tea only after 14:50 and retire the triathlon transition-area drinks", changeCost: 5, support: { students: 26, neighbours: 86, pandc: 42 } },
+        ],
+      },
+      {
+        id: "triathlon-bike-bag-lockup", title: "Bike-bag lock-up", options: [
+          { id: "triathlon-bike-bag-lockup-original", original: true, label: "Leave the bike-bag door on a shared padlock after club hours", changeCost: 0, support: { students: 11, neighbours: 31, pandc: 36 } },
+          { id: "triathlon-bike-bag-lockup-steward", original: false, label: "Require a P&C steward to lock the bike-bag store before 19:20", changeCost: 3, support: { students: 58, neighbours: 55, pandc: 75 } },
+          { id: "triathlon-bike-bag-lockup-timer", original: false, label: "Add a timed lock on the bike-bag store after the last triathlon session", changeCost: 2, support: { students: 47, neighbours: 50, pandc: 67 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
