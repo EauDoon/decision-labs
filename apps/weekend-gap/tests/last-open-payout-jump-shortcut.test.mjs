@@ -1,0 +1,32 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("keyboard PageDown is wired to the last-open-payout-hour copy control", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="copy-last-open-payout"/);
+  assert.match(html, /id="gantt-title"/);
+  assert.match(html, /<kbd>PageDown<\/kbd>/);
+  assert.match(html, /Jump to the last-open-payout-hour copy control/);
+  assert.match(app, /function jumpToLastOpenPayoutCopy/);
+  assert.match(app, /#copy-last-open-payout/);
+  assert.ok(app.includes('event.key === "PageDown"'));
+  assert.ok(app.includes('event.key === "Home"'));
+  assert.match(app, /function jumpToLastOpenBankCopy/);
+  assert.match(app, /function jumpToGantt/);
+  assert.notEqual(app.match(/function jumpToLastOpenPayoutCopy/)?.[0], app.match(/function jumpToLastOpenBankCopy/)?.[0]);
+  assert.notEqual(app.match(/function jumpToLastOpenPayoutCopy/)?.[0], app.match(/function jumpToLastOpenIssuerCopy/)?.[0]);
+  assert.notEqual(app.match(/function jumpToLastOpenPayoutCopy/)?.[0], app.match(/function jumpToFirstOpenPayoutCopy/)?.[0]);
+  assert.notEqual(app.match(/function jumpToLastOpenPayoutCopy/)?.[0], app.match(/function jumpToGantt/)?.[0]);
+  const pageDownFn = app.slice(app.indexOf("function jumpToLastOpenPayoutCopy"), app.indexOf("function jumpToHideWeekendPayoutOpenFilter"));
+  assert.match(pageDownFn, /jumpToGantt\(\)/);
+  assert.doesNotMatch(pageDownFn, /copyLastOpenPayoutHourMarkdown/);
+  assert.doesNotMatch(pageDownFn, /copyLastOpenBankHourMarkdown/);
+  assert.doesNotMatch(pageDownFn, /copyLastOpenIssuerHourMarkdown/);
+  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
+  assert.ok(handler.indexOf('event.key === "PageDown"') !== handler.indexOf('event.key === "Home"'));
+  assert.match(handler, /jumpToLastOpenPayoutCopy\(\)/);
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "PageDown"'), handler.indexOf('event.key === "PageDown"') + 180), /copyLastOpenPayoutHourMarkdown/);
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "PageDown"'), handler.indexOf('event.key === "PageDown"') + 180), /copyLastOpenBankHourMarkdown/);
+});
