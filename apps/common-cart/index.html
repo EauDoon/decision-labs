@@ -141,9 +141,9 @@ SOFTWARE.
         <li><kbd>F3</kbd> Copy leftover uncovered count (organizer private)</li>
         <li><kbd>F4</kbd> Focus the leftover uncovered count copy control, or leftover heading if missing</li>
         <li><kbd>Backspace</kbd> Focus hide first winner-allocated buyer, or the buyer list if missing</li>
-        <li><kbd>Shift+F7</kbd> Copy leftover uncovered leftover-only minimum (organizer private)</li>
-        <li><kbd>Shift+F8</kbd> Focus the leftover uncovered leftover-only minimum copy control, or leftover heading if missing</li>
-        <li><kbd>Shift+F9</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
+        <li><kbd>Shift+F7</kbd> Copy leftover uncovered leftover-only headroom (organizer private)</li>
+        <li><kbd>Shift+F8</kbd> Focus the leftover uncovered leftover-only headroom copy control, or leftover heading if missing</li>
+        <li><kbd>Shift+F9</kbd> Focus hide last uncovered leftover buyer, or the buyer list if missing</li>
         <li><kbd>F7</kbd> Copy leftover uncovered leftover-only count (organizer private)</li>
         <li><kbd>F8</kbd> Focus the leftover uncovered leftover-only count copy control, or leftover heading if missing</li>
         <li><kbd>F9</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
@@ -226,6 +226,7 @@ SOFTWARE.
           <button class="preset" data-preset="sailingCarnivalLunch" type="button">Sailing carnival</button>
           <button class="preset" data-preset="canoeingCarnivalLunch" type="button">Canoeing carnival</button>
           <button class="preset" data-preset="kayakingCarnivalLunch" type="button">Kayaking carnival</button>
+          <button class="preset" data-preset="dragonBoatCarnivalLunch" type="button">Dragon boat carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -619,7 +620,8 @@ SOFTWARE.
             <button id="copy-leftover-uncovered-leftover-only-count" class="print-chrome" type="button" aria-keyshortcuts="F7">Copy leftover uncovered leftover-only count (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-remaining" class="print-chrome" type="button" aria-keyshortcuts="F10">Copy leftover uncovered leftover-only remaining (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-maximum" class="print-chrome" type="button" aria-keyshortcuts="Shift+F10">Copy leftover uncovered leftover-only maximum (organizer private)</button>
-            <button id="copy-leftover-uncovered-leftover-only-minimum" class="print-chrome" type="button" aria-keyshortcuts="Shift+F7">Copy leftover uncovered leftover-only minimum (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-minimum" class="print-chrome" type="button">Copy leftover uncovered leftover-only minimum (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-headroom" class="print-chrome" type="button" aria-keyshortcuts="Shift+F7">Copy leftover uncovered leftover-only headroom (organizer private)</button>
             <button id="copy-uncovered-leftover" class="print-chrome" type="button">Copy uncovered leftover counts (organizer private)</button>
             <button id="copy-uncovered-leftover-units" class="print-chrome" type="button">Copy uncovered leftover units (organizer private)</button>
             <p class="canvas-note print-chrome">Organizer-private Markdown of leftover buyer counts and units. Clipboard copies when allowed; otherwise a textarea is shown. This is not a merchant export.</p>
@@ -643,6 +645,7 @@ SOFTWARE.
             <p class="canvas-note print-chrome">Leftover uncovered leftover-only remaining copy is leftover-only buyer units after the winner. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered leftover-only maximum copy is the largest leftover-only buyer quantity. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered leftover-only minimum copy is the smallest leftover-only buyer quantity. Organizer-private. This is not a merchant export.</p>
+            <p class="canvas-note print-chrome">Leftover uncovered leftover-only headroom copy is leftover-fill remaining capacity after leftover-only units. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover copy is counts and units only. Buyer identities stay out. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover unit-count copy is count only. Organizer-private. This is not a merchant export.</p>
           </article>
