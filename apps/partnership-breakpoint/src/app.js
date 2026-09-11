@@ -1203,6 +1203,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>First at-hold remaining-to-hold</h2><p>${escapeAttribute(firstAtHoldRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Last zero-share participant</h2><p>${escapeAttribute(lastZeroShareLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Last zero-share remaining-to-hold</h2><p>${escapeAttribute(lastZeroShareRemainingMarkdown(result))}</p></section>
+    <section class="print-only print-keep"><h2>First zero-share remaining-to-hold</h2><p>${escapeAttribute(firstZeroShareRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First zero-share participant</h2><p>${escapeAttribute(firstZeroShareLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
