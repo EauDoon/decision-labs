@@ -41,3 +41,11 @@ reduces all support scores by each supplied drop, clamped at zero. Enter 1 to
 20 drops from 0 to 100. Each row evaluates the same selected option IDs with
 the original locks, budget, floors, and vetoes. Cost stays fixed. This is a
 deterministic downside scenario, not a probability estimate or a new search.
+
+## Compare workshop revisions
+
+`node scripts/analyze.mjs compare before.json after.json` returns the model's
+identifier-aware input comparison plus separately solved before/after cases.
+Both files can be proposals or workspace exports; at most one can be stdin.
+Added or removed IDs remain explicit, never invented zero scores. Read the
+input changes before attributing an outcome difference to any one assumption.

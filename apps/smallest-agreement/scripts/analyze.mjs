@@ -1,10 +1,11 @@
 import { createReadStream } from 'node:fs';
-import { findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage } from '../src/model.js';
+import { findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage, compareScenarioInputs } from '../src/model.js';
 
 const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [arguments]
   solve
   evaluate <option IDs separated by commas, in clause order>
-  stress <option IDs> <support drops separated by commas>`;
+  stress <option IDs> <support drops separated by commas>
+  compare <second workshop.json>`;
 
 async function readText(path, limit = 262144) {
   const stream = path === '-' ? process.stdin : createReadStream(path);
@@ -50,9 +51,11 @@ try {
   if (command === '--help' && path === undefined) {
     process.stdout.write(usage + '\n');
   } else {
-    const arity = { solve: 0, evaluate: 1, stress: 2 };
+    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1 };
     if (!Object.hasOwn(arity, command) || !path || args.length !== arity[command]) throw new TypeError(usage);
-    const proposal = proposalFrom(parseJson(await readText(path)));
+    if (command === 'compare' && path === '-' && args[0] === '-') throw new TypeError('Only one comparison input may use stdin.');
+    const inputText = await readText(path);
+    const proposal = proposalFrom(parseJson(inputText));
     let output;
     switch (command) {
       case 'solve': output = solve(proposal); break;
@@ -61,6 +64,12 @@ try {
         method: 'Fixed package, all support scores reduced and clamped at zero; no reoptimization or probabilities.',
         rows: levels(args[1], 100).map(drop => checked(stressPackage(proposal, args[0].split(','), drop))),
       }; break;
+      case 'compare': {
+        const rightText = await readText(args[0]);
+        const right = proposalFrom(parseJson(rightText));
+        output = { inputs: compareScenarioInputs(proposal, right), before: solve(proposal), after: solve(right) };
+        break;
+      }
     }
     process.stdout.write(JSON.stringify(output, null, 2) + '\n');
   }

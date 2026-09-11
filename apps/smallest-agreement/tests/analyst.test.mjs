@@ -93,3 +93,21 @@ test('stress holds the package fixed, clamps support, and crosses the known marg
   for (const bad of ['', '1,,2', '-1', '101', 'NaN', '1,'.repeat(20) + '1']) invalid(['stress', '-', 'balanced', bad], proposal, /numeric levels/);
   invalid(['stress', '-', 'unknown', '5'], proposal, /belong/);
 });
+
+test('compare reports changed inputs before independently recomputed results', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'agreement-compare-'));
+  try {
+    const file = join(directory, 'after.json');
+    const after = { ...proposal, threshold: 70 };
+    writeFileSync(file, JSON.stringify(after));
+    const compared = result(['compare', '-', file]);
+    assert.deepEqual(compared.inputs, [{ field: 'Approval threshold', before: 60, after: 70 }]);
+    assert.equal(compared.before.agreement.changeCost, 2);
+    assert.equal(compared.after.agreement.changeCost, 5);
+    assert.match(JSON.stringify(compared.inputs), /threshold/);
+    assert.deepEqual(result(['compare', file, '-'], after).before, result(['solve', '-'], after));
+    writeFileSync(file, '{malformed');
+    invalid(['compare', '-', file], proposal, /valid JSON/);
+    invalid(['compare', '-', '-'], proposal, /Only one/);
+  } finally { rmSync(directory, { recursive: true }); }
+});
