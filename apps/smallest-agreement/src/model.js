@@ -3022,7 +3022,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideFirstGroupBelowFloor: hideFirstGroupBelowFloor.value,
     hideLastGroupBelowFloor: hideLastGroupBelowFloor.value,
     hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
-    json: `${JSON.stringify({`
+    json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
       clauseDensity,
