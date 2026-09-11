@@ -278,7 +278,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByTertiaryFill: boolean; hideLastBuyerFilledByTertiaryFill: boolean; hideLastUnservedBuyer: boolean; hideFirstUnservedBuyer: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByTertiaryFill: boolean; hideLastBuyerFilledByTertiaryFill: boolean; hideLastUnservedBuyer: boolean; hideFirstUnservedBuyer: boolean; hideLastLeftoverOnlyBuyer: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -343,6 +343,8 @@ export function filterBuyerIdsHidingLastBuyerFilledByTertiaryFill(rawScenario: u
 export function filterBuyerIdsHidingLastUnservedBuyer(rawScenario: unknown, hideLastUnservedBuyer: boolean): string[];
 /** Display-only. Matching is unchanged. Hides only the first buyer with no winner, leftover-fill, or tertiary units. Winner-allocated, leftover-fill, tertiary-fill, and other unserved buyers stay visible. When hideFirstUnservedBuyer is false, every buyer id is returned. */
 export function filterBuyerIdsHidingFirstUnservedBuyer(rawScenario: unknown, hideFirstUnservedBuyer: boolean): string[];
+/** Display-only. Matching is unchanged. Hides only the last leftover-only buyer (leftover-fill or tertiary, not winner, not unserved). Winner-allocated, unserved, and other leftover-only buyers stay visible. When hideLastLeftoverOnlyBuyer is false, every buyer id is returned. */
+export function filterBuyerIdsHidingLastLeftoverOnlyBuyer(rawScenario: unknown, hideLastLeftoverOnlyBuyer: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
@@ -496,6 +498,8 @@ export function createWinnerInspectorSummaryMarkdown(rawScenario: unknown): stri
 export function createUncoveredLeftoverCountsMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line uncovered leftover unit-count. Count only. Not a merchant export. */
 export function createUncoveredLeftoverUnitCountMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover uncovered remaining units. Count only. Honest empty none. Not a merchant export. Distinct from leftover-fill remaining and tertiary remaining. */
+export function createLeftoverUncoveredRemainingMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];
