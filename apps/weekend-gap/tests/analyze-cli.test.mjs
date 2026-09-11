@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { once } from 'node:events';
 import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
@@ -221,4 +222,32 @@ test('all JSON inputs reject duplicate decoded keys and invalid UTF-8', () => {
   const withSyntaxInText = { ...fixture(), name: 'String { "key": 1, "key": 2 }' };
   assert.equal(result(['simulate', '-'], withSyntaxInText).scenario.name, withSyntaxInText.name);
   assert.equal(result(['batch', '-'], { format: 'weekend-gap-library', version: 1, scenarios: [fixture(), fixture()] }).rows.length, 2);
+});
+
+test('local-file boundary rejects URI and Windows device or stream inputs', () => {
+  const uri = run(['simulate', 'file://scenario.json']);
+  assert.equal(uri.status, 1);
+  assert.match(uri.stderr, /local file/);
+  if (process.platform === 'win32') {
+    for (const path of ['NUL', 'con.txt', 'COM1', 'CONIN$', 'scenario.json:stream']) {
+      const rejected = run(['simulate', path]);
+      assert.equal(rejected.status, 1);
+      assert.equal(rejected.stdout, '');
+      assert.match(rejected.stderr, /local file/);
+    }
+  }
+  assert.equal(result(['simulate', '-']).summary.totalDemandAud, 72);
+});
+
+test('closed output pipe produces a controlled error without a stack trace', async () => {
+  const child = spawn(process.execPath, [cli, 'simulate', '-']);
+  let diagnostic = '';
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', chunk => { diagnostic += chunk; });
+  child.stdout.destroy();
+  child.stdin.end(JSON.stringify(fixture()));
+  const [status] = await once(child, 'close');
+  assert.equal(status, 1);
+  assert.match(diagnostic, /Cannot write output/);
+  assert.doesNotMatch(diagnostic, /node:events|Unhandled|at /);
 });

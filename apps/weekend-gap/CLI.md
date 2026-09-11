@@ -12,6 +12,8 @@ node scripts/analyze.mjs simulate scenario.json --format markdown
 Use `-` as the input path to consume JSON on stdin. Output goes to stdout and
 errors go to stderr with exit status 1. Success returns status 0. The CLI never
 writes input files. Redirect stdout to a different path to save results.
+If the receiving process closes its pipe, output fails with a controlled error
+and exit status 1 rather than an unhandled stack trace.
 Use `node scripts/analyze.mjs --help` for syntax. Use the direct Node command
 when piping JSON because npm may print its own command header.
 
@@ -21,6 +23,8 @@ are included in JSON simulation output. Unknown fields, wrong types, invalid
 values and assumptions that require normalization or clamping are rejected.
 Fix the reported input and rerun; no previous result or workspace is modified.
 Files must be regular files. Scenario inputs are bounded to 250,000 bytes.
+Network/UNC paths, URI inputs and Windows devices or alternate streams are
+rejected. Nonblocking file opens reject FIFOs without waiting for a writer.
 All inputs require valid UTF-8. Duplicate JSON object members are rejected at
 every depth, including names written with Unicode escapes, before model use.
 

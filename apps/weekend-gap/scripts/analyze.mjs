@@ -1,4 +1,5 @@
 import { open } from 'node:fs/promises';
+import { constants } from 'node:fs';
 import {
   DEFAULT_SCENARIO, scenarioFromJSON, runSimulation, dashboardToMarkdown,
   compareScenarios,
@@ -40,7 +41,13 @@ async function readText(path, limit = 250000) {
     }
     return decode(Buffer.concat(chunks));
   }
-  const file = await open(path, 'r');
+  if (/^[\\/]{2}/.test(path) || /^[a-z]+:\/\//i.test(path)
+    || (process.platform === 'win32' && (path.replace(/^[a-z]:/i, '').includes(':')
+      || path.split(/[\\/]/).some(part => /^(?:con|prn|aux|nul|com[1-9¹²³]|lpt[1-9¹²³]|conin\$|conout\$)(?:\.|$)/i.test(part.replace(/[. ]+$/, '')))))) {
+    throw new Error('Input must be a local file, not a network path, device or alternate stream.');
+  }
+  // Nonblocking open lets the regular-file check reject FIFOs before waiting for a writer.
+  const file = await open(path, constants.O_RDONLY | (constants.O_NONBLOCK ?? 0));
   try {
     if (!(await file.stat()).isFile()) throw new Error('Input must be a regular file.');
     const buffer = Buffer.alloc(limit + 1);
@@ -189,6 +196,11 @@ async function main([command, ...rest]) {
     default: throw new Error('Unknown command. Run with --help.');
   }
 }
+
+process.stdout.on('error', () => {
+  process.stderr.write('Weekend Gap: Cannot write output. Check the receiving process.\n');
+  process.exitCode = 1;
+});
 
 try {
   const result = await main(process.argv.slice(2));
