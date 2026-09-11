@@ -472,6 +472,22 @@ test("workspace stores hide first leftover-only buyer and older files default to
   assert.throws(() => validateWorkspace({ version: 1, rooms: [], extra: true }), /unexpected field/);
 });
 
+test("workspace stores hide last winner-allocated buyer and older files default to show-all", () => {
+  const s = clonePreset();
+  const legacy = validateWorkspace({ version: 1, rooms: [s] });
+  assert.equal(Object.hasOwn(legacy, "hideLastWinnerAllocatedBuyer"), true);
+  assert.equal(legacy.hideLastWinnerAllocatedBuyer, false);
+  assert.equal(legacy.hideFirstLeftoverOnlyBuyer, false);
+  const hidden = validateWorkspace({ version: 1, rooms: [s], hideLastWinnerAllocatedBuyer: true, hideFirstLeftoverOnlyBuyer: false, hideLastLeftoverOnlyBuyer: false });
+  assert.equal(hidden.hideLastWinnerAllocatedBuyer, true);
+  assert.equal(hidden.hideFirstLeftoverOnlyBuyer, false);
+  const shown = validateWorkspace({ version: 1, rooms: [], hideLastWinnerAllocatedBuyer: false });
+  assert.equal(shown.hideLastWinnerAllocatedBuyer, false);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideLastWinnerAllocatedBuyer: "true" }), /true or false/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideLastWinnerAllocatedBuyer: 1 }), /true or false/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], extra: true }), /unexpected field/);
+});
+
 test("workspace stores hide offers with remaining capacity and older files default to show-all", () => {
   const s = clonePreset();
   const legacy = validateWorkspace({ version: 1, rooms: [s] });
