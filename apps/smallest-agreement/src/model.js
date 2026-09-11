@@ -2401,6 +2401,45 @@ export function formatFirstGroupAtOrAboveThresholdLabelMarkdown(proposal, option
 }
 
 /**
+ * One-line Markdown of the last group whose average on the inspected package
+ * currently meets their declared support floor.
+ * Uses the same meeting-floor list as hideLastGroupAtFloor.
+ * Honest when none or no inspected package is available.
+ * Distinct from last at-or-above-threshold group copy, first at-or-above-threshold
+ * group copy, and hideLastGroupAtFloor.
+ * A floor is a number you entered, not a legal quorum.
+ * Do not treat the label as a legal identity.
+ */
+export function formatLastGroupAtFloorLabelMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum. The label is not a legal identity.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      text: `No inspected package is available, so there is no last at-floor group label to copy. ${disclaimer}\n`,
+    };
+  }
+  const listed = groupsMeetingDeclaredSupportFloor(proposal, options);
+  if (listed.status !== "ok") return listed;
+  const last = listed.groups[listed.groups.length - 1];
+  if (!last) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No group currently meets their support floor, so there is no last at-floor group label to copy. ${disclaimer}\n`,
+    };
+  }
+  return {
+    status: "ok",
+    empty: false,
+    label: last.name,
+    text: `Last at-floor group: ${briefText(last.name)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2692,6 +2731,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideLastGroupAtOrAboveThreshold",
   "hideFirstGroupAtOrAboveThreshold",
   "hideLastGroupAtFloor",
+  "hideFirstGroupAtFloor",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2719,6 +2759,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideLastGroupAtOrAboveThreshold",
   "hideFirstGroupAtOrAboveThreshold",
   "hideLastGroupAtFloor",
+  "hideFirstGroupAtFloor",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2796,6 +2837,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideFirstGroupAtOrAboveThreshold.error) return { status: "invalid", errors: [hideFirstGroupAtOrAboveThreshold.error] };
   const hideLastGroupAtFloor = readWorkspaceBoolean(prefs, "hideLastGroupAtFloor");
   if (hideLastGroupAtFloor.error) return { status: "invalid", errors: [hideLastGroupAtFloor.error] };
+  const hideFirstGroupAtFloor = readWorkspaceBoolean(prefs, "hideFirstGroupAtFloor");
+  if (hideFirstGroupAtFloor.error) return { status: "invalid", errors: [hideFirstGroupAtFloor.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2822,6 +2865,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideLastGroupAtOrAboveThreshold: hideLastGroupAtOrAboveThreshold.value,
     hideFirstGroupAtOrAboveThreshold: hideFirstGroupAtOrAboveThreshold.value,
     hideLastGroupAtFloor: hideLastGroupAtFloor.value,
+    hideFirstGroupAtFloor: hideFirstGroupAtFloor.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -2849,6 +2893,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideLastGroupAtOrAboveThreshold: hideLastGroupAtOrAboveThreshold.value,
       hideFirstGroupAtOrAboveThreshold: hideFirstGroupAtOrAboveThreshold.value,
       hideLastGroupAtFloor: hideLastGroupAtFloor.value,
+      hideFirstGroupAtFloor: hideFirstGroupAtFloor.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -2889,6 +2934,7 @@ export function parseWorkspaceJson(text) {
       hideLastGroupAtOrAboveThreshold: null,
       hideFirstGroupAtOrAboveThreshold: null,
       hideLastGroupAtFloor: null,
+      hideFirstGroupAtFloor: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -2951,6 +2997,8 @@ export function parseWorkspaceJson(text) {
   if (hideFirstGroupAtOrAboveThreshold.error) return { status: "invalid", errors: [hideFirstGroupAtOrAboveThreshold.error] };
   const hideLastGroupAtFloor = readWorkspaceBoolean(raw, "hideLastGroupAtFloor");
   if (hideLastGroupAtFloor.error) return { status: "invalid", errors: [hideLastGroupAtFloor.error] };
+  const hideFirstGroupAtFloor = readWorkspaceBoolean(raw, "hideFirstGroupAtFloor");
+  if (hideFirstGroupAtFloor.error) return { status: "invalid", errors: [hideFirstGroupAtFloor.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -2979,6 +3027,7 @@ export function parseWorkspaceJson(text) {
     hideLastGroupAtOrAboveThreshold: hideLastGroupAtOrAboveThreshold.value,
     hideFirstGroupAtOrAboveThreshold: hideFirstGroupAtOrAboveThreshold.value,
     hideLastGroupAtFloor: hideLastGroupAtFloor.value,
+    hideFirstGroupAtFloor: hideFirstGroupAtFloor.value,
   };
 }
 
