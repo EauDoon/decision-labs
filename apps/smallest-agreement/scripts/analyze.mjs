@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs';
-import { findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage, compareScenarioInputs, createAgreementReviewPacket, replayAgreementReviewPacket, AGREEMENT_REVIEW_TOOLS } from '../src/model.js';
+import { findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage, compareScenarioInputs, createAgreementReviewPacket, replayAgreementReviewPacket, AGREEMENT_REVIEW_TOOLS, MAX_CHANGE_COST, MAX_CLAUSES } from '../src/model.js';
 
 const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [arguments]
   solve
@@ -8,7 +8,8 @@ const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [argumen
   compare <second workshop.json>
   review <tool: ${AGREEMENT_REVIEW_TOOLS.map(tool => tool.id).join(', ')}>
   replay (input is a review packet)
-  batch (input is JSONL, one proposal or workspace per nonblank line)`;
+  batch (input is JSONL, one proposal or workspace per nonblank line)
+  sweep <threshold|maxChangeCost> <numeric levels separated by commas>`;
 
 async function readText(path, limit = 262144) {
   const stream = path === '-' ? process.stdin : createReadStream(path);
@@ -69,7 +70,7 @@ try {
   if (command === '--help' && path === undefined) {
     process.stdout.write(usage + '\n');
   } else {
-    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0 };
+    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2 };
     if (!Object.hasOwn(arity, command) || !path || args.length !== arity[command]) throw new TypeError(usage);
     if (command === 'compare' && path === '-' && args[0] === '-') throw new TypeError('Only one comparison input may use stdin.');
     const inputText = await readText(path, ['replay', 'batch'].includes(command) ? 1048576 : 262144);
@@ -82,6 +83,16 @@ try {
       case 'review': output = createAgreementReviewPacket(proposal, args[0]); break;
       case 'replay': output = replayAgreementReviewPacket(raw); break;
       case 'batch': output = batch(inputText); break;
+      case 'sweep': {
+        const field = args[0];
+        if (field !== 'threshold' && field !== 'maxChangeCost') throw new TypeError('Sweep field must be threshold or maxChangeCost.');
+        const values = levels(args[1], field === 'threshold' ? 100 : MAX_CHANGE_COST * MAX_CLAUSES);
+        const maxCombinations = Math.floor(50000 / values.length);
+        output = { field, maxCombinationsPerRow: maxCombinations, rows: values.map(value => ({
+          value, result: checked(findSmallestAgreement({ ...proposal, [field]: value }, { alternativesLimit: 5, maxCombinations })),
+        })) };
+        break;
+      }
       case 'stress': output = {
         method: 'Fixed package, all support scores reduced and clamped at zero; no reoptimization or probabilities.',
         rows: levels(args[1], 100).map(drop => checked(stressPackage(proposal, args[0].split(','), drop))),

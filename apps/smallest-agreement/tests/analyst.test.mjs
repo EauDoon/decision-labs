@@ -160,3 +160,15 @@ test('batch isolates malformed records and preserves physical line numbers and l
   assert.equal(result(['batch', '-'], large).result.status, 'too_large');
   assert.equal(result(['batch', '-']).result.agreement.changeCost, 2);
 });
+
+test('sweep exposes discrete threshold and budget transitions with bounded searches', () => {
+  const thresholds = result(['sweep', '-', 'threshold', '0,60,70,100']);
+  assert.equal(thresholds.maxCombinationsPerRow, 12500);
+  assert.deepEqual(thresholds.rows.map(row => row.result.agreement?.changeCost ?? null), [0, 2, 5, null]);
+  assert.deepEqual(result(['sweep', '-', 'maxChangeCost', '0,1,2,5']).rows.map(row => row.result.status), ['infeasible', 'infeasible', 'found', 'found']);
+  const veto = { ...proposal, groups: proposal.groups.map(group => ({ ...group, veto: true })) };
+  assert.deepEqual(result(['sweep', '-', 'threshold', '60,65'], veto).rows.map(row => row.result.agreement.changeCost), [2, 5]);
+  invalid(['sweep', '-', 'weight', '1']);
+  invalid(['sweep', '-', 'maxChangeCost', '20000000001']);
+  invalid(['sweep', '-', 'threshold', '60,']);
+});

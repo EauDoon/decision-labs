@@ -85,3 +85,15 @@ means at least one row failed input validation; exit 0 means every record
 produced a report, including honest infeasible or capped reports. File-level
 size/record-count errors exit 2 without partial stdout. Batch errors omit raw
 JSON contents, but valid reports retain supplied data.
+
+## Test explicit threshold or budget scenarios
+
+`node scripts/analyze.mjs sweep proposal.json threshold 50,60,70,80`
+or `node scripts/analyze.mjs sweep proposal.json maxChangeCost 0,2,5,10`
+re-solves each specified value, preserving every other assumption. Enter up to
+20 values within the model's threshold or budget range. Input order and repeat
+values are retained. The total 50,000-combination allowance is divided evenly
+among rows and reported as `maxCombinationsPerRow`. Capped rows remain
+`too_large`. Threshold changes also change declared veto requirements under
+the existing model. These discrete points do not establish a continuous
+frontier or authorize changes to governing rules.
