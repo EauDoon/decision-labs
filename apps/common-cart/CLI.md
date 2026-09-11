@@ -41,3 +41,12 @@ merchant offer terms, aggregate demand and leftover counts, without room titles,
 buyer labels, identifiers, individual budgets or allocations. Aggregate reports
 are not anonymization guarantees for small groups. Residual fills are planning
 alternatives, not simultaneous purchases or reserved inventory.
+
+## Run organizer reviews
+
+`node scripts/analyze.mjs tools` lists the model's supported review IDs and titles.
+`node scripts/analyze.mjs review --input scenario.json --tool withdrawal` runs
+one review, preserving its columns, rows and limitations. Current tools cover
+withdrawal stress, shipping exposure, delivery slack, minimum/capacity previews,
+stranded buyers, dependency, coverage and same-cohort alternatives. Review output
+can contain private buyer labels. An unsupported or missing tool fails closed.

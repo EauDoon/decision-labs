@@ -5,7 +5,7 @@ import { mkdtempSync, readFileSync, writeFileSync, rmSync, existsSync } from 'no
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { clonePreset } from '../src/model.js';
+import { clonePreset, CART_REVIEW_TOOLS, analyzeCartReview } from '../src/model.js';
 
 const script = fileURLToPath(new URL('../scripts/analyze.mjs', import.meta.url));
 const fixture = () => ({ title: 'Synthetic oracle', currency: 'AUD', buyers: [
@@ -53,6 +53,20 @@ test('merchant export uses aggregate allowlists without private buyer records', 
   for (const value of ['private-id', 'Private label', 'PRIVATE ROOM', '1234567', 'buyerId', 'selectedBuyerIds', 'maxOrderTotal', 'maxUnitPrice']) assert.equal(text.includes(value), false, value);
   input.offers = [];
   assert.equal(ok(['merchant', '--input', '-'], input).residual.primary, null);
+});
+
+test('review discovery and every supported tool preserve model report semantics', () => {
+  assert.deepEqual(ok(['tools']), CART_REVIEW_TOOLS);
+  for (const { id } of CART_REVIEW_TOOLS) {
+    const input = clonePreset('neighbourhood');
+    assert.deepEqual(ok(['review', '--input', '-', '--tool', id], input), analyzeCartReview(input, id));
+  }
+  const shipping = ok(['review', '--input', '-', '--tool', 'shipping']);
+  assert.equal(shipping.rows[0][2], 1);
+  assert.equal(shipping.rows[0][3], 13);
+  fails(['review', '--input', '-', '--tool', 'bogus'], fixture());
+  fails(['review', '--input', '-'], fixture(), /--tool/);
+  fails(['tools', '--input', '-'], fixture(), /does not accept/);
 });
 
 test('market CLI has independent shipping, allocation, and no-winner oracles', () => {
