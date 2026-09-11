@@ -1559,7 +1559,7 @@ function handleShortcut(event) {
   }
   if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    focusLeftoverUncoveredLeftoverOnlyCapacityCopy();
+    focusLeftoverUncoveredLeftoverOnlyUnitPriceCopy();
     return;
   }
   if (event.shiftKey && key === "F9") {
@@ -2281,6 +2281,17 @@ function focusLeftoverUncoveredLeftoverOnlyCapacityCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-capacity");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverUncoveredLeftoverOnlyUnitPriceCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-unit-price");
   if (copy) {
     copy.focus();
     return;
