@@ -50,6 +50,7 @@ test("Friday late bank open keeps the Normal Friday calendar with a Friday eveni
   assert.notDeepEqual(preset, PRESETS.saturdayLateBankOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayEarlyBankOpen);
   assert.notDeepEqual(preset, PRESETS.fridayEarlyIssuerOpen);
+  assert.notDeepEqual(preset, PRESETS.fridayLateFxOpen);
   assert.notDeepEqual(preset, PRESETS.sundayLateBankClose);
   assert.notDeepEqual(preset, PRESETS.earlyMondayBankOpen);
   assert.notDeepEqual(preset, PRESETS.saturdayLatePayoutOpen);
