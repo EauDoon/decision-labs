@@ -5,7 +5,7 @@ import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import { fileURLToPath } from 'node:url';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText } from '../scripts/serve.mjs';
 
 test('all analyst commands reject Windows console aliases before opening input', { skip: process.platform !== 'win32' }, () => {
   const commands = [
@@ -3948,4 +3948,114 @@ test('404 copy first Open href stays GET HEAD only with connect-src none', async
   });
   assert.equal(head.status, 404);
   assert.equal(head.body, '');
+});
+
+test('404 copy last labelled skip target text uses the labelled heading without extra public paths', () => {
+  const page = notFoundPage();
+  const text = catalogLastLabelledSkipTargetText();
+  assert.equal(text, 'Trust and limits');
+  assert.equal(page.includes(text), true, '404 page should print the last labelled skip-target text');
+  assert.notEqual(text, catalogLastSkipText());
+  assert.notEqual(text, catalogLastSkipHref());
+  assert.notEqual(text, catalogFirstLabelledSkipTargetText());
+  assert.notEqual(text, catalogFirstSkipTargetText());
+  assert.match(page, /id="copy-last-labelled-skip-target-text"/);
+  assert.match(page, />Copy last labelled skip target text</);
+  assert.match(page, /id="copy-last-labelled-skip-target-text-fallback"/);
+  assert.match(page, /textarea id="copy-last-labelled-skip-target-text-fallback"/);
+  assert.match(page, /lastLabelledSkipTargetTextMarkdown/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="trust"/);
+  assert.match(page, /aria-labelledby="trust-title"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /Copied the last labelled skip-target text from this page/);
+  assert.match(page, /This is the last labelled skip-target text, not a live product feed/);
+  assert.match(page, /id="copy-first-labelled-skip-target-text"/);
+  assert.match(page, />Copy first labelled skip target text</);
+  assert.match(page, /id="copy-last-skip-target-text"/);
+  assert.match(page, />Copy last skip target text</);
+  assert.notEqual(page.match(/id="copy-last-labelled-skip-target-text"/)?.[0], page.match(/id="copy-first-labelled-skip-target-text"/)?.[0]);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy last labelled skip target text markdown is the labelled heading, or empty if missing', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let clickLast = null;
+  let skips = [
+    {
+      getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
+      textContent: "Skip to what's new",
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#trust' : null; },
+      textContent: 'Skip to Trust and limits',
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#version-line' : null; },
+      textContent: 'Skip to catalog versions',
+    },
+  ];
+  const versionLine = {
+    getAttribute() { return null; },
+    tagName: 'H2',
+    textContent: 'Partnership Breakpoint 1.5.26, Common Cart 1.4.26, The Smallest Agreement 1.5.26, Weekend Gap 1.5.26',
+  };
+  const whatsNew = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'whats-new-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'First-labelled-skip-target-text copy',
+  };
+  const trust = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'trust-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Trust body',
+  };
+  const whatsLabel = { textContent: "What's new", tagName: 'H2' };
+  const trustLabel = { textContent: 'Trust and limits', tagName: 'H2' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-labelled-skip-target-text') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-labelled-skip-target-text-status') return { textContent: '' };
+      if (id === 'copy-last-labelled-skip-target-text-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'whats-new') return whatsNew;
+      if (id === 'whats-new-title') return whatsLabel;
+      if (id === 'trust') return trust;
+      if (id === 'trust-title') return trustLabel;
+      if (id === 'version-line') return versionLine;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#skips a.skip' ? skips : [];
+    },
+    addEventListener() {},
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- Trust and limits');
+  assert.doesNotMatch(copied, /#trust/);
+  assert.doesNotMatch(copied, /Skip to catalog versions/);
+  assert.doesNotMatch(copied, /Partnership Breakpoint/);
+  assert.doesNotMatch(copied, /What's new/);
+  skips = [];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
 });
