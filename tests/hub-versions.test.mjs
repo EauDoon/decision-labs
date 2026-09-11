@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText, catalogFirstLabelledSkipTargetText, catalogLastLabelledSkipTargetText } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -319,6 +319,37 @@ test('404 first labelled skip target text matches the label of the first skip hr
   assert.match(page, /aria-labelledby="whats-new-title"/);
   assert.match(page, /id="copy-first-skip-target-text"/);
   assert.match(page, />Copy first skip target text</);
+  assert.match(page, /id="copy-last-skip-target-text"/);
+  assert.match(page, />Copy last skip target text</);
+});
+
+test('404 last labelled skip target text matches the label of the last skip href that has aria-labelledby', () => {
+  const text = catalogLastLabelledSkipTargetText();
+  assert.equal(text, 'Trust and limits');
+  assert.equal(html.includes(`>${text}</h2>`), true, 'last labelled skip target text missing from catalog');
+  assert.notEqual(text, catalogLastSkipText());
+  assert.notEqual(text, catalogLastSkipHref());
+  assert.notEqual(text, catalogFirstLabelledSkipTargetText());
+  assert.notEqual(text, catalogFirstSkipTargetText());
+  const serve = readFileSync(new URL('../scripts/serve.mjs', import.meta.url), 'utf8');
+  const start = serve.indexOf('export function catalogLastLabelledSkipTargetText');
+  const end = serve.indexOf('export function notFoundPage');
+  const body = serve.slice(start, end);
+  assert.match(body, /aria-labelledby/);
+  assert.match(body, /catalogMarkupText/);
+  assert.match(body, /links\.length - 1/);
+  assert.doesNotMatch(body, /catalogSkipTargetText\(/);
+  assert.doesNotMatch(body, /\^<h\[1-6\]/);
+  const page = notFoundPage();
+  assert.equal(page.includes(text), true, 'last labelled skip target text missing from 404 page');
+  assert.match(page, /id="copy-last-labelled-skip-target-text"/);
+  assert.match(page, />Copy last labelled skip target text</);
+  assert.match(page, /lastLabelledSkipTargetTextMarkdown/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="trust"/);
+  assert.match(page, /aria-labelledby="trust-title"/);
+  assert.match(page, /id="copy-first-labelled-skip-target-text"/);
+  assert.match(page, />Copy first labelled skip target text</);
   assert.match(page, /id="copy-last-skip-target-text"/);
   assert.match(page, />Copy last skip target text</);
 });
