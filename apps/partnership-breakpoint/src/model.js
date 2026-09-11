@@ -55,6 +55,7 @@
  * @property {boolean} [hideLastParticipantAtHold] Optional roster display preference. Omitted files default to showing the last roster row currently at hold (remaining-to-hold is 0).
  * @property {boolean} [hideFirstParticipantAtHold] Optional roster display preference. Omitted files default to showing the first roster row currently at hold (remaining-to-hold is 0).
  * @property {boolean} [hideFirstZeroShareParticipant] Optional roster display preference. Omitted files default to showing the first roster row with zero revenue share.
+ * @property {boolean} [hideLastZeroShareParticipant] Optional roster display preference. Omitted files default to showing the last roster row with zero revenue share.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -68,7 +69,7 @@
 export const EPSILON = 1e-9;
 export const MAX_PARTICIPANTS = 24;
 export const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant', 'hideLastSpareCapacityParticipant', 'hideFirstSpareCapacityParticipant', 'hideLastParticipantWithoutCapacity', 'hideFirstParticipantWithoutCapacity', 'hideLastParticipantAtHold', 'hideFirstParticipantAtHold', 'hideFirstZeroShareParticipant']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant', 'hideLastSpareCapacityParticipant', 'hideFirstSpareCapacityParticipant', 'hideLastParticipantWithoutCapacity', 'hideFirstParticipantWithoutCapacity', 'hideLastParticipantAtHold', 'hideFirstParticipantAtHold', 'hideFirstZeroShareParticipant', 'hideLastZeroShareParticipant']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -352,6 +353,15 @@ export const PRESETS = Object.freeze({
       { id: 'waterpolo-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.12, fixedMonthlyCost: 1170, minimumAcceptableProfit: 450, capacity: 4200, minimumCommitment: 0, riskCost: 220 },
     ],
   },
+  rowingCarnivalSplit: {
+    name: 'Rowing carnival split',
+    deal: { monthlyVolume: 4300, feePerTransaction: 8, addressableVolume: 5500, volumeShockPct: 0 },
+    participants: [
+      { id: 'rowing-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.68, fixedMonthlyCost: 3560, minimumAcceptableProfit: 1350, capacity: 5200, minimumCommitment: 0, riskCost: 510 },
+      { id: 'rowing-boat-hire', name: 'Boat hire', revenueShare: 0.38, variableCostPerTransaction: 2.22, fixedMonthlyCost: 2300, minimumAcceptableProfit: 890, capacity: 6300, minimumCommitment: 340, riskCost: 350 },
+      { id: 'rowing-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.16, fixedMonthlyCost: 1200, minimumAcceptableProfit: 460, capacity: 4300, minimumCommitment: 0, riskCost: 230 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -539,6 +549,12 @@ export function validateConfiguration(config) {
     const hideFirstZero = own(config, 'hideFirstZeroShareParticipant');
     if (hideFirstZero !== true && hideFirstZero !== false) {
       errors.push('Hide first zero-share participant must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideLastZeroShareParticipant')) {
+    const hideLastZero = own(config, 'hideLastZeroShareParticipant');
+    if (hideLastZero !== true && hideLastZero !== false) {
+      errors.push('Hide last zero-share participant must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
