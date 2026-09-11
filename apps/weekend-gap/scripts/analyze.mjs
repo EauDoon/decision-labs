@@ -3,12 +3,14 @@ import {
   DEFAULT_SCENARIO, scenarioFromJSON, runSimulation, dashboardToMarkdown,
   compareScenarios,
   planReserve,
+  timelineToCSV, analyzeTimeline,
 } from '../src/model.js';
 
 const usage = `Weekend Gap offline analysis (synthetic AUD only)
   simulate SCENARIO [--format json|markdown]
   compare BASELINE CANDIDATE
   reserve SCENARIO TARGET_PERCENT DEADLINE_HOUR
+  timeline SCENARIO [--format json|csv]
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
 Omitted fields use model defaults; invalid or adjusted values are rejected.
@@ -78,6 +80,11 @@ function argumentsFor(args, count, formats = ['json']) {
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
   switch (command) {
+    case 'timeline': {
+      const { args: [path], format } = argumentsFor(rest, 1, ['json', 'csv']);
+      const input = await scenario(path);
+      return format === 'csv' ? timelineToCSV(input) : { scenario: input, ...analyzeTimeline(input) };
+    }
     case 'reserve': {
       const { args: [path, target, deadline] } = argumentsFor(rest, 3);
       const input = await scenario(path);

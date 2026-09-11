@@ -52,6 +52,27 @@ test('reserve planner exposes reachable cents and unreachable early deadlines', 
   for (const [target, deadline] of [['101', '72'], ['50', '0'], ['50', '1.5'], ['', '72'], ['0x10', '72'], ['NaN', '72']]) fails(['reserve', '-', target, deadline]);
 });
 
+test('hourly JSON and CSV retain interval versus checkpoint semantics', () => {
+  const expected = oracle(fixture());
+  const output = result(['timeline', '-']);
+  assert.equal(output.rows.length, 72);
+  output.rows.forEach((row, index) => {
+    assert.equal(row.hour, index);
+    assert.equal(row.endHour, index + 1);
+    assert.equal(row.queuedAud, expected[index].queue);
+    assert.equal(row.settledAud, expected[index].paid);
+  });
+  assert.equal(output.queueAudHours, expected.reduce((sum, row) => sum + row.queue, 0));
+  const csv = run(['timeline', '-', '--format', 'csv']);
+  assert.equal(csv.status, 0);
+  const lines = csv.stdout.trim().split(/\r?\n/);
+  assert.equal(lines.length, 74);
+  assert.match(lines[0], /^checkpoint_hour,local_time,interval_start_hour/);
+  assert.equal(lines[1].split(',')[2], '');
+  assert.equal(Number(lines.at(-1).split(',')[6]), expected.at(-1).queue);
+  fails(['timeline', '-', '--format', 'html']);
+});
+
 test('CLI simulation matches a separate 1 AUD/hour ledger and reads files or stdin', () => {
   const expected = oracle(fixture()).at(-1);
   const output = result(['simulate', '-']);

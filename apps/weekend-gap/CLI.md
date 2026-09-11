@@ -42,3 +42,12 @@ The target accepts decimals from 0 to 100; the deadline is a whole hour from
 1 to 72. An `unreachable` result is a successful analysis with a null minimum,
 not a CLI failure. Gates, arrival timing, throughput and nominal cap stay fixed.
 The result includes the complete assumptions and the planner's explanation.
+
+## Inspect the hourly ledger
+
+`node scripts/analyze.mjs timeline scenario.json` returns 72 interval rows,
+blocker observations, queue AUD-hours and backlog durations as JSON. Concurrent
+blocker counts overlap; they are not additive causal effects. Add `--format csv`
+for the existing 73-checkpoint ledger, including initial hour zero. CSV arrival
+and settlement columns refer to the previous interval; next-hour capacity is
+distinct. The last checkpoint closes hour 72; it does not extend the horizon.
