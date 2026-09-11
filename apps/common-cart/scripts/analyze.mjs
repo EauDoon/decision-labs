@@ -5,6 +5,7 @@ import { parseArgs } from 'node:util';
 import { evaluateMarket, evaluateOffer, groupExclusionReasons, unitsToNextTier, capacityBar } from '../src/model.js';
 import { createMerchantReport, createMerchantResidualReport } from '../src/model.js';
 import { CART_REVIEW_TOOLS, analyzeCartReview } from '../src/model.js';
+import { createCartReviewPacket, replayCartReviewPacket } from '../src/model.js';
 
 const LIMIT = 1048576;
 const help = `Common Cart offline analyst (Node 20+)
@@ -13,6 +14,8 @@ Usage: node scripts/analyze.mjs market --input scenario.json [--output result.js
        node scripts/analyze.mjs merchant --input scenario.json
        node scripts/analyze.mjs tools
        node scripts/analyze.mjs review --input scenario.json --tool withdrawal
+       node scripts/analyze.mjs packet --input scenario.json --tool coverage --output packet.json
+       node scripts/analyze.mjs replay --input packet.json
 Use --input - for piped UTF-8 JSON. Output defaults to stdout.
 Inputs are limited to 1 MiB. Output files must not exist.
 Results are organizer-private, synthetic planning aids, never orders.
@@ -84,7 +87,7 @@ async function main() {
   if (new Set(names).size !== names.length) throw new Error('Duplicate options are not allowed.');
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
-  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'] };
+  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [] };
   if (positionals.length !== 1 || !Object.hasOwn(allowed, command)) throw new Error('Choose a supported command. Use --help for usage.');
   for (const name of names) if (!['input', 'output'].includes(name) && !allowed[command].includes(name)) throw new Error(`--${name} is not supported by ${command}.`);
   if (command === 'tools') {
@@ -95,10 +98,11 @@ async function main() {
   const scenario = json(await readText(values.input));
   let result;
   if (command === 'market') result = evaluateMarket(scenario);
-  if (command === 'review') {
+  if (command === 'review' || command === 'packet') {
     if (!values.tool) throw new Error('--tool is required. Use tools to list reviews.');
-    result = analyzeCartReview(scenario, values.tool);
+    result = command === 'packet' ? createCartReviewPacket(scenario, values.tool) : analyzeCartReview(scenario, values.tool);
   }
+  if (command === 'replay') result = replayCartReviewPacket(scenario);
   if (command === 'merchant') result = { market: createMerchantReport(scenario), residual: createMerchantResidualReport(scenario) };
   if (command === 'offer') {
     if (!values.offer) throw new Error('--offer is required.');

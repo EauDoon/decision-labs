@@ -50,3 +50,16 @@ one review, preserving its columns, rows and limitations. Current tools cover
 withdrawal stress, shipping exposure, delivery slack, minimum/capacity previews,
 stranded buyers, dependency, coverage and same-cohort alternatives. Review output
 can contain private buyer labels. An unsupported or missing tool fails closed.
+
+## Save and replay review evidence
+
+```sh
+node scripts/analyze.mjs packet --input scenario.json --tool coverage --output packet.json
+node scripts/analyze.mjs replay --input packet.json --output replayed.json
+```
+
+Packets retain the full private scenario, canonical input snapshot and review.
+Replay recomputes through the model and rejects changed snapshots, result cells,
+metadata or unsupported packet shapes. Success writes the recomputed packet.
+Packets are unsigned: internal consistency does not authenticate the author or
+prove inputs are real. Keep the original packet when investigating a failure.

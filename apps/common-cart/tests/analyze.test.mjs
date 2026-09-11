@@ -69,6 +69,18 @@ test('review discovery and every supported tool preserve model report semantics'
   fails(['tools', '--input', '-'], fixture(), /does not accept/);
 });
 
+test('review packets replay independently and reject tampered snapshots and results', () => {
+  const packet = ok(['packet', '--input', '-', '--tool', 'coverage']);
+  assert.equal(packet.format, 'common-cart-review');
+  assert.deepEqual(ok(['replay', '--input', '-'], packet), packet);
+  const changed = structuredClone(packet); changed.review.rows[0][1] = 999;
+  fails(['replay', '--input', '-'], changed, /does not match/);
+  const changedInput = structuredClone(packet); changedInput.scenario.buyers[0].quantity = 3;
+  fails(['replay', '--input', '-'], changedInput, /snapshot changed/);
+  fails(['replay', '--input', '-'], { ...packet, extra: 'field' }, /Unsupported/);
+  fails(['packet', '--input', '-'], fixture(), /--tool/);
+});
+
 test('market CLI has independent shipping, allocation, and no-winner oracles', () => {
   const result = ok(['market', '--input', '-']);
   assert.equal(result.winner.fulfilledUnits, 2);
