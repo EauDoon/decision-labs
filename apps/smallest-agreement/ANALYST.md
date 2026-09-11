@@ -31,6 +31,7 @@ parse errors do not echo input text. Run `node scripts/analyze.mjs --help`
 for syntax. Use the direct `node` command or npm's `--silent` flag for clean
 machine-readable stdout. Scores, weights, and costs are human assumptions.
 These reports cannot establish fairness, consent, legal validity, or authority.
+An output-stream failure also exits 2 with a controlled JSON error on stderr.
 
 ## Inspect a proposed package
 

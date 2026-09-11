@@ -1,6 +1,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { spawnSync } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
+import { once } from 'node:events';
 import { fileURLToPath } from 'node:url';
 import { mkdtempSync, readFileSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -254,4 +255,16 @@ test('POSIX FIFO inputs fail without waiting for a writer', { skip: process.plat
     assert.equal(spawnSync('mkfifo', [file]).status, 0);
     invalid(['solve', file], proposal, /regular file/);
   } finally { rmSync(directory, { recursive: true }); }
+});
+
+test('closed output pipe produces a controlled error without a runtime stack', { timeout: 10000 }, async () => {
+  const child = spawn(process.execPath, [script, 'solve', '-']);
+  let stderr = '';
+  child.stderr.setEncoding('utf8');
+  child.stderr.on('data', text => { stderr += text; });
+  child.stdout.destroy();
+  child.stdin.end(JSON.stringify(proposal));
+  const [status] = await once(child, 'close');
+  assert.equal(status, 2);
+  assert.deepEqual(JSON.parse(stderr), { status: 'error', error: 'Cannot write output stream.' });
 });

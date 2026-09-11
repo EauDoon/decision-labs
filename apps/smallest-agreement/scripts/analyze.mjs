@@ -8,6 +8,11 @@ import {
   formatParticipantGroupsCsv, formatClauseOptionsCsv, formatDiscussionWorksheetCsv,
 } from '../src/model.js';
 
+process.stdout.on('error', () => {
+  process.stderr.write(JSON.stringify({ status: 'error', error: 'Cannot write output stream.' }) + '\n');
+  process.exitCode = 2;
+});
+
 const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [arguments]
   solve
   evaluate <option IDs separated by commas, in clause order>
