@@ -97,3 +97,13 @@ among rows and reported as `maxCombinationsPerRow`. Capped rows remain
 `too_large`. Threshold changes also change declared veto requirements under
 the existing model. These discrete points do not establish a continuous
 frontier or authorize changes to governing rules.
+
+## Preview an option commitment
+
+`node scripts/analyze.mjs lock proposal.json hours balanced` replaces any
+existing lock on the named clause in an in-memory copy, then searches the
+remaining permitted options. Supply actual clause and option IDs. The result
+contains the hypothetical proposal and its search, keeping other locks, floors,
+vetoes, and budget. A lock never grants decision authority. The source file
+is unchanged; the nested `proposal` is available if you choose to save that
+counterfactual separately.

@@ -172,3 +172,19 @@ test('sweep exposes discrete threshold and budget transitions with bounded searc
   invalid(['sweep', '-', 'maxChangeCost', '20000000001']);
   invalid(['sweep', '-', 'threshold', '60,']);
 });
+
+test('lock preview forces one option while preserving other constraints and source inputs', () => {
+  const preview = result(['lock', '-', 'hours', 'maximum']);
+  assert.equal(preview.status, 'preview');
+  assert.equal(preview.proposal.clauses[0].lockedOptionId, 'maximum');
+  assert.equal(preview.result.agreement.changeCost, 5);
+  assert.equal(preview.result.checkedCombinations, 1);
+  assert.equal(result(['lock', '-', 'hours', 'original']).result.status, 'infeasible');
+  assert.equal(result(['lock', '-', 'hours', 'maximum'], { ...proposal, maxChangeCost: 2 }).result.status, 'infeasible');
+  const previouslyLocked = structuredClone(proposal);
+  previouslyLocked.clauses[0].lockedOptionId = 'original';
+  assert.equal(result(['lock', '-', 'hours', 'balanced'], previouslyLocked).result.agreement.changeCost, 2);
+  invalid(['lock', '-', 'missing', 'balanced'], proposal, /Unknown clause/);
+  invalid(['lock', '-', 'hours', 'missing'], proposal, /Unknown option/);
+  assert.equal(result(['solve', '-']).agreement.changeCost, 2);
+});

@@ -1,5 +1,5 @@
 import { createReadStream } from 'node:fs';
-import { findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage, compareScenarioInputs, createAgreementReviewPacket, replayAgreementReviewPacket, AGREEMENT_REVIEW_TOOLS, MAX_CHANGE_COST, MAX_CLAUSES } from '../src/model.js';
+import { findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage, compareScenarioInputs, createAgreementReviewPacket, replayAgreementReviewPacket, AGREEMENT_REVIEW_TOOLS, MAX_CHANGE_COST, MAX_CLAUSES, previewLockedOption } from '../src/model.js';
 
 const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [arguments]
   solve
@@ -9,7 +9,8 @@ const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [argumen
   review <tool: ${AGREEMENT_REVIEW_TOOLS.map(tool => tool.id).join(', ')}>
   replay (input is a review packet)
   batch (input is JSONL, one proposal or workspace per nonblank line)
-  sweep <threshold|maxChangeCost> <numeric levels separated by commas>`;
+  sweep <threshold|maxChangeCost> <numeric levels separated by commas>
+  lock <clause ID> <option ID>`;
 
 async function readText(path, limit = 262144) {
   const stream = path === '-' ? process.stdin : createReadStream(path);
@@ -70,7 +71,7 @@ try {
   if (command === '--help' && path === undefined) {
     process.stdout.write(usage + '\n');
   } else {
-    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2 };
+    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2, lock: 2 };
     if (!Object.hasOwn(arity, command) || !path || args.length !== arity[command]) throw new TypeError(usage);
     if (command === 'compare' && path === '-' && args[0] === '-') throw new TypeError('Only one comparison input may use stdin.');
     const inputText = await readText(path, ['replay', 'batch'].includes(command) ? 1048576 : 262144);
@@ -83,6 +84,7 @@ try {
       case 'review': output = createAgreementReviewPacket(proposal, args[0]); break;
       case 'replay': output = replayAgreementReviewPacket(raw); break;
       case 'batch': output = batch(inputText); break;
+      case 'lock': output = checked(previewLockedOption(proposal, args[0], args[1], { alternativesLimit: 5 })); break;
       case 'sweep': {
         const field = args[0];
         if (field !== 'threshold' && field !== 'maxChangeCost') throw new TypeError('Sweep field must be threshold or maxChangeCost.');
