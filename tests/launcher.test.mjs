@@ -4,7 +4,7 @@ import { request } from 'node:http';
 import { readFileSync } from 'node:fs';
 import { spawnSync } from 'node:child_process';
 import vm from 'node:vm';
-import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref } from '../scripts/serve.mjs';
+import { createLauncher, parsePort, PUBLIC_PATHS, publicFile, CONTENT_SECURITY_POLICY, notFoundPage, catalogVersionLine, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref } from '../scripts/serve.mjs';
 
 test('launcher serves only workbenches and refuses hostile hosts and methods', async (t) => {
   const server = createLauncher();
@@ -3260,6 +3260,68 @@ test('404 copy last Open href markdown is the last printed Open href, or empty i
   opens = [];
   copied = 'stale';
   await clickLast();
+  assert.equal(copied, '');
+  assert.equal(PUBLIC_PATHS.length, 6);
+});
+
+test('404 copy first skip href uses the printed href without extra public paths', () => {
+  const page = notFoundPage();
+  const href = catalogFirstSkipHref();
+  assert.equal(href, '#whats-new');
+  assert.equal(page.includes(href), true, '404 page should print the first skip-link href');
+  assert.notEqual(href, catalogFirstOpenHref());
+  assert.match(page, /id="copy-first-skip"/);
+  assert.match(page, />Copy first skip href</);
+  assert.match(page, /id="copy-first-skip-fallback"/);
+  assert.match(page, /textarea id="copy-first-skip-fallback"/);
+  assert.match(page, /firstSkipMarkdown/);
+  assert.match(page, /querySelector\('#skips a\.skip'\)/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /Not a live product feed/);
+  assert.match(page, /id="copy-last-open"/);
+  assert.match(page, />Copy last Open href</);
+  assert.doesNotMatch(page, /\bfetch\s*\(/);
+  assert.doesNotMatch(page, /XMLHttpRequest/);
+  assert.equal(PUBLIC_PATHS.length, 6);
+  assert.deepEqual([...PUBLIC_PATHS], [
+    '/',
+    '/index.html',
+    '/apps/partnership-breakpoint/standalone.html',
+    '/apps/common-cart/standalone.html',
+    '/apps/smallest-agreement/standalone.html',
+    '/apps/weekend-gap/standalone.html',
+  ]);
+  assert.equal(publicFile('/package.json'), null);
+});
+
+test('404 copy first skip href markdown is the first printed skip href, or empty if missing', async () => {
+  const page = notFoundPage();
+  const source = page.match(/<script>([\s\S]*?)<\/script>/)[1];
+  let copied = '';
+  let clickFirst = null;
+  let skip = { getAttribute(name) { return name === 'href' ? '#whats-new' : null; } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-skip') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-skip-status') return { textContent: '' };
+      if (id === 'copy-first-skip-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#skips a.skip' ? skip : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  vm.runInNewContext(source, {
+    document,
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickFirst();
+  assert.equal(copied, '- #whats-new');
+  skip = null;
+  copied = 'stale';
+  await clickFirst();
   assert.equal(copied, '');
   assert.equal(PUBLIC_PATHS.length, 6);
 });
