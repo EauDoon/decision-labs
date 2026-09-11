@@ -278,7 +278,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByTertiaryFill: boolean; hideLastBuyerFilledByTertiaryFill: boolean; hideLastUnservedBuyer: boolean; hideFirstUnservedBuyer: boolean; hideLastLeftoverOnlyBuyer: boolean; hideFirstLeftoverOnlyBuyer: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByTertiaryFill: boolean; hideLastBuyerFilledByTertiaryFill: boolean; hideLastUnservedBuyer: boolean; hideFirstUnservedBuyer: boolean; hideLastLeftoverOnlyBuyer: boolean; hideFirstLeftoverOnlyBuyer: boolean; hideLastWinnerAllocatedBuyer: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -347,6 +347,8 @@ export function filterBuyerIdsHidingFirstUnservedBuyer(rawScenario: unknown, hid
 export function filterBuyerIdsHidingLastLeftoverOnlyBuyer(rawScenario: unknown, hideLastLeftoverOnlyBuyer: boolean): string[];
 /** Display-only. Matching is unchanged. Hides only the first leftover-only buyer (leftover-fill or tertiary, not winner, not unserved). Winner-allocated, unserved, and other leftover-only buyers stay visible. When hideFirstLeftoverOnlyBuyer is false, every buyer id is returned. */
 export function filterBuyerIdsHidingFirstLeftoverOnlyBuyer(rawScenario: unknown, hideFirstLeftoverOnlyBuyer: boolean): string[];
+/** Display-only. Matching is unchanged. Hides only the last winner-allocated buyer. Leftover-only, unserved, leftover-fill, tertiary-fill, and other winner-allocated buyers stay visible. When hideLastWinnerAllocatedBuyer is false, every buyer id is returned. */
+export function filterBuyerIdsHidingLastWinnerAllocatedBuyer(rawScenario: unknown, hideLastWinnerAllocatedBuyer: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
@@ -502,8 +504,10 @@ export function createUncoveredLeftoverCountsMarkdown(rawScenario: unknown): str
 export function createUncoveredLeftoverUnitCountMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered remaining units. Count only. Honest empty none. Not a merchant export. Distinct from leftover-fill remaining and tertiary remaining. */
 export function createLeftoverUncoveredRemainingMarkdown(rawScenario: unknown): string;
-/** Organizer-private one-line leftover uncovered maximum. Leftover-fill offer capacity. Honest empty none. Not a merchant export. Distinct prefix from leftover-fill maximum, leftover uncovered remaining, tertiary maximum, and uncovered leftover unit-count. */
+/** Organizer-private one-line leftover uncovered maximum. Leftover-fill offer capacity. Honest empty none. Not a merchant export. Distinct prefix from leftover-fill maximum, leftover uncovered remaining, leftover uncovered minimum, tertiary maximum, and uncovered leftover unit-count. */
 export function createLeftoverUncoveredMaximumMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover uncovered minimum. Leftover-fill offer minimum units. Honest empty none. Not a merchant export. Distinct prefix from leftover-fill minimum, leftover uncovered remaining, leftover uncovered maximum, and uncovered leftover unit-count. */
+export function createLeftoverUncoveredMinimumMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];
