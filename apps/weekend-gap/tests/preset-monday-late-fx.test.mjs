@@ -112,3 +112,13 @@ test("older scenario JSON without mondayLateFxOpen keeps Monday evening on ordin
   assert.equal(sanitizeScenario({ mondayLateFxOpen: "true" }).scenario.mondayLateFxOpen, false);
   assert.ok(sanitizeScenario({ mondayLateFxOpen: "true" }).errors.some((error) => error.includes("mondayLateFxOpen")));
 });
+
+test("Monday late FX open is available as a preset button and is not an FX feed", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /data-preset="mondayLateFxOpen"/);
+  assert.match(html, /Monday late FX open \(synthetic\)/);
+  assert.match(html, /id="mondayLateFxOpen"/);
+  assert.match(html, /Keep Monday FX open 16:00 to 18:00/);
+  assert.match(html, /not an FX feed/i);
+  assert.doesNotMatch(html, /live queue/i);
+});
