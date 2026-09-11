@@ -57,6 +57,7 @@ import {
   formatLastGroupWithoutFloorLabelMarkdown,
   formatFirstGroupWithoutFloorLabelMarkdown,
   formatGroupsWithoutFloorCountMarkdown,
+  formatGroupsWithoutFloorRemainingMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -1169,6 +1170,39 @@ const presets = {
       },
     ],
   },
+  "kayaking-club-hours": {
+    title: "Kayaking club hours: whitewater booking, slalom bar, and spraydeck lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "whitewater-booking", title: "Whitewater booking", options: [
+          { id: "whitewater-booking-original", original: true, label: "Keep weekday whitewater booking from 14:30 with no posted whitewater rota", changeCost: 0, support: { students: 9, neighbours: 94, pandc: 55 } },
+          { id: "whitewater-booking-late", original: false, label: "Open weekday kayaking at 16:45 with a posted whitewater rota", changeCost: 2, support: { students: 84, neighbours: 37, pandc: 48 } },
+          { id: "whitewater-booking-weekend", original: false, label: "Hold Sunday morning whitewater at 07:45 with a slalom booking card", changeCost: 4, support: { students: 69, neighbours: 44, pandc: 53 } },
+        ],
+      },
+      {
+        id: "kayaking-slalom-bar", title: "Slalom bar hours", options: [
+          { id: "kayaking-slalom-bar-original", original: true, label: "No posted kayaking slalom-bar hours", changeCost: 0, support: { students: 75, neighbours: 16, pandc: 25 } },
+          { id: "kayaking-slalom-bar-cap", original: false, label: "Close the kayaking slalom bar at 18:45 and keep drinks inside the slalom hut", changeCost: 1, support: { students: 48, neighbours: 80, pandc: 58 } },
+          { id: "kayaking-slalom-bar-cut", original: false, label: "Serve tea only after 17:15 and retire the kayaking slalom bar", changeCost: 5, support: { students: 30, neighbours: 90, pandc: 43 } },
+        ],
+      },
+      {
+        id: "kayaking-spraydeck-lockup", title: "Spraydeck lock-up", options: [
+          { id: "kayaking-spraydeck-lockup-original", original: true, label: "Leave the spraydeck store door on a shared padlock after club hours", changeCost: 0, support: { students: 14, neighbours: 38, pandc: 37 } },
+          { id: "kayaking-spraydeck-lockup-steward", original: false, label: "Require a P&C steward to lock the spraydeck store before 19:50", changeCost: 3, support: { students: 60, neighbours: 52, pandc: 75 } },
+          { id: "kayaking-spraydeck-lockup-timer", original: false, label: "Add a timed lock on the spraydeck store after the last session", changeCost: 2, support: { students: 49, neighbours: 50, pandc: 67 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -1350,6 +1384,11 @@ function renderCopyFallbacks(result) {
   if (groupsWithoutFloorCountBox) {
     const listed = formatGroupsWithoutFloorCountMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     groupsWithoutFloorCountBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
+  const groupsWithoutFloorRemainingBox = $("#groups-without-floor-remaining-fallback");
+  if (groupsWithoutFloorRemainingBox) {
+    const listed = formatGroupsWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    groupsWithoutFloorRemainingBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
@@ -2210,6 +2249,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-last-group-at-or-above-threshold-button").disabled = result.status === "invalid";
   $("#copy-first-group-at-or-above-threshold-button").disabled = result.status === "invalid";
   $("#copy-groups-without-floor-count-button").disabled = result.status === "invalid";
+  $("#copy-groups-without-floor-remaining-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -4100,6 +4140,24 @@ async function copyGroupsWithoutFloorCount() {
   }
 }
 $("#copy-groups-without-floor-count-button").addEventListener("click", copyGroupsWithoutFloorCount);
+async function copyGroupsWithoutFloorRemaining() {
+  const listed = formatGroupsWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the groups-without-floor remaining.");
+  const fallback = $("#groups-without-floor-remaining-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty groups-without-floor remaining. A floor is a number you entered, not a legal quorum."
+    : listed.empty
+    ? "No groups are without a support floor. Copied an honest zero. A floor is a number you entered, not a legal quorum."
+    : "Groups-without-floor remaining copied as Markdown. A floor is a number you entered, not a legal quorum.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the groups-without-floor remaining from the Markdown box. A floor is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-groups-without-floor-remaining-button").addEventListener("click", copyGroupsWithoutFloorRemaining);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -5343,6 +5401,15 @@ function jumpToGroupsWithoutFloorCountCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToGroupsWithoutFloorRemainingCopy() {
+  const control = $("#copy-groups-without-floor-remaining-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -5683,6 +5750,15 @@ document.addEventListener("keydown", (event) => {
   } else if (key === "Backspace") {
     event.preventDefault();
     jumpToHideLastGroupBelowFloor();
+  } else if (event.shiftKey && key === "F7") {
+    event.preventDefault();
+    copyGroupsWithoutFloorRemaining();
+  } else if (event.shiftKey && key === "F8") {
+    event.preventDefault();
+    jumpToGroupsWithoutFloorRemainingCopy();
+  } else if (event.shiftKey && key === "F9") {
+    event.preventDefault();
+    jumpToHideLastGroupWithoutFloor();
   } else if (key === "F7") {
     event.preventDefault();
     copyLastGroupWithoutFloor();
