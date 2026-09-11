@@ -1306,6 +1306,39 @@ const presets = {
       },
     ],
   },
+  "cycling-club-hours": {
+    title: "Cycling club hours: velodrome staging booking, cafe hours, and bike-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 8 },
+      { id: "neighbours", name: "Neighbours", weight: 7, veto: true },
+      { id: "pandc", name: "P&C", weight: 10 },
+    ],
+    clauses: [
+      {
+        id: "cycling-staging-booking", title: "Velodrome staging booking", options: [
+          { id: "cycling-staging-booking-original", original: true, label: "Keep weekday velodrome staging from 10:05 with no posted bike-rack rota", changeCost: 0, support: { students: 5, neighbours: 92, pandc: 59 } },
+          { id: "cycling-staging-booking-late", original: false, label: "Open weekday velodrome staging at 17:10 with a posted bike-rack rota", changeCost: 2, support: { students: 88, neighbours: 32, pandc: 44 } },
+          { id: "cycling-staging-booking-weekend", original: false, label: "Hold Sunday morning velodrome staging at 08:40 with a bike-rack booking card", changeCost: 4, support: { students: 73, neighbours: 40, pandc: 52 } },
+        ],
+      },
+      {
+        id: "cycling-cafe", title: "Cafe hours", options: [
+          { id: "cycling-cafe-original", original: true, label: "No posted cycling cafe hours", changeCost: 0, support: { students: 70, neighbours: 18, pandc: 29 } },
+          { id: "cycling-cafe-cap", original: false, label: "Close the cycling cafe at 19:05 and keep drinks inside the velodrome cafe", changeCost: 1, support: { students: 43, neighbours: 82, pandc: 61 } },
+          { id: "cycling-cafe-cut", original: false, label: "Serve tea only after 13:55 and retire the cycling cafe drinks", changeCost: 5, support: { students: 25, neighbours: 85, pandc: 41 } },
+        ],
+      },
+      {
+        id: "cycling-bike-box-lockup", title: "Bike-box lock-up", options: [
+          { id: "cycling-bike-box-lockup-original", original: true, label: "Leave the bike-box door on a shared padlock after club hours", changeCost: 0, support: { students: 10, neighbours: 30, pandc: 35 } },
+          { id: "cycling-bike-box-lockup-steward", original: false, label: "Require a P&C steward to lock the bike-box store before 20:15", changeCost: 3, support: { students: 57, neighbours: 56, pandc: 76 } },
+          { id: "cycling-bike-box-lockup-timer", original: false, label: "Add a timed lock on the bike-box store after the last cycling session", changeCost: 2, support: { students: 46, neighbours: 49, pandc: 66 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
