@@ -161,6 +161,36 @@ export function catalogLastSkipText() {
   return catalogSkipLinks().at(-1)?.text ?? '';
 }
 
+function catalogMarkupTag(html, id) {
+  const needle = `id="${id}"`;
+  const idx = html.indexOf(needle);
+  if (idx < 0) return null;
+  const tagStart = html.lastIndexOf('<', idx);
+  const tagEnd = html.indexOf('>', idx);
+  if (tagStart < 0 || tagEnd < 0) return null;
+  return { start: tagStart, end: tagEnd, tag: html.slice(tagStart, tagEnd + 1) };
+}
+
+function catalogMarkupText(html, id) {
+  const found = catalogMarkupTag(html, id);
+  if (!found) return '';
+  const closeLt = html.indexOf('<', found.end + 1);
+  if (closeLt < 0) return '';
+  return html.slice(found.end + 1, closeLt).trim();
+}
+
+export function catalogFirstSkipTargetText() {
+  const href = catalogFirstSkipHref();
+  if (!href.startsWith('#') || href.length < 2) return '';
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  const found = catalogMarkupTag(html, href.slice(1));
+  if (!found) return '';
+  const labelled = found.tag.match(/aria-labelledby="([^"]+)"/);
+  if (labelled) return catalogMarkupText(html, labelled[1]);
+  if (/^<h[1-6]\b/i.test(found.tag)) return catalogMarkupText(html, href.slice(1));
+  return '';
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
@@ -244,10 +274,11 @@ export function notFoundPage() {
     .copy-last-skip-tools { margin: 16px 0 0; }
     .copy-first-skip-text-tools { margin: 16px 0 0; }
     .copy-last-skip-text-tools { margin: 16px 0 0; }
+    .copy-first-skip-target-text-tools { margin: 16px 0 0; }
     .copy-first-review-tools { margin: 16px 0 0; }
     .copy-last-review-tools { margin: 16px 0 0; }
     .copy-lede-tools { margin: 16px 0 0; }
-    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench, .copy-last-workbench, .copy-first-open, .copy-last-open, .copy-first-skip, .copy-last-skip, .copy-first-skip-text, .copy-last-skip-text, .copy-first-review, .copy-last-review {
+    .copy-versions, .copy-trust, .copy-how, .copy-jobs, .copy-lede, .copy-version-line, .copy-first-trust, .copy-first-how, .copy-last-how, .copy-last-job, .copy-last-whats-new, .copy-first-whats-new, .copy-first-workbench, .copy-last-workbench, .copy-first-open, .copy-last-open, .copy-first-skip, .copy-last-skip, .copy-first-skip-text, .copy-last-skip-text, .copy-first-skip-target-text, .copy-first-review, .copy-last-review {
       display: inline-flex;
       align-items: center;
       min-height: 44px;
@@ -260,8 +291,8 @@ export function notFoundPage() {
       font-weight: 650;
       cursor: pointer;
     }
-    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status, .copy-last-workbench-status, .copy-first-open-status, .copy-last-open-status, .copy-first-skip-status, .copy-last-skip-status, .copy-first-skip-text-status, .copy-last-skip-text-status, .copy-first-review-status, .copy-last-review-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
-    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback, .copy-last-workbench-fallback, .copy-first-open-fallback, .copy-last-open-fallback, .copy-first-skip-fallback, .copy-last-skip-fallback, .copy-first-skip-text-fallback, .copy-last-skip-text-fallback, .copy-first-review-fallback, .copy-last-review-fallback {
+    .copy-versions-status, .copy-trust-status, .copy-how-status, .copy-jobs-status, .copy-lede-status, .copy-version-line-status, .copy-first-trust-status, .copy-first-how-status, .copy-last-how-status, .copy-last-job-status, .copy-last-whats-new-status, .copy-first-whats-new-status, .copy-first-workbench-status, .copy-last-workbench-status, .copy-first-open-status, .copy-last-open-status, .copy-first-skip-status, .copy-last-skip-status, .copy-first-skip-text-status, .copy-last-skip-text-status, .copy-first-skip-target-text-status, .copy-first-review-status, .copy-last-review-status { display: inline-block; margin-left: 12px; font-size: 15px; color: #1e3a42; }
+    .copy-versions-fallback, .copy-trust-fallback, .copy-how-fallback, .copy-jobs-fallback, .copy-lede-fallback, .copy-version-line-fallback, .copy-first-trust-fallback, .copy-first-how-fallback, .copy-last-how-fallback, .copy-last-job-fallback, .copy-last-whats-new-fallback, .copy-first-whats-new-fallback, .copy-first-workbench-fallback, .copy-last-workbench-fallback, .copy-first-open-fallback, .copy-last-open-fallback, .copy-first-skip-fallback, .copy-last-skip-fallback, .copy-first-skip-text-fallback, .copy-last-skip-text-fallback, .copy-first-skip-target-text-fallback, .copy-first-review-fallback, .copy-last-review-fallback {
       display: block;
       width: 100%;
       margin-top: 10px;
@@ -271,7 +302,7 @@ export function notFoundPage() {
       border: 1px solid #c3d0d3;
       border-radius: 4px;
     }
-    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-first-open-fallback[hidden], .copy-last-open-fallback[hidden], .copy-first-skip-fallback[hidden], .copy-last-skip-fallback[hidden], .copy-first-skip-text-fallback[hidden], .copy-last-skip-text-fallback[hidden], .copy-first-review-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
+    .copy-versions-fallback[hidden], .copy-trust-fallback[hidden], .copy-how-fallback[hidden], .copy-jobs-fallback[hidden], .copy-lede-fallback[hidden], .copy-version-line-fallback[hidden], .copy-first-trust-fallback[hidden], .copy-first-how-fallback[hidden], .copy-last-how-fallback[hidden], .copy-last-job-fallback[hidden], .copy-last-whats-new-fallback[hidden], .copy-first-whats-new-fallback[hidden], .copy-first-workbench-fallback[hidden], .copy-last-workbench-fallback[hidden], .copy-first-open-fallback[hidden], .copy-last-open-fallback[hidden], .copy-first-skip-fallback[hidden], .copy-last-skip-fallback[hidden], .copy-first-skip-text-fallback[hidden], .copy-last-skip-text-fallback[hidden], .copy-first-skip-target-text-fallback[hidden], .copy-first-review-fallback[hidden], .copy-last-review-fallback[hidden] { display: none; }
     .trust, .guide { margin: 28px 0 8px; padding-top: 8px; }
     .trust ul, .guide ul { margin: 12px 0 0; padding-left: 1.2rem; color: #1e3a42; }
     .trust li, .guide li { margin: 8px 0; }
@@ -317,7 +348,7 @@ ${skipNav}
       <span class="copy-last-job-status" id="copy-last-job-status" role="status"></span>
     </p>
     <textarea id="copy-last-job-fallback" class="copy-last-job-fallback" hidden readonly rows="2" aria-label="Last workbench job as Markdown"></textarea>
-    <section class="whats-new" id="whats-new">
+    <section class="whats-new" id="whats-new" aria-labelledby="whats-new-title">
       <h2 id="whats-new-title">What's new</h2>
       <ul class="whats-new-list">
         ${newsList}
@@ -377,6 +408,11 @@ ${skipNav}
       <span class="copy-last-skip-text-status" id="copy-last-skip-text-status" role="status"></span>
     </p>
     <textarea id="copy-last-skip-text-fallback" class="copy-last-skip-text-fallback" hidden readonly rows="2" aria-label="Last skip-link text as Markdown"></textarea>
+    <p class="copy-first-skip-target-text-tools">
+      <button type="button" class="copy-first-skip-target-text" id="copy-first-skip-target-text">Copy first skip target text</button>
+      <span class="copy-first-skip-target-text-status" id="copy-first-skip-target-text-status" role="status"></span>
+    </p>
+    <textarea id="copy-first-skip-target-text-fallback" class="copy-first-skip-target-text-fallback" hidden readonly rows="2" aria-label="First skip-target text as Markdown"></textarea>
     <p class="copy-first-review-tools">
       <button type="button" class="copy-first-review" id="copy-first-review">Copy first review path</button>
       <span class="copy-first-review-status" id="copy-first-review-status" role="status"></span>
@@ -903,6 +939,49 @@ ${skipNav}
             lastSkipTextStatus.textContent = empty
               ? 'Clipboard unavailable. Copy the empty string from the text box. Last skip-link text was missing. This is catalog copy, not a live product feed.'
               : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last skip-link text, not a live product feed.';
+          }
+        }
+      });
+      const firstSkipTargetTextBtn = document.getElementById('copy-first-skip-target-text');
+      const firstSkipTargetTextStatus = document.getElementById('copy-first-skip-target-text-status');
+      const firstSkipTargetTextFallback = document.getElementById('copy-first-skip-target-text-fallback');
+      const firstSkipTargetTextMarkdown = () => {
+        const skip = document.querySelector('#skips a.skip');
+        const href = skip && skip.getAttribute ? skip.getAttribute('href') : '';
+        if (!href || href.charAt(0) !== '#' || href.length < 2) return '';
+        const target = document.getElementById(href.slice(1));
+        if (!target) return '';
+        const labelledBy = target.getAttribute ? target.getAttribute('aria-labelledby') : '';
+        const label = labelledBy ? document.getElementById(labelledBy) : null;
+        let text = '';
+        if (label) text = label.textContent.trim();
+        else if (target.tagName && /^H[1-6]$/.test(target.tagName)) text = target.textContent.trim();
+        if (!text) return '';
+        return '- ' + text;
+      };
+      firstSkipTargetTextBtn?.addEventListener('click', async () => {
+        const markdown = firstSkipTargetTextMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (firstSkipTargetTextFallback) firstSkipTargetTextFallback.hidden = true;
+          if (firstSkipTargetTextStatus) {
+            firstSkipTargetTextStatus.textContent = empty
+              ? 'First skip-target text was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the first skip-target text from this page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (firstSkipTargetTextFallback) {
+            firstSkipTargetTextFallback.hidden = false;
+            firstSkipTargetTextFallback.value = markdown;
+            firstSkipTargetTextFallback.focus();
+            firstSkipTargetTextFallback.select();
+          }
+          if (firstSkipTargetTextStatus) {
+            firstSkipTargetTextStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. First skip-target text was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the first skip-target text, not a live product feed.';
           }
         }
       });
