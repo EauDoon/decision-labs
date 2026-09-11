@@ -127,6 +127,18 @@ CHANGELOG.md        Version history
 
 MIT. See [LICENSE](LICENSE).
 
+## New in v1.5.25: Saturday late FX open, last-weekend-FX-closed copy and weekday-FX-closed Gantt hide
+
+1. Press `F7` to copy the last weekend-FX-closed hour through the last-weekend-FX-closed copy control, using one-line Markdown. Honest empty when none. The key is ignored while typing. Distinct from `F3` last-closed-payout copy and `Delete` last-closed-FX copy.
+2. Press `F8` to jump to the last-weekend-FX-closed-hour copy control. If that control is missing, the Gantt heading is used. The key does not copy. The key is ignored while typing. Distinct from `F4` last-closed-payout jump and `F2` last-closed-FX jump.
+3. Press `F9` to jump to the hide-weekday-FX-closed Gantt filter. If that control is missing, the Gantt heading is used. The key is ignored while typing. Distinct from `Backspace` hide-weekend-FX-closed.
+4. Use the Saturday late FX open (synthetic) preset. It keeps the same 72-hour calendar as Normal Friday and treats FX as weekday-depth / open on Saturday from 16:00 to 18:00 even though Saturday is not a business day. That window is ORed into FX open / weekday FX depth through `isSaturdayLateFxOpenHour`. It is distinct from Saturday late bank open, Saturday late payout open, Saturday early FX open, and Friday late FX open. It is synthetic, not an FX feed.
+5. Hide Gantt hours that are weekday and FX-closed. Display only. The model still contains 72 hours. Workspace JSON stores the optional boolean `hideWeekdayFxClosedGanttHours`. Older files restore all hours. Unknown keys are rejected. Distinct from hide-FX-closed, hide-weekend-FX-closed, and hide-weekend-FX-open filters. The selected hour stays visible if it would otherwise hide. On the default Saturday calendar weekday FX stays weekday-depth, so hide-weekday-FX-closed matches the full drawing unless a weekday FX-closed hour exists, such as a public-holiday Monday. Hide-weekend-FX-closed still hides Saturday and Sunday thinned hours. Hide-FX-closed also hides those weekday closed hours.
+6. Analysis JSON still has no timestamps. Hatched Gantt cells remain a local drawing. They do not connect to a bank or a live redemption queue.
+7. Timing review packets from 1.5.0 stay in place.
+
+v1.5.24 Friday late FX open, last-closed-payout copy and weekend-FX-closed Gantt hide remain below.
+
 ## New in v1.5.24: Friday late FX open, last-closed-payout copy and weekend-FX-closed Gantt hide
 
 1. Press `F3` to copy the last closed payout hour through the last-closed-payout copy control, using one-line Markdown. Honest empty when none. The key is ignored while typing. Distinct from `Delete` last-closed-FX copy, `PageUp` last-open-payout copy and `"` first-closed-payout copy.

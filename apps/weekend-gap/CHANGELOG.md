@@ -1,5 +1,17 @@
 # Changelog
 
+## 1.5.25 - 2026-09-11
+
+A workshop follow-up on 1.5.24. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.24 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `F7` copies last weekend-FX-closed hour through the new last-weekend-FX-closed copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from `F3` last-closed-payout copy and `Delete` last-closed-FX copy.
+- Keyboard `F8` jumps to the last-weekend-FX-closed-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from `F4` last-closed-payout jump and `F2` last-closed-FX jump.
+- Keyboard `F9` jumps to the hide-weekday-FX-closed Gantt filter, or the Gantt heading if that control is missing. Ignored while typing. Distinct from `Backspace` hide-weekend-FX-closed.
+- Saturday late FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Saturday 16:00 to 18:00 treats FX as weekday-depth / open even though Saturday is not a business day. Distinct from Saturday late bank open, Saturday late payout open, Saturday early FX open, and Friday late FX open. Synthetic. Not an FX feed.
+- Filter that hides Gantt hours that are weekday and FX-closed. Display only; the model still contains 72 hours. Workspace JSON stores optional `hideWeekdayFxClosedGanttHours`. Older files omit the key and show all hours. Unknown keys are rejected. Distinct from `hideFxClosedGanttHours`, `hideWeekendFxClosedGanttHours`, and `hideWeekendFxOpenGanttHours`. The selected hour stays visible if it would otherwise hide.
+
 ## 1.5.24 - 2026-09-11
 
 A workshop follow-up on 1.5.23. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.23 review UI stay in place. Analysis JSON still has no timestamps.
