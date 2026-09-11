@@ -52,6 +52,7 @@ import {
   formatLastGroupAtOrAboveThresholdLabelMarkdown,
   formatFirstGroupAtOrAboveThresholdLabelMarkdown,
   formatLastGroupAtFloorLabelMarkdown,
+  formatLastBelowSupportFloorGroupLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -994,6 +995,39 @@ const presets = {
           { id: "softball-changing-room-lockup-original", original: true, label: "Leave the diamond changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 21, neighbours: 37, pandc: 41 } },
           { id: "softball-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the diamond changing room before 21:00", changeCost: 3, support: { students: 67, neighbours: 59, pandc: 69 } },
           { id: "softball-changing-room-lockup-timer", original: false, label: "Add a timed lock on the diamond changing-room door after the last session", changeCost: 2, support: { students: 55, neighbours: 53, pandc: 61 } },
+        ],
+      },
+    ],
+  },
+  "lacrosse-club-hours": {
+    title: "Lacrosse club hours: field booking, clubhouse bar, and changing-room lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "lacrosse-field-booking", title: "Lacrosse field booking", options: [
+          { id: "lacrosse-field-booking-original", original: true, label: "Keep weekday lacrosse field booking from 16:30 with no posted field rota", changeCost: 0, support: { students: 14, neighbours: 92, pandc: 56 } },
+          { id: "lacrosse-field-booking-late", original: false, label: "Open weekday lacrosse at 18:45 with a posted field rota", changeCost: 2, support: { students: 81, neighbours: 42, pandc: 55 } },
+          { id: "lacrosse-field-booking-weekend", original: false, label: "Hold Sunday afternoon field at 14:00 with a booking card", changeCost: 4, support: { students: 68, neighbours: 49, pandc: 50 } },
+        ],
+      },
+      {
+        id: "lacrosse-clubhouse-bar", title: "Clubhouse bar", options: [
+          { id: "lacrosse-clubhouse-bar-original", original: true, label: "No posted lacrosse clubhouse-bar hours", changeCost: 0, support: { students: 78, neighbours: 11, pandc: 25 } },
+          { id: "lacrosse-clubhouse-bar-cap", original: false, label: "Close the lacrosse clubhouse bar at 19:45 and keep drinks inside the clubhouse", changeCost: 1, support: { students: 50, neighbours: 82, pandc: 61 } },
+          { id: "lacrosse-clubhouse-bar-cut", original: false, label: "Serve tea only after 18:45 and retire the lacrosse clubhouse bar", changeCost: 5, support: { students: 32, neighbours: 88, pandc: 48 } },
+        ],
+      },
+      {
+        id: "lacrosse-changing-room-lockup", title: "Changing-room lock-up", options: [
+          { id: "lacrosse-changing-room-lockup-original", original: true, label: "Leave the lacrosse field changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 19, neighbours: 35, pandc: 39 } },
+          { id: "lacrosse-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the lacrosse field changing room before 21:30", changeCost: 3, support: { students: 65, neighbours: 57, pandc: 71 } },
+          { id: "lacrosse-changing-room-lockup-timer", original: false, label: "Add a timed lock on the lacrosse field changing-room door after the last session", changeCost: 2, support: { students: 54, neighbours: 52, pandc: 63 } },
         ],
       },
     ],
