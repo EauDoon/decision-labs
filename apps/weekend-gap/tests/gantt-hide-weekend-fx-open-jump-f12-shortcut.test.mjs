@@ -25,9 +25,11 @@ test("keyboard F12 is wired to the existing hide-weekend-FX-open Gantt filter", 
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   assert.ok(handler.indexOf('event.key === "F12"') !== handler.indexOf('event.key === "F9"'));
   assert.ok(handler.indexOf('event.key === "F12"') !== handler.indexOf('event.key === "ArrowLeft"'));
-  const f12Slice = handler.slice(handler.indexOf('event.key === "F12"'), handler.indexOf('event.key === "F12"') + 180);
+  const unshiftedF12 = handler.lastIndexOf('event.key === "F12"');
+  const f12Slice = handler.slice(unshiftedF12, unshiftedF12 + 180);
   assert.match(f12Slice, /jumpToHideWeekendFxOpenFilter\(\)/);
   assert.doesNotMatch(f12Slice, /jumpToHideWeekdayFxClosedFilter/);
+  assert.doesNotMatch(f12Slice, /jumpToHideWeekdayFxOpenFilter/);
   assert.doesNotMatch(f12Slice, /copyLastWeekdayFxClosedHourMarkdown/);
   assert.doesNotMatch(f12Slice, /copyLastWeekendFxClosedHourMarkdown/);
 });
