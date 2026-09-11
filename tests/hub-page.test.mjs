@@ -106,6 +106,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Last-skip-target-text copy, last-skip-target-text jump, and last-labelled-skip-target jump/);
   assert.match(html, /First-labelled-skip-target-text copy, first-labelled-skip-target-text jump, and first-labelled-skip-label jump/);
   assert.match(html, /Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump/);
+  assert.match(html, /Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump/);
   assert.match(html, /First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump/);
   assert.match(html, /First-review copy, first-review jump, and first-path jump/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
@@ -5679,7 +5680,8 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
 test('What\'s new and README name first-workbench copy, first-card jump, and first-trust jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
@@ -5781,7 +5783,8 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
 test('What\'s new and README name last-workbench copy, last-card jump, and last-trust jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
@@ -8177,7 +8180,8 @@ test('dollar caret and backtick stay distinct from asterisk ampersand percent an
 test('What\'s new and README name first-open copy, first-open jump, and first-open-link jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
@@ -8228,7 +8232,8 @@ test('What\'s new and README name first-open copy, first-open jump, and first-op
 test('What\'s new and README name first-review copy, first-review jump, and first-path jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
@@ -8279,7 +8284,8 @@ test('What\'s new and README name first-review copy, first-review jump, and firs
 test('What\'s new and README name last-review copy, last-review jump, and last-path jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
@@ -9785,7 +9791,8 @@ test('0, backslash, and s stay distinct from last-review, first-review, last-ope
 test('What\'s new and README name last-open copy, last-open jump, and last-open-link jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
@@ -10210,7 +10217,8 @@ test('Home, End, and ] stay distinct from first-open, last-review, first-review,
 test('What\'s new and README name first-skip copy, first-skip jump, and first-skip-link jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
@@ -10410,7 +10418,8 @@ test('keyboard PageDown focuses Copy first skip href and ArrowRight focuses the 
 test('What\'s new and README name last-skip copy, last-skip jump, and last-skip-link jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
@@ -10623,7 +10632,8 @@ test('keyboard ArrowDown focuses Copy last skip href and ArrowLeft focuses the l
 test('What\'s new and README name first-skip-text copy, first-skip-text jump, and skip-nav jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
@@ -10838,7 +10848,8 @@ test('keyboard ArrowUp focuses Copy first skip text and F2 focuses the skip nav'
 test('What\'s new and README name last-skip-text copy, last-skip-text jump, and last-skip-target jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('Last-skip-text copy, last-skip-text jump, and last-skip-target jump'), true);
   assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
@@ -11069,7 +11080,8 @@ test('keyboard F4 focuses Copy last skip text and F6 focuses the last skip targe
 test('What\'s new and README name first-skip-target-text copy, first-skip-target-text jump, and first-skip-target jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-skip-target-text copy, first-skip-target-text jump, and first-skip-target jump'), true);
   assert.equal(headings.includes('Last-skip-text copy, last-skip-text jump, and last-skip-target jump'), true);
@@ -11322,7 +11334,8 @@ test('keyboard F8 focuses Copy first skip target text and F9 focuses the first s
 test('What\'s new and README name last-skip-target-text copy, last-skip-target-text jump, and last-labelled-skip-target jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('Last-skip-target-text copy, last-skip-target-text jump, and last-labelled-skip-target jump'), true);
   assert.equal(headings.includes('First-skip-target-text copy, first-skip-target-text jump, and first-skip-target jump'), true);
@@ -11591,7 +11604,8 @@ test('keyboard F11 focuses Copy last skip target text and F12 focuses the last l
 test('What\'s new and README name first-labelled-skip-target-text copy, first-labelled-skip-target-text jump, and first-labelled-skip-label jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-labelled-skip-target-text copy, first-labelled-skip-target-text jump, and first-labelled-skip-label jump'), true);
   assert.equal(headings.includes('Last-skip-target-text copy, last-skip-target-text jump, and last-labelled-skip-target jump'), true);
@@ -11874,7 +11888,8 @@ test('keyboard Shift+F11 focuses Copy first labelled skip target text and Shift+
 test('What\'s new and README name last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-labelled-skip-target-text copy, first-labelled-skip-target-text jump, and first-labelled-skip-label jump'), true);
   assert.equal(headings.includes('Last-skip-target-text copy, last-skip-target-text jump, and last-labelled-skip-target jump'), true);
@@ -12174,10 +12189,50 @@ test('keyboard Shift+F8 focuses Copy last labelled skip target text and Shift+F9
   assert.deepEqual(assigned, []);
 });
 
+test('What\'s new and README name last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump without changing workbench versions', () => {
+  const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
+  const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
+  assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
+  assert.equal(headings.includes('First-labelled-skip-target-text copy, first-labelled-skip-target-text jump, and first-labelled-skip-label jump'), true);
+  assert.equal(headings.includes('Last-skip-target-text copy, last-skip-target-text jump, and last-labelled-skip-target jump'), true);
+  assert.equal(headings.includes('First-skip-target-text copy, first-skip-target-text jump, and first-skip-target jump'), true);
+  assert.equal(headings.includes('Last-skip-text copy, last-skip-text jump, and last-skip-target jump'), true);
+  assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
+  assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
+  assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
+  assert.equal(headings[headings.length - 1], 'Monday early FX open, last-weekday-FX-open copy, and weekend-FX-closed hide in Weekend Gap 1.5.28');
+  assert.match(html, /Copy last labelled skip href through Shift\+F5 as Markdown/);
+  assert.match(html, /jump to that control with keyboard Shift\+F6/);
+  assert.match(html, /jump to the last labelled skip target with keyboard Shift\+F1/);
+  assert.match(html, /The branded 404 page can copy the last labelled skip-link href without adding a public path/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /These are in-page catalog tools/);
+  assert.match(readme, /last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump/);
+  assert.match(readme, /first-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy last labelled skip href on\s+that 404 page copies/);
+  assert.match(readme, /Copy last labelled skip href copies the href/);
+  assert.match(readme, /Press `Shift\+F5` to copy the href of the last skip link whose target has aria-labelledby/);
+  assert.match(readme, /Press `Shift\+F6` to focus the Copy last labelled skip href control/);
+  assert.match(readme, /Press `Shift\+F1` to focus the last labelled skip target/);
+  assert.match(readme, /Key `Shift\+F5` copies the href of the last skip href that has aria-labelledby/);
+  assert.match(readme, /Key `Shift\+F6` focuses the Copy last labelled skip href control/);
+  assert.match(readme, /Key `Shift\+F1` focuses the last labelled skip target/);
+  assert.match(html, /Press <kbd>Shift\+F5<\/kbd> to copy the last labelled skip href/);
+  assert.match(html, /Press <kbd>Shift\+F6<\/kbd> to focus Copy last labelled skip href/);
+  assert.match(html, /Press <kbd>Shift\+F1<\/kbd> to focus the last labelled skip target/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+});
+
 test('What\'s new and README name first-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump');
+  assert.equal(headings[0], 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump');
+  assert.equal(headings.includes('First-labelled-skip-href copy, first-labelled-skip-href jump, and first-labelled-skip-target jump'), true);
   assert.equal(headings.includes('Last-labelled-skip-target-text copy, last-labelled-skip-target-text jump, and last-labelled-skip-label jump'), true);
   assert.equal(headings.includes('First-labelled-skip-target-text copy, first-labelled-skip-target-text jump, and first-labelled-skip-label jump'), true);
   assert.equal(headings.includes('Last-skip-target-text copy, last-skip-target-text jump, and last-labelled-skip-target jump'), true);
@@ -12464,5 +12519,281 @@ test('keyboard Shift+F3 focuses Copy first labelled skip href and Shift+F4 focus
   skips = [];
   fire('F4', true);
   assert.deepEqual(focused, ['copy-first-labelled-skip-href', 'whats-new', 'whats-new', 'whats-new-title', 'copy-last-skip-text', 'catalog-heading']);
+  assert.deepEqual(assigned, []);
+});
+
+test('copy last labelled skip href control is distinct from Copy last skip href, Copy first labelled skip href, and Copy last labelled skip target text', () => {
+  assert.match(html, /id="copy-last-labelled-skip-href"/);
+  assert.match(html, />Copy last labelled skip href</);
+  assert.match(html, /aria-keyshortcuts="Shift\+F5"/);
+  assert.match(html, /id="copy-last-labelled-skip-href-fallback"/);
+  assert.match(html, /class="copy-last-labelled-skip-href-fallback"/);
+  assert.match(html, /textarea id="copy-last-labelled-skip-href-fallback"/);
+  assert.match(html, /id="copy-last-skip"/);
+  assert.match(html, />Copy last skip href</);
+  assert.match(html, /id="copy-first-labelled-skip-href"/);
+  assert.match(html, />Copy first labelled skip href</);
+  assert.match(html, /id="copy-last-labelled-skip-target-text"/);
+  assert.match(html, />Copy last labelled skip target text</);
+  assert.match(html, /lastLabelledSkipHrefMarkdown/);
+  assert.notEqual(html.match(/id="copy-last-labelled-skip-href"/)?.[0], html.match(/id="copy-last-skip"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-labelled-skip-href"/)?.[0], html.match(/id="copy-first-labelled-skip-href"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-labelled-skip-href"/)?.[0], html.match(/id="copy-last-labelled-skip-target-text"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-last-labelled-skip-href"/)?.[0], html.match(/id="copy-first-whats-new"/)?.[0]);
+  assert.equal(html.indexOf('id="copy-first-labelled-skip-href"') < html.indexOf('id="copy-last-labelled-skip-href"'), true);
+  assert.equal(html.indexOf('id="copy-last-skip"') < html.indexOf('id="copy-last-labelled-skip-href"'), true);
+  assert.match(html, /@media print[\s\S]*\.copy-last-labelled-skip-href-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-last-labelled-skip-href-fallback \{ display: none !important; \}/);
+  assert.match(html, /\.copy-first-labelled-skip-href-tools, \.copy-first-labelled-skip-href-fallback \{ display: none !important; \}/);
+  assert.match(html, /\.copy-last-labelled-skip-href-tools, \.copy-last-labelled-skip-href-fallback \{ display: none !important; \}/);
+  assert.match(html, /Copied the last labelled skip-link href from this catalog page as Markdown/);
+  assert.match(html, /This is the last labelled skip-link href, not a live product feed/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('copy last labelled skip href markdown is the href of the last skip whose target has aria-labelledby, or empty if missing', async () => {
+  assert.match(html, /lastLabelledSkipHrefMarkdown/);
+  assert.match(html, /querySelectorAll\('#skips a\.skip'\)/);
+  assert.match(html, /getAttribute\('aria-labelledby'\)/);
+  assert.match(html, /lastLabelledSkipHrefFallback\.hidden = false/);
+  assert.match(html, /lastLabelledSkipHrefFallback\.select\(\)/);
+  assert.match(html, /This is the last labelled skip-link href, not a live product feed/);
+  assert.match(html, /Copied an empty string/);
+  let copied = '';
+  let clickLast = null;
+  let skips = [
+    {
+      getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
+      textContent: "Skip to what's new",
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#version-line' : null; },
+      textContent: 'Skip to catalog versions',
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#trust' : null; },
+      textContent: 'Skip to Trust and limits',
+    },
+  ];
+  const versionLine = {
+    getAttribute() { return null; },
+    tagName: 'P',
+    textContent: 'Partnership Breakpoint 1.5.27, Common Cart 1.4.27, The Smallest Agreement 1.5.27, Weekend Gap 1.5.27',
+  };
+  const whatsNew = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'whats-new-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Last-labelled-skip-href copy, last-labelled-skip-href jump, and last-labelled-skip-target jump',
+  };
+  const trust = {
+    getAttribute(name) { return name === 'aria-labelledby' ? 'trust-title' : null; },
+    tagName: 'SECTION',
+    textContent: 'Trust and limits',
+  };
+  const whatsLabel = { textContent: "What's new", tagName: 'H2' };
+  const trustLabel = { textContent: 'Trust and limits', tagName: 'H2' };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-labelled-skip-href') return { addEventListener(name, handler) { if (name === 'click') clickLast = handler; } };
+      if (id === 'copy-last-labelled-skip-href-status') return { textContent: '' };
+      if (id === 'copy-last-labelled-skip-href-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      if (id === 'whats-new') return whatsNew;
+      if (id === 'whats-new-title') return whatsLabel;
+      if (id === 'trust') return trust;
+      if (id === 'trust-title') return trustLabel;
+      if (id === 'version-line') return versionLine;
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll(selector) {
+      return selector === '#skips a.skip' ? skips : [];
+    },
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickLast();
+  assert.equal(copied, '- #trust');
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /Trust and limits/);
+  assert.doesNotMatch(copied, /What's new/);
+  assert.doesNotMatch(copied, /Skip to Trust and limits/);
+  assert.doesNotMatch(copied, /Partnership Breakpoint/);
+  skips = [];
+  copied = 'stale';
+  await clickLast();
+  assert.equal(copied, '');
+});
+
+test('keyboard Shift+F5 copies last labelled skip href when focus is not in an input', () => {
+  assert.match(html, /event\.shiftKey && event\.key === 'F5'/);
+  assert.match(html, /lastLabelledSkipHrefBtn\?\.click\(\)/);
+  assert.equal(html.indexOf("event.shiftKey && event.key === 'F6'") < html.indexOf("if (event.key === 'F6')"), true);
+  assert.match(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, F5:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, F5:/);
+  const clicks = { lastLabelledSkipHref: 0, lastSkip: 0, firstLabelledSkipHref: 0, lastLabelledSkipTargetText: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-labelled-skip-href') return { click() { clicks.lastLabelledSkipHref += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-href'); } };
+      if (id === 'copy-last-skip') return { click() { clicks.lastSkip += 1; }, addEventListener() {}, focus() { focused.push('copy-last-skip'); } };
+      if (id === 'copy-first-labelled-skip-href') return { click() { clicks.firstLabelledSkipHref += 1; }, addEventListener() {}, focus() { focused.push('copy-first-labelled-skip-href'); } };
+      if (id === 'copy-last-labelled-skip-target-text') return { click() { clicks.lastLabelledSkipTargetText += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-target-text'); } };
+      if (id === 'version-line') return { focus() { focused.push('version-line'); } };
+      if (id === 'skips') return { focus() { focused.push('skips'); } };
+      if (id === 'catalog-heading') return { focus() { focused.push('catalog-heading'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target, shiftKey = false) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('F5', input, true);
+  assert.equal(clicks.lastLabelledSkipHref, 0);
+  fire('F5', body, true);
+  assert.equal(clicks.lastLabelledSkipHref, 1);
+  assert.equal(clicks.lastSkip, 0);
+  assert.equal(clicks.firstLabelledSkipHref, 0);
+  fire('F6', body, false);
+  assert.equal(clicks.lastLabelledSkipHref, 1);
+  assert.deepEqual(focused, ['version-line']);
+  fire('F2', body, true);
+  assert.equal(clicks.firstLabelledSkipHref, 1);
+  assert.equal(clicks.lastLabelledSkipHref, 1);
+  fire('F7', body, true);
+  assert.equal(clicks.lastLabelledSkipTargetText, 1);
+  assert.equal(clicks.lastLabelledSkipHref, 1);
+  assert.deepEqual(assigned, []);
+});
+
+test('keyboard Shift+F6 focuses Copy last labelled skip href and Shift+F1 focuses the last labelled skip target', () => {
+  assert.match(html, /event\.shiftKey && event\.key === 'F6'/);
+  assert.match(html, /event\.shiftKey && event\.key === 'F1'/);
+  assert.equal(html.indexOf("event.shiftKey && event.key === 'F6'") < html.indexOf("if (event.key === 'F6')"), true);
+  assert.match(html, /getElementById\('copy-last-labelled-skip-href'\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /lastLabelledSkipTarget\(\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, F6:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, F1:/);
+  const focused = [];
+  const clicks = { lastLabelledSkipHref: 0, lastSkip: 0, firstLabelledSkipHref: 0, lastLabelledSkipTargetText: 0 };
+  const assigned = [];
+  let keydown = null;
+  let skips = [
+    {
+      getAttribute(name) { return name === 'href' ? '#whats-new' : null; },
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#version-line' : null; },
+    },
+    {
+      getAttribute(name) { return name === 'href' ? '#trust' : null; },
+    },
+  ];
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-last-labelled-skip-href') return { click() { clicks.lastLabelledSkipHref += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-href'); } };
+      if (id === 'copy-last-skip') return { click() { clicks.lastSkip += 1; }, addEventListener() {}, focus() { focused.push('copy-last-skip'); } };
+      if (id === 'copy-first-labelled-skip-href') return { click() { clicks.firstLabelledSkipHref += 1; }, addEventListener() {}, focus() { focused.push('copy-first-labelled-skip-href'); } };
+      if (id === 'copy-last-labelled-skip-target-text') return { click() { clicks.lastLabelledSkipTargetText += 1; }, addEventListener() {}, focus() { focused.push('copy-last-labelled-skip-target-text'); } };
+      if (id === 'whats-new') return {
+        getAttribute(name) { return name === 'aria-labelledby' ? 'whats-new-title' : null; },
+        focus() { focused.push('whats-new'); },
+      };
+      if (id === 'whats-new-title') return { focus() { focused.push('whats-new-title'); } };
+      if (id === 'trust') return {
+        getAttribute(name) { return name === 'aria-labelledby' ? 'trust-title' : null; },
+        focus() { focused.push('trust'); },
+      };
+      if (id === 'trust-title') return { focus() { focused.push('trust-title'); } };
+      if (id === 'version-line') return {
+        getAttribute() { return null; },
+        focus() { focused.push('version-line'); },
+      };
+      if (id === 'skips') return { focus() { focused.push('skips'); } };
+      if (id === 'catalog-heading') return { focus() { focused.push('catalog-heading'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      if (selector === '#whats-new h3') return { focus() { focused.push('first-h3'); } };
+      return null;
+    },
+    querySelectorAll(selector) {
+      return selector === '#skips a.skip' ? skips : [];
+    },
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, shiftKey = false) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey,
+      preventDefault() {},
+    });
+  };
+  fire('F6', true);
+  fire('F1', true);
+  assert.equal(clicks.lastLabelledSkipHref, 0);
+  assert.equal(clicks.lastSkip, 0);
+  assert.equal(clicks.firstLabelledSkipHref, 0);
+  assert.deepEqual(focused, ['copy-last-labelled-skip-href', 'trust']);
+  fire('F6', false);
+  fire('F12', false);
+  fire('F4', true);
+  assert.deepEqual(focused, ['copy-last-labelled-skip-href', 'trust', 'version-line', 'trust', 'whats-new']);
+  skips = [];
+  fire('F1', true);
+  assert.deepEqual(focused, ['copy-last-labelled-skip-href', 'trust', 'version-line', 'trust', 'whats-new', 'catalog-heading']);
   assert.deepEqual(assigned, []);
 });
