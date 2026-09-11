@@ -156,6 +156,26 @@ test('CSV import replaces only requested records and produces an evaluable scena
   fails(['import', '--input', '-', '--kind', 'wrong', '--csv', csvPath], fixture(), /requires/);
 }));
 
+test('workspace selection validates all rooms and preserves display-only filter semantics', () => temporary(dir => {
+  const first = fixture(), second = fixture(); second.title = 'Second room'; second.offers[0].unitPrice = 4;
+  const workspace = { version: 1, rooms: [first, second], hideExcludedBuyers: true, fulfillmentFilter: 'pickup' };
+  const path = join(dir, 'workspace.json'); writeFileSync(path, JSON.stringify(workspace));
+  const rooms = ok(['rooms', '--input', '-'], workspace);
+  assert.deepEqual(rooms.map(room => room.index), [1, 2]);
+  assert.equal(rooms[1].title, 'Second room');
+  assert.equal(ok(['market', '--input', '-', '--room', '2'], workspace).winner.totalCost, 9);
+  const compare = ok(['compare', '--input', path, '--room', '1', '--against', path, '--against-room', '2']);
+  assert.equal(compare.summary.current.cost, 9);
+  assert.equal(compare.summary.baseline.cost, 13);
+  fails(['market', '--input', '-'], workspace, /unexpected field/);
+  for (const index of ['0', '1.5', '-1', '3']) fails(['market', '--input', '-', '--room', index], workspace);
+  const invalid = structuredClone(workspace); invalid.rooms[1].buyers[0].quantity = 0;
+  fails(['market', '--input', '-', '--room', '1'], invalid, /quantity/);
+  fails(['replay', '--input', '-', '--room', '1'], workspace, /not supported/);
+  assert.deepEqual(ok(['rooms', '--input', '-'], { version: 1, rooms: [] }), []);
+  fails(['market', '--input', '-', '--room', '1'], { version: 1, rooms: [] }, /outside/);
+}));
+
 test('market CLI has independent shipping, allocation, and no-winner oracles', () => {
   const result = ok(['market', '--input', '-']);
   assert.equal(result.winner.fulfilledUnits, 2);

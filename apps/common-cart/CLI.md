@@ -116,3 +116,21 @@ category from the first buyer (then first offer, then Product), minimum to 1 and
 delivery to 7. CSV does not import price tiers. Use JSON for tiered offers and
 stable IDs. Quote cells containing commas. Each input has the same 1 MiB UTF-8
 limit; at most one can be stdin. Source files are preserved, including on failure.
+
+## Analyze saved workspace rooms
+
+```sh
+node scripts/analyze.mjs rooms --input workspace.json
+node scripts/analyze.mjs market --input workspace.json --room 2
+node scripts/analyze.mjs compare --input workspace.json --room 1 --against workspace.json --against-room 2
+```
+
+`rooms` validates the complete workspace and lists one-based indices, private room
+titles, currencies and record counts. Scenario commands accept `--room` to select
+that index; `compare` also accepts `--against-room` for its second input. Selection
+is explicit, so duplicate room titles are unambiguous and a workspace is never
+silently treated as its first room. Invalid unselected rooms still fail validation.
+Display filters remain display-only and never exclude buyers/offers from matching.
+An empty workspace can be listed but not selected. `tools`, `rooms`, `batch` and
+`replay` reject `--room`; batches contain scenarios and packets retain their own
+scenario. No room, scenario or workspace file is modified.

@@ -7,7 +7,7 @@ import { createMerchantReport, createMerchantResidualReport } from '../src/model
 import { CART_REVIEW_TOOLS, analyzeCartReview } from '../src/model.js';
 import { createCartReviewPacket, replayCartReviewPacket } from '../src/model.js';
 import { compareScenarios, compareRoomsByOfferIdentity } from '../src/model.js';
-import { validateScenario } from '../src/model.js';
+import { validateScenario, validateWorkspace } from '../src/model.js';
 import { importBuyersFromCsv, importOffersFromCsv } from '../src/model.js';
 
 const LIMIT = 1048576;
@@ -23,6 +23,9 @@ Usage: node scripts/analyze.mjs market --input scenario.json [--output result.js
        node scripts/analyze.mjs sweep --input scenario.json --offer O01 --field capacity --values '[10,20,30]'
        node scripts/analyze.mjs batch --input scenarios.jsonl --output results.jsonl
        node scripts/analyze.mjs import --input scenario.json --kind buyers --csv buyers.csv --output updated.json
+       node scripts/analyze.mjs rooms --input workspace.json
+       node scripts/analyze.mjs market --input workspace.json --room 2
+       node scripts/analyze.mjs compare --input workspace.json --room 1 --against workspace.json --against-room 2
 Use --input - for piped UTF-8 JSON. Output defaults to stdout.
 Inputs are limited to 1 MiB. Output files must not exist.
 Results are organizer-private, synthetic planning aids, never orders.
@@ -73,6 +76,15 @@ function json(text) {
   catch { throw new Error('Input must contain valid JSON.'); }
 }
 
+function selectScenario(candidate, room) {
+  if (room === undefined) return validateScenario(candidate);
+  if (!/^[1-9]\d?$/.test(room)) throw new Error('--room and --against-room must be positive whole-number indices.');
+  const workspace = validateWorkspace(candidate);
+  const selected = workspace.rooms[Number(room) - 1];
+  if (!selected) throw new Error('Room index is outside this workspace. Use rooms to list indices.');
+  return selected;
+}
+
 async function writeResult(value, path, jsonl = false) {
   const text = jsonl ? value.map(row => JSON.stringify(row)).join('\n') + '\n' : JSON.stringify(value, null, 2) + '\n';
   if (!path || path === '-') {
@@ -92,14 +104,18 @@ async function main() {
     against: { type: 'string' },
     field: { type: 'string' }, values: { type: 'string' },
     kind: { type: 'string' }, csv: { type: 'string' },
+    room: { type: 'string' }, 'against-room': { type: 'string' },
   } });
   const names = tokens.filter(token => token.kind === 'option').map(token => token.name);
   if (new Set(names).size !== names.length) throw new Error('Duplicate options are not allowed.');
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
-  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against'], sweep: ['offer', 'field', 'values'], batch: [], import: ['kind', 'csv'] };
+  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against', 'against-room'], sweep: ['offer', 'field', 'values'], batch: [], import: ['kind', 'csv'], rooms: [] };
   if (positionals.length !== 1 || !Object.hasOwn(allowed, command)) throw new Error('Choose a supported command. Use --help for usage.');
-  for (const name of names) if (!['input', 'output'].includes(name) && !allowed[command].includes(name)) throw new Error(`--${name} is not supported by ${command}.`);
+  for (const name of names) {
+    if (name === 'room' && !['tools', 'batch', 'replay', 'rooms'].includes(command)) continue;
+    if (!['input', 'output'].includes(name) && !allowed[command].includes(name)) throw new Error(`--${name} is not supported by ${command}.`);
+  }
   if (command === 'tools') {
     if (values.input) throw new Error('tools does not accept --input.');
     await writeResult(CART_REVIEW_TOOLS, values.output); return;
@@ -118,7 +134,13 @@ async function main() {
     await writeResult(scenarios.map((scenario, index) => ({ line: index + 1, market: evaluateMarket(scenario) })), values.output, true);
     return;
   }
-  const scenario = json(inputText);
+  const candidate = json(inputText);
+  if (command === 'rooms') {
+    const workspace = validateWorkspace(candidate);
+    await writeResult(workspace.rooms.map((room, index) => ({ index: index + 1, title: room.title, currency: room.currency, buyerCount: room.buyers.length, offerCount: room.offers.length })), values.output);
+    return;
+  }
+  const scenario = command === 'replay' ? candidate : selectScenario(candidate, values.room);
   let result;
   if (command === 'market') result = evaluateMarket(scenario);
   if (command === 'review' || command === 'packet') {
@@ -133,7 +155,7 @@ async function main() {
   }
   if (command === 'compare') {
     if (!values.against) throw new Error('--against is required.');
-    const other = json(await readText(values.against));
+    const other = selectScenario(json(await readText(values.against)), values['against-room']);
     result = { summary: compareScenarios(scenario, other), offers: compareRoomsByOfferIdentity(scenario, other) };
   }
   if (command === 'sweep') {
