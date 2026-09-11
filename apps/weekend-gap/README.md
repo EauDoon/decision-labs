@@ -6,6 +6,8 @@ It is an educational tool. It uses no live market data, issuer data, account dat
 
 ## Open without installing anything
 
+For terminal-only simulation and analyst workflows, see the [offline CLI](CLI.md).
+
 Double-click [standalone.html](standalone.html) to use the full simulator directly from a file. It has no server, package installation, or network dependency. Import and export JSON remain available.
 
 Standalone files cannot make portable share links, so sharing is disabled there. Use **Export JSON** to move a scenario to another copy of the simulator.
