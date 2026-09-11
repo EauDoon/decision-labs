@@ -1,10 +1,13 @@
 import { readFileSync } from 'node:fs';
 import { assertValidConfiguration, calculatePartnership, evaluateStressGrid, stressGridCsv } from '../src/model.js';
+import { solveFeeForAllHold, solveMinimumShareToHold, solveMinimumVolumeToHold } from '../src/model.js';
 
 const HELP = `Offline Partnership Breakpoint analysis (Node.js 20+)
 Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
   summary INPUT                 Validate and calculate a saved scenario
   stress INPUT [--csv] [--failed-only]  Inspect compound cases or export CSV
+  solve INPUT fee                Find the common fee floor
+  solve INPUT share|volume ID    Find a participant's holding boundary
 INPUT is a JSON file or - for standard input. Output is JSON on stdout.
 Errors are JSON on stderr, exit 1. Success is exit 0.
 Results describe declared inputs, not probabilities or financial advice.
@@ -44,6 +47,15 @@ function run(command, args) {
       const scenarios = flags.includes('--failed-only') ? grid.scenarios.filter(scenario => !scenario.viable) : grid.scenarios;
       return flags.includes('--csv') ? stressGridCsv(config, { scenarioIds: scenarios.map(scenario => scenario.id) })
         : { ...grid, scenarios, selectedCaseCount: scenarios.length };
+    }
+    case 'solve': {
+      arity(args, 2, 3);
+      const [input, axis, id] = args;
+      if (!['fee', 'share', 'volume'].includes(axis)) throw new Error('Solve axis must be fee, share, or volume.');
+      arity(args, axis === 'fee' ? 2 : 3);
+      const config = assertValidConfiguration(readJSON(input));
+      return axis === 'fee' ? solveFeeForAllHold(config)
+        : axis === 'share' ? solveMinimumShareToHold(config, id) : solveMinimumVolumeToHold(config, id);
     }
     default: throw new Error('Unknown command. Run with --help for usage.');
   }

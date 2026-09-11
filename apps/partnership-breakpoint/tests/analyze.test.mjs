@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { clonePreset, parseCsv } from '../src/model.js';
+import { clonePreset, parseCsv, calculatePartnership } from '../src/model.js';
 
 const cli = fileURLToPath(new URL('../scripts/analyze.mjs', import.meta.url));
 const run = (args, value) => spawnSync(process.execPath, [cli, ...args], {
@@ -79,4 +79,26 @@ test('stress exports complete and failing compound cases without changing grid c
   const empty = output(run(['stress', '-', '--failed-only'], config));
   assert.equal(empty.selectedCaseCount, 0);
   assert.equal(empty.caseCount, 1);
+});
+
+test('solvers expose independently calculated fee, share and volume boundaries', () => {
+  const config = clonePreset('balanced');
+  const p = config.participants[0];
+  const fee = output(run(['solve', '-', 'fee'], config));
+  const expectedFee = Math.max(...config.participants.map(item =>
+    (item.variableCostPerTransaction + (item.fixedMonthlyCost + item.riskCost + item.minimumAcceptableProfit) / 100000) / item.revenueShare));
+  assert.equal(fee.status, 'possible');
+  assert.equal(fee.fee, expectedFee);
+  const share = output(run(['solve', '-', 'share', p.id], config));
+  const shareFloor = (100000 * p.variableCostPerTransaction + p.fixedMonthlyCost + p.riskCost + p.minimumAcceptableProfit) / (100000 * config.deal.feePerTransaction);
+  assert.ok(Math.abs(share.share - shareFloor) < 1e-9);
+  assert.equal(calculatePartnership({ ...config, participants: share.proposal }).participants[0].viable, true);
+  const volume = output(run(['solve', '-', 'volume', p.id], config));
+  const expectedVolume = Math.max(p.minimumCommitment ?? 0, (p.fixedMonthlyCost + p.riskCost + p.minimumAcceptableProfit) / (p.revenueShare * config.deal.feePerTransaction - p.variableCostPerTransaction));
+  assert.ok(Math.abs(volume.monthlyVolume - expectedVolume) < 1e-6);
+  assert.match(output(run(['solve', '-', 'share', 'missing'], config), 1).error, /participant/);
+  assert.match(output(run(['solve', '-', 'fee', p.id], config), 1).error, /Wrong arguments/);
+  p.capacity = 1;
+  assert.equal(output(run(['solve', '-', 'fee'], config)).status, 'impossible');
+  assert.equal(output(run(['solve', '-', 'share', p.id], config)).status, 'impossible');
 });
