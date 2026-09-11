@@ -69,6 +69,7 @@ test("Saturday early issuer open keeps the Normal Friday calendar with a Saturda
   assert.notDeepEqual(preset, PRESETS.sundayLateIssuerClose);
   assert.notDeepEqual(preset, PRESETS.sundayEarlyIssuerOpen);
   assert.notDeepEqual(preset, PRESETS.fridayEarlyIssuerOpen);
+  assert.notDeepEqual(preset, PRESETS.saturdayEarlyBankOpen);
   const early = runSimulation(preset);
   const normal = runSimulation(DEFAULT_SCENARIO);
   const sundayEarly = runSimulation(PRESETS.sundayEarlyIssuerOpen);

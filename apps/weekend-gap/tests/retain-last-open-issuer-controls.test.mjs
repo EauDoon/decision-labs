@@ -32,12 +32,15 @@ test("1.5.18 keeps 5 6 7 last-open-issuer controls and Sunday issuer presets", a
   assert.equal(PRESETS.saturdayEarlyIssuerOpen.saturdayEarlyIssuerOpen, true);
   assert.equal(PRESETS.fridayEarlyIssuerOpen.fridayEarlyIssuerOpen, true);
   assert.equal(PRESETS.fridayEarlyIssuerOpen.saturdayEarlyIssuerOpen, false);
+  assert.equal(PRESETS.saturdayEarlyBankOpen.saturdayEarlyBankOpen, true);
+  assert.equal(PRESETS.saturdayEarlyBankOpen.saturdayEarlyIssuerOpen, false);
   assert.equal(PRESETS.saturdayEarlyIssuerOpen.sundayEarlyIssuerOpen, false);
   assert.equal(PRESETS.saturdayEarlyIssuerOpen.sundayLateIssuerClose, false);
   assert.equal(DEFAULT_SCENARIO.sundayEarlyIssuerOpen, false);
   assert.equal(DEFAULT_SCENARIO.sundayLateIssuerClose, false);
   assert.equal(DEFAULT_SCENARIO.saturdayEarlyIssuerOpen, false);
   assert.equal(DEFAULT_SCENARIO.fridayEarlyIssuerOpen, false);
+  assert.equal(DEFAULT_SCENARIO.saturdayEarlyBankOpen, false);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   assert.ok(handler.indexOf('event.key === "5"') !== handler.indexOf('event.key === "8"'));
   assert.ok(handler.indexOf('event.key === "6"') !== handler.indexOf('event.key === "9"'));
