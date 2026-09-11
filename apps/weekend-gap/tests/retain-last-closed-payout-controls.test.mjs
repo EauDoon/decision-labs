@@ -73,7 +73,7 @@ test("1.5.26 keeps F7 F8 F9 last-weekend-FX-closed controls and F3 F4 Backspace"
   const f9Slice = handler.slice(handler.indexOf('event.key === "F9"'), handler.indexOf('event.key === "F9"') + 180);
   assert.doesNotMatch(f9Slice, /copyLastWeekendFxClosedHourMarkdown/);
   assert.doesNotMatch(f9Slice, /copyLastClosedPayoutHourMarkdown/);
-  const f12Slice = handler.slice(handler.indexOf('event.key === "F12"'), handler.indexOf('event.key === "F12"') + 180);
+  const f12Slice = handler.slice(handler.lastIndexOf('event.key === "F12"'), handler.lastIndexOf('event.key === "F12"') + 180);
   assert.match(f12Slice, /jumpToHideWeekendFxOpenFilter/);
   assert.doesNotMatch(f12Slice, /jumpToHideWeekdayFxClosedFilter/);
 });

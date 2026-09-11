@@ -1,0 +1,38 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+import { DEFAULT_SCENARIO, PRESETS } from "../src/model.js";
+
+test("1.5.27 keeps F10 F11 F12 last-weekday-FX-closed controls and F7 F8 F9", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="copy-last-weekday-fx-closed"[^>]*aria-keyshortcuts="F10"/);
+  assert.match(html, /<kbd>F10<\/kbd>/);
+  assert.match(html, /<kbd>F11<\/kbd>/);
+  assert.match(html, /<kbd>F12<\/kbd>/);
+  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
+  assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
+  assert.match(html, /data-preset="sundayLateFxOpen"/);
+  assert.match(html, /data-preset="sundayEarlyFxOpen"/);
+  assert.match(app, /event\.key === "F10"/);
+  assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
+  assert.match(app, /event\.key === "F11"/);
+  assert.match(app, /jumpToLastWeekdayFxClosedCopy\(\)/);
+  assert.match(app, /event\.key === "F12"/);
+  assert.match(app, /jumpToHideWeekendFxOpenFilter\(\)/);
+  assert.match(app, /event\.key === "F7"/);
+  assert.match(app, /copyLastWeekendFxClosedHourMarkdown\(\)/);
+  assert.match(app, /if \(event\.defaultPrevented\) return/);
+  assert.equal(PRESETS.sundayLateFxOpen.sundayLateFxOpen, true);
+  assert.equal(PRESETS.sundayEarlyFxOpen.sundayEarlyFxOpen, true);
+  assert.equal(PRESETS.sundayEarlyFxOpen.sundayLateFxOpen, false);
+  assert.equal(DEFAULT_SCENARIO.sundayEarlyFxOpen, false);
+  assert.equal(DEFAULT_SCENARIO.sundayLateFxOpen, false);
+  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
+  const unshiftedF12 = handler.lastIndexOf('event.key === "F12"');
+  const f12Slice = handler.slice(unshiftedF12, unshiftedF12 + 180);
+  assert.match(f12Slice, /jumpToHideWeekendFxOpenFilter/);
+  assert.doesNotMatch(f12Slice, /jumpToHideWeekdayFxOpenFilter/);
+  assert.ok(handler.indexOf('event.key === "F10" && event.shiftKey') < handler.lastIndexOf('event.key === "F10"'));
+});
