@@ -435,18 +435,18 @@ test('404 last review path matches the last catalog workbench review path', () =
 });
 
 
-test('catalog versions stay Partnership Breakpoint 1.5.27, Common Cart 1.4.27, The Smallest Agreement 1.5.27, Weekend Gap 1.5.27', () => {
-  assert.match(html, /data-app="partnership-breakpoint">\s*1\.5\.27\s*</);
-  assert.match(html, /data-app="common-cart">\s*1\.4\.27\s*</);
+test('catalog versions stay Partnership Breakpoint 1.5.28, Common Cart 1.4.28, The Smallest Agreement 1.5.27, Weekend Gap 1.5.27', () => {
+  assert.match(html, /data-app="partnership-breakpoint">\s*1\.5\.28\s*</);
+  assert.match(html, /data-app="common-cart">\s*1\.4\.28\s*</);
   assert.match(html, /data-app="smallest-agreement">\s*1\.5\.27\s*</);
   assert.match(html, /data-app="weekend-gap">\s*1\.5\.27\s*</);
-  assert.match(html, /data-app-version="partnership-breakpoint">\s*1\.5\.27\s*</);
-  assert.match(html, /data-app-version="common-cart">\s*1\.4\.27\s*</);
+  assert.match(html, /data-app-version="partnership-breakpoint">\s*1\.5\.28\s*</);
+  assert.match(html, /data-app-version="common-cart">\s*1\.4\.28\s*</);
   assert.match(html, /data-app-version="smallest-agreement">\s*1\.5\.27\s*</);
   assert.match(html, /data-app-version="weekend-gap">\s*1\.5\.27\s*</);
-  assert.match(html, /Partnership Breakpoint 1\.5\.27, Common Cart 1\.4\.27, The Smallest Agreement 1\.5\.27, Weekend Gap 1\.5\.27/);
-  assert.match(readme, /\[Partnership Breakpoint\]\(apps\/partnership-breakpoint\/\) \| 1\.5\.27 \|/);
-  assert.match(readme, /\[Common Cart\]\(apps\/common-cart\/\) \| 1\.4\.27 \|/);
+  assert.match(html, /Partnership Breakpoint 1\.5\.28, Common Cart 1\.4\.28, The Smallest Agreement 1\.5\.27, Weekend Gap 1\.5\.27/);
+  assert.match(readme, /\[Partnership Breakpoint\]\(apps\/partnership-breakpoint\/\) \| 1\.5\.28 \|/);
+  assert.match(readme, /\[Common Cart\]\(apps\/common-cart\/\) \| 1\.4\.28 \|/);
   assert.match(readme, /\[The Smallest Agreement\]\(apps\/smallest-agreement\/\) \| 1\.5\.27 \|/);
   assert.match(readme, /\[Weekend Gap\]\(apps\/weekend-gap\/\) \| 1\.5\.27 \|/);
 });
