@@ -234,6 +234,7 @@ const exportedNames = Object.freeze([
   "lastWeekdayFxOpenGanttHour",
   "firstWeekdayFxOpenGanttHour",
   "firstWeekdayFxClosedGanttHour",
+  "firstWeekendFxOpenGanttHour",
   "ganttHourClosedOnAnyGate",
   "ganttHourClosedOnEveryGate",
   "ganttHourOpenOnEveryGate",
