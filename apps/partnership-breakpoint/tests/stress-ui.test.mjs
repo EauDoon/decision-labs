@@ -100,6 +100,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'copy-last-zero-share-remaining', 'last-zero-share-remaining-copy-text',
         'copy-last-zero-share-volume', 'last-zero-share-volume-copy-text',
         'copy-first-zero-share-remaining', 'first-zero-share-remaining-copy-text',
+        'copy-first-zero-share-volume', 'first-zero-share-volume-copy-text',
         'hide-zero-share-participants',
         'copy-first-zero-share-participant', 'first-zero-share-label-copy-text',
       ]);
@@ -728,7 +729,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, first over-capacity remaining listed capacity, last over-capacity participant, last over-capacity remaining listed capacity, first within-capacity remaining listed capacity, last within-capacity remaining listed capacity, last spare-capacity remaining listed capacity, first spare-capacity remaining listed capacity, last unbounded remaining-to-hold, first unbounded remaining-to-hold, last at-hold remaining-to-hold, first at-hold remaining-to-hold, last zero-share participant, last zero-share remaining-to-hold, first zero-share remaining-to-hold, and first zero-share participant', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, first over-capacity remaining listed capacity, last over-capacity participant, last over-capacity remaining listed capacity, first within-capacity remaining listed capacity, last within-capacity remaining listed capacity, last spare-capacity remaining listed capacity, first spare-capacity remaining listed capacity, last unbounded remaining-to-hold, first unbounded remaining-to-hold, last at-hold remaining-to-hold, first at-hold remaining-to-hold, last zero-share participant, last zero-share remaining-to-hold, last zero-share volume-to-hold, first zero-share remaining-to-hold, first zero-share volume-to-hold, and first zero-share participant', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -763,6 +764,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /<h2>Last zero-share remaining-to-hold<\/h2><p>Last zero-share remaining-to-hold: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Last zero-share volume-to-hold<\/h2><p>Last zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>First zero-share remaining-to-hold<\/h2><p>First zero-share remaining-to-hold: none entered\.<\/p>/);
+  assert.match(app.markup(), /<h2>First zero-share volume-to-hold<\/h2><p>First zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   const before = JSON.stringify(app.saved());
@@ -792,6 +794,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>Last zero-share remaining-to-hold<\/h2><p>Last zero-share remaining-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last zero-share volume-to-hold<\/h2><p>Last zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First zero-share remaining-to-hold<\/h2><p>First zero-share remaining-to-hold: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>First zero-share volume-to-hold<\/h2><p>First zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   app.edit('deal.title', 'Harbor JV', { type: 'text' });
@@ -819,6 +822,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>Last zero-share remaining-to-hold<\/h2><p>Last zero-share remaining-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last zero-share volume-to-hold<\/h2><p>Last zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First zero-share remaining-to-hold<\/h2><p>First zero-share remaining-to-hold: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>First zero-share volume-to-hold<\/h2><p>First zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   app.edit('deal.monthlyVolume', '116000');
   const over = JSON.stringify(app.saved());
@@ -842,6 +846,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>Last zero-share remaining-to-hold<\/h2><p>Last zero-share remaining-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last zero-share volume-to-hold<\/h2><p>Last zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First zero-share remaining-to-hold<\/h2><p>First zero-share remaining-to-hold: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>First zero-share volume-to-hold<\/h2><p>First zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
@@ -882,6 +887,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /<h2>Last zero-share remaining-to-hold<\/h2><p>Last zero-share remaining-to-hold: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>Last zero-share volume-to-hold<\/h2><p>Last zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>First zero-share remaining-to-hold<\/h2><p>First zero-share remaining-to-hold: none entered\.<\/p>/);
+  assert.match(snapshot, /<h2>First zero-share volume-to-hold<\/h2><p>First zero-share volume-to-hold: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
@@ -2149,6 +2155,49 @@ test('dragon boat carnival split preset loads from the starting-point buttons', 
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
 });
 
+test('surf carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="surfCarnivalSplit"/);
+  assert.match(app.markup(), /Surf carnival split/);
+  assert.match(app.markup(), /data-preset="dragonBoatCarnivalSplit"/);
+  assert.match(app.markup(), /Dragon boat carnival split/);
+  assert.match(app.markup(), /data-preset="kayakingCarnivalSplit"/);
+  assert.match(app.markup(), /Kayaking carnival split/);
+  const markup = app.markup();
+  assert.ok(markup.indexOf('data-preset="dragonBoatCarnivalSplit"') < markup.indexOf('data-preset="surfCarnivalSplit"'));
+  app.click('preset', { preset: 'surfCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['surf-committee', 'surf-club-hire', 'surf-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Surf club hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 8);
+  assert.equal(app.saved().deal.monthlyVolume, 4800);
+  assert.equal(app.saved().deal.addressableVolume, 6000);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [5700, 6800, 4800]);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[0].fixedMonthlyCost, app.saved().participants[1].fixedMonthlyCost);
+  assert.notEqual(app.saved().participants[1].fixedMonthlyCost, app.saved().participants[2].fixedMonthlyCost);
+  assert.match(app.notice(), /Surf carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'dragonboat-committee,dragonboat-club-hire,dragonboat-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'kayaking-committee,kayaking-slalom-hire,kayaking-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'canoeing-committee,canoeing-paddle-hire,canoeing-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'sailing-committee,sailing-yacht-hire,sailing-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Dragon boat club hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Whitewater slalom hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Paddle club hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Yacht club hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Pool operations');
+  assert.equal(app.saved().participants.map((item) => item.name)[1], 'Surf club hire');
+  const exported = JSON.stringify(app.saved());
+  assert.doesNotMatch(exported, /live roster/i);
+  assert.doesNotMatch(exported, /hosted/i);
+  assert.doesNotMatch(exported, /\bapi\b/i);
+  assert.doesNotMatch(exported, /forecast/i);
+  assert.doesNotMatch(exported, /live capacity/i);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+});
+
 test('lacrosse carnival last-at-hold remaining is 0 for First-aid and first-at-hold hides Carnival committee only', async () => {
   const app = await workbench('file:', { clipboard: 'ok' });
   app.click('dismiss-coach');
@@ -2544,6 +2593,74 @@ test('dragon boat carnival last-zero-share volume is distinct and zero-share hid
   assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
 });
 
+test('surf carnival first-zero-share volume is distinct and last-zero-share hide hides that row only', async () => {
+  const app = await workbench('file:', { clipboard: 'ok' });
+  app.click('dismiss-coach');
+  app.click('preset', { preset: 'surfCarnivalSplit' });
+  app.click('copy-first-zero-share-volume');
+  assert.equal(app.copied().at(-1), 'First zero-share volume-to-hold: none entered.');
+  assert.doesNotMatch(app.copied().at(-1), /Last zero-share volume-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last zero-share remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /First zero-share remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /First zero-share participant/);
+  assert.doesNotMatch(app.copied().at(-1), /Last zero-share participant/);
+  assert.doesNotMatch(app.copied().at(-1), /First-breakpoint volume-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /probab/i);
+  app.click('copy-last-zero-share-volume');
+  assert.equal(app.copied().at(-1), 'Last zero-share volume-to-hold: none entered.');
+  app.click('copy-last-zero-share-remaining');
+  assert.equal(app.copied().at(-1), 'Last zero-share remaining-to-hold: none entered.');
+  app.click('copy-first-zero-share-remaining');
+  assert.equal(app.copied().at(-1), 'First zero-share remaining-to-hold: none entered.');
+  app.click('copy-first-breakpoint-volume');
+  assert.match(app.copied().at(-1), /^First-breakpoint volume-to-hold:/);
+  assert.doesNotMatch(app.copied().at(-1), /First zero-share volume-to-hold/);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  app.click('duplicate-participant', { index: '0' });
+  assert.equal(forms(), 4);
+  app.click('duplicate-participant', { index: '3' });
+  assert.equal(forms(), 5);
+  app.click('copy-first-zero-share-volume');
+  assert.equal(app.copied().at(-1), 'First zero-share volume-to-hold: volume to hold is not a finite amount for Carnival committee copy. Volume to hold. Not a forecast.');
+  assert.doesNotMatch(app.copied().at(-1), /Last zero-share volume-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last zero-share remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /First zero-share remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /First-breakpoint volume-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /probab/i);
+  app.click('copy-last-zero-share-volume');
+  assert.equal(app.copied().at(-1), 'Last zero-share volume-to-hold: volume to hold is not a finite amount for First-aid copy. Volume to hold. Not a forecast.');
+  assert.notEqual(app.copied().at(-1), 'First zero-share volume-to-hold: volume to hold is not a finite amount for Carnival committee copy. Volume to hold. Not a forecast.');
+  app.click('copy-first-zero-share-remaining');
+  assert.equal(app.copied().at(-1), 'First zero-share remaining-to-hold: remaining to hold is not a finite amount for Carnival committee copy. Remaining to hold. Not a forecast.');
+  const beforeHold = holdCount();
+  assert.ok(beforeHold);
+  app.click('hide-last-zero-share-participant');
+  assert.equal(forms(), 4);
+  assert.match(app.markup(), /Participant 1: Carnival committee/);
+  assert.match(app.markup(), /Participant 2: Carnival committee copy/);
+  assert.doesNotMatch(app.markup(), /Participant 5: First-aid copy/);
+  assert.match(app.markup(), /1 last participant with zero revenue share is hidden from this roster display/);
+  assert.equal(holdCount(), beforeHold);
+  assert.equal(app.saved().hideLastZeroShareParticipant, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideFirstZeroShareParticipant'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  app.click('export');
+  const exported = JSON.parse(await app.downloads()[0].blob.text());
+  assert.equal(exported.hideLastZeroShareParticipant, true);
+  assert.doesNotMatch(JSON.stringify(exported), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(exported), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(exported), /\bapi\b/i);
+  assert.doesNotMatch(JSON.stringify(exported), /forecast/i);
+  app.click('show-last-zero-share-participant');
+  assert.equal(forms(), 5);
+  app.click('hide-zero-share-participants');
+  assert.equal(forms(), 3);
+  assert.equal(app.saved().hideZeroShareParticipants, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastZeroShareParticipant'), false);
+});
+
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
   const app = await workbench();
   assert.match(app.markup(), /data-preset="talentAgentPlatform"/);
@@ -2701,9 +2818,9 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>F10<\/kbd> Copy last zero-share remaining-to-hold as Markdown/);
   assert.match(app.markup(), /<kbd>F11<\/kbd> Jump to Copy last zero-share remaining-to-hold, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>F12<\/kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing/);
-  assert.match(app.markup(), /<kbd>Shift\+F10<\/kbd> Copy last zero-share volume-to-hold as Markdown/);
-  assert.match(app.markup(), /<kbd>Shift\+F11<\/kbd> Jump to Copy last zero-share volume-to-hold, or the Participants heading if missing/);
-  assert.match(app.markup(), /<kbd>Shift\+F12<\/kbd> Jump to Hide participants with zero revenue share, or the Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>Shift\+F10<\/kbd> Copy first zero-share volume-to-hold as Markdown/);
+  assert.match(app.markup(), /<kbd>Shift\+F11<\/kbd> Jump to Copy first zero-share volume-to-hold, or the Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>Shift\+F12<\/kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\+<\/kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>!<\/kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\|<\/kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing/);
@@ -5595,25 +5712,27 @@ test('keyboard F10 copies last zero-share remaining-to-hold through the new cont
   assert.doesNotMatch(JSON.stringify(canoeing.saved()), /\bapi\b/i);
 });
 
-test('keyboard Shift+F10 copies last zero-share volume-to-hold through the new control', async () => {
+test('keyboard Shift+F10 copies first zero-share volume-to-hold through the new control', async () => {
   const fallback = await workbench();
   fallback.click('dismiss-coach');
-  assert.match(fallback.markup(), /id="copy-last-zero-share-volume"/);
-  assert.match(fallback.markup(), /data-action="copy-last-zero-share-volume"/);
-  assert.match(fallback.markup(), /id="copy-last-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(fallback.markup(), /id="copy-first-zero-share-volume"/);
+  assert.match(fallback.markup(), /data-action="copy-first-zero-share-volume"/);
+  assert.match(fallback.markup(), /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.doesNotMatch(fallback.markup(), /id="copy-last-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   fallback.keydown('F10', { shiftKey: true });
   assert.equal(fallback.downloads().length, 0);
-  assert.match(fallback.markup(), /id="last-zero-share-volume-copy-text"/);
-  assert.match(fallback.markup(), /Last zero-share volume-to-hold: none entered\./);
-  assert.match(fallback.markup(), /id="last-zero-share-volume-copy-title">Last zero-share volume-to-hold Markdown/);
+  assert.match(fallback.markup(), /id="first-zero-share-volume-copy-text"/);
+  assert.match(fallback.markup(), /First zero-share volume-to-hold: none entered\./);
+  assert.match(fallback.markup(), /id="first-zero-share-volume-copy-title">First zero-share volume-to-hold Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-volume-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="last-zero-share-remaining-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="first-zero-share-remaining-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="first-zero-share-label-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="last-zero-share-label-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="volume-copy-text"/);
   assert.match(fallback.notice(), /Copy the Markdown from the text area/);
-  fallback.click('close-last-zero-share-volume-copy');
-  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-volume-copy-text"/);
+  fallback.click('close-first-zero-share-volume-copy');
+  assert.doesNotMatch(fallback.markup(), /id="first-zero-share-volume-copy-text"/);
   const before = fallback.markup();
   fallback.keydown('F10', { shiftKey: true, tagName: 'INPUT' });
   assert.equal(fallback.markup(), before);
@@ -5623,14 +5742,15 @@ test('keyboard Shift+F10 copies last zero-share volume-to-hold through the new c
   assert.equal(fallback.markup(), before);
   fallback.edit('deal.monthlyVolume', '');
   fallback.keydown('F10', { shiftKey: true });
-  assert.match(fallback.markup(), /id="last-zero-share-volume-copy-text"/);
-  assert.match(fallback.markup(), />Last zero-share volume-to-hold: none entered\.</);
+  assert.match(fallback.markup(), /id="first-zero-share-volume-copy-text"/);
+  assert.match(fallback.markup(), />First zero-share volume-to-hold: none entered\.</);
 
   const withClipboard = await workbench('file:', { clipboard: 'ok' });
   withClipboard.keydown('F10', { shiftKey: true });
   assert.equal(withClipboard.copied().length, 1);
   assert.equal(withClipboard.copied()[0].split('\n').length, 1);
-  assert.equal(withClipboard.copied()[0], 'Last zero-share volume-to-hold: none entered.');
+  assert.equal(withClipboard.copied()[0], 'First zero-share volume-to-hold: none entered.');
+  assert.doesNotMatch(withClipboard.copied()[0], /Last zero-share volume-to-hold/);
   assert.doesNotMatch(withClipboard.copied()[0], /Last zero-share remaining-to-hold/);
   assert.doesNotMatch(withClipboard.copied()[0], /First zero-share remaining-to-hold/);
   assert.doesNotMatch(withClipboard.copied()[0], /First zero-share participant/);
@@ -5656,7 +5776,7 @@ test('keyboard Shift+F10 copies last zero-share volume-to-hold through the new c
 
   const denied = await workbench('file:', { clipboard: 'fail' });
   denied.keydown('F10', { shiftKey: true });
-  assert.match(denied.markup(), /id="last-zero-share-volume-copy-text"/);
+  assert.match(denied.markup(), /id="first-zero-share-volume-copy-text"/);
   assert.match(denied.notice(), /Clipboard unavailable/);
 
   const talent = await workbench('file:', { clipboard: 'ok' });
@@ -5664,7 +5784,7 @@ test('keyboard Shift+F10 copies last zero-share volume-to-hold through the new c
   talent.click('duplicate-participant', { index: '0' });
   talent.click('duplicate-participant', { index: '3' });
   talent.keydown('F10', { shiftKey: true });
-  assert.equal(talent.copied().at(-1), 'Last zero-share volume-to-hold: volume to hold is not a finite amount for Platform copy. Volume to hold. Not a forecast.');
+  assert.equal(talent.copied().at(-1), 'First zero-share volume-to-hold: volume to hold is not a finite amount for Talent copy. Volume to hold. Not a forecast.');
   talent.keydown('F10');
   assert.equal(talent.copied().at(-1), 'Last zero-share remaining-to-hold: remaining to hold is not a finite amount for Platform copy. Remaining to hold. Not a forecast.');
   talent.keydown('F7');
@@ -5672,35 +5792,36 @@ test('keyboard Shift+F10 copies last zero-share volume-to-hold through the new c
   talent.keydown('F3');
   assert.equal(talent.copied().at(-1), 'Last zero-share participant: Platform copy. Last roster row with zero revenue share. Not a forecast.');
 
-  const dragonBoat = await workbench('file:', { clipboard: 'ok' });
-  dragonBoat.click('preset', { preset: 'dragonBoatCarnivalSplit' });
-  dragonBoat.click('duplicate-participant', { index: '0' });
-  dragonBoat.click('duplicate-participant', { index: '3' });
-  dragonBoat.keydown('F10', { shiftKey: true });
-  assert.equal(dragonBoat.copied().at(-1), 'Last zero-share volume-to-hold: volume to hold is not a finite amount for First-aid copy. Volume to hold. Not a forecast.');
-  dragonBoat.keydown('F10');
-  assert.equal(dragonBoat.copied().at(-1), 'Last zero-share remaining-to-hold: remaining to hold is not a finite amount for First-aid copy. Remaining to hold. Not a forecast.');
-  assert.doesNotMatch(dragonBoat.copied().at(-1), /Last zero-share remaining if any/);
-  assert.doesNotMatch(JSON.stringify(dragonBoat.saved()), /live roster/i);
-  assert.doesNotMatch(JSON.stringify(dragonBoat.saved()), /hosted/i);
-  assert.doesNotMatch(JSON.stringify(dragonBoat.saved()), /\bapi\b/i);
+  const surf = await workbench('file:', { clipboard: 'ok' });
+  surf.click('preset', { preset: 'surfCarnivalSplit' });
+  surf.click('duplicate-participant', { index: '0' });
+  surf.click('duplicate-participant', { index: '3' });
+  surf.keydown('F10', { shiftKey: true });
+  assert.equal(surf.copied().at(-1), 'First zero-share volume-to-hold: volume to hold is not a finite amount for Carnival committee copy. Volume to hold. Not a forecast.');
+  surf.keydown('F10');
+  assert.equal(surf.copied().at(-1), 'Last zero-share remaining-to-hold: remaining to hold is not a finite amount for First-aid copy. Remaining to hold. Not a forecast.');
+  assert.doesNotMatch(surf.copied().at(-1), /Last zero-share remaining if any/);
+  assert.doesNotMatch(JSON.stringify(surf.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(surf.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(surf.saved()), /\bapi\b/i);
 });
 
-test('keyboard Shift+F11 jumps to Copy last zero-share volume-to-hold unless a field is focused', async () => {
+test('keyboard Shift+F11 jumps to Copy first zero-share volume-to-hold unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
-  assert.match(app.markup(), /id="copy-last-zero-share-volume"/);
-  assert.match(app.markup(), /id="copy-last-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.match(app.markup(), /id="copy-first-zero-share-volume"/);
+  assert.match(app.markup(), /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
   app.keydown('F11', { shiftKey: true });
-  assert.ok(app.focused().includes('#copy-last-zero-share-volume'));
-  assert.ok(app.focused().includes('scroll:#copy-last-zero-share-volume'));
+  assert.ok(app.focused().includes('#copy-first-zero-share-volume'));
+  assert.ok(app.focused().includes('scroll:#copy-first-zero-share-volume'));
+  assert.ok(!app.focused().includes('#copy-last-zero-share-volume'));
   assert.ok(!app.focused().includes('#copy-last-zero-share-remaining'));
   assert.ok(!app.focused().includes('#copy-first-zero-share-remaining'));
   assert.ok(!app.focused().includes('#copy-first-zero-share-participant'));
   assert.ok(!app.focused().includes('#copy-last-zero-share-participant'));
   assert.ok(!app.focused().includes('#copy-first-breakpoint-volume'));
-  assert.doesNotMatch(app.markup(), /id="last-zero-share-volume-copy-text"/);
+  assert.doesNotMatch(app.markup(), /id="first-zero-share-volume-copy-text"/);
   const before = app.focused().length;
   app.keydown('F11', { shiftKey: true, tagName: 'INPUT' });
   assert.equal(app.focused().length, before);
@@ -5710,43 +5831,47 @@ test('keyboard Shift+F11 jumps to Copy last zero-share volume-to-hold unless a f
   assert.equal(app.focused().length, before);
   app.keydown('F11');
   assert.ok(app.focused().includes('#copy-last-zero-share-remaining'));
-  assert.ok(!app.focused().at(-1)?.includes('copy-last-zero-share-volume'));
+  assert.ok(!app.focused().at(-1)?.includes('copy-first-zero-share-volume'));
   app.keydown('F8');
   assert.ok(app.focused().includes('#copy-first-zero-share-participant'));
   app.edit('deal.monthlyVolume', '');
   app.keydown('F11', { shiftKey: true });
-  assert.ok(app.focused().includes('#copy-last-zero-share-volume'));
-  assert.ok(app.focused().includes('scroll:#copy-last-zero-share-volume'));
-  assert.match(app.markup(), /id="copy-last-zero-share-volume"/);
+  assert.ok(app.focused().includes('#copy-first-zero-share-volume'));
+  assert.ok(app.focused().includes('scroll:#copy-first-zero-share-volume'));
+  assert.match(app.markup(), /id="copy-first-zero-share-volume"/);
   assert.match(app.markup(), /id="participant-inputs-title"/);
-  assert.doesNotMatch(app.markup(), /id="last-zero-share-volume-copy-text"/);
+  assert.doesNotMatch(app.markup(), /id="first-zero-share-volume-copy-text"/);
 
   const withClipboard = await workbench('file:', { clipboard: 'ok' });
   withClipboard.click('dismiss-coach');
   withClipboard.keydown('F11', { shiftKey: true });
   assert.equal(withClipboard.copied().length, 0);
-  assert.ok(withClipboard.focused().includes('#copy-last-zero-share-volume'));
+  assert.ok(withClipboard.focused().includes('#copy-first-zero-share-volume'));
 });
 
-test('keyboard Shift+F12 jumps to Hide participants with zero revenue share unless a field is focused', async () => {
+test('keyboard Shift+F12 jumps to Hide the last participant with zero revenue share unless a field is focused', async () => {
   const app = await workbench();
   app.click('dismiss-coach');
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"/);
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*data-action="hide-last-zero-share-participant"/);
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*aria-keyshortcuts="Backspace"/);
   assert.match(app.markup(), /id="hide-zero-share-participants"/);
-  assert.match(app.markup(), /id="hide-zero-share-participants"[^>]*data-action="hide-zero-share-participants"/);
-  assert.match(app.markup(), /id="hide-zero-share-participants"[^>]*aria-keyshortcuts="Shift\+F12"/);
+  assert.doesNotMatch(app.markup(), /id="hide-zero-share-participants"[^>]*aria-keyshortcuts="Shift\+F12"/);
   assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
   const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
   assert.equal(forms(), 3);
   app.keydown('F12', { shiftKey: true });
-  assert.ok(app.focused().includes('#hide-zero-share-participants'));
-  assert.ok(app.focused().includes('scroll:#hide-zero-share-participants'));
+  assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-last-zero-share-participant'));
   assert.ok(!app.focused().includes('#hide-first-zero-share-participant'));
-  assert.ok(!app.focused().includes('#hide-last-zero-share-participant'));
+  assert.ok(!app.focused().includes('#hide-zero-share-participants'));
+  assert.ok(!app.focused().includes('#copy-first-zero-share-volume'));
   assert.ok(!app.focused().includes('#copy-last-zero-share-volume'));
   assert.ok(!app.focused().includes('#copy-last-zero-share-remaining'));
   assert.ok(!app.focused().includes('#copy-first-zero-share-remaining'));
   assert.equal(forms(), 3);
-  assert.match(app.markup(), /id="hide-zero-share-participants"[^>]*aria-pressed="false"/);
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*aria-pressed="false"/);
+  assert.doesNotMatch(app.markup(), /id="first-zero-share-volume-copy-text"/);
   assert.doesNotMatch(app.markup(), /id="last-zero-share-volume-copy-text"/);
   assert.doesNotMatch(app.markup(), /id="first-zero-share-remaining-copy-text"/);
   const before = app.focused().length;
@@ -5758,7 +5883,6 @@ test('keyboard Shift+F12 jumps to Hide participants with zero revenue share unle
   assert.equal(app.focused().length, before);
   app.keydown('F12');
   assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
-  assert.ok(!app.focused().at(-1)?.includes('hide-zero-share-participants'));
   app.keydown('F9');
   assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
   app.keydown('ArrowRight');
@@ -5767,17 +5891,18 @@ test('keyboard Shift+F12 jumps to Hide participants with zero revenue share unle
   assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
   app.edit('deal.monthlyVolume', '');
   app.keydown('F12', { shiftKey: true });
-  assert.ok(app.focused().includes('#hide-zero-share-participants'));
-  assert.ok(app.focused().includes('scroll:#hide-zero-share-participants'));
-  assert.match(app.markup(), /id="hide-zero-share-participants"/);
+  assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-last-zero-share-participant'));
+  assert.match(app.markup(), /id="hide-last-zero-share-participant"/);
   assert.equal(forms(), 3);
-  assert.doesNotMatch(app.markup(), /id="last-zero-share-volume-copy-text"/);
+  assert.doesNotMatch(app.markup(), /id="first-zero-share-volume-copy-text"/);
 
   const withClipboard = await workbench('file:', { clipboard: 'ok' });
   withClipboard.click('dismiss-coach');
   withClipboard.keydown('F12', { shiftKey: true });
   assert.equal(withClipboard.copied().length, 0);
-  assert.ok(withClipboard.focused().includes('#hide-zero-share-participants'));
+  assert.ok(withClipboard.focused().includes('#hide-last-zero-share-participant'));
+  assert.doesNotMatch(withClipboard.markup(), /id="first-zero-share-volume-copy-text"/);
   assert.doesNotMatch(withClipboard.markup(), /id="last-zero-share-volume-copy-text"/);
   assert.doesNotMatch(withClipboard.markup(), /id="first-zero-share-remaining-copy-text"/);
 });
@@ -5918,8 +6043,9 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*aria-keyshortcuts="Backspace"/);
   assert.match(app.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
   assert.match(app.markup(), /id="copy-last-zero-share-remaining"[^>]*aria-keyshortcuts="F10"/);
-  assert.match(app.markup(), /id="copy-last-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
-  assert.match(app.markup(), /id="hide-zero-share-participants"[^>]*aria-keyshortcuts="Shift\+F12"/);
+  assert.match(app.markup(), /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.doesNotMatch(app.markup(), /id="copy-last-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.doesNotMatch(app.markup(), /id="hide-zero-share-participants"[^>]*aria-keyshortcuts="Shift\+F12"/);
   app.keydown('4');
   assert.equal(app.copied().at(-1), 'Last unbounded remaining-to-hold: none entered.');
   app.keydown('PageUp');
@@ -5935,7 +6061,7 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   app.keydown('F10');
   assert.equal(app.copied().at(-1), 'Last zero-share remaining-to-hold: none entered.');
   app.keydown('F10', { shiftKey: true });
-  assert.equal(app.copied().at(-1), 'Last zero-share volume-to-hold: none entered.');
+  assert.equal(app.copied().at(-1), 'First zero-share volume-to-hold: none entered.');
   app.keydown('Home');
   assert.ok(app.focused().includes('#copy-last-unbounded-remaining'));
   app.keydown('PageDown');
@@ -5951,7 +6077,7 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   app.keydown('F11');
   assert.ok(app.focused().includes('#copy-last-zero-share-remaining'));
   app.keydown('F11', { shiftKey: true });
-  assert.ok(app.focused().includes('#copy-last-zero-share-volume'));
+  assert.ok(app.focused().includes('#copy-first-zero-share-volume'));
   app.keydown('End');
   assert.ok(app.focused().includes('#hide-first-without-capacity-participant'));
   app.keydown('ArrowUp');
@@ -5967,7 +6093,7 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   app.keydown('F12');
   assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
   app.keydown('F12', { shiftKey: true });
-  assert.ok(app.focused().includes('#hide-zero-share-participants'));
+  assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
   app.keydown('ArrowRight');
   assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
   const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
@@ -7549,7 +7675,7 @@ test('copy last zero-share volume-to-hold is one Markdown line with an honest em
   fallback.click('dismiss-coach');
   assert.match(fallback.markup(), /id="copy-last-zero-share-volume"/);
   assert.match(fallback.markup(), /data-action="copy-last-zero-share-volume"/);
-  assert.match(fallback.markup(), /id="copy-last-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  assert.doesNotMatch(fallback.markup(), /id="copy-last-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
   fallback.click('copy-last-zero-share-volume');
   assert.equal(fallback.downloads().length, 0);
   assert.match(fallback.markup(), /id="last-zero-share-volume-copy-text"/);
@@ -7557,6 +7683,7 @@ test('copy last zero-share volume-to-hold is one Markdown line with an honest em
   assert.match(fallback.markup(), /id="last-zero-share-volume-copy-title">Last zero-share volume-to-hold Markdown/);
   assert.doesNotMatch(fallback.markup(), /id="last-zero-share-remaining-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="first-zero-share-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-zero-share-volume-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="first-zero-share-label-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="last-zero-share-label-copy-text"/);
   assert.doesNotMatch(fallback.markup(), /id="volume-copy-text"/);
@@ -7579,11 +7706,8 @@ test('copy last zero-share volume-to-hold is one Markdown line with an honest em
   assert.doesNotMatch(named, /First zero-share participant/);
   assert.doesNotMatch(named, /Last zero-share participant/);
   assert.doesNotMatch(named, /First-breakpoint volume-to-hold/);
+  assert.doesNotMatch(named, /First zero-share volume-to-hold/);
   assert.doesNotMatch(named, /probab/i);
-  assert.match(withClipboard.notice(), /copied as Markdown/);
-  assert.match(withClipboard.notice(), /not a forecast/);
-  assert.match(withClipboard.notice(), /organizer or planner copy/);
-  assert.doesNotMatch(withClipboard.markup(), /id="last-zero-share-volume-copy-text"/);
 
   const denied = await workbench('file:', { clipboard: 'fail' });
   denied.click('copy-last-zero-share-volume');
@@ -7622,6 +7746,92 @@ test('copy last zero-share volume-to-hold is one Markdown line with an honest em
   assert.doesNotMatch(JSON.stringify(dragonBoat.saved()), /hosted/i);
   assert.doesNotMatch(JSON.stringify(dragonBoat.saved()), /\bapi\b/i);
   assert.doesNotMatch(JSON.stringify(dragonBoat.saved()), /forecast/i);
+});
+
+test('copy first zero-share volume-to-hold is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-first-zero-share-volume"/);
+  assert.match(fallback.markup(), /data-action="copy-first-zero-share-volume"/);
+  assert.match(fallback.markup(), /id="copy-first-zero-share-volume"[^>]*aria-keyshortcuts="Shift\+F10"/);
+  fallback.click('copy-first-zero-share-volume');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="first-zero-share-volume-copy-text"/);
+  assert.match(fallback.markup(), /First zero-share volume-to-hold: none entered\./);
+  assert.match(fallback.markup(), /id="first-zero-share-volume-copy-title">First zero-share volume-to-hold Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-volume-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-zero-share-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-zero-share-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="volume-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-first-zero-share-volume-copy');
+  assert.doesNotMatch(fallback.markup(), /id="first-zero-share-volume-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-first-zero-share-volume');
+  assert.match(fallback.markup(), /id="first-zero-share-volume-copy-text"/);
+  assert.match(fallback.markup(), />First zero-share volume-to-hold: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-first-zero-share-volume');
+  assert.equal(withClipboard.copied().length, 1);
+  const named = withClipboard.copied()[0];
+  assert.equal(named.split('\n').length, 1);
+  assert.equal(named, 'First zero-share volume-to-hold: none entered.');
+  assert.doesNotMatch(named, /Last zero-share volume-to-hold/);
+  assert.doesNotMatch(named, /Last zero-share remaining-to-hold/);
+  assert.doesNotMatch(named, /First zero-share remaining-to-hold/);
+  assert.doesNotMatch(named, /First zero-share participant/);
+  assert.doesNotMatch(named, /Last zero-share participant/);
+  assert.doesNotMatch(named, /First-breakpoint volume-to-hold/);
+  assert.doesNotMatch(named, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.match(withClipboard.notice(), /organizer or planner copy/);
+  assert.doesNotMatch(withClipboard.markup(), /id="first-zero-share-volume-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-first-zero-share-volume');
+  assert.match(denied.markup(), /id="first-zero-share-volume-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const talent = await workbench('file:', { clipboard: 'ok' });
+  talent.click('preset', { preset: 'talentAgentPlatform' });
+  talent.click('copy-first-breakpoint-volume');
+  assert.match(talent.copied().at(-1), /^First-breakpoint volume-to-hold:/);
+  assert.doesNotMatch(talent.copied().at(-1), /First zero-share volume-to-hold/);
+  talent.click('copy-last-zero-share-volume');
+  assert.equal(talent.copied().at(-1), 'Last zero-share volume-to-hold: none entered.');
+  talent.click('copy-first-zero-share-volume');
+  assert.equal(talent.copied().at(-1), 'First zero-share volume-to-hold: none entered.');
+  talent.click('duplicate-participant', { index: '0' });
+  talent.click('duplicate-participant', { index: '3' });
+  talent.click('copy-first-zero-share-volume');
+  assert.equal(talent.copied().at(-1), 'First zero-share volume-to-hold: volume to hold is not a finite amount for Talent copy. Volume to hold. Not a forecast.');
+  talent.click('copy-last-zero-share-volume');
+  assert.equal(talent.copied().at(-1), 'Last zero-share volume-to-hold: volume to hold is not a finite amount for Platform copy. Volume to hold. Not a forecast.');
+  talent.click('copy-first-zero-share-remaining');
+  assert.equal(talent.copied().at(-1), 'First zero-share remaining-to-hold: remaining to hold is not a finite amount for Talent copy. Remaining to hold. Not a forecast.');
+  talent.click('copy-last-zero-share-remaining');
+  assert.equal(talent.copied().at(-1), 'Last zero-share remaining-to-hold: remaining to hold is not a finite amount for Platform copy. Remaining to hold. Not a forecast.');
+
+  const surf = await workbench('file:', { clipboard: 'ok' });
+  surf.click('preset', { preset: 'surfCarnivalSplit' });
+  surf.click('copy-first-zero-share-volume');
+  assert.equal(surf.copied().at(-1), 'First zero-share volume-to-hold: none entered.');
+  surf.click('duplicate-participant', { index: '0' });
+  surf.click('duplicate-participant', { index: '3' });
+  surf.click('copy-first-zero-share-volume');
+  assert.equal(surf.copied().at(-1), 'First zero-share volume-to-hold: volume to hold is not a finite amount for Carnival committee copy. Volume to hold. Not a forecast.');
+  surf.click('copy-last-zero-share-volume');
+  assert.equal(surf.copied().at(-1), 'Last zero-share volume-to-hold: volume to hold is not a finite amount for First-aid copy. Volume to hold. Not a forecast.');
+  surf.click('copy-first-zero-share-remaining');
+  assert.equal(surf.copied().at(-1), 'First zero-share remaining-to-hold: remaining to hold is not a finite amount for Carnival committee copy. Remaining to hold. Not a forecast.');
+  assert.doesNotMatch(JSON.stringify(surf.saved()), /live roster/i);
+  assert.doesNotMatch(JSON.stringify(surf.saved()), /hosted/i);
+  assert.doesNotMatch(JSON.stringify(surf.saved()), /\bapi\b/i);
+  assert.doesNotMatch(JSON.stringify(surf.saved()), /forecast/i);
 });
 
 test('copy last within-capacity remaining listed capacity is one Markdown line with an honest empty', async () => {

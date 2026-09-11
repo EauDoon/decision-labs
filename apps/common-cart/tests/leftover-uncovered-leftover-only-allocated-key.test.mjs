@@ -1,0 +1,21 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+
+test("Shift+F7 leftover uncovered leftover-only allocated copy uses the leftover uncovered leftover-only allocated control", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyAllocated\(\);/u);
+  assert.match(app, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
+  assert.match(app, /function copyLeftoverUncoveredLeftoverOnlyAllocated\(/u);
+  assert.match(app, /createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown\(scenario\)/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(html, /<kbd>Shift\+F7<\/kbd> Copy leftover uncovered leftover-only allocated \(organizer private\)/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyHeadroom/u);
+  assert.doesNotMatch(app, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyMinimum/u);
+  assert.doesNotMatch(app, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyAllocated/u);
+});

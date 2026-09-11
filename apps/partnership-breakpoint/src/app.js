@@ -96,6 +96,7 @@ let lastZeroShareLabelCopyText = '';
 let lastZeroShareRemainingCopyText = '';
 let lastZeroShareVolumeCopyText = '';
 let firstZeroShareRemainingCopyText = '';
+let firstZeroShareVolumeCopyText = '';
 let firstZeroShareLabelCopyText = '';
 let lastBreakpointLabelCopyText = '';
 let rosterPasteText = '';
@@ -174,6 +175,7 @@ function checkpoint() {
   lastZeroShareRemainingCopyText = '';
   lastZeroShareVolumeCopyText = '';
   firstZeroShareRemainingCopyText = '';
+  firstZeroShareVolumeCopyText = '';
   firstZeroShareLabelCopyText = '';
   lastBreakpointLabelCopyText = '';
   importSequence += 1;
@@ -228,6 +230,7 @@ function travelHistory(direction) {
   lastZeroShareRemainingCopyText = '';
   lastZeroShareVolumeCopyText = '';
   firstZeroShareRemainingCopyText = '';
+  firstZeroShareVolumeCopyText = '';
   firstZeroShareLabelCopyText = '';
   lastBreakpointLabelCopyText = '';
   importSequence += 1;
@@ -1078,11 +1081,11 @@ function inputPanel(result) {
           <p class="share-balance" aria-live="polite">${shareBalanceText()}</p><div class="button-row"><button type="button" data-action="copy-allocation-balance">Copy allocation balance</button><button type="button" id="equal-split" data-action="equal-shares">Split equally</button><button type="button" id="normalize-shares" data-action="normalize-shares">Normalize current shares</button></div>          <p class="notice">These actions change revenue shares only. Equal split assigns the same share to each participant. Normalize preserves the current proportions. Neither guarantees viability. Copy allocation balance names missing or excess share. It is not a negotiated allocation.</p>
           <div class="button-row"><button type="button" data-action="hide-holding-participants" aria-pressed="${hideHoldingParticipants}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants who currently hold</button><button type="button" data-action="show-holding-participants" ${hideHoldingParticipants ? '' : 'disabled'}>Show holding participants</button></div>
           <p class="notice">${rosterFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-zero-share-participants" data-action="hide-zero-share-participants" aria-keyshortcuts="Shift+F12" aria-pressed="${hideZeroShareParticipants}">Hide participants with zero revenue share</button><button type="button" data-action="show-zero-share-participants" ${hideZeroShareParticipants ? '' : 'disabled'}>Show zero-share participants</button></div>
+          <div class="button-row"><button type="button" id="hide-zero-share-participants" data-action="hide-zero-share-participants" aria-pressed="${hideZeroShareParticipants}">Hide participants with zero revenue share</button><button type="button" data-action="show-zero-share-participants" ${hideZeroShareParticipants ? '' : 'disabled'}>Show zero-share participants</button></div>
           <p class="notice">${zeroShareFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-first-zero-share-participant" data-action="hide-first-zero-share-participant" aria-keyshortcuts="ArrowRight" aria-pressed="${hideFirstZeroShareParticipant}">Hide the first participant with zero revenue share</button><button type="button" data-action="show-first-zero-share-participant" ${hideFirstZeroShareParticipant ? '' : 'disabled'}>Show the first participant with zero revenue share</button><button type="button" id="copy-first-zero-share-participant" data-action="copy-first-zero-share-participant" aria-keyshortcuts="F7">Copy first zero-share participant label</button><button type="button" id="copy-first-zero-share-remaining" data-action="copy-first-zero-share-remaining">Copy first zero-share remaining-to-hold</button></div>
+          <div class="button-row"><button type="button" id="hide-first-zero-share-participant" data-action="hide-first-zero-share-participant" aria-keyshortcuts="ArrowRight" aria-pressed="${hideFirstZeroShareParticipant}">Hide the first participant with zero revenue share</button><button type="button" data-action="show-first-zero-share-participant" ${hideFirstZeroShareParticipant ? '' : 'disabled'}>Show the first participant with zero revenue share</button><button type="button" id="copy-first-zero-share-participant" data-action="copy-first-zero-share-participant" aria-keyshortcuts="F7">Copy first zero-share participant label</button><button type="button" id="copy-first-zero-share-remaining" data-action="copy-first-zero-share-remaining">Copy first zero-share remaining-to-hold</button><button type="button" id="copy-first-zero-share-volume" data-action="copy-first-zero-share-volume" aria-keyshortcuts="Shift+F10">Copy first zero-share volume-to-hold</button></div>
           <p class="notice">${firstZeroShareFilterNote}</p>
-          <div class="button-row"><button type="button" id="hide-last-zero-share-participant" data-action="hide-last-zero-share-participant" aria-keyshortcuts="Backspace" aria-pressed="${hideLastZeroShareParticipant}">Hide the last participant with zero revenue share</button><button type="button" data-action="show-last-zero-share-participant" ${hideLastZeroShareParticipant ? '' : 'disabled'}>Show the last participant with zero revenue share</button><button type="button" id="copy-last-zero-share-participant" data-action="copy-last-zero-share-participant" aria-keyshortcuts="F3">Copy last zero-share participant label</button><button type="button" id="copy-last-zero-share-remaining" data-action="copy-last-zero-share-remaining" aria-keyshortcuts="F10">Copy last zero-share remaining-to-hold</button><button type="button" id="copy-last-zero-share-volume" data-action="copy-last-zero-share-volume" aria-keyshortcuts="Shift+F10">Copy last zero-share volume-to-hold</button></div>
+          <div class="button-row"><button type="button" id="hide-last-zero-share-participant" data-action="hide-last-zero-share-participant" aria-keyshortcuts="Backspace" aria-pressed="${hideLastZeroShareParticipant}">Hide the last participant with zero revenue share</button><button type="button" data-action="show-last-zero-share-participant" ${hideLastZeroShareParticipant ? '' : 'disabled'}>Show the last participant with zero revenue share</button><button type="button" id="copy-last-zero-share-participant" data-action="copy-last-zero-share-participant" aria-keyshortcuts="F3">Copy last zero-share participant label</button><button type="button" id="copy-last-zero-share-remaining" data-action="copy-last-zero-share-remaining" aria-keyshortcuts="F10">Copy last zero-share remaining-to-hold</button><button type="button" id="copy-last-zero-share-volume" data-action="copy-last-zero-share-volume">Copy last zero-share volume-to-hold</button></div>
           <p class="notice">${lastZeroShareFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button><button type="button" id="copy-over-capacity-count" data-action="copy-over-capacity-count" aria-keyshortcuts='"'>Copy over-capacity participant count</button><button type="button" id="copy-first-over-capacity-label" data-action="copy-first-over-capacity-label" aria-keyshortcuts="}">Copy first over-capacity participant label</button><button type="button" id="copy-first-over-capacity-remaining" data-action="copy-first-over-capacity-remaining" aria-keyshortcuts="~">Copy first over-capacity remaining listed capacity</button><button type="button" id="copy-last-over-capacity-label" data-action="copy-last-over-capacity-label" aria-keyshortcuts="(">Copy last over-capacity participant label</button><button type="button" id="copy-last-over-capacity-remaining" data-action="copy-last-over-capacity-remaining" aria-keyshortcuts="*">Copy last over-capacity remaining listed capacity</button></div>
           <p class="notice">${overCapacityFilterNote}</p>
@@ -1162,7 +1165,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}${lastOverCapacityLabelCopySection()}${lastOverCapacityRemainingCopySection()}${firstWithinCapacityRemainingCopySection()}${lastWithinCapacityRemainingCopySection()}${lastSpareCapacityRemainingCopySection()}${firstSpareCapacityRemainingCopySection()}${lastUnboundedRemainingCopySection()}${firstUnboundedRemainingCopySection()}${lastAtHoldRemainingCopySection()}${firstAtHoldRemainingCopySection()}${lastZeroShareLabelCopySection()}${lastZeroShareRemainingCopySection()}${lastZeroShareVolumeCopySection()}${firstZeroShareRemainingCopySection()}${firstZeroShareLabelCopySection()}${lastBreakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}${lastOverCapacityLabelCopySection()}${lastOverCapacityRemainingCopySection()}${firstWithinCapacityRemainingCopySection()}${lastWithinCapacityRemainingCopySection()}${lastSpareCapacityRemainingCopySection()}${firstSpareCapacityRemainingCopySection()}${lastUnboundedRemainingCopySection()}${firstUnboundedRemainingCopySection()}${lastAtHoldRemainingCopySection()}${firstAtHoldRemainingCopySection()}${lastZeroShareLabelCopySection()}${lastZeroShareRemainingCopySection()}${lastZeroShareVolumeCopySection()}${firstZeroShareRemainingCopySection()}${firstZeroShareVolumeCopySection()}${firstZeroShareLabelCopySection()}${lastBreakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -1208,6 +1211,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>Last zero-share remaining-to-hold</h2><p>${escapeAttribute(lastZeroShareRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Last zero-share volume-to-hold</h2><p>${escapeAttribute(lastZeroShareVolumeMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First zero-share remaining-to-hold</h2><p>${escapeAttribute(firstZeroShareRemainingMarkdown(result))}</p></section>
+    <section class="print-only print-keep"><h2>First zero-share volume-to-hold</h2><p>${escapeAttribute(firstZeroShareVolumeMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First zero-share participant</h2><p>${escapeAttribute(firstZeroShareLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
@@ -1264,6 +1268,7 @@ function resultsPanel(result) {
     ${lastZeroShareRemainingCopySection()}
     ${lastZeroShareVolumeCopySection()}
     ${firstZeroShareRemainingCopySection()}
+    ${firstZeroShareVolumeCopySection()}
     ${firstZeroShareLabelCopySection()}
     ${lastBreakpointLabelCopySection()}
     ${comparisonSection(result)}
@@ -1771,6 +1776,7 @@ function attachEvents() {
     if (action === 'close-last-zero-share-remaining-copy') { lastZeroShareRemainingCopyText = ''; render(); return; }
     if (action === 'close-last-zero-share-volume-copy') { lastZeroShareVolumeCopyText = ''; render(); return; }
     if (action === 'close-first-zero-share-remaining-copy') { firstZeroShareRemainingCopyText = ''; render(); return; }
+    if (action === 'close-first-zero-share-volume-copy') { firstZeroShareVolumeCopyText = ''; render(); return; }
     if (action === 'close-first-zero-share-label-copy') { firstZeroShareLabelCopyText = ''; render(); return; }
     if (action === 'close-last-breakpoint-label-copy') { lastBreakpointLabelCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
@@ -2320,6 +2326,7 @@ function attachEvents() {
     if (action === 'copy-last-zero-share-remaining') copyLastZeroShareRemaining();
     if (action === 'copy-last-zero-share-volume') copyLastZeroShareVolume();
     if (action === 'copy-first-zero-share-remaining') copyFirstZeroShareRemaining();
+    if (action === 'copy-first-zero-share-volume') copyFirstZeroShareVolume();
     if (action === 'copy-first-zero-share-participant') copyFirstZeroShareParticipant();
     if (action === 'copy-last-breakpoint-label') copyLastBreakpointLabel();
     if (action === 'copy-share-hold') copyShareHoldPreview();
@@ -2753,7 +2760,7 @@ function handleShortcut(event) {
   if (event.key === 'Delete') copyFirstAtHoldRemaining();
   if (event.key === 'F3') copyLastZeroShareParticipant();
   if (event.key === 'F7') copyFirstZeroShareParticipant();
-  if (event.key === 'F10' && event.shiftKey) copyLastZeroShareVolume();
+  if (event.key === 'F10' && event.shiftKey) copyFirstZeroShareVolume();
   if (event.key === 'F10' && !event.shiftKey) copyLastZeroShareRemaining();
   if (event.key === '.') {
     const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
@@ -2961,7 +2968,7 @@ function handleShortcut(event) {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'F11' && event.shiftKey) {
-    const target = document.querySelector('#copy-last-zero-share-volume')
+    const target = document.querySelector('#copy-first-zero-share-volume')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -2973,7 +2980,7 @@ function handleShortcut(event) {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'F12' && event.shiftKey) {
-    const target = document.querySelector('#hide-zero-share-participants')
+    const target = document.querySelector('#hide-last-zero-share-participant')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -4452,7 +4459,7 @@ function showLastZeroShareVolumeCopyFallback(text, message) {
 
 function lastZeroShareVolumeCopySection() {
   if (!lastZeroShareVolumeCopyText) return '';
-  return `<section class="panel" aria-labelledby="last-zero-share-volume-copy-title"><div class="panel-heading"><h2 id="last-zero-share-volume-copy-title">Last zero-share volume-to-hold Markdown</h2><button type="button" data-action="close-last-zero-share-volume-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is volume to hold for the last roster row with zero revenue share. It is distinct from last zero-share remaining-to-hold copy, first zero-share remaining-to-hold copy, first zero-share participant label copy, last zero-share participant label copy, and first-breakpoint volume-to-hold copy. It is organizer or planner copy, not a forecast of who will exit.</p><label class="brief-copy-label" for="last-zero-share-volume-copy-text">Last zero-share volume-to-hold Markdown</label><textarea id="last-zero-share-volume-copy-text" readonly rows="4">${escapeAttribute(lastZeroShareVolumeCopyText)}</textarea></div></section>`;
+  return `<section class="panel" aria-labelledby="last-zero-share-volume-copy-title"><div class="panel-heading"><h2 id="last-zero-share-volume-copy-title">Last zero-share volume-to-hold Markdown</h2><button type="button" data-action="close-last-zero-share-volume-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is volume to hold for the last roster row with zero revenue share. It is distinct from last zero-share remaining-to-hold copy, first zero-share remaining-to-hold copy, first zero-share volume-to-hold copy, first zero-share participant label copy, last zero-share participant label copy, and first-breakpoint volume-to-hold copy. It is organizer or planner copy, not a forecast of who will exit.</p><label class="brief-copy-label" for="last-zero-share-volume-copy-text">Last zero-share volume-to-hold Markdown</label><textarea id="last-zero-share-volume-copy-text" readonly rows="4">${escapeAttribute(lastZeroShareVolumeCopyText)}</textarea></div></section>`;
 }
 
 function copyLastZeroShareVolume() {
@@ -4507,7 +4514,7 @@ function showFirstZeroShareRemainingCopyFallback(text, message) {
 
 function firstZeroShareRemainingCopySection() {
   if (!firstZeroShareRemainingCopyText) return '';
-  return `<section class="panel" aria-labelledby="first-zero-share-remaining-copy-title"><div class="panel-heading"><h2 id="first-zero-share-remaining-copy-title">First zero-share remaining-to-hold Markdown</h2><button type="button" data-action="close-first-zero-share-remaining-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is remaining to hold for the first roster row with zero revenue share. It is distinct from first zero-share participant label copy, last zero-share participant label copy, last zero-share remaining-to-hold copy, first at-hold remaining-to-hold copy, last at-hold remaining-to-hold copy, last unbounded remaining-to-hold copy, and first unbounded remaining-to-hold copy. It is organizer or planner copy, not a forecast of who will exit.</p><label class="brief-copy-label" for="first-zero-share-remaining-copy-text">First zero-share remaining-to-hold Markdown</label><textarea id="first-zero-share-remaining-copy-text" readonly rows="4">${escapeAttribute(firstZeroShareRemainingCopyText)}</textarea></div></section>`;
+  return `<section class="panel" aria-labelledby="first-zero-share-remaining-copy-title"><div class="panel-heading"><h2 id="first-zero-share-remaining-copy-title">First zero-share remaining-to-hold Markdown</h2><button type="button" data-action="close-first-zero-share-remaining-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is remaining to hold for the first roster row with zero revenue share. It is distinct from first zero-share participant label copy, last zero-share participant label copy, last zero-share remaining-to-hold copy, first zero-share volume-to-hold copy, last zero-share volume-to-hold copy, first at-hold remaining-to-hold copy, last at-hold remaining-to-hold copy, last unbounded remaining-to-hold copy, and first unbounded remaining-to-hold copy. It is organizer or planner copy, not a forecast of who will exit.</p><label class="brief-copy-label" for="first-zero-share-remaining-copy-text">First zero-share remaining-to-hold Markdown</label><textarea id="first-zero-share-remaining-copy-text" readonly rows="4">${escapeAttribute(firstZeroShareRemainingCopyText)}</textarea></div></section>`;
 }
 
 function copyFirstZeroShareRemaining() {
@@ -4540,6 +4547,61 @@ function copyFirstZeroShareRemaining() {
     }
   }
   showFirstZeroShareRemainingCopyFallback(text, fallbackNote);
+}
+
+function firstZeroShareVolumeMarkdown(result) {
+  const participant = state.participants.find((item) => participantHasZeroShare(item));
+  if (!participant) return 'First zero-share volume-to-hold: none entered.';
+  const named = result?.participants.find((item) => item.id === participant.id);
+  const volume = named?.exitVolume;
+  if (volume == null || !Number.isFinite(volume)) {
+    return 'First zero-share volume-to-hold: volume to hold is not a finite amount for ' + reportText(named?.name ?? participant.name) + '. Volume to hold. Not a forecast.';
+  }
+  return 'First zero-share volume-to-hold: ' + formatVolume(volume) + ' for ' + reportText(named?.name ?? participant.name) + '. Volume to hold. Not a forecast.';
+}
+
+function showFirstZeroShareVolumeCopyFallback(text, message) {
+  firstZeroShareVolumeCopyText = text;
+  render();
+  document.querySelector('#first-zero-share-volume-copy-text')?.focus();
+  setNotice(message);
+}
+
+function firstZeroShareVolumeCopySection() {
+  if (!firstZeroShareVolumeCopyText) return '';
+  return `<section class="panel" aria-labelledby="first-zero-share-volume-copy-title"><div class="panel-heading"><h2 id="first-zero-share-volume-copy-title">First zero-share volume-to-hold Markdown</h2><button type="button" data-action="close-first-zero-share-volume-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This is volume to hold for the first roster row with zero revenue share. It is distinct from last zero-share volume-to-hold copy, last zero-share remaining-to-hold copy, first zero-share remaining-to-hold copy, first zero-share participant label copy, last zero-share participant label copy, and first-breakpoint volume-to-hold copy. It is organizer or planner copy, not a forecast of who will exit.</p><label class="brief-copy-label" for="first-zero-share-volume-copy-text">First zero-share volume-to-hold Markdown</label><textarea id="first-zero-share-volume-copy-text" readonly rows="4">${escapeAttribute(firstZeroShareVolumeCopyText)}</textarea></div></section>`;
+}
+
+function copyFirstZeroShareVolume() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = firstZeroShareVolumeMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'First zero-share volume-to-hold copied as Markdown. Volume to hold. It is organizer or planner copy, not a forecast of who will exit.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          firstZeroShareVolumeCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showFirstZeroShareVolumeCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      firstZeroShareVolumeCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showFirstZeroShareVolumeCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showFirstZeroShareVolumeCopyFallback(text, fallbackNote);
 }
 
 function firstZeroShareLabelMarkdown(result) {
@@ -5704,9 +5766,9 @@ function helpDialog() {
         <li><kbd>F10</kbd> Copy last zero-share remaining-to-hold as Markdown</li>
         <li><kbd>F11</kbd> Jump to Copy last zero-share remaining-to-hold, or the Participants heading if missing</li>
         <li><kbd>F12</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
-        <li><kbd>Shift+F10</kbd> Copy last zero-share volume-to-hold as Markdown</li>
-        <li><kbd>Shift+F11</kbd> Jump to Copy last zero-share volume-to-hold, or the Participants heading if missing</li>
-        <li><kbd>Shift+F12</kbd> Jump to Hide participants with zero revenue share, or the Participants heading if missing</li>
+        <li><kbd>Shift+F10</kbd> Copy first zero-share volume-to-hold as Markdown</li>
+        <li><kbd>Shift+F11</kbd> Jump to Copy first zero-share volume-to-hold, or the Participants heading if missing</li>
+        <li><kbd>Shift+F12</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>|</kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing</li>
