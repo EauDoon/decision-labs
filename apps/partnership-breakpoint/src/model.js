@@ -358,7 +358,7 @@ export const PRESETS = Object.freeze({
     deal: { monthlyVolume: 4300, feePerTransaction: 8, addressableVolume: 5500, volumeShockPct: 0 },
     participants: [
       { id: 'rowing-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.68, fixedMonthlyCost: 3560, minimumAcceptableProfit: 1350, capacity: 5200, minimumCommitment: 0, riskCost: 510 },
-      { id: 'rowing-boat-hire', name: 'Boat hire', revenueShare: 0.38, variableCostPerTransaction: 2.22, fixedMonthlyCost: 2300, minimumAcceptableProfit: 890, capacity: 6300, minimumCommitment: 340, riskCost: 350 },
+      { id: 'rowing-boat-hire', name: 'Boat hire', revenueShare: 0.38, variableCostPerTransaction: 2.20, fixedMonthlyCost: 2300, minimumAcceptableProfit: 890, capacity: 6300, minimumCommitment: 340, riskCost: 350 },
       { id: 'rowing-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.16, fixedMonthlyCost: 1200, minimumAcceptableProfit: 460, capacity: 4300, minimumCommitment: 0, riskCost: 230 },
     ],
   },
