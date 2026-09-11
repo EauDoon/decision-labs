@@ -63,3 +63,12 @@ Replay recomputes through the model and rejects changed snapshots, result cells,
 metadata or unsupported packet shapes. Success writes the recomputed packet.
 Packets are unsigned: internal consistency does not authenticate the author or
 prove inputs are real. Keep the original packet when investigating a failure.
+
+## Compare negotiations
+
+`node scripts/analyze.mjs compare --input before.json --against after.json`
+returns summary metrics and offer-ID alignment. Missing offers are explicit;
+merchant names are not used to infer identity. The summary identifies changed
+demand. Different currencies retain the model warning and null comparable costs;
+no exchange rates or cross-currency savings are invented. At most one source
+can be stdin. Both scenarios are validated before any output is written.

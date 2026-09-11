@@ -81,6 +81,28 @@ test('review packets replay independently and reject tampered snapshots and resu
   fails(['packet', '--input', '-'], fixture(), /--tool/);
 });
 
+test('comparison preserves identity and suppresses cross-currency cost comparisons', () => temporary(dir => {
+  const afterPath = join(dir, 'after.json');
+  const after = fixture(); after.offers[0].unitPrice = 5;
+  writeFileSync(afterPath, JSON.stringify(after));
+  const result = ok(['compare', '--input', '-', '--against', afterPath]);
+  assert.equal(result.summary.baseline.cost, 13);
+  assert.equal(result.summary.current.cost, 11);
+  assert.equal(result.summary.sameDemand, true);
+  assert.equal(result.offers.shared[0].offerId, 'O1');
+  after.currency = 'USD'; after.buyers[0].quantity = 1; after.offers[0].id = 'O2';
+  writeFileSync(afterPath, JSON.stringify(after));
+  const different = ok(['compare', '--input', '-', '--against', afterPath]);
+  assert.equal(different.summary.sameDemand, false);
+  assert.equal(different.summary.sameCurrency, false);
+  assert.equal(different.summary.baseline.cost, null);
+  assert.equal(different.summary.current.cost, null);
+  assert.deepEqual(different.offers.missingFromRight, ['O1']);
+  assert.deepEqual(different.offers.missingFromLeft, ['O2']);
+  fails(['compare', '--input', '-', '--against', '-'], fixture(), /Only one/);
+  fails(['compare', '--input', '-'], fixture(), /--against/);
+}));
+
 test('market CLI has independent shipping, allocation, and no-winner oracles', () => {
   const result = ok(['market', '--input', '-']);
   assert.equal(result.winner.fulfilledUnits, 2);

@@ -6,6 +6,7 @@ import { evaluateMarket, evaluateOffer, groupExclusionReasons, unitsToNextTier, 
 import { createMerchantReport, createMerchantResidualReport } from '../src/model.js';
 import { CART_REVIEW_TOOLS, analyzeCartReview } from '../src/model.js';
 import { createCartReviewPacket, replayCartReviewPacket } from '../src/model.js';
+import { compareScenarios, compareRoomsByOfferIdentity } from '../src/model.js';
 
 const LIMIT = 1048576;
 const help = `Common Cart offline analyst (Node 20+)
@@ -16,6 +17,7 @@ Usage: node scripts/analyze.mjs market --input scenario.json [--output result.js
        node scripts/analyze.mjs review --input scenario.json --tool withdrawal
        node scripts/analyze.mjs packet --input scenario.json --tool coverage --output packet.json
        node scripts/analyze.mjs replay --input packet.json
+       node scripts/analyze.mjs compare --input before.json --against after.json
 Use --input - for piped UTF-8 JSON. Output defaults to stdout.
 Inputs are limited to 1 MiB. Output files must not exist.
 Results are organizer-private, synthetic planning aids, never orders.
@@ -82,12 +84,13 @@ async function main() {
   const { values, positionals, tokens } = parseArgs({ allowPositionals: true, tokens: true, options: {
     input: { type: 'string' }, output: { type: 'string' }, help: { type: 'boolean' }, offer: { type: 'string' },
     tool: { type: 'string' },
+    against: { type: 'string' },
   } });
   const names = tokens.filter(token => token.kind === 'option').map(token => token.name);
   if (new Set(names).size !== names.length) throw new Error('Duplicate options are not allowed.');
   if (values.help) { process.stdout.write(help); return; }
   const [command] = positionals;
-  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [] };
+  const allowed = { market: [], offer: ['offer'], merchant: [], tools: [], review: ['tool'], packet: ['tool'], replay: [], compare: ['against'] };
   if (positionals.length !== 1 || !Object.hasOwn(allowed, command)) throw new Error('Choose a supported command. Use --help for usage.');
   for (const name of names) if (!['input', 'output'].includes(name) && !allowed[command].includes(name)) throw new Error(`--${name} is not supported by ${command}.`);
   if (command === 'tools') {
@@ -95,6 +98,7 @@ async function main() {
     await writeResult(CART_REVIEW_TOOLS, values.output); return;
   }
   if (!values.input) throw new Error('--input is required.');
+  if (values.input === '-' && values.against === '-') throw new Error('Only one input may use stdin.');
   const scenario = json(await readText(values.input));
   let result;
   if (command === 'market') result = evaluateMarket(scenario);
@@ -103,6 +107,11 @@ async function main() {
     result = command === 'packet' ? createCartReviewPacket(scenario, values.tool) : analyzeCartReview(scenario, values.tool);
   }
   if (command === 'replay') result = replayCartReviewPacket(scenario);
+  if (command === 'compare') {
+    if (!values.against) throw new Error('--against is required.');
+    const other = json(await readText(values.against));
+    result = { summary: compareScenarios(scenario, other), offers: compareRoomsByOfferIdentity(scenario, other) };
+  }
   if (command === 'merchant') result = { market: createMerchantReport(scenario), residual: createMerchantResidualReport(scenario) };
   if (command === 'offer') {
     if (!values.offer) throw new Error('--offer is required.');
