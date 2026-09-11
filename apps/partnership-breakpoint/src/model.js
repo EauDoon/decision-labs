@@ -380,6 +380,15 @@ export const PRESETS = Object.freeze({
       { id: 'canoeing-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.24, fixedMonthlyCost: 1260, minimumAcceptableProfit: 480, capacity: 4500, minimumCommitment: 0, riskCost: 250 },
     ],
   },
+  kayakingCarnivalSplit: {
+    name: 'Kayaking carnival split',
+    deal: { monthlyVolume: 4600, feePerTransaction: 8, addressableVolume: 5800, volumeShockPct: 0 },
+    participants: [
+      { id: 'kayaking-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.74, fixedMonthlyCost: 3620, minimumAcceptableProfit: 1380, capacity: 5500, minimumCommitment: 0, riskCost: 525 },
+      { id: 'kayaking-slalom-hire', name: 'Whitewater slalom hire', revenueShare: 0.38, variableCostPerTransaction: 2.16, fixedMonthlyCost: 2440, minimumAcceptableProfit: 900, capacity: 6600, minimumCommitment: 370, riskCost: 380 },
+      { id: 'kayaking-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.28, fixedMonthlyCost: 1290, minimumAcceptableProfit: 490, capacity: 4600, minimumCommitment: 0, riskCost: 260 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
