@@ -499,6 +499,23 @@ export const presets = Object.freeze({
       offer("O02", "Pool Salad Run", "Water polo lunch pack", "Pool salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Water Polo Pickup", "Water polo lunch pack", "Pool water", 16, 16, 1, 44, 5), fulfillment: "pickup" }
     ]
+  },
+  rowingCarnivalLunch: {
+    title: "Rowing carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Dock crate", "Rowing lunch pack", 15, 23, 4, ["Rowing pie", "Pontoon salad"]),
+      buyer("B02", "Stroke bench", "Rowing lunch pack", 19, 19, 3, ["Rowing pie"]),
+      buyer("B03", "Coxswain hamper", "Rowing lunch pack", 13, 21, 5, ["Pontoon salad", "Pontoon water"]),
+      buyer("B04", "Sideline cooler", "Rowing lunch pack", 10, 17, 2, ["Pontoon water"]),
+      buyer("B05", "Scoreboard trolley", "Rowing lunch pack", 16, 22, 4, ["Rowing pie", "Pontoon water"]),
+      buyer("B06", "Bench table", "Rowing lunch pack", 14, 20, 3, ["Pontoon salad", "Rowing pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Rowing Delivery", "Rowing lunch pack", "Rowing pie", 17, 17, 3, 54, 3),
+      offer("O02", "Pontoon Salad Run", "Rowing lunch pack", "Pontoon salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Rowing Pickup", "Rowing lunch pack", "Pontoon water", 17, 17, 1, 44, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -540,7 +557,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByTertiaryFill", "hideLastBuyerFilledByTertiaryFill", "hideLastUnservedBuyer", "hideFirstUnservedBuyer", "hideLastLeftoverOnlyBuyer", "hideFirstLeftoverOnlyBuyer", "hideLastWinnerAllocatedBuyer", "hideFirstWinnerAllocatedBuyer"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByTertiaryFill", "hideLastBuyerFilledByTertiaryFill", "hideLastUnservedBuyer", "hideFirstUnservedBuyer", "hideLastLeftoverOnlyBuyer", "hideFirstLeftoverOnlyBuyer", "hideLastWinnerAllocatedBuyer", "hideFirstWinnerAllocatedBuyer", "hideFirstUncoveredLeftoverBuyer"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -733,7 +750,15 @@ export function validateWorkspace(candidate) {
     }
     hideFirstWinnerAllocated = hideFirstWinnerAllocatedBuyer;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer, hideFirstBuyerFilledByLeftoverFill: hideFirstLeftoverFillBuyer, hideFirstBuyerFilledByTertiaryFill: hideFirstTertiaryFillBuyer, hideLastBuyerFilledByTertiaryFill: hideLastTertiaryFillBuyer, hideLastUnservedBuyer: hideLastUnserved, hideFirstUnservedBuyer: hideFirstUnserved, hideLastLeftoverOnlyBuyer: hideLastLeftoverOnly, hideFirstLeftoverOnlyBuyer: hideFirstLeftoverOnly, hideLastWinnerAllocatedBuyer: hideLastWinnerAllocated, hideFirstWinnerAllocatedBuyer: hideFirstWinnerAllocated };
+  const hideFirstUncoveredLeftoverBuyer = own(candidate, "hideFirstUncoveredLeftoverBuyer");
+  let hideFirstUncoveredLeftover = false;
+  if (hideFirstUncoveredLeftoverBuyer !== undefined) {
+    if (hideFirstUncoveredLeftoverBuyer !== true && hideFirstUncoveredLeftoverBuyer !== false) {
+      throw new ScenarioError("Hide first uncovered leftover buyer must be true or false.");
+    }
+    hideFirstUncoveredLeftover = hideFirstUncoveredLeftoverBuyer;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer, hideFirstBuyerFilledByLeftoverFill: hideFirstLeftoverFillBuyer, hideFirstBuyerFilledByTertiaryFill: hideFirstTertiaryFillBuyer, hideLastBuyerFilledByTertiaryFill: hideLastTertiaryFillBuyer, hideLastUnservedBuyer: hideLastUnserved, hideFirstUnservedBuyer: hideFirstUnserved, hideLastLeftoverOnlyBuyer: hideLastLeftoverOnly, hideFirstLeftoverOnlyBuyer: hideFirstLeftoverOnly, hideLastWinnerAllocatedBuyer: hideLastWinnerAllocated, hideFirstWinnerAllocatedBuyer: hideFirstWinnerAllocated, hideFirstUncoveredLeftoverBuyer: hideFirstUncoveredLeftover };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -1106,6 +1131,29 @@ export function filterBuyerIdsHidingFirstWinnerAllocatedBuyer(rawScenario, hideF
     }
   }
   return scenario.buyers.filter((buyer) => buyer.id !== firstWinnerAllocatedId).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides only the first uncovered leftover buyer. Uncovered leftover buyers are leftover-after-winner buyers still unfilled after leftover fill and tertiary fill. Leftover-only, winner-allocated, leftover-fill, tertiary-fill, and other leftover buyers stay visible. */
+export function filterBuyerIdsHidingFirstUncoveredLeftoverBuyer(rawScenario, hideFirstUncoveredLeftoverBuyer) {
+  if (hideFirstUncoveredLeftoverBuyer !== true && hideFirstUncoveredLeftoverBuyer !== false) {
+    throw new ScenarioError("Hide first uncovered leftover buyer must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideFirstUncoveredLeftoverBuyer) return scenario.buyers.map((buyer) => buyer.id);
+  const coverage = computeResidualCoverage(scenario);
+  const leftoverIds = new Set(coverage.leftoverBuyerIds);
+  const filled = new Set([
+    ...(coverage.secondary?.selectedBuyerIds ?? []),
+    ...(coverage.tertiary?.selectedBuyerIds ?? [])
+  ]);
+  let firstUncoveredLeftoverId = null;
+  for (const buyer of scenario.buyers) {
+    if (leftoverIds.has(buyer.id) && !filled.has(buyer.id)) {
+      firstUncoveredLeftoverId = buyer.id;
+      break;
+    }
+  }
+  return scenario.buyers.filter((buyer) => buyer.id !== firstUncoveredLeftoverId).map((buyer) => buyer.id);
 }
 
 /** Display-only. Matching is unchanged. Hides only the first buyer with no winner, leftover-fill, or tertiary units. Winner-allocated, leftover-fill, tertiary-fill, and other unserved buyers stay visible. */
@@ -2320,6 +2368,24 @@ export function createLeftoverUncoveredCountMarkdown(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   const amount = coverage.leftoverBuyerCount > 0 ? String(coverage.unfilledBuyerCount) : "none";
   return `Common Cart leftover uncovered count (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
+function leftoverOnlyAllocatedCount(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const market = evaluateMarket(rawScenario);
+  const winnerIds = new Set(market.winner?.selectedBuyerIds ?? []);
+  const leftoverOnly = new Set();
+  for (const id of [...(coverage.secondary?.selectedBuyerIds ?? []), ...(coverage.tertiary?.selectedBuyerIds ?? [])]) {
+    if (!winnerIds.has(id)) leftoverOnly.add(id);
+  }
+  return leftoverOnly.size;
+}
+
+/** Organizer-private one-line leftover uncovered leftover-only count. Leftover-only buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
+export function createLeftoverUncoveredLeftoverOnlyCountMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedCount(rawScenario)) : "none";
+  return `Common Cart leftover uncovered leftover-only count (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
 export function redactBuyerLabels(rawScenario) {

@@ -156,6 +156,11 @@ export const presets: Readonly<{
   volleyballCarnivalLunch: Scenario;
   soccerCarnivalLunch: Scenario;
   rugbyCarnivalLunch: Scenario;
+  hockeyCarnivalLunch: Scenario;
+  baseballCarnivalLunch: Scenario;
+  softballCarnivalLunch: Scenario;
+  waterPoloCarnivalLunch: Scenario;
+  rowingCarnivalLunch: Scenario;
 }>;
 
 export function clonePreset(name?: keyof typeof presets): Scenario;
@@ -278,7 +283,7 @@ export interface ScenarioHistory {
   undo(): Scenario;
   redo(): Scenario;
 }
-export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByTertiaryFill: boolean; hideLastBuyerFilledByTertiaryFill: boolean; hideLastUnservedBuyer: boolean; hideFirstUnservedBuyer: boolean; hideLastLeftoverOnlyBuyer: boolean; hideFirstLeftoverOnlyBuyer: boolean; hideLastWinnerAllocatedBuyer: boolean; hideFirstWinnerAllocatedBuyer: boolean; }
+export interface ScenarioWorkspace { version: 1; rooms: Scenario[]; fulfillmentFilter: "all" | "shipping" | "pickup"; hideExcludedBuyers: boolean; hideUnwinnableOffers: boolean; hideCoveredLeftoverRows: boolean; hideTertiaryLeftoverRow: boolean; hideLeftoverFillRow: boolean; hideZeroRemainingCapacityOffers: boolean; hideOffersWithRemainingCapacity: boolean; hideFullyFilledBuyers: boolean; hideBuyersWithLeftover: boolean; hideUnservedBuyers: boolean; hideLeftoverOnlyBuyers: boolean; hideWinnerAllocatedBuyers: boolean; hideBuyersFilledByLeftoverFill: boolean; hideLastBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByLeftoverFill: boolean; hideFirstBuyerFilledByTertiaryFill: boolean; hideLastBuyerFilledByTertiaryFill: boolean; hideLastUnservedBuyer: boolean; hideFirstUnservedBuyer: boolean; hideLastLeftoverOnlyBuyer: boolean; hideFirstLeftoverOnlyBuyer: boolean; hideLastWinnerAllocatedBuyer: boolean; hideFirstWinnerAllocatedBuyer: boolean; hideFirstUncoveredLeftoverBuyer: boolean; }
 export interface ComparisonMetrics {
   requested: number;
   fulfilled: number;
@@ -351,6 +356,8 @@ export function filterBuyerIdsHidingFirstLeftoverOnlyBuyer(rawScenario: unknown,
 export function filterBuyerIdsHidingLastWinnerAllocatedBuyer(rawScenario: unknown, hideLastWinnerAllocatedBuyer: boolean): string[];
 /** Display-only. Matching is unchanged. Hides only the first winner-allocated buyer. Leftover-only, unserved, leftover-fill, tertiary-fill, and other winner-allocated buyers stay visible. When hideFirstWinnerAllocatedBuyer is false, every buyer id is returned. */
 export function filterBuyerIdsHidingFirstWinnerAllocatedBuyer(rawScenario: unknown, hideFirstWinnerAllocatedBuyer: boolean): string[];
+/** Display-only. Matching is unchanged. Hides only the first uncovered leftover buyer (leftover-after-winner still unfilled after leftover fill and tertiary fill). Leftover-only, winner-allocated, leftover-fill, tertiary-fill, and other leftover buyers stay visible. When hideFirstUncoveredLeftoverBuyer is false, every buyer id is returned. */
+export function filterBuyerIdsHidingFirstUncoveredLeftoverBuyer(rawScenario: unknown, hideFirstUncoveredLeftoverBuyer: boolean): string[];
 export interface OrganizerBuyerVariantCount {
   variant: string;
   buyerCount: number;
@@ -512,6 +519,8 @@ export function createLeftoverUncoveredMaximumMarkdown(rawScenario: unknown): st
 export function createLeftoverUncoveredMinimumMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered count. Uncovered leftover buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
 export function createLeftoverUncoveredCountMarkdown(rawScenario: unknown): string;
+/** Organizer-private one-line leftover uncovered leftover-only count. Leftover-only buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
+export function createLeftoverUncoveredLeftoverOnlyCountMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];
