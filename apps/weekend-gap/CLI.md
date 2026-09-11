@@ -100,3 +100,20 @@ browser's review replay workflow. Tools are `days`, `cohorts`, `deadlines`,
 `--help` reads this catalog directly from the model. Keep each packet's notes
 with its rows, especially the FIFO assumption and unfinished waiting amounts
 in cohort reviews. Packets carry synthetic inputs, not proof of actual service.
+
+## Replay and verify a saved packet
+
+```sh
+node scripts/analyze.mjs review scenario.json days > review.json
+node scripts/analyze.mjs replay review.json
+```
+
+Replay accepts at most 1 MiB, recomputes the native packet and checks its exact
+input snapshot and every result field. Success emits the verified packet, which
+can be piped to other local tools. Changed inputs, notes, rows, versions or extra
+fields fail with status 1 and no stdout. Recreate a packet from the intended
+scenario after changes. This checks reproducibility against the current model,
+not authorship, authenticity or real-world accuracy. CLI JSON has no timestamps.
+
+Run `node --test tests/analyze-cli.test.mjs` for subprocess success, error and
+recovery checks, plus an independent synthetic hourly-ledger oracle.

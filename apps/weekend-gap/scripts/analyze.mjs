@@ -9,6 +9,7 @@ import {
   compareDemandProfiles,
   libraryFromJSON,
   WEEKEND_REVIEW_TOOLS, createWeekendReviewPacket,
+  replayWeekendReviewPacket,
 } from '../src/model.js';
 
 const usage = `Weekend Gap offline analysis (synthetic AUD only)
@@ -21,6 +22,7 @@ const usage = `Weekend Gap offline analysis (synthetic AUD only)
   profiles SCENARIO
   batch LIBRARY
   review SCENARIO TOOL
+  replay PACKET
 Review tools: ${WEEKEND_REVIEW_TOOLS.map(tool => tool.id).join(', ')}
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
@@ -94,6 +96,10 @@ function argumentsFor(args, count, formats = ['json']) {
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
   switch (command) {
+    case 'replay': {
+      const { args: [path] } = argumentsFor(rest, 1);
+      return replayWeekendReviewPacket(parseJSON(await readText(path, 1048576)));
+    }
     case 'review': {
       const { args: [path, tool] } = argumentsFor(rest, 2);
       return createWeekendReviewPacket(await scenario(path), tool);

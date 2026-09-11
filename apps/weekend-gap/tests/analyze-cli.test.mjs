@@ -145,6 +145,37 @@ test('CLI creates native replayable packets for every timing review', () => {
   assert.doesNotMatch(malformed.stderr, /SYNTHETIC_PRIVATE_INPUT/);
 });
 
+test('packet replay recomputes results and fails closed on tampering then recovers', () => {
+  const packet = result(['review', '-', 'days']);
+  assert.deepEqual(result(['replay', '-'], packet), packet);
+  for (const change of [
+    p => { p.review.rows[0][3]++; },
+    p => { p.scenario.reserveCashAud++; },
+    p => { p.inputJSON += ' '; },
+    p => { p.extra = true; },
+    p => { p.version = 2; },
+    p => { p.review.note = 'Guaranteed payout'; },
+    p => { p.tool = 'unknown'; },
+  ]) {
+    const bad = structuredClone(packet);
+    change(bad);
+    fails(['replay', '-'], bad);
+  }
+  fails(['replay', '-'], ' '.repeat(1048577));
+  fails(['replay', '-'], fixture());
+  const dir = mkdtempSync(join(tmpdir(), 'weekend-cli-'));
+  try {
+    const path = join(dir, 'review.json');
+    writeFileSync(path, JSON.stringify(packet));
+    assert.deepEqual(result(['replay', path]), packet);
+    const oversize = join(dir, 'oversize.json');
+    writeFileSync(oversize, ' '.repeat(1048577));
+    fails(['replay', oversize]);
+    fails(['simulate', dir]);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+  assert.deepEqual(result(['replay', '-'], packet), packet);
+});
+
 test('CLI simulation matches a separate 1 AUD/hour ledger and reads files or stdin', () => {
   const expected = oracle(fixture()).at(-1);
   const output = result(['simulate', '-']);
