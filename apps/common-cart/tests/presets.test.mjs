@@ -105,7 +105,7 @@ test("office fruit box is distinct synthetic weekly fruit for an office", () => 
 });
 
 test("new presets survive validation and keep a deterministic winner", () => {
-  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit", "libraryPaper", "sportsKit", "surfFirstAid", "theatreWardrobe", "choirFolders", "scoutCamp", "schoolExcursionLunch", "netballCanteen", "swimmingCarnivalLunch", "athleticsCarnivalLunch", "cricketCarnivalLunch", "tennisCarnivalLunch", "basketballCarnivalLunch", "volleyballCarnivalLunch", "soccerCarnivalLunch"]) {
+  for (const name of ["officePantry", "hardware", "garden", "schoolFete", "officeFruit", "libraryPaper", "sportsKit", "surfFirstAid", "theatreWardrobe", "choirFolders", "scoutCamp", "schoolExcursionLunch", "netballCanteen", "swimmingCarnivalLunch", "athleticsCarnivalLunch", "cricketCarnivalLunch", "tennisCarnivalLunch", "basketballCarnivalLunch", "volleyballCarnivalLunch", "soccerCarnivalLunch", "rugbyCarnivalLunch"]) {
     const first = evaluateMarket(clonePreset(name));
     const second = evaluateMarket(validateScenario(clonePreset(name)));
     assert.equal(first.winner.offer.id, second.winner.offer.id);
@@ -895,6 +895,7 @@ test("soccer carnival lunch is distinct synthetic mixed carnival lunch", () => {
   assert.equal(carnival.scenario.buyers[0].category, "Soccer lunch pack");
   assert.notEqual(carnival.scenario.buyers[0].category, volleyball.scenario.buyers[0].category);
   assert.notDeepEqual(clonePreset("soccerCarnivalLunch"), clonePreset("volleyballCarnivalLunch"));
+  assert.notDeepEqual(clonePreset("soccerCarnivalLunch"), clonePreset("rugbyCarnivalLunch"));
   assert.ok(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Soccer pie")));
   assert.ok(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Pitch salad")));
   assert.ok(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Pitch water")));
@@ -918,4 +919,40 @@ test("the example bar includes the soccer carnival lunch preset", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   assert.match(html, /data-preset="soccerCarnivalLunch"/u);
   assert.match(html, /Soccer carnival/u);
+});
+
+test("rugby carnival lunch is distinct synthetic mixed carnival lunch", () => {
+  const carnival = evaluateMarket(clonePreset("rugbyCarnivalLunch"));
+  const soccer = evaluateMarket(clonePreset("soccerCarnivalLunch"));
+  const volleyball = evaluateMarket(clonePreset("volleyballCarnivalLunch"));
+  assert.ok(carnival.winner);
+  assert.equal(carnival.scenario.title, "Rugby carnival lunch");
+  assert.equal(carnival.scenario.buyers[0].category, "Rugby lunch pack");
+  assert.notEqual(carnival.scenario.buyers[0].category, soccer.scenario.buyers[0].category);
+  assert.notDeepEqual(clonePreset("rugbyCarnivalLunch"), clonePreset("soccerCarnivalLunch"));
+  assert.ok(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Rugby pie")));
+  assert.ok(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Tryline salad")));
+  assert.ok(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Tryline water")));
+  assert.equal(carnival.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Soccer pie")), false);
+  assert.ok(carnival.results.some((result) => result.offer.merchant === "Court-side Rugby Delivery" && result.offer.fulfillment === "shipping"));
+  assert.ok(carnival.results.some((result) => result.offer.merchant === "Hall Rugby Pickup" && result.offer.fulfillment === "pickup"));
+  const leftoverFill = computeResidualCoverage(carnival.scenario).secondary;
+  assert.ok(leftoverFill);
+  assert.equal(leftoverFill.merchant, "Hall Rugby Pickup");
+  assert.equal(carnival.scenario.offers.find((offer) => offer.id === leftoverFill.offerId).minimumUnits, 12);
+  assert.equal(soccer.winner.offer.merchant, "Court-side Soccer Delivery");
+  assert.equal(soccer.scenario.offers.find((offer) => offer.merchant === "Hall Soccer Pickup").minimumUnits, 11);
+  assert.notEqual(volleyball.scenario.title, carnival.scenario.title);
+  assert.notEqual(soccer.scenario.title, carnival.scenario.title);
+  const first = evaluateMarket(clonePreset("rugbyCarnivalLunch"));
+  const second = evaluateMarket(validateScenario(clonePreset("rugbyCarnivalLunch")));
+  assert.equal(first.winner.offer.id, second.winner.offer.id);
+  assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
+});
+
+test("the example bar includes the rugby carnival lunch preset", async () => {
+  const { readFile } = await import("node:fs/promises");
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /data-preset="rugbyCarnivalLunch"/u);
+  assert.match(html, /Rugby carnival/u);
 });

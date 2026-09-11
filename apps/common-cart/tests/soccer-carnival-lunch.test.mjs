@@ -12,6 +12,7 @@ test("soccer carnival lunch leftover fill is hall pickup and stays distinct from
   assert.equal(soccer.scenario.title, "Soccer carnival lunch");
   assert.notEqual(soccer.scenario.title, volleyball.scenario.title);
   assert.notDeepEqual(clonePreset("soccerCarnivalLunch"), clonePreset("volleyballCarnivalLunch"));
+  assert.notDeepEqual(clonePreset("soccerCarnivalLunch"), clonePreset("rugbyCarnivalLunch"));
   const leftoverFill = computeResidualCoverage(soccer.scenario).secondary;
   assert.ok(leftoverFill);
   assert.equal(leftoverFill.merchant, "Hall Soccer Pickup");
