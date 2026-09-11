@@ -241,7 +241,7 @@ test('duplicate JSON members, including escaped-equivalent names, fail before an
 });
 
 test('file inputs reject device and network aliases before opening and recover with regular files', () => {
-  for (const path of ['NUL', 'nul.txt', 'CON', 'COM1', 'LPT¹.txt', '\\\\server\\share\\draft.json', '//server/share/draft.json', '\\\\.\\NUL', 'draft.json:extra']) {
+  for (const path of ['NUL', 'nul.txt', 'CON', 'CONIN$', 'CONOUT$', 'COM1', 'LPT¹.txt', '\\\\server\\share\\draft.json', '//server/share/draft.json', '\\\\.\\NUL', 'draft.json:extra']) {
     invalid(['solve', path], proposal, /ordinary local file/);
   }
   invalid(['solve', fileURLToPath(new URL('../scripts/', import.meta.url))], proposal, /regular file/);
