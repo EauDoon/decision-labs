@@ -8,7 +8,19 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
-## Changelog (1.4.17)
+## Changelog (1.4.18)
+
+Tertiary-fill remaining copy through 1, tertiary-fill remaining copy jump, hide last unserved buyer jump, Soccer carnival lunch, hide last unserved buyer, leftover print tertiary-fill remaining capacity, kept on top of 1.4.0 review packets and 1.4.1/1.4.2/1.4.3/1.4.4/1.4.5/1.4.6/1.4.7/1.4.8/1.4.9/1.4.10/1.4.11/1.4.12/1.4.13/1.4.14/1.4.15/1.4.16/1.4.17 tools. This remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap Markdown, leftover print, winning merchant copy, winning fulfillment copy, and remaining-capacity copy still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer leftover copies are labeled organizer-private. Review packets stay private and unsigned.
+
+- **Keyboard tertiary-fill remaining copy.** `1` copies tertiary-fill remaining capacity through the tertiary-fill remaining copy control. Same organizer-private count-only Markdown as the tertiary-fill remaining button. Ignored while typing. Help lists it. Distinct from `}` leftover-fill remaining capacity and `8` leftover-fill maximum. Not a merchant export.
+- **Keyboard tertiary-fill remaining copy jump.** `2` focuses the tertiary-fill remaining copy control, or the leftover heading if that control is missing. Ignored while typing. Help lists it. Does not copy. Distinct from `9` leftover-fill maximum copy jump.
+- **Keyboard hide last unserved buyer jump.** `3` focuses hide last unserved buyer, or the buyer list if that control is missing. Ignored while typing. Help lists it. Distinct from `|` hide unserved buyers and `0` hide last tertiary-fill buyer.
+- **Soccer carnival lunch.** A synthetic carnival lunch preset with mixed soccer pie, pitch salad, and pitch water variants, mixed quantities, a hall pickup leftover-fill offer whose pickup minimum is 11, and a court-side soccer delivery offer. Distinct from neighbourhood coffee, studio chairs, pantry staples, office pantry, hardware tools, garden seed, school fete catering, office fruit box, coffee price ladder, library photocopy paper, sports club match-day kit, surf club first-aid kit, theatre wardrobe kit, community choir folders, scout camp, school excursion lunch, netball canteen lunch, swimming carnival lunch, athletics carnival lunch, cricket carnival lunch, tennis carnival lunch, basketball carnival lunch, and volleyball carnival lunch. Not live inventory.
+- **Hide last unserved buyer.** Display filter hides only the last buyer with no winner, leftover-fill, or tertiary units. Winner-allocated, leftover-fill, tertiary-fill, and other unserved buyers stay visible. Matching is unchanged. The last hide choice is kept in workspace JSON. Older files omit it and show every buyer. Distinct from `hideUnservedBuyers` and `hideLastBuyerFilledByTertiaryFill`.
+- **Leftover print tertiary-fill remaining capacity.** Leftover print (`body.print-leftover`) includes tertiary-fill remaining capacity as a merchant-safe count when tertiary fill exists, or an honest empty line. Buyer identities stay out. Reuses tertiary-fill remaining wording.
+- **1.4.0 review packets kept.** Allocated coverage, sole-offer dependency, unserved reasons, same-cohort alternatives, withdrawal stress, shipping exposure, delivery slack, bounded capacity and minimum previews, and private review packet export/inspect remain.
+
+## Earlier changelog (1.4.17)
 
 Leftover-fill maximum copy through 8, leftover-fill maximum copy jump, hide last tertiary-fill buyer jump, Volleyball carnival lunch, hide last tertiary-fill buyer, leftover print leftover-fill maximum, kept on top of 1.4.0 review packets and 1.4.1/1.4.2/1.4.3/1.4.4/1.4.5/1.4.6/1.4.7/1.4.8/1.4.9/1.4.10/1.4.11/1.4.12/1.4.13/1.4.14/1.4.15/1.4.16 tools. This remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap Markdown, leftover print, winning merchant copy, winning fulfillment copy, and remaining-capacity copy still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer leftover copies are labeled organizer-private. Review packets stay private and unsigned.
 
@@ -402,6 +414,16 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |   |-- buyer-variant-counts.test.mjs Organizer variant counts
 |   |-- leftover-markdown.test.mjs Leftover coverage Markdown
 |   |-- leftover-jump.test.mjs Organizer leftover jump
+|   |-- leftover-fill-maximum-key.test.mjs Leftover-fill maximum copy
+|   |-- leftover-fill-maximum-jump.test.mjs Leftover-fill maximum jump
+|   |-- leftover-print-fill-maximum.test.mjs Leftover print leftover-fill maximum
+|   |-- volleyball-carnival-lunch.test.mjs Volleyball carnival lunch preset
+|   |-- hide-last-buyer-filled-by-tertiary-fill.test.mjs Hide last tertiary-fill buyer
+|   |-- soccer-carnival-lunch.test.mjs Soccer carnival lunch preset
+|   |-- tertiary-fill-remaining-key.test.mjs Tertiary-fill remaining copy
+|   |-- tertiary-fill-remaining-jump.test.mjs Tertiary-fill remaining jump
+|   |-- leftover-print-tertiary-remaining.test.mjs Leftover print tertiary remaining
+|   |-- hide-last-unserved-buyer.test.mjs Hide last unserved buyer
 |   |-- winner-inspector-markdown.test.mjs Winner inspector Markdown
 |   |-- hide-unwinnable-offers.test.mjs Hide locked offers
 |   |-- hide-covered-leftover.test.mjs Hide covered leftover rows

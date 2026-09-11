@@ -408,6 +408,22 @@ test("workspace stores hide last tertiary-fill buyer and older files default to 
   assert.throws(() => validateWorkspace({ version: 1, rooms: [], extra: true }), /unexpected field/);
 });
 
+test("workspace stores hide last unserved buyer and older files default to show-all", () => {
+  const s = clonePreset();
+  const legacy = validateWorkspace({ version: 1, rooms: [s] });
+  assert.equal(Object.hasOwn(legacy, "hideLastUnservedBuyer"), true);
+  assert.equal(legacy.hideLastUnservedBuyer, false);
+  assert.equal(legacy.hideLastBuyerFilledByTertiaryFill, false);
+  const hidden = validateWorkspace({ version: 1, rooms: [s], hideLastUnservedBuyer: true, hideLastBuyerFilledByTertiaryFill: false, hideUnservedBuyers: false });
+  assert.equal(hidden.hideLastUnservedBuyer, true);
+  assert.equal(hidden.hideLastBuyerFilledByTertiaryFill, false);
+  const shown = validateWorkspace({ version: 1, rooms: [], hideLastUnservedBuyer: false });
+  assert.equal(shown.hideLastUnservedBuyer, false);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideLastUnservedBuyer: "true" }), /true or false/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], hideLastUnservedBuyer: 1 }), /true or false/);
+  assert.throws(() => validateWorkspace({ version: 1, rooms: [], extra: true }), /unexpected field/);
+});
+
 test("workspace stores hide offers with remaining capacity and older files default to show-all", () => {
   const s = clonePreset();
   const legacy = validateWorkspace({ version: 1, rooms: [s] });

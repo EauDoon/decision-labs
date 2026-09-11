@@ -397,6 +397,23 @@ export const presets = Object.freeze({
       offer("O02", "Sideline Salad Run", "Volleyball lunch pack", "Sideline salad", 12, 12, 4, 34, 2),
       { ...offer("O03", "Hall Volleyball Pickup", "Volleyball lunch pack", "Sideline water", 10, 10, 1, 38, 5), fulfillment: "pickup" }
     ]
+  },
+  soccerCarnivalLunch: {
+    title: "Soccer carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Pitch crate", "Soccer lunch pack", 13, 21, 4, ["Soccer pie", "Pitch salad"]),
+      buyer("B02", "Goal bench", "Soccer lunch pack", 17, 17, 3, ["Soccer pie"]),
+      buyer("B03", "Referee hamper", "Soccer lunch pack", 11, 19, 5, ["Pitch salad", "Pitch water"]),
+      buyer("B04", "Sideline cooler", "Soccer lunch pack", 8, 15, 2, ["Pitch water"]),
+      buyer("B05", "Scoreboard trolley", "Soccer lunch pack", 14, 20, 4, ["Soccer pie", "Pitch water"]),
+      buyer("B06", "Bench table", "Soccer lunch pack", 12, 18, 3, ["Pitch salad", "Soccer pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Soccer Delivery", "Soccer lunch pack", "Soccer pie", 15, 15, 3, 50, 3),
+      offer("O02", "Pitch Salad Run", "Soccer lunch pack", "Pitch salad", 13, 13, 4, 38, 2),
+      { ...offer("O03", "Hall Soccer Pickup", "Soccer lunch pack", "Pitch water", 11, 11, 1, 40, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -438,7 +455,7 @@ export function validateWorkspace(candidate) {
   if (!candidate || typeof candidate !== "object" || Array.isArray(candidate) || own(candidate, "version") !== 1 || !Array.isArray(own(candidate, "rooms")) || candidate.rooms.length > 12) {
     throw new ScenarioError("Workspace must contain version 1 and at most 12 saved rooms.");
   }
-  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByTertiaryFill", "hideLastBuyerFilledByTertiaryFill"], "Workspace");
+  rejectUnknownFields(candidate, ["version", "rooms", "fulfillmentFilter", "hideExcludedBuyers", "hideUnwinnableOffers", "hideCoveredLeftoverRows", "hideTertiaryLeftoverRow", "hideLeftoverFillRow", "hideZeroRemainingCapacityOffers", "hideOffersWithRemainingCapacity", "hideFullyFilledBuyers", "hideBuyersWithLeftover", "hideUnservedBuyers", "hideLeftoverOnlyBuyers", "hideWinnerAllocatedBuyers", "hideBuyersFilledByLeftoverFill", "hideLastBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByLeftoverFill", "hideFirstBuyerFilledByTertiaryFill", "hideLastBuyerFilledByTertiaryFill", "hideLastUnservedBuyer"], "Workspace");
   const fulfillmentFilter = own(candidate, "fulfillmentFilter");
   let filter = "all";
   if (fulfillmentFilter !== undefined) {
@@ -583,7 +600,15 @@ export function validateWorkspace(candidate) {
     }
     hideLastTertiaryFillBuyer = hideLastBuyerFilledByTertiaryFill;
   }
-  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer, hideFirstBuyerFilledByLeftoverFill: hideFirstLeftoverFillBuyer, hideFirstBuyerFilledByTertiaryFill: hideFirstTertiaryFillBuyer, hideLastBuyerFilledByTertiaryFill: hideLastTertiaryFillBuyer };
+  const hideLastUnservedBuyer = own(candidate, "hideLastUnservedBuyer");
+  let hideLastUnserved = false;
+  if (hideLastUnservedBuyer !== undefined) {
+    if (hideLastUnservedBuyer !== true && hideLastUnservedBuyer !== false) {
+      throw new ScenarioError("Hide last unserved buyer must be true or false.");
+    }
+    hideLastUnserved = hideLastUnservedBuyer;
+  }
+  return { version: 1, rooms: candidate.rooms.map(validateScenario), fulfillmentFilter: filter, hideExcludedBuyers: hideExcluded, hideUnwinnableOffers: hideUnwinnable, hideCoveredLeftoverRows: hideCoveredLeftover, hideTertiaryLeftoverRow: hideTertiaryLeftover, hideLeftoverFillRow: hideLeftoverFill, hideZeroRemainingCapacityOffers: hideZeroRemaining, hideOffersWithRemainingCapacity: hideRemainingCapacity, hideFullyFilledBuyers: hideFullyFilled, hideBuyersWithLeftover: hideLeftoverBuyers, hideUnservedBuyers: hideUnserved, hideLeftoverOnlyBuyers: hideLeftoverOnly, hideWinnerAllocatedBuyers: hideWinnerAllocated, hideBuyersFilledByLeftoverFill: hideLeftoverFillBuyers, hideLastBuyerFilledByLeftoverFill: hideLastLeftoverFillBuyer, hideFirstBuyerFilledByLeftoverFill: hideFirstLeftoverFillBuyer, hideFirstBuyerFilledByTertiaryFill: hideFirstTertiaryFillBuyer, hideLastBuyerFilledByTertiaryFill: hideLastTertiaryFillBuyer, hideLastUnservedBuyer: hideLastUnserved };
 }
 
 export function duplicateEntry(rawScenario, kind, id) {
@@ -878,6 +903,25 @@ export function filterBuyerIdsHidingFirstBuyerFilledByTertiaryFill(rawScenario, 
     if (firstId && buyer.id === firstId) return false;
     return true;
   }).map((buyer) => buyer.id);
+}
+
+/** Display-only. Matching is unchanged. Hides only the last buyer with no winner, leftover-fill, or tertiary units. Winner-allocated, leftover-fill, tertiary-fill, and other unserved buyers stay visible. */
+export function filterBuyerIdsHidingLastUnservedBuyer(rawScenario, hideLastUnservedBuyer) {
+  if (hideLastUnservedBuyer !== true && hideLastUnservedBuyer !== false) {
+    throw new ScenarioError("Hide last unserved buyer must be true or false.");
+  }
+  const scenario = validateScenario(rawScenario);
+  if (!hideLastUnservedBuyer) return scenario.buyers.map((buyer) => buyer.id);
+  const market = evaluateMarket(scenario);
+  const coverage = computeResidualCoverage(scenario);
+  const served = new Set(market.winner?.selectedBuyerIds ?? []);
+  for (const id of coverage.secondary?.selectedBuyerIds ?? []) served.add(id);
+  for (const id of coverage.tertiary?.selectedBuyerIds ?? []) served.add(id);
+  let lastUnservedId = null;
+  for (const buyer of scenario.buyers) {
+    if (!served.has(buyer.id)) lastUnservedId = buyer.id;
+  }
+  return scenario.buyers.filter((buyer) => buyer.id !== lastUnservedId).map((buyer) => buyer.id);
 }
 
 /** Display-only. Matching is unchanged. Hides only the last tertiary-fill selectedBuyerIds entry. Winner-allocated, leftover-fill, unserved, and other tertiary-fill buyers stay visible. */
@@ -1893,6 +1937,18 @@ export function createLeftoverFillMaximumMarkdown(rawScenario) {
   const leftoverOffer = scenario.offers.find((offer) => offer.id === coverage.secondary.offerId);
   const maximum = leftoverOffer ? leftoverOffer.capacity : 0;
   return `Common Cart leftover fill maximum (organizer private): ${maximum}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line tertiary fill remaining capacity. Count only. Not a merchant export. */
+export function createTertiaryFillRemainingCapacityMarkdown(rawScenario) {
+  const scenario = validateScenario(rawScenario);
+  const coverage = computeResidualCoverage(scenario);
+  if (!coverage.tertiary) {
+    return "Common Cart tertiary fill remaining capacity (organizer private): none. Not a merchant export.\n";
+  }
+  const tertiaryOffer = scenario.offers.find((offer) => offer.id === coverage.tertiary.offerId);
+  const remaining = tertiaryOffer ? Math.max(0, tertiaryOffer.capacity - coverage.tertiary.fulfilledUnits) : 0;
+  return `Common Cart tertiary fill remaining capacity (organizer private): ${remaining}. Not a merchant export.\n`;
 }
 
 /** Merchant-safe remaining capacity on the unlocked winner. Honest empty when none unlocked. No buyer data. */
