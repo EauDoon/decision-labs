@@ -2670,9 +2670,9 @@ export function formatGroupsWithoutFloorCountMarkdown(proposal, options) {
  * Uses the same without-floor list as hideFirstGroupWithoutFloor and
  * hideLastGroupWithoutFloor.
  * Honest when remaining is zero or no inspected package is available.
- * Distinct prefix from groups-without-floor count copy, first
+ * Distinct prefix from last-without-floor remaining copy, first-without-floor
+ * remaining copy, first-without-floor cost copy, groups-without-floor count copy, first
  * group-without-floor label copy, last group-without-floor label copy,
- * last-without-floor remaining copy, first-without-floor remaining copy,
  * and remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
@@ -2718,7 +2718,8 @@ export function formatGroupsWithoutFloorRemainingMarkdown(proposal, options) {
  * Honest when remaining is zero, none, or no inspected package is available.
  * Distinct prefix from aggregate groups-without-floor remaining copy, groups-without-floor
  * count copy, first group-without-floor label copy, last group-without-floor
- * label copy, first-without-floor remaining copy, and remaining change-budget copy.
+ * label copy, first-without-floor remaining copy, first-without-floor cost copy,
+ * and remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
  * Do not treat labels as legal identities.
@@ -2769,8 +2770,8 @@ export function formatLastGroupWithoutFloorRemainingMarkdown(proposal, options) 
  * Honest when remaining is zero, none, or no inspected package is available.
  * Distinct prefix from last-without-floor remaining copy, aggregate
  * groups-without-floor remaining copy, groups-without-floor count copy, first
- * group-without-floor label copy, last group-without-floor label copy, and
- * remaining change-budget copy.
+ * group-without-floor label copy, last group-without-floor label copy,
+ * first-without-floor cost copy, and remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
  * Do not treat labels as legal identities.
@@ -2809,6 +2810,59 @@ export function formatFirstGroupWithoutFloorRemainingMarkdown(proposal, options)
     empty: remaining === 0,
     remaining,
     text: `First-without-floor remaining: ${remaining}. ${disclaimer}\n`,
+  };
+}
+
+/**
+ * One-line Markdown of mixing-weight cost of the first group without a
+ * declared support floor (minSupport missing).
+ * Looks up that listed group's weight from proposal.groups.
+ * Uses the same without-floor list as hideFirstGroupWithoutFloor,
+ * hideLastGroupWithoutFloor, and formatFirstGroupWithoutFloorRemainingMarkdown.
+ * Honest when cost is zero, none, or no inspected package is available.
+ * Distinct prefix from first-without-floor remaining copy, last-without-floor
+ * remaining copy, aggregate groups-without-floor remaining copy,
+ * groups-without-floor count copy, first group-without-floor label copy, last
+ * group-without-floor label copy, and remaining change-budget copy.
+ * A floor is a number you entered, not a legal quorum.
+ * Mixing weights are not a legal right.
+ * Do not treat labels as legal identities.
+ * Display-only. The solver ignores the copy.
+ */
+export function formatFirstGroupWithoutFloorCostMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      cost: 0,
+      text: `No inspected package is available, so there is no first-without-floor cost to copy. ${disclaimer}\n`,
+    };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const listed = groupsWithoutDeclaredSupportFloor(proposal);
+  if (listed.status !== "ok") return listed;
+  const first = listed.groups[0];
+  if (!first) {
+    return {
+      status: "ok",
+      empty: true,
+      cost: 0,
+      text: `First-without-floor cost: 0. ${disclaimer}\n`,
+    };
+  }
+  const weightsById = new Map(proposal.groups.map((group) => [group.id, group.weight]));
+  const cost = weightsById.get(first.id);
+  return {
+    status: "ok",
+    empty: cost === 0,
+    cost,
+    text: `First-without-floor cost: ${cost}. ${disclaimer}\n`,
   };
 }
 
