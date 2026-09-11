@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.28 - 2026-09-11
+
+Monday early FX open, last-weekday-FX-open copy, and weekend-FX-closed hide in Weekend Gap 1.5.28
+
+A workshop follow-up on 1.5.27. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt rows are a local drawing. They do not connect to a bank or a live redemption queue. Timing review packets from 1.5.0 and the 1.5.1-1.5.27 review UI stay in place. Analysis JSON still has no timestamps.
+
+### Added
+
+- Keyboard `Shift+F10` copies last weekday-FX-open hour through the new last-weekday-FX-open copy control, using one-line Markdown. Honest empty when none. Ignored while typing. Distinct from unshifted `F10` last-weekday-FX-closed copy, last-weekend-FX-open copy, `F7` last-weekend-FX-closed copy and `Delete` last-closed-FX copy. Shift is handled before unshifted `F10`.
+- Keyboard `Shift+F11` jumps to the last-weekday-FX-open-hour copy control, or the Gantt heading if that control is missing. Does not copy. Ignored while typing. Distinct from unshifted `F11` last-weekday-FX-closed jump and `F8` last-weekend-FX-closed jump.
+- Keyboard `Shift+F12` jumps to the existing hide-weekend-FX-closed Gantt filter (`hideWeekendFxClosedGanttHours`), or the Gantt heading if that control is missing. Ignored while typing. Distinct from unshifted `F12` hide-weekend-FX-open and from hide-weekday-FX-open jump. `Backspace` still jumps to the same weekend-FX-closed filter.
+- Monday early FX open (synthetic) preset: same 72-hour calendar as Normal Friday, Monday 08:00 to 10:00 treats FX as weekday-depth / open through `isMondayEarlyFxOpenHour`. That window is a real weekday-FX-open case, including when a Monday public holiday would otherwise thin FX. Distinct from Sunday early FX open, Friday late FX open, Saturday late FX open, Sunday late FX open, and Early Monday bank open. Synthetic. Not an FX feed.
+
 ## 1.5.27 - 2026-09-11
 
 A workshop follow-up on 1.5.26. Weekend Gap remains a local-first decision aid, not a decision maker. Hatched Gantt cells are a local drawing, not a bank feed. Timing review packets from 1.5.0 and the 1.5.1-1.5.26 review UI stay in place. Analysis JSON still has no timestamps.
