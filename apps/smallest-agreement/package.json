@@ -8,6 +8,7 @@
     "node": ">=20"
   },
   "scripts": {
+    "analyze": "node scripts/analyze.mjs",
     "start": "node scripts/dev-server.mjs",
     "launch": "node scripts/launch.mjs",
     "build:standalone": "node scripts/build-standalone.mjs",
