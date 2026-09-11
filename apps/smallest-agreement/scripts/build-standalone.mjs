@@ -65,6 +65,7 @@ const appImport = `import {
   formatFirstBelowThresholdGroupLabelMarkdown,
   formatLastGroupAtOrAboveThresholdLabelMarkdown,
   formatFirstGroupAtOrAboveThresholdLabelMarkdown,
+  formatLastGroupAtFloorLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,

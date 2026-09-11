@@ -51,6 +51,7 @@ import {
   formatFirstBelowThresholdGroupLabelMarkdown,
   formatLastGroupAtOrAboveThresholdLabelMarkdown,
   formatFirstGroupAtOrAboveThresholdLabelMarkdown,
+  formatLastGroupAtFloorLabelMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -960,6 +961,39 @@ const presets = {
           { id: "rugby-changing-room-lockup-original", original: true, label: "Leave the outdoor changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 20, neighbours: 36, pandc: 40 } },
           { id: "rugby-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the outdoor changing room before 21:15", changeCost: 3, support: { students: 66, neighbours: 58, pandc: 68 } },
           { id: "rugby-changing-room-lockup-timer", original: false, label: "Add a timed lock on the outdoor changing-room door after the last session", changeCost: 2, support: { students: 56, neighbours: 54, pandc: 60 } },
+        ],
+      },
+    ],
+  },
+  "softball-club-hours": {
+    title: "Softball club hours: diamond booking, clubhouse bar, and changing-room lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "softball-diamond-booking", title: "Softball diamond booking", options: [
+          { id: "softball-diamond-booking-original", original: true, label: "Keep weekday softball diamond booking from 16:00 with no posted diamond rota", changeCost: 0, support: { students: 15, neighbours: 91, pandc: 57 } },
+          { id: "softball-diamond-booking-late", original: false, label: "Open weekday softball at 18:15 with a posted diamond rota", changeCost: 2, support: { students: 83, neighbours: 43, pandc: 53 } },
+          { id: "softball-diamond-booking-weekend", original: false, label: "Hold Saturday morning diamond at 10:00 with a booking card", changeCost: 4, support: { students: 69, neighbours: 51, pandc: 51 } },
+        ],
+      },
+      {
+        id: "softball-clubhouse-bar", title: "Clubhouse bar", options: [
+          { id: "softball-clubhouse-bar-original", original: true, label: "No posted softball clubhouse-bar hours", changeCost: 0, support: { students: 77, neighbours: 13, pandc: 27 } },
+          { id: "softball-clubhouse-bar-cap", original: false, label: "Close the softball clubhouse bar at 20:00 and keep drinks inside the clubhouse", changeCost: 1, support: { students: 51, neighbours: 81, pandc: 63 } },
+          { id: "softball-clubhouse-bar-cut", original: false, label: "Serve tea only after 19:00 and retire the softball clubhouse bar", changeCost: 5, support: { students: 33, neighbours: 87, pandc: 49 } },
+        ],
+      },
+      {
+        id: "softball-changing-room-lockup", title: "Changing-room lock-up", options: [
+          { id: "softball-changing-room-lockup-original", original: true, label: "Leave the diamond changing-room door on a shared padlock after club hours", changeCost: 0, support: { students: 21, neighbours: 37, pandc: 41 } },
+          { id: "softball-changing-room-lockup-steward", original: false, label: "Require a P&C steward to lock the diamond changing room before 21:00", changeCost: 3, support: { students: 67, neighbours: 59, pandc: 69 } },
+          { id: "softball-changing-room-lockup-timer", original: false, label: "Add a timed lock on the diamond changing-room door after the last session", changeCost: 2, support: { students: 55, neighbours: 53, pandc: 61 } },
         ],
       },
     ],
