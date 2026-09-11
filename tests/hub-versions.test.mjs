@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -251,6 +251,26 @@ test('404 last skip text matches the last catalog skip-link text', () => {
   assert.match(page, /id="skips"/);
   assert.match(page, /id="copy-first-skip-text"/);
   assert.match(page, />Copy first skip text</);
+});
+
+test('404 first skip target text matches the labelled heading of the first skip href', () => {
+  const text = catalogFirstSkipTargetText();
+  assert.equal(text, "What's new");
+  assert.equal(html.includes(`>${text}</h2>`), true, 'first skip target text missing from catalog');
+  assert.notEqual(text, catalogFirstSkipText());
+  assert.notEqual(text, catalogFirstSkipHref());
+  assert.notEqual(text, catalogLastSkipText());
+  assert.notEqual(text, catalogFirstWhatsNewHeading());
+  const page = notFoundPage();
+  assert.equal(page.includes(text), true, 'first skip target text missing from 404 page');
+  assert.match(page, /id="copy-first-skip-target-text"/);
+  assert.match(page, />Copy first skip target text</);
+  assert.match(page, /firstSkipTargetTextMarkdown/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="whats-new"/);
+  assert.match(page, /aria-labelledby="whats-new-title"/);
+  assert.match(page, /id="copy-last-skip-text"/);
+  assert.match(page, />Copy last skip text</);
 });
 
 test('404 first Open href matches the first catalog Open workbench href', () => {
