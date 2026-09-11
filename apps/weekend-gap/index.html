@@ -119,6 +119,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="mondayEarlyFxOpen">Monday early FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="mondayLateFxOpen">Monday late FX open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="tuesdayEarlyFxOpen">Tuesday early FX open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="tuesdayLateFxOpen">Tuesday late FX open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -414,6 +415,13 @@ SOFTWARE.
                 Keep Tuesday FX open 08:00 to 10:00
               </label>
               <p>When selected, Tuesday 08:00 to 10:00 treats FX as weekday-depth / open. That window is a real weekday-FX-open case through isTuesdayEarlyFxOpenHour. Issuer, bank and payout stay on their Tuesday morning rules those hours. Older scenario files omit this field and keep Tuesday morning on ordinary weekday FX depth. Distinct from Monday early FX open, Monday late FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. This is a synthetic calendar, not an FX feed.</p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="tuesdayLateFxOpen">
+                <input id="tuesdayLateFxOpen" name="tuesdayLateFxOpen" data-field="tuesdayLateFxOpen" type="checkbox">
+                Keep Tuesday FX open 16:00 to 18:00
+              </label>
+              <p>When selected, Tuesday 16:00 to 18:00 treats FX as weekday-depth / open. That window is a real weekday-FX-open case through isTuesdayLateFxOpenHour. Issuer, bank and payout stay on their Tuesday afternoon rules those hours. Older scenario files omit this field and keep Tuesday afternoon on ordinary weekday FX depth. Distinct from Tuesday early FX open, Monday late FX open, Monday early FX open, Friday late FX open, Sunday early FX open, and Saturday late FX open. This is a synthetic calendar, not an FX feed.</p>
             </div>
           </form>
 
