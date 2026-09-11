@@ -27,6 +27,7 @@ test("workspace round trip preserves detached baseline, notes and analysis contr
  assert.equal(result.workspace.hideWeekendIssuerOpenGanttHours,false);
  assert.equal(result.workspace.hideWeekendIssuerClosedGanttHours,false);
  assert.equal(result.workspace.hideWeekendBankClosedGanttHours,false);
+ assert.equal(result.workspace.hideWeekendBankOpenGanttHours,false);
  assert.equal(scenarioFromJSON(text).scenario,null);assert.deepEqual(workspaceFromJSON("\uFEFF"+text),result);
 });
 test("workspace Gantt density defaults to snapshots and older files remain valid",()=>{
@@ -301,8 +302,19 @@ test("older workspace files omit hideWeekendBankClosedGanttHours and restore all
  assert.deepEqual(legacy.errors,[]);
  assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendBankClosedGanttHours:true})).workspace.hideWeekendBankClosedGanttHours,true);
 });
+test("older workspace files omit hideWeekendBankOpenGanttHours and restore all hours",()=>{
+ const text=workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO,{hideWeekendBankOpenGanttHours:true,notes:"legacy weekend-bank-open filter"});
+ const raw=JSON.parse(text);
+ assert.equal(raw.hideWeekendBankOpenGanttHours,true);
+ delete raw.hideWeekendBankOpenGanttHours;
+ const legacy=workspaceFromJSON(JSON.stringify(raw));
+ assert.ok(legacy.workspace);
+ assert.equal(legacy.workspace.hideWeekendBankOpenGanttHours,false);
+ assert.deepEqual(legacy.errors,[]);
+ assert.equal(workspaceFromJSON(JSON.stringify({...raw,hideWeekendBankOpenGanttHours:true})).workspace.hideWeekendBankOpenGanttHours,true);
+});
 test("invalid workspace controls and format cannot replace an active workspace",()=>{
  const valid=JSON.parse(workspaceToJSON(DEFAULT_SCENARIO,DEFAULT_SCENARIO));
- for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{ganttHourIndex:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"},{ganttGateFilter:"issuer-only"},{queueBacklogOnly:"yes"},{ganttEveryGateClosed:"yes"},{hideWeekdayGanttHours:"yes"},{hideWeekendGanttHours:"yes"},{hideOpenGanttHours:"yes"},{hideClosedGanttHours:"yes"},{hideZeroQueueGanttHours:"yes"},{hideBankClosedGanttHours:"yes"},{hideIssuerClosedGanttHours:"yes"},{hidePayoutClosedGanttHours:"yes"},{hideFxClosedGanttHours:"yes"},{hidePayoutOpenGanttHours:"yes"},{hideFxOpenGanttHours:"yes"},{hideBankOpenGanttHours:"yes"},{hideIssuerOpenGanttHours:"yes"},{hideWeekendIssuerOpenGanttHours:"yes"},{hideWeekendIssuerClosedGanttHours:"yes"},{hideWeekendBankClosedGanttHours:"yes"},{extraField:true},{constructor:{}}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
+ for(const changed of [{version:2},{current:null},{baseline:[]},{targetPercent:-1},{deadlineHour:73},{selectedHour:1.5},{ganttHourIndex:1.5},{notes:"x".repeat(4001)},{ganttDensity:"wide"},{selectedChart:"canvas"},{ganttClosedOnly:"yes"},{ganttGateFilter:"issuer-only"},{queueBacklogOnly:"yes"},{ganttEveryGateClosed:"yes"},{hideWeekdayGanttHours:"yes"},{hideWeekendGanttHours:"yes"},{hideOpenGanttHours:"yes"},{hideClosedGanttHours:"yes"},{hideZeroQueueGanttHours:"yes"},{hideBankClosedGanttHours:"yes"},{hideIssuerClosedGanttHours:"yes"},{hidePayoutClosedGanttHours:"yes"},{hideFxClosedGanttHours:"yes"},{hidePayoutOpenGanttHours:"yes"},{hideFxOpenGanttHours:"yes"},{hideBankOpenGanttHours:"yes"},{hideIssuerOpenGanttHours:"yes"},{hideWeekendIssuerOpenGanttHours:"yes"},{hideWeekendIssuerClosedGanttHours:"yes"},{hideWeekendBankClosedGanttHours:"yes"},{hideWeekendBankOpenGanttHours:"yes"},{extraField:true},{constructor:{}}]) assert.equal(workspaceFromJSON(JSON.stringify({...valid,...changed})).workspace,null);
  assert.equal(workspaceFromJSON("x".repeat(250001)).workspace,null);
 });
