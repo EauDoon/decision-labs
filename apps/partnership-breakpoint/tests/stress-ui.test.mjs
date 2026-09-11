@@ -91,6 +91,8 @@ async function workbench(protocol = 'file:', options = {}) {
         'hide-last-without-capacity-participant',
         'hide-first-without-capacity-participant',
         'hide-last-at-hold-participant',
+        'hide-first-at-hold-participant',
+        'copy-last-at-hold-remaining', 'last-at-hold-remaining-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
