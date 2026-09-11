@@ -42,6 +42,7 @@ import {
   formatLastVetoGroupLabelMarkdown,
   formatLastNonVetoGroupLabelMarkdown,
   formatLastBelowThresholdGroupLabelMarkdown,
+  formatFirstBelowThresholdGroupLabelMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -1910,7 +1911,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true, hideGroupsMeetingThreshold: true, hideGroupsBelowThreshold: true, hideVetoGroups: true, hideNonVetoGroups: true, hideFirstVetoGroup: true, hideLastVetoGroup: true, hideFirstNonVetoGroup: true, hideLastNonVetoGroup: true, hideLastGroupBelowThreshold: true, hideFirstGroupBelowThreshold: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true, hideGroupsMeetingThreshold: true, hideGroupsBelowThreshold: true, hideVetoGroups: true, hideNonVetoGroups: true, hideFirstVetoGroup: true, hideLastVetoGroup: true, hideFirstNonVetoGroup: true, hideLastNonVetoGroup: true, hideLastGroupBelowThreshold: true, hideFirstGroupBelowThreshold: true, hideLastGroupAtOrAboveThreshold: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
@@ -1930,6 +1931,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(exported.hideLastNonVetoGroup, true);
   assert.equal(exported.hideLastGroupBelowThreshold, true);
   assert.equal(exported.hideFirstGroupBelowThreshold, true);
+  assert.equal(exported.hideLastGroupAtOrAboveThreshold, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
@@ -1950,6 +1952,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parsed.hideLastNonVetoGroup, true);
   assert.equal(parsed.hideLastGroupBelowThreshold, true);
   assert.equal(parsed.hideFirstGroupBelowThreshold, true);
+  assert.equal(parsed.hideLastGroupAtOrAboveThreshold, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
@@ -1968,6 +1971,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(Object.hasOwn(parsed.proposal, "hideLastNonVetoGroup"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideLastGroupBelowThreshold"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideFirstGroupBelowThreshold"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideLastGroupAtOrAboveThreshold"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
@@ -1988,6 +1992,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(omitted.hideLastNonVetoGroup, false);
   assert.equal(omitted.hideLastGroupBelowThreshold, false);
   assert.equal(omitted.hideFirstGroupBelowThreshold, false);
+  assert.equal(omitted.hideLastGroupAtOrAboveThreshold, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
@@ -2007,6 +2012,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(bare.hideLastNonVetoGroup, null);
   assert.equal(bare.hideLastGroupBelowThreshold, null);
   assert.equal(bare.hideFirstGroupBelowThreshold, null);
+  assert.equal(bare.hideLastGroupAtOrAboveThreshold, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
@@ -2037,6 +2043,8 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideLastGroupBelowThreshold: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { hideFirstGroupBelowThreshold: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideFirstGroupBelowThreshold: 1, proposal: input })).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideLastGroupAtOrAboveThreshold: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideLastGroupAtOrAboveThreshold: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -2911,6 +2919,75 @@ test("last below-threshold group label Markdown escapes the group name and is no
   assert.equal(copied.label, "Short*bloc [A]");
   assert.equal(copied.text, "Last below-threshold group: Short\\*bloc \\[A\\]. A threshold is a number you entered, not a legal quorum. The label is not a legal identity.\n");
   assert.doesNotMatch(copied.text, /Last non-veto group/u);
+  assert.doesNotMatch(copied.text, /First below-floor group/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("first below-threshold group label Markdown is one line, honest when none, and not a legal identity", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "cleared", name: "Cleared", weight: 1 },
+      { id: "short", name: "Short", weight: 1 },
+      { id: "floored", name: "Floored", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { cleared: 90, short: 20, floored: 20 }),
+      option("alt", false, { cleared: 80, short: 85, floored: 85 }, 1),
+      option("other", false, { cleared: 70, short: 90, floored: 90 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const copied = formatFirstBelowThresholdGroupLabelMarkdown(input, originals);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.label, "Short");
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "First below-threshold group: Short. A threshold is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.doesNotMatch(copied.text, /Last below-threshold group/u);
+  assert.doesNotMatch(copied.text, /First below-floor group/u);
+  assert.doesNotMatch(copied.text, /Floored/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const passing = input.clauses[0].options[1];
+  const none = formatFirstBelowThresholdGroupLabelMarkdown(input, [passing]);
+  assert.equal(none.status, "ok");
+  assert.equal(none.empty, true);
+  assert.equal(none.text, "No group is below the approval threshold, so there is no first below-threshold group label to copy. A threshold is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.equal(none.text.trim().includes("\n"), false);
+  const missing = formatFirstBelowThresholdGroupLabelMarkdown(input, null);
+  assert.equal(missing.status, "unavailable");
+  assert.equal(missing.empty, true);
+  assert.match(missing.text, /No inspected package is available/u);
+  assert.match(missing.text, /not a legal quorum/u);
+  assert.match(missing.text, /not a legal identity/u);
+  assert.equal(missing.text.trim().includes("\n"), false);
+  assert.equal(formatFirstBelowThresholdGroupLabelMarkdown({ title: "" }).status, "invalid");
+});
+
+test("first below-threshold group label Markdown escapes the group name and is not a legal identity", () => {
+  const input = proposal({
+    threshold: 70,
+    groups: [
+      { id: "cleared", name: "Cleared", weight: 1 },
+      { id: "short", name: "Short*bloc [A]", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { cleared: 90, short: 20 }),
+      option("alt", false, { cleared: 80, short: 30 }, 1),
+      option("other", false, { cleared: 70, short: 40 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatFirstBelowThresholdGroupLabelMarkdown(input, getOriginalOptions(input));
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.label, "Short*bloc [A]");
+  assert.equal(copied.text, "First below-threshold group: Short\\*bloc \\[A\\]. A threshold is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.doesNotMatch(copied.text, /Last below-threshold group/u);
   assert.doesNotMatch(copied.text, /First below-floor group/u);
   assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
   assert.equal(JSON.stringify(input), before);
