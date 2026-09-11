@@ -194,6 +194,20 @@ export function catalogFirstSkipTargetText() {
   return catalogSkipTargetText(catalogFirstSkipHref());
 }
 
+export function catalogFirstLabelledSkipTargetText() {
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  for (const link of catalogSkipLinks()) {
+    const href = link.href;
+    if (!href.startsWith('#') || href.length < 2) continue;
+    const found = catalogMarkupTag(html, href.slice(1));
+    if (!found) continue;
+    const labelled = found.tag.match(/aria-labelledby="([^"]+)"/);
+    if (!labelled) continue;
+    return catalogMarkupText(html, labelled[1]);
+  }
+  return '';
+}
+
 export function catalogLastSkipTargetText() {
   const links = catalogSkipLinks();
   for (let i = links.length - 1; i >= 0; i -= 1) {
