@@ -1237,6 +1237,67 @@ test("keyboard handler jumps to hide first unserved buyer with End when not typi
   assert.match(app, /if \(key === "3"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUnservedBuyer\(\);/u);
 });
 
+test("shortcut help documents leftover uncovered remaining copy", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>PageUp<\/kbd> Copy leftover uncovered remaining \(organizer private\)/u);
+  assert.match(html, /id="copy-leftover-uncovered-remaining"/u);
+  assert.match(html, /id="copy-leftover-uncovered-remaining"[^>]*aria-keyshortcuts="PageUp"/u);
+});
+
+test("keyboard handler copies leftover uncovered remaining with PageUp when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.match(app, /if \(key === "PageUp"\)/u);
+  assert.match(app, /function copyLeftoverUncoveredRemaining\(/u);
+  assert.match(app, /createLeftoverUncoveredRemainingMarkdown\(scenario\)/u);
+  assert.match(app, /#copy-leftover-uncovered-remaining/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.doesNotMatch(app, /if \(key === "PageUp"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillRemainingCapacity/u);
+  assert.match(app, /if \(key === "1"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillRemainingCapacity\(\);/u);
+  assert.match(app, /if \(key === "4"\) \{\s*event\.preventDefault\(\);\s*copyTertiaryFillMaximum\(\);/u);
+});
+
+test("shortcut help documents leftover uncovered remaining copy jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>PageDown<\/kbd> Focus the leftover uncovered remaining copy control, or leftover heading if missing/u);
+  assert.match(html, /id="copy-leftover-uncovered-remaining"/u);
+  assert.match(html, /id="residual-title"/u);
+});
+
+test("keyboard handler jumps to leftover uncovered remaining copy with PageDown when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "PageDown"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredRemainingCopy\(\);/u);
+  assert.match(app, /function focusLeftoverUncoveredRemainingCopy\(/u);
+  assert.match(app, /#copy-leftover-uncovered-remaining/u);
+  assert.match(app, /#residual-title/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /if \(event\.defaultPrevented/u);
+  assert.doesNotMatch(app, /if \(key === "PageDown"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredRemaining/u);
+  assert.match(app, /if \(key === "2"\) \{\s*event\.preventDefault\(\);\s*focusTertiaryFillRemainingCopy\(\);/u);
+  assert.match(app, /if \(key === "Home"\) \{\s*event\.preventDefault\(\);\s*focusTertiaryFillMaximumCopy\(\);/u);
+});
+
+test("shortcut help documents hide last leftover-only buyer jump", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /<kbd>ArrowUp<\/kbd> Focus hide last leftover-only buyer, or the buyer list if missing/u);
+  assert.match(html, /id="hide-last-leftover-only-buyer"/u);
+  assert.match(html, /id="buyers-list"/u);
+});
+
+test("keyboard handler jumps to hide last leftover-only buyer with ArrowUp when not typing", async () => {
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(app, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+  assert.match(app, /function focusHideLastLeftoverOnlyBuyer\(/u);
+  assert.match(app, /#hide-last-leftover-only-buyer/u);
+  assert.match(app, /#buyers-list/u);
+  assert.match(app, /#buyer-tab/u);
+  assert.match(app, /isTypingTarget\(event\.target\)/u);
+  assert.match(app, /if \(event\.defaultPrevented/u);
+  assert.doesNotMatch(app, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUnservedBuyer/u);
+  assert.match(app, /if \(key === "End"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUnservedBuyer\(\);/u);
+  assert.match(app, /if \(key === "3"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUnservedBuyer\(\);/u);
+});
+
 test("apostrophe leftover fill unit-count copy uses the existing leftover-fill-units control", async () => {
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");

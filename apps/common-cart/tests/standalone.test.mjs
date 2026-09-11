@@ -112,5 +112,25 @@ test("standalone retains 1.4.18 tertiary remaining tools and 1.4.19 tertiary max
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-last-unserved-buyer/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-tertiary-fill-maximum/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-unserved-buyer/u);
+  assert.match(html, /id="copy-leftover-uncovered-remaining"/u);
+  assert.match(html, /id="copy-leftover-uncovered-remaining"[^>]*aria-keyshortcuts="PageUp"/u);
+  assert.match(html, /id="hide-last-leftover-only-buyer"/u);
+  assert.match(html, /id="leftover-print-uncovered-remaining"/u);
+  assert.match(html, /Leftover uncovered remaining: none/u);
+  assert.match(html, /data-preset="hockeyCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverUncoveredRemaining\(/u);
+  assert.match(html, /function focusLeftoverUncoveredRemainingCopy\(/u);
+  assert.match(html, /function focusHideLastLeftoverOnlyBuyer\(/u);
+  assert.match(html, /filterBuyerIdsHidingLastLeftoverOnlyBuyer\(/u);
+  assert.match(html, /hideLastLeftoverOnlyBuyer/u);
+  assert.match(html, /createLeftoverUncoveredRemainingMarkdown\(/u);
+  assert.match(html, /if \(key === "PageUp"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredRemaining\(\);/u);
+  assert.match(html, /if \(key === "PageDown"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredRemainingCopy\(\);/u);
+  assert.match(html, /if \(key === "ArrowUp"\) \{\s*event\.preventDefault\(\);\s*focusHideLastLeftoverOnlyBuyer\(\);/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-remaining/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-last-leftover-only-buyer/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /leftover-print-uncovered-remaining/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideLastLeftoverOnlyBuyer/u);
 });
 
