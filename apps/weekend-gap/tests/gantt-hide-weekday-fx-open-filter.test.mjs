@@ -48,13 +48,13 @@ test("weekday-FX-open helper hides hours that are weekday and FX-open", () => {
 
 test("hide-weekday-FX-open Gantt SVG is display-only and keeps the selected hour visible", () => {
   const early = PRESETS.sundayEarlyFxOpen;
-  const full = buildGateGanttSvg(DEFAULT_SCENARIO, 0);
-  const hiddenWeekdayFxOpen = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideWeekdayFxOpenHours: true });
-  const hiddenWeekendFxOpen = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideWeekendFxOpenHours: true });
-  const hiddenFxOpen = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideFxOpenHours: true });
-  const hiddenWeekdayFxClosed = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideWeekdayFxClosedHours: true });
-  const selectedWeekdayOpen = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideWeekdayFxOpenHours: true });
-  const selectedWeekend = buildGateGanttSvg(DEFAULT_SCENARIO, 9, { hideWeekdayFxOpenHours: true });
+  const full = buildGateGanttSvg(early, 0);
+  const hiddenWeekdayFxOpen = buildGateGanttSvg(early, 0, { hideWeekdayFxOpenHours: true });
+  const hiddenWeekendFxOpen = buildGateGanttSvg(early, 0, { hideWeekendFxOpenHours: true });
+  const hiddenFxOpen = buildGateGanttSvg(early, 0, { hideFxOpenHours: true });
+  const hiddenWeekdayFxClosed = buildGateGanttSvg(early, 0, { hideWeekdayFxClosedHours: true });
+  const selectedWeekdayOpen = buildGateGanttSvg(early, 0, { hideWeekdayFxOpenHours: true });
+  const selectedWeekend = buildGateGanttSvg(early, 9, { hideWeekdayFxOpenHours: true });
   assert.notEqual(full, hiddenWeekdayFxOpen);
   assert.notEqual(hiddenWeekdayFxOpen, hiddenWeekendFxOpen);
   assert.notEqual(hiddenWeekdayFxOpen, hiddenFxOpen);
@@ -67,12 +67,16 @@ test("hide-weekday-FX-open Gantt SVG is display-only and keeps the selected hour
   const selectedOpenRects = (selectedWeekdayOpen.match(/<rect /g) || []).length;
   const selectedWeekendRects = (selectedWeekend.match(/<rect /g) || []).length;
   assert.ok(hiddenRects < fullRects);
-  assert.ok(fxRects <= hiddenRects);
-  assert.equal(weekendRects, fullRects);
+  assert.ok(fxRects < hiddenRects);
+  assert.ok(weekendRects !== fullRects);
   assert.ok(selectedOpenRects > selectedWeekendRects);
-  const earlyHiddenWeekday = buildGateGanttSvg(early, 0, { hideWeekdayFxOpenHours: true });
-  const earlyHiddenWeekend = buildGateGanttSvg(early, 0, { hideWeekendFxOpenHours: true });
-  assert.notEqual(earlyHiddenWeekday, earlyHiddenWeekend);
+  const defaultFull = buildGateGanttSvg(DEFAULT_SCENARIO, 0);
+  const defaultHiddenWeekend = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideWeekendFxOpenHours: true });
+  const defaultHiddenWeekday = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideWeekdayFxOpenHours: true });
+  const defaultHiddenFx = buildGateGanttSvg(DEFAULT_SCENARIO, 0, { hideFxOpenHours: true });
+  assert.equal(defaultHiddenWeekend, defaultFull);
+  assert.notEqual(defaultHiddenWeekday, defaultFull);
+  assert.equal(defaultHiddenWeekday, defaultHiddenFx);
   assert.equal(attributeBottlenecks(DEFAULT_SCENARIO).hours, SIMULATION_HOURS);
   assert.equal(runSimulation(DEFAULT_SCENARIO).timeline.length, SIMULATION_HOURS + 1);
 });
