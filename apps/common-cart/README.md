@@ -8,6 +8,17 @@ It is a working research prototype for a simple question: can shared demand crea
 
 *Built-in synthetic coffee scenario.*
 
+## Changelog (1.4.23)
+
+Leftover uncovered count copy through F3, leftover uncovered count copy jump, hide first winner-allocated buyer jump, Water polo carnival lunch, hide first winner-allocated buyer, leftover print leftover uncovered count, kept on top of 1.4.0 review packets and 1.4.1/1.4.2/1.4.3/1.4.4/1.4.5/1.4.6/1.4.7/1.4.8/1.4.9/1.4.10/1.4.11/1.4.12/1.4.13/1.4.14/1.4.15/1.4.16/1.4.17/1.4.18/1.4.19/1.4.20/1.4.21/1.4.22 tools. This remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap Markdown, leftover print, winning merchant copy, winning fulfillment copy, and remaining-capacity copy still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer leftover copies are labeled organizer-private. Review packets stay private and unsigned.
+
+- **Keyboard leftover uncovered count copy.** `F3` copies uncovered leftover buyer count through the leftover uncovered count copy control. Same organizer-private count-only Markdown as the leftover uncovered count button. Ignored while typing. Help lists it. Distinct prefix from leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts even when the number matches. Not a merchant export.
+- **Keyboard leftover uncovered count jump.** `F4` focuses the leftover uncovered count copy control, or the leftover heading if that control is missing. It does not copy. Ignored while typing. Help lists it. Distinct from leftover uncovered remaining jump, leftover uncovered maximum jump, leftover uncovered minimum jump, leftover fill remaining jump, leftover fill maximum jump, leftover fill minimum jump, leftover fill pickup jump, leftover fill label jump, leftover fill delivery jump, leftover fill fulfillment jump, leftover fill unit-count jump, leftover fill merchant jump, leftover fill jump, uncovered leftover jump, leftover jump, leftover print jump, leftover headroom jump, winning remaining-capacity jump, requested-units jump, and remaining-capacity jump.
+- **Keyboard hide first winner-allocated buyer jump.** `Backspace` focuses hide first winner-allocated buyer, or the buyer list if that control is missing. It does not copy. Ignored while typing. Help lists it. Return if `event.defaultPrevented` so tablists keep their keys. Distinct from hide last winner-allocated buyer jump, hide first leftover-only buyer jump, hide last leftover-only buyer jump, hide first unserved jump, hide last unserved jump, hide last leftover-fill jump, hide first leftover-fill jump, hide last tertiary-fill jump, hide first tertiary-fill jump, leftover fill remaining jump, leftover fill maximum jump, leftover fill minimum jump, leftover fill pickup jump, leftover fill label jump, leftover fill delivery jump, leftover fill fulfillment jump, leftover fill unit-count jump, leftover fill merchant jump, leftover fill jump, leftover jump, leftover print jump, leftover headroom jump, winning remaining-capacity jump, requested-units jump, remaining-capacity jump, and hide remaining-capacity jump.
+- **Water polo carnival lunch.** Example bar starting point after Softball carnival. Winner Court-side Water Polo Delivery. Leftover Hall Water Polo Pickup with pickup minimum 16. Soccer 11, rugby 12, hockey 13, baseball 14, and softball 15 stay. Synthetic. Not live inventory.
+- **Hide first winner-allocated buyer.** Display-only organizer filter. Travels on saved workspace JSON as optional `hideFirstWinnerAllocatedBuyer`. Older files omit it and default to showing that buyer. Distinct from hide all winner-allocated buyers and hide last winner-allocated buyer. Hidden rows still match. Merchant views still show counts only.
+- **Leftover print leftover uncovered count.** Print leftover one-pager includes uncovered leftover buyer count, or honest empty none. Organizer-private. Not a merchant export.
+
 ## Changelog (1.4.22)
 
 Leftover uncovered minimum copy through Delete, leftover uncovered minimum copy jump, hide last winner-allocated buyer jump, Softball carnival lunch, hide last winner-allocated buyer, leftover print leftover uncovered minimum, kept on top of 1.4.0 review packets and 1.4.1/1.4.2/1.4.3/1.4.4/1.4.5/1.4.6/1.4.7/1.4.8/1.4.9/1.4.10/1.4.11/1.4.12/1.4.13/1.4.14/1.4.15/1.4.16/1.4.17/1.4.18/1.4.19/1.4.20/1.4.21 tools. This remains an offline simulator. Residual coverage is leftover planning, not checkout. Merchant views, JSON, CSV, overlap Markdown, leftover print, winning merchant copy, winning fulfillment copy, and remaining-capacity copy still receive aggregates, counts, merchant labels, or fulfillment modes only. Organizer leftover copies are labeled organizer-private. Review packets stay private and unsigned.
@@ -492,6 +503,11 @@ The allocator performs an exact bounded search for the greatest whole-buyer quan
 |   |-- leftover-uncovered-minimum-jump.test.mjs Leftover uncovered minimum jump
 |   |-- leftover-print-uncovered-minimum.test.mjs Leftover print leftover uncovered minimum
 |   |-- hide-last-winner-allocated-buyer.test.mjs Hide last winner-allocated buyer
+|   |-- water-polo-carnival-lunch.test.mjs Water polo carnival lunch preset
+|   |-- leftover-uncovered-count-key.test.mjs Leftover uncovered count copy
+|   |-- leftover-uncovered-count-jump.test.mjs Leftover uncovered count jump
+|   |-- leftover-print-uncovered-count.test.mjs Leftover print leftover uncovered count
+|   |-- hide-first-winner-allocated-buyer.test.mjs Hide first winner-allocated buyer
 |   |-- winner-inspector-markdown.test.mjs Winner inspector Markdown
 |   |-- hide-unwinnable-offers.test.mjs Hide locked offers
 |   |-- hide-covered-leftover.test.mjs Hide covered leftover rows

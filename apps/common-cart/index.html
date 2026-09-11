@@ -138,6 +138,9 @@ SOFTWARE.
         <li><kbd>Delete</kbd> Copy leftover uncovered minimum (organizer private)</li>
         <li><kbd>F2</kbd> Focus the leftover uncovered minimum copy control, or leftover heading if missing</li>
         <li><kbd>ArrowRight</kbd> Focus hide last winner-allocated buyer, or the buyer list if missing</li>
+        <li><kbd>F3</kbd> Copy leftover uncovered count (organizer private)</li>
+        <li><kbd>F4</kbd> Focus the leftover uncovered count copy control, or leftover heading if missing</li>
+        <li><kbd>Backspace</kbd> Focus hide first winner-allocated buyer, or the buyer list if missing</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -206,6 +209,7 @@ SOFTWARE.
           <button class="preset" data-preset="hockeyCarnivalLunch" type="button">Hockey carnival</button>
           <button class="preset" data-preset="baseballCarnivalLunch" type="button">Baseball carnival</button>
           <button class="preset" data-preset="softballCarnivalLunch" type="button">Softball carnival</button>
+          <button class="preset" data-preset="waterPoloCarnivalLunch" type="button">Water polo carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -381,7 +385,11 @@ SOFTWARE.
             <input id="hide-last-winner-allocated-buyer" type="checkbox" aria-keyshortcuts="ArrowRight">
             Hide the last winner-allocated buyer
           </label>
-          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, and hide-last-winner-allocated-buyer choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
+          <label class="checkbox-field">
+            <input id="hide-first-winner-allocated-buyer" type="checkbox" aria-keyshortcuts="Backspace">
+            Hide the first winner-allocated buyer
+          </label>
+          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, and hide-first-winner-allocated-buyer choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
         </div>
         <div class="table-shell print-private" id="buyers-list" tabindex="-1" role="region" aria-label="Buyer constraints list">
           <table>
@@ -521,6 +529,7 @@ SOFTWARE.
             <p id="leftover-print-uncovered-remaining" class="canvas-note leftover-print-uncovered-remaining print-leftover-keep">Leftover uncovered remaining: none</p>
             <p id="leftover-print-uncovered-maximum" class="canvas-note leftover-print-uncovered-maximum print-leftover-keep">Leftover uncovered maximum: none</p>
             <p id="leftover-print-uncovered-minimum" class="canvas-note leftover-print-uncovered-minimum print-leftover-keep">Leftover uncovered minimum: none</p>
+            <p id="leftover-print-uncovered-count" class="canvas-note leftover-print-uncovered-count print-leftover-keep">Leftover uncovered count: none</p>
             <p id="leftover-print-requested" class="canvas-note leftover-print-requested print-leftover-keep">Requested units: 0</p>
             <button id="copy-requested-units" class="print-chrome" type="button">Copy requested units (organizer private)</button>
             <p class="canvas-note print-chrome">Organizer-private one-line Markdown of requested units. Count only. This is not a merchant export.</p>
@@ -582,6 +591,7 @@ SOFTWARE.
             <button id="copy-leftover-uncovered-remaining" class="print-chrome" type="button" aria-keyshortcuts="PageUp">Copy leftover uncovered remaining (organizer private)</button>
             <button id="copy-leftover-uncovered-maximum" class="print-chrome" type="button" aria-keyshortcuts="Insert">Copy leftover uncovered maximum (organizer private)</button>
             <button id="copy-leftover-uncovered-minimum" class="print-chrome" type="button" aria-keyshortcuts="Delete">Copy leftover uncovered minimum (organizer private)</button>
+            <button id="copy-leftover-uncovered-count" class="print-chrome" type="button" aria-keyshortcuts="F3">Copy leftover uncovered count (organizer private)</button>
             <button id="copy-uncovered-leftover" class="print-chrome" type="button">Copy uncovered leftover counts (organizer private)</button>
             <button id="copy-uncovered-leftover-units" class="print-chrome" type="button">Copy uncovered leftover units (organizer private)</button>
             <p class="canvas-note print-chrome">Organizer-private Markdown of leftover buyer counts and units. Clipboard copies when allowed; otherwise a textarea is shown. This is not a merchant export.</p>
@@ -600,6 +610,7 @@ SOFTWARE.
             <p class="canvas-note print-chrome">Leftover uncovered remaining copy is remaining uncovered leftover units as a count. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered maximum copy is leftover-fill offer capacity as a count. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered minimum copy is leftover-fill offer minimum units as a count. Organizer-private. This is not a merchant export.</p>
+            <p class="canvas-note print-chrome">Leftover uncovered count copy is uncovered leftover buyer count. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover copy is counts and units only. Buyer identities stay out. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover unit-count copy is count only. Organizer-private. This is not a merchant export.</p>
           </article>
