@@ -24,6 +24,22 @@ function fails(args, input) {
   assert.match(output.stderr, /Weekend Gap:/);
 }
 
+test('comparison preserves signed deltas and rejects two stdin sources', () => {
+  const dir = mkdtempSync(join(tmpdir(), 'weekend-cli-'));
+  try {
+    const baseline = join(dir, 'baseline.json');
+    writeFileSync(baseline, JSON.stringify({ ...fixture(), reserveCashAud: 0 }));
+    const output = result(['compare', baseline, '-']);
+    assert.equal(output.deltas.totalSettledAud, 72);
+    assert.equal(output.deltas.finalQueuedAud, -72);
+    assert.equal(output.deltas.hoursToFirstSettlement, null);
+    assert.deepEqual(output.changes, [{ field: 'reserveCashAud', baseline: 0, candidate: 72 }]);
+    assert.equal(output.sameDemand, true);
+    assert.equal(result(['compare', baseline, '-'], { ...fixture(), redemptionDemandAud: 144 }).sameDemand, false);
+    fails(['compare', '-', '-']);
+  } finally { rmSync(dir, { recursive: true, force: true }); }
+});
+
 test('CLI simulation matches a separate 1 AUD/hour ledger and reads files or stdin', () => {
   const expected = oracle(fixture()).at(-1);
   const output = result(['simulate', '-']);

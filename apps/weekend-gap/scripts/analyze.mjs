@@ -1,10 +1,12 @@
 import { open } from 'node:fs/promises';
 import {
   DEFAULT_SCENARIO, scenarioFromJSON, runSimulation, dashboardToMarkdown,
+  compareScenarios,
 } from '../src/model.js';
 
 const usage = `Weekend Gap offline analysis (synthetic AUD only)
   simulate SCENARIO [--format json|markdown]
+  compare BASELINE CANDIDATE
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
 Omitted fields use model defaults; invalid or adjusted values are rejected.
@@ -67,6 +69,16 @@ function argumentsFor(args, count, formats = ['json']) {
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
   switch (command) {
+    case 'compare': {
+      const { args: [left, right] } = argumentsFor(rest, 2);
+      const comparison = compareScenarios(await scenario(left), await scenario(right));
+      return { baseline: comparison.baseline.scenario, candidate: comparison.candidate.scenario,
+        baselineSummary: comparison.baseline.summary, candidateSummary: comparison.candidate.summary,
+        changes: comparison.changes, deltas: comparison.deltas,
+        sameDemand: comparison.baseline.scenario.redemptionDemandAud === comparison.candidate.scenario.redemptionDemandAud
+          && comparison.baseline.scenario.demandProfile === comparison.candidate.scenario.demandProfile,
+        note: 'Deltas are candidate minus baseline. Different demand can explain reduced queues; this is not a strategy ranking.' };
+    }
     case 'simulate': {
       const { args: [path], format } = argumentsFor(rest, 1, ['json', 'markdown']);
       const input = await scenario(path);

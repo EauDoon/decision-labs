@@ -25,3 +25,11 @@ Files must be regular files. Scenario inputs are bounded to 250,000 bytes.
 `simulate` returns the canonical scenario and 72-hour summary as JSON, or the
 existing dashboard Markdown. Null settlement times mean no qualifying event
 within the modeled horizon, not hour zero or a later forecast.
+
+## Compare assumptions
+
+`node scripts/analyze.mjs compare baseline.json candidate.json` returns both
+canonical inputs, summary metrics, changed fields and signed candidate-minus-
+baseline deltas. `sameDemand` compares total demand and arrival profile. Inspect
+it before interpreting reduced queues. One input may use stdin; two cannot.
+Null timing deltas preserve the absence of an event rather than inventing zero.
