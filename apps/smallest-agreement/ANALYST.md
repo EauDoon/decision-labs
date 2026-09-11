@@ -25,3 +25,11 @@ parse errors do not echo input text. Run `node scripts/analyze.mjs --help`
 for syntax. Use the direct `node` command or npm's `--silent` flag for clean
 machine-readable stdout. Scores, weights, and costs are human assumptions.
 These reports cannot establish fairness, consent, legal validity, or authority.
+
+## Inspect a proposed package
+
+`node scripts/analyze.mjs evaluate proposal.json original,balanced`
+evaluates exactly one option ID per clause in the proposal's clause order.
+Use the actual IDs in your export. The result includes support, cost, threshold
+and constraint checks even when the package fails. Unknown or missing IDs are
+errors. This command evaluates your selection without searching or editing it.

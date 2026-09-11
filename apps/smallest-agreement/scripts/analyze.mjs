@@ -1,7 +1,9 @@
 import { createReadStream } from 'node:fs';
-import { findSmallestAgreement, proposalFromWorkshopDocument } from '../src/model.js';
+import { findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage } from '../src/model.js';
 
-const usage = 'Usage: node scripts/analyze.mjs solve <proposal.json|->';
+const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [arguments]
+  solve
+  evaluate <option IDs separated by commas, in clause order>`;
 
 async function readText(path, limit = 262144) {
   const stream = path === '-' ? process.stdin : createReadStream(path);
@@ -39,9 +41,11 @@ try {
   if (command === '--help' && path === undefined) {
     process.stdout.write(usage + '\n');
   } else {
-    if (command !== 'solve' || !path || args.length) throw new TypeError(usage);
+    const arity = { solve: 0, evaluate: 1 };
+    if (!Object.hasOwn(arity, command) || !path || args.length !== arity[command]) throw new TypeError(usage);
     const proposal = proposalFrom(parseJson(await readText(path)));
-    process.stdout.write(JSON.stringify(solve(proposal), null, 2) + '\n');
+    const output = command === 'evaluate' ? checked(evaluatePackage(proposal, args[0].split(','))) : solve(proposal);
+    process.stdout.write(JSON.stringify(output, null, 2) + '\n');
   }
 } catch (error) {
   process.stderr.write(JSON.stringify({ status: 'error', error: error.message }) + '\n');

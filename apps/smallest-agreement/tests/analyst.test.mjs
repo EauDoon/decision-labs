@@ -72,3 +72,15 @@ test('solve preserves infeasible and search-cap statuses', () => {
   const large = { ...proposal, clauses: Array.from({ length: 10 }, (_, index) => ({ ...proposal.clauses[0], id: 'c' + index })) };
   assert.equal(result(['solve', '-'], large).status, 'too_large');
 });
+
+test('evaluate inspects supplied option IDs and preserves numerical constraint failures', () => {
+  const custom = result(['evaluate', '-', 'maximum']);
+  assert.equal(custom.summary.approval, 92.5);
+  assert.equal(custom.summary.changeCost, 5);
+  assert.equal(custom.summary.constraints.met, true);
+  const constrained = { ...proposal, maxChangeCost: 1, groups: proposal.groups.map(group => ({ ...group, minSupport: 90 })) };
+  assert.equal(result(['evaluate', '-', 'balanced'], constrained).summary.constraints.met, false);
+  invalid(['evaluate', '-', 'invented'], proposal, /belong/);
+  invalid(['evaluate', '-', 'balanced,maximum'], proposal, /exactly one/);
+  assert.equal(result(['evaluate', '-', 'balanced']).summary.approval, 65);
+});
