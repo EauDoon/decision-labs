@@ -10,7 +10,7 @@ test("1.5.26 keeps F7 F8 F9 last-weekend-FX-closed controls and F3 F4 Backspace"
   assert.match(html, /<kbd>F3<\/kbd>/);
   assert.match(html, /<kbd>F4<\/kbd>/);
   assert.match(html, /<kbd>Backspace<\/kbd>/);
-  assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace"/);
+  assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace Shift\+F12"/);
   assert.match(html, /id="copy-last-closed-fx"[^>]*aria-keyshortcuts="Delete"/);
   assert.match(html, /id="gantt-hide-weekend-payout-closed"[^>]*aria-keyshortcuts="ArrowRight"/);
   assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
