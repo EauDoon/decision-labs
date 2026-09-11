@@ -84,3 +84,12 @@ test('evaluate inspects supplied option IDs and preserves numerical constraint f
   invalid(['evaluate', '-', 'balanced,maximum'], proposal, /exactly one/);
   assert.equal(result(['evaluate', '-', 'balanced']).summary.approval, 65);
 });
+
+test('stress holds the package fixed, clamps support, and crosses the known margin', () => {
+  const stressed = result(['stress', '-', 'balanced', '0,5,6,100']);
+  assert.deepEqual(stressed.rows.map(row => row.summary.approval), [65, 60, 59, 0]);
+  assert.deepEqual(stressed.rows.map(row => row.status), ['passing', 'passing', 'not_passing', 'not_passing']);
+  assert.ok(stressed.rows.every(row => row.summary.changeCost === 2));
+  for (const bad of ['', '1,,2', '-1', '101', 'NaN', '1,'.repeat(20) + '1']) invalid(['stress', '-', 'balanced', bad], proposal, /numeric levels/);
+  invalid(['stress', '-', 'unknown', '5'], proposal, /belong/);
+});

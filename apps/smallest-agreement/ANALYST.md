@@ -33,3 +33,11 @@ evaluates exactly one option ID per clause in the proposal's clause order.
 Use the actual IDs in your export. The result includes support, cost, threshold
 and constraint checks even when the package fails. Unknown or missing IDs are
 errors. This command evaluates your selection without searching or editing it.
+
+## Stress a fixed package
+
+`node scripts/analyze.mjs stress proposal.json original,balanced 0,5,10,20`
+reduces all support scores by each supplied drop, clamped at zero. Enter 1 to
+20 drops from 0 to 100. Each row evaluates the same selected option IDs with
+the original locks, budget, floors, and vetoes. Cost stays fixed. This is a
+deterministic downside scenario, not a probability estimate or a new search.
