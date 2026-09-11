@@ -2216,11 +2216,14 @@ test('triathlon carnival split preset loads from the starting-point buttons', as
   const app = await workbench();
   assert.match(app.markup(), /data-preset="triathlonCarnivalSplit"/);
   assert.match(app.markup(), /Triathlon carnival split/);
+  assert.match(app.markup(), /data-preset="cyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Cycling carnival split/);
   assert.match(app.markup(), /data-preset="surfCarnivalSplit"/);
   assert.match(app.markup(), /Surf carnival split/);
   assert.match(app.markup(), /data-preset="dragonBoatCarnivalSplit"/);
   const markup = app.markup();
   assert.ok(markup.indexOf('data-preset="surfCarnivalSplit"') < markup.indexOf('data-preset="triathlonCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="triathlonCarnivalSplit"') < markup.indexOf('data-preset="cyclingCarnivalSplit"'));
   assert.ok(markup.indexOf('data-preset="dragonBoatCarnivalSplit"') < markup.indexOf('data-preset="surfCarnivalSplit"'));
   app.click('preset', { preset: 'triathlonCarnivalSplit' });
   assert.equal(app.saved().participants.length, 3);
@@ -2252,6 +2255,62 @@ test('triathlon carnival split preset loads from the starting-point buttons', as
   assert.doesNotMatch(exported, /forecast/i);
   assert.doesNotMatch(exported, /live capacity/i);
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+});
+
+test('cycling carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="cyclingCarnivalSplit"/);
+  assert.match(app.markup(), /Cycling carnival split/);
+  assert.match(app.markup(), /data-preset="triathlonCarnivalSplit"/);
+  assert.match(app.markup(), /Triathlon carnival split/);
+  assert.match(app.markup(), /data-preset="surfCarnivalSplit"/);
+  const markup = app.markup();
+  assert.ok(markup.indexOf('data-preset="triathlonCarnivalSplit"') < markup.indexOf('data-preset="cyclingCarnivalSplit"'));
+  assert.ok(markup.indexOf('data-preset="surfCarnivalSplit"') < markup.indexOf('data-preset="triathlonCarnivalSplit"'));
+  app.click('preset', { preset: 'cyclingCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['cycling-committee', 'cycling-club-hire', 'cycling-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Cycling club hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 8);
+  assert.equal(app.saved().deal.monthlyVolume, 5000);
+  assert.equal(app.saved().deal.addressableVolume, 6200);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [5900, 7000, 5000]);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[0].fixedMonthlyCost, app.saved().participants[1].fixedMonthlyCost);
+  assert.notEqual(app.saved().participants[1].fixedMonthlyCost, app.saved().participants[2].fixedMonthlyCost);
+  assert.match(app.notice(), /Cycling carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'triathlon-committee,triathlon-club-hire,triathlon-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'surf-committee,surf-club-hire,surf-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'dragonboat-committee,dragonboat-club-hire,dragonboat-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'kayaking-committee,kayaking-slalom-hire,kayaking-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'canoeing-committee,canoeing-paddle-hire,canoeing-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Triathlon club hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Surf club hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Dragon boat club hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Whitewater slalom hire');
+  assert.notEqual(app.saved().participants.map((item) => item.name)[1], 'Paddle club hire');
+  assert.equal(app.saved().participants.map((item) => item.name)[1], 'Cycling club hire');
+  const exported = JSON.stringify(app.saved());
+  assert.doesNotMatch(exported, /live roster/i);
+  assert.doesNotMatch(exported, /hosted/i);
+  assert.doesNotMatch(exported, /\bapi\b/i);
+  assert.doesNotMatch(exported, /forecast/i);
+  assert.doesNotMatch(exported, /live capacity/i);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+
+  const over = await workbench('file:', { clipboard: 'ok' });
+  over.click('preset', { preset: 'cyclingCarnivalSplit' });
+  over.edit('deal.monthlyVolume', '6000');
+  over.click('copy-first-over-capacity-volume');
+  assert.equal(over.copied().at(-1), 'First over-capacity volume-to-hold: 4,969 txn for Carnival committee. Volume to hold. Not a forecast.');
+  over.click('copy-last-over-capacity-volume');
+  assert.equal(over.copied().at(-1), 'Last over-capacity volume-to-hold: 4,000 txn for First-aid. Volume to hold. Not a forecast.');
+  over.click('copy-first-over-capacity-remaining');
+  assert.equal(over.copied().at(-1), 'First over-capacity remaining listed capacity: 100 txn over for Carnival committee. How far over listed capacity. Not a forecast.');
+  over.click('copy-last-over-capacity-remaining');
+  assert.equal(over.copied().at(-1), 'Last over-capacity remaining listed capacity: 1,000 txn over for First-aid. How far over listed capacity. Not a forecast.');
 });
 
 test('lacrosse carnival last-at-hold remaining is 0 for First-aid and first-at-hold hides Carnival committee only', async () => {
