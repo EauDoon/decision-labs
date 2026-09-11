@@ -111,6 +111,7 @@ SOFTWARE.
               <button type="button" class="preset-button" data-preset="saturdayEarlyBankOpen">Saturday early bank open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="fridayEarlyBankOpen">Friday early bank open (synthetic)</button>
               <button type="button" class="preset-button" data-preset="saturdayLateBankOpen">Saturday late bank open (synthetic)</button>
+              <button type="button" class="preset-button" data-preset="fridayLateBankOpen">Friday late bank open (synthetic)</button>
             </div>
           </fieldset>
 
@@ -350,6 +351,13 @@ SOFTWARE.
                 Keep Saturday bank open 16:00 to 18:00
               </label>
               <p>When selected, Saturday 16:00 to 18:00 treats the bank gate as open even though Saturday is not a business day. Issuer, payout and FX stay on their Saturday evening rules those hours. The 72-hour workshop clock starts Friday 15:00, so this window is inside the modeled start. Older scenario files omit this field and keep Saturday evening bank closed. Distinct from Saturday early bank open, Friday early bank open, and Friday early issuer open. This is a synthetic calendar, not a bank feed.</p>
+            </div>
+            <div class="input-group input-group--full">
+              <label class="checkbox-label" for="fridayLateBankOpen">
+                <input id="fridayLateBankOpen" name="fridayLateBankOpen" data-field="fridayLateBankOpen" type="checkbox">
+                Keep Friday bank open 16:00 to 18:00
+              </label>
+              <p>When selected, Friday 16:00 to 18:00 treats the bank gate as open even when the ordinary bank window ends earlier. Issuer, payout and FX stay on their Friday evening rules those hours. The 72-hour workshop clock starts Friday 15:00, so this window is inside the modeled start. Older scenario files omit this field and keep Friday evening on the ordinary bank window. Distinct from Friday early bank open, Saturday late bank open, Saturday early bank open, and Friday early issuer open. This is a synthetic calendar, not a bank feed.</p>
             </div>
           </form>
 
@@ -796,6 +804,10 @@ SOFTWARE.
                 <input id="gantt-hide-weekend-fx-open" type="checkbox" aria-keyshortcuts="ArrowLeft">
                 Hide weekend hours where the FX gate is open
               </label>
+              <label class="checkbox-label" for="gantt-hide-weekend-payout-closed">
+                <input id="gantt-hide-weekend-payout-closed" type="checkbox" aria-keyshortcuts="ArrowRight">
+                Hide weekend hours where the payout gate is closed
+              </label>
               <button id="export-gantt" type="button">Download Gantt SVG</button>
               <button id="export-gantt-csv" type="button">Export Gantt CSV</button>
               <button id="copy-gantt-hour" type="button">Copy selected hour</button>
@@ -817,6 +829,7 @@ SOFTWARE.
               <button id="copy-last-open-fx" type="button" aria-keyshortcuts="Insert">Copy last open FX hour</button>
               <button id="copy-last-closed-issuer" type="button" aria-keyshortcuts="8">Copy last closed issuer hour</button>
               <button id="copy-last-closed-bank" type="button" aria-keyshortcuts="1">Copy last closed bank hour</button>
+              <button id="copy-last-closed-fx" type="button" aria-keyshortcuts="Delete">Copy last closed FX hour</button>
             </div>
             <label class="sr-only" for="gantt-hour-copy-fallback">Selected hour Markdown fallback</label>
             <textarea id="gantt-hour-copy-fallback" rows="8" hidden readonly></textarea>
@@ -856,6 +869,8 @@ SOFTWARE.
             <textarea id="last-closed-issuer-copy-fallback" rows="2" hidden readonly></textarea>
             <label class="sr-only" for="last-closed-bank-copy-fallback">Last closed bank hour Markdown fallback</label>
             <textarea id="last-closed-bank-copy-fallback" rows="2" hidden readonly></textarea>
+            <label class="sr-only" for="last-closed-fx-copy-fallback">Last closed FX hour Markdown fallback</label>
+            <textarea id="last-closed-fx-copy-fallback" rows="2" hidden readonly></textarea>
             <div id="gate-gantt" class="gantt-svg"></div>
             <div class="table-scroll" id="gantt-hour-row" tabindex="-1" role="region" aria-label="Gate Gantt table fallback">
               <table>
@@ -960,6 +975,7 @@ SOFTWARE.
           <li><kbd>4</kbd> Copy last open bank hour as Markdown</li>
           <li><kbd>PageUp</kbd> Copy last open payout hour as Markdown</li>
           <li><kbd>Insert</kbd> Copy last open FX hour as Markdown</li>
+          <li><kbd>Delete</kbd> Copy last closed FX hour as Markdown</li>
           <li><kbd>+</kbd> Jump to the first-closed-FX-hour copy control</li>
           <li><kbd>!</kbd> Jump to the first-open-payout-hour copy control</li>
           <li><kbd>)</kbd> Jump to the first-open-FX-hour copy control</li>
@@ -971,6 +987,7 @@ SOFTWARE.
           <li><kbd>Home</kbd> Jump to the last-open-bank-hour copy control</li>
           <li><kbd>PageDown</kbd> Jump to the last-open-payout-hour copy control</li>
           <li><kbd>ArrowDown</kbd> Jump to the last-open-FX-hour copy control</li>
+          <li><kbd>F2</kbd> Jump to the last-closed-FX-hour copy control</li>
           <li><kbd>_</kbd> Jump to the first-closed-payout-hour copy control</li>
           <li><kbd>&lt;</kbd> Jump to the first-closed-bank-hour copy control</li>
           <li><kbd>-</kbd> Jump to the first-closed-issuer-hour copy control</li>
@@ -988,6 +1005,7 @@ SOFTWARE.
           <li><kbd>End</kbd> Jump to the hide-weekend-bank-open Gantt filter</li>
           <li><kbd>ArrowUp</kbd> Jump to the hide-weekend-payout-open Gantt filter</li>
           <li><kbd>ArrowLeft</kbd> Jump to the hide-weekend-FX-open Gantt filter</li>
+          <li><kbd>ArrowRight</kbd> Jump to the hide-weekend-payout-closed Gantt filter</li>
           <li><kbd>N</kbd> Jump to the first-payout Gantt marker</li>
           <li><kbd>O</kbd> Jump to the Payout Gantt row</li>
           <li><kbd>A</kbd> Jump to analysis and export controls</li>
