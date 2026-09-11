@@ -59,6 +59,7 @@ import {
   formatGroupsWithoutFloorCountMarkdown,
   formatGroupsWithoutFloorRemainingMarkdown,
   formatLastGroupWithoutFloorRemainingMarkdown,
+  formatFirstGroupWithoutFloorRemainingMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -1237,6 +1238,39 @@ const presets = {
       },
     ],
   },
+  "surf-club-hours": {
+    title: "Surf club hours: surf-club staging booking, clubhouse bar, and board-bag lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 6 },
+      { id: "neighbours", name: "Neighbours", weight: 5, veto: true },
+      { id: "pandc", name: "P&C", weight: 8 },
+    ],
+    clauses: [
+      {
+        id: "surf-club-staging-booking", title: "Surf-club staging booking", options: [
+          { id: "surf-club-staging-booking-original", original: true, label: "Keep weekday surf-club staging from 12:40 with no posted board-rack rota", changeCost: 0, support: { students: 7, neighbours: 91, pandc: 56 } },
+          { id: "surf-club-staging-booking-late", original: false, label: "Open weekday surf-club staging at 17:35 with a posted board-rack rota", changeCost: 2, support: { students: 85, neighbours: 35, pandc: 47 } },
+          { id: "surf-club-staging-booking-weekend", original: false, label: "Hold Sunday morning surf-club staging at 09:10 with a board-rack booking card", changeCost: 4, support: { students: 70, neighbours: 43, pandc: 55 } },
+        ],
+      },
+      {
+        id: "surf-club-clubhouse-bar", title: "Clubhouse bar hours", options: [
+          { id: "surf-club-clubhouse-bar-original", original: true, label: "No posted surf-club clubhouse-bar hours", changeCost: 0, support: { students: 72, neighbours: 17, pandc: 26 } },
+          { id: "surf-club-clubhouse-bar-cap", original: false, label: "Close the surf-club clubhouse bar at 19:25 and keep drinks inside the clubhouse", changeCost: 1, support: { students: 45, neighbours: 79, pandc: 58 } },
+          { id: "surf-club-clubhouse-bar-cut", original: false, label: "Serve tea only after 15:40 and retire the surf-club clubhouse bar", changeCost: 5, support: { students: 27, neighbours: 88, pandc: 40 } },
+        ],
+      },
+      {
+        id: "surf-club-board-bag-lockup", title: "Board-bag lock-up", options: [
+          { id: "surf-club-board-bag-lockup-original", original: true, label: "Leave the board-bag door on a shared padlock after club hours", changeCost: 0, support: { students: 12, neighbours: 32, pandc: 38 } },
+          { id: "surf-club-board-bag-lockup-steward", original: false, label: "Require a P&C steward to lock the board-bag store before 20:40", changeCost: 3, support: { students: 59, neighbours: 54, pandc: 77 } },
+          { id: "surf-club-board-bag-lockup-timer", original: false, label: "Add a timed lock on the board-bag store after the last surf-club session", changeCost: 2, support: { students: 48, neighbours: 52, pandc: 69 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -1428,6 +1462,11 @@ function renderCopyFallbacks(result) {
   if (lastGroupWithoutFloorRemainingBox) {
     const listed = formatLastGroupWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     lastGroupWithoutFloorRemainingBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
+  const firstGroupWithoutFloorRemainingBox = $("#first-group-without-floor-remaining-fallback");
+  if (firstGroupWithoutFloorRemainingBox) {
+    const listed = formatFirstGroupWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    firstGroupWithoutFloorRemainingBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
@@ -2290,6 +2329,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-groups-without-floor-count-button").disabled = result.status === "invalid";
   $("#copy-groups-without-floor-remaining-button").disabled = result.status === "invalid";
   $("#copy-last-group-without-floor-remaining-button").disabled = result.status === "invalid";
+  $("#copy-first-group-without-floor-remaining-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -4216,6 +4256,24 @@ async function copyLastGroupWithoutFloorRemaining() {
   }
 }
 $("#copy-last-group-without-floor-remaining-button").addEventListener("click", copyLastGroupWithoutFloorRemaining);
+async function copyFirstGroupWithoutFloorRemaining() {
+  const listed = formatFirstGroupWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the first-without-floor remaining.");
+  const fallback = $("#first-group-without-floor-remaining-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty first-without-floor remaining. A floor is a number you entered, not a legal quorum."
+    : listed.empty
+    ? "No group is without a support floor. Copied an honest zero. A floor is a number you entered, not a legal quorum."
+    : "First-without-floor remaining copied as Markdown. A floor is a number you entered, not a legal quorum.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the first-without-floor remaining from the Markdown box. A floor is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-first-group-without-floor-remaining-button").addEventListener("click", copyFirstGroupWithoutFloorRemaining);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -5477,6 +5535,15 @@ function jumpToLastGroupWithoutFloorRemainingCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToFirstGroupWithoutFloorRemainingCopy() {
+  const control = $("#copy-first-group-without-floor-remaining-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -5819,13 +5886,13 @@ document.addEventListener("keydown", (event) => {
     jumpToHideLastGroupBelowFloor();
   } else if (event.shiftKey && key === "F7") {
     event.preventDefault();
-    copyLastGroupWithoutFloorRemaining();
+    copyFirstGroupWithoutFloorRemaining();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    jumpToLastGroupWithoutFloorRemainingCopy();
+    jumpToFirstGroupWithoutFloorRemainingCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
-    jumpToHideFirstGroupWithoutFloor();
+    jumpToHideLastGroupWithoutFloor();
   } else if (key === "F7") {
     event.preventDefault();
     copyLastGroupWithoutFloor();
