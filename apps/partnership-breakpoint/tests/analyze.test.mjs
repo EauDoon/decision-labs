@@ -5,7 +5,7 @@ import { mkdtempSync, writeFileSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { clonePreset, parseCsv, calculatePartnership } from '../src/model.js';
+import { clonePreset, parseCsv, calculatePartnership, PARTNERSHIP_REVIEW_TOOLS } from '../src/model.js';
 
 const cli = fileURLToPath(new URL('../scripts/analyze.mjs', import.meta.url));
 const run = (args, value) => spawnSync(process.execPath, [cli, ...args], {
@@ -127,4 +127,23 @@ test('compare aligns missing IDs, three snapshots and rejects mixed currency lab
   assert.ok(replacement.second);
   assert.match(output(run(['compare', a, d]), 1).error, /currency/);
   assert.match(output(run(['compare', '-', '-'], current), 1).error, /only one/);
+});
+
+test('review creates every supported packet and replay detects tampered evidence', () => {
+  const config = clonePreset('balanced');
+  for (const { id } of PARTNERSHIP_REVIEW_TOOLS) {
+    const packet = output(run(['review', '-', id], config));
+    assert.equal(packet.tool, id);
+    assert.deepEqual(packet.scenario, config);
+    assert.deepEqual(output(run(['replay', '-'], packet)), packet);
+  }
+  const packet = output(run(['review', '-', 'zero'], config));
+  assert.equal(packet.review.rows[0][1], config.participants[0].fixedMonthlyCost + config.participants[0].riskCost);
+  packet.review.rows[0][1] += 1;
+  assert.match(output(run(['replay', '-'], packet), 1).error, /does not match/);
+  const original = output(run(['review', '-', 'zero'], config));
+  original.scenario.deal.monthlyVolume += 1;
+  assert.match(output(run(['replay', '-'], original), 1).error, /snapshot changed/);
+  assert.match(output(run(['review', '-', 'unknown'], config), 1).error, /Unknown partnership review/);
+  assert.match(output(run(['replay', '-'], config), 1).error, /Unsupported/);
 });

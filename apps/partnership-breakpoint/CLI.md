@@ -40,3 +40,12 @@ node scripts/analyze.mjs compare current.json first.json second.json
 ```
 
 Two-case output uses `current` and `imported`; three-case output uses `current`, `first` and `second`. Alignment uses stable participant IDs regardless of roster ordering. Missing participants remain `null` with `rosterMismatch`, never zero profit. At most one scenario may come from stdin. All currency labels must match, including omitted labels. The CLI performs no currency conversion, and matching labels do not certify compatible assumptions.
+
+## Reproducible constraint review
+
+```sh
+node scripts/analyze.mjs review scenario.json interval > interval-review.json
+node scripts/analyze.mjs replay interval-review.json
+```
+
+`review` emits the browser-compatible version 1 review packet: validated scenario, exact input snapshot and derived table. `--help` lists the model's available review IDs. `replay` recomputes the packet and rejects changed inputs, fields or result cells with exit 1. A successful replay returns the verified packet. This checks internal reproducibility, not authorship or real-world truth; a consistently regenerated replacement packet can still contain different assumptions. The model's packet-size limit remains in force.

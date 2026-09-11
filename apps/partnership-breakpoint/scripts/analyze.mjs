@@ -2,6 +2,7 @@ import { readFileSync } from 'node:fs';
 import { assertValidConfiguration, calculatePartnership, evaluateStressGrid, stressGridCsv } from '../src/model.js';
 import { solveFeeForAllHold, solveMinimumShareToHold, solveMinimumVolumeToHold } from '../src/model.js';
 import { compareImportedCase, compareThreeSnapshots } from '../src/model.js';
+import { PARTNERSHIP_REVIEW_TOOLS, createPartnershipReviewPacket, replayPartnershipReviewPacket } from '../src/model.js';
 
 const HELP = `Offline Partnership Breakpoint analysis (Node.js 20+)
 Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
@@ -10,6 +11,9 @@ Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
   solve INPUT fee                Find the common fee floor
   solve INPUT share|volume ID    Find a participant's holding boundary
   compare CURRENT FIRST [SECOND]  Align two or three scenarios by participant ID
+  review INPUT TOOL             Create a replayable constraint review packet
+  replay INPUT                  Verify an existing review packet
+Review tools: ${PARTNERSHIP_REVIEW_TOOLS.map(tool => tool.id).join(', ')}
 INPUT is a JSON file or - for standard input. Output is JSON on stdout.
 Errors are JSON on stderr, exit 1. Success is exit 0.
 Results describe declared inputs, not probabilities or financial advice.
@@ -67,6 +71,12 @@ function run(command, args) {
       if (configs.some(config => (config.deal.currency ?? '') !== currency)) throw new Error('Comparison requires matching currency labels; no currency conversion is performed.');
       return configs.length === 2 ? compareImportedCase(...configs) : compareThreeSnapshots(...configs);
     }
+    case 'review':
+      arity(args, 2);
+      return createPartnershipReviewPacket(readJSON(args[0]), args[1]);
+    case 'replay':
+      arity(args, 1);
+      return replayPartnershipReviewPacket(readJSON(args[0]));
     default: throw new Error('Unknown command. Run with --help for usage.');
   }
 }
