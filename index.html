@@ -2555,6 +2555,11 @@
           (document.getElementById('skips') || document.getElementById('catalog-heading'))?.focus();
           return;
         }
+        if (event.key === 'F3') {
+          event.preventDefault();
+          lastSkipTextBtn?.click();
+          return;
+        }
         if (event.key === '&') {
           event.preventDefault();
           (document.getElementById('copy-first-workbench') || document.getElementById('workbenches-title') || document.getElementById('workbenches'))?.focus();
