@@ -60,3 +60,13 @@ import. Scenario review searches retain each model tool's existing caps;
 `too_large` is unavailable, not infeasible. When no recommendation exists,
 the packet explicitly identifies its original-package context. A packet is
 reproducible model evidence, not an authenticated decision record.
+
+## Verify a received review
+
+`node scripts/analyze.mjs replay review.json` accepts a review packet up to
+1 MiB and recomputes it through the model's strict replay validator. It returns
+the verified packet or exits 2 for changed inputs, changed results, extra
+fields, or unsupported versions. CLI packets use compact JSON. If a packet no
+longer matches the current model, run a new review; do not edit its claimed
+results. Successful replay proves internal reproducibility under this model,
+not who created the packet or whether the declared assumptions are true.

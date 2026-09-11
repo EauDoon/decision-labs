@@ -125,3 +125,21 @@ test('review creates browser-compatible packets with declared input snapshots', 
   }
   invalid(['review', '-', 'not-a-tool'], proposal, /Unknown agreement review/);
 });
+
+test('replay recomputes packets, rejects changed inputs/results/fields, and recovers', () => {
+  const packet = result(['review', '-', 'margin']);
+  assert.deepEqual(result(['replay', '-'], packet), packet);
+  for (const mutate of [
+    changed => { changed.review.rows[0][1] = 99; },
+    changed => { changed.scenario.threshold = 99; },
+    changed => { changed.extra = 'untrusted'; },
+    changed => { changed.review.note = 'A binding decision'; },
+    changed => { changed.version = 2; },
+  ]) {
+    const changed = structuredClone(packet);
+    mutate(changed);
+    invalid(['replay', '-'], changed);
+  }
+  invalid(['replay', '-'], ' '.repeat(1048577), /1024 KiB/);
+  assert.deepEqual(result(['replay', '-'], packet), packet);
+});
