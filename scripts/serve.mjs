@@ -161,6 +161,36 @@ export function catalogLastSkipText() {
   return catalogSkipLinks().at(-1)?.text ?? '';
 }
 
+function catalogMarkupTag(html, id) {
+  const needle = `id="${id}"`;
+  const idx = html.indexOf(needle);
+  if (idx < 0) return null;
+  const tagStart = html.lastIndexOf('<', idx);
+  const tagEnd = html.indexOf('>', idx);
+  if (tagStart < 0 || tagEnd < 0) return null;
+  return { start: tagStart, end: tagEnd, tag: html.slice(tagStart, tagEnd + 1) };
+}
+
+function catalogMarkupText(html, id) {
+  const found = catalogMarkupTag(html, id);
+  if (!found) return '';
+  const closeLt = html.indexOf('<', found.end + 1);
+  if (closeLt < 0) return '';
+  return html.slice(found.end + 1, closeLt).trim();
+}
+
+export function catalogFirstSkipTargetText() {
+  const href = catalogFirstSkipHref();
+  if (!href.startsWith('#') || href.length < 2) return '';
+  const html = readFileSync(new URL('index.html', root), 'utf8');
+  const found = catalogMarkupTag(html, href.slice(1));
+  if (!found) return '';
+  const labelled = found.tag.match(/aria-labelledby="([^"]+)"/);
+  if (labelled) return catalogMarkupText(html, labelled[1]);
+  if (/^<h[1-6]\b/i.test(found.tag)) return catalogMarkupText(html, href.slice(1));
+  return '';
+}
+
 export function notFoundPage() {
   const versions = catalogVersionLine();
   const jobsList = catalogJobs().map(({ name, job }) => `<li>${escapeHtml(name)}: ${escapeHtml(job)}</li>`).join('\n      ');
