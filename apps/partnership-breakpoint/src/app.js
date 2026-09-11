@@ -2587,7 +2587,8 @@ function drawSensitivityChart(grid) {
 }
 
 function handleShortcut(event) {
-  if (event.defaultPrevented || event.metaKey || event.ctrlKey || event.altKey) return;
+  if (event.defaultPrevented) return;
+  if (event.metaKey || event.ctrlKey || event.altKey) return;
   if ((coachVisible || helpOpen) && event.key === 'Tab') {
     trapDialogTab(event);
     return;
@@ -2752,7 +2753,7 @@ function handleShortcut(event) {
   if (event.key === 'Delete') copyFirstAtHoldRemaining();
   if (event.key === 'F3') copyLastZeroShareParticipant();
   if (event.key === 'F7') copyFirstZeroShareParticipant();
-  if (event.key === 'F10' && event.shiftKey) copyFirstZeroShareRemaining();
+  if (event.key === 'F10' && event.shiftKey) copyLastZeroShareVolume();
   if (event.key === 'F10' && !event.shiftKey) copyLastZeroShareRemaining();
   if (event.key === '.') {
     const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
@@ -2960,7 +2961,7 @@ function handleShortcut(event) {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'F11' && event.shiftKey) {
-    const target = document.querySelector('#copy-first-zero-share-remaining')
+    const target = document.querySelector('#copy-last-zero-share-volume')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -2972,7 +2973,7 @@ function handleShortcut(event) {
     target?.scrollIntoView?.({ block: 'start' });
   }
   if (event.key === 'F12' && event.shiftKey) {
-    const target = document.querySelector('#hide-first-zero-share-participant')
+    const target = document.querySelector('#hide-zero-share-participants')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -5703,9 +5704,9 @@ function helpDialog() {
         <li><kbd>F10</kbd> Copy last zero-share remaining-to-hold as Markdown</li>
         <li><kbd>F11</kbd> Jump to Copy last zero-share remaining-to-hold, or the Participants heading if missing</li>
         <li><kbd>F12</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
-        <li><kbd>Shift+F10</kbd> Copy first zero-share remaining-to-hold as Markdown</li>
-        <li><kbd>Shift+F11</kbd> Jump to Copy first zero-share remaining-to-hold, or the Participants heading if missing</li>
-        <li><kbd>Shift+F12</kbd> Jump to Hide the first participant with zero revenue share, or the Participants heading if missing</li>
+        <li><kbd>Shift+F10</kbd> Copy last zero-share volume-to-hold as Markdown</li>
+        <li><kbd>Shift+F11</kbd> Jump to Copy last zero-share volume-to-hold, or the Participants heading if missing</li>
+        <li><kbd>Shift+F12</kbd> Jump to Hide participants with zero revenue share, or the Participants heading if missing</li>
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>|</kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing</li>
