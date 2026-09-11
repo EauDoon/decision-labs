@@ -2,7 +2,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 
-import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText } from '../scripts/serve.mjs';
+import { catalogVersionLine, notFoundPage, catalogJobs, catalogLastWhatsNewHeading, catalogFirstWhatsNewHeading, catalogFirstWorkbenchHeading, catalogLastWorkbenchHeading, catalogLastReviewPath, catalogFirstReviewPath, catalogFirstOpenHref, catalogLastOpenHref, catalogFirstSkipHref, catalogLastSkipHref, catalogFirstSkipText, catalogLastSkipText, catalogFirstSkipTargetText, catalogLastSkipTargetText } from '../scripts/serve.mjs';
 
 const html = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
 const readme = readFileSync(new URL('../README.md', import.meta.url), 'utf8');
@@ -273,6 +273,26 @@ test('404 first skip target text matches the labelled heading of the first skip 
   assert.match(page, />Copy last skip text</);
 });
 
+test('404 last skip target text matches the labelled heading of the last skip href that has one', () => {
+  const text = catalogLastSkipTargetText();
+  assert.equal(text, 'Trust and limits');
+  assert.equal(html.includes(`>${text}</h2>`), true, 'last skip target text missing from catalog');
+  assert.notEqual(text, catalogLastSkipText());
+  assert.notEqual(text, catalogLastSkipHref());
+  assert.notEqual(text, catalogFirstSkipTargetText());
+  assert.notEqual(text, catalogFirstSkipText());
+  const page = notFoundPage();
+  assert.equal(page.includes(text), true, 'last skip target text missing from 404 page');
+  assert.match(page, /id="copy-last-skip-target-text"/);
+  assert.match(page, />Copy last skip target text</);
+  assert.match(page, /lastSkipTargetTextMarkdown/);
+  assert.match(page, /id="skips"/);
+  assert.match(page, /id="trust"/);
+  assert.match(page, /aria-labelledby="trust-title"/);
+  assert.match(page, /id="copy-first-skip-target-text"/);
+  assert.match(page, />Copy first skip target text</);
+});
+
 test('404 first Open href matches the first catalog Open workbench href', () => {
   const href = catalogFirstOpenHref();
   assert.equal(href, 'apps/partnership-breakpoint/standalone.html');
@@ -321,18 +341,18 @@ test('404 last review path matches the last catalog workbench review path', () =
 });
 
 
-test('catalog versions stay Partnership Breakpoint 1.5.24, Common Cart 1.4.24, The Smallest Agreement 1.5.24, Weekend Gap 1.5.24', () => {
-  assert.match(html, /data-app="partnership-breakpoint">\s*1\.5\.24\s*</);
-  assert.match(html, /data-app="common-cart">\s*1\.4\.24\s*</);
-  assert.match(html, /data-app="smallest-agreement">\s*1\.5\.24\s*</);
+test('catalog versions stay Partnership Breakpoint 1.5.25, Common Cart 1.4.25, The Smallest Agreement 1.5.25, Weekend Gap 1.5.24', () => {
+  assert.match(html, /data-app="partnership-breakpoint">\s*1\.5\.25\s*</);
+  assert.match(html, /data-app="common-cart">\s*1\.4\.25\s*</);
+  assert.match(html, /data-app="smallest-agreement">\s*1\.5\.25\s*</);
   assert.match(html, /data-app="weekend-gap">\s*1\.5\.24\s*</);
-  assert.match(html, /data-app-version="partnership-breakpoint">\s*1\.5\.24\s*</);
-  assert.match(html, /data-app-version="common-cart">\s*1\.4\.24\s*</);
-  assert.match(html, /data-app-version="smallest-agreement">\s*1\.5\.24\s*</);
+  assert.match(html, /data-app-version="partnership-breakpoint">\s*1\.5\.25\s*</);
+  assert.match(html, /data-app-version="common-cart">\s*1\.4\.25\s*</);
+  assert.match(html, /data-app-version="smallest-agreement">\s*1\.5\.25\s*</);
   assert.match(html, /data-app-version="weekend-gap">\s*1\.5\.24\s*</);
-  assert.match(html, /Partnership Breakpoint 1\.5\.24, Common Cart 1\.4\.24, The Smallest Agreement 1\.5\.24, Weekend Gap 1\.5\.24/);
-  assert.match(readme, /\[Partnership Breakpoint\]\(apps\/partnership-breakpoint\/\) \| 1\.5\.24 \|/);
-  assert.match(readme, /\[Common Cart\]\(apps\/common-cart\/\) \| 1\.4\.24 \|/);
-  assert.match(readme, /\[The Smallest Agreement\]\(apps\/smallest-agreement\/\) \| 1\.5\.24 \|/);
+  assert.match(html, /Partnership Breakpoint 1\.5\.25, Common Cart 1\.4\.25, The Smallest Agreement 1\.5\.25, Weekend Gap 1\.5\.24/);
+  assert.match(readme, /\[Partnership Breakpoint\]\(apps\/partnership-breakpoint\/\) \| 1\.5\.25 \|/);
+  assert.match(readme, /\[Common Cart\]\(apps\/common-cart\/\) \| 1\.4\.25 \|/);
+  assert.match(readme, /\[The Smallest Agreement\]\(apps\/smallest-agreement\/\) \| 1\.5\.25 \|/);
   assert.match(readme, /\[Weekend Gap\]\(apps\/weekend-gap\/\) \| 1\.5\.24 \|/);
 });

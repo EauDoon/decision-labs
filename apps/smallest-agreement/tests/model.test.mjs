@@ -50,6 +50,7 @@ import {
   formatFirstGroupAtFloorLabelMarkdown,
   formatLastBelowSupportFloorGroupLabelMarkdown,
   formatLastGroupWithoutFloorLabelMarkdown,
+  formatFirstGroupWithoutFloorLabelMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -1918,7 +1919,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   });
   const before = JSON.stringify(input);
   const baseline = findSmallestAgreement(input);
-  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true, hideGroupsMeetingThreshold: true, hideGroupsBelowThreshold: true, hideVetoGroups: true, hideNonVetoGroups: true, hideFirstVetoGroup: true, hideLastVetoGroup: true, hideFirstNonVetoGroup: true, hideLastNonVetoGroup: true, hideLastGroupBelowThreshold: true, hideFirstGroupBelowThreshold: true, hideLastGroupAtOrAboveThreshold: true, hideFirstGroupAtOrAboveThreshold: true, hideLastGroupAtFloor: true, hideFirstGroupAtFloor: true, hideFirstGroupBelowFloor: true, hideLastGroupBelowFloor: true, hideLastGroupWithoutFloor: true });
+  const exported = formatWorkspaceJson(input, { changedClausesOnly: true, belowFloorGroupsOnly: true, overBudgetClausesOnly: true, hideGroupsAtFloor: true, hideGroupsWithoutFloors: true, noCheaperRemainingClausesOnly: true, hideUnlockedClauses: true, hideLockedClauses: true, hideGroupsMeetingThreshold: true, hideGroupsBelowThreshold: true, hideVetoGroups: true, hideNonVetoGroups: true, hideFirstVetoGroup: true, hideLastVetoGroup: true, hideFirstNonVetoGroup: true, hideLastNonVetoGroup: true, hideLastGroupBelowThreshold: true, hideFirstGroupBelowThreshold: true, hideLastGroupAtOrAboveThreshold: true, hideFirstGroupAtOrAboveThreshold: true, hideLastGroupAtFloor: true, hideFirstGroupAtFloor: true, hideFirstGroupBelowFloor: true, hideLastGroupBelowFloor: true, hideLastGroupWithoutFloor: true, hideFirstGroupWithoutFloor: true });
   assert.equal(exported.status, "ok");
   assert.equal(exported.changedClausesOnly, true);
   assert.equal(exported.belowFloorGroupsOnly, true);
@@ -1945,6 +1946,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(exported.hideFirstGroupBelowFloor, true);
   assert.equal(exported.hideLastGroupBelowFloor, true);
   assert.equal(exported.hideLastGroupWithoutFloor, true);
+  assert.equal(exported.hideFirstGroupWithoutFloor, true);
   const parsed = parseWorkspaceJson(exported.json);
   assert.equal(parsed.status, "ok");
   assert.equal(parsed.changedClausesOnly, true);
@@ -1972,6 +1974,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parsed.hideFirstGroupBelowFloor, true);
   assert.equal(parsed.hideLastGroupBelowFloor, true);
   assert.equal(parsed.hideLastGroupWithoutFloor, true);
+  assert.equal(parsed.hideFirstGroupWithoutFloor, true);
   assert.equal(Object.hasOwn(parsed.proposal, "changedClausesOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "belowFloorGroupsOnly"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "overBudgetClausesOnly"), false);
@@ -1997,6 +2000,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(Object.hasOwn(parsed.proposal, "hideFirstGroupBelowFloor"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideLastGroupBelowFloor"), false);
   assert.equal(Object.hasOwn(parsed.proposal, "hideLastGroupWithoutFloor"), false);
+  assert.equal(Object.hasOwn(parsed.proposal, "hideFirstGroupWithoutFloor"), false);
   assert.deepEqual(findSmallestAgreement(parsed.proposal), baseline);
   const omitted = parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, proposal: input }));
   assert.equal(omitted.changedClausesOnly, false);
@@ -2024,6 +2028,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(omitted.hideFirstGroupBelowFloor, false);
   assert.equal(omitted.hideLastGroupBelowFloor, false);
   assert.equal(omitted.hideLastGroupWithoutFloor, false);
+  assert.equal(omitted.hideFirstGroupWithoutFloor, false);
   const bare = parseWorkspaceJson(JSON.stringify(input));
   assert.equal(bare.changedClausesOnly, null);
   assert.equal(bare.belowFloorGroupsOnly, null);
@@ -2050,6 +2055,7 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(bare.hideFirstGroupBelowFloor, null);
   assert.equal(bare.hideLastGroupBelowFloor, null);
   assert.equal(bare.hideLastGroupWithoutFloor, null);
+  assert.equal(bare.hideFirstGroupWithoutFloor, null);
   assert.equal(formatWorkspaceJson(input, { extra: true }).errors[0].code, "unknown_key");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, extra: true, proposal: input })).errors[0].code, "unknown_key");
   assert.equal(formatWorkspaceJson(input, { changedClausesOnly: "yes" }).errors[0].code, "invalid_filter");
@@ -2094,6 +2100,8 @@ test("workspace JSON persists changed-clause and below-floor filters and rejects
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideLastGroupBelowFloor: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(formatWorkspaceJson(input, { hideLastGroupWithoutFloor: "yes" }).errors[0].code, "invalid_filter");
   assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideLastGroupWithoutFloor: 1, proposal: input })).errors[0].code, "invalid_filter");
+  assert.equal(formatWorkspaceJson(input, { hideFirstGroupWithoutFloor: "yes" }).errors[0].code, "invalid_filter");
+  assert.equal(parseWorkspaceJson(JSON.stringify({ format: "smallest-agreement-workspace", version: 1, hideFirstGroupWithoutFloor: 1, proposal: input })).errors[0].code, "invalid_filter");
   assert.equal(JSON.stringify(input), before);
 });
 
@@ -3467,6 +3475,7 @@ test("last group-without-floor label Markdown is one line, honest when none, and
   assert.doesNotMatch(copied.text, /Last at-floor group/u);
   assert.doesNotMatch(copied.text, /First below-floor group/u);
   assert.doesNotMatch(copied.text, /Last below-floor group/u);
+  assert.doesNotMatch(copied.text, /First group without a support floor/u);
   assert.doesNotMatch(copied.text, /Floored/u);
   assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
   assert.equal(JSON.stringify(input), before);
@@ -3517,6 +3526,97 @@ test("last group-without-floor label Markdown escapes the group name and is not 
   assert.equal(copied.empty, false);
   assert.equal(copied.label, "Later*bloc [A]");
   assert.equal(copied.text, "Last group without a support floor: Later\\*bloc \\[A\\]. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.doesNotMatch(copied.text, /First at-floor group/u);
+  assert.doesNotMatch(copied.text, /Last at-floor group/u);
+  assert.doesNotMatch(copied.text, /Last below-floor group/u);
+  assert.doesNotMatch(copied.text, /First group without a support floor/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+});
+
+test("first group-without-floor label Markdown is one line, honest when none, and not a legal identity", () => {
+  const input = proposal({
+    threshold: 50,
+    groups: [
+      { id: "open", name: "Open", weight: 1 },
+      { id: "floored", name: "Floored", weight: 1, minSupport: 40 },
+      { id: "later", name: "Later open", weight: 1 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { open: 90, floored: 90, later: 80 }),
+      option("alt", false, { open: 20, floored: 20, later: 20 }, 1),
+      option("other", false, { open: 70, floored: 70, later: 72 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const copied = formatFirstGroupWithoutFloorLabelMarkdown(input, originals);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.label, "Open");
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "First group without a support floor: Open. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.doesNotMatch(copied.text, /Last group without a support floor/u);
+  assert.doesNotMatch(copied.text, /First at-floor group/u);
+  assert.doesNotMatch(copied.text, /Last at-floor group/u);
+  assert.doesNotMatch(copied.text, /First below-floor group/u);
+  assert.doesNotMatch(copied.text, /Last below-floor group/u);
+  assert.doesNotMatch(copied.text, /hideGroupsWithoutFloors/u);
+  assert.doesNotMatch(copied.text, /Floored/u);
+  assert.doesNotMatch(copied.text, /Later open/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const lastWithoutFloor = formatLastGroupWithoutFloorLabelMarkdown(input, originals);
+  assert.equal(lastWithoutFloor.label, "Later open");
+  assert.doesNotMatch(lastWithoutFloor.text, /First group without a support floor/u);
+  const firstAtFloor = formatFirstGroupAtFloorLabelMarkdown(input, originals);
+  assert.equal(firstAtFloor.label, "Floored");
+  assert.doesNotMatch(firstAtFloor.text, /First group without a support floor/u);
+  const noneInput = proposal({
+    groups: [{ id: "g", name: "G", weight: 1, minSupport: 40 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }),
+      option("alt", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const none = formatFirstGroupWithoutFloorLabelMarkdown(noneInput, getOriginalOptions(noneInput));
+  assert.equal(none.status, "ok");
+  assert.equal(none.empty, true);
+  assert.equal(none.text, "No group is without a support floor, so there is no first group-without-floor label to copy. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.equal(none.text.trim().includes("\n"), false);
+  const missing = formatFirstGroupWithoutFloorLabelMarkdown(input, null);
+  assert.equal(missing.status, "unavailable");
+  assert.equal(missing.empty, true);
+  assert.match(missing.text, /No inspected package is available/u);
+  assert.match(missing.text, /not a legal quorum/u);
+  assert.match(missing.text, /not a legal identity/u);
+  assert.doesNotMatch(missing.text, /last group-without-floor/u);
+  assert.equal(missing.text.trim().includes("\n"), false);
+  assert.equal(formatFirstGroupWithoutFloorLabelMarkdown({ title: "" }).status, "invalid");
+});
+
+test("first group-without-floor label Markdown escapes the group name and is not a legal identity", () => {
+  const input = proposal({
+    threshold: 50,
+    groups: [
+      { id: "open", name: "Open*bloc [A]", weight: 1 },
+      { id: "floored", name: "Floored", weight: 1, minSupport: 40 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { floored: 90, open: 80 }),
+      option("alt", false, { floored: 80, open: 75 }, 1),
+      option("other", false, { floored: 70, open: 72 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const copied = formatFirstGroupWithoutFloorLabelMarkdown(input, getOriginalOptions(input));
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.empty, false);
+  assert.equal(copied.label, "Open*bloc [A]");
+  assert.equal(copied.text, "First group without a support floor: Open\\*bloc \\[A\\]. A floor is a number you entered, not a legal quorum. The label is not a legal identity.\n");
+  assert.doesNotMatch(copied.text, /Last group without a support floor/u);
   assert.doesNotMatch(copied.text, /First at-floor group/u);
   assert.doesNotMatch(copied.text, /Last at-floor group/u);
   assert.doesNotMatch(copied.text, /Last below-floor group/u);

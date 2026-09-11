@@ -2581,6 +2581,50 @@ export function formatLastGroupWithoutFloorLabelMarkdown(proposal, options) {
 }
 
 /**
+ * One-line Markdown of the first group without a declared support floor
+ * (minSupport missing).
+ * Uses the same without-floor list as hideFirstGroupWithoutFloor.
+ * Honest when none or no inspected package is available.
+ * Distinct from last group-without-floor copy, first at-floor group copy,
+ * last at-floor group copy, first-below-floor group copy, last-below-floor
+ * group copy, hideGroupsWithoutFloors, and hideLastGroupWithoutFloor.
+ * A floor is a number you entered, not a legal quorum.
+ * Do not treat the label as a legal identity.
+ */
+export function formatFirstGroupWithoutFloorLabelMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum. The label is not a legal identity.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      text: `No inspected package is available, so there is no first group-without-floor label to copy. ${disclaimer}\n`,
+    };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const listed = groupsWithoutDeclaredSupportFloor(proposal);
+  if (listed.status !== "ok") return listed;
+  const first = listed.groups[0];
+  if (!first) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No group is without a support floor, so there is no first group-without-floor label to copy. ${disclaimer}\n`,
+    };
+  }
+  return {
+    status: "ok",
+    empty: false,
+    label: first.name,
+    text: `First group without a support floor: ${briefText(first.name)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2876,6 +2920,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideFirstGroupBelowFloor",
   "hideLastGroupBelowFloor",
   "hideLastGroupWithoutFloor",
+  "hideFirstGroupWithoutFloor",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2907,6 +2952,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideFirstGroupBelowFloor",
   "hideLastGroupBelowFloor",
   "hideLastGroupWithoutFloor",
+  "hideFirstGroupWithoutFloor",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2992,6 +3038,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideLastGroupBelowFloor.error) return { status: "invalid", errors: [hideLastGroupBelowFloor.error] };
   const hideLastGroupWithoutFloor = readWorkspaceBoolean(prefs, "hideLastGroupWithoutFloor");
   if (hideLastGroupWithoutFloor.error) return { status: "invalid", errors: [hideLastGroupWithoutFloor.error] };
+  const hideFirstGroupWithoutFloor = readWorkspaceBoolean(prefs, "hideFirstGroupWithoutFloor");
+  if (hideFirstGroupWithoutFloor.error) return { status: "invalid", errors: [hideFirstGroupWithoutFloor.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -3022,6 +3070,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideFirstGroupBelowFloor: hideFirstGroupBelowFloor.value,
     hideLastGroupBelowFloor: hideLastGroupBelowFloor.value,
     hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
+    hideFirstGroupWithoutFloor: hideFirstGroupWithoutFloor.value,
     json: `${JSON.stringify({
       format: "smallest-agreement-workspace",
       version: 1,
@@ -3053,6 +3102,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideFirstGroupBelowFloor: hideFirstGroupBelowFloor.value,
       hideLastGroupBelowFloor: hideLastGroupBelowFloor.value,
       hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
+      hideFirstGroupWithoutFloor: hideFirstGroupWithoutFloor.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -3097,6 +3147,7 @@ export function parseWorkspaceJson(text) {
       hideFirstGroupBelowFloor: null,
       hideLastGroupBelowFloor: null,
       hideLastGroupWithoutFloor: null,
+      hideFirstGroupWithoutFloor: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -3167,6 +3218,8 @@ export function parseWorkspaceJson(text) {
   if (hideLastGroupBelowFloor.error) return { status: "invalid", errors: [hideLastGroupBelowFloor.error] };
   const hideLastGroupWithoutFloor = readWorkspaceBoolean(raw, "hideLastGroupWithoutFloor");
   if (hideLastGroupWithoutFloor.error) return { status: "invalid", errors: [hideLastGroupWithoutFloor.error] };
+  const hideFirstGroupWithoutFloor = readWorkspaceBoolean(raw, "hideFirstGroupWithoutFloor");
+  if (hideFirstGroupWithoutFloor.error) return { status: "invalid", errors: [hideFirstGroupWithoutFloor.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -3199,6 +3252,7 @@ export function parseWorkspaceJson(text) {
     hideFirstGroupBelowFloor: hideFirstGroupBelowFloor.value,
     hideLastGroupBelowFloor: hideLastGroupBelowFloor.value,
     hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
+    hideFirstGroupWithoutFloor: hideFirstGroupWithoutFloor.value,
   };
 }
 

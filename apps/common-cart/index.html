@@ -144,6 +144,9 @@ SOFTWARE.
         <li><kbd>F7</kbd> Copy leftover uncovered leftover-only count (organizer private)</li>
         <li><kbd>F8</kbd> Focus the leftover uncovered leftover-only count copy control, or leftover heading if missing</li>
         <li><kbd>F9</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
+        <li><kbd>F10</kbd> Copy leftover uncovered leftover-only remaining (organizer private)</li>
+        <li><kbd>F11</kbd> Focus the leftover uncovered leftover-only remaining copy control, or leftover heading if missing</li>
+        <li><kbd>F12</kbd> Focus hide last uncovered leftover buyer, or the buyer list if missing</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -214,6 +217,7 @@ SOFTWARE.
           <button class="preset" data-preset="softballCarnivalLunch" type="button">Softball carnival</button>
           <button class="preset" data-preset="waterPoloCarnivalLunch" type="button">Water polo carnival</button>
           <button class="preset" data-preset="rowingCarnivalLunch" type="button">Rowing carnival</button>
+          <button class="preset" data-preset="sailingCarnivalLunch" type="button">Sailing carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -397,7 +401,11 @@ SOFTWARE.
             <input id="hide-first-uncovered-leftover-buyer" type="checkbox" aria-keyshortcuts="F9">
             Hide the first uncovered leftover buyer
           </label>
-          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, and hide-first-uncovered-leftover-buyer choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
+          <label class="checkbox-field">
+            <input id="hide-last-uncovered-leftover-buyer" type="checkbox" aria-keyshortcuts="F12">
+            Hide the last uncovered leftover buyer
+          </label>
+          <p id="buyer-variant-filter-note">The filter hides rows on screen. Saved buyers and matching stay unchanged. Merchant views still show counts only. The last hide-excluded, hide-fully-filled, hide-buyers-with-leftover, hide-unserved-buyers, hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, hide-first-uncovered-leftover-buyer, and hide-last-uncovered-leftover-buyer choices are kept in this browser's workspace file. Older workspace files without them still show every buyer.</p>
         </div>
         <div class="table-shell print-private" id="buyers-list" tabindex="-1" role="region" aria-label="Buyer constraints list">
           <table>
@@ -601,6 +609,7 @@ SOFTWARE.
             <button id="copy-leftover-uncovered-minimum" class="print-chrome" type="button" aria-keyshortcuts="Delete">Copy leftover uncovered minimum (organizer private)</button>
             <button id="copy-leftover-uncovered-count" class="print-chrome" type="button" aria-keyshortcuts="F3">Copy leftover uncovered count (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-count" class="print-chrome" type="button" aria-keyshortcuts="F7">Copy leftover uncovered leftover-only count (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-remaining" class="print-chrome" type="button" aria-keyshortcuts="F10">Copy leftover uncovered leftover-only remaining (organizer private)</button>
             <button id="copy-uncovered-leftover" class="print-chrome" type="button">Copy uncovered leftover counts (organizer private)</button>
             <button id="copy-uncovered-leftover-units" class="print-chrome" type="button">Copy uncovered leftover units (organizer private)</button>
             <p class="canvas-note print-chrome">Organizer-private Markdown of leftover buyer counts and units. Clipboard copies when allowed; otherwise a textarea is shown. This is not a merchant export.</p>
@@ -621,6 +630,7 @@ SOFTWARE.
             <p class="canvas-note print-chrome">Leftover uncovered minimum copy is leftover-fill offer minimum units as a count. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered count copy is uncovered leftover buyer count. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered leftover-only count copy is leftover-only buyer count. Organizer-private. This is not a merchant export.</p>
+            <p class="canvas-note print-chrome">Leftover uncovered leftover-only remaining copy is leftover-only buyer units after the winner. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover copy is counts and units only. Buyer identities stay out. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover unit-count copy is count only. Organizer-private. This is not a merchant export.</p>
           </article>
