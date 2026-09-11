@@ -1689,6 +1689,9 @@ test("basketball club hours preset loads a distinct synthetic basketball worksho
   assert.doesNotMatch(app.clauses(), /Pitch booking/u);
   assert.doesNotMatch(app.clauses(), /Goal nets/u);
   assert.doesNotMatch(app.clauses(), /Changing-room lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Ice booking/u);
+  assert.doesNotMatch(app.clauses(), /Rink boards/u);
+  assert.doesNotMatch(app.clauses(), /Rink lock-up/u);
   assert.doesNotMatch(app.clauses(), /Scoring nets/u);
   assert.doesNotMatch(app.clauses(), /Tea room/u);
   assert.doesNotMatch(app.clauses(), /Pavilion lock-up/u);
@@ -1767,6 +1770,9 @@ test("volleyball club hours preset loads a distinct synthetic volleyball worksho
   assert.doesNotMatch(app.clauses(), /Pitch booking/u);
   assert.doesNotMatch(app.clauses(), /Goal nets/u);
   assert.doesNotMatch(app.clauses(), /Changing-room lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Ice booking/u);
+  assert.doesNotMatch(app.clauses(), /Rink boards/u);
+  assert.doesNotMatch(app.clauses(), /Rink lock-up/u);
   assert.doesNotMatch(app.clauses(), /Court booking/u);
   assert.doesNotMatch(app.clauses(), /Ball machines/u);
   assert.doesNotMatch(app.clauses(), /Clubhouse lock-up/u);
@@ -2036,6 +2042,9 @@ test("tennis club hours preset loads a distinct synthetic tennis workshop", asyn
   assert.doesNotMatch(app.clauses(), /Pitch booking/u);
   assert.doesNotMatch(app.clauses(), /Goal nets/u);
   assert.doesNotMatch(app.clauses(), /Changing-room lock-up/u);
+  assert.doesNotMatch(app.clauses(), /Ice booking/u);
+  assert.doesNotMatch(app.clauses(), /Rink boards/u);
+  assert.doesNotMatch(app.clauses(), /Rink lock-up/u);
   assert.doesNotMatch(app.clauses(), /Cook hours/u);
   assert.doesNotMatch(app.clauses(), /Smoke/u);
   assert.doesNotMatch(app.clauses(), /Rooftop lock-up/u);
@@ -6950,6 +6959,8 @@ test("copy last at-or-above-threshold group writes one-line Markdown with a clip
   assert.match(none.message(), /honest empty/u);
   assert.match(none.message(), /not a legal identity/u);
 });
+
+test("copy current locks writes Markdown with a textarea fallback and is not a legal hold", async () => {
   const html = await standaloneBytes();
   assert.match(html, /id="copy-locks-button"/u);
   assert.match(html, /id="locks-markdown-fallback"/u);
