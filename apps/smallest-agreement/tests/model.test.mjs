@@ -53,6 +53,7 @@ import {
   formatFirstGroupWithoutFloorLabelMarkdown,
   formatGroupsWithoutFloorCountMarkdown,
   formatGroupsWithoutFloorRemainingMarkdown,
+  formatLastGroupWithoutFloorRemainingMarkdown,
   formatGroupSupportMarkdown,
   remainingChangeBudget,
   formatRemainingChangeBudgetMarkdown,
@@ -3723,6 +3724,7 @@ test("groups-without-floor remaining Markdown is one line, honest 0 when none, a
   assert.equal(copied.text.trim().includes("\n"), false);
   assert.equal(copied.text, "Groups-without-floor remaining: 6. A floor is a number you entered, not a legal quorum.\n");
   assert.doesNotMatch(copied.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(copied.text, /Last-without-floor remaining/u);
   assert.doesNotMatch(copied.text, /First group without a support floor/u);
   assert.doesNotMatch(copied.text, /Last group without a support floor/u);
   assert.doesNotMatch(copied.text, /Remaining change-budget/u);
@@ -3753,6 +3755,7 @@ test("groups-without-floor remaining Markdown is one line, honest 0 when none, a
   assert.equal(zero.text, "Groups-without-floor remaining: 0. A floor is a number you entered, not a legal quorum.\n");
   assert.equal(zero.text.trim().includes("\n"), false);
   assert.doesNotMatch(zero.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(zero.text, /Last-without-floor remaining/u);
   assert.doesNotMatch(zero.text, /First group without a support floor/u);
   assert.doesNotMatch(zero.text, /Last group without a support floor/u);
   const missing = formatGroupsWithoutFloorRemainingMarkdown(input, null);
@@ -3785,11 +3788,136 @@ test("groups-without-floor remaining Markdown is one line, honest 0 when none, a
   assert.equal(kayakCopied.remaining, 9);
   assert.equal(kayakCopied.text, "Groups-without-floor remaining: 9. A floor is a number you entered, not a legal quorum.\n");
   assert.doesNotMatch(kayakCopied.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(kayakCopied.text, /Last-without-floor remaining/u);
   assert.doesNotMatch(kayakCopied.text, /Students/u);
   assert.doesNotMatch(kayakCopied.text, /Neighbours/u);
   const kayakCount = formatGroupsWithoutFloorCountMarkdown(kayaking, getOriginalOptions(kayaking));
   assert.equal(kayakCount.count, 3);
   assert.doesNotMatch(kayakCount.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(kayakCount.text, /Last-without-floor remaining/u);
+});
+
+test("last-without-floor remaining Markdown is one line, honest 0 when none, and distinct from aggregate remaining", () => {
+  const input = proposal({
+    threshold: 50,
+    groups: [
+      { id: "open", name: "Open", weight: 4 },
+      { id: "floored", name: "Floored", weight: 3, minSupport: 40 },
+      { id: "later", name: "Later open", weight: 2 },
+    ],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { open: 90, floored: 90, later: 80 }),
+      option("alt", false, { open: 20, floored: 20, later: 20 }, 1),
+      option("other", false, { open: 70, floored: 70, later: 72 }, 2),
+    ] }],
+  });
+  const before = JSON.stringify(input);
+  const originals = getOriginalOptions(input);
+  const copied = formatLastGroupWithoutFloorRemainingMarkdown(input, originals);
+  assert.equal(copied.status, "ok");
+  assert.equal(copied.remaining, 2);
+  assert.equal(copied.empty, false);
+  assert.equal(copied.text.includes("\n"), true);
+  assert.equal(copied.text.trim().includes("\n"), false);
+  assert.equal(copied.text, "Last-without-floor remaining: 2. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(copied.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(copied.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(copied.text, /First group without a support floor/u);
+  assert.doesNotMatch(copied.text, /Last group without a support floor/u);
+  assert.doesNotMatch(copied.text, /Remaining change-budget/u);
+  assert.doesNotMatch(copied.text, /First at-floor group/u);
+  assert.doesNotMatch(copied.text, /Last at-floor group/u);
+  assert.doesNotMatch(copied.text, /First below-floor group/u);
+  assert.doesNotMatch(copied.text, /Last below-floor group/u);
+  assert.doesNotMatch(copied.text, /Open/u);
+  assert.doesNotMatch(copied.text, /Later open/u);
+  assert.doesNotMatch(copied.text, /[\u2014\u2013]/u);
+  assert.equal(JSON.stringify(input), before);
+  const aggregated = formatGroupsWithoutFloorRemainingMarkdown(input, originals);
+  assert.equal(aggregated.remaining, 6);
+  assert.equal(aggregated.text, "Groups-without-floor remaining: 6. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(aggregated.text, /Last-without-floor remaining/u);
+  const lastLabel = formatLastGroupWithoutFloorLabelMarkdown(input, originals);
+  assert.equal(lastLabel.label, "Later open");
+  assert.doesNotMatch(lastLabel.text, /Last-without-floor remaining/u);
+  const noneInput = proposal({
+    groups: [{ id: "g", name: "G", weight: 1, minSupport: 40 }],
+    clauses: [{ id: "one", title: "One", options: [
+      option("original", true, { g: 90 }),
+      option("alt", false, { g: 80 }, 1),
+      option("other", false, { g: 70 }, 2),
+    ] }],
+  });
+  const zero = formatLastGroupWithoutFloorRemainingMarkdown(noneInput, getOriginalOptions(noneInput));
+  assert.equal(zero.status, "ok");
+  assert.equal(zero.empty, true);
+  assert.equal(zero.remaining, 0);
+  assert.equal(zero.text, "Last-without-floor remaining: 0. A floor is a number you entered, not a legal quorum.\n");
+  assert.equal(zero.text.trim().includes("\n"), false);
+  assert.doesNotMatch(zero.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(zero.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(zero.text, /First group without a support floor/u);
+  assert.doesNotMatch(zero.text, /Last group without a support floor/u);
+  const missing = formatLastGroupWithoutFloorRemainingMarkdown(input, null);
+  assert.equal(missing.status, "unavailable");
+  assert.equal(missing.empty, true);
+  assert.equal(missing.remaining, 0);
+  assert.match(missing.text, /No inspected package is available/u);
+  assert.match(missing.text, /not a legal quorum/u);
+  assert.doesNotMatch(missing.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(missing.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(missing.text, /First group without a support floor/u);
+  assert.doesNotMatch(missing.text, /Last group without a support floor/u);
+  assert.equal(missing.text.trim().includes("\n"), false);
+  assert.equal(formatLastGroupWithoutFloorRemainingMarkdown({ title: "" }).status, "invalid");
+  const kayaking = proposal({
+    title: "Kayaking club hours: whitewater booking, slalom bar, and spraydeck lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [{ id: "whitewater-booking", title: "Whitewater booking", options: [
+      option("whitewater-booking-original", true, { students: 9, neighbours: 94, pandc: 55 }),
+      option("whitewater-booking-late", false, { students: 84, neighbours: 37, pandc: 48 }, 2),
+      option("whitewater-booking-weekend", false, { students: 69, neighbours: 44, pandc: 53 }, 4),
+    ] }],
+  });
+  const kayakCopied = formatLastGroupWithoutFloorRemainingMarkdown(kayaking, getOriginalOptions(kayaking));
+  assert.equal(kayakCopied.status, "ok");
+  assert.equal(kayakCopied.remaining, 2);
+  assert.equal(kayakCopied.text, "Last-without-floor remaining: 2. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(kayakCopied.text, /Groups-without-floor remaining/u);
+  assert.doesNotMatch(kayakCopied.text, /Groups without a support floor:/u);
+  assert.doesNotMatch(kayakCopied.text, /Students/u);
+  assert.doesNotMatch(kayakCopied.text, /Neighbours/u);
+  assert.doesNotMatch(kayakCopied.text, /P&C/u);
+  const kayakAggregate = formatGroupsWithoutFloorRemainingMarkdown(kayaking, getOriginalOptions(kayaking));
+  assert.equal(kayakAggregate.remaining, 9);
+  assert.doesNotMatch(kayakAggregate.text, /Last-without-floor remaining/u);
+  const dragonBoat = proposal({
+    title: "Dragon boat club hours: dragon-boat staging booking, drum bar, and paddle-box lock-up",
+    threshold: 70,
+    groups: [
+      { id: "students", name: "Students", weight: 5 },
+      { id: "neighbours", name: "Neighbours", weight: 4, veto: true },
+      { id: "pandc", name: "P&C", weight: 7 },
+    ],
+    clauses: [{ id: "dragon-boat-staging-booking", title: "Dragon-boat staging booking", options: [
+      option("dragon-boat-staging-booking-original", true, { students: 8, neighbours: 90, pandc: 57 }),
+      option("dragon-boat-staging-booking-late", false, { students: 86, neighbours: 34, pandc: 46 }, 2),
+      option("dragon-boat-staging-booking-weekend", false, { students: 71, neighbours: 42, pandc: 54 }, 4),
+    ] }],
+  });
+  const dragonCopied = formatLastGroupWithoutFloorRemainingMarkdown(dragonBoat, getOriginalOptions(dragonBoat));
+  assert.equal(dragonCopied.status, "ok");
+  assert.equal(dragonCopied.remaining, 7);
+  assert.equal(dragonCopied.text, "Last-without-floor remaining: 7. A floor is a number you entered, not a legal quorum.\n");
+  assert.doesNotMatch(dragonCopied.text, /Groups-without-floor remaining/u);
+  const dragonAggregate = formatGroupsWithoutFloorRemainingMarkdown(dragonBoat, getOriginalOptions(dragonBoat));
+  assert.equal(dragonAggregate.remaining, 16);
+  assert.doesNotMatch(dragonAggregate.text, /Last-without-floor remaining/u);
 });
 
 test("first veto group label Markdown escapes the group name and is not a legal right", () => {

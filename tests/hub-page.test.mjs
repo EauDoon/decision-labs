@@ -142,6 +142,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Sailing carnival, first-zero-share copy, and first-zero-share hide jump in Partnership Breakpoint 1\.5\.25/);
   assert.match(html, /Canoeing carnival, last-zero-share remaining copy, and last-zero-share hide jump in Partnership Breakpoint 1\.5\.26/);
   assert.match(html, /Kayaking carnival, first-zero-share remaining copy, and first-zero-share hide jump in Partnership Breakpoint 1\.5\.27/);
+  assert.match(html, /Dragon boat carnival, last-zero-share volume copy, and zero-share hide jump in Partnership Breakpoint 1\.5\.28/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -172,6 +173,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Sailing carnival lunch, leftover-uncovered leftover-only remaining copy, and last uncovered-leftover hide in Common Cart 1\.4\.25/);
   assert.match(html, /Canoeing carnival lunch, leftover-uncovered leftover-only maximum copy, and first uncovered-leftover hide jump in Common Cart 1\.4\.26/);
   assert.match(html, /Kayaking carnival lunch, leftover-uncovered leftover-only minimum copy, and first uncovered-leftover hide jump in Common Cart 1\.4\.27/);
+  assert.match(html, /Dragon boat carnival lunch, leftover-uncovered leftover-only headroom copy, and last uncovered-leftover hide jump in Common Cart 1\.4\.28/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -202,6 +204,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Sailing club hours, first-without-floor copy, and first-without-floor hide in The Smallest Agreement 1\.5\.25/);
   assert.match(html, /Canoeing club hours, without-floor-count copy, and first-without-floor hide jump in The Smallest Agreement 1\.5\.26/);
   assert.match(html, /Kayaking club hours, without-floor-remaining copy, and last-without-floor hide jump in The Smallest Agreement 1\.5\.27/);
+  assert.match(html, /Dragon boat club hours, last-without-floor-remaining copy, and first-without-floor hide jump in The Smallest Agreement 1\.5\.28/);
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /Dashboard copy, file compare, and compressed Friday in Weekend Gap 1\.4\.3/);
@@ -278,6 +281,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /leftover uncovered leftover-only remaining copy shortcut, the Sailing carnival lunch start/);
   assert.match(readme, /leftover uncovered leftover-only maximum copy shortcut, the Canoeing carnival lunch start/);
   assert.match(readme, /leftover uncovered leftover-only minimum copy shortcut, the Kayaking carnival lunch start/);
+  assert.match(readme, /leftover uncovered leftover-only headroom copy shortcut, the Dragon boat carnival lunch start/);
   assert.match(readme, /waterfall SVG download, compare and print keys/);
   assert.match(readme, /waterfall\s+Markdown copy, the Talent, agent, and platform start/);
   assert.match(readme, /tornado Markdown copy, the\s+Three-party joint venture start/);
@@ -305,6 +309,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /first-zero-share copy shortcut, the Sailing carnival split start/);
   assert.match(readme, /last-zero-share remaining copy shortcut, the Canoeing carnival split start/);
   assert.match(readme, /first-zero-share remaining copy shortcut, the Kayaking carnival split start/);
+  assert.match(readme, /last-zero-share volume copy shortcut, the Dragon boat carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -335,6 +340,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Sailing club hours start, first-without-floor group copy shortcut/);
   assert.match(readme, /Canoeing club hours start, without-floor-count group copy shortcut/);
   assert.match(readme, /Kayaking club hours start, without-floor-remaining group copy shortcut/);
+  assert.match(readme, /Dragon boat club hours start, last-without-floor-remaining group copy shortcut/);
   assert.match(readme, /queue-clear hours and Gantt compare/);
   assert.match(readme, /queue CSV export, peak-queue jump/);
   assert.match(readme, /dashboard Markdown copy, two-file compare/);
@@ -5612,6 +5618,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Sailing carnival, first-zero-share copy, and first-zero-share hide jump in Partnership Breakpoint 1.5.25'), true);
   assert.equal(headings.includes('Canoeing carnival, last-zero-share remaining copy, and last-zero-share hide jump in Partnership Breakpoint 1.5.26'), true);
   assert.equal(headings.includes('Kayaking carnival, first-zero-share remaining copy, and first-zero-share hide jump in Partnership Breakpoint 1.5.27'), true);
+  assert.equal(headings.includes('Dragon boat carnival, last-zero-share volume copy, and zero-share hide jump in Partnership Breakpoint 1.5.28'), true);
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
@@ -5628,6 +5635,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Sailing carnival lunch, leftover-uncovered leftover-only remaining copy, and last uncovered-leftover hide in Common Cart 1.4.25'), true);
   assert.equal(headings.includes('Canoeing carnival lunch, leftover-uncovered leftover-only maximum copy, and first uncovered-leftover hide jump in Common Cart 1.4.26'), true);
   assert.equal(headings.includes('Kayaking carnival lunch, leftover-uncovered leftover-only minimum copy, and first uncovered-leftover hide jump in Common Cart 1.4.27'), true);
+  assert.equal(headings.includes('Dragon boat carnival lunch, leftover-uncovered leftover-only headroom copy, and last uncovered-leftover hide jump in Common Cart 1.4.28'), true);
   assert.equal(headings.includes('Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1.5.12'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
@@ -5644,6 +5652,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Sailing club hours, first-without-floor copy, and first-without-floor hide in The Smallest Agreement 1.5.25'), true);
   assert.equal(headings.includes('Canoeing club hours, without-floor-count copy, and first-without-floor hide jump in The Smallest Agreement 1.5.26'), true);
   assert.equal(headings.includes('Kayaking club hours, without-floor-remaining copy, and last-without-floor hide jump in The Smallest Agreement 1.5.27'), true);
+  assert.equal(headings.includes('Dragon boat club hours, last-without-floor-remaining copy, and first-without-floor hide jump in The Smallest Agreement 1.5.28'), true);
   assert.match(html, /Copy first What's new heading through close-paren as Markdown/);
   assert.match(html, /jump to Copy catalog intro with keyboard at/);
   assert.match(html, /jump to Copy skip links with keyboard hash/);
@@ -5712,6 +5721,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Sailing carnival, first-zero-share copy, and first-zero-share hide jump in Partnership Breakpoint 1.5.25'), true);
   assert.equal(headings.includes('Canoeing carnival, last-zero-share remaining copy, and last-zero-share hide jump in Partnership Breakpoint 1.5.26'), true);
   assert.equal(headings.includes('Kayaking carnival, first-zero-share remaining copy, and first-zero-share hide jump in Partnership Breakpoint 1.5.27'), true);
+  assert.equal(headings.includes('Dragon boat carnival, last-zero-share volume copy, and zero-share hide jump in Partnership Breakpoint 1.5.28'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
   assert.equal(headings.includes('Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1.4.15'), true);
@@ -5727,6 +5737,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Sailing carnival lunch, leftover-uncovered leftover-only remaining copy, and last uncovered-leftover hide in Common Cart 1.4.25'), true);
   assert.equal(headings.includes('Canoeing carnival lunch, leftover-uncovered leftover-only maximum copy, and first uncovered-leftover hide jump in Common Cart 1.4.26'), true);
   assert.equal(headings.includes('Kayaking carnival lunch, leftover-uncovered leftover-only minimum copy, and first uncovered-leftover hide jump in Common Cart 1.4.27'), true);
+  assert.equal(headings.includes('Dragon boat carnival lunch, leftover-uncovered leftover-only headroom copy, and last uncovered-leftover hide jump in Common Cart 1.4.28'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
   assert.equal(headings.includes('Tennis club hours, last-veto copy, and last-non-veto hide in The Smallest Agreement 1.5.15'), true);
@@ -5742,6 +5753,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Sailing club hours, first-without-floor copy, and first-without-floor hide in The Smallest Agreement 1.5.25'), true);
   assert.equal(headings.includes('Canoeing club hours, without-floor-count copy, and first-without-floor hide jump in The Smallest Agreement 1.5.26'), true);
   assert.equal(headings.includes('Kayaking club hours, without-floor-remaining copy, and last-without-floor hide jump in The Smallest Agreement 1.5.27'), true);
+  assert.equal(headings.includes('Dragon boat club hours, last-without-floor-remaining copy, and first-without-floor hide jump in The Smallest Agreement 1.5.28'), true);
   assert.match(html, /Copy first workbench heading through asterisk as Markdown/);
   assert.match(html, /jump to that control with keyboard ampersand/);
   assert.match(html, /jump to Copy first Trust item with keyboard percent/);
