@@ -584,6 +584,23 @@ export const presets = Object.freeze({
       offer("O02", "Drum Salad Run", "Dragon boat lunch pack", "Drum salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Dragon Boat Pickup", "Dragon boat lunch pack", "Drum water", 17, 21, 1, 44, 5), fulfillment: "pickup" }
     ]
+  },
+  surfCarnivalLunch: {
+    title: "Surf carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Surf-rack crate", "Surf lunch pack", 15, 23, 4, ["Surf pie", "Beach salad"]),
+      buyer("B02", "Board-bag bench", "Surf lunch pack", 19, 19, 3, ["Surf pie"]),
+      buyer("B03", "Break hamper", "Surf lunch pack", 13, 21, 5, ["Beach salad", "Beach water"]),
+      buyer("B04", "Sideline cooler", "Surf lunch pack", 10, 17, 2, ["Beach water"]),
+      buyer("B05", "Scoreboard trolley", "Surf lunch pack", 16, 22, 4, ["Surf pie", "Beach water"]),
+      buyer("B06", "Bench table", "Surf lunch pack", 14, 20, 3, ["Beach salad", "Surf pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Surf Delivery", "Surf lunch pack", "Surf pie", 17, 17, 3, 54, 3),
+      offer("O02", "Beach Salad Run", "Surf lunch pack", "Beach salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Surf Pickup", "Surf lunch pack", "Beach water", 17, 22, 1, 44, 5), fulfillment: "pickup" }
+    ]
   }
 });
 
@@ -2555,6 +2572,13 @@ export function createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(rawScenario)
   const coverage = computeResidualCoverage(rawScenario);
   const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedHeadroom(rawScenario)) : "none";
   return `Common Cart leftover uncovered leftover-only headroom (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover uncovered leftover-only allocated. Leftover-only units assigned onto leftover-fill. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only headroom, leftover uncovered leftover-only minimum, leftover uncovered leftover-only maximum, leftover uncovered leftover-only remaining, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, uncovered leftover unit-count, leftover-fill remaining, leftover-fill minimum, leftover-fill maximum, leftover unspent item headroom, leftover unit price, and tertiary remaining even when the number matches. */
+export function createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedUnits(rawScenario)) : "none";
+  return `Common Cart leftover uncovered leftover-only allocated (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
 export function redactBuyerLabels(rawScenario) {

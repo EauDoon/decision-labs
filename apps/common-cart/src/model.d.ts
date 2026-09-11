@@ -532,6 +532,7 @@ export function createLeftoverUncoveredLeftoverOnlyMaximumMarkdown(rawScenario: 
 export function createLeftoverUncoveredLeftoverOnlyMinimumMarkdown(rawScenario: unknown): string;
 /** Organizer-private one-line leftover uncovered leftover-only headroom. Leftover-fill remaining capacity after leftover-only units. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only minimum, leftover uncovered leftover-only maximum, leftover uncovered leftover-only remaining, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, uncovered leftover unit-count, leftover-fill remaining, leftover-fill minimum, leftover-fill maximum, leftover unspent item headroom, and tertiary remaining. */
 export function createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown(rawScenario: unknown): string;
+export function createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown(rawScenario: unknown): string;
 
 export interface CartReview {
   tool: string; title: string; currency: string; columns: string[];

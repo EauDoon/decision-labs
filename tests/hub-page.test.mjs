@@ -176,6 +176,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Canoeing carnival lunch, leftover-uncovered leftover-only maximum copy, and first uncovered-leftover hide jump in Common Cart 1\.4\.26/);
   assert.match(html, /Kayaking carnival lunch, leftover-uncovered leftover-only minimum copy, and first uncovered-leftover hide jump in Common Cart 1\.4\.27/);
   assert.match(html, /Dragon boat carnival lunch, leftover-uncovered leftover-only headroom copy, and last uncovered-leftover hide jump in Common Cart 1\.4\.28/);
+  assert.match(html, /Surf carnival lunch, leftover-uncovered leftover-only allocated copy, and first uncovered-leftover hide jump in Common Cart 1\.4\.29/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -285,6 +286,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /leftover uncovered leftover-only maximum copy shortcut, the Canoeing carnival lunch start/);
   assert.match(readme, /leftover uncovered leftover-only minimum copy shortcut, the Kayaking carnival lunch start/);
   assert.match(readme, /leftover uncovered leftover-only headroom copy shortcut, the Dragon boat carnival lunch start/);
+  assert.match(readme, /leftover uncovered leftover-only allocated copy shortcut, the Surf carnival lunch start/);
   assert.match(readme, /waterfall SVG download, compare and print keys/);
   assert.match(readme, /waterfall\s+Markdown copy, the Talent, agent, and platform start/);
   assert.match(readme, /tornado Markdown copy, the\s+Three-party joint venture start/);
@@ -5643,6 +5645,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Canoeing carnival lunch, leftover-uncovered leftover-only maximum copy, and first uncovered-leftover hide jump in Common Cart 1.4.26'), true);
   assert.equal(headings.includes('Kayaking carnival lunch, leftover-uncovered leftover-only minimum copy, and first uncovered-leftover hide jump in Common Cart 1.4.27'), true);
   assert.equal(headings.includes('Dragon boat carnival lunch, leftover-uncovered leftover-only headroom copy, and last uncovered-leftover hide jump in Common Cart 1.4.28'), true);
+  assert.equal(headings.includes('Surf carnival lunch, leftover-uncovered leftover-only allocated copy, and first uncovered-leftover hide jump in Common Cart 1.4.29'), true);
   assert.equal(headings.includes('Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1.5.12'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
@@ -5748,6 +5751,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Canoeing carnival lunch, leftover-uncovered leftover-only maximum copy, and first uncovered-leftover hide jump in Common Cart 1.4.26'), true);
   assert.equal(headings.includes('Kayaking carnival lunch, leftover-uncovered leftover-only minimum copy, and first uncovered-leftover hide jump in Common Cart 1.4.27'), true);
   assert.equal(headings.includes('Dragon boat carnival lunch, leftover-uncovered leftover-only headroom copy, and last uncovered-leftover hide jump in Common Cart 1.4.28'), true);
+  assert.equal(headings.includes('Surf carnival lunch, leftover-uncovered leftover-only allocated copy, and first uncovered-leftover hide jump in Common Cart 1.4.29'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
   assert.equal(headings.includes('Tennis club hours, last-veto copy, and last-non-veto hide in The Smallest Agreement 1.5.15'), true);

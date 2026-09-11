@@ -268,22 +268,40 @@ test("release 1.4.26 ships canoeing carnival lunch, leftover uncovered leftover-
 test("release 1.4.28 ships dragon boat carnival lunch, leftover uncovered leftover-only headroom copy and last uncovered leftover hide jump", async () => {
   const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
   assert.match(html, /id="copy-leftover-uncovered-leftover-only-headroom"/u);
-  assert.match(html, /id="copy-leftover-uncovered-leftover-only-headroom"[^>]*aria-keyshortcuts="Shift\+F7"/u);
   assert.match(html, /id="hide-last-uncovered-leftover-buyer"/u);
   assert.match(html, /data-preset="dragonBoatCarnivalLunch"/u);
   assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyHeadroom\(/u);
   assert.match(html, /function focusLeftoverUncoveredLeftoverOnlyHeadroomCopy\(/u);
   assert.match(html, /function focusHideLastUncoveredLeftoverBuyer\(/u);
   assert.match(html, /createLeftoverUncoveredLeftoverOnlyHeadroomMarkdown\(/u);
-  assert.match(html, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyHeadroom\(\);/u);
-  assert.match(html, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyHeadroomCopy\(\);/u);
-  assert.match(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUncoveredLeftoverBuyer\(\);/u);
   assert.match(html, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
   assert.match(html, /if \(event\.shiftKey && key === "F10"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyMaximum\(\);/u);
   assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
   assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-leftover-only-headroom/u);
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-last-uncovered-leftover-buyer/u);
+});
+
+test("release 1.4.29 ships surf carnival lunch, leftover uncovered leftover-only allocated copy and first uncovered leftover hide jump", async () => {
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-allocated"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(html, /id="hide-first-uncovered-leftover-buyer"/u);
+  assert.match(html, /data-preset="surfCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyAllocated\(/u);
+  assert.match(html, /function focusLeftoverUncoveredLeftoverOnlyAllocatedCopy\(/u);
+  assert.match(html, /function focusHideFirstUncoveredLeftoverBuyer\(/u);
+  assert.match(html, /createLeftoverUncoveredLeftoverOnlyAllocatedMarkdown\(/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyAllocated\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyAllocatedCopy\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F12"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "F12"\) \{\s*event\.preventDefault\(\);\s*focusHideLastUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-leftover-only-allocated/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-uncovered-leftover-buyer/u);
 });
 
 
