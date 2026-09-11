@@ -55,6 +55,7 @@ import {
   lastWeekendFxOpenHourToMarkdown,
   lastWeekdayFxOpenHourToMarkdown,
   firstWeekdayFxOpenHourToMarkdown,
+  firstWeekdayFxClosedHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   firstClosedFxGanttHour,

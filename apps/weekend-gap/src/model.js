@@ -1780,6 +1780,13 @@ export function firstWeekdayFxOpenGanttHour(input) {
   return open ? open.hour : null;
 }
 
+/** First chart hour that is weekday and FX-closed. Honest empty when none of the 72 hours matches. Distinct from last-weekday-FX-closed, first-weekday-FX-open, last-weekday-FX-open and last-weekend-FX-closed. */
+export function firstWeekdayFxClosedGanttHour(input) {
+  const schedule = buildGateSchedule(input);
+  const closed = schedule.hours.find((point) => point.hour < SIMULATION_HOURS && ganttHourWeekdayFxClosed(point));
+  return closed ? closed.hour : null;
+}
+
 /** True when issuer, bank or payout is closed, or FX is weekend-thinned. */
 export function ganttHourClosedOnAnyGate(point) {
   if (!point || typeof point !== "object") return false;
@@ -2373,6 +2380,15 @@ export function firstWeekdayFxOpenHourToMarkdown(input) {
     return "First weekday-FX-open hour: none. Counts of modeled hours, not an FX calendar.";
   }
   return "First weekday-FX-open hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not an FX calendar.";
+}
+
+/** One-line first weekday-FX-closed hour label. Honest empty when none exists. Distinct from last-weekday-FX-closed, first-weekday-FX-open, last-weekday-FX-open and last-weekend-FX-closed copy. */
+export function firstWeekdayFxClosedHourToMarkdown(input) {
+  const hour = firstWeekdayFxClosedGanttHour(input);
+  if (hour === null) {
+    return "First weekday-FX-closed hour: none. Counts of modeled hours, not an FX calendar.";
+  }
+  return "First weekday-FX-closed hour: " + formatTime(hour) + " (hour " + hour + "). Counts of modeled hours, not an FX calendar.";
 }
 
 /** Markdown for arrival-hour cohorts. Remaining is unfinished after 72 hours. Not a forecast. */
