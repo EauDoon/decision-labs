@@ -1,0 +1,33 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("keyboard F12 is wired to the existing hide-weekend-FX-open Gantt filter", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="gantt-hide-weekend-fx-open"/);
+  assert.match(html, /id="gantt-title"/);
+  assert.match(html, /<kbd>F12<\/kbd>/);
+  assert.match(html, /Jump to the hide-weekend-FX-open Gantt filter/);
+  assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
+  assert.match(app, /function jumpToHideWeekendFxOpenFilter/);
+  assert.match(app, /#gantt-hide-weekend-fx-open/);
+  assert.match(app, /event\.key === "F12"/);
+  assert.match(app, /event\.key === "F9"/);
+  assert.match(app, /event\.key === "ArrowLeft"/);
+  assert.match(app, /function jumpToHideWeekdayFxClosedFilter/);
+  assert.match(app, /function jumpToGantt/);
+  assert.match(app, /if \(event\.defaultPrevented\) return/);
+  assert.notEqual(app.match(/function jumpToHideWeekendFxOpenFilter/)?.[0], app.match(/function jumpToHideWeekdayFxClosedFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToHideWeekendFxOpenFilter/)?.[0], app.match(/function jumpToHideFxOpenFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToHideWeekendFxOpenFilter/)?.[0], app.match(/function jumpToGantt/)?.[0]);
+  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
+  assert.ok(handler.indexOf('event.key === "F12"') !== handler.indexOf('event.key === "F9"'));
+  assert.ok(handler.indexOf('event.key === "F12"') !== handler.indexOf('event.key === "ArrowLeft"'));
+  const f12Slice = handler.slice(handler.indexOf('event.key === "F12"'), handler.indexOf('event.key === "F12"') + 180);
+  assert.match(f12Slice, /jumpToHideWeekendFxOpenFilter\(\)/);
+  assert.doesNotMatch(f12Slice, /jumpToHideWeekdayFxClosedFilter/);
+  assert.doesNotMatch(f12Slice, /copyLastWeekdayFxClosedHourMarkdown/);
+  assert.doesNotMatch(f12Slice, /copyLastWeekendFxClosedHourMarkdown/);
+});
