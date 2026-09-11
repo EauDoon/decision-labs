@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { fixture, oracle } from './review-fixture.mjs';
+import { WEEKEND_REVIEW_TOOLS, replayWeekendReviewPacket } from '../src/model.js';
 
 const cli = fileURLToPath(new URL('../scripts/analyze.mjs', import.meta.url));
 function run(args, input = fixture()) {
@@ -124,6 +125,24 @@ test('library batch validates atomically and preserves ordered duplicate names',
   assert.equal(result(['batch', '-'], { ...input, scenarios: Array.from({ length: 12 }, fixture) }).rows.length, 12);
   for (const bad of [{ ...input, scenarios: [] }, { ...input, version: 2 }, { ...input, extra: true }, { ...input, scenarios: [...input.scenarios, { ...fixture(), typo: 1 }] }, { ...input, scenarios: Array.from({ length: 13 }, fixture) }]) fails(['batch', '-'], bad);
   assert.equal(result(['batch', '-'], input).rows.length, 2);
+});
+
+test('CLI creates native replayable packets for every timing review', () => {
+  for (const { id } of WEEKEND_REVIEW_TOOLS) {
+    const packet = result(['review', '-', id]);
+    assert.deepEqual(replayWeekendReviewPacket(packet), packet);
+    assert.equal(packet.tool, id);
+    assert.deepEqual(packet.scenario, fixture());
+  }
+  const days = result(['review', '-', 'days']).review.rows;
+  assert.deepEqual(days.map(row => row[1]), [9, 24, 24, 15]);
+  assert.equal(days.reduce((sum, row) => sum + row[3], 0), oracle(fixture()).at(-1).settled);
+  fails(['review', '-', 'unknown']);
+  fails(['review', '-', 'days'], { ...fixture(), reserveCashAud: -1 });
+  assert.match(run(['--help']).stdout, /reserve-hours/);
+  const malformed = run(['batch', '-'], '{"SYNTHETIC_PRIVATE_INPUT":');
+  assert.equal(malformed.status, 1);
+  assert.doesNotMatch(malformed.stderr, /SYNTHETIC_PRIVATE_INPUT/);
 });
 
 test('CLI simulation matches a separate 1 AUD/hour ledger and reads files or stdin', () => {

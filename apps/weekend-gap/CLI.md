@@ -89,3 +89,14 @@ output is emitted; one invalid entry fails the command without partial rows.
 Results preserve input order and duplicate names through one-based indices and
 include every canonical scenario and summary. Different demand is not normalized
 away, and the CLI does not select a winner. The same 250,000-byte limit applies.
+
+## Create a timing-review packet
+
+`node scripts/analyze.mjs review scenario.json days` emits the native
+`weekend-review` v1 packet, including canonical inputs, input snapshot, result
+columns and rows, units and methodological notes. It is compatible with the
+browser's review replay workflow. Tools are `days`, `cohorts`, `deadlines`,
+`closures`, `overlap`, `reserve`, `throughput`, `holidays` and `reserve-hours`.
+`--help` reads this catalog directly from the model. Keep each packet's notes
+with its rows, especially the FIFO assumption and unfinished waiting amounts
+in cohort reviews. Packets carry synthetic inputs, not proof of actual service.

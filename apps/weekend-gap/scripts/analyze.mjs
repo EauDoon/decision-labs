@@ -8,6 +8,7 @@ import {
   previewWindowShift,
   compareDemandProfiles,
   libraryFromJSON,
+  WEEKEND_REVIEW_TOOLS, createWeekendReviewPacket,
 } from '../src/model.js';
 
 const usage = `Weekend Gap offline analysis (synthetic AUD only)
@@ -19,6 +20,8 @@ const usage = `Weekend Gap offline analysis (synthetic AUD only)
   shift SCENARIO GATE START_DELTA_HOURS END_DELTA_HOURS
   profiles SCENARIO
   batch LIBRARY
+  review SCENARIO TOOL
+Review tools: ${WEEKEND_REVIEW_TOOLS.map(tool => tool.id).join(', ')}
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
 Omitted fields use model defaults; invalid or adjusted values are rejected.
@@ -50,9 +53,12 @@ async function readText(path, limit = 250000) {
   } finally { await file.close(); }
 }
 
+function parseJSON(text) {
+  try { return JSON.parse(text); } catch { throw new Error('Invalid JSON.'); }
+}
+
 function parseScenario(text) {
-  let parsed;
-  try { parsed = JSON.parse(text); } catch { throw new Error('Invalid JSON.'); }
+  const parsed = parseJSON(text);
   const result = scenarioFromJSON(text);
   if (!result.scenario || result.errors.length) throw new Error(result.errors.join(' '));
   const raw = Object.hasOwn(parsed, 'scenario') ? parsed.scenario : parsed;
@@ -88,12 +94,16 @@ function argumentsFor(args, count, formats = ['json']) {
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
   switch (command) {
+    case 'review': {
+      const { args: [path, tool] } = argumentsFor(rest, 2);
+      return createWeekendReviewPacket(await scenario(path), tool);
+    }
     case 'batch': {
       const { args: [path] } = argumentsFor(rest, 1);
       const text = await readText(path);
+      const raw = parseJSON(text);
       const library = libraryFromJSON(text);
       if (!library.scenarios || library.errors.length) throw new Error(library.errors.join(' '));
-      const raw = JSON.parse(text);
       if (!raw.scenarios.length || Object.keys(raw).some(key => !['format', 'version', 'scenarios'].includes(key))) {
         throw new Error('Library requires 1 to 12 scenarios and only format, version, scenarios fields.');
       }
