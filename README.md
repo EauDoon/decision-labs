@@ -50,7 +50,7 @@ moves focus; it does not open a workbench. Key `/` focuses the first Trust and
 limits list item, or the Trust and limits heading if none. That key moves
 focus; it does not open a workbench. Shift+/ still opens the shortcut list. Key `r` focuses the
 first review path on the first workbench card. That key moves focus; it does
-not open the workbench. Key `{` copies the last review path from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that path is missing, it copies an empty string. That key is distinct from `$`, which copies the last workbench heading, from `r`, which focuses the first review path, and from `5`, which focuses Copy last review path. Key `5` focuses the Copy last review path control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `{`, which copies the last review path, from `r`, which focuses the first review path, and from `6`, which focuses the last review path. Key `6` focuses the last review path on the last workbench card, or the workbenches heading if that path is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `r`, which focuses the first review path, and from `5`, which focuses Copy last review path. Key `7` copies the first review path from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that path is missing, it copies an empty string. That key is distinct from `{`, which copies the last review path, from `r`, which focuses the first review path, and from `8`, which focuses Copy first review path. Key `8` focuses the Copy first review path control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `7`, which copies the first review path, from `5`, which focuses Copy last review path, and from `9`, which focuses the first review path. Key `9` focuses the first review path on the first workbench card, or the workbenches heading if that path is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `6`, which focuses the last review path, from `r`, which also focuses the first review path, and from `8`, which focuses Copy first review path. Key `0` copies the first Open workbench href from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that href is missing, it copies an empty string. That key is distinct from `\`, which focuses Copy first Open href, from `s`, which focuses the first Open workbench link, from `]`, which focuses the last Open workbench link, from `{`, which copies the last review path, from `7`, which copies the first review path, and from `5` and `6`, which jump last-review. Key `\` focuses the Copy first Open href control, or the catalog heading or workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `0`, which copies the first Open workbench href, from `s`, which focuses the first Open workbench link, from `]`, which focuses the last Open workbench link, and from first-review keys `7`, `8`, and `9`. Key `p` prints this catalog page. It is not a live product
+not open the workbench. Key `{` copies the last review path from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that path is missing, it copies an empty string. That key is distinct from `$`, which copies the last workbench heading, from `r`, which focuses the first review path, and from `5`, which focuses Copy last review path. Key `5` focuses the Copy last review path control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `{`, which copies the last review path, from `r`, which focuses the first review path, and from `6`, which focuses the last review path. Key `6` focuses the last review path on the last workbench card, or the workbenches heading if that path is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `r`, which focuses the first review path, and from `5`, which focuses Copy last review path. Key `7` copies the first review path from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that path is missing, it copies an empty string. That key is distinct from `{`, which copies the last review path, from `r`, which focuses the first review path, and from `8`, which focuses Copy first review path. Key `8` focuses the Copy first review path control, or the workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `7`, which copies the first review path, from `5`, which focuses Copy last review path, and from `9`, which focuses the first review path. Key `9` focuses the first review path on the first workbench card, or the workbenches heading if that path is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `6`, which focuses the last review path, from `r`, which also focuses the first review path, and from `8`, which focuses Copy first review path. Key `0` copies the first Open workbench href from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that href is missing, it copies an empty string. That key is distinct from `\`, which focuses Copy first Open href, from `s`, which focuses the first Open workbench link, from `]`, which focuses the last Open workbench link, from `{`, which copies the last review path, from `7`, which copies the first review path, and from `5` and `6`, which jump last-review. Key `\` focuses the Copy first Open href control, or the catalog heading or workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `0`, which copies the first Open workbench href, from `s`, which focuses the first Open workbench link, from `]`, which focuses the last Open workbench link, and from first-review keys `7`, `8`, and `9`. Key `Home` copies the last Open workbench href from this page as one Markdown line. That copy is catalog copy, not a live product feed. If that href is missing, it copies an empty string. That key is distinct from `0`, which copies the first Open workbench href, from `End`, which focuses Copy last Open href, from `s`, which focuses the first Open workbench link, from `]`, which focuses the last Open workbench link, from `{`, which copies the last review path, from `7`, which copies the first review path, and from `5` and `6`, which jump last-review. Key `End` focuses the Copy last Open href control, or the catalog heading or workbenches heading if that control is missing. That key moves focus; it does not open a workbench. It does not copy. That key is distinct from `Home`, which copies the last Open workbench href, from `0`, which copies the first Open workbench href, from `s`, which focuses the first Open workbench link, from `]`, which focuses the last Open workbench link, and from first-review keys `7`, `8`, and `9`. Key `p` prints this catalog page. It is not a live product
 sheet. Key `e` copies the catalog heading and lede from this page as Markdown.
 That copy is catalog copy, not a live product feed. If those nodes are
 missing, it copies an empty string. Keys `v` and `j` copy the printed version list and one-sentence jobs.
@@ -180,6 +180,8 @@ The catalog also names first-review copy, first-review jump, and first-path jump
 That What's new entry is hub-only. It does not change workbench versions.
 The catalog also names first-open copy, first-open jump, and first-open-link jump.
 That What's new entry is hub-only. It does not change workbench versions.
+The catalog also names last-open copy, last-open jump, and last-open-link jump.
+That What's new entry is hub-only. It does not change workbench versions.
 These are
 browser tools on the case you opened, not hosted APIs. Each app also ships a `MODEL.md` (formulas and
 conventions), `CONTRIBUTING.md`, `SECURITY.md`, and its own `LICENSE`. The
@@ -278,6 +280,20 @@ open a workbench. It does not copy. That key is distinct from `0`, which copies
 the first Open workbench href, from `s`, which focuses the first Open workbench
 link, from `]`, which focuses the last Open workbench link, and from first-review
 keys `7`, `8`, and `9`.
+Press `Home` to copy the last Open workbench href from this page as one Markdown
+line. That key uses the same Copy last Open href control, including
+the visible text box when the clipboard API is unavailable. If that href is
+missing, it copies an empty string. This is catalog copy, not a live product
+feed. It is distinct from `0`, which copies the first Open workbench href, from
+`End`, which focuses Copy last Open href, from `s`, which focuses the first Open
+workbench link, from `]`, which focuses the last Open workbench link, from `{`,
+from `7`, and from last-review keys `5` and `6`.
+Press `End` to focus the Copy last Open href control, or the catalog heading or
+workbenches heading if that control is missing. That key moves focus; it does not
+open a workbench. It does not copy. That key is distinct from `Home`, which copies
+the last Open workbench href, from `0`, which copies the first Open workbench
+href, from `s`, which focuses the first Open workbench link, from `]`, which
+focuses the last Open workbench link, and from first-review keys `7`, `8`, and `9`.
 Press `f` to focus the footer version line. That key does
 not open a workbench. Press `p` to print this catalog. That key prints this
 page in the browser. It is not a live product sheet. Press `c` to copy the catalog address
@@ -343,6 +359,8 @@ fetch a product feed or add another public path. Copy first review path on
 that 404 page copies the printed first review path as one Markdown line. It does not
 fetch a product feed or add another public path. Copy first Open href on
 that 404 page copies the printed first Open workbench href as one Markdown line. It does not
+fetch a product feed or add another public path. Copy last Open href on
+that 404 page copies the printed last Open workbench href as one Markdown line. It does not
 fetch a product feed or add another public path. When the catalog is served over http,
 a control copies the loopback address; it stays hidden on a file URL.
 Copy versions copies the four workbench names and versions already printed on
@@ -408,6 +426,12 @@ box fallback. If that href is missing, it copies an empty string. That copy is
 catalog copy, not a live product feed. It is distinct from Copy first review
 path, which copies the first review path, and from key `s`, which
 focuses the first Open workbench link.
+Copy last Open href copies the last Open workbench href from this
+catalog page as one Markdown line, with the same clipboard and visible text
+box fallback. If that href is missing, it copies an empty string. That copy is
+catalog copy, not a live product feed. It is distinct from Copy first Open
+href, which copies the first Open workbench href, and from key `]`, which
+focuses the last Open workbench link.
 Press `j` to copy catalog jobs through that same control.
 Press `q` to copy catalog jobs through that same Copy jobs control. It does not fork that Markdown.
 Press `;` to copy the first workbench name and one-sentence job from this page

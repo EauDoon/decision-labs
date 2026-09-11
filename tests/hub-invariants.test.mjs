@@ -588,13 +588,21 @@ test('catalog keys 0 and backslash stay distinct from last-review first-review l
   assert.match(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
   assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
   assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 0:/);
-  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 5:/);
-  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, 7:/);
+  assert.match(html, /event\.key === 'Home'/);
+  assert.match(html, /event\.key === 'End'/);
+  assert.match(html, /aria-keyshortcuts="Home"/);
+  assert.match(html, /id="copy-last-open"/);
+  assert.match(html, />Copy last Open href</);
+  assert.match(html, /lastOpenBtn\?\.click\(\)/);
+  assert.match(html, /getElementById\('copy-last-open'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, Home:/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, Home:/);
 });
 
 test('print CSS hides copy first Open href tools like other copy tools', () => {
   const print = html.match(/@media print \{([\s\S]*)\}\s*<\/style>/)?.[1] ?? '';
   assert.match(print, /\.copy-first-open-tools, \.copy-first-open-fallback \{ display: none !important; \}/);
+  assert.match(print, /\.copy-last-open-tools, \.copy-last-open-fallback \{ display: none !important; \}/);
   assert.match(print, /\.copy-first-review-tools, \.copy-first-review-fallback \{ display: none !important; \}/);
   assert.match(print, /#how-it-works, \.guide \{ display: block !important; \}/);
 });
@@ -615,6 +623,9 @@ test('404 Copy first Open href does not expand PUBLIC_PATHS or connect-src', () 
   assert.match(page, /id="copy-first-open"/);
   assert.match(page, />Copy first Open href</);
   assert.match(page, /firstOpenMarkdown/);
+  assert.match(page, /id="copy-last-open"/);
+  assert.match(page, />Copy last Open href</);
+  assert.match(page, /lastOpenMarkdown/);
   assert.match(page, /id="workbenches"/);
   assert.match(page, /apps\/partnership-breakpoint\/standalone\.html/);
   assert.match(page, /id="copy-first-review"/);
