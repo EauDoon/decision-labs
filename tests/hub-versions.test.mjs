@@ -214,17 +214,17 @@ test('404 last review path matches the last catalog workbench review path', () =
 });
 
 
-test('catalog versions stay Partnership Breakpoint 1.5.17, Common Cart 1.4.17, The Smallest Agreement 1.5.17, Weekend Gap 1.5.17', () => {
-  assert.match(html, /data-app="partnership-breakpoint">\s*1\.5\.17\s*</);
+test('catalog versions stay Partnership Breakpoint 1.5.18, Common Cart 1.4.17, The Smallest Agreement 1.5.17, Weekend Gap 1.5.17', () => {
+  assert.match(html, /data-app="partnership-breakpoint">\s*1\.5\.18\s*</);
   assert.match(html, /data-app="common-cart">\s*1\.4\.17\s*</);
   assert.match(html, /data-app="smallest-agreement">\s*1\.5\.17\s*</);
   assert.match(html, /data-app="weekend-gap">\s*1\.5\.17\s*</);
-  assert.match(html, /data-app-version="partnership-breakpoint">\s*1\.5\.17\s*</);
+  assert.match(html, /data-app-version="partnership-breakpoint">\s*1\.5\.18\s*</);
   assert.match(html, /data-app-version="common-cart">\s*1\.4\.17\s*</);
   assert.match(html, /data-app-version="smallest-agreement">\s*1\.5\.17\s*</);
   assert.match(html, /data-app-version="weekend-gap">\s*1\.5\.17\s*</);
-  assert.match(html, /Partnership Breakpoint 1\.5\.17, Common Cart 1\.4\.17, The Smallest Agreement 1\.5\.17, Weekend Gap 1\.5\.17/);
-  assert.match(readme, /\[Partnership Breakpoint\]\(apps\/partnership-breakpoint\/\) \| 1\.5\.17 \|/);
+  assert.match(html, /Partnership Breakpoint 1\.5\.18, Common Cart 1\.4\.17, The Smallest Agreement 1\.5\.17, Weekend Gap 1\.5\.17/);
+  assert.match(readme, /\[Partnership Breakpoint\]\(apps\/partnership-breakpoint\/\) \| 1\.5\.18 \|/);
   assert.match(readme, /\[Common Cart\]\(apps\/common-cart\/\) \| 1\.4\.17 \|/);
   assert.match(readme, /\[The Smallest Agreement\]\(apps\/smallest-agreement\/\) \| 1\.5\.17 \|/);
   assert.match(readme, /\[Weekend Gap\]\(apps\/weekend-gap\/\) \| 1\.5\.17 \|/);
