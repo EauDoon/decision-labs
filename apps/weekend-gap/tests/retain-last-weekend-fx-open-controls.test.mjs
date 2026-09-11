@@ -12,7 +12,7 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.match(html, /<kbd>F12<\/kbd>/);
   assert.match(html, /id="gantt-hide-weekend-fx-open"[^>]*aria-keyshortcuts="ArrowLeft F12"/);
   assert.match(html, /id="copy-last-weekend-fx-closed"[^>]*aria-keyshortcuts="F7"/);
-  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9"/);
+  assert.match(html, /id="gantt-hide-weekday-fx-closed"[^>]*aria-keyshortcuts="F9 Shift\+F12"/);
   assert.match(html, /id="copy-last-weekend-fx-open"/);
   assert.match(html, /id="copy-last-weekday-fx-open"/);
   assert.match(html, /data-preset="sundayLateFxOpen"/);
@@ -20,6 +20,7 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.match(html, /data-preset="mondayEarlyFxOpen"/);
   assert.match(html, /data-preset="mondayLateFxOpen"/);
   assert.match(html, /data-preset="tuesdayEarlyFxOpen"/);
+  assert.match(html, /data-preset="tuesdayLateFxOpen"/);
   assert.match(app, /event\.key === "F10"/);
   assert.match(app, /copyLastWeekdayFxClosedHourMarkdown\(\)/);
   assert.match(app, /event\.key === "F11"/);
@@ -38,11 +39,14 @@ test("1.5.29 keeps F10 F11 F12 last-weekday-FX-closed controls, last-weekend-FX-
   assert.equal(PRESETS.mondayLateFxOpen.mondayEarlyFxOpen, false);
   assert.equal(PRESETS.tuesdayEarlyFxOpen.tuesdayEarlyFxOpen, true);
   assert.equal(PRESETS.tuesdayEarlyFxOpen.mondayLateFxOpen, false);
+  assert.equal(PRESETS.tuesdayLateFxOpen.tuesdayLateFxOpen, true);
+  assert.equal(PRESETS.tuesdayLateFxOpen.tuesdayEarlyFxOpen, false);
   assert.equal(PRESETS.mondayEarlyFxOpen.sundayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.sundayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.mondayEarlyFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.mondayLateFxOpen, false);
   assert.equal(DEFAULT_SCENARIO.tuesdayEarlyFxOpen, false);
+  assert.equal(DEFAULT_SCENARIO.tuesdayLateFxOpen, false);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   const unshiftedF12 = handler.lastIndexOf('event.key === "F12"');
   const f12Slice = handler.slice(unshiftedF12, unshiftedF12 + 180);
