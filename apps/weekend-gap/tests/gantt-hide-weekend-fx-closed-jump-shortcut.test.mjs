@@ -1,0 +1,31 @@
+import assert from "node:assert/strict";
+import test from "node:test";
+import { readFile } from "node:fs/promises";
+
+test("keyboard Backspace is wired to the hide-weekend-FX-closed Gantt filter", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
+  assert.match(html, /id="gantt-hide-weekend-fx-closed"/);
+  assert.match(html, /id="gantt-title"/);
+  assert.match(html, /<kbd>Backspace<\/kbd>/);
+  assert.match(html, /Jump to the hide-weekend-FX-closed Gantt filter/);
+  assert.match(html, /id="gantt-hide-weekend-fx-closed"[^>]*aria-keyshortcuts="Backspace"/);
+  assert.match(app, /function jumpToHideWeekendFxClosedFilter/);
+  assert.match(app, /#gantt-hide-weekend-fx-closed/);
+  assert.match(app, /event\.key === "Backspace"/);
+  assert.match(app, /event\.key === "ArrowRight"/);
+  assert.match(app, /event\.key === "ArrowLeft"/);
+  assert.match(app, /function jumpToHideWeekendPayoutClosedFilter/);
+  assert.match(app, /function jumpToHideWeekendFxOpenFilter/);
+  assert.match(app, /function jumpToHideFxClosedFilter/);
+  assert.match(app, /function jumpToGantt/);
+  assert.notEqual(app.match(/function jumpToHideWeekendFxClosedFilter/)?.[0], app.match(/function jumpToHideWeekendFxOpenFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToHideWeekendFxClosedFilter/)?.[0], app.match(/function jumpToHideWeekendPayoutClosedFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToHideWeekendFxClosedFilter/)?.[0], app.match(/function jumpToHideFxClosedFilter/)?.[0]);
+  assert.notEqual(app.match(/function jumpToHideWeekendFxClosedFilter/)?.[0], app.match(/function jumpToGantt/)?.[0]);
+  const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
+  assert.ok(handler.indexOf('event.key === "Backspace"') !== handler.indexOf('event.key === "ArrowRight"'));
+  assert.ok(handler.indexOf('event.key === "Backspace"') !== handler.indexOf('event.key === "ArrowLeft"'));
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "Backspace"'), handler.indexOf('event.key === "Backspace"') + 180), /copyLastClosedPayoutHourMarkdown/);
+  assert.doesNotMatch(handler.slice(handler.indexOf('event.key === "Backspace"'), handler.indexOf('event.key === "Backspace"') + 180), /copyLastClosedFxHourMarkdown/);
+});
