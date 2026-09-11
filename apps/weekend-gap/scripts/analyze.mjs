@@ -7,6 +7,7 @@ import {
   runSensitivity,
   previewWindowShift,
   compareDemandProfiles,
+  libraryFromJSON,
 } from '../src/model.js';
 
 const usage = `Weekend Gap offline analysis (synthetic AUD only)
@@ -17,6 +18,7 @@ const usage = `Weekend Gap offline analysis (synthetic AUD only)
   sensitivity SCENARIO FIELD
   shift SCENARIO GATE START_DELTA_HOURS END_DELTA_HOURS
   profiles SCENARIO
+  batch LIBRARY
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
 Omitted fields use model defaults; invalid or adjusted values are rejected.
@@ -86,6 +88,24 @@ function argumentsFor(args, count, formats = ['json']) {
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
   switch (command) {
+    case 'batch': {
+      const { args: [path] } = argumentsFor(rest, 1);
+      const text = await readText(path);
+      const library = libraryFromJSON(text);
+      if (!library.scenarios || library.errors.length) throw new Error(library.errors.join(' '));
+      const raw = JSON.parse(text);
+      if (!raw.scenarios.length || Object.keys(raw).some(key => !['format', 'version', 'scenarios'].includes(key))) {
+        throw new Error('Library requires 1 to 12 scenarios and only format, version, scenarios fields.');
+      }
+      const inputs = raw.scenarios.map((value, index) => {
+        try { return parseScenario(JSON.stringify(value)); }
+        catch (error) { throw new Error(`Library entry ${index + 1}: ${error.message}`); }
+      });
+      return { rows: inputs.map((input, index) => {
+        const simulation = runSimulation(input);
+        return { index: index + 1, scenario: input, summary: simulation.summary };
+      }), note: 'Input order is preserved, including duplicate names. Compare demand and arrival profiles before interpreting outcomes. No scenario is ranked.' };
+    }
     case 'profiles': {
       const { args: [path] } = argumentsFor(rest, 1);
       const input = await scenario(path);

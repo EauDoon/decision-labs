@@ -79,3 +79,13 @@ The result includes the fixed demand denominator and all three outcome rows.
 These are synthetic schedules, not estimates of customer behavior. No-settlement
 timings remain null. Unlike comparing arbitrary files, this experiment isolates
 the declared demand profile rather than changing the total demand.
+
+## Analyze a saved library
+
+`node scripts/analyze.mjs batch library.json` accepts the existing browser library
+format: `{"format":"weekend-gap-library","version":1,"scenarios":[{},{}]}`.
+Supply 1 to 12 raw scenario objects. The whole library is validated before any
+output is emitted; one invalid entry fails the command without partial rows.
+Results preserve input order and duplicate names through one-based indices and
+include every canonical scenario and summary. Different demand is not normalized
+away, and the CLI does not select a winner. The same 250,000-byte limit applies.

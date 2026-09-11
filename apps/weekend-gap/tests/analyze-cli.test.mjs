@@ -114,6 +114,18 @@ test('arrival-profile comparison holds demand fixed and retains no-settlement nu
   fails(['profiles', '-', 'extra']);
 });
 
+test('library batch validates atomically and preserves ordered duplicate names', () => {
+  const input = { format: 'weekend-gap-library', version: 1, scenarios: [fixture(), { ...fixture(), reserveCashAud: 0 }] };
+  const rows = result(['batch', '-'], input).rows;
+  assert.deepEqual(rows.map(row => row.index), [1, 2]);
+  assert.equal(rows[0].scenario.name, rows[1].scenario.name);
+  assert.equal(rows[0].summary.totalSettledAud, 72);
+  assert.equal(rows[1].summary.finalQueuedAud, 72);
+  assert.equal(result(['batch', '-'], { ...input, scenarios: Array.from({ length: 12 }, fixture) }).rows.length, 12);
+  for (const bad of [{ ...input, scenarios: [] }, { ...input, version: 2 }, { ...input, extra: true }, { ...input, scenarios: [...input.scenarios, { ...fixture(), typo: 1 }] }, { ...input, scenarios: Array.from({ length: 13 }, fixture) }]) fails(['batch', '-'], bad);
+  assert.equal(result(['batch', '-'], input).rows.length, 2);
+});
+
 test('CLI simulation matches a separate 1 AUD/hour ledger and reads files or stdin', () => {
   const expected = oracle(fixture()).at(-1);
   const output = result(['simulate', '-']);
