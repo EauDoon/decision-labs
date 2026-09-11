@@ -1380,12 +1380,14 @@ test('rowing carnival remaining listed capacity is distinct from water polo lacr
   const waterPolo = clonePreset('waterPoloCarnivalSplit');
   const lacrosse = clonePreset('lacrosseCarnivalSplit');
   const softball = clonePreset('softballCarnivalSplit');
+  const rugby = clonePreset('rugbyCarnivalSplit');
   const waterPoloResult = calculatePartnership(waterPolo);
   const lacrosseResult = calculatePartnership(lacrosse);
-  const softballRemaining = softball.participants.map((item) => item.capacity - calculatePartnership(softball).effectiveVolume);
+  const rugbyRemaining = rugby.participants.map((item) => item.capacity - calculatePartnership(rugby).effectiveVolume);
   assert.notEqual(JSON.stringify(rowing.participants.map((item) => item.capacity)), JSON.stringify(waterPolo.participants.map((item) => item.capacity)));
   assert.notEqual(JSON.stringify(rowing.participants.map((item) => item.capacity)), JSON.stringify(lacrosse.participants.map((item) => item.capacity)));
-  assert.notEqual(JSON.stringify(remaining), JSON.stringify(softballRemaining));
+  assert.notEqual(JSON.stringify(rowing.participants.map((item) => item.capacity)), JSON.stringify(softball.participants.map((item) => item.capacity)));
+  assert.notEqual(JSON.stringify(remaining), JSON.stringify(rugbyRemaining));
   assert.notEqual(result.effectiveVolume, waterPoloResult.effectiveVolume);
   assert.notEqual(result.effectiveVolume, lacrosseResult.effectiveVolume);
   assert.notEqual(result.effectiveVolume, calculatePartnership(softball).effectiveVolume);
