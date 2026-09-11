@@ -96,6 +96,18 @@ A score can be incomplete, a weight can be contested, and a low numerical change
 
 Support floors and veto marks protect only the numerical averages you enter. They do not establish consent, a legal veto, or prevent a low score on an individual clause. Clause locks express a supplied constraint, not a grant of decision authority. Optional clause notes are facilitator reminders only.
 
+## v1.5.22, 11-09-2026
+
+Lacrosse club hours, last-below-floor copy, and first-below-floor hide in The Smallest Agreement 1.5.22.
+
+- Added keyboard `Delete`, `F2`, and `ArrowRight` for last below-floor group copy, the last below-floor group copy control, and the hide-first-group-below-floor control. Shortcut help lists them. Shortcuts are ignored while typing. The label is not a legal identity. A floor is a number you entered, not a legal quorum.
+- Added copy of the last group currently below their declared support floor as one-line Markdown, with a clipboard fallback. Honest when none. Distinct from first-below-floor group copy, last below-threshold group copy, and last at-floor group copy. A floor is a number you entered, not a legal quorum. Do not treat the label as a legal identity.
+- Added a display filter that hides only the first group whose average is currently below their declared support floor. Hidden groups still count in the model. Workspace JSON persists that optional boolean and rejects unknown keys. Older files omit the key and default to show-all. The solver ignores it. Distinct from hideFirstGroupAtFloor, hideLastGroupAtFloor, hideGroupsAtFloor, hideFirstGroupBelowThreshold, and belowFloorGroupsOnly. If composed with other hides, the empty-groups notice is honest and model counts stay the same. A floor is a number you entered, not a legal quorum.
+- Added the Lacrosse club hours preset: students, neighbours, and P&C scoring lacrosse field booking, clubhouse bar, and changing-room lock-up. Distinct from Softball club hours (diamond) and Rugby club hours (pitch). Not a recorded vote.
+- Kept the 1.5.0 package review tools, `createAgreementReviewPacket`, replay, and AGREEMENT_REVIEW_TOOLS.
+
+See [CHANGELOG.md](CHANGELOG.md) for the full list.
+
 ## v1.5.21, 11-09-2026
 
 Softball club hours, last-at-floor copy, and first-at-floor hide in The Smallest Agreement 1.5.21.

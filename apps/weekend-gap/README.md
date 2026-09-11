@@ -127,6 +127,18 @@ CHANGELOG.md        Version history
 
 MIT. See [LICENSE](LICENSE).
 
+## New in v1.5.22: Saturday late bank open, last-open-FX copy and weekend-FX-open Gantt hide
+
+1. Press `Insert` to copy the last open FX hour through the last-open-FX copy control, using one-line Markdown. Honest empty when none. The key is ignored while typing. Distinct from `4` last-open-bank copy, `PageUp` last-open-payout copy and `(` first-open-FX copy.
+2. Press `ArrowDown` to jump to the last-open-FX-hour copy control. If that control is missing, the Gantt heading is used. The key does not copy. The key is ignored while typing. Distinct from `PageDown` last-open-payout jump and `Home` last-open-bank jump.
+3. Press `ArrowLeft` to jump to the hide-weekend-FX-open Gantt filter. If that control is missing, the Gantt heading is used. The key is ignored while typing. Distinct from `ArrowUp` hide-weekend-payout-open and `End` hide-weekend-bank-open.
+4. Use the Saturday late bank open (synthetic) preset. It keeps the same 72-hour calendar as Normal Friday and treats the bank gate as open on Saturday from 16:00 to 18:00 even though Saturday is not a business day. The workshop clock starts Friday 15:00, so that Saturday evening window is inside the modeled start. It is distinct from Saturday early bank open, Friday early bank open, and Friday early issuer open. It is synthetic, not a bank feed.
+5. Hide Gantt hours that are weekend and FX-open. Display only. The model still contains 72 hours. Workspace JSON stores the optional boolean `hideWeekendFxOpenGanttHours`. Older files restore all hours. Unknown keys are rejected. Distinct from hide-weekend-payout-open, hide-FX-open, hide-weekend, and hide-weekend-bank-open filters. The selected hour stays visible if it would otherwise hide. On the default Saturday calendar FX is weekend-thinned, so hide-weekend-FX-open matches the full drawing unless a weekend FX-open preset is used. Saturday early FX open keeps Saturday 06:00 to 12:00 visible under hide-FX-closed and hides those hours under hide-weekend-FX-open, unlike hide-weekend or hide-FX-open. Saturday early bank open stays visible under hide-weekend-FX-open.
+6. Analysis JSON still has no timestamps. Hatched Gantt cells remain a local drawing. They do not connect to a bank or a live redemption queue.
+7. Timing review packets from 1.5.0 stay in place.
+
+v1.5.21 Friday early bank open, last-open-payout copy and weekend-payout-open Gantt hide remain below.
+
 ## New in v1.5.21: Friday early bank open, last-open-payout copy and weekend-payout-open Gantt hide
 
 1. Press `PageUp` to copy the last open payout hour through the last-open-payout copy control, using one-line Markdown. Honest empty when none. The key is ignored while typing. Distinct from `4` last-open-bank copy, `5` last-open-issuer copy and `~` first-open-payout copy.
