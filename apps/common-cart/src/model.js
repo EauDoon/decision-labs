@@ -589,17 +589,17 @@ export const presets = Object.freeze({
     title: "Surf carnival lunch",
     currency: "AUD",
     buyers: [
-      buyer("B01", "Surf-rack crate", "Surf lunch pack", 15, 23, 4, ["Surf pie", "Clubhouse salad"]),
+      buyer("B01", "Surf-rack crate", "Surf lunch pack", 15, 23, 4, ["Surf pie", "Beach salad"]),
       buyer("B02", "Board-bag bench", "Surf lunch pack", 19, 19, 3, ["Surf pie"]),
-      buyer("B03", "Break hamper", "Surf lunch pack", 13, 21, 5, ["Clubhouse salad", "Clubhouse water"]),
-      buyer("B04", "Sideline cooler", "Surf lunch pack", 10, 17, 2, ["Clubhouse water"]),
-      buyer("B05", "Scoreboard trolley", "Surf lunch pack", 16, 22, 4, ["Surf pie", "Clubhouse water"]),
-      buyer("B06", "Bench table", "Surf lunch pack", 14, 20, 3, ["Clubhouse salad", "Surf pie"])
+      buyer("B03", "Break hamper", "Surf lunch pack", 13, 21, 5, ["Beach salad", "Beach water"]),
+      buyer("B04", "Sideline cooler", "Surf lunch pack", 10, 17, 2, ["Beach water"]),
+      buyer("B05", "Scoreboard trolley", "Surf lunch pack", 16, 22, 4, ["Surf pie", "Beach water"]),
+      buyer("B06", "Bench table", "Surf lunch pack", 14, 20, 3, ["Beach salad", "Surf pie"])
     ],
     offers: [
       offer("O01", "Court-side Surf Delivery", "Surf lunch pack", "Surf pie", 17, 17, 3, 54, 3),
-      offer("O02", "Clubhouse Salad Run", "Surf lunch pack", "Clubhouse salad", 15, 15, 4, 42, 2),
-      { ...offer("O03", "Hall Surf Pickup", "Surf lunch pack", "Clubhouse water", 17, 22, 1, 44, 5), fulfillment: "pickup" }
+      offer("O02", "Beach Salad Run", "Surf lunch pack", "Beach salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Surf Pickup", "Surf lunch pack", "Beach water", 17, 22, 1, 44, 5), fulfillment: "pickup" }
     ]
   }
 });
