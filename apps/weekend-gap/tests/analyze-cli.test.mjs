@@ -10,7 +10,7 @@ import { WEEKEND_REVIEW_TOOLS, replayWeekendReviewPacket } from '../src/model.js
 
 const cli = fileURLToPath(new URL('../scripts/analyze.mjs', import.meta.url));
 function run(args, input = fixture()) {
-  return spawnSync(process.execPath, [cli, ...args], { input: typeof input === 'string' ? input : JSON.stringify(input), encoding: 'utf8', timeout: 10000, maxBuffer: 2 ** 22 });
+  return spawnSync(process.execPath, [cli, ...args], { input: typeof input === 'string' || Buffer.isBuffer(input) ? input : JSON.stringify(input), encoding: 'utf8', timeout: 10000, maxBuffer: 2 ** 22 });
 }
 function result(args, input) {
   const runResult = run(args, input);
@@ -196,4 +196,29 @@ test('CLI fails closed on malformed inputs and recovers on the next valid run', 
   for (const args of [[], ['bogus'], ['simulate'], ['simulate', '-', '--format', 'yaml'], ['simulate', '-', 'extra'], ['simulate', 'missing-scenario.json']]) fails(args);
   assert.equal(run(['--help']).status, 0);
   assert.equal(result(['simulate', '-']).summary.totalDemandAud, 72);
+});
+
+test('all JSON inputs reject duplicate decoded keys and invalid UTF-8', () => {
+  const text = JSON.stringify(fixture());
+  for (const duplicate of [text.replace('"reserveCashAud":72', '"reserveCashAud":0,"reserveCashAud":72'),
+    text.replace('"reserveCashAud":72', '"reserveCashAud":0,"reserveCashA\\u0075d":72')]) {
+    fails(['simulate', '-'], duplicate);
+    fails(['review', '-', 'days'], duplicate);
+    fails(['batch', '-'], '{"format":"weekend-gap-library","version":1,"scenarios":[' + duplicate + ']}');
+  }
+  const packet = result(['review', '-', 'days']);
+  fails(['replay', '-'], JSON.stringify(packet).replace('"version":1', '"version":2,"version":1'));
+  const invalid = Buffer.from(text);
+  invalid[invalid.indexOf('Synthetic')] = 255;
+  fails(['simulate', '-'], invalid);
+  fails(['review', '-', 'days'], invalid);
+  const directory = mkdtempSync(join(tmpdir(), 'weekend-cli-'));
+  try {
+    const file = join(directory, 'invalid.json');
+    writeFileSync(file, invalid);
+    fails(['simulate', file]);
+  } finally { rmSync(directory, { recursive: true, force: true }); }
+  const withSyntaxInText = { ...fixture(), name: 'String { "key": 1, "key": 2 }' };
+  assert.equal(result(['simulate', '-'], withSyntaxInText).scenario.name, withSyntaxInText.name);
+  assert.equal(result(['batch', '-'], { format: 'weekend-gap-library', version: 1, scenarios: [fixture(), fixture()] }).rows.length, 2);
 });

@@ -38,7 +38,7 @@ async function readText(path, limit = 250000) {
       if (size > limit) throw new Error(`Input exceeds ${limit} bytes.`);
       chunks.push(chunk);
     }
-    return Buffer.concat(chunks).toString('utf8').replace(/^\uFEFF/, '');
+    return decode(Buffer.concat(chunks));
   }
   const file = await open(path, 'r');
   try {
@@ -51,12 +51,32 @@ async function readText(path, limit = 250000) {
       size += bytesRead;
     }
     if (size > limit) throw new Error(`Input exceeds ${limit} bytes.`);
-    return buffer.subarray(0, size).toString('utf8').replace(/^\uFEFF/, '');
+    return decode(buffer.subarray(0, size));
   } finally { await file.close(); }
 }
 
+function decode(bytes) {
+  try { return new TextDecoder('utf-8', { fatal: true }).decode(bytes); }
+  catch { throw new Error('Input must be valid UTF-8.'); }
+}
+
 function parseJSON(text) {
-  try { return JSON.parse(text); } catch { throw new Error('Invalid JSON.'); }
+  let value;
+  try { value = JSON.parse(text); } catch { throw new Error('Invalid JSON.'); }
+  // JSON.parse validates grammar first. Scan complete strings so braces inside
+  // values cannot affect object scopes; decode key escapes before comparison.
+  const objects = [];
+  for (const token of text.matchAll(/"(?:\\[\s\S]|[^"\\])*"|[{}]/g)) {
+    if (token[0] === '{') objects.push(new Set());
+    else if (token[0] === '}') objects.pop();
+    else if (/^\s*:/.test(text.slice(token.index + token[0].length))) {
+      const key = JSON.parse(token[0]);
+      const keys = objects.at(-1);
+      if (keys.has(key)) throw new Error('Duplicate JSON object member.');
+      keys.add(key);
+    }
+  }
+  return value;
 }
 
 function parseScenario(text) {

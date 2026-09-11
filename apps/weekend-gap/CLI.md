@@ -21,6 +21,8 @@ are included in JSON simulation output. Unknown fields, wrong types, invalid
 values and assumptions that require normalization or clamping are rejected.
 Fix the reported input and rerun; no previous result or workspace is modified.
 Files must be regular files. Scenario inputs are bounded to 250,000 bytes.
+All inputs require valid UTF-8. Duplicate JSON object members are rejected at
+every depth, including names written with Unicode escapes, before model use.
 
 `simulate` returns the canonical scenario and 72-hour summary as JSON, or the
 existing dashboard Markdown. Null settlement times mean no qualifying event
