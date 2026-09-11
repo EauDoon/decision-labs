@@ -118,12 +118,19 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /id="copy-first-spare-capacity-remaining"/);
   assert.match(html, /data-action="copy-first-spare-capacity-remaining"/);
   assert.match(html, /id="copy-first-spare-capacity-remaining"[^>]*aria-keyshortcuts="1"/);
+  assert.match(html, /id="copy-last-unbounded-remaining"/);
+  assert.match(html, /data-action="copy-last-unbounded-remaining"/);
+  assert.match(html, /id="copy-last-unbounded-remaining"[^>]*aria-keyshortcuts="4"/);
+  assert.match(html, /id="hide-first-spare-capacity-participant"/);
   assert.match(html, /id="hide-first-spare-capacity-participant"/);
   assert.match(html, /data-action="hide-first-spare-capacity-participant"/);
   assert.match(html, /id="hide-first-spare-capacity-participant"[^>]*aria-keyshortcuts="0"/);
   assert.match(html, /id="hide-last-without-capacity-participant"/);
   assert.match(html, /data-action="hide-last-without-capacity-participant"/);
   assert.match(html, /id="hide-last-without-capacity-participant"[^>]*aria-keyshortcuts="3"/);
+  assert.match(html, /id="hide-first-without-capacity-participant"/);
+  assert.match(html, /data-action="hide-first-without-capacity-participant"/);
+  assert.match(html, /id="hide-first-without-capacity-participant"[^>]*aria-keyshortcuts="End"/);
   assert.match(html, /School concert split/);
   assert.match(html, /Sports carnival split/);
   assert.match(html, /Netball carnival/);
@@ -135,6 +142,7 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /Volleyball carnival split/);
   assert.match(html, /Rugby carnival split/);
   assert.match(html, /Hockey carnival split/);
+  assert.match(html, /Baseball carnival split/);
   assert.match(html, /hideParticipantsAtLeastHeadroom/);
   assert.match(html, /hideParticipantsWithinCapacity/);
   assert.match(html, /hideFirstBreakpointParticipant/);
@@ -146,5 +154,6 @@ test('standalone retains 1.5.16 review tools and 1.5.17 copy controls', async ()
   assert.match(html, /hideLastSpareCapacityParticipant/);
   assert.match(html, /hideFirstSpareCapacityParticipant/);
   assert.match(html, /hideLastParticipantWithoutCapacity/);
+  assert.match(html, /hideFirstParticipantWithoutCapacity/);
   assert.match(html, /id="hide-last-over-capacity-participant"/);
 });
