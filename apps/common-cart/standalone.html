@@ -563,6 +563,9 @@ footer {
         <li><kbd>F10</kbd> Copy leftover uncovered leftover-only remaining (organizer private)</li>
         <li><kbd>F11</kbd> Focus the leftover uncovered leftover-only remaining copy control, or leftover heading if missing</li>
         <li><kbd>F12</kbd> Focus hide last uncovered leftover buyer, or the buyer list if missing</li>
+        <li><kbd>Shift+F10</kbd> Copy leftover uncovered leftover-only maximum (organizer private)</li>
+        <li><kbd>Shift+F11</kbd> Focus the leftover uncovered leftover-only maximum copy control, or leftover heading if missing</li>
+        <li><kbd>Shift+F12</kbd> Focus hide first uncovered leftover buyer, or the buyer list if missing</li>
         <li><kbd>Esc</kbd> Close help or the first-run guide</li>
       </ul>
       <p class="canvas-note">Shortcuts are ignored while you type in a field, list, or dialog.</p>
@@ -634,6 +637,7 @@ footer {
           <button class="preset" data-preset="waterPoloCarnivalLunch" type="button">Water polo carnival</button>
           <button class="preset" data-preset="rowingCarnivalLunch" type="button">Rowing carnival</button>
           <button class="preset" data-preset="sailingCarnivalLunch" type="button">Sailing carnival</button>
+          <button class="preset" data-preset="canoeingCarnivalLunch" type="button">Canoeing carnival</button>
           <button class="preset" data-preset="tiers" type="button">Price ladder</button>
         </div>
       </div>
@@ -1026,6 +1030,7 @@ footer {
             <button id="copy-leftover-uncovered-count" class="print-chrome" type="button" aria-keyshortcuts="F3">Copy leftover uncovered count (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-count" class="print-chrome" type="button" aria-keyshortcuts="F7">Copy leftover uncovered leftover-only count (organizer private)</button>
             <button id="copy-leftover-uncovered-leftover-only-remaining" class="print-chrome" type="button" aria-keyshortcuts="F10">Copy leftover uncovered leftover-only remaining (organizer private)</button>
+            <button id="copy-leftover-uncovered-leftover-only-maximum" class="print-chrome" type="button" aria-keyshortcuts="Shift+F10">Copy leftover uncovered leftover-only maximum (organizer private)</button>
             <button id="copy-uncovered-leftover" class="print-chrome" type="button">Copy uncovered leftover counts (organizer private)</button>
             <button id="copy-uncovered-leftover-units" class="print-chrome" type="button">Copy uncovered leftover units (organizer private)</button>
             <p class="canvas-note print-chrome">Organizer-private Markdown of leftover buyer counts and units. Clipboard copies when allowed; otherwise a textarea is shown. This is not a merchant export.</p>
@@ -1047,6 +1052,7 @@ footer {
             <p class="canvas-note print-chrome">Leftover uncovered count copy is uncovered leftover buyer count. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered leftover-only count copy is leftover-only buyer count. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Leftover uncovered leftover-only remaining copy is leftover-only buyer units after the winner. Organizer-private. This is not a merchant export.</p>
+            <p class="canvas-note print-chrome">Leftover uncovered leftover-only maximum copy is the largest leftover-only buyer quantity. Organizer-private. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover copy is counts and units only. Buyer identities stay out. This is not a merchant export.</p>
             <p class="canvas-note print-chrome">Uncovered leftover unit-count copy is count only. Organizer-private. This is not a merchant export.</p>
           </article>
@@ -1809,6 +1815,23 @@ const presets = Object.freeze({
       offer("O01", "Court-side Sailing Delivery", "Sailing lunch pack", "Sailing pie", 17, 17, 3, 54, 3),
       offer("O02", "Marina Salad Run", "Sailing lunch pack", "Marina salad", 15, 15, 4, 42, 2),
       { ...offer("O03", "Hall Sailing Pickup", "Sailing lunch pack", "Marina water", 17, 18, 1, 44, 5), fulfillment: "pickup" }
+    ]
+  },
+  canoeingCarnivalLunch: {
+    title: "Canoeing carnival lunch",
+    currency: "AUD",
+    buyers: [
+      buyer("B01", "Canoe-shed crate", "Canoeing lunch pack", 15, 23, 4, ["Canoeing pie", "Clubhouse salad"]),
+      buyer("B02", "Paddle bench", "Canoeing lunch pack", 19, 19, 3, ["Canoeing pie"]),
+      buyer("B03", "Bow hamper", "Canoeing lunch pack", 13, 21, 5, ["Clubhouse salad", "Clubhouse water"]),
+      buyer("B04", "Sideline cooler", "Canoeing lunch pack", 10, 17, 2, ["Clubhouse water"]),
+      buyer("B05", "Scoreboard trolley", "Canoeing lunch pack", 16, 22, 4, ["Canoeing pie", "Clubhouse water"]),
+      buyer("B06", "Bench table", "Canoeing lunch pack", 14, 20, 3, ["Clubhouse salad", "Canoeing pie"])
+    ],
+    offers: [
+      offer("O01", "Court-side Canoeing Delivery", "Canoeing lunch pack", "Canoeing pie", 17, 17, 3, 54, 3),
+      offer("O02", "Clubhouse Salad Run", "Canoeing lunch pack", "Clubhouse salad", 15, 15, 4, 42, 2),
+      { ...offer("O03", "Hall Canoeing Pickup", "Canoeing lunch pack", "Clubhouse water", 17, 19, 1, 44, 5), fulfillment: "pickup" }
     ]
   }
 });
@@ -3719,6 +3742,16 @@ function leftoverOnlyAllocatedUnits(rawScenario) {
   return units;
 }
 
+function leftoverOnlyAllocatedMaximum(rawScenario) {
+  const leftoverOnly = leftoverOnlyAllocatedIds(rawScenario);
+  const scenario = validateScenario(rawScenario);
+  let maximum = 0;
+  for (const buyer of scenario.buyers) {
+    if (leftoverOnly.has(buyer.id) && buyer.quantity > maximum) maximum = buyer.quantity;
+  }
+  return maximum;
+}
+
 /** Organizer-private one-line leftover uncovered leftover-only count. Leftover-only buyer count. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, uncovered leftover unit-count, and uncovered leftover counts. */
 function createLeftoverUncoveredLeftoverOnlyCountMarkdown(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
@@ -3731,6 +3764,13 @@ function createLeftoverUncoveredLeftoverOnlyRemainingMarkdown(rawScenario) {
   const coverage = computeResidualCoverage(rawScenario);
   const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedUnits(rawScenario)) : "none";
   return `Common Cart leftover uncovered leftover-only remaining (organizer private): ${amount}. Not a merchant export.\n`;
+}
+
+/** Organizer-private one-line leftover uncovered leftover-only maximum. Largest leftover-only buyer quantity. Honest empty none. Not a merchant export. Distinct prefix from leftover uncovered leftover-only remaining, leftover uncovered leftover-only count, leftover uncovered remaining, leftover uncovered maximum, leftover uncovered minimum, leftover uncovered count, uncovered leftover unit-count, leftover-fill remaining, leftover-fill maximum, and tertiary remaining even when the number matches. */
+function createLeftoverUncoveredLeftoverOnlyMaximumMarkdown(rawScenario) {
+  const coverage = computeResidualCoverage(rawScenario);
+  const amount = coverage.leftoverBuyerCount > 0 ? String(leftoverOnlyAllocatedMaximum(rawScenario)) : "none";
+  return `Common Cart leftover uncovered leftover-only maximum (organizer private): ${amount}. Not a merchant export.\n`;
 }
 
 function redactBuyerLabels(rawScenario) {
@@ -4898,6 +4938,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-leftover-uncovered-count").addEventListener("click", copyLeftoverUncoveredCount);
   document.querySelector("#copy-leftover-uncovered-leftover-only-count").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyCount);
   document.querySelector("#copy-leftover-uncovered-leftover-only-remaining").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyRemaining);
+  document.querySelector("#copy-leftover-uncovered-leftover-only-maximum").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyMaximum);
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-uncovered-leftover-units").addEventListener("click", copyUncoveredLeftoverUnitCount);
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
@@ -6048,6 +6089,21 @@ function handleShortcut(event) {
     focusHideFirstUncoveredLeftoverBuyer();
     return;
   }
+  if (event.shiftKey && key === "F10") {
+    event.preventDefault();
+    copyLeftoverUncoveredLeftoverOnlyMaximum();
+    return;
+  }
+  if (event.shiftKey && key === "F11") {
+    event.preventDefault();
+    focusLeftoverUncoveredLeftoverOnlyMaximumCopy();
+    return;
+  }
+  if (event.shiftKey && key === "F12") {
+    event.preventDefault();
+    focusHideFirstUncoveredLeftoverBuyer();
+    return;
+  }
   if (key === "F10") {
     event.preventDefault();
     copyLeftoverUncoveredLeftoverOnlyRemaining();
@@ -6677,6 +6733,17 @@ function focusLeftoverUncoveredLeftoverOnlyRemainingCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-remaining");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverUncoveredLeftoverOnlyMaximumCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-maximum");
   if (copy) {
     copy.focus();
     return;
@@ -8593,6 +8660,16 @@ function copyLeftoverUncoveredLeftoverOnlyRemaining() {
       "Clipboard was blocked. Organizer-private leftover uncovered leftover-only remaining Markdown is in the textarea. Count only. This is not a merchant export."
     );
   } catch (error) { setStatus(`Leftover uncovered leftover-only remaining copy failed: ${messageOf(error)}`); }
+}
+
+function copyLeftoverUncoveredLeftoverOnlyMaximum() {
+  try {
+    copyTextWithFallback(
+      createLeftoverUncoveredLeftoverOnlyMaximumMarkdown(scenario),
+      "Leftover uncovered leftover-only maximum copied as organizer-private Markdown. Count only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only maximum Markdown is in the textarea. Count only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover uncovered leftover-only maximum copy failed: ${messageOf(error)}`); }
 }
 
 function copyUncoveredLeftoverCounts() {

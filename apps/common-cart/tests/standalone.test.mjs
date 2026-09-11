@@ -245,3 +245,23 @@ test("release 1.4.25 ships sailing carnival lunch, leftover uncovered leftover-o
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hideLastUncoveredLeftoverBuyer/u);
 });
 
+test("release 1.4.26 ships canoeing carnival lunch, leftover uncovered leftover-only maximum copy and first uncovered leftover hide jump", async () => {
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-maximum"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-maximum"[^>]*aria-keyshortcuts="Shift\+F10"/u);
+  assert.match(html, /id="hide-first-uncovered-leftover-buyer"/u);
+  assert.match(html, /data-preset="canoeingCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyMaximum\(/u);
+  assert.match(html, /function focusLeftoverUncoveredLeftoverOnlyMaximumCopy\(/u);
+  assert.match(html, /function focusHideFirstUncoveredLeftoverBuyer\(/u);
+  assert.match(html, /createLeftoverUncoveredLeftoverOnlyMaximumMarkdown\(/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F10"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyMaximum\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F11"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyMaximumCopy\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F12"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "F10"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyRemaining\(\);/u);
+  assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-leftover-only-maximum/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-uncovered-leftover-buyer/u);
+});
+

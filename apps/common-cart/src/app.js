@@ -87,6 +87,7 @@ import {
   createLeftoverUncoveredCountMarkdown,
   createLeftoverUncoveredLeftoverOnlyCountMarkdown,
   createLeftoverUncoveredLeftoverOnlyRemainingMarkdown,
+  createLeftoverUncoveredLeftoverOnlyMaximumMarkdown,
   createWinningRemainingCapacityMarkdown,
   createRequestedUnitsMarkdown,
   organizerLeftoverRows,
@@ -405,6 +406,7 @@ function bindStaticEvents() {
   document.querySelector("#copy-leftover-uncovered-count").addEventListener("click", copyLeftoverUncoveredCount);
   document.querySelector("#copy-leftover-uncovered-leftover-only-count").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyCount);
   document.querySelector("#copy-leftover-uncovered-leftover-only-remaining").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyRemaining);
+  document.querySelector("#copy-leftover-uncovered-leftover-only-maximum").addEventListener("click", copyLeftoverUncoveredLeftoverOnlyMaximum);
   document.querySelector("#copy-uncovered-leftover").addEventListener("click", copyUncoveredLeftoverCounts);
   document.querySelector("#copy-uncovered-leftover-units").addEventListener("click", copyUncoveredLeftoverUnitCount);
   document.querySelector("#copy-leftover-headroom").addEventListener("click", copyLeftoverHeadroom);
@@ -1555,6 +1557,21 @@ function handleShortcut(event) {
     focusHideFirstUncoveredLeftoverBuyer();
     return;
   }
+  if (event.shiftKey && key === "F10") {
+    event.preventDefault();
+    copyLeftoverUncoveredLeftoverOnlyMaximum();
+    return;
+  }
+  if (event.shiftKey && key === "F11") {
+    event.preventDefault();
+    focusLeftoverUncoveredLeftoverOnlyMaximumCopy();
+    return;
+  }
+  if (event.shiftKey && key === "F12") {
+    event.preventDefault();
+    focusHideFirstUncoveredLeftoverBuyer();
+    return;
+  }
   if (key === "F10") {
     event.preventDefault();
     copyLeftoverUncoveredLeftoverOnlyRemaining();
@@ -2184,6 +2201,17 @@ function focusLeftoverUncoveredLeftoverOnlyRemainingCopy() {
   const buyerTab = document.querySelector("#buyer-tab");
   if (buyerTab) activateTab(buyerTab);
   const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-remaining");
+  if (copy) {
+    copy.focus();
+    return;
+  }
+  document.querySelector("#residual-title")?.focus();
+}
+
+function focusLeftoverUncoveredLeftoverOnlyMaximumCopy() {
+  const buyerTab = document.querySelector("#buyer-tab");
+  if (buyerTab) activateTab(buyerTab);
+  const copy = document.querySelector("#copy-leftover-uncovered-leftover-only-maximum");
   if (copy) {
     copy.focus();
     return;
@@ -4100,6 +4128,16 @@ function copyLeftoverUncoveredLeftoverOnlyRemaining() {
       "Clipboard was blocked. Organizer-private leftover uncovered leftover-only remaining Markdown is in the textarea. Count only. This is not a merchant export."
     );
   } catch (error) { setStatus(`Leftover uncovered leftover-only remaining copy failed: ${messageOf(error)}`); }
+}
+
+function copyLeftoverUncoveredLeftoverOnlyMaximum() {
+  try {
+    copyTextWithFallback(
+      createLeftoverUncoveredLeftoverOnlyMaximumMarkdown(scenario),
+      "Leftover uncovered leftover-only maximum copied as organizer-private Markdown. Count only. This is not a merchant export.",
+      "Clipboard was blocked. Organizer-private leftover uncovered leftover-only maximum Markdown is in the textarea. Count only. This is not a merchant export."
+    );
+  } catch (error) { setStatus(`Leftover uncovered leftover-only maximum copy failed: ${messageOf(error)}`); }
 }
 
 function copyUncoveredLeftoverCounts() {
