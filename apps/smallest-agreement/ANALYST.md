@@ -107,3 +107,14 @@ contains the hypothetical proposal and its search, keeping other locks, floors,
 vetoes, and budget. A lock never grants decision authority. The source file
 is unchanged; the nested `proposal` is available if you choose to save that
 counterfactual separately.
+
+## Export facilitator and spreadsheet handoffs
+
+`node scripts/analyze.mjs export proposal.json brief` emits the existing
+Markdown decision brief with ranked packages and constraint limitations.
+`export proposal.json evidence` emits CSV of all model inputs and the computed
+recommendation status. `support`, `groups`, `options`, and `worksheet` emit
+the corresponding existing CSV formats without running a solver. These are
+raw Markdown or CSV, not JSON strings. CSV text cells retain the model's
+spreadsheet-formula neutralization and quoting. All exports contain declared
+participant information; none is a redaction or authorization to share it.

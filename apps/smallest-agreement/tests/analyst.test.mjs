@@ -188,3 +188,36 @@ test('lock preview forces one option while preserving other constraints and sour
   invalid(['lock', '-', 'hours', 'missing'], proposal, /Unknown option/);
   assert.equal(result(['solve', '-']).agreement.changeCost, 2);
 });
+
+test('exports produce usable Markdown and spreadsheet-safe model CSV without JSON wrapping', () => {
+  const brief = run(['export', '-', 'brief']);
+  assert.equal(brief.status, 0, brief.stderr);
+  assert.match(brief.stdout, /^# The Smallest Agreement/);
+  assert.match(brief.stdout, /Recommended approval: 65\.0%/);
+  assert.match(brief.stdout, /Total change cost: 2\.0/);
+  for (const format of ['evidence', 'support', 'groups', 'options', 'worksheet']) {
+    const exported = run(['export', '-', format]);
+    assert.equal(exported.status, 0, exported.stderr);
+    assert.match(exported.stdout, /,/);
+    assert.ok(exported.stdout.split('\n').length > 2);
+  }
+  const maliciousLabel = { ...proposal, title: '=SUM(1,2)' };
+  const csv = run(['export', '-', 'evidence'], maliciousLabel);
+  assert.match(csv.stdout, /'=SUM\(1,2\)/);
+  assert.match(run(['export', '-', 'brief'], { ...proposal, maxChangeCost: 0 }).stdout, /No permitted combination/);
+  invalid(['export', '-', 'constructor'], proposal, /Unknown export format/);
+  invalid(['export', '-', 'brief'], '{bad', /valid JSON/);
+});
+
+test('file read errors and invalid UTF-8 emit safe errors and recover', () => {
+  const directory = mkdtempSync(join(tmpdir(), 'agreement-input-'));
+  try {
+    const file = join(directory, 'input.json');
+    invalid(['export', file, 'brief'], proposal, /Cannot read/);
+    writeFileSync(file, Buffer.from([0xff, 0xfe, 0x00]));
+    invalid(['export', file, 'brief'], proposal, /UTF-8/);
+    writeFileSync(file, JSON.stringify(proposal));
+    assert.equal(run(['export', file, 'brief']).status, 0);
+    assert.equal(JSON.parse(readFileSync(file, 'utf8')).threshold, 60);
+  } finally { rmSync(directory, { recursive: true }); }
+});

@@ -1,5 +1,11 @@
 import { createReadStream } from 'node:fs';
-import { findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage, compareScenarioInputs, createAgreementReviewPacket, replayAgreementReviewPacket, AGREEMENT_REVIEW_TOOLS, MAX_CHANGE_COST, MAX_CLAUSES, previewLockedOption } from '../src/model.js';
+import {
+  findSmallestAgreement, proposalFromWorkshopDocument, evaluatePackage, stressPackage,
+  compareScenarioInputs, createAgreementReviewPacket, replayAgreementReviewPacket,
+  AGREEMENT_REVIEW_TOOLS, MAX_CHANGE_COST, MAX_CLAUSES, previewLockedOption,
+  formatDecisionBrief, formatEvidenceCsv, formatSupportMatrixCsv,
+  formatParticipantGroupsCsv, formatClauseOptionsCsv, formatDiscussionWorksheetCsv,
+} from '../src/model.js';
 
 const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [arguments]
   solve
@@ -10,7 +16,8 @@ const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [argumen
   replay (input is a review packet)
   batch (input is JSONL, one proposal or workspace per nonblank line)
   sweep <threshold|maxChangeCost> <numeric levels separated by commas>
-  lock <clause ID> <option ID>`;
+  lock <clause ID> <option ID>
+  export <brief|evidence|support|groups|options|worksheet>`;
 
 async function readText(path, limit = 262144) {
   const stream = path === '-' ? process.stdin : createReadStream(path);
@@ -71,7 +78,7 @@ try {
   if (command === '--help' && path === undefined) {
     process.stdout.write(usage + '\n');
   } else {
-    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2, lock: 2 };
+    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0, sweep: 2, lock: 2, export: 1 };
     if (!Object.hasOwn(arity, command) || !path || args.length !== arity[command]) throw new TypeError(usage);
     if (command === 'compare' && path === '-' && args[0] === '-') throw new TypeError('Only one comparison input may use stdin.');
     const inputText = await readText(path, ['replay', 'batch'].includes(command) ? 1048576 : 262144);
@@ -85,6 +92,18 @@ try {
       case 'replay': output = replayAgreementReviewPacket(raw); break;
       case 'batch': output = batch(inputText); break;
       case 'lock': output = checked(previewLockedOption(proposal, args[0], args[1], { alternativesLimit: 5 })); break;
+      case 'export': {
+        const formats = {
+          brief: p => formatDecisionBrief(p, solve(p)),
+          evidence: p => formatEvidenceCsv(p, solve(p)),
+          support: formatSupportMatrixCsv, groups: formatParticipantGroupsCsv,
+          options: p => checked(formatClauseOptionsCsv(p)).csv,
+          worksheet: p => checked(formatDiscussionWorksheetCsv(p)).csv,
+        };
+        if (!Object.hasOwn(formats, args[0])) throw new TypeError('Unknown export format. ' + usage);
+        output = formats[args[0]](proposal);
+        break;
+      }
       case 'sweep': {
         const field = args[0];
         if (field !== 'threshold' && field !== 'maxChangeCost') throw new TypeError('Sweep field must be threshold or maxChangeCost.');
@@ -106,7 +125,7 @@ try {
         break;
       }
     }
-    process.stdout.write((command === 'batch' ? output.map(row => JSON.stringify(row)).join('\n') : JSON.stringify(output)) + '\n');
+    process.stdout.write(command === 'export' ? output : (command === 'batch' ? output.map(row => JSON.stringify(row)).join('\n') : JSON.stringify(output)) + '\n');
   }
 } catch (error) {
   process.stderr.write(JSON.stringify({ status: 'error', error: error.message }) + '\n');
