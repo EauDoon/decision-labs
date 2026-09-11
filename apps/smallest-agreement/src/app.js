@@ -1169,6 +1169,39 @@ const presets = {
       },
     ],
   },
+  "kayaking-club-hours": {
+    title: "Kayaking club hours: whitewater booking, slalom bar, and spraydeck lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 4 },
+      { id: "neighbours", name: "Neighbours", weight: 3, veto: true },
+      { id: "pandc", name: "P&C", weight: 2 },
+    ],
+    clauses: [
+      {
+        id: "whitewater-booking", title: "Whitewater booking", options: [
+          { id: "whitewater-booking-original", original: true, label: "Keep weekday whitewater booking from 14:30 with no posted whitewater rota", changeCost: 0, support: { students: 9, neighbours: 94, pandc: 55 } },
+          { id: "whitewater-booking-late", original: false, label: "Open weekday kayaking at 16:45 with a posted whitewater rota", changeCost: 2, support: { students: 84, neighbours: 37, pandc: 48 } },
+          { id: "whitewater-booking-weekend", original: false, label: "Hold Sunday morning whitewater at 07:45 with a slalom booking card", changeCost: 4, support: { students: 69, neighbours: 44, pandc: 53 } },
+        ],
+      },
+      {
+        id: "kayaking-slalom-bar", title: "Slalom bar hours", options: [
+          { id: "kayaking-slalom-bar-original", original: true, label: "No posted kayaking slalom-bar hours", changeCost: 0, support: { students: 75, neighbours: 16, pandc: 25 } },
+          { id: "kayaking-slalom-bar-cap", original: false, label: "Close the kayaking slalom bar at 18:45 and keep drinks inside the slalom hut", changeCost: 1, support: { students: 48, neighbours: 80, pandc: 58 } },
+          { id: "kayaking-slalom-bar-cut", original: false, label: "Serve tea only after 17:15 and retire the kayaking slalom bar", changeCost: 5, support: { students: 30, neighbours: 90, pandc: 43 } },
+        ],
+      },
+      {
+        id: "kayaking-spraydeck-lockup", title: "Spraydeck lock-up", options: [
+          { id: "kayaking-spraydeck-lockup-original", original: true, label: "Leave the spraydeck store door on a shared padlock after club hours", changeCost: 0, support: { students: 14, neighbours: 38, pandc: 37 } },
+          { id: "kayaking-spraydeck-lockup-steward", original: false, label: "Require a P&C steward to lock the spraydeck store before 19:50", changeCost: 3, support: { students: 60, neighbours: 52, pandc: 75 } },
+          { id: "kayaking-spraydeck-lockup-timer", original: false, label: "Add a timed lock on the spraydeck store after the last session", changeCost: 2, support: { students: 49, neighbours: 50, pandc: 67 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
