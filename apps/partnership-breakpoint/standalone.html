@@ -435,6 +435,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
  * @property {boolean} [hideLastParticipantAtHold] Optional roster display preference. Omitted files default to showing the last roster row currently at hold (remaining-to-hold is 0).
  * @property {boolean} [hideFirstParticipantAtHold] Optional roster display preference. Omitted files default to showing the first roster row currently at hold (remaining-to-hold is 0).
  * @property {boolean} [hideFirstZeroShareParticipant] Optional roster display preference. Omitted files default to showing the first roster row with zero revenue share.
+ * @property {boolean} [hideLastZeroShareParticipant] Optional roster display preference. Omitted files default to showing the last roster row with zero revenue share.
  *
  * @typedef {object} ShockResult
  * @property {string} kind
@@ -448,7 +449,7 @@ input[aria-invalid="true"], textarea[aria-invalid="true"] { border: 2px solid #b
 const EPSILON = 1e-9;
 const MAX_PARTICIPANTS = 24;
 const MAX_NUMERIC_INPUT = 1_000_000_000_000_000;
-const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant', 'hideLastSpareCapacityParticipant', 'hideFirstSpareCapacityParticipant', 'hideLastParticipantWithoutCapacity', 'hideFirstParticipantWithoutCapacity', 'hideLastParticipantAtHold', 'hideFirstParticipantAtHold', 'hideFirstZeroShareParticipant']);
+const CONFIG_KEYS = new Set(['deal', 'participants', 'stress', 'collapseAllHoldCases', 'hideHoldingParticipants', 'hideAllHoldLedger', 'hideZeroShareParticipants', 'hideParticipantsOverCapacity', 'hideParticipantsAtHold', 'hideParticipantsWithoutCapacity', 'hideParticipantsWithSpareCapacity', 'hideParticipantsAtLeastHeadroom', 'hideParticipantsWithinCapacity', 'hideFirstBreakpointParticipant', 'hideFirstOverCapacityParticipant', 'hideLastOverCapacityParticipant', 'hideLastBreakpointParticipant', 'hideLastWithinCapacityParticipant', 'hideFirstWithinCapacityParticipant', 'hideLastSpareCapacityParticipant', 'hideFirstSpareCapacityParticipant', 'hideLastParticipantWithoutCapacity', 'hideFirstParticipantWithoutCapacity', 'hideLastParticipantAtHold', 'hideFirstParticipantAtHold', 'hideFirstZeroShareParticipant', 'hideLastZeroShareParticipant']);
 const DEAL_KEYS = new Set(['monthlyVolume', 'feePerTransaction', 'addressableVolume', 'volumeShockPct', 'title', 'currency', 'notes']);
 const PARTICIPANT_KEYS = new Set(['id', 'name', 'revenueShare', 'variableCostPerTransaction', 'fixedMonthlyCost', 'minimumAcceptableProfit', 'capacity', 'minimumCommitment', 'riskCost']);
 const RESERVED_KEYS = new Set(['__proto__', 'constructor', 'prototype']);
@@ -732,6 +733,15 @@ const PRESETS = Object.freeze({
       { id: 'waterpolo-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.12, fixedMonthlyCost: 1170, minimumAcceptableProfit: 450, capacity: 4200, minimumCommitment: 0, riskCost: 220 },
     ],
   },
+  rowingCarnivalSplit: {
+    name: 'Rowing carnival split',
+    deal: { monthlyVolume: 4300, feePerTransaction: 8, addressableVolume: 5500, volumeShockPct: 0 },
+    participants: [
+      { id: 'rowing-committee', name: 'Carnival committee', revenueShare: 0.37, variableCostPerTransaction: 1.68, fixedMonthlyCost: 3560, minimumAcceptableProfit: 1350, capacity: 5200, minimumCommitment: 0, riskCost: 510 },
+      { id: 'rowing-boat-hire', name: 'Boat hire', revenueShare: 0.38, variableCostPerTransaction: 2.22, fixedMonthlyCost: 2300, minimumAcceptableProfit: 890, capacity: 6300, minimumCommitment: 340, riskCost: 350 },
+      { id: 'rowing-first-aid', name: 'First-aid', revenueShare: 0.25, variableCostPerTransaction: 1.16, fixedMonthlyCost: 1200, minimumAcceptableProfit: 460, capacity: 4300, minimumCommitment: 0, riskCost: 230 },
+    ],
+  },
 });
 
 function isFiniteNumber(value) {
@@ -919,6 +929,12 @@ function validateConfiguration(config) {
     const hideFirstZero = own(config, 'hideFirstZeroShareParticipant');
     if (hideFirstZero !== true && hideFirstZero !== false) {
       errors.push('Hide first zero-share participant must be a boolean.');
+    }
+  }
+  if (Object.hasOwn(config, 'hideLastZeroShareParticipant')) {
+    const hideLastZero = own(config, 'hideLastZeroShareParticipant');
+    if (hideLastZero !== true && hideLastZero !== false) {
+      errors.push('Hide last zero-share participant must be a boolean.');
     }
   }
   if (Object.hasOwn(config, 'stress')) {
@@ -2573,6 +2589,7 @@ let lastUnboundedRemainingCopyText = '';
 let firstUnboundedRemainingCopyText = '';
 let lastAtHoldRemainingCopyText = '';
 let firstAtHoldRemainingCopyText = '';
+let lastZeroShareLabelCopyText = '';
 let lastBreakpointLabelCopyText = '';
 let rosterPasteText = '';
 let invalidFieldCount = 0;
@@ -2604,6 +2621,7 @@ let hideFirstParticipantWithoutCapacity = false;
 let hideLastParticipantAtHold = false;
 let hideFirstParticipantAtHold = false;
 let hideFirstZeroShareParticipant = false;
+let hideLastZeroShareParticipant = false;
 let hideUnboundedTornado = false;
 let printRedacted = false;
 const undoHistory = [];
@@ -2645,6 +2663,7 @@ function checkpoint() {
   firstUnboundedRemainingCopyText = '';
   lastAtHoldRemainingCopyText = '';
   firstAtHoldRemainingCopyText = '';
+  lastZeroShareLabelCopyText = '';
   lastBreakpointLabelCopyText = '';
   importSequence += 1;
   undoHistory.push(clone(state));
@@ -2694,6 +2713,7 @@ function travelHistory(direction) {
   firstUnboundedRemainingCopyText = '';
   lastAtHoldRemainingCopyText = '';
   firstAtHoldRemainingCopyText = '';
+  lastZeroShareLabelCopyText = '';
   lastBreakpointLabelCopyText = '';
   importSequence += 1;
   activePreset = '';
@@ -2819,6 +2839,7 @@ function readCollapsePreference() {
   hideLastParticipantAtHold = state.hideLastParticipantAtHold === true;
   hideFirstParticipantAtHold = state.hideFirstParticipantAtHold === true;
   hideFirstZeroShareParticipant = state.hideFirstZeroShareParticipant === true;
+  hideLastZeroShareParticipant = state.hideLastZeroShareParticipant === true;
 }
 
 function writeCollapsePreference() {
@@ -2868,6 +2889,8 @@ function writeCollapsePreference() {
   else delete state.hideFirstParticipantAtHold;
   if (hideFirstZeroShareParticipant) state.hideFirstZeroShareParticipant = true;
   else delete state.hideFirstZeroShareParticipant;
+  if (hideLastZeroShareParticipant) state.hideLastZeroShareParticipant = true;
+  else delete state.hideLastZeroShareParticipant;
 }
 
 function compactErrorMessage(error) {
@@ -3097,6 +3120,14 @@ function participantIsFirstZeroShare(participant) {
   return Boolean(first) && first.id === participant.id;
 }
 
+function participantIsLastZeroShare(participant) {
+  let last = null;
+  for (const item of state.participants) {
+    if (participantHasZeroShare(item)) last = item;
+  }
+  return Boolean(last) && last.id === participant.id;
+}
+
 function participantOverListedCapacity(result, participant) {
   if (!result) return false;
   const capacity = participant.capacity;
@@ -3246,6 +3277,7 @@ function participantIsFirstAtHold(result, participant) {
 function participantHiddenFromRoster(result, participant) {
   if (hideZeroShareParticipants && participantHasZeroShare(participant)) return true;
   if (hideFirstZeroShareParticipant && participantIsFirstZeroShare(participant)) return true;
+  if (hideLastZeroShareParticipant && participantIsLastZeroShare(participant)) return true;
   if (hideHoldingParticipants && participantCurrentlyHolds(result, participant.id)) return true;
   if (hideParticipantsOverCapacity && participantOverListedCapacity(result, participant)) return true;
   if (hideParticipantsAtHold && participantAtHoldNoCapacityBreach(result, participant)) return true;
@@ -3278,6 +3310,9 @@ function inputPanel(result) {
     : 0;
   const hiddenFirstZeroShareCount = hideFirstZeroShareParticipant
     ? state.participants.filter((participant) => participantIsFirstZeroShare(participant)).length
+    : 0;
+  const hiddenLastZeroShareCount = hideLastZeroShareParticipant
+    ? state.participants.filter((participant) => participantIsLastZeroShare(participant)).length
     : 0;
   const hiddenOverCount = hideParticipantsOverCapacity && result
     ? state.participants.filter((participant) => participantOverListedCapacity(result, participant)).length
@@ -3378,6 +3413,9 @@ function inputPanel(result) {
   const firstZeroShareFilterNote = hideFirstZeroShareParticipant
     ? `${hiddenFirstZeroShareCount} first participant with zero revenue share ${hiddenFirstZeroShareCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores ${hiddenFirstZeroShareCount === 1 ? 'it' : 'them'}. Tested-case and model counts are unchanged.`
     : 'Hide the first roster row with zero revenue share to filter this roster display only. Expand restores it. Counts stay the same.';
+  const lastZeroShareFilterNote = hideLastZeroShareParticipant
+    ? `${hiddenLastZeroShareCount} last participant with zero revenue share ${hiddenLastZeroShareCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores ${hiddenLastZeroShareCount === 1 ? 'it' : 'them'}. Tested-case and model counts are unchanged.`
+    : 'Hide the last roster row with zero revenue share to filter this roster display only. Expand restores it. Counts stay the same.';
   const overCapacityFilterNote = hideParticipantsOverCapacity
     ? `${hiddenOverCount} participant${hiddenOverCount === 1 ? '' : 's'} whose volume is above listed capacity ${hiddenOverCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores them. Tested-case and model counts are unchanged.`
     : 'Hide participants whose volume is above listed capacity to filter this roster display only. Expand restores them. Counts stay the same.';
@@ -3432,7 +3470,7 @@ function inputPanel(result) {
   const firstAtHoldFilterNote = hideFirstParticipantAtHold
     ? `${hiddenFirstAtHoldCount} first participant at hold ${hiddenFirstAtHoldCount === 1 ? 'is' : 'are'} hidden from this roster display. Expand restores ${hiddenFirstAtHoldCount === 1 ? 'it' : 'them'}. Tested-case and model counts are unchanged.`
     : 'Hide the first roster row currently at hold (remaining-to-hold is 0) to filter this roster display only. Expand restores it. Counts stay the same.';
-  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideFirstZeroShareParticipant, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom, hideParticipantsWithinCapacity, hideFirstBreakpointParticipant, hideLastBreakpointParticipant, hideFirstOverCapacityParticipant, hideLastOverCapacityParticipant, hideLastWithinCapacityParticipant, hideFirstWithinCapacityParticipant, hideLastSpareCapacityParticipant, hideFirstSpareCapacityParticipant, hideLastParticipantWithoutCapacity, hideFirstParticipantWithoutCapacity, hideLastParticipantAtHold, hideFirstParticipantAtHold].filter(Boolean).length;
+  const rosterFilterCount = [hideHoldingParticipants, hideZeroShareParticipants, hideFirstZeroShareParticipant, hideLastZeroShareParticipant, hideParticipantsOverCapacity, hideParticipantsAtHold, hideParticipantsWithoutCapacity, hideParticipantsWithSpareCapacity, hideParticipantsAtLeastHeadroom, hideParticipantsWithinCapacity, hideFirstBreakpointParticipant, hideLastBreakpointParticipant, hideFirstOverCapacityParticipant, hideLastOverCapacityParticipant, hideLastWithinCapacityParticipant, hideFirstWithinCapacityParticipant, hideLastSpareCapacityParticipant, hideFirstSpareCapacityParticipant, hideLastParticipantWithoutCapacity, hideFirstParticipantWithoutCapacity, hideLastParticipantAtHold, hideFirstParticipantAtHold].filter(Boolean).length;
   const rosterEmptyNotice = !participantForms && firstVisibleIndex === -1
     ? rosterFilterCount === 1 && hideHoldingParticipants
       ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant currently holds. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
@@ -3476,6 +3514,8 @@ function inputPanel(result) {
                                     ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the first participant at hold. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
                                   : rosterFilterCount === 1 && hideFirstZeroShareParticipant
                                     ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the first participant with zero revenue share. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
+                                  : rosterFilterCount === 1 && hideLastZeroShareParticipant
+                                    ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is the last participant with zero revenue share. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : rosterFilterCount > 0
               ? `<p class="notice"><span id="share-hold-jump" tabindex="-1"></span>Every displayed participant is hidden by the current roster filters. Expand to edit the hidden roster cards. Counts are unchanged.</p>`
               : ''
@@ -3527,6 +3567,8 @@ function inputPanel(result) {
           <p class="notice">${zeroShareFilterNote}</p>
           <div class="button-row"><button type="button" id="hide-first-zero-share-participant" data-action="hide-first-zero-share-participant" aria-keyshortcuts="ArrowRight" aria-pressed="${hideFirstZeroShareParticipant}">Hide the first participant with zero revenue share</button><button type="button" data-action="show-first-zero-share-participant" ${hideFirstZeroShareParticipant ? '' : 'disabled'}>Show the first participant with zero revenue share</button></div>
           <p class="notice">${firstZeroShareFilterNote}</p>
+          <div class="button-row"><button type="button" id="hide-last-zero-share-participant" data-action="hide-last-zero-share-participant" aria-keyshortcuts="Backspace" aria-pressed="${hideLastZeroShareParticipant}">Hide the last participant with zero revenue share</button><button type="button" data-action="show-last-zero-share-participant" ${hideLastZeroShareParticipant ? '' : 'disabled'}>Show the last participant with zero revenue share</button><button type="button" id="copy-last-zero-share-participant" data-action="copy-last-zero-share-participant" aria-keyshortcuts="F3">Copy last zero-share participant label</button></div>
+          <p class="notice">${lastZeroShareFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-over-capacity-participants" aria-pressed="${hideParticipantsOverCapacity}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants whose volume is above listed capacity</button><button type="button" data-action="show-over-capacity-participants" ${hideParticipantsOverCapacity ? '' : 'disabled'}>Show over-capacity participants</button><button type="button" id="copy-over-capacity-count" data-action="copy-over-capacity-count" aria-keyshortcuts='"'>Copy over-capacity participant count</button><button type="button" id="copy-first-over-capacity-label" data-action="copy-first-over-capacity-label" aria-keyshortcuts="}">Copy first over-capacity participant label</button><button type="button" id="copy-first-over-capacity-remaining" data-action="copy-first-over-capacity-remaining" aria-keyshortcuts="~">Copy first over-capacity remaining listed capacity</button><button type="button" id="copy-last-over-capacity-label" data-action="copy-last-over-capacity-label" aria-keyshortcuts="(">Copy last over-capacity participant label</button><button type="button" id="copy-last-over-capacity-remaining" data-action="copy-last-over-capacity-remaining" aria-keyshortcuts="*">Copy last over-capacity remaining listed capacity</button></div>
           <p class="notice">${overCapacityFilterNote}</p>
           <div class="button-row"><button type="button" data-action="hide-at-hold-participants" aria-pressed="${hideParticipantsAtHold}" ${result ? '' : 'disabled title="Resolve invalid inputs before filtering the roster"'}>Hide participants at hold with no listed capacity breach</button><button type="button" data-action="show-at-hold-participants" ${hideParticipantsAtHold ? '' : 'disabled'}>Show at-hold participants</button></div>
@@ -3605,7 +3647,7 @@ function invalidSummary() {
 function resultsPanel(result) {
   if (!result) {
     const errors = validateConfiguration(state).errors;
-    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}${lastOverCapacityLabelCopySection()}${lastOverCapacityRemainingCopySection()}${firstWithinCapacityRemainingCopySection()}${lastWithinCapacityRemainingCopySection()}${lastSpareCapacityRemainingCopySection()}${firstSpareCapacityRemainingCopySection()}${lastUnboundedRemainingCopySection()}${firstUnboundedRemainingCopySection()}${lastAtHoldRemainingCopySection()}${firstAtHoldRemainingCopySection()}${lastBreakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
+    return `<section class="results" id="results-start">${errorBox(errors)}${importedCompareSection()}${notesCopySection()}${waterfallCopySection()}${viabilityCopySection()}${utilizationCopySection()}${tornadoCopySection()}${operatingCopySection()}${splitCopySection()}${allocationCopySection()}${breakpointSnapshotCopySection()}${titleCopySection()}${breakpointLabelCopySection()}${remainingCopySection()}${volumeCopySection()}${viabilityLabelCopySection()}${overCapacityCountCopySection()}${firstOverCapacityLabelCopySection()}${firstOverCapacityRemainingCopySection()}${lastOverCapacityLabelCopySection()}${lastOverCapacityRemainingCopySection()}${firstWithinCapacityRemainingCopySection()}${lastWithinCapacityRemainingCopySection()}${lastSpareCapacityRemainingCopySection()}${firstSpareCapacityRemainingCopySection()}${lastUnboundedRemainingCopySection()}${firstUnboundedRemainingCopySection()}${lastAtHoldRemainingCopySection()}${firstAtHoldRemainingCopySection()}${lastZeroShareLabelCopySection()}${lastBreakpointLabelCopySection()}<section class="panel"><div class="panel-heading"><h2>Model status</h2></div><div class="panel-body"><p class="notice">Calculations return once every required field is valid and shares reconcile to 1.</p></div></section>${methodAndLimits()}</section>`;
   }
   const statusClass = result.viable ? 'viable' : 'fragile';
   const status = result.viable ? 'Operating region holds' : 'A participant exits';
@@ -3647,6 +3689,7 @@ function resultsPanel(result) {
     <section class="print-only print-keep"><h2>First unbounded remaining-to-hold</h2><p>${escapeAttribute(firstUnboundedRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Last at-hold remaining-to-hold</h2><p>${escapeAttribute(lastAtHoldRemainingMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>First at-hold remaining-to-hold</h2><p>${escapeAttribute(firstAtHoldRemainingMarkdown(result))}</p></section>
+    <section class="print-only print-keep"><h2>Last zero-share participant</h2><p>${escapeAttribute(lastZeroShareLabelMarkdown(result))}</p></section>
     <section class="print-only print-keep"><h2>Allocation balance</h2><p>${escapeAttribute(shareBalanceText())}</p></section>
     <section class="print-only print-keep"><h2>Deal notes</h2>${state.deal.notes ? `<p>${escapeAttribute(state.deal.notes)}</p>` : '<p>No deal notes were entered.</p>'}</section>
     <section class="print-only print-hide"><h2>Case assumptions</h2><p>Reproducible inputs. Deterministic monthly model; money is expressed in consistent currency units.</p><pre>${escapeAttribute(JSON.stringify(state, null, 2))}</pre></section>
@@ -3698,6 +3741,7 @@ function resultsPanel(result) {
     ${firstUnboundedRemainingCopySection()}
     ${lastAtHoldRemainingCopySection()}
     ${firstAtHoldRemainingCopySection()}
+    ${lastZeroShareLabelCopySection()}
     ${lastBreakpointLabelCopySection()}
     ${comparisonSection(result)}
     ${threeCompareSection(result)}
@@ -4200,6 +4244,7 @@ function attachEvents() {
     if (action === 'close-first-unbounded-remaining-copy') { firstUnboundedRemainingCopyText = ''; render(); return; }
     if (action === 'close-last-at-hold-remaining-copy') { lastAtHoldRemainingCopyText = ''; render(); return; }
     if (action === 'close-first-at-hold-remaining-copy') { firstAtHoldRemainingCopyText = ''; render(); return; }
+    if (action === 'close-last-zero-share-label-copy') { lastZeroShareLabelCopyText = ''; render(); return; }
     if (action === 'close-last-breakpoint-label-copy') { lastBreakpointLabelCopyText = ''; render(); return; }
     if (action === 'solve-fee-hold') { previewFeeHold(); return; }
     if (action === 'apply-fee-hold') { applyFeeHold(); return; }
@@ -4270,6 +4315,20 @@ function attachEvents() {
     }
     if (action === 'show-first-zero-share-participant') {
       hideFirstZeroShareParticipant = false;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'hide-last-zero-share-participant') {
+      hideLastZeroShareParticipant = true;
+      writeCollapsePreference();
+      saveState();
+      render();
+      return;
+    }
+    if (action === 'show-last-zero-share-participant') {
+      hideLastZeroShareParticipant = false;
       writeCollapsePreference();
       saveState();
       render();
@@ -4730,6 +4789,7 @@ function attachEvents() {
     if (action === 'copy-first-unbounded-remaining') copyFirstUnboundedRemaining();
     if (action === 'copy-last-at-hold-remaining') copyLastAtHoldRemaining();
     if (action === 'copy-first-at-hold-remaining') copyFirstAtHoldRemaining();
+    if (action === 'copy-last-zero-share-participant') copyLastZeroShareParticipant();
     if (action === 'copy-last-breakpoint-label') copyLastBreakpointLabel();
     if (action === 'copy-share-hold') copyShareHoldPreview();
     if (action === 'copy-deal-notes') copyDealNotes();
@@ -5158,6 +5218,7 @@ window.addEventListener('keydown', (event) => {
   if (event.key === 'PageUp') copyFirstUnboundedRemaining();
   if (event.key === 'Insert') copyLastAtHoldRemaining();
   if (event.key === 'Delete') copyFirstAtHoldRemaining();
+  if (event.key === 'F3') copyLastZeroShareParticipant();
   if (event.key === '.') {
     const target = document.querySelector('#copy-first-breakpoint-label') ?? document.querySelector('#first-breakpoint-title');
     target?.focus?.({ preventScroll: false });
@@ -5335,6 +5396,18 @@ window.addEventListener('keydown', (event) => {
   }
   if (event.key === 'ArrowRight') {
     const target = document.querySelector('#hide-first-zero-share-participant')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'F4') {
+    const target = document.querySelector('#copy-last-zero-share-participant')
+      ?? document.querySelector('#participant-inputs-title');
+    target?.focus?.({ preventScroll: false });
+    target?.scrollIntoView?.({ block: 'start' });
+  }
+  if (event.key === 'Backspace') {
+    const target = document.querySelector('#hide-last-zero-share-participant')
       ?? document.querySelector('#participant-inputs-title');
     target?.focus?.({ preventScroll: false });
     target?.scrollIntoView?.({ block: 'start' });
@@ -6670,6 +6743,60 @@ function copyFirstAtHoldRemaining() {
   showFirstAtHoldRemainingCopyFallback(text, fallbackNote);
 }
 
+function lastZeroShareLabelMarkdown(result) {
+  let participant = null;
+  for (const item of state.participants) {
+    if (participantHasZeroShare(item)) participant = item;
+  }
+  if (!participant) return 'Last zero-share participant: none entered.';
+  const named = result?.participants.find((item) => item.id === participant.id);
+  return 'Last zero-share participant: ' + reportText(named?.name ?? participant.name) + '. Last roster row with zero revenue share. Not a forecast.';
+}
+
+function showLastZeroShareLabelCopyFallback(text, message) {
+  lastZeroShareLabelCopyText = text;
+  render();
+  document.querySelector('#last-zero-share-label-copy-text')?.focus();
+  setNotice(message);
+}
+
+function lastZeroShareLabelCopySection() {
+  if (!lastZeroShareLabelCopyText) return '';
+  return `<section class="panel" aria-labelledby="last-zero-share-label-copy-title"><div class="panel-heading"><h2 id="last-zero-share-label-copy-title">Last zero-share participant label Markdown</h2><button type="button" data-action="close-last-zero-share-label-copy">Close</button></div><div class="panel-body"><p>Clipboard is unavailable in this browser. Select the Markdown below and copy it. This names the last roster row with zero revenue share. It is distinct from first at-hold remaining-to-hold copy, last at-hold remaining-to-hold copy, last unbounded remaining-to-hold copy, and first unbounded remaining-to-hold copy. It is not a forecast.</p><label class="brief-copy-label" for="last-zero-share-label-copy-text">Last zero-share participant label Markdown</label><textarea id="last-zero-share-label-copy-text" readonly rows="4">${escapeAttribute(lastZeroShareLabelCopyText)}</textarea></div></section>`;
+}
+
+function copyLastZeroShareParticipant() {
+  const validation = validateConfiguration(state);
+  const result = validation.valid ? calculatePartnership(state) : null;
+  const text = lastZeroShareLabelMarkdown(result);
+  const clipboard = globalThis.navigator?.clipboard;
+  const copiedNote = 'Last zero-share participant label copied as Markdown. Last roster row with zero revenue share. It is not a forecast.';
+  const fallbackNote = 'Clipboard unavailable. Copy the Markdown from the text area.';
+  if (clipboard && typeof clipboard.writeText === 'function') {
+    try {
+      const written = clipboard.writeText(text);
+      if (written && typeof written.then === 'function') {
+        written.then(() => {
+          lastZeroShareLabelCopyText = '';
+          render();
+          setNotice(copiedNote);
+        }).catch(() => {
+          showLastZeroShareLabelCopyFallback(text, fallbackNote);
+        });
+        return;
+      }
+      lastZeroShareLabelCopyText = '';
+      render();
+      setNotice(copiedNote);
+      return;
+    } catch {
+      showLastZeroShareLabelCopyFallback(text, fallbackNote);
+      return;
+    }
+  }
+  showLastZeroShareLabelCopyFallback(text, fallbackNote);
+}
+
 function lastBreakpointLabelMarkdown(result) {
   if (!result?.firstBreakpoint?.participant) return 'Last first-breakpoint participant: none entered.';
   let participant = null;
@@ -7772,6 +7899,9 @@ function helpDialog() {
         <li><kbd>ArrowUp</kbd> Jump to Hide the last participant at hold, or the Participants heading if missing</li>
         <li><kbd>ArrowLeft</kbd> Jump to Hide the first participant at hold, or the Participants heading if missing</li>
         <li><kbd>ArrowRight</kbd> Jump to Hide the first participant with zero revenue share, or the Participants heading if missing</li>
+        <li><kbd>F3</kbd> Copy last zero-share participant label as Markdown</li>
+        <li><kbd>F4</kbd> Jump to Copy last zero-share participant label, or the Participants heading if missing</li>
+        <li><kbd>Backspace</kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing</li>
         <li><kbd>+</kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>!</kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing</li>
         <li><kbd>|</kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing</li>
