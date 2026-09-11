@@ -58,6 +58,7 @@ import {
   formatFirstGroupWithoutFloorLabelMarkdown,
   formatGroupsWithoutFloorCountMarkdown,
   formatGroupsWithoutFloorRemainingMarkdown,
+  formatLastGroupWithoutFloorRemainingMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
@@ -1423,6 +1424,11 @@ function renderCopyFallbacks(result) {
     const listed = formatGroupsWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     groupsWithoutFloorRemainingBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
+  const lastGroupWithoutFloorRemainingBox = $("#last-group-without-floor-remaining-fallback");
+  if (lastGroupWithoutFloorRemainingBox) {
+    const listed = formatLastGroupWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    lastGroupWithoutFloorRemainingBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
     const exported = formatRecommendedChangeCostCsv(state.proposal, result ?? currentResult());
@@ -2283,6 +2289,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-first-group-at-or-above-threshold-button").disabled = result.status === "invalid";
   $("#copy-groups-without-floor-count-button").disabled = result.status === "invalid";
   $("#copy-groups-without-floor-remaining-button").disabled = result.status === "invalid";
+  $("#copy-last-group-without-floor-remaining-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -4191,6 +4198,24 @@ async function copyGroupsWithoutFloorRemaining() {
   }
 }
 $("#copy-groups-without-floor-remaining-button").addEventListener("click", copyGroupsWithoutFloorRemaining);
+async function copyLastGroupWithoutFloorRemaining() {
+  const listed = formatLastGroupWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the last-without-floor remaining.");
+  const fallback = $("#last-group-without-floor-remaining-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty last-without-floor remaining. A floor is a number you entered, not a legal quorum."
+    : listed.empty
+    ? "No group is without a support floor. Copied an honest zero. A floor is a number you entered, not a legal quorum."
+    : "Last-without-floor remaining copied as Markdown. A floor is a number you entered, not a legal quorum.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the last-without-floor remaining from the Markdown box. A floor is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-last-group-without-floor-remaining-button").addEventListener("click", copyLastGroupWithoutFloorRemaining);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -5443,6 +5468,15 @@ function jumpToGroupsWithoutFloorRemainingCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToLastGroupWithoutFloorRemainingCopy() {
+  const control = $("#copy-last-group-without-floor-remaining-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -5785,13 +5819,13 @@ document.addEventListener("keydown", (event) => {
     jumpToHideLastGroupBelowFloor();
   } else if (event.shiftKey && key === "F7") {
     event.preventDefault();
-    copyGroupsWithoutFloorRemaining();
+    copyLastGroupWithoutFloorRemaining();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    jumpToGroupsWithoutFloorRemainingCopy();
+    jumpToLastGroupWithoutFloorRemainingCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
-    jumpToHideLastGroupWithoutFloor();
+    jumpToHideFirstGroupWithoutFloor();
   } else if (key === "F7") {
     event.preventDefault();
     copyLastGroupWithoutFloor();
