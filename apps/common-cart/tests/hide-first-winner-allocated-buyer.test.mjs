@@ -195,6 +195,6 @@ test("the organizer hide first winner-allocated buyer filter is not on the merch
   assert.match(app, /filterBuyerIdsHidingFirstWinnerAllocatedBuyer\(/u);
   assert.match(app, /hideFirstWinnerAllocatedBuyer/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
-  assert.match(html, /hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, and hide-first-uncovered-leftover-buyer choices are kept/u);
+  assert.match(html, /hide-last-winner-allocated-buyer, hide-first-winner-allocated-buyer, hide-first-uncovered-leftover-buyer, and hide-last-uncovered-leftover-buyer choices are kept/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
 });
