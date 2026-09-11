@@ -97,6 +97,7 @@ async function workbench(protocol = 'file:', options = {}) {
         'hide-first-zero-share-participant',
         'hide-last-zero-share-participant',
         'copy-last-zero-share-participant', 'last-zero-share-label-copy-text',
+        'copy-first-zero-share-participant', 'first-zero-share-label-copy-text',
       ]);
       const id = typeof selector === 'string' && selector.startsWith('#') ? selector.slice(1) : '';
       if (focusIds.has(id) && app.innerHTML.includes(`id="${id}"`)) {
@@ -723,7 +724,7 @@ test('compound case inspection requires explicit application and supports undo',
   app.click('undo'); assert.deepEqual(app.saved(), original);
 });
 
-test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, first over-capacity remaining listed capacity, last over-capacity participant, last over-capacity remaining listed capacity, first within-capacity remaining listed capacity, last within-capacity remaining listed capacity, last spare-capacity remaining listed capacity, first spare-capacity remaining listed capacity, last unbounded remaining-to-hold, first unbounded remaining-to-hold, last at-hold remaining-to-hold, first at-hold remaining-to-hold, and last zero-share participant', async () => {
+test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, allocation balance, deal title, currency code, first-breakpoint participant, remaining-to-hold, volume-to-hold, over-capacity count, first over-capacity participant, first over-capacity remaining listed capacity, last over-capacity participant, last over-capacity remaining listed capacity, first within-capacity remaining listed capacity, last within-capacity remaining listed capacity, last spare-capacity remaining listed capacity, first spare-capacity remaining listed capacity, last unbounded remaining-to-hold, first unbounded remaining-to-hold, last at-hold remaining-to-hold, first at-hold remaining-to-hold, last zero-share participant, and first zero-share participant', async () => {
   const app = await workbench();
   const html = await buildStandalone();
   app.click('dismiss-coach');
@@ -755,6 +756,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.markup(), /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Platform\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.markup(), /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
+  assert.match(app.markup(), /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   assert.match(app.markup(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   const before = JSON.stringify(app.saved());
   app.click('print-report');
@@ -780,6 +782,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Platform\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   app.edit('deal.title', 'Harbor JV', { type: 'text' });
   app.edit('deal.currency', 'USD', { type: 'text' });
@@ -803,6 +806,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Platform\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   app.edit('deal.monthlyVolume', '116000');
   const over = JSON.stringify(app.saved());
   app.click('print-report');
@@ -822,6 +826,7 @@ test('print one-pager keeps tornado, waterfall, ledger, notes, least headroom, a
   assert.match(app.lastPrint(), /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Platform\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(app.lastPrint(), /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
+  assert.match(app.lastPrint(), /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   assert.match(html, /@media print/);
   assert.match(html, /\.skip-link, \.site-header, \.site-footer/);
   assert.match(html, /\.panel:not\(\.print-keep\)/);
@@ -858,6 +863,7 @@ test('redacted print uses Participant 1 through N in the print path and styleshe
   assert.match(snapshot, /<h2>Last at-hold remaining-to-hold<\/h2><p>Last at-hold remaining-to-hold: 0 txn remaining for Participant 3\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>First at-hold remaining-to-hold<\/h2><p>First at-hold remaining-to-hold: 0 txn remaining for Participant 1\. Remaining to hold\. Not a forecast\.<\/p>/);
   assert.match(snapshot, /<h2>Last zero-share participant<\/h2><p>Last zero-share participant: none entered\.<\/p>/);
+  assert.match(snapshot, /<h2>First zero-share participant<\/h2><p>First zero-share participant: none entered\.<\/p>/);
   assert.match(snapshot, /<h2>Allocation balance<\/h2><p>Allocated: 100\.0%\. Shares reconcile to 100%\.<\/p>/);
   assert.doesNotMatch(snapshot, /Liquidity Partner has the least volume headroom/);
   assert.doesNotMatch(snapshot, /Least-headroom participant: Liquidity Partner/);
@@ -1984,6 +1990,33 @@ test('rowing carnival split preset loads from the starting-point buttons', async
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'waterpolo-committee,waterpolo-pool-hire,waterpolo-first-aid');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'lacrosse-committee,lacrosse-ground-hire,lacrosse-first-aid');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'softball-committee,softball-diamond-hire,softball-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'sailing-committee,sailing-yacht-hire,sailing-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
+});
+
+test('sailing carnival split preset loads from the starting-point buttons', async () => {
+  const app = await workbench();
+  assert.match(app.markup(), /data-preset="sailingCarnivalSplit"/);
+  assert.match(app.markup(), /Sailing carnival split/);
+  assert.match(app.markup(), /data-preset="rowingCarnivalSplit"/);
+  assert.match(app.markup(), /Rowing carnival split/);
+  app.click('preset', { preset: 'sailingCarnivalSplit' });
+  assert.equal(app.saved().participants.length, 3);
+  assert.deepEqual(app.saved().participants.map((item) => item.id), ['sailing-committee', 'sailing-yacht-hire', 'sailing-first-aid']);
+  assert.deepEqual(app.saved().participants.map((item) => item.name), ['Carnival committee', 'Yacht club hire', 'First-aid']);
+  assert.equal(app.saved().deal.feePerTransaction, 8);
+  assert.equal(app.saved().deal.monthlyVolume, 4400);
+  assert.equal(app.saved().deal.addressableVolume, 5600);
+  assert.deepEqual(app.saved().participants.map((item) => item.capacity), [5300, 6400, 4400]);
+  assert.notEqual(app.saved().participants[0].variableCostPerTransaction, app.saved().participants[1].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[1].variableCostPerTransaction, app.saved().participants[2].variableCostPerTransaction);
+  assert.notEqual(app.saved().participants[0].fixedMonthlyCost, app.saved().participants[1].fixedMonthlyCost);
+  assert.notEqual(app.saved().participants[1].fixedMonthlyCost, app.saved().participants[2].fixedMonthlyCost);
+  assert.match(app.notice(), /Sailing carnival split loaded/);
+  assert.match(app.markup(), /Operating region holds/);
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'rowing-committee,rowing-boat-hire,rowing-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'waterpolo-committee,waterpolo-pool-hire,waterpolo-first-aid');
+  assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'lacrosse-committee,lacrosse-ground-hire,lacrosse-first-aid');
   assert.notEqual(app.saved().participants.map((item) => item.id).join(','), 'creator,platform');
 });
 
@@ -2125,6 +2158,63 @@ test('rowing carnival last-zero-share label names the last duplicate and last-ze
   assert.equal(forms(), 3);
   assert.equal(app.saved().hideZeroShareParticipants, true);
   assert.equal(Object.hasOwn(app.saved(), 'hideLastZeroShareParticipant'), false);
+});
+
+test('sailing carnival first-zero-share label names the first duplicate and first-zero-share hide hides that row only', async () => {
+  const app = await workbench('file:', { clipboard: 'ok' });
+  app.click('dismiss-coach');
+  app.click('preset', { preset: 'sailingCarnivalSplit' });
+  app.click('copy-first-zero-share-participant');
+  assert.equal(app.copied().at(-1), 'First zero-share participant: none entered.');
+  assert.doesNotMatch(app.copied().at(-1), /Last zero-share participant/);
+  assert.doesNotMatch(app.copied().at(-1), /First at-hold remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last at-hold remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last unbounded remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /First unbounded remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /probab/i);
+  app.click('copy-last-zero-share-participant');
+  assert.equal(app.copied().at(-1), 'Last zero-share participant: none entered.');
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  const holdCount = () => app.markup().match(/([0-9]+) of 27 tested cases hold/)?.[1];
+  assert.equal(forms(), 3);
+  app.click('duplicate-participant', { index: '0' });
+  assert.equal(forms(), 4);
+  app.click('duplicate-participant', { index: '3' });
+  assert.equal(forms(), 5);
+  app.click('copy-first-zero-share-participant');
+  assert.equal(app.copied().at(-1), 'First zero-share participant: Carnival committee copy. First roster row with zero revenue share. Not a forecast.');
+  assert.doesNotMatch(app.copied().at(-1), /Last zero-share participant/);
+  assert.doesNotMatch(app.copied().at(-1), /First at-hold remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last at-hold remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /Last unbounded remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /First unbounded remaining-to-hold/);
+  assert.doesNotMatch(app.copied().at(-1), /probab/i);
+  app.click('copy-last-zero-share-participant');
+  assert.equal(app.copied().at(-1), 'Last zero-share participant: First-aid copy. Last roster row with zero revenue share. Not a forecast.');
+  assert.notEqual(app.copied().at(-1), 'First zero-share participant: Carnival committee copy. First roster row with zero revenue share. Not a forecast.');
+  const beforeHold = holdCount();
+  assert.ok(beforeHold);
+  app.click('hide-first-zero-share-participant');
+  assert.equal(forms(), 4);
+  assert.match(app.markup(), /Participant 1: Carnival committee/);
+  assert.doesNotMatch(app.markup(), /Participant 2: Carnival committee copy/);
+  assert.match(app.markup(), /Participant 5: First-aid copy/);
+  assert.match(app.markup(), /1 first participant with zero revenue share is hidden from this roster display/);
+  assert.equal(holdCount(), beforeHold);
+  assert.equal(app.saved().hideFirstZeroShareParticipant, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideLastZeroShareParticipant'), false);
+  assert.equal(Object.hasOwn(app.saved(), 'hideZeroShareParticipants'), false);
+  app.click('show-first-zero-share-participant');
+  assert.equal(forms(), 5);
+  app.click('hide-last-zero-share-participant');
+  assert.equal(forms(), 4);
+  assert.match(app.markup(), /Participant 2: Carnival committee copy/);
+  assert.doesNotMatch(app.markup(), /Participant 5: First-aid copy/);
+  app.click('show-last-zero-share-participant');
+  app.click('hide-zero-share-participants');
+  assert.equal(forms(), 3);
+  assert.equal(app.saved().hideZeroShareParticipants, true);
+  assert.equal(Object.hasOwn(app.saved(), 'hideFirstZeroShareParticipant'), false);
 });
 
 test('talent, agent, and platform preset loads from the starting-point buttons', async () => {
@@ -2278,6 +2368,9 @@ test('keyboard shortcuts open help, undo, redo, and export without stealing from
   assert.match(app.markup(), /<kbd>F3<\/kbd> Copy last zero-share participant label as Markdown/);
   assert.match(app.markup(), /<kbd>F4<\/kbd> Jump to Copy last zero-share participant label, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>Backspace<\/kbd> Jump to Hide the last participant with zero revenue share, or the Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>F7<\/kbd> Copy first zero-share participant label as Markdown/);
+  assert.match(app.markup(), /<kbd>F8<\/kbd> Jump to Copy first zero-share participant label, or the Participants heading if missing/);
+  assert.match(app.markup(), /<kbd>F9<\/kbd> Jump to Hide the first participant with zero revenue share, or the Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\+<\/kbd> Jump to Copy first over-capacity participant label, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>!<\/kbd> Jump to Copy first over-capacity remaining listed capacity, or the First breakpoint or Participants heading if missing/);
   assert.match(app.markup(), /<kbd>\|<\/kbd> Jump to Hide the first-breakpoint participant, or the Participants heading if missing/);
@@ -4921,6 +5014,168 @@ test('keyboard Backspace jumps to Hide the last participant with zero revenue sh
   assert.equal(forms(), 3);
 });
 
+test('keyboard F7 copies first zero-share participant label through the new control', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-first-zero-share-participant"/);
+  assert.match(fallback.markup(), /data-action="copy-first-zero-share-participant"/);
+  assert.match(fallback.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
+  fallback.keydown('F7');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="first-zero-share-label-copy-text"/);
+  assert.match(fallback.markup(), /First zero-share participant: none entered\./);
+  assert.match(fallback.markup(), /id="first-zero-share-label-copy-title">First zero-share participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-at-hold-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-at-hold-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-unbounded-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-unbounded-remaining-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-first-zero-share-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="first-zero-share-label-copy-text"/);
+  const before = fallback.markup();
+  fallback.keydown('F7', { tagName: 'INPUT' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('F7', { tagName: 'TEXTAREA' });
+  assert.equal(fallback.markup(), before);
+  fallback.keydown('F7', { defaultPrevented: true });
+  assert.equal(fallback.markup(), before);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.keydown('F7');
+  assert.match(fallback.markup(), /id="first-zero-share-label-copy-text"/);
+  assert.match(fallback.markup(), />First zero-share participant: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.keydown('F7');
+  assert.equal(withClipboard.copied().length, 1);
+  assert.equal(withClipboard.copied()[0].split('\n').length, 1);
+  assert.equal(withClipboard.copied()[0], 'First zero-share participant: none entered.');
+  assert.doesNotMatch(withClipboard.copied()[0], /Last zero-share participant/);
+  assert.doesNotMatch(withClipboard.copied()[0], /First at-hold remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /Last at-hold remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /Last unbounded remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /First unbounded remaining-to-hold/);
+  assert.doesNotMatch(withClipboard.copied()[0], /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  const copied = withClipboard.copied().length;
+  withClipboard.keydown('F7', { tagName: 'INPUT' });
+  assert.equal(withClipboard.copied().length, copied);
+  withClipboard.keydown('F7', { defaultPrevented: true });
+  assert.equal(withClipboard.copied().length, copied);
+  withClipboard.keydown('F3');
+  assert.equal(withClipboard.copied().at(-1), 'Last zero-share participant: none entered.');
+  withClipboard.keydown('Delete');
+  assert.equal(withClipboard.copied().at(-1), 'First at-hold remaining-to-hold: 0 txn remaining for Platform. Remaining to hold. Not a forecast.');
+  withClipboard.keydown('Insert');
+  assert.equal(withClipboard.copied().at(-1), 'Last at-hold remaining-to-hold: 0 txn remaining for Liquidity Partner. Remaining to hold. Not a forecast.');
+  withClipboard.keydown('4');
+  assert.equal(withClipboard.copied().at(-1), 'Last unbounded remaining-to-hold: none entered.');
+  withClipboard.keydown('PageUp');
+  assert.equal(withClipboard.copied().at(-1), 'First unbounded remaining-to-hold: none entered.');
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.keydown('F7');
+  assert.match(denied.markup(), /id="first-zero-share-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const talent = await workbench('file:', { clipboard: 'ok' });
+  talent.click('preset', { preset: 'talentAgentPlatform' });
+  talent.click('duplicate-participant', { index: '0' });
+  talent.click('duplicate-participant', { index: '3' });
+  talent.keydown('F7');
+  assert.equal(talent.copied().at(-1), 'First zero-share participant: Talent copy. First roster row with zero revenue share. Not a forecast.');
+  talent.keydown('F3');
+  assert.equal(talent.copied().at(-1), 'Last zero-share participant: Platform copy. Last roster row with zero revenue share. Not a forecast.');
+});
+
+test('keyboard F8 jumps to Copy first zero-share participant label unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="copy-first-zero-share-participant"/);
+  assert.match(app.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  app.keydown('F8');
+  assert.ok(app.focused().includes('#copy-first-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#copy-first-zero-share-participant'));
+  assert.ok(!app.focused().includes('#copy-last-zero-share-participant'));
+  assert.ok(!app.focused().includes('#copy-first-at-hold-remaining'));
+  assert.ok(!app.focused().includes('#copy-last-at-hold-remaining'));
+  assert.doesNotMatch(app.markup(), /id="first-zero-share-label-copy-text"/);
+  const before = app.focused().length;
+  app.keydown('F8', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('F8', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('F8', { defaultPrevented: true });
+  assert.equal(app.focused().length, before);
+  app.keydown('F4');
+  assert.ok(app.focused().includes('#copy-last-zero-share-participant'));
+  assert.ok(!app.focused().at(-1)?.includes('copy-first-zero-share-participant'));
+  app.keydown('F2');
+  assert.ok(app.focused().includes('#copy-first-at-hold-remaining'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('F8');
+  assert.ok(app.focused().includes('#copy-first-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#copy-first-zero-share-participant'));
+  assert.match(app.markup(), /id="copy-first-zero-share-participant"/);
+  assert.match(app.markup(), /id="participant-inputs-title"/);
+  assert.doesNotMatch(app.markup(), /id="first-zero-share-label-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('dismiss-coach');
+  withClipboard.keydown('F8');
+  assert.equal(withClipboard.copied().length, 0);
+  assert.ok(withClipboard.focused().includes('#copy-first-zero-share-participant'));
+});
+
+test('keyboard F9 jumps to Hide the first participant with zero revenue share unless a field is focused', async () => {
+  const app = await workbench();
+  app.click('dismiss-coach');
+  assert.match(app.markup(), /id="hide-first-zero-share-participant"/);
+  assert.match(app.markup(), /id="hide-first-zero-share-participant"[^>]*data-action="hide-first-zero-share-participant"/);
+  assert.match(app.markup(), /id="hide-first-zero-share-participant"[^>]*aria-keyshortcuts="ArrowRight"/);
+  assert.match(app.markup(), /id="participant-inputs-title" tabindex="-1"/);
+  const forms = () => app.markup().match(/class="participant-form/g)?.length ?? 0;
+  assert.equal(forms(), 3);
+  app.keydown('F9');
+  assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-first-zero-share-participant'));
+  assert.ok(!app.focused().includes('#hide-last-zero-share-participant'));
+  assert.ok(!app.focused().includes('#copy-first-zero-share-participant'));
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /id="hide-first-zero-share-participant"[^>]*aria-pressed="false"/);
+  assert.doesNotMatch(app.markup(), /id="first-zero-share-label-copy-text"/);
+  assert.doesNotMatch(app.markup(), /id="last-zero-share-label-copy-text"/);
+  const before = app.focused().length;
+  app.keydown('F9', { tagName: 'INPUT' });
+  assert.equal(app.focused().length, before);
+  app.keydown('F9', { tagName: 'TEXTAREA' });
+  assert.equal(app.focused().length, before);
+  app.keydown('F9', { defaultPrevented: true });
+  assert.equal(app.focused().length, before);
+  app.keydown('Backspace');
+  assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
+  assert.ok(!app.focused().at(-1)?.includes('hide-first-zero-share-participant'));
+  app.keydown('ArrowRight');
+  assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
+  app.edit('deal.monthlyVolume', '');
+  app.keydown('F9');
+  assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
+  assert.ok(app.focused().includes('scroll:#hide-first-zero-share-participant'));
+  assert.match(app.markup(), /id="hide-first-zero-share-participant"/);
+  assert.equal(forms(), 3);
+  assert.doesNotMatch(app.markup(), /id="first-zero-share-label-copy-text"/);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('dismiss-coach');
+  withClipboard.keydown('F9');
+  assert.equal(withClipboard.copied().length, 0);
+  assert.ok(withClipboard.focused().includes('#hide-first-zero-share-participant'));
+  assert.doesNotMatch(withClipboard.markup(), /id="first-zero-share-label-copy-text"/);
+  assert.doesNotMatch(withClipboard.markup(), /id="last-zero-share-label-copy-text"/);
+});
+
 test('Insert ArrowDown and ArrowLeft retain 4 Home End PageUp PageDown and ArrowUp controls', async () => {
   const app = await workbench('file:', { clipboard: 'ok' });
   app.click('dismiss-coach');
@@ -4965,6 +5220,7 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   assert.match(app.markup(), /id="hide-first-zero-share-participant"[^>]*aria-keyshortcuts="ArrowRight"/);
   assert.match(app.markup(), /id="copy-last-zero-share-participant"[^>]*aria-keyshortcuts="F3"/);
   assert.match(app.markup(), /id="hide-last-zero-share-participant"[^>]*aria-keyshortcuts="Backspace"/);
+  assert.match(app.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
   app.keydown('4');
   assert.equal(app.copied().at(-1), 'Last unbounded remaining-to-hold: none entered.');
   app.keydown('PageUp');
@@ -4975,6 +5231,8 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   assert.equal(app.copied().at(-1), 'First at-hold remaining-to-hold: 0 txn remaining for Platform. Remaining to hold. Not a forecast.');
   app.keydown('F3');
   assert.equal(app.copied().at(-1), 'Last zero-share participant: none entered.');
+  app.keydown('F7');
+  assert.equal(app.copied().at(-1), 'First zero-share participant: none entered.');
   app.keydown('Home');
   assert.ok(app.focused().includes('#copy-last-unbounded-remaining'));
   app.keydown('PageDown');
@@ -4985,6 +5243,8 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   assert.ok(app.focused().includes('#copy-first-at-hold-remaining'));
   app.keydown('F4');
   assert.ok(app.focused().includes('#copy-last-zero-share-participant'));
+  app.keydown('F8');
+  assert.ok(app.focused().includes('#copy-first-zero-share-participant'));
   app.keydown('End');
   assert.ok(app.focused().includes('#hide-first-without-capacity-participant'));
   app.keydown('ArrowUp');
@@ -4992,6 +5252,8 @@ test('Delete F2 and ArrowRight retain 4 Home End PageUp PageDown ArrowUp Insert 
   app.keydown('ArrowLeft');
   assert.ok(app.focused().includes('#hide-first-at-hold-participant'));
   app.keydown('ArrowRight');
+  assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
+  app.keydown('F9');
   assert.ok(app.focused().includes('#hide-first-zero-share-participant'));
   app.keydown('Backspace');
   assert.ok(app.focused().includes('#hide-last-zero-share-participant'));
@@ -6339,6 +6601,69 @@ test('copy last zero-share participant label is one Markdown line with an honest
   assert.equal(talent.copied().at(-1), 'Last unbounded remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
   talent.click('duplicate-participant', { index: '0' });
   talent.click('duplicate-participant', { index: '3' });
+  talent.click('copy-last-zero-share-participant');
+  assert.equal(talent.copied().at(-1), 'Last zero-share participant: Platform copy. Last roster row with zero revenue share. Not a forecast.');
+});
+
+test('copy first zero-share participant label is one Markdown line with an honest empty', async () => {
+  const fallback = await workbench();
+  fallback.click('dismiss-coach');
+  assert.match(fallback.markup(), /id="copy-first-zero-share-participant"/);
+  assert.match(fallback.markup(), /data-action="copy-first-zero-share-participant"/);
+  assert.match(fallback.markup(), /id="copy-first-zero-share-participant"[^>]*aria-keyshortcuts="F7"/);
+  fallback.click('copy-first-zero-share-participant');
+  assert.equal(fallback.downloads().length, 0);
+  assert.match(fallback.markup(), /id="first-zero-share-label-copy-text"/);
+  assert.match(fallback.markup(), /First zero-share participant: none entered\./);
+  assert.match(fallback.markup(), /id="first-zero-share-label-copy-title">First zero-share participant label Markdown/);
+  assert.doesNotMatch(fallback.markup(), /id="last-zero-share-label-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-at-hold-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-at-hold-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="last-unbounded-remaining-copy-text"/);
+  assert.doesNotMatch(fallback.markup(), /id="first-unbounded-remaining-copy-text"/);
+  assert.match(fallback.notice(), /Copy the Markdown from the text area/);
+  fallback.click('close-first-zero-share-label-copy');
+  assert.doesNotMatch(fallback.markup(), /id="first-zero-share-label-copy-text"/);
+  fallback.edit('deal.monthlyVolume', '');
+  fallback.click('copy-first-zero-share-participant');
+  assert.match(fallback.markup(), /id="first-zero-share-label-copy-text"/);
+  assert.match(fallback.markup(), />First zero-share participant: none entered\.</);
+
+  const withClipboard = await workbench('file:', { clipboard: 'ok' });
+  withClipboard.click('copy-first-zero-share-participant');
+  assert.equal(withClipboard.copied().length, 1);
+  const named = withClipboard.copied()[0];
+  assert.equal(named.split('\n').length, 1);
+  assert.equal(named, 'First zero-share participant: none entered.');
+  assert.doesNotMatch(named, /Last zero-share participant/);
+  assert.doesNotMatch(named, /First at-hold remaining-to-hold/);
+  assert.doesNotMatch(named, /Last at-hold remaining-to-hold/);
+  assert.doesNotMatch(named, /Last unbounded remaining-to-hold/);
+  assert.doesNotMatch(named, /First unbounded remaining-to-hold/);
+  assert.doesNotMatch(named, /probab/i);
+  assert.match(withClipboard.notice(), /copied as Markdown/);
+  assert.match(withClipboard.notice(), /not a forecast/);
+  assert.doesNotMatch(withClipboard.markup(), /id="first-zero-share-label-copy-text"/);
+
+  const denied = await workbench('file:', { clipboard: 'fail' });
+  denied.click('copy-first-zero-share-participant');
+  assert.match(denied.markup(), /id="first-zero-share-label-copy-text"/);
+  assert.match(denied.notice(), /Clipboard unavailable/);
+
+  const talent = await workbench('file:', { clipboard: 'ok' });
+  talent.click('preset', { preset: 'talentAgentPlatform' });
+  talent.click('copy-first-at-hold-remaining');
+  assert.equal(talent.copied().at(-1), 'First at-hold remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+  talent.click('copy-last-at-hold-remaining');
+  assert.equal(talent.copied().at(-1), 'Last at-hold remaining-to-hold: 0 txn remaining for Platform. Remaining to hold. Not a forecast.');
+  talent.click('copy-first-unbounded-remaining');
+  assert.equal(talent.copied().at(-1), 'First unbounded remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+  talent.click('copy-last-unbounded-remaining');
+  assert.equal(talent.copied().at(-1), 'Last unbounded remaining-to-hold: 0 txn remaining for Talent. Remaining to hold. Not a forecast.');
+  talent.click('duplicate-participant', { index: '0' });
+  talent.click('duplicate-participant', { index: '3' });
+  talent.click('copy-first-zero-share-participant');
+  assert.equal(talent.copied().at(-1), 'First zero-share participant: Talent copy. First roster row with zero revenue share. Not a forecast.');
   talent.click('copy-last-zero-share-participant');
   assert.equal(talent.copied().at(-1), 'Last zero-share participant: Platform copy. Last roster row with zero revenue share. Not a forecast.');
 });
@@ -9132,6 +9457,14 @@ test('hiding the first participant with zero revenue share is display-only and e
   assert.doesNotMatch(app.markup(), /Participant 2: Carnival committee copy/);
   assert.match(app.markup(), /Participant 1: Carnival committee/);
   app.click('show-first-zero-share-participant');
+  app.click('preset', { preset: 'sailingCarnivalSplit' });
+  assert.equal(forms(), 3);
+  app.click('duplicate-participant', { index: '0' });
+  app.click('hide-first-zero-share-participant');
+  assert.equal(forms(), 3);
+  assert.doesNotMatch(app.markup(), /Participant 2: Carnival committee copy/);
+  assert.match(app.markup(), /Participant 1: Carnival committee/);
+  app.click('show-first-zero-share-participant');
   app.click('hide-zero-share-participants');
   assert.equal(forms(), 3);
   assert.equal(app.saved().hideZeroShareParticipants, true);
@@ -9165,6 +9498,13 @@ test('hide-first-zero-share preference round-trips on saved JSON and defaults to
   const imported = clonePreset('waterPoloCarnivalSplit');
   imported.hideFirstZeroShareParticipant = true;
   app.import(imported);
+  assert.equal(app.saved().hideFirstZeroShareParticipant, true);
+  assert.equal(forms(), 3);
+  assert.match(app.markup(), /of 27 tested cases hold/);
+
+  const sailingImported = clonePreset('sailingCarnivalSplit');
+  sailingImported.hideFirstZeroShareParticipant = true;
+  app.import(sailingImported);
   assert.equal(app.saved().hideFirstZeroShareParticipant, true);
   assert.equal(forms(), 3);
   assert.match(app.markup(), /of 27 tested cases hold/);
@@ -9228,6 +9568,14 @@ test('hiding the last participant with zero revenue share is display-only and ex
   assert.equal(forms(), 4);
   assert.match(app.markup(), /Participant 2: Platform copy/);
   app.click('preset', { preset: 'rowingCarnivalSplit' });
+  assert.equal(forms(), 3);
+  app.click('duplicate-participant', { index: '0' });
+  app.click('hide-last-zero-share-participant');
+  assert.equal(forms(), 3);
+  assert.doesNotMatch(app.markup(), /Participant 2: Carnival committee copy/);
+  assert.match(app.markup(), /Participant 1: Carnival committee/);
+  app.click('show-last-zero-share-participant');
+  app.click('preset', { preset: 'sailingCarnivalSplit' });
   assert.equal(forms(), 3);
   app.click('duplicate-participant', { index: '0' });
   app.click('hide-last-zero-share-participant');
