@@ -103,9 +103,9 @@ input[type="range"] { width: 100%; accent-color: var(--brick); }
 .clause-note { display: grid; gap: .4rem; margin: 0 0 .75rem; font-size: .82rem; }
 .package-table-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #package-table-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
-.locks-markdown-fallback-label, .change-cost-csv-fallback-label, .package-markdown-fallback-label, .group-support-fallback-label, .option-count-fallback-label, .lock-count-fallback-label, .first-locked-option-fallback-label, .below-floor-count-fallback-label, .first-below-floor-group-fallback-label, .threshold-group-count-fallback-label, .first-veto-group-fallback-label, .veto-group-count-fallback-label, .first-non-veto-group-fallback-label, .last-veto-group-fallback-label, .last-non-veto-group-fallback-label, .last-below-threshold-group-fallback-label, .first-below-threshold-group-fallback-label, .last-group-at-or-above-threshold-fallback-label, .first-group-at-or-above-threshold-fallback-label, .last-group-at-floor-fallback-label, .first-group-at-floor-fallback-label, .last-below-floor-group-fallback-label, .last-group-without-floor-fallback-label, .first-group-without-floor-fallback-label, .groups-without-floor-count-fallback-label, .groups-without-floor-remaining-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
+.locks-markdown-fallback-label, .change-cost-csv-fallback-label, .package-markdown-fallback-label, .group-support-fallback-label, .option-count-fallback-label, .lock-count-fallback-label, .first-locked-option-fallback-label, .below-floor-count-fallback-label, .first-below-floor-group-fallback-label, .threshold-group-count-fallback-label, .first-veto-group-fallback-label, .veto-group-count-fallback-label, .first-non-veto-group-fallback-label, .last-veto-group-fallback-label, .last-non-veto-group-fallback-label, .last-below-threshold-group-fallback-label, .first-below-threshold-group-fallback-label, .last-group-at-or-above-threshold-fallback-label, .first-group-at-or-above-threshold-fallback-label, .last-group-at-floor-fallback-label, .first-group-at-floor-fallback-label, .last-below-floor-group-fallback-label, .last-group-without-floor-fallback-label, .first-group-without-floor-fallback-label, .groups-without-floor-count-fallback-label, .groups-without-floor-remaining-fallback-label, .last-group-without-floor-remaining-fallback-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #locks-markdown-fallback, #change-cost-csv-fallback, #package-markdown-fallback, #group-support-fallback { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
-#option-count-fallback, #lock-count-fallback, #first-locked-option-fallback, #below-floor-count-fallback, #first-below-floor-group-fallback, #threshold-group-count-fallback, #first-veto-group-fallback, #veto-group-count-fallback, #first-non-veto-group-fallback, #last-veto-group-fallback, #last-non-veto-group-fallback, #last-below-threshold-group-fallback, #first-below-threshold-group-fallback, #last-group-at-or-above-threshold-fallback, #first-group-at-or-above-threshold-fallback, #last-group-at-floor-fallback, #first-group-at-floor-fallback, #last-below-floor-group-fallback, #last-group-without-floor-fallback, #first-group-without-floor-fallback, #groups-without-floor-count-fallback, #groups-without-floor-remaining-fallback { width: 100%; min-height: 3rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
+#option-count-fallback, #lock-count-fallback, #first-locked-option-fallback, #below-floor-count-fallback, #first-below-floor-group-fallback, #threshold-group-count-fallback, #first-veto-group-fallback, #veto-group-count-fallback, #first-non-veto-group-fallback, #last-veto-group-fallback, #last-non-veto-group-fallback, #last-below-threshold-group-fallback, #first-below-threshold-group-fallback, #last-group-at-or-above-threshold-fallback, #first-group-at-or-above-threshold-fallback, #last-group-at-floor-fallback, #first-group-at-floor-fallback, #last-below-floor-group-fallback, #last-group-without-floor-fallback, #first-group-without-floor-fallback, #groups-without-floor-count-fallback, #groups-without-floor-remaining-fallback, #last-group-without-floor-remaining-fallback { width: 100%; min-height: 3rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .clause-paste-label { display: block; margin: 1rem 0 .35rem; font-size: .88rem; font-weight: 700; }
 #clause-paste { width: 100%; min-height: 8rem; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .78rem; }
 .constraint-card { margin-bottom: 1rem; }
@@ -211,7 +211,7 @@ input[aria-invalid="true"], input:user-invalid { outline: 2px solid var(--brick)
 kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px solid var(--line); padding: .1rem .35rem; background: #fffdf7; }
 @media print {
   body, .site-header, .workbench, .result-card, .method-grid article { background: white; color: black; }
-  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, .hide-locked-clauses-filter, #hide-locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, .hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note, .hide-groups-without-floors-filter, #hide-groups-without-floors-filter-note, .hide-groups-meeting-threshold-filter, #hide-groups-meeting-threshold-filter-note, .hide-groups-below-threshold-filter, #hide-groups-below-threshold-filter-note, .hide-veto-groups-filter, #hide-veto-groups-filter-note, .hide-non-veto-groups-filter, #hide-non-veto-groups-filter-note, .hide-first-veto-group-filter, #hide-first-veto-group-filter-note, .hide-last-veto-group-filter, #hide-last-veto-group-filter-note, .hide-first-non-veto-group-filter, #hide-first-non-veto-group-filter-note, .hide-last-non-veto-group-filter, #hide-last-non-veto-group-filter-note, .hide-last-group-below-threshold-filter, #hide-last-group-below-threshold-filter-note, .hide-first-group-below-threshold-filter, #hide-first-group-below-threshold-filter-note, .hide-last-group-at-or-above-threshold-filter, #hide-last-group-at-or-above-threshold-filter-note, .hide-first-group-at-or-above-threshold-filter, #hide-first-group-at-or-above-threshold-filter-note, .hide-last-group-at-floor-filter, #hide-last-group-at-floor-filter-note, .hide-first-group-at-floor-filter, #hide-first-group-at-floor-filter-note, .hide-first-group-below-floor-filter, #hide-first-group-below-floor-filter-note, .hide-last-group-below-floor-filter, #hide-last-group-below-floor-filter-note, .hide-last-group-without-floor-filter, #hide-last-group-without-floor-filter-note, .hide-first-group-without-floor-filter, #hide-first-group-without-floor-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, #locks-heading, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, .first-locked-option-fallback-label, #first-locked-option-fallback, #first-locked-option-fallback-note, .below-floor-count-fallback-label, #below-floor-count-fallback, #below-floor-count-fallback-note, .first-below-floor-group-fallback-label, #first-below-floor-group-fallback, #first-below-floor-group-fallback-note, .threshold-group-count-fallback-label, #threshold-group-count-fallback, #threshold-group-count-fallback-note, .first-veto-group-fallback-label, #first-veto-group-fallback, #first-veto-group-fallback-note, .veto-group-count-fallback-label, #veto-group-count-fallback, #veto-group-count-fallback-note, .first-non-veto-group-fallback-label, #first-non-veto-group-fallback, #first-non-veto-group-fallback-note, .last-veto-group-fallback-label, #last-veto-group-fallback, #last-veto-group-fallback-note, .last-non-veto-group-fallback-label, #last-non-veto-group-fallback, #last-non-veto-group-fallback-note, .last-below-threshold-group-fallback-label, #last-below-threshold-group-fallback, #last-below-threshold-group-fallback-note, .first-below-threshold-group-fallback-label, #first-below-threshold-group-fallback, #first-below-threshold-group-fallback-note, .last-group-at-or-above-threshold-fallback-label, #last-group-at-or-above-threshold-fallback, #last-group-at-or-above-threshold-fallback-note, .first-group-at-or-above-threshold-fallback-label, #first-group-at-or-above-threshold-fallback, #first-group-at-or-above-threshold-fallback-note, .last-group-at-floor-fallback-label, #last-group-at-floor-fallback, #last-group-at-floor-fallback-note, .first-group-at-floor-fallback-label, #first-group-at-floor-fallback, #first-group-at-floor-fallback-note, .last-below-floor-group-fallback-label, #last-below-floor-group-fallback, #last-below-floor-group-fallback-note, .last-group-without-floor-fallback-label, #last-group-without-floor-fallback, #last-group-without-floor-fallback-note, .first-group-without-floor-fallback-label, #first-group-without-floor-fallback, #first-group-without-floor-fallback-note, .groups-without-floor-count-fallback-label, #groups-without-floor-count-fallback, #groups-without-floor-count-fallback-note, .groups-without-floor-remaining-fallback-label, #groups-without-floor-remaining-fallback, #groups-without-floor-remaining-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, .option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, .original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, .group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, .remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, .approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note { display: none !important; }
+  .header-actions, .workshop-nav, .workshop-guide, .control-panel, .skip-link, .clause-heading, .clauses-editor, .clause-filter-label, #clause-filter, #clause-filter-note, #clause-filter-status, .locked-clauses-filter, #locked-clauses-filter-note, .hide-unlocked-clauses-filter, #hide-unlocked-clauses-filter-note, .hide-locked-clauses-filter, #hide-locked-clauses-filter-note, .changed-clauses-filter, #changed-clauses-filter-note, .over-budget-clauses-filter, #over-budget-clauses-filter-note, .no-cheaper-remaining-clauses-filter, #no-cheaper-remaining-clauses-filter-note, .clause-density-label, #clause-density, .veto-groups-filter, #veto-groups-filter-note, .below-floor-groups-filter, #below-floor-groups-filter-note, .hide-groups-at-floor-filter, #hide-groups-at-floor-filter-note, .hide-groups-without-floors-filter, #hide-groups-without-floors-filter-note, .hide-groups-meeting-threshold-filter, #hide-groups-meeting-threshold-filter-note, .hide-groups-below-threshold-filter, #hide-groups-below-threshold-filter-note, .hide-veto-groups-filter, #hide-veto-groups-filter-note, .hide-non-veto-groups-filter, #hide-non-veto-groups-filter-note, .hide-first-veto-group-filter, #hide-first-veto-group-filter-note, .hide-last-veto-group-filter, #hide-last-veto-group-filter-note, .hide-first-non-veto-group-filter, #hide-first-non-veto-group-filter-note, .hide-last-non-veto-group-filter, #hide-last-non-veto-group-filter-note, .hide-last-group-below-threshold-filter, #hide-last-group-below-threshold-filter-note, .hide-first-group-below-threshold-filter, #hide-first-group-below-threshold-filter-note, .hide-last-group-at-or-above-threshold-filter, #hide-last-group-at-or-above-threshold-filter-note, .hide-first-group-at-or-above-threshold-filter, #hide-first-group-at-or-above-threshold-filter-note, .hide-last-group-at-floor-filter, #hide-last-group-at-floor-filter-note, .hide-first-group-at-floor-filter, #hide-first-group-at-floor-filter-note, .hide-first-group-below-floor-filter, #hide-first-group-below-floor-filter-note, .hide-last-group-below-floor-filter, #hide-last-group-below-floor-filter-note, .hide-last-group-without-floor-filter, #hide-last-group-without-floor-filter-note, .hide-first-group-without-floor-filter, #hide-first-group-without-floor-filter-note, #veto-groups-status, .near-miss-sort-label, .manual-options, .autosave-status, button, #comparison-select, #file-compare-controls, .coach-overlay, #coach-again, #shortcut-overlay, #locks-heading, .package-table-fallback-label, #package-table-fallback, #package-table-fallback-note, .locks-markdown-fallback-label, #locks-markdown-fallback, #locks-markdown-fallback-note, .lock-count-fallback-label, #lock-count-fallback, #lock-count-fallback-note, .first-locked-option-fallback-label, #first-locked-option-fallback, #first-locked-option-fallback-note, .below-floor-count-fallback-label, #below-floor-count-fallback, #below-floor-count-fallback-note, .first-below-floor-group-fallback-label, #first-below-floor-group-fallback, #first-below-floor-group-fallback-note, .threshold-group-count-fallback-label, #threshold-group-count-fallback, #threshold-group-count-fallback-note, .first-veto-group-fallback-label, #first-veto-group-fallback, #first-veto-group-fallback-note, .veto-group-count-fallback-label, #veto-group-count-fallback, #veto-group-count-fallback-note, .first-non-veto-group-fallback-label, #first-non-veto-group-fallback, #first-non-veto-group-fallback-note, .last-veto-group-fallback-label, #last-veto-group-fallback, #last-veto-group-fallback-note, .last-non-veto-group-fallback-label, #last-non-veto-group-fallback, #last-non-veto-group-fallback-note, .last-below-threshold-group-fallback-label, #last-below-threshold-group-fallback, #last-below-threshold-group-fallback-note, .first-below-threshold-group-fallback-label, #first-below-threshold-group-fallback, #first-below-threshold-group-fallback-note, .last-group-at-or-above-threshold-fallback-label, #last-group-at-or-above-threshold-fallback, #last-group-at-or-above-threshold-fallback-note, .first-group-at-or-above-threshold-fallback-label, #first-group-at-or-above-threshold-fallback, #first-group-at-or-above-threshold-fallback-note, .last-group-at-floor-fallback-label, #last-group-at-floor-fallback, #last-group-at-floor-fallback-note, .first-group-at-floor-fallback-label, #first-group-at-floor-fallback, #first-group-at-floor-fallback-note, .last-below-floor-group-fallback-label, #last-below-floor-group-fallback, #last-below-floor-group-fallback-note, .last-group-without-floor-fallback-label, #last-group-without-floor-fallback, #last-group-without-floor-fallback-note, .first-group-without-floor-fallback-label, #first-group-without-floor-fallback, #first-group-without-floor-fallback-note, .groups-without-floor-count-fallback-label, #groups-without-floor-count-fallback, #groups-without-floor-count-fallback-note, .groups-without-floor-remaining-fallback-label, #groups-without-floor-remaining-fallback, #groups-without-floor-remaining-fallback-note, .last-group-without-floor-remaining-fallback-label, #last-group-without-floor-remaining-fallback, #last-group-without-floor-remaining-fallback-note, .change-cost-csv-fallback-label, #change-cost-csv-fallback, #change-cost-csv-fallback-note, .clause-paste-label, #clause-paste, #clause-paste-note, .groups-paste-label, #groups-paste, #groups-paste-note, .package-markdown-fallback-label, #package-markdown-fallback, #package-markdown-fallback-note, .option-count-fallback-label, #option-count-fallback, #option-count-fallback-note, .original-versus-recommended-fallback-label, #original-versus-recommended-fallback, #original-versus-recommended-fallback-note, .group-support-fallback-label, #group-support-fallback, #group-support-fallback-note, .remaining-budget-fallback-label, #remaining-budget-fallback, #remaining-budget-fallback-note, .approval-threshold-fallback-label, #approval-threshold-fallback, #approval-threshold-fallback-note { display: none !important; }
   .site-header { padding: 0 0 1rem; }
   .workspace, .results-grid, .method-grid { display: block; max-width: none; }
   .workbench { padding: 0; }
@@ -293,6 +293,7 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <option value="sailing-club-hours">Sailing club hours</option>
             <option value="canoeing-club-hours">Canoeing club hours</option>
             <option value="kayaking-club-hours">Kayaking club hours</option>
+            <option value="dragon-boat-club-hours">Dragon boat club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -341,7 +342,8 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
         <button class="button button-secondary" type="button" id="copy-last-group-without-floor-button" aria-keyshortcuts="F7">Copy last group without a support floor</button>
         <button class="button button-secondary" type="button" id="copy-first-group-without-floor-button" aria-keyshortcuts="F10">Copy first group without a support floor</button>
         <button class="button button-secondary" type="button" id="copy-groups-without-floor-count-button" aria-keyshortcuts="Shift+F10">Copy groups-without-floor count</button>
-        <button class="button button-secondary" type="button" id="copy-groups-without-floor-remaining-button" aria-keyshortcuts="Shift+F7">Copy groups-without-floor remaining</button>
+        <button class="button button-secondary" type="button" id="copy-groups-without-floor-remaining-button">Copy groups-without-floor remaining</button>
+        <button class="button button-secondary" type="button" id="copy-last-group-without-floor-remaining-button" aria-keyshortcuts="Shift+F7">Copy last-without-floor remaining</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -602,7 +604,10 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
             <p id="groups-without-floor-count-fallback-note" class="field-note">One line of the count of groups without a declared support floor, or an honest zero. Distinct from first group-without-floor label copy and last group-without-floor label copy. A floor is a number you entered, not a legal quorum. If the clipboard is blocked, copy from this box.</p>
             <label class="groups-without-floor-remaining-fallback-label" for="groups-without-floor-remaining-fallback">Groups-without-floor remaining Markdown</label>
             <textarea id="groups-without-floor-remaining-fallback" readonly rows="3" spellcheck="false" aria-describedby="groups-without-floor-remaining-fallback-note"></textarea>
-            <p id="groups-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing-weight total of groups without a declared support floor, or an honest zero. Distinct from groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <p id="groups-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing-weight total of groups without a declared support floor, or an honest zero. Distinct from last-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
+            <label class="last-group-without-floor-remaining-fallback-label" for="last-group-without-floor-remaining-fallback">Last-without-floor remaining Markdown</label>
+            <textarea id="last-group-without-floor-remaining-fallback" readonly rows="3" spellcheck="false" aria-describedby="last-group-without-floor-remaining-fallback-note"></textarea>
+            <p id="last-group-without-floor-remaining-fallback-note" class="field-note">One line of remaining mixing weight of the last group without a declared support floor, or an honest zero. Distinct from aggregate groups-without-floor remaining copy, groups-without-floor count copy, first group-without-floor label copy, last group-without-floor label copy, and remaining change-budget copy. A floor is a number you entered, not a legal quorum. Mixing weights are not a legal right. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
@@ -818,9 +823,9 @@ kbd { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; border: 1px s
           <li><kbd>F10</kbd> Copy the first group-without-floor label as one-line Markdown</li>
           <li><kbd>F11</kbd> Jump to the first group-without-floor copy control, or the groups heading</li>
           <li><kbd>F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
-          <li><kbd>Shift+F7</kbd> Copy the groups-without-floor remaining as one-line Markdown</li>
-          <li><kbd>Shift+F8</kbd> Jump to the groups-without-floor remaining copy control, or the groups heading</li>
-          <li><kbd>Shift+F9</kbd> Jump to the hide-last-group-without-floor control, or the groups heading</li>
+          <li><kbd>Shift+F7</kbd> Copy the last-without-floor remaining as one-line Markdown</li>
+          <li><kbd>Shift+F8</kbd> Jump to the last-without-floor remaining copy control, or the groups heading</li>
+          <li><kbd>Shift+F9</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
           <li><kbd>Shift+F10</kbd> Copy the groups-without-floor count as one-line Markdown</li>
           <li><kbd>Shift+F11</kbd> Jump to the groups-without-floor count copy control, or the groups heading</li>
           <li><kbd>Shift+F12</kbd> Jump to the hide-first-group-without-floor control, or the groups heading</li>
@@ -3503,8 +3508,8 @@ function formatGroupsWithoutFloorCountMarkdown(proposal, options) {
  * hideLastGroupWithoutFloor.
  * Honest when remaining is zero or no inspected package is available.
  * Distinct prefix from groups-without-floor count copy, first
- * group-without-floor label copy, last group-without-floor label copy, and
- * remaining change-budget copy.
+ * group-without-floor label copy, last group-without-floor label copy,
+ * last-without-floor remaining copy, and remaining change-budget copy.
  * A floor is a number you entered, not a legal quorum.
  * Mixing weights are not a legal right.
  * Do not treat labels as legal identities.
@@ -3537,6 +3542,57 @@ function formatGroupsWithoutFloorRemainingMarkdown(proposal, options) {
     empty: remaining === 0,
     remaining,
     text: `Groups-without-floor remaining: ${remaining}. ${disclaimer}\n`,
+  };
+}
+
+/**
+ * One-line Markdown of remaining mixing weight of the last group without a
+ * declared support floor (minSupport missing).
+ * Looks up that listed group's weight from proposal.groups.
+ * Uses the same without-floor list as hideFirstGroupWithoutFloor and
+ * hideLastGroupWithoutFloor.
+ * Honest when remaining is zero, none, or no inspected package is available.
+ * Distinct prefix from aggregate groups-without-floor remaining copy, groups-without-floor
+ * count copy, first group-without-floor label copy, last group-without-floor
+ * label copy, and remaining change-budget copy.
+ * A floor is a number you entered, not a legal quorum.
+ * Mixing weights are not a legal right.
+ * Do not treat labels as legal identities.
+ */
+function formatLastGroupWithoutFloorRemainingMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      remaining: 0,
+      text: `No inspected package is available, so there is no last-without-floor remaining to copy. ${disclaimer}\n`,
+    };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const listed = groupsWithoutDeclaredSupportFloor(proposal);
+  if (listed.status !== "ok") return listed;
+  const last = listed.groups[listed.groups.length - 1];
+  if (!last) {
+    return {
+      status: "ok",
+      empty: true,
+      remaining: 0,
+      text: `Last-without-floor remaining: 0. ${disclaimer}\n`,
+    };
+  }
+  const weightsById = new Map(proposal.groups.map((group) => [group.id, group.weight]));
+  const remaining = weightsById.get(last.id);
+  return {
+    status: "ok",
+    empty: remaining === 0,
+    remaining,
+    text: `Last-without-floor remaining: ${remaining}. ${disclaimer}\n`,
   };
 }
 
@@ -5739,6 +5795,39 @@ const presets = {
       },
     ],
   },
+  "dragon-boat-club-hours": {
+    title: "Dragon boat club hours: dragon-boat staging booking, drum bar, and paddle-box lock-up",
+    threshold: 70,
+    maxChangeCost: 8,
+    groups: [
+      { id: "students", name: "Students", weight: 5 },
+      { id: "neighbours", name: "Neighbours", weight: 4, veto: true },
+      { id: "pandc", name: "P&C", weight: 7 },
+    ],
+    clauses: [
+      {
+        id: "dragon-boat-staging-booking", title: "Dragon-boat staging booking", options: [
+          { id: "dragon-boat-staging-booking-original", original: true, label: "Keep weekday dragon-boat staging from 13:10 with no posted drum-seat rota", changeCost: 0, support: { students: 8, neighbours: 90, pandc: 57 } },
+          { id: "dragon-boat-staging-booking-late", original: false, label: "Open weekday dragon-boat staging at 18:20 with a posted drum-seat rota", changeCost: 2, support: { students: 86, neighbours: 34, pandc: 46 } },
+          { id: "dragon-boat-staging-booking-weekend", original: false, label: "Hold Saturday morning dragon-boat staging at 08:20 with a drum-seat booking card", changeCost: 4, support: { students: 71, neighbours: 42, pandc: 54 } },
+        ],
+      },
+      {
+        id: "dragon-boat-drum-bar", title: "Drum bar hours", options: [
+          { id: "dragon-boat-drum-bar-original", original: true, label: "No posted dragon-boat drum-bar hours", changeCost: 0, support: { students: 73, neighbours: 18, pandc: 27 } },
+          { id: "dragon-boat-drum-bar-cap", original: false, label: "Close the dragon-boat drum bar at 20:10 and keep drinks inside the drum hut", changeCost: 1, support: { students: 46, neighbours: 78, pandc: 59 } },
+          { id: "dragon-boat-drum-bar-cut", original: false, label: "Serve tea only after 16:20 and retire the dragon-boat drum bar", changeCost: 5, support: { students: 28, neighbours: 89, pandc: 41 } },
+        ],
+      },
+      {
+        id: "dragon-boat-paddle-box-lockup", title: "Paddle-box lock-up", options: [
+          { id: "dragon-boat-paddle-box-lockup-original", original: true, label: "Leave the paddle-box door on a shared padlock after club hours", changeCost: 0, support: { students: 13, neighbours: 33, pandc: 39 } },
+          { id: "dragon-boat-paddle-box-lockup-steward", original: false, label: "Require a P&C steward to lock the paddle-box before 21:05", changeCost: 3, support: { students: 58, neighbours: 53, pandc: 76 } },
+          { id: "dragon-boat-paddle-box-lockup-timer", original: false, label: "Add a timed lock on the paddle-box after the last dragon-boat session", changeCost: 2, support: { students: 47, neighbours: 51, pandc: 68 } },
+        ],
+      },
+    ],
+  },
 };
 
 let agreementReviewPacket = null;
@@ -5925,6 +6014,11 @@ function renderCopyFallbacks(result) {
   if (groupsWithoutFloorRemainingBox) {
     const listed = formatGroupsWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
     groupsWithoutFloorRemainingBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
+  }
+  const lastGroupWithoutFloorRemainingBox = $("#last-group-without-floor-remaining-fallback");
+  if (lastGroupWithoutFloorRemainingBox) {
+    const listed = formatLastGroupWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(result ?? currentResult()));
+    lastGroupWithoutFloorRemainingBox.value = listed.status === "ok" || listed.status === "unavailable" ? listed.text : "";
   }
   const costBox = $("#change-cost-csv-fallback");
   if (costBox) {
@@ -6786,6 +6880,7 @@ function renderResults(result, vetoBlocks = blockingVetoIds(result)) {
   $("#copy-first-group-at-or-above-threshold-button").disabled = result.status === "invalid";
   $("#copy-groups-without-floor-count-button").disabled = result.status === "invalid";
   $("#copy-groups-without-floor-remaining-button").disabled = result.status === "invalid";
+  $("#copy-last-group-without-floor-remaining-button").disabled = result.status === "invalid";
   $("#copy-change-cost-button").disabled = result.status === "invalid" || !result.agreement;
   $("#copy-veto-button").disabled = result.status === "invalid" || result.status === "too_large";
   $("#share-button").disabled = result.status === "invalid";
@@ -8694,6 +8789,24 @@ async function copyGroupsWithoutFloorRemaining() {
   }
 }
 $("#copy-groups-without-floor-remaining-button").addEventListener("click", copyGroupsWithoutFloorRemaining);
+async function copyLastGroupWithoutFloorRemaining() {
+  const listed = formatLastGroupWithoutFloorRemainingMarkdown(state.proposal, inspectedPackage(currentResult()));
+  if (listed.status === "invalid") return notifyDraft("Fix the draft before copying the last-without-floor remaining.");
+  const fallback = $("#last-group-without-floor-remaining-fallback");
+  if (fallback) fallback.value = listed.text;
+  notifyDraft(listed.status === "unavailable"
+    ? "No inspected package is available. Copied an honest empty last-without-floor remaining. A floor is a number you entered, not a legal quorum."
+    : listed.empty
+    ? "No group is without a support floor. Copied an honest zero. A floor is a number you entered, not a legal quorum."
+    : "Last-without-floor remaining copied as Markdown. A floor is a number you entered, not a legal quorum.");
+  try {
+    await navigator.clipboard.writeText(listed.text);
+  } catch {
+    fallback?.focus?.();
+    notifyDraft("Clipboard is blocked. Copy the last-without-floor remaining from the Markdown box. A floor is a number you entered, not a legal quorum.");
+  }
+}
+$("#copy-last-group-without-floor-remaining-button").addEventListener("click", copyLastGroupWithoutFloorRemaining);
 $("#copy-change-cost-button").addEventListener("click", async () => {
   const exported = formatRecommendedChangeCostCsv(state.proposal, currentResult());
   if (exported.status === "invalid") return notifyDraft("Fix the draft before copying the change-cost table.");
@@ -9946,6 +10059,15 @@ function jumpToGroupsWithoutFloorRemainingCopy() {
   $("#groups-heading")?.focus?.();
 }
 
+function jumpToLastGroupWithoutFloorRemainingCopy() {
+  const control = $("#copy-last-group-without-floor-remaining-button");
+  if (control?.focus) {
+    control.focus();
+    return;
+  }
+  $("#groups-heading")?.focus?.();
+}
+
 function jumpToPrintPack() {
   const control = $("#print-button");
   if (control?.focus) {
@@ -10288,13 +10410,13 @@ document.addEventListener("keydown", (event) => {
     jumpToHideLastGroupBelowFloor();
   } else if (event.shiftKey && key === "F7") {
     event.preventDefault();
-    copyGroupsWithoutFloorRemaining();
+    copyLastGroupWithoutFloorRemaining();
   } else if (event.shiftKey && key === "F8") {
     event.preventDefault();
-    jumpToGroupsWithoutFloorRemainingCopy();
+    jumpToLastGroupWithoutFloorRemainingCopy();
   } else if (event.shiftKey && key === "F9") {
     event.preventDefault();
-    jumpToHideLastGroupWithoutFloor();
+    jumpToHideFirstGroupWithoutFloor();
   } else if (key === "F7") {
     event.preventDefault();
     copyLastGroupWithoutFloor();

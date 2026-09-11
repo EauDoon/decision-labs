@@ -72,6 +72,7 @@ const appImport = `import {
   formatFirstGroupWithoutFloorLabelMarkdown,
   formatGroupsWithoutFloorCountMarkdown,
   formatGroupsWithoutFloorRemainingMarkdown,
+  formatLastGroupWithoutFloorRemainingMarkdown,
   formatRecommendedChangeCostCsv,
   changedClauseIds,
   groupsBelowSupportRequirement,
