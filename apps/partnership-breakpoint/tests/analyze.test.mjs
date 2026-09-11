@@ -211,3 +211,29 @@ test('roster exports spreadsheet-safe CSV and validates CSV/TSV replacement atom
   assert.match(output(run(['roster', '-', '-'], config), 1).error, /only one/);
   assert.deepEqual(output(run(['summary', path])), calculatePartnership(config));
 });
+
+test('redact removes free text and custom IDs while preserving scenario economics', (t) => {
+  const config = clonePreset('balanced');
+  config.deal.title = 'Synthetic sensitive deal';
+  config.deal.notes = 'Synthetic sensitive notes';
+  config.deal.currency = 'USD';
+  config.participants[0].id = 'synthetic-sensitive-id';
+  config.participants[0].name = 'Synthetic sensitive participant';
+  config.stress = { volumeDropPct: 7, volumeGrowthPct: 0, feeDropPct: 0, variableCostRisePct: 0 };
+  const [path] = files(t, [config]);
+  const result = run(['redact', path]);
+  const redacted = output(result);
+  assert.doesNotMatch(result.stdout, /sensitive/i);
+  assert.equal(redacted.deal.currency, 'USD');
+  assert.deepEqual(redacted.stress, config.stress);
+  assert.deepEqual(redacted.participants.map(p => p.id), config.participants.map((_, i) => `participant-${i + 1}`));
+  const before = output(run(['summary', path]));
+  const after = output(run(['summary', '-'], redacted));
+  assert.equal(before.totalRevenue, after.totalRevenue);
+  assert.equal(before.totalProfit, after.totalProfit);
+  assert.equal(before.viable, after.viable);
+  assert.deepEqual(before.participants.map(p => p.monthlyProfit), after.participants.map(p => p.monthlyProfit));
+  assert.deepEqual(output(run(['summary', path])), before);
+  const packet = output(run(['review', '-', 'slack'], redacted));
+  assert.doesNotMatch(JSON.stringify(packet), /sensitive/i);
+});

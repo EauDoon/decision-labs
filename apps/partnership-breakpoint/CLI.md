@@ -77,3 +77,12 @@ node scripts/analyze.mjs roster scenario.json edited-roster.tsv > revised-scenar
 ```
 
 With one input, `roster` exports the existing import columns and escapes formula-like names. With a second file, it detects CSV or TSV, validates the whole replacement and emits a scenario with unchanged deal terms. The existing roster size, numeric and share validation applies. Invalid replacement produces no scenario. At most one input may be stdin. Roster import regenerates IDs from names, so retain the original scenario if later comparisons need original IDs. This is the same behavior as browser roster import.
+
+## Remove labels before sharing
+
+```sh
+node scripts/analyze.mjs redact scenario.json > redacted-scenario.json
+node scripts/analyze.mjs review redacted-scenario.json slack > redacted-review.json
+```
+
+Redaction removes the title and notes, replaces names with Participant 1 through N, and replaces custom IDs with `participant-1` through `participant-N`. The model's redaction helper also omits display preferences. Economics, currency and stress settings remain. This is label removal, not anonymization: amounts or circumstances may still identify a deal, so review the output before sharing. Generate any review packets or CSV from the redacted scenario, since existing artifacts are not rewritten. Remapped IDs prevent reliable alignment with the original roster by ID; roster position is preserved. No file is uploaded or changed.

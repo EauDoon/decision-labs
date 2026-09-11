@@ -5,6 +5,7 @@ import { compareImportedCase, compareThreeSnapshots } from '../src/model.js';
 import { PARTNERSHIP_REVIEW_TOOLS, createPartnershipReviewPacket, replayPartnershipReviewPacket } from '../src/model.js';
 import { materializeStressCase, applyStressProposal } from '../src/model.js';
 import { participantsFromRosterText, participantsToCsv } from '../src/model.js';
+import { redactConfiguration } from '../src/model.js';
 
 const HELP = `Offline Partnership Breakpoint analysis (Node.js 20+)
 Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
@@ -18,6 +19,7 @@ Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
   case INPUT CASE_ID            Export a compound case as new baseline inputs
   proposal INPUT                Export a rechecked fixed-share scenario
   roster INPUT [ROSTER_FILE]     Export CSV, or replace roster from CSV/TSV
+  redact INPUT                  Remove labels and remap IDs in a portable scenario
 Review tools: ${PARTNERSHIP_REVIEW_TOOLS.map(tool => tool.id).join(', ')}
 INPUT is a JSON file or - for standard input. Output is JSON on stdout.
 Errors are JSON on stderr, exit 1. Success is exit 0.
@@ -95,6 +97,12 @@ function run(command, args) {
       if (args.length === 1) return participantsToCsv(config);
       const participants = participantsFromRosterText(readText(args[1]));
       return assertValidConfiguration({ ...config, participants });
+    }
+    case 'redact': {
+      arity(args, 1);
+      const config = redactConfiguration(readJSON(args[0]));
+      config.participants.forEach((participant, index) => { participant.id = `participant-${index + 1}`; });
+      return assertValidConfiguration(config);
     }
     default: throw new Error('Unknown command. Run with --help for usage.');
   }
