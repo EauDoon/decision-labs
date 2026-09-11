@@ -2308,73 +2308,78 @@ test("keyboard F12 jumps to the hide-weekend-FX-open filter and does not copy", 
   assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, false);
 });
 
-test("keyboard Shift+F10 copies first weekday-FX-open hour through the new control and ignores the key while typing", async () => {
+test("keyboard Shift+F10 copies first weekday-FX-closed hour through the new control and ignores the key while typing", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("F10", { tagName: "BODY" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("first-weekday-fx-open-copy-fallback").hidden, false);
-  assert.match(ui.nodes.get("first-weekday-fx-open-copy-fallback").value, /First weekday-FX-open hour:/);
-  assert.match(ui.nodes.get("first-weekday-fx-open-copy-fallback").value, /Counts of modeled hours, not an FX calendar/);
-  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-open-copy-fallback").value, /Last weekday-FX-open hour:/);
-  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-open-copy-fallback").value, /Last weekend-FX-open hour:/);
-  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-open-copy-fallback").value, /Last weekday-FX-closed hour:/);
-  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-open-copy-fallback").value, /Last weekend-FX-closed hour:/);
-  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-open-copy-fallback").value, /Last closed FX hour:/);
-  ui.nodes.get("first-weekday-fx-open-copy-fallback").hidden = true;
-  ui.nodes.get("first-weekday-fx-open-copy-fallback").value = "";
+  assert.equal(ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /First weekday-FX-closed hour:/);
+  assert.match(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /Counts of modeled hours, not an FX calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /First weekday-FX-open hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /Last weekday-FX-open hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /Last weekend-FX-open hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /Last weekday-FX-closed hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /Last weekend-FX-closed hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /Last closed FX hour:/);
+  ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden = true;
+  ui.nodes.get("first-weekday-fx-closed-copy-fallback").value = "";
   await ui.keydown("F10", { tagName: "INPUT" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("first-weekday-fx-open-copy-fallback").hidden, true);
+  assert.equal(ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden, true);
   await ui.keydown("F10", { tagName: "TEXTAREA" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("first-weekday-fx-open-copy-fallback").hidden, true);
+  assert.equal(ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden, true);
   await ui.keydown("F10", { tagName: "SELECT" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("first-weekday-fx-open-copy-fallback").hidden, true);
+  assert.equal(ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden, true);
   await ui.keydown("F10", { tagName: "BODY" }, { shiftKey: true, defaultPrevented: true });
-  assert.equal(ui.nodes.get("first-weekday-fx-open-copy-fallback").hidden, true);
+  assert.equal(ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden, true);
   await ui.keydown("F10");
   assert.equal(ui.nodes.get("last-weekday-fx-closed-copy-fallback").hidden, false);
   assert.match(ui.nodes.get("last-weekday-fx-closed-copy-fallback").value, /Last weekday-FX-closed hour:/);
-  assert.notEqual(ui.nodes.get("first-weekday-fx-open-copy-fallback").value, ui.nodes.get("last-weekday-fx-closed-copy-fallback").value);
+  assert.notEqual(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, ui.nodes.get("last-weekday-fx-closed-copy-fallback").value);
 });
 
-test("keyboard Shift+F11 jumps to the first-weekday-FX-open copy control and does not copy", async () => {
+test("keyboard Shift+F11 jumps to the first-weekday-FX-closed copy control and does not copy", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("F11", { tagName: "BODY" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("copy-first-weekday-fx-open").focused, true);
-  assert.equal(ui.nodes.get("copy-last-weekday-fx-open").focused, undefined);
-  assert.equal(ui.nodes.get("first-weekday-fx-open-copy-fallback").hidden, true);
-  ui.nodes.get("copy-first-weekday-fx-open").focused = false;
+  assert.equal(ui.nodes.get("copy-first-weekday-fx-closed").focused, true);
+  assert.equal(ui.nodes.get("copy-first-weekday-fx-open").focused, undefined);
+  assert.equal(ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden, true);
+  ui.nodes.get("copy-first-weekday-fx-closed").focused = false;
   ui.nodes.get("gantt-title").focused = false;
   await ui.keydown("F11", { tagName: "INPUT" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("copy-first-weekday-fx-open").focused, false);
+  assert.equal(ui.nodes.get("copy-first-weekday-fx-closed").focused, false);
   assert.equal(ui.nodes.get("gantt-title").focused, false);
   await ui.keydown("F11", { tagName: "TEXTAREA" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("copy-first-weekday-fx-open").focused, false);
+  assert.equal(ui.nodes.get("copy-first-weekday-fx-closed").focused, false);
   await ui.keydown("F11", { tagName: "BODY" }, { shiftKey: true, defaultPrevented: true });
-  assert.equal(ui.nodes.get("copy-first-weekday-fx-open").focused, false);
+  assert.equal(ui.nodes.get("copy-first-weekday-fx-closed").focused, false);
   await ui.keydown("F11");
   assert.equal(ui.nodes.get("copy-last-weekday-fx-closed").focused, true);
-  assert.equal(ui.nodes.get("copy-first-weekday-fx-open").focused, false);
-  assert.equal(ui.nodes.get("first-weekday-fx-open-copy-fallback").hidden, true);
+  assert.equal(ui.nodes.get("copy-first-weekday-fx-closed").focused, false);
+  assert.equal(ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden, true);
 });
 
-test("keyboard Shift+F12 jumps to the hide-weekday-FX-closed filter and does not copy", async () => {
+test("keyboard Shift+F12 jumps to the hide-weekday-FX-open filter and does not copy", async () => {
   const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
   await ui.keydown("F12", { tagName: "BODY" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, true);
-  assert.equal(ui.nodes.get("gantt-hide-weekend-fx-closed").focused, undefined);
-  assert.equal(ui.nodes.get("first-weekday-fx-open-copy-fallback").hidden, true);
-  ui.nodes.get("gantt-hide-weekday-fx-closed").focused = false;
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, undefined);
+  assert.equal(ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden, true);
+  ui.nodes.get("gantt-hide-weekday-fx-open").focused = false;
   ui.nodes.get("gantt-title").focused = false;
   await ui.keydown("F12", { tagName: "INPUT" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, false);
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, false);
   assert.equal(ui.nodes.get("gantt-title").focused, false);
   await ui.keydown("F12", { tagName: "TEXTAREA" }, { shiftKey: true });
-  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, false);
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, false);
   await ui.keydown("F12", { tagName: "BODY" }, { shiftKey: true, defaultPrevented: true });
-  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, false);
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, false);
   await ui.keydown("F12");
   assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, true);
-  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, false);
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, false);
   ui.nodes.get("gantt-hide-weekend-fx-open").focused = false;
+  await ui.keydown("F9");
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-closed").focused, true);
+  assert.equal(ui.nodes.get("gantt-hide-weekday-fx-open").focused, false);
+  ui.nodes.get("gantt-hide-weekday-fx-closed").focused = false;
   await ui.keydown("Backspace");
   assert.equal(ui.nodes.get("gantt-hide-weekend-fx-closed").focused, true);
   assert.equal(ui.nodes.get("gantt-hide-weekend-fx-open").focused, false);
@@ -2429,6 +2434,21 @@ test("copy last weekday-FX-open hour uses one-line Markdown distinct from last-w
   assert.notEqual(ui.nodes.get("last-weekday-fx-open-copy-fallback").value, ui.nodes.get("last-weekend-fx-open-copy-fallback").value);
   await ui.nodes.get("copy-last-weekday-fx-closed").click();
   assert.notEqual(ui.nodes.get("last-weekday-fx-open-copy-fallback").value, ui.nodes.get("last-weekday-fx-closed-copy-fallback").value);
+});
+
+test("copy first weekday-FX-closed hour uses one-line Markdown distinct from first-weekday-FX-open, last-weekday-FX-closed and last-weekend-FX-closed", async () => {
+  const ui = await boot(new Map([["weekend-gap:coach:v1", "dismissed"]]));
+  await ui.nodes.get("copy-first-weekday-fx-closed").click();
+  assert.equal(ui.nodes.get("first-weekday-fx-closed-copy-fallback").hidden, false);
+  assert.match(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /First weekday-FX-closed hour:/);
+  assert.match(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /Counts of modeled hours, not an FX calendar/);
+  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /First weekday-FX-open hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /Last weekday-FX-closed hour:/);
+  assert.doesNotMatch(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, /Last weekend-FX-closed hour:/);
+  await ui.nodes.get("copy-first-weekday-fx-open").click();
+  assert.notEqual(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, ui.nodes.get("first-weekday-fx-open-copy-fallback").value);
+  await ui.nodes.get("copy-last-weekday-fx-closed").click();
+  assert.notEqual(ui.nodes.get("first-weekday-fx-closed-copy-fallback").value, ui.nodes.get("last-weekday-fx-closed-copy-fallback").value);
 });
 
 test("copy first weekday-FX-open hour uses one-line Markdown distinct from last-weekday-FX-open, last-weekend-FX-open and last-weekday-FX-closed", async () => {
