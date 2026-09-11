@@ -1082,6 +1082,25 @@ export function groupsBelowDeclaredSupportFloor(proposal, options) {
 }
 
 /**
+ * Groups with no declared support floor (minSupport missing).
+ * Distinct from groups below a declared floor and from hideGroupsWithoutFloors
+ * when only the last such group is hidden.
+ * A floor is a number you entered, not a legal quorum.
+ * Display-only. Solver counts stay the same.
+ */
+export function groupsWithoutDeclaredSupportFloor(proposal) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const groups = [];
+  for (const group of proposal.groups) {
+    if (!Object.hasOwn(group, "minSupport")) {
+      groups.push({ id: group.id, name: group.name });
+    }
+  }
+  return { status: "ok", groups };
+}
+
+/**
  * Clause ids whose cheapest remaining change exceeds leftover change budget.
  * Remaining change is the lowest changeCost among options other than the inspected selection.
  * When leftover budget is 0 or negative, every clause is listed.
@@ -2518,6 +2537,50 @@ export function formatLastBelowSupportFloorGroupLabelMarkdown(proposal, options)
 }
 
 /**
+ * One-line Markdown of the last group without a declared support floor
+ * (minSupport missing).
+ * Uses the same without-floor list as hideLastGroupWithoutFloor.
+ * Honest when none or no inspected package is available.
+ * Distinct from first at-floor group copy, last at-floor group copy,
+ * first-below-floor group copy, last-below-floor group copy, and
+ * hideGroupsWithoutFloors.
+ * A floor is a number you entered, not a legal quorum.
+ * Do not treat the label as a legal identity.
+ */
+export function formatLastGroupWithoutFloorLabelMarkdown(proposal, options) {
+  const validation = validateProposal(proposal);
+  if (!validation.valid) return { status: "invalid", errors: validation.errors };
+  const disclaimer = "A floor is a number you entered, not a legal quorum. The label is not a legal identity.";
+  if (!Array.isArray(options) || options.length !== proposal.clauses.length) {
+    return {
+      status: "unavailable",
+      empty: true,
+      text: `No inspected package is available, so there is no last group-without-floor label to copy. ${disclaimer}\n`,
+    };
+  }
+  const selected = proposal.clauses.map((clause, index) => clause.options.find((option) => option.id === options[index]?.id) ?? null);
+  if (selected.some((option) => !option)) {
+    return { status: "invalid", errors: ["Every selected option must belong to its clause."] };
+  }
+  const listed = groupsWithoutDeclaredSupportFloor(proposal);
+  if (listed.status !== "ok") return listed;
+  const last = listed.groups[listed.groups.length - 1];
+  if (!last) {
+    return {
+      status: "ok",
+      empty: true,
+      text: `No group is without a support floor, so there is no last group-without-floor label to copy. ${disclaimer}\n`,
+    };
+  }
+  return {
+    status: "ok",
+    empty: false,
+    label: last.name,
+    text: `Last group without a support floor: ${briefText(last.name)}. ${disclaimer}\n`,
+  };
+}
+
+/**
  * Markdown table of group name, mixing weight, and average support on the inspected package.
  * Mixing weights are not a legal right.
  */
@@ -2812,6 +2875,7 @@ const WORKSPACE_DOCUMENT_KEYS = new Set([
   "hideFirstGroupAtFloor",
   "hideFirstGroupBelowFloor",
   "hideLastGroupBelowFloor",
+  "hideLastGroupWithoutFloor",
   "proposal",
 ]);
 const WORKSPACE_PREF_KEYS = new Set([
@@ -2842,6 +2906,7 @@ const WORKSPACE_PREF_KEYS = new Set([
   "hideFirstGroupAtFloor",
   "hideFirstGroupBelowFloor",
   "hideLastGroupBelowFloor",
+  "hideLastGroupWithoutFloor",
 ]);
 
 function readWorkspaceBoolean(raw, key) {
@@ -2925,6 +2990,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
   if (hideFirstGroupBelowFloor.error) return { status: "invalid", errors: [hideFirstGroupBelowFloor.error] };
   const hideLastGroupBelowFloor = readWorkspaceBoolean(prefs, "hideLastGroupBelowFloor");
   if (hideLastGroupBelowFloor.error) return { status: "invalid", errors: [hideLastGroupBelowFloor.error] };
+  const hideLastGroupWithoutFloor = readWorkspaceBoolean(prefs, "hideLastGroupWithoutFloor");
+  if (hideLastGroupWithoutFloor.error) return { status: "invalid", errors: [hideLastGroupWithoutFloor.error] };
   return {
     status: "ok",
     clauseDensity,
@@ -2954,7 +3021,8 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
     hideFirstGroupAtFloor: hideFirstGroupAtFloor.value,
     hideFirstGroupBelowFloor: hideFirstGroupBelowFloor.value,
     hideLastGroupBelowFloor: hideLastGroupBelowFloor.value,
-    json: `${JSON.stringify({
+    hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
+    json: `${JSON.stringify({`
       format: "smallest-agreement-workspace",
       version: 1,
       clauseDensity,
@@ -2984,6 +3052,7 @@ export function formatWorkspaceJson(proposal, prefs = {}) {
       hideFirstGroupAtFloor: hideFirstGroupAtFloor.value,
       hideFirstGroupBelowFloor: hideFirstGroupBelowFloor.value,
       hideLastGroupBelowFloor: hideLastGroupBelowFloor.value,
+      hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
       proposal: canonicalProposal(proposal),
     }, null, 2)}\n`,
   };
@@ -3027,6 +3096,7 @@ export function parseWorkspaceJson(text) {
       hideFirstGroupAtFloor: null,
       hideFirstGroupBelowFloor: null,
       hideLastGroupBelowFloor: null,
+      hideLastGroupWithoutFloor: null,
     };
   }
   for (const key of Object.keys(raw)) {
@@ -3095,6 +3165,8 @@ export function parseWorkspaceJson(text) {
   if (hideFirstGroupBelowFloor.error) return { status: "invalid", errors: [hideFirstGroupBelowFloor.error] };
   const hideLastGroupBelowFloor = readWorkspaceBoolean(raw, "hideLastGroupBelowFloor");
   if (hideLastGroupBelowFloor.error) return { status: "invalid", errors: [hideLastGroupBelowFloor.error] };
+  const hideLastGroupWithoutFloor = readWorkspaceBoolean(raw, "hideLastGroupWithoutFloor");
+  if (hideLastGroupWithoutFloor.error) return { status: "invalid", errors: [hideLastGroupWithoutFloor.error] };
   return {
     status: "ok",
     kind: "workspace",
@@ -3126,6 +3198,7 @@ export function parseWorkspaceJson(text) {
     hideFirstGroupAtFloor: hideFirstGroupAtFloor.value,
     hideFirstGroupBelowFloor: hideFirstGroupBelowFloor.value,
     hideLastGroupBelowFloor: hideLastGroupBelowFloor.value,
+    hideLastGroupWithoutFloor: hideLastGroupWithoutFloor.value,
   };
 }
 
