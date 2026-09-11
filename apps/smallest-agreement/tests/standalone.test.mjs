@@ -6896,13 +6896,13 @@ test("keyboard Delete copies the last below-floor group unless an input is activ
     threshold: 70,
     groups: [
       { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
-      { id: "open", name: "Open", weight: 1 },
+      { id: "open", name: "Open", weight: 5 },
       { id: "later", name: "Later floor", weight: 1, minSupport: 90 },
     ],
     clauses: [{ id: "one", title: "One", options: [
       { id: "original", label: "Keep original", original: true, changeCost: 0, support: { floored: 50, open: 90, later: 40 } },
-      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 85, open: 40, later: 95 } },
-      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 90, open: 80, later: 95 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 50, open: 40, later: 40 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 50, open: 80, later: 40 } },
     ] }],
   };
   const app = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
@@ -8130,13 +8130,13 @@ test("copy last below-floor group writes one-line Markdown with a clipboard fall
     threshold: 70,
     groups: [
       { id: "floored", name: "Floored", weight: 1, minSupport: 80 },
-      { id: "open", name: "Open", weight: 1 },
+      { id: "open", name: "Open", weight: 5 },
       { id: "later", name: "Later floor", weight: 1, minSupport: 90 },
     ],
     clauses: [{ id: "one", title: "One", options: [
       { id: "original", label: "Keep original", original: true, changeCost: 0, support: { floored: 50, open: 90, later: 40 } },
-      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 85, open: 40, later: 95 } },
-      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 90, open: 80, later: 95 } },
+      { id: "mid", label: "Mid option", original: false, changeCost: 1, support: { floored: 50, open: 40, later: 40 } },
+      { id: "other", label: "Other option", original: false, changeCost: 2, support: { floored: 50, open: 80, later: 40 } },
     ] }],
   };
   const app = await savedWorkbench(new Map([["smallest-agreement:proposal:v1", JSON.stringify(draft)]]));
