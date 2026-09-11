@@ -143,3 +143,20 @@ test('replay recomputes packets, rejects changed inputs/results/fields, and reco
   invalid(['replay', '-'], ' '.repeat(1048577), /1024 KiB/);
   assert.deepEqual(result(['replay', '-'], packet), packet);
 });
+
+test('batch isolates malformed records and preserves physical line numbers and later recovery', () => {
+  const processResult = run(['batch', '-'], [JSON.stringify(proposal), '', '{private-marker', JSON.stringify({ ...proposal, threshold: 70 })].join('\r\n'));
+  assert.equal(processResult.status, 1);
+  assert.equal(processResult.stderr, '');
+  const rows = processResult.stdout.trim().split('\n').map(line => JSON.parse(line));
+  assert.deepEqual(rows.map(row => row.line), [1, 3, 4]);
+  assert.deepEqual(rows.map(row => row.status), ['ok', 'error', 'ok']);
+  assert.equal(rows[0].result.agreement.changeCost, 2);
+  assert.equal(rows[2].result.agreement.changeCost, 5);
+  assert.doesNotMatch(processResult.stdout, /private-marker/);
+  invalid(['batch', '-'], '\n', /1 to 20/);
+  invalid(['batch', '-'], Array(21).fill('{}').join('\n'), /1 to 20/);
+  const large = { ...proposal, clauses: Array.from({ length: 8 }, (_, index) => ({ ...proposal.clauses[0], id: 'c' + index })) };
+  assert.equal(result(['batch', '-'], large).result.status, 'too_large');
+  assert.equal(result(['batch', '-']).result.agreement.changeCost, 2);
+});

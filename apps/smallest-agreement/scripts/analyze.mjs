@@ -7,7 +7,8 @@ const usage = `Usage: node scripts/analyze.mjs <command> <input.json|-> [argumen
   stress <option IDs> <support drops separated by commas>
   compare <second workshop.json>
   review <tool: ${AGREEMENT_REVIEW_TOOLS.map(tool => tool.id).join(', ')}>
-  replay (input is a review packet)`;
+  replay (input is a review packet)
+  batch (input is JSONL, one proposal or workspace per nonblank line)`;
 
 async function readText(path, limit = 262144) {
   const stream = path === '-' ? process.stdin : createReadStream(path);
@@ -48,23 +49,39 @@ function levels(text, maximum) {
   return parts.map(Number);
 }
 
+function batch(text) {
+  const lines = text.split(/\r?\n/).map((text, index) => ({ text, line: index + 1 })).filter(row => row.text.trim());
+  if (lines.length < 1 || lines.length > 20) throw new TypeError('Batch requires 1 to 20 nonblank JSONL records.');
+  return lines.map(({ text, line }) => {
+    try {
+      if (Buffer.byteLength(text) > 262144) throw new TypeError('Record exceeds 256 KiB.');
+      const proposal = proposalFrom(parseJson(text));
+      return { line, status: 'ok', result: findSmallestAgreement(proposal, { alternativesLimit: 5, maxCombinations: 2500 }) };
+    } catch (error) {
+      process.exitCode = 1;
+      return { line, status: 'error', error: error.message };
+    }
+  });
+}
+
 try {
   const [command, path, ...args] = process.argv.slice(2);
   if (command === '--help' && path === undefined) {
     process.stdout.write(usage + '\n');
   } else {
-    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0 };
+    const arity = { solve: 0, evaluate: 1, stress: 2, compare: 1, review: 1, replay: 0, batch: 0 };
     if (!Object.hasOwn(arity, command) || !path || args.length !== arity[command]) throw new TypeError(usage);
     if (command === 'compare' && path === '-' && args[0] === '-') throw new TypeError('Only one comparison input may use stdin.');
-    const inputText = await readText(path, command === 'replay' ? 1048576 : 262144);
-    const raw = parseJson(inputText);
-    const proposal = command === 'replay' ? null : proposalFrom(raw);
+    const inputText = await readText(path, ['replay', 'batch'].includes(command) ? 1048576 : 262144);
+    const raw = command === 'batch' ? null : parseJson(inputText);
+    const proposal = ['replay', 'batch'].includes(command) ? null : proposalFrom(raw);
     let output;
     switch (command) {
       case 'solve': output = solve(proposal); break;
       case 'evaluate': output = checked(evaluatePackage(proposal, args[0].split(','))); break;
       case 'review': output = createAgreementReviewPacket(proposal, args[0]); break;
       case 'replay': output = replayAgreementReviewPacket(raw); break;
+      case 'batch': output = batch(inputText); break;
       case 'stress': output = {
         method: 'Fixed package, all support scores reduced and clamped at zero; no reoptimization or probabilities.',
         rows: levels(args[1], 100).map(drop => checked(stressPackage(proposal, args[0].split(','), drop))),
@@ -76,7 +93,7 @@ try {
         break;
       }
     }
-    process.stdout.write(JSON.stringify(output) + '\n');
+    process.stdout.write((command === 'batch' ? output.map(row => JSON.stringify(row)).join('\n') : JSON.stringify(output)) + '\n');
   }
 } catch (error) {
   process.stderr.write(JSON.stringify({ status: 'error', error: error.message }) + '\n');

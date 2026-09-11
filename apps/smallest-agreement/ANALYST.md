@@ -70,3 +70,18 @@ fields, or unsupported versions. CLI packets use compact JSON. If a packet no
 longer matches the current model, run a new review; do not edit its claimed
 results. Successful replay proves internal reproducibility under this model,
 not who created the packet or whether the declared assumptions are true.
+
+## Process a bounded workshop batch
+
+`node scripts/analyze.mjs batch workshops.jsonl` reads one complete proposal
+or workspace JSON object per nonblank line, up to 20 records and 1 MiB total.
+Each record is limited to 256 KiB and 2,500 search combinations, so the whole
+batch checks at most 50,000 combinations. A larger individual search reports
+`too_large`; run that case with `solve` to use the normal 50,000 cap.
+
+Output is JSONL in source order with physical line numbers, including one
+error row for each invalid record. Valid later records still run. Exit 1
+means at least one row failed input validation; exit 0 means every record
+produced a report, including honest infeasible or capped reports. File-level
+size/record-count errors exit 2 without partial stdout. Batch errors omit raw
+JSON contents, but valid reports retain supplied data.
