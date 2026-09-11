@@ -71,6 +71,7 @@ SOFTWARE.
             <option value="softball-club-hours">Softball club hours</option>
             <option value="lacrosse-club-hours">Lacrosse club hours</option>
             <option value="water-polo-club-hours">Water polo club hours</option>
+            <option value="rowing-club-hours">Rowing club hours</option>
           </select>
         </label>
         <button class="button button-secondary" type="button" id="load-preset">Load preset</button>
@@ -116,6 +117,7 @@ SOFTWARE.
         <button class="button button-secondary" type="button" id="copy-last-group-at-floor-button" aria-keyshortcuts="Insert">Copy last at-floor group</button>
         <button class="button button-secondary" type="button" id="copy-first-group-at-floor-button" aria-keyshortcuts="F3">Copy first at-floor group</button>
         <button class="button button-secondary" type="button" id="copy-last-below-floor-group-button" aria-keyshortcuts="Delete">Copy last below-floor group</button>
+        <button class="button button-secondary" type="button" id="copy-last-group-without-floor-button" aria-keyshortcuts="F7">Copy last group without a support floor</button>
         <button class="button button-secondary" type="button" id="copy-change-cost-button">Copy change-cost table</button>
         <button class="button button-secondary" type="button" id="copy-veto-button">Copy veto blockers</button>
         <button class="button button-secondary" type="button" id="share-button">Share link</button>
@@ -181,7 +183,7 @@ SOFTWARE.
           <label class="hide-groups-at-floor-filter" for="hide-groups-at-floor"><input id="hide-groups-at-floor" type="checkbox"> Hide groups currently meeting their support floor</label>
           <p id="hide-groups-at-floor-filter-note" class="field-note">Hides groups whose average on the inspected package meets a declared support floor. Groups without a floor stay visible. Hidden groups still count in the model. The solver is unchanged.</p>
           <label class="hide-groups-without-floors-filter" for="hide-groups-without-floors"><input id="hide-groups-without-floors" type="checkbox"> Hide groups that have no support floor</label>
-          <p id="hide-groups-without-floors-filter-note" class="field-note">Hides groups that have no declared support floor. Groups with a floor stay visible. Hidden groups still count in the model. The solver is unchanged.</p>
+          <p id="hide-groups-without-floors-filter-note" class="field-note">Hides groups that have no declared support floor. Groups with a floor stay visible. Hidden groups still count in the model. The solver is unchanged. Distinct from hideLastGroupWithoutFloor.</p>
           <label class="hide-groups-meeting-threshold-filter" for="hide-groups-meeting-threshold"><input id="hide-groups-meeting-threshold" type="checkbox"> Hide groups currently meeting the approval threshold</label>
           <p id="hide-groups-meeting-threshold-filter-note" class="field-note">Hides groups whose average support on the inspected package currently meets the numeric approval threshold. Hidden groups still count in the model. The solver is unchanged. Distinct from hide-at-floor, hide-without-floors, leftover-budget, locked-clause, hide-unlocked, and hide-locked filters.</p>
           <label class="hide-groups-below-threshold-filter" for="hide-groups-below-threshold"><input id="hide-groups-below-threshold" type="checkbox" aria-keyshortcuts="{"> Hide groups currently below the approval threshold</label>
@@ -213,7 +215,9 @@ SOFTWARE.
           <label class="hide-first-group-below-floor-filter" for="hide-first-group-below-floor"><input id="hide-first-group-below-floor" type="checkbox" aria-keyshortcuts="ArrowRight"> Hide first group currently below their support floor</label>
           <p id="hide-first-group-below-floor-filter-note" class="field-note">Hides only the first group whose average support on the inspected package is currently below their declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstGroupAtFloor, hideLastGroupAtFloor, hideGroupsAtFloor, hideFirstGroupBelowThreshold, hideLastGroupBelowFloor, and belowFloorGroupsOnly. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
           <label class="hide-last-group-below-floor-filter" for="hide-last-group-below-floor"><input id="hide-last-group-below-floor" type="checkbox" aria-keyshortcuts="Backspace"> Hide last group currently below their support floor</label>
-          <p id="hide-last-group-below-floor-filter-note" class="field-note">Hides only the last group whose average support on the inspected package is currently below their declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstGroupBelowFloor, hideLastGroupBelowThreshold, hideLastGroupAtFloor, hideGroupsAtFloor, and belowFloorGroupsOnly. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
+          <p id="hide-last-group-below-floor-filter-note" class="field-note">Hides only the last group whose average support on the inspected package is currently below their declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstGroupBelowFloor, hideLastGroupBelowThreshold, hideLastGroupAtFloor, hideGroupsAtFloor, hideLastGroupWithoutFloor, and belowFloorGroupsOnly. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
+          <label class="hide-last-group-without-floor-filter" for="hide-last-group-without-floor"><input id="hide-last-group-without-floor" type="checkbox" aria-keyshortcuts="F9"> Hide last group without a support floor</label>
+          <p id="hide-last-group-without-floor-filter-note" class="field-note">Hides only the last group that has no declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsWithoutFloors and hideLastGroupBelowFloor. Workspace JSON persists this optional boolean. Older files omit the key and show all groups. A floor is a number you entered, not a legal quorum.</p>
           <p id="veto-groups-status" class="visually-hidden" role="status" aria-live="polite"></p>
           <label class="groups-paste-label" for="groups-paste">Paste participant groups TSV or CSV</label>
           <textarea id="groups-paste" rows="8" spellcheck="false" aria-describedby="groups-paste-note"></textarea>
@@ -360,7 +364,10 @@ SOFTWARE.
             <p id="first-group-at-floor-fallback-note" class="field-note">One line of the first group whose average support on the inspected package currently meets their declared support floor, or an honest empty line when none. Distinct from last at-floor group copy, first at-or-above-threshold group copy, and hideFirstGroupAtFloor. A floor is a number you entered, not a legal quorum. The label is not a legal identity. If the clipboard is blocked, copy from this box.</p>
             <label class="last-below-floor-group-fallback-label" for="last-below-floor-group-fallback">Last below-floor group Markdown</label>
             <textarea id="last-below-floor-group-fallback" readonly rows="3" spellcheck="false" aria-describedby="last-below-floor-group-fallback-note"></textarea>
-            <p id="last-below-floor-group-fallback-note" class="field-note">One line of the last group whose average support on the inspected package is currently below their declared support floor, or an honest empty line when none. Distinct from first-below-floor group copy, last below-threshold group copy, last at-floor group copy, hideFirstGroupBelowFloor, and hideLastGroupBelowFloor. A floor is a number you entered, not a legal quorum. The label is not a legal identity. If the clipboard is blocked, copy from this box.</p>
+            <p id="last-below-floor-group-fallback-note" class="field-note">One line of the last group whose average support on the inspected package is currently below their declared support floor, or an honest empty line when none. Distinct from first-below-floor group copy, last below-threshold group copy, last at-floor group copy, hideFirstGroupBelowFloor, hideLastGroupBelowFloor, and last group-without-floor copy. A floor is a number you entered, not a legal quorum. The label is not a legal identity. If the clipboard is blocked, copy from this box.</p>
+            <label class="last-group-without-floor-fallback-label" for="last-group-without-floor-fallback">Last group without a support floor Markdown</label>
+            <textarea id="last-group-without-floor-fallback" readonly rows="3" spellcheck="false" aria-describedby="last-group-without-floor-fallback-note"></textarea>
+            <p id="last-group-without-floor-fallback-note" class="field-note">One line of the last group without a declared support floor, or an honest empty line when none. Distinct from first at-floor group copy, last at-floor group copy, first-below-floor group copy, last-below-floor group copy, hideGroupsWithoutFloors, and hideLastGroupWithoutFloor. A floor is a number you entered, not a legal quorum. The label is not a legal identity. If the clipboard is blocked, copy from this box.</p>
             <label class="change-cost-csv-fallback-label" for="change-cost-csv-fallback">Change-cost CSV</label>
             <textarea id="change-cost-csv-fallback" readonly rows="8" spellcheck="false" aria-describedby="change-cost-csv-fallback-note"></textarea>
             <p id="change-cost-csv-fallback-note" class="field-note">Compact CSV of clause, original option, recommended option, and cost delta. Cells that look like spreadsheet formulas receive a leading apostrophe. If the clipboard is blocked, copy from this box.</p>
@@ -570,6 +577,9 @@ SOFTWARE.
           <li><kbd>F2</kbd> Jump to the last below-floor group copy control, or the groups heading</li>
           <li><kbd>ArrowRight</kbd> Jump to the hide-first-group-below-floor control, or the groups heading</li>
           <li><kbd>Backspace</kbd> Jump to the hide-last-group-below-floor control, or the groups heading</li>
+          <li><kbd>F7</kbd> Copy the last group-without-floor label as one-line Markdown</li>
+          <li><kbd>F8</kbd> Jump to the last group-without-floor copy control, or the groups heading</li>
+          <li><kbd>F9</kbd> Jump to the hide-last-group-without-floor control, or the groups heading</li>
           <li><kbd>Esc</kbd> Close help or the tour</li>
         </ul>
         <button class="button button-brick" type="button" id="shortcut-close">Close</button>
