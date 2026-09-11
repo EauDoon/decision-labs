@@ -172,6 +172,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Volleyball club hours, last-below-threshold copy, and first-below-threshold hide in The Smallest Agreement 1\.5\.17/);
   assert.match(html, /Soccer club hours, first-below-threshold copy, and last-at-or-above hide in The Smallest Agreement 1\.5\.18/);
   assert.match(html, /Hockey club hours, last-at-or-above copy, and first-at-or-above hide in The Smallest Agreement 1\.5\.19/);
+  assert.match(html, /Rugby club hours, first-at-or-above copy, and last-at-floor hide in The Smallest Agreement 1\.5\.20/);
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /Dashboard copy, file compare, and compressed Friday in Weekend Gap 1\.4\.3/);
@@ -275,6 +276,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Volleyball club hours start, last-below-threshold group copy shortcut/);
   assert.match(readme, /Soccer club hours start, first-below-threshold group copy shortcut/);
   assert.match(readme, /Hockey club hours start, last-at-or-above-threshold group copy shortcut/);
+  assert.match(readme, /Rugby club hours start, first-at-or-above-threshold group copy shortcut/);
   assert.match(readme, /queue-clear hours and Gantt compare/);
   assert.match(readme, /queue CSV export, peak-queue jump/);
   assert.match(readme, /dashboard Markdown copy, two-file compare/);
@@ -5523,6 +5525,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Volleyball club hours, last-below-threshold copy, and first-below-threshold hide in The Smallest Agreement 1.5.17'), true);
   assert.equal(headings.includes('Soccer club hours, first-below-threshold copy, and last-at-or-above hide in The Smallest Agreement 1.5.18'), true);
   assert.equal(headings.includes('Hockey club hours, last-at-or-above copy, and first-at-or-above hide in The Smallest Agreement 1.5.19'), true);
+  assert.equal(headings.includes('Rugby club hours, first-at-or-above copy, and last-at-floor hide in The Smallest Agreement 1.5.20'), true);
   assert.match(html, /Copy first What's new heading through close-paren as Markdown/);
   assert.match(html, /jump to Copy catalog intro with keyboard at/);
   assert.match(html, /jump to Copy skip links with keyboard hash/);
@@ -5587,6 +5590,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Volleyball club hours, last-below-threshold copy, and first-below-threshold hide in The Smallest Agreement 1.5.17'), true);
   assert.equal(headings.includes('Soccer club hours, first-below-threshold copy, and last-at-or-above hide in The Smallest Agreement 1.5.18'), true);
   assert.equal(headings.includes('Hockey club hours, last-at-or-above copy, and first-at-or-above hide in The Smallest Agreement 1.5.19'), true);
+  assert.equal(headings.includes('Rugby club hours, first-at-or-above copy, and last-at-floor hide in The Smallest Agreement 1.5.20'), true);
   assert.match(html, /Copy first workbench heading through asterisk as Markdown/);
   assert.match(html, /jump to that control with keyboard ampersand/);
   assert.match(html, /jump to Copy first Trust item with keyboard percent/);

@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.20 - 2026-09-11
+
+A workshop follow-up on 1.5.19. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `PageUp` copies the first group at or above the numeric approval threshold through the new `#copy-first-group-at-or-above-threshold-button` (`formatFirstGroupAtOrAboveThresholdLabelMarkdown`). Ignored while typing. Distinct from `4` last-at-or-above copy and `1` first-below-threshold copy. The label is not a legal identity.
+- Keyboard `PageDown` jumps to that first at-or-above-threshold group copy control, or the groups heading if missing. Ignored while typing. It does not copy. Distinct from `Home` last-at-or-above jump.
+- Keyboard `ArrowUp` jumps to the hide-last-group-at-floor control, or the groups heading if missing. Ignored while typing. Distinct from `End` hide-first-group-at-or-above-threshold and `3` hide-last-group-at-or-above-threshold. A floor is a number you entered, not a legal quorum.
+- Rugby club hours preset: synthetic students, neighbours (a veto group), and P&C scoring outdoor pitch booking, clubhouse bar, and changing-room lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, Rooftop BBQ hours, School disco hours, Sports day hours, Netball training hours, Swimming club hours, Athletics club hours, Cricket club hours, Tennis club hours, Basketball club hours, Volleyball club hours, Soccer club hours, and Hockey club hours. Not a recorded vote.
+- Hide only the last group whose average support on the inspected package currently meets their declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideGroupsAtFloor, hideFirstGroupAtOrAboveThreshold, and hideLastGroupAtOrAboveThreshold. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all. If composed with other hides, the empty-groups notice is honest and model counts stay the same. A floor is a number you entered, not a legal quorum.
+- Copy the first group at or above the numeric approval threshold as one-line Markdown, with a clipboard fallback. Honest when none. Distinct from last at-or-above-threshold group copy, first below-threshold group copy, and threshold-group count copy. A threshold is a number you entered, not a legal quorum. Do not treat the label as a legal identity.
+
 ## 1.5.19 - 2026-09-11
 
 A workshop follow-up on 1.5.18. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
