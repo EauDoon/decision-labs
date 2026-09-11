@@ -1,5 +1,18 @@
 # Changelog
 
+## 1.5.22 - 2026-09-11
+
+A workshop follow-up on 1.5.21. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.
+
+### Added
+
+- Keyboard `Delete` copies the last group currently below their declared support floor through the new `#copy-last-below-floor-group-button` (`formatLastBelowSupportFloorGroupLabelMarkdown`). Ignored while typing. Distinct from `Insert` last-at-floor copy, `PageUp` first-at-or-above copy, `"` first-below-floor copy, and `8` last-below-threshold copy. The label is not a legal identity. A floor is a number you entered, not a legal quorum.
+- Keyboard `F2` jumps to that last below-floor group copy control, or the groups heading if missing. Ignored while typing. It does not copy. Distinct from `ArrowDown` last-at-floor jump and `PageDown` first-at-or-above jump.
+- Keyboard `ArrowRight` jumps to the hide-first-group-below-floor control, or the groups heading if missing. Ignored while typing. Distinct from `ArrowLeft` hide-first-group-at-floor and `ArrowUp` hide-last-group-at-floor. A floor is a number you entered, not a legal quorum.
+- Lacrosse club hours preset: synthetic students, neighbours (a veto group), and P&C scoring lacrosse field booking, clubhouse bar, and changing-room lock-up. Distinct from Neighbourhood Plan, Library Quiet Hours, Sports Fixture Night, Market stall hours, Shared bike shed, Street stall lighting, Hall hire hours, Community garden watering, Shared laundry hours, Rooftop BBQ hours, School disco hours, Sports day hours, Netball training hours, Swimming club hours, Athletics club hours, Cricket club hours, Tennis club hours, Basketball club hours, Volleyball club hours, Soccer club hours, Hockey club hours, Rugby club hours, and Softball club hours. Distinct from softball-club-hours (diamond) and rugby-club-hours (pitch). Not a recorded vote.
+- Hide only the first group whose average support on the inspected package is currently below their declared support floor. Hidden groups still count in the model. The solver is unchanged. Distinct from hideFirstGroupAtFloor, hideLastGroupAtFloor, hideGroupsAtFloor, hideFirstGroupBelowThreshold, and belowFloorGroupsOnly. Workspace JSON persists the optional boolean and rejects unknown keys. Older files omit the key and default to show-all. If composed with other hides, the empty-groups notice is honest and model counts stay the same. A floor is a number you entered, not a legal quorum.
+- Copy the last group currently below their declared support floor as one-line Markdown, with a clipboard fallback. Honest when none. Distinct from first-below-floor group copy, last below-threshold group copy, last at-floor group copy, and hideFirstGroupBelowFloor. A floor is a number you entered, not a legal quorum. Do not treat the label as a legal identity.
+
 ## 1.5.21 - 2026-09-11
 
 A workshop follow-up on 1.5.20. The solver is still a decision aid, not a decision maker. A veto remains a number, not a legal right. Locks remain draft choices, not a legal hold or a recorded vote. Package review packets, replay, and AGREEMENT_REVIEW_TOOLS from 1.5.0 are unchanged.

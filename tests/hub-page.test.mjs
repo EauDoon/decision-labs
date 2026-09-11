@@ -100,6 +100,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Last-open copy, last-open jump, and last-open-link jump/);
   assert.match(html, /First-skip copy, first-skip jump, and first-skip-link jump/);
   assert.match(html, /Last-skip copy, last-skip jump, and last-skip-link jump/);
+  assert.match(html, /First-skip-text copy, first-skip-text jump, and skip-nav jump/);
   assert.match(html, /First-review copy, first-review jump, and first-path jump/);
   assert.match(html, /Share-to-hold in Partnership Breakpoint/);
   assert.match(html, /Residual coverage in Common Cart/);
@@ -129,6 +130,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Hockey carnival, first-spare remaining copy, and last-unbounded hide in Partnership Breakpoint 1\.5\.19/);
   assert.match(html, /Baseball carnival, last-unbounded remaining copy, and first-unbounded hide in Partnership Breakpoint 1\.5\.20/);
   assert.match(html, /Softball carnival, first-unbounded remaining copy, and last-at-hold hide in Partnership Breakpoint 1\.5\.21/);
+  assert.match(html, /Lacrosse carnival, last-at-hold remaining copy, and first-at-hold hide in Partnership Breakpoint 1\.5\.22/);
   assert.match(html, /Leftover fill and overlap counts in Common Cart 1\.3\.1/);
   assert.match(html, /Offer CSV, sort, and leftover headroom in Common Cart 1\.3\.2/);
   assert.match(html, /Offer export, variant filter, and empty-offer recovery in Common Cart 1\.3\.3/);
@@ -153,6 +155,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Rugby carnival lunch, tertiary-maximum copy, and first unserved hide in Common Cart 1\.4\.19/);
   assert.match(html, /Hockey carnival lunch, leftover-uncovered remaining copy, and last leftover-only hide in Common Cart 1\.4\.20/);
   assert.match(html, /Baseball carnival lunch, leftover-uncovered maximum copy, and first leftover-only hide in Common Cart 1\.4\.21/);
+  assert.match(html, /Softball carnival lunch, leftover-uncovered minimum copy, and last winner-allocated hide in Common Cart 1\.4\.22/);
   assert.match(html, /Package pin, locks, and notes in The Smallest Agreement 1\.4\.1/);
   assert.match(html, /Facilitator pack and group CSV in The Smallest Agreement 1\.4\.2/);
   assert.match(html, /Clause CSV, veto filter, and quiet-hours preset in The Smallest Agreement 1\.4\.3/);
@@ -177,6 +180,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(html, /Hockey club hours, last-at-or-above copy, and first-at-or-above hide in The Smallest Agreement 1\.5\.19/);
   assert.match(html, /Rugby club hours, first-at-or-above copy, and last-at-floor hide in The Smallest Agreement 1\.5\.20/);
   assert.match(html, /Softball club hours, last-at-floor copy, and first-at-floor hide in The Smallest Agreement 1\.5\.21/);
+  assert.match(html, /Lacrosse club hours, last-below-floor copy, and first-below-floor hide in The Smallest Agreement 1\.5\.22/);
   assert.match(html, /Queue-clear hours and Gantt compare in Weekend Gap 1\.4\.1/);
   assert.match(html, /Queue CSV, peak jump, and long-weekend preset in Weekend Gap 1\.4\.2/);
   assert.match(html, /Dashboard copy, file compare, and compressed Friday in Weekend Gap 1\.4\.3/);
@@ -241,6 +245,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /tertiary-fill maximum copy shortcut, the Rugby carnival lunch start/);
   assert.match(readme, /leftover uncovered remaining copy shortcut, the Hockey carnival lunch start/);
   assert.match(readme, /leftover uncovered maximum copy shortcut, the Baseball carnival lunch start/);
+  assert.match(readme, /leftover uncovered minimum copy shortcut, the Softball carnival lunch start/);
   assert.match(readme, /waterfall SVG download, compare and print keys/);
   assert.match(readme, /waterfall\s+Markdown copy, the Talent, agent, and platform start/);
   assert.match(readme, /tornado Markdown copy, the\s+Three-party joint venture start/);
@@ -262,6 +267,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /first-spare-capacity remaining copy shortcut, the Hockey carnival split start/);
   assert.match(readme, /last-unbounded remaining-to-hold copy shortcut, the Baseball carnival split start/);
   assert.match(readme, /first-unbounded remaining-to-hold copy shortcut, the Softball carnival split start/);
+  assert.match(readme, /last-at-hold remaining-to-hold copy shortcut, the Lacrosse carnival split start/);
   assert.match(readme, /package pin, locks, and notes/);
   assert.match(readme, /facilitator pack, group CSV/);
   assert.match(readme, /clause CSV\s+import, veto-only filter/);
@@ -286,6 +292,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Hockey club hours start, last-at-or-above-threshold group copy shortcut/);
   assert.match(readme, /Rugby club hours start, first-at-or-above-threshold group copy shortcut/);
   assert.match(readme, /Softball club hours start, last-at-floor group copy shortcut/);
+  assert.match(readme, /Lacrosse club hours start, last-below-floor group copy shortcut/);
   assert.match(readme, /queue-clear hours and Gantt compare/);
   assert.match(readme, /queue CSV export, peak-queue jump/);
   assert.match(readme, /dashboard Markdown copy, two-file compare/);
@@ -326,6 +333,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /last-open copy, last-open jump, and last-open-link jump/);
   assert.match(readme, /first-skip copy, first-skip jump, and first-skip-link jump/);
   assert.match(readme, /last-skip copy, last-skip jump, and last-skip-link jump/);
+  assert.match(readme, /first-skip-text copy, first-skip-text jump, and skip-nav jump/);
   assert.match(readme, /does not change workbench versions/);
   assert.match(readme, /not hosted APIs/);
   assert.match(readme, /does not serve those\s+markdown files/);
@@ -349,6 +357,7 @@ test('catalog names current workbench tools without live services', () => {
   assert.match(readme, /Copy last Open href on\s+that 404 page copies/);
   assert.match(readme, /Copy first skip href on\s+that 404 page copies/);
   assert.match(readme, /Copy last skip href on\s+that 404 page copies/);
+  assert.match(readme, /Copy first skip text on\s+that 404 page copies/);
   assert.match(readme, /does not fetch a\s+policy file or add another public path/);
   assert.match(readme, /Key `m` focuses the main catalog content/);
   assert.match(readme, /Key `s` focuses the first Open\s+workbench link without opening it/);
@@ -5501,6 +5510,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
   assert.equal(headings.includes("First What's new copy, intro jump, and skip-link jump"), true);
+  assert.equal(headings.includes('First-skip-text copy, first-skip-text jump, and skip-nav jump'), true);
   assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
@@ -5527,6 +5537,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Hockey carnival, first-spare remaining copy, and last-unbounded hide in Partnership Breakpoint 1.5.19'), true);
   assert.equal(headings.includes('Baseball carnival, last-unbounded remaining copy, and first-unbounded hide in Partnership Breakpoint 1.5.20'), true);
   assert.equal(headings.includes('Softball carnival, first-unbounded remaining copy, and last-at-hold hide in Partnership Breakpoint 1.5.21'), true);
+  assert.equal(headings.includes('Lacrosse carnival, last-at-hold remaining copy, and first-at-hold hide in Partnership Breakpoint 1.5.22'), true);
   assert.equal(headings.includes('Swimming carnival lunch, leftover-fulfillment copy, and winner-allocated hide in Common Cart 1.4.12'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
@@ -5537,6 +5548,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Rugby carnival lunch, tertiary-maximum copy, and first unserved hide in Common Cart 1.4.19'), true);
   assert.equal(headings.includes('Hockey carnival lunch, leftover-uncovered remaining copy, and last leftover-only hide in Common Cart 1.4.20'), true);
   assert.equal(headings.includes('Baseball carnival lunch, leftover-uncovered maximum copy, and first leftover-only hide in Common Cart 1.4.21'), true);
+  assert.equal(headings.includes('Softball carnival lunch, leftover-uncovered minimum copy, and last winner-allocated hide in Common Cart 1.4.22'), true);
   assert.equal(headings.includes('Swimming club hours, first-veto copy, and first-veto hide in The Smallest Agreement 1.5.12'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
@@ -5547,6 +5559,7 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
   assert.equal(headings.includes('Hockey club hours, last-at-or-above copy, and first-at-or-above hide in The Smallest Agreement 1.5.19'), true);
   assert.equal(headings.includes('Rugby club hours, first-at-or-above copy, and last-at-floor hide in The Smallest Agreement 1.5.20'), true);
   assert.equal(headings.includes('Softball club hours, last-at-floor copy, and first-at-floor hide in The Smallest Agreement 1.5.21'), true);
+  assert.equal(headings.includes('Lacrosse club hours, last-below-floor copy, and first-below-floor hide in The Smallest Agreement 1.5.22'), true);
   assert.match(html, /Copy first What's new heading through close-paren as Markdown/);
   assert.match(html, /jump to Copy catalog intro with keyboard at/);
   assert.match(html, /jump to Copy skip links with keyboard hash/);
@@ -5570,7 +5583,8 @@ test('What\'s new and README name first What\'s new copy, intro jump, and skip-l
 test('What\'s new and README name first-workbench copy, first-card jump, and first-trust jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'Last-skip copy, last-skip jump, and last-skip-link jump');
+  assert.equal(headings[0], 'First-skip-text copy, first-skip-text jump, and skip-nav jump');
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
@@ -5600,6 +5614,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Hockey carnival, first-spare remaining copy, and last-unbounded hide in Partnership Breakpoint 1.5.19'), true);
   assert.equal(headings.includes('Baseball carnival, last-unbounded remaining copy, and first-unbounded hide in Partnership Breakpoint 1.5.20'), true);
   assert.equal(headings.includes('Softball carnival, first-unbounded remaining copy, and last-at-hold hide in Partnership Breakpoint 1.5.21'), true);
+  assert.equal(headings.includes('Lacrosse carnival, last-at-hold remaining copy, and first-at-hold hide in Partnership Breakpoint 1.5.22'), true);
   assert.equal(headings.includes('Athletics carnival lunch, leftover-delivery copy, and leftover-fill hide in Common Cart 1.4.13'), true);
   assert.equal(headings.includes('Cricket carnival lunch, leftover-pickup copy, and last leftover-fill hide in Common Cart 1.4.14'), true);
   assert.equal(headings.includes('Tennis carnival lunch, leftover-label copy, and first leftover-fill hide in Common Cart 1.4.15'), true);
@@ -5609,6 +5624,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Rugby carnival lunch, tertiary-maximum copy, and first unserved hide in Common Cart 1.4.19'), true);
   assert.equal(headings.includes('Hockey carnival lunch, leftover-uncovered remaining copy, and last leftover-only hide in Common Cart 1.4.20'), true);
   assert.equal(headings.includes('Baseball carnival lunch, leftover-uncovered maximum copy, and first leftover-only hide in Common Cart 1.4.21'), true);
+  assert.equal(headings.includes('Softball carnival lunch, leftover-uncovered minimum copy, and last winner-allocated hide in Common Cart 1.4.22'), true);
   assert.equal(headings.includes('Athletics club hours, veto-count copy, and last-veto hide in The Smallest Agreement 1.5.13'), true);
   assert.equal(headings.includes('Cricket club hours, first-non-veto copy, and first-non-veto hide in The Smallest Agreement 1.5.14'), true);
   assert.equal(headings.includes('Tennis club hours, last-veto copy, and last-non-veto hide in The Smallest Agreement 1.5.15'), true);
@@ -5618,6 +5634,7 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
   assert.equal(headings.includes('Hockey club hours, last-at-or-above copy, and first-at-or-above hide in The Smallest Agreement 1.5.19'), true);
   assert.equal(headings.includes('Rugby club hours, first-at-or-above copy, and last-at-floor hide in The Smallest Agreement 1.5.20'), true);
   assert.equal(headings.includes('Softball club hours, last-at-floor copy, and first-at-floor hide in The Smallest Agreement 1.5.21'), true);
+  assert.equal(headings.includes('Lacrosse club hours, last-below-floor copy, and first-below-floor hide in The Smallest Agreement 1.5.22'), true);
   assert.match(html, /Copy first workbench heading through asterisk as Markdown/);
   assert.match(html, /jump to that control with keyboard ampersand/);
   assert.match(html, /jump to Copy first Trust item with keyboard percent/);
@@ -5641,7 +5658,8 @@ test('What\'s new and README name first-workbench copy, first-card jump, and fir
 test('What\'s new and README name last-workbench copy, last-card jump, and last-trust jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'Last-skip copy, last-skip jump, and last-skip-link jump');
+  assert.equal(headings[0], 'First-skip-text copy, first-skip-text jump, and skip-nav jump');
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
@@ -8027,7 +8045,8 @@ test('dollar caret and backtick stay distinct from asterisk ampersand percent an
 test('What\'s new and README name first-open copy, first-open jump, and first-open-link jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'Last-skip copy, last-skip jump, and last-skip-link jump');
+  assert.equal(headings[0], 'First-skip-text copy, first-skip-text jump, and skip-nav jump');
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
@@ -8068,7 +8087,8 @@ test('What\'s new and README name first-open copy, first-open jump, and first-op
 test('What\'s new and README name first-review copy, first-review jump, and first-path jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'Last-skip copy, last-skip jump, and last-skip-link jump');
+  assert.equal(headings[0], 'First-skip-text copy, first-skip-text jump, and skip-nav jump');
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
@@ -8109,7 +8129,8 @@ test('What\'s new and README name first-review copy, first-review jump, and firs
 test('What\'s new and README name last-review copy, last-review jump, and last-path jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'Last-skip copy, last-skip jump, and last-skip-link jump');
+  assert.equal(headings[0], 'First-skip-text copy, first-skip-text jump, and skip-nav jump');
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
@@ -9605,7 +9626,8 @@ test('0, backslash, and s stay distinct from last-review, first-review, last-ope
 test('What\'s new and README name last-open copy, last-open jump, and last-open-link jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'Last-skip copy, last-skip jump, and last-skip-link jump');
+  assert.equal(headings[0], 'First-skip-text copy, first-skip-text jump, and skip-nav jump');
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
@@ -10027,7 +10049,8 @@ test('Home, End, and ] stay distinct from first-open, last-review, first-review,
 test('What\'s new and README name first-skip copy, first-skip jump, and first-skip-link jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'Last-skip copy, last-skip jump, and last-skip-link jump');
+  assert.equal(headings[0], 'First-skip-text copy, first-skip-text jump, and skip-nav jump');
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
@@ -10224,7 +10247,8 @@ test('keyboard PageDown focuses Copy first skip href and ArrowRight focuses the 
 test('What\'s new and README name last-skip copy, last-skip jump, and last-skip-link jump without changing workbench versions', () => {
   const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
   const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
-  assert.equal(headings[0], 'Last-skip copy, last-skip jump, and last-skip-link jump');
+  assert.equal(headings[0], 'First-skip-text copy, first-skip-text jump, and skip-nav jump');
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
   assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
   assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
   assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
@@ -10428,5 +10452,218 @@ test('keyboard ArrowDown focuses Copy last skip href and ArrowLeft focuses the l
   assert.equal(clicks.lastSkip, 0);
   assert.equal(clicks.firstSkip, 0);
   assert.deepEqual(focused, ['copy-last-skip', 'last-skip-link']);
+  assert.deepEqual(assigned, []);
+});
+
+test('What\'s new and README name first-skip-text copy, first-skip-text jump, and skip-nav jump without changing workbench versions', () => {
+  const news = html.slice(html.indexOf('id="whats-new"'), html.indexOf('id="workbenches"'));
+  const headings = [...news.matchAll(/<h3[^>]*>([^<]+)<\/h3>/g)].map((match) => match[1]);
+  assert.equal(headings[0], 'First-skip-text copy, first-skip-text jump, and skip-nav jump');
+  assert.equal(headings.includes('Last-skip copy, last-skip jump, and last-skip-link jump'), true);
+  assert.equal(headings.includes('First-skip copy, first-skip jump, and first-skip-link jump'), true);
+  assert.equal(headings.includes('Last-open copy, last-open jump, and last-open-link jump'), true);
+  assert.equal(headings.includes('First-open copy, first-open jump, and first-open-link jump'), true);
+  assert.equal(headings[headings.length - 1], 'Friday early bank open, last-open-payout copy, and weekend-payout-open hide in Weekend Gap 1.5.21');
+  assert.match(html, /Copy first skip text through Delete as Markdown/);
+  assert.match(html, /jump to that control with keyboard ArrowUp/);
+  assert.match(html, /jump to the skip nav with keyboard F2/);
+  assert.match(html, /The branded 404 page can copy the first skip-link text without adding a public path/);
+  assert.match(html, /They do not change workbench versions and they do not call a live product feed/);
+  assert.match(html, /These are in-page catalog tools/);
+  assert.match(readme, /first-skip-text copy, first-skip-text jump, and skip-nav jump/);
+  assert.match(readme, /That What's new entry is hub-only. It does not change workbench versions/);
+  assert.match(readme, /Copy first skip text on\s+that 404 page copies/);
+  assert.match(readme, /Copy first skip text copies the first skip-link text/);
+  assert.match(readme, /Press `Delete` to copy the first skip-link text/);
+  assert.match(readme, /Press `ArrowUp` to focus the Copy first skip text control/);
+  assert.match(readme, /Press `F2` to focus the skip nav/);
+  assert.match(readme, /Key `Delete` copies the first skip-link text/);
+  assert.match(readme, /Key `ArrowUp` focuses the Copy first skip text control/);
+  assert.match(readme, /Key `F2` focuses the skip nav/);
+  assert.doesNotMatch(html, /hosted API/i);
+  assert.doesNotMatch(html, /live service/i);
+});
+
+test('copy first skip text control is distinct from Copy first skip href and Copy last skip href', () => {
+  assert.match(html, /id="copy-first-skip-text"/);
+  assert.match(html, />Copy first skip text</);
+  assert.match(html, /aria-keyshortcuts="Delete"/);
+  assert.match(html, /id="copy-first-skip-text-fallback"/);
+  assert.match(html, /class="copy-first-skip-text-fallback"/);
+  assert.match(html, /textarea id="copy-first-skip-text-fallback"/);
+  assert.match(html, /id="copy-first-skip"/);
+  assert.match(html, />Copy first skip href</);
+  assert.match(html, /id="copy-last-skip"/);
+  assert.match(html, />Copy last skip href</);
+  assert.match(html, /id="copy-skips"/);
+  assert.match(html, />Copy skip links</);
+  assert.match(html, /firstSkipTextMarkdown/);
+  assert.notEqual(html.match(/id="copy-first-skip-text"/)?.[0], html.match(/id="copy-first-skip"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-first-skip-text"/)?.[0], html.match(/id="copy-last-skip"/)?.[0]);
+  assert.notEqual(html.match(/id="copy-first-skip-text"/)?.[0], html.match(/id="copy-skips"/)?.[0]);
+  assert.equal(html.indexOf('id="copy-first-skip"') < html.indexOf('id="copy-last-skip"'), true);
+  assert.equal(html.indexOf('id="copy-last-skip"') < html.indexOf('id="copy-first-skip-text"'), true);
+  assert.match(html, /@media print[\s\S]*\.copy-first-skip-text-tools/);
+  assert.match(html, /@media print[\s\S]*\.copy-first-skip-text-fallback \{ display: none !important; \}/);
+  assert.doesNotMatch(html, /hosted API/i);
+});
+
+test('copy first skip text markdown is the first #skips a.skip text, or empty if missing', async () => {
+  assert.match(html, /firstSkipTextMarkdown/);
+  assert.match(html, /querySelector\('#skips a\.skip'\)/);
+  assert.match(html, /firstSkipTextFallback\.hidden = false/);
+  assert.match(html, /firstSkipTextFallback\.select\(\)/);
+  assert.match(html, /This is the first skip-link text, not a live product feed/);
+  assert.match(html, /Copied an empty string/);
+  let copied = '';
+  let clickFirst = null;
+  let skip = { textContent: "Skip to what's new" };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-skip-text') return { addEventListener(name, handler) { if (name === 'click') clickFirst = handler; } };
+      if (id === 'copy-first-skip-text-status') return { textContent: '' };
+      if (id === 'copy-first-skip-text-fallback') return { hidden: true, value: '', focus() {}, select() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#skips a.skip' ? skip : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener() {},
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    navigator: { clipboard: { writeText: async (text) => { copied = text; } } },
+  });
+  await clickFirst();
+  assert.equal(copied, "- Skip to what's new");
+  assert.doesNotMatch(copied, /\n/);
+  assert.doesNotMatch(copied, /#whats-new/);
+  skip = null;
+  copied = 'stale';
+  await clickFirst();
+  assert.equal(copied, '');
+});
+
+test('keyboard Delete copies first skip text when focus is not in an input', () => {
+  assert.match(html, /event\.key === 'Delete'/);
+  assert.match(html, /firstSkipTextBtn\?\.click\(\)/);
+  assert.match(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3 \}/);
+  assert.doesNotMatch(html, /const keys = \{ 1: 0, 2: 1, 3: 2, 4: 3, Delete:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, Delete:/);
+  const clicks = { firstSkipText: 0, firstSkip: 0, lastSkip: 0, lastOpen: 0 };
+  const focused = [];
+  const assigned = [];
+  let keydown = null;
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-skip-text') return { click() { clicks.firstSkipText += 1; }, addEventListener() {}, focus() { focused.push('copy-first-skip-text'); } };
+      if (id === 'copy-first-skip') return { click() { clicks.firstSkip += 1; }, addEventListener() {}, focus() { focused.push('copy-first-skip'); } };
+      if (id === 'copy-last-skip') return { click() { clicks.lastSkip += 1; }, addEventListener() {}, focus() { focused.push('copy-last-skip'); } };
+      if (id === 'copy-last-open') return { click() { clicks.lastOpen += 1; }, addEventListener() {}, focus() { focused.push('copy-last-open'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector: () => null,
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key, target) => {
+    keydown({
+      key,
+      target,
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  const input = { tagName: 'INPUT', closest() { return input; } };
+  const body = { tagName: 'BODY', closest() { return null; } };
+  fire('Delete', input);
+  assert.equal(clicks.firstSkipText, 0);
+  fire('Delete', body);
+  assert.equal(clicks.firstSkipText, 1);
+  assert.equal(clicks.firstSkip, 0);
+  assert.equal(clicks.lastSkip, 0);
+  assert.equal(clicks.lastOpen, 0);
+  assert.deepEqual(assigned, []);
+});
+
+test('keyboard ArrowUp focuses Copy first skip text and F2 focuses the skip nav', () => {
+  assert.match(html, /event\.key === 'ArrowUp'/);
+  assert.match(html, /event\.key === 'F2'/);
+  assert.match(html, /getElementById\('copy-first-skip-text'\) \|\| document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)/);
+  assert.match(html, /\(document\.getElementById\('skips'\) \|\| document\.getElementById\('catalog-heading'\)\)\?\.focus\(\)/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, ArrowUp:/);
+  assert.doesNotMatch(html, /const launchKeys = \{ 1: 0, 2: 1, 3: 2, 4: 3, F2:/);
+  const focused = [];
+  const clicks = { firstSkipText: 0, firstSkip: 0, lastSkip: 0 };
+  const assigned = [];
+  let keydown = null;
+  const firstSkip = { focus() { focused.push('first-skip-link'); } };
+  const document = {
+    getElementById(id) {
+      if (id === 'copy-first-skip-text') return { click() { clicks.firstSkipText += 1; }, addEventListener() {}, focus() { focused.push('copy-first-skip-text'); } };
+      if (id === 'copy-first-skip') return { click() { clicks.firstSkip += 1; }, addEventListener() {}, focus() { focused.push('copy-first-skip'); } };
+      if (id === 'copy-last-skip') return { click() { clicks.lastSkip += 1; }, addEventListener() {}, focus() { focused.push('copy-last-skip'); } };
+      if (id === 'skips') return { focus() { focused.push('skips'); } };
+      if (id === 'catalog-heading') return { focus() { focused.push('catalog-heading'); } };
+      if (id === 'shortcuts') return { hidden: true };
+      if (id === 'shortcuts-open') return { setAttribute() {}, addEventListener() {} };
+      if (id === 'shortcuts-close') return { addEventListener() {} };
+      if (id === 'skip-shortcuts') return { addEventListener() {} };
+      return null;
+    },
+    querySelector(selector) {
+      return selector === '#skips a.skip' ? firstSkip : null;
+    },
+    querySelectorAll: () => [],
+    addEventListener(name, handler) {
+      if (name === 'keydown') keydown = handler;
+    },
+  };
+  const source = html.match(/<script>([\s\S]*?)<\/script>/)[1];
+  vm.runInNewContext(source, {
+    document,
+    location: { protocol: 'file:', hash: '' },
+    localStorage: { getItem: () => null, setItem() {} },
+    window: { location: { assign(href) { assigned.push(href); } } },
+  });
+  const fire = (key) => {
+    keydown({
+      key,
+      target: { tagName: 'BODY', closest() { return null; } },
+      defaultPrevented: false,
+      altKey: false,
+      ctrlKey: false,
+      metaKey: false,
+      shiftKey: false,
+      preventDefault() {},
+    });
+  };
+  fire('ArrowUp');
+  fire('F2');
+  assert.equal(clicks.firstSkipText, 0);
+  assert.equal(clicks.firstSkip, 0);
+  assert.equal(clicks.lastSkip, 0);
+  assert.deepEqual(focused, ['copy-first-skip-text', 'skips']);
   assert.deepEqual(assigned, []);
 });
