@@ -1,0 +1,55 @@
+import test from "node:test";
+import assert from "node:assert/strict";
+import { readFile } from "node:fs/promises";
+import { clonePreset, computeResidualCoverage, evaluateMarket, validateScenario } from "../src/model.js";
+
+test("baseball carnival lunch leftover fill is hall pickup and stays distinct from hockey carnival lunch", () => {
+  const baseball = evaluateMarket(clonePreset("baseballCarnivalLunch"));
+  const hockey = evaluateMarket(clonePreset("hockeyCarnivalLunch"));
+  const rugby = evaluateMarket(clonePreset("rugbyCarnivalLunch"));
+  const soccer = evaluateMarket(clonePreset("soccerCarnivalLunch"));
+  assert.ok(baseball.winner);
+  assert.equal(baseball.winner.offer.merchant, "Court-side Baseball Delivery");
+  assert.equal(baseball.winner.offer.fulfillment, "shipping");
+  assert.equal(baseball.winner.fulfilledUnits, 50);
+  assert.deepEqual(baseball.winner.selectedBuyerIds, ["B01", "B02", "B05"]);
+  assert.equal(baseball.scenario.title, "Baseball carnival lunch");
+  assert.notEqual(baseball.scenario.title, hockey.scenario.title);
+  assert.notDeepEqual(clonePreset("baseballCarnivalLunch"), clonePreset("hockeyCarnivalLunch"));
+  assert.notDeepEqual(clonePreset("baseballCarnivalLunch"), clonePreset("rugbyCarnivalLunch"));
+  assert.notDeepEqual(clonePreset("baseballCarnivalLunch"), clonePreset("soccerCarnivalLunch"));
+  const leftoverFill = computeResidualCoverage(baseball.scenario).secondary;
+  assert.ok(leftoverFill);
+  assert.equal(leftoverFill.merchant, "Hall Baseball Pickup");
+  const leftoverOffer = baseball.scenario.offers.find((offer) => offer.id === leftoverFill.offerId);
+  assert.equal(leftoverOffer.fulfillment, "pickup");
+  assert.equal(leftoverOffer.minimumUnits, 14);
+  assert.equal(soccer.scenario.offers.find((offer) => offer.merchant === "Hall Soccer Pickup").minimumUnits, 11);
+  assert.equal(rugby.scenario.offers.find((offer) => offer.merchant === "Hall Rugby Pickup").minimumUnits, 12);
+  assert.equal(hockey.scenario.offers.find((offer) => offer.merchant === "Hall Hockey Pickup").minimumUnits, 13);
+  assert.equal(soccer.winner.offer.merchant, "Court-side Soccer Delivery");
+  assert.equal(rugby.winner.offer.merchant, "Court-side Rugby Delivery");
+  assert.equal(hockey.winner.offer.merchant, "Court-side Hockey Delivery");
+  assert.equal(leftoverOffer.capacity, 44);
+  assert.equal(leftoverFill.fulfilledUnits, 23);
+  assert.equal(leftoverOffer.capacity - leftoverFill.fulfilledUnits, 21);
+  assert.deepEqual(leftoverFill.selectedBuyerIds, ["B03", "B04"]);
+  assert.equal(computeResidualCoverage(baseball.scenario).tertiary, null);
+  assert.deepEqual(computeResidualCoverage(baseball.scenario).leftoverBuyerIds.filter((id) => !(leftoverFill.selectedBuyerIds ?? []).includes(id)), ["B06"]);
+  assert.ok(baseball.results.some((result) => result.offer.merchant === "Court-side Baseball Delivery" && result.offer.fulfillment === "shipping"));
+  assert.ok(baseball.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Baseball pie")));
+  assert.ok(baseball.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Boards salad")));
+  assert.ok(baseball.scenario.buyers.some((buyer) => buyer.allowedVariants.includes("Boards water")));
+  const first = evaluateMarket(clonePreset("baseballCarnivalLunch"));
+  const second = evaluateMarket(validateScenario(clonePreset("baseballCarnivalLunch")));
+  assert.equal(first.winner.offer.id, second.winner.offer.id);
+  assert.equal(first.winner.fulfilledUnits, second.winner.fulfilledUnits);
+  assert.equal(first.winner.fulfilledUnits, 50);
+});
+
+test("the example bar includes baseball carnival lunch next to hockey carnival lunch", async () => {
+  const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
+  assert.match(html, /data-preset="baseballCarnivalLunch"/u);
+  assert.match(html, /Baseball carnival/u);
+  assert.match(html, /data-preset="hockeyCarnivalLunch"/u);
+});

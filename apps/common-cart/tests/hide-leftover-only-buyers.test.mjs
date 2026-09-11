@@ -131,6 +131,6 @@ test("the organizer hide-leftover-only-buyers filter is not on the merchant tabl
   assert.match(app, /#buyers-list/u);
   assert.match(app, /if \(key === "@"\)/u);
   assert.match(html, /aria-keyshortcuts="@"/u);
-  assert.match(html, /hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, and hide-last-leftover-only-buyer choices are kept/u);
+  assert.match(html, /hide-leftover-only-buyers, hide-winner-allocated-buyers, hide-buyers-filled-by-leftover-fill, hide-last-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-leftover-fill, hide-first-buyer-filled-by-tertiary-fill, hide-last-buyer-filled-by-tertiary-fill, hide-last-unserved-buyer, hide-first-unserved-buyer, hide-last-leftover-only-buyer, and hide-first-leftover-only-buyer choices are kept/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
 });
