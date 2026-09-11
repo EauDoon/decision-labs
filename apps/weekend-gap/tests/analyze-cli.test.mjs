@@ -40,6 +40,18 @@ test('comparison preserves signed deltas and rejects two stdin sources', () => {
   } finally { rmSync(dir, { recursive: true, force: true }); }
 });
 
+test('reserve planner exposes reachable cents and unreachable early deadlines', () => {
+  const plan = result(['reserve', '-', '50', '72']).plan;
+  assert.equal(plan.status, 'reachable');
+  assert.equal(plan.minimumReserveAud, 36);
+  assert.ok(oracle({ ...fixture(), reserveCashAud: 35.99 }).at(-1).settled < 36);
+  const early = result(['reserve', '-', '100', '1']).plan;
+  assert.equal(early.status, 'unreachable');
+  assert.equal(early.minimumReserveAud, null);
+  assert.equal(result(['reserve', '-', '0', '72']).plan.minimumReserveAud, 0);
+  for (const [target, deadline] of [['101', '72'], ['50', '0'], ['50', '1.5'], ['', '72'], ['0x10', '72'], ['NaN', '72']]) fails(['reserve', '-', target, deadline]);
+});
+
 test('CLI simulation matches a separate 1 AUD/hour ledger and reads files or stdin', () => {
   const expected = oracle(fixture()).at(-1);
   const output = result(['simulate', '-']);

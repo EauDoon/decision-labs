@@ -2,11 +2,13 @@ import { open } from 'node:fs/promises';
 import {
   DEFAULT_SCENARIO, scenarioFromJSON, runSimulation, dashboardToMarkdown,
   compareScenarios,
+  planReserve,
 } from '../src/model.js';
 
 const usage = `Weekend Gap offline analysis (synthetic AUD only)
   simulate SCENARIO [--format json|markdown]
   compare BASELINE CANDIDATE
+  reserve SCENARIO TARGET_PERCENT DEADLINE_HOUR
 Use - instead of a file to read stdin. JSON goes to stdout; errors to stderr.
 Scenario files may be partial raw objects or supported scenario envelopes.
 Omitted fields use model defaults; invalid or adjusted values are rejected.
@@ -55,6 +57,13 @@ function parseScenario(text) {
 
 async function scenario(path) { return parseScenario(await readText(path)); }
 
+function number(value) {
+  if (!/^-?(?:\d+(?:\.\d*)?|\.\d+)$/.test(value) || !Number.isFinite(Number(value))) {
+    throw new Error('Expected a finite decimal number.');
+  }
+  return Number(value);
+}
+
 function argumentsFor(args, count, formats = ['json']) {
   let format = formats[0];
   if (args.length === count + 2 && args[count] === '--format') {
@@ -69,6 +78,11 @@ function argumentsFor(args, count, formats = ['json']) {
 async function main([command, ...rest]) {
   if (command === '--help' && !rest.length) return usage;
   switch (command) {
+    case 'reserve': {
+      const { args: [path, target, deadline] } = argumentsFor(rest, 3);
+      const input = await scenario(path);
+      return { scenario: input, plan: planReserve(input, number(target), number(deadline)) };
+    }
     case 'compare': {
       const { args: [left, right] } = argumentsFor(rest, 2);
       const comparison = compareScenarios(await scenario(left), await scenario(right));

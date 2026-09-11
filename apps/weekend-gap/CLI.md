@@ -33,3 +33,12 @@ canonical inputs, summary metrics, changed fields and signed candidate-minus-
 baseline deltas. `sameDemand` compares total demand and arrival profile. Inspect
 it before interpreting reduced queues. One input may use stdin; two cannot.
 Null timing deltas preserve the absence of an event rather than inventing zero.
+
+## Test a reserve target
+
+`node scripts/analyze.mjs reserve scenario.json 75 72` asks for the minimum
+whole-cent starting reserve to settle 75% of total 72-hour demand by hour 72.
+The target accepts decimals from 0 to 100; the deadline is a whole hour from
+1 to 72. An `unreachable` result is a successful analysis with a null minimum,
+not a CLI failure. Gates, arrival timing, throughput and nominal cap stay fixed.
+The result includes the complete assumptions and the planner's explanation.
