@@ -190,3 +190,24 @@ test('proposal emits a verified holding split and refuses unfundable or operatio
     assert.match(output(failed, 1).error, /No verified fixed-share proposal/);
   }
 });
+
+test('roster exports spreadsheet-safe CSV and validates CSV/TSV replacement atomically', (t) => {
+  const config = clonePreset('balanced');
+  config.participants[0].name = '+Synthetic';
+  const exported = run(['roster', '-'], config);
+  assert.equal(exported.status, 0);
+  const rows = parseCsv(exported.stdout.trim());
+  assert.equal(rows[1][0], "'+Synthetic");
+  const [path, csv, tsv, invalid] = files(t, [config, exported.stdout, rows.map(row => row.join('\t')).join('\n'), 'name,share\nBroken,1']);
+  for (const roster of [csv, tsv]) {
+    const result = output(run(['roster', path, roster]));
+    assert.deepEqual(result.deal, config.deal);
+    assert.equal(result.participants[0].name, '+Synthetic');
+    assert.equal(output(run(['summary', '-'], result)).totalProfit, calculatePartnership(config).totalProfit);
+  }
+  const failed = run(['roster', path, invalid]);
+  assert.equal(failed.stdout, '');
+  assert.equal(failed.status, 1);
+  assert.match(output(run(['roster', '-', '-'], config), 1).error, /only one/);
+  assert.deepEqual(output(run(['summary', path])), calculatePartnership(config));
+});

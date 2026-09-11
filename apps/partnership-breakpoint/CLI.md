@@ -68,3 +68,12 @@ node scripts/analyze.mjs stress proposed-scenario.json
 ```
 
 The explicit `proposal` command uses the model's revalidated fixed-share proposal and exports a new browser-importable scenario. Other economics stay fixed. Operational breaches, insufficient revenue and precision failures produce exit 1 with no scenario. To inspect those causes first, run `stress`. A successful proposal means all discrete tested cases hold under the model; it does not establish counterparty acceptance or protection in untested conditions. For a synthetic feasible example, start with Balanced and set volume drop to 5%, with growth, fee drop and variable-cost rise all zero.
+
+## Spreadsheet roster round trips
+
+```sh
+node scripts/analyze.mjs roster scenario.json > participants.csv
+node scripts/analyze.mjs roster scenario.json edited-roster.tsv > revised-scenario.json
+```
+
+With one input, `roster` exports the existing import columns and escapes formula-like names. With a second file, it detects CSV or TSV, validates the whole replacement and emits a scenario with unchanged deal terms. The existing roster size, numeric and share validation applies. Invalid replacement produces no scenario. At most one input may be stdin. Roster import regenerates IDs from names, so retain the original scenario if later comparisons need original IDs. This is the same behavior as browser roster import.
