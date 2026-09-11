@@ -49,3 +49,14 @@ identifier-aware input comparison plus separately solved before/after cases.
 Both files can be proposals or workspace exports; at most one can be stdin.
 Added or removed IDs remain explicit, never invented zero scores. Read the
 input changes before attributing an outcome difference to any one assumption.
+
+## Create a portable review packet
+
+`node scripts/analyze.mjs review proposal.json margin` emits the same version-1
+`agreement-review` packet as the browser, including canonical scenario, exact
+input snapshot, explanatory limits, and calculated table. The supported tools
+are listed by `--help`. Packets can be imported through the browser's review
+import. Scenario review searches retain each model tool's existing caps;
+`too_large` is unavailable, not infeasible. When no recommendation exists,
+the packet explicitly identifies its original-package context. A packet is
+reproducible model evidence, not an authenticated decision record.

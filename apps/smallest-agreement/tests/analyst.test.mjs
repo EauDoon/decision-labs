@@ -111,3 +111,17 @@ test('compare reports changed inputs before independently recomputed results', (
     invalid(['compare', '-', '-'], proposal, /Only one/);
   } finally { rmSync(directory, { recursive: true }); }
 });
+
+test('review creates browser-compatible packets with declared input snapshots', () => {
+  const packet = result(['review', '-', 'margin']);
+  assert.equal(packet.format, 'agreement-review');
+  assert.equal(packet.version, 1);
+  assert.equal(packet.tool, 'margin');
+  assert.deepEqual(JSON.parse(packet.inputJSON), packet.scenario);
+  assert.deepEqual(packet.review.rows[0].slice(1, 5), [65, 60, 5, 2]);
+  assert.match(packet.review.note, /declared inputs/);
+  for (const tool of ['floors', 'dominance', 'substitutions', 'rollback', 'thresholds', 'budgets', 'locks', 'uncertainty']) {
+    assert.equal(result(['review', '-', tool]).review.tool, tool);
+  }
+  invalid(['review', '-', 'not-a-tool'], proposal, /Unknown agreement review/);
+});
