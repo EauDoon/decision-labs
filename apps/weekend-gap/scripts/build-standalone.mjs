@@ -87,6 +87,7 @@ const appImportMarker = `import {
   lastWeekdayFxClosedHourToMarkdown,
   lastWeekendFxOpenHourToMarkdown,
   lastWeekdayFxOpenHourToMarkdown,
+  firstWeekdayFxOpenHourToMarkdown,
   arrivalCohortsToMarkdown,
   firstClosedGanttHour,
   firstClosedFxGanttHour,
