@@ -2502,6 +2502,15 @@ function jumpToFirstWeekdayFxOpenCopy() {
   }
   return jumpToGantt();
 }
+function jumpToFirstWeekdayFxClosedCopy() {
+  const control = document.querySelector("#copy-first-weekday-fx-closed");
+  if (control) {
+    control.focus();
+    control.scrollIntoView?.({ block: "start" });
+    return true;
+  }
+  return jumpToGantt();
+}
 function jumpToHideWeekdayFxOpenFilter() {
   const control = document.querySelector("#gantt-hide-weekday-fx-open");
   if (control) {
@@ -2949,7 +2958,7 @@ document.addEventListener("keydown", (event) => {
   }
   if (event.key === "F11" && event.shiftKey) {
     event.preventDefault();
-    jumpToFirstWeekdayFxOpenCopy();
+    jumpToFirstWeekdayFxClosedCopy();
     return;
   }
   if (event.key === "F11") {
