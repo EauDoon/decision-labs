@@ -17,6 +17,7 @@ import {
   filterBuyerIdsHidingLastBuyerFilledByTertiaryFill,
   filterBuyerIdsHidingLastLeftoverOnlyBuyer,
   filterBuyerIdsHidingLastUnservedBuyer,
+  filterBuyerIdsHidingLastWinnerAllocatedBuyer,
   filterBuyerIdsHidingLeftoverOnlyBuyers,
   filterBuyerIdsHidingUnservedBuyers,
   filterBuyerIdsHidingWinnerAllocatedBuyers,
@@ -46,75 +47,76 @@ function tertiaryFillFixture() {
   });
 }
 
-test("hide first leftover-only buyer is display-only and leaves matching unchanged", () => {
-  const scenario = clonePreset("hockeyCarnivalLunch");
+test("hide last winner-allocated buyer is display-only and leaves matching unchanged", () => {
+  const scenario = clonePreset("softballCarnivalLunch");
   const original = scenario.buyers.map((buyer) => buyer.id);
   const market = evaluateMarket(scenario);
   const winnerId = market.winner.offer.id;
-  const shown = filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, true);
-  const all = filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, false);
-  const lastLeftoverOnly = filterBuyerIdsHidingLastLeftoverOnlyBuyer(scenario, true);
+  const shown = filterBuyerIdsHidingLastWinnerAllocatedBuyer(scenario, true);
+  const all = filterBuyerIdsHidingLastWinnerAllocatedBuyer(scenario, false);
+  const allWinnerAllocated = filterBuyerIdsHidingWinnerAllocatedBuyers(scenario, true);
   assert.deepEqual(all, original);
-  assert.equal(shown.includes("B03"), false);
-  assert.equal(shown.includes("B04"), true);
-  assert.equal(lastLeftoverOnly.includes("B04"), false);
-  assert.equal(lastLeftoverOnly.includes("B03"), true);
+  assert.equal(shown.includes("B05"), false);
+  assert.equal(shown.includes("B01"), true);
+  assert.equal(shown.includes("B02"), true);
+  assert.equal(allWinnerAllocated.includes("B01"), false);
+  assert.equal(allWinnerAllocated.includes("B02"), false);
+  assert.equal(allWinnerAllocated.includes("B05"), false);
   assert.ok(shown.length < original.length);
   assert.deepEqual(scenario.buyers.map((buyer) => buyer.id), original);
   assert.equal(evaluateMarket(scenario).winner.offer.id, winnerId);
   assert.equal(evaluateMarket(scenario).winner.fulfilledUnits, market.winner.fulfilledUnits);
 });
 
-test("baseball carnival lunch leftover-only ids match hockey leftover-only order", () => {
-  const hockey = clonePreset("hockeyCarnivalLunch");
+test("baseball carnival lunch last winner-allocated id matches softball last winner-allocated order", () => {
+  const softball = clonePreset("softballCarnivalLunch");
   const baseball = clonePreset("baseballCarnivalLunch");
-  const hockeyFirst = filterBuyerIdsHidingFirstLeftoverOnlyBuyer(hockey, true);
-  const hockeyLast = filterBuyerIdsHidingLastLeftoverOnlyBuyer(hockey, true);
-  const baseballFirst = filterBuyerIdsHidingFirstLeftoverOnlyBuyer(baseball, true);
-  const baseballLast = filterBuyerIdsHidingLastLeftoverOnlyBuyer(baseball, true);
-  assert.equal(hockeyFirst.includes("B03"), false);
-  assert.equal(hockeyFirst.includes("B04"), true);
-  assert.equal(hockeyLast.includes("B04"), false);
-  assert.equal(hockeyLast.includes("B03"), true);
-  assert.equal(baseballFirst.includes("B03"), false);
-  assert.equal(baseballFirst.includes("B04"), true);
-  assert.equal(baseballLast.includes("B04"), false);
-  assert.equal(baseballLast.includes("B03"), true);
+  const softballLast = filterBuyerIdsHidingLastWinnerAllocatedBuyer(softball, true);
+  const baseballLast = filterBuyerIdsHidingLastWinnerAllocatedBuyer(baseball, true);
+  assert.equal(softballLast.includes("B05"), false);
+  assert.equal(softballLast.includes("B01"), true);
+  assert.equal(softballLast.includes("B02"), true);
+  assert.equal(baseballLast.includes("B05"), false);
+  assert.equal(baseballLast.includes("B01"), true);
+  assert.equal(baseballLast.includes("B02"), true);
 });
 
-test("winner-allocated, leftover-fill, tertiary-fill, unserved, and other leftover-only buyers stay visible when hiding the first leftover-only buyer", () => {
+test("leftover-only, leftover-fill, tertiary-fill, unserved, and other winner-allocated buyers stay visible when hiding the last winner-allocated buyer", () => {
   const scenario = tertiaryFillFixture();
   const coverage = computeResidualCoverage(scenario);
   const market = evaluateMarket(scenario);
   const winnerIds = market.winner.selectedBuyerIds;
   const leftoverFillIds = coverage.secondary?.selectedBuyerIds ?? [];
   const tertiaryIds = coverage.tertiary?.selectedBuyerIds ?? [];
-  const shown = filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, true);
+  const shown = filterBuyerIdsHidingLastWinnerAllocatedBuyer(scenario, true);
+  const allWinnerAllocated = filterBuyerIdsHidingWinnerAllocatedBuyers(scenario, true);
   const lastLeftoverOnly = filterBuyerIdsHidingLastLeftoverOnlyBuyer(scenario, true);
-  const leftoverOnlyAll = filterBuyerIdsHidingLeftoverOnlyBuyers(scenario, true);
-  assert.equal(shown.includes("B03"), false);
-  assert.equal(shown.includes("B07"), true);
+  assert.equal(shown.includes("B02"), false);
+  assert.equal(shown.includes("B01"), true);
+  assert.equal(shown.includes("B03"), true);
   assert.equal(shown.includes("B04"), true);
-  assert.equal(shown.includes("B06"), true);
   assert.equal(shown.includes("B05"), true);
+  assert.equal(shown.includes("B06"), true);
+  assert.equal(shown.includes("B07"), true);
   assert.equal(shown.includes("B08"), true);
+  assert.equal(allWinnerAllocated.includes("B01"), false);
+  assert.equal(allWinnerAllocated.includes("B02"), false);
   assert.equal(lastLeftoverOnly.includes("B07"), false);
-  assert.equal(lastLeftoverOnly.includes("B03"), true);
-  assert.equal(leftoverOnlyAll.includes("B03"), false);
-  assert.equal(leftoverOnlyAll.includes("B07"), false);
-  for (const id of leftoverFillIds) {
-    if (id !== "B03") assert.equal(shown.includes(id), true);
-  }
-  for (const id of winnerIds) assert.equal(shown.includes(id), true);
+  for (const id of leftoverFillIds) assert.equal(shown.includes(id), true);
   for (const id of tertiaryIds) assert.equal(shown.includes(id), true);
-  assert.notDeepEqual(shown, leftoverOnlyAll);
+  for (const id of winnerIds) {
+    if (id !== "B02") assert.equal(shown.includes(id), true);
+  }
+  assert.notDeepEqual(shown, allWinnerAllocated);
   assert.notDeepEqual(shown, lastLeftoverOnly);
 });
 
-test("hide first leftover-only buyer is distinct from last leftover-only, last leftover-fill, last unserved, and first unserved", () => {
+test("hide last winner-allocated buyer is distinct from all winner-allocated, last leftover-only, and first leftover-only", () => {
   const scenario = tertiaryFillFixture();
-  const firstLeftoverOnly = filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, true);
+  const lastWinnerAllocated = filterBuyerIdsHidingLastWinnerAllocatedBuyer(scenario, true);
+  const winnerAllocated = filterBuyerIdsHidingWinnerAllocatedBuyers(scenario, true);
   const lastLeftoverOnly = filterBuyerIdsHidingLastLeftoverOnlyBuyer(scenario, true);
+  const firstLeftoverOnly = filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, true);
   const lastUnserved = filterBuyerIdsHidingLastUnservedBuyer(scenario, true);
   const firstUnserved = filterBuyerIdsHidingFirstUnservedBuyer(scenario, true);
   const lastTertiary = filterBuyerIdsHidingLastBuyerFilledByTertiaryFill(scenario, true);
@@ -124,76 +126,67 @@ test("hide first leftover-only buyer is distinct from last leftover-only, last l
   const leftoverOnly = filterBuyerIdsHidingLeftoverOnlyBuyers(scenario, true);
   const leftover = filterBuyerIdsHidingBuyersWithLeftover(scenario, true);
   const unserved = filterBuyerIdsHidingUnservedBuyers(scenario, true);
-  const winnerAllocated = filterBuyerIdsHidingWinnerAllocatedBuyers(scenario, true);
   const included = filterBuyerIdsHidingExcluded(scenario, "O01", true);
-  assert.equal(firstLeftoverOnly.includes("B03"), false);
-  assert.equal(firstLeftoverOnly.includes("B07"), true);
+  assert.equal(lastWinnerAllocated.includes("B02"), false);
+  assert.equal(lastWinnerAllocated.includes("B01"), true);
+  assert.equal(winnerAllocated.includes("B01"), false);
   assert.equal(lastLeftoverOnly.includes("B07"), false);
-  assert.equal(lastLeftoverOnly.includes("B03"), true);
-  assert.equal(lastUnserved.includes("B08"), false);
-  assert.equal(lastUnserved.includes("B07"), true);
-  assert.equal(firstUnserved.includes("B05"), false);
-  assert.equal(lastLeftoverFill.includes("B04"), false);
-  assert.equal(lastLeftoverFill.includes("B07"), true);
-  assert.equal(lastTertiary.includes("B07"), false);
-  assert.notDeepEqual(firstLeftoverOnly, lastLeftoverOnly);
-  assert.notDeepEqual(firstLeftoverOnly, lastUnserved);
-  assert.notDeepEqual(firstLeftoverOnly, firstUnserved);
-  assert.notDeepEqual(firstLeftoverOnly, lastLeftoverFill);
-  assert.notDeepEqual(firstLeftoverOnly, leftoverFill);
-  assert.notDeepEqual(firstLeftoverOnly, leftoverOnly);
-  assert.notDeepEqual(firstLeftoverOnly, leftover);
-  assert.notDeepEqual(firstLeftoverOnly, unserved);
-  assert.notDeepEqual(firstLeftoverOnly, winnerAllocated);
-  assert.notDeepEqual(firstLeftoverOnly, included);
-  assert.notDeepEqual(firstLeftoverOnly, firstTertiary);
-  assert.notDeepEqual(firstLeftoverOnly, filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, false));
-  assert.notEqual(filterBuyerIdsHidingFirstLeftoverOnlyBuyer.name, filterBuyerIdsHidingLastLeftoverOnlyBuyer.name);
-  assert.notEqual(filterBuyerIdsHidingFirstLeftoverOnlyBuyer.name, filterBuyerIdsHidingLeftoverOnlyBuyers.name);
-  assert.notEqual("hideFirstLeftoverOnlyBuyer", "hideLastLeftoverOnlyBuyer");
-  assert.notEqual("hideFirstLeftoverOnlyBuyer", "hideLeftoverOnlyBuyers");
-  assert.notEqual("hideFirstLeftoverOnlyBuyer", "hideLastUnservedBuyer");
-  assert.notEqual("hideFirstLeftoverOnlyBuyer", "hideFirstUnservedBuyer");
+  assert.equal(firstLeftoverOnly.includes("B03"), false);
+  assert.notDeepEqual(lastWinnerAllocated, winnerAllocated);
+  assert.notDeepEqual(lastWinnerAllocated, lastLeftoverOnly);
+  assert.notDeepEqual(lastWinnerAllocated, firstLeftoverOnly);
+  assert.notDeepEqual(lastWinnerAllocated, lastUnserved);
+  assert.notDeepEqual(lastWinnerAllocated, firstUnserved);
+  assert.notDeepEqual(lastWinnerAllocated, lastLeftoverFill);
+  assert.notDeepEqual(lastWinnerAllocated, leftoverFill);
+  assert.notDeepEqual(lastWinnerAllocated, leftoverOnly);
+  assert.notDeepEqual(lastWinnerAllocated, leftover);
+  assert.notDeepEqual(lastWinnerAllocated, unserved);
+  assert.notDeepEqual(lastWinnerAllocated, included);
+  assert.notDeepEqual(lastWinnerAllocated, firstTertiary);
+  assert.notDeepEqual(lastWinnerAllocated, lastTertiary);
+  assert.notDeepEqual(lastWinnerAllocated, filterBuyerIdsHidingLastWinnerAllocatedBuyer(scenario, false));
+  assert.notEqual(filterBuyerIdsHidingLastWinnerAllocatedBuyer.name, filterBuyerIdsHidingWinnerAllocatedBuyers.name);
+  assert.notEqual(filterBuyerIdsHidingLastWinnerAllocatedBuyer.name, filterBuyerIdsHidingLastLeftoverOnlyBuyer.name);
+  assert.notEqual(filterBuyerIdsHidingLastWinnerAllocatedBuyer.name, filterBuyerIdsHidingFullyFilled.name);
+  assert.notEqual("hideLastWinnerAllocatedBuyer", "hideWinnerAllocatedBuyers");
+  assert.notEqual("hideLastWinnerAllocatedBuyer", "hideLastLeftoverOnlyBuyer");
+  assert.notEqual("hideLastWinnerAllocatedBuyer", "hideFirstLeftoverOnlyBuyer");
+  assert.notEqual("hideLastWinnerAllocatedBuyer", "hideLastUnservedBuyer");
 });
 
-test("hide first leftover-only buyer keeps every buyer when leftover-only buyers are missing", () => {
+test("hide last winner-allocated buyer keeps every buyer when none unlock", () => {
   const scenario = clonePreset("neighbourhood");
-  scenario.buyers.forEach((buyer) => {
-    buyer.allowedVariants = ["Medium roast"];
-    buyer.maxUnitPrice = 40;
-    buyer.latestDeliveryDays = 30;
-  });
-  scenario.offers = [{ ...scenario.offers[0], variant: "Medium roast", minimumUnits: 1, capacity: 5000, deliveryDays: 1 }];
+  scenario.offers.forEach((offer) => { offer.minimumUnits = 5000; });
   const original = scenario.buyers.map((buyer) => buyer.id);
-  const coverage = computeResidualCoverage(scenario);
-  assert.ok(evaluateMarket(scenario).winner);
-  assert.equal(coverage.unfilledBuyerCount, 0);
-  assert.deepEqual(filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, true), original);
+  assert.equal(evaluateMarket(scenario).winner, null);
+  assert.deepEqual(filterBuyerIdsHidingLastWinnerAllocatedBuyer(scenario, true), original);
 });
 
-test("hide first leftover-only buyer rejects prototype-like flags", () => {
+test("hide last winner-allocated buyer rejects prototype-like flags", () => {
   const scenario = clonePreset("studio");
-  assert.throws(() => filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, "true"), /true or false/);
-  assert.throws(() => filterBuyerIdsHidingFirstLeftoverOnlyBuyer(scenario, 1), ScenarioError);
+  assert.throws(() => filterBuyerIdsHidingLastWinnerAllocatedBuyer(scenario, "true"), /true or false/);
+  assert.throws(() => filterBuyerIdsHidingLastWinnerAllocatedBuyer(scenario, 1), ScenarioError);
 });
 
-test("the organizer hide first leftover-only buyer filter is not on the merchant table", async () => {
+test("the organizer hide last winner-allocated buyer filter is not on the merchant table", async () => {
   const html = await readFile(new URL("../index.html", import.meta.url), "utf8");
   const app = await readFile(new URL("../src/app.js", import.meta.url), "utf8");
   const buyerPanel = html.slice(html.indexOf('id="buyer-panel"'), html.indexOf('id="merchant-panel"'));
   const merchantPanel = html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"'));
-  assert.match(buyerPanel, /id="hide-first-leftover-only-buyer"/u);
-  assert.match(buyerPanel, /Hide the first leftover-only buyer/u);
+  assert.match(buyerPanel, /id="hide-last-winner-allocated-buyer"/u);
+  assert.match(buyerPanel, /Hide the last winner-allocated buyer/u);
+  assert.match(buyerPanel, /id="hide-winner-allocated-buyers"/u);
   assert.match(buyerPanel, /id="hide-last-leftover-only-buyer"/u);
-  assert.match(buyerPanel, /id="hide-leftover-only-buyers"/u);
+  assert.match(buyerPanel, /id="hide-first-leftover-only-buyer"/u);
   assert.match(buyerPanel, /Merchant views still show counts only/u);
-  assert.equal(merchantPanel.includes("hide-first-leftover-only-buyer"), false);
-  assert.equal(merchantPanel.includes("hideFirstLeftoverOnlyBuyer"), false);
-  assert.equal(merchantPanel.includes("copy-leftover-uncovered-maximum"), false);
+  assert.equal(merchantPanel.includes("hide-last-winner-allocated-buyer"), false);
+  assert.equal(merchantPanel.includes("hideLastWinnerAllocatedBuyer"), false);
+  assert.equal(merchantPanel.includes("copy-leftover-uncovered-minimum"), false);
   assert.match(app, /function applyBuyerDisplayFilters\(/u);
-  assert.match(app, /filterBuyerIdsHidingFirstLeftoverOnlyBuyer\(/u);
-  assert.match(app, /hideFirstLeftoverOnlyBuyer/u);
+  assert.match(app, /filterBuyerIdsHidingLastWinnerAllocatedBuyer\(/u);
+  assert.match(app, /hideLastWinnerAllocatedBuyer/u);
   assert.match(app, /persistWorkspaceDisplaySettings\(/u);
-  assert.match(html, /hide-last-leftover-only-buyer, hide-first-leftover-only-buyer, and hide-last-winner-allocated-buyer choices are kept/u);
+  assert.match(html, /hide-first-leftover-only-buyer, and hide-last-winner-allocated-buyer choices are kept/u);
   assert.match(html, /Older workspace files without them still show every buyer/u);
 });
