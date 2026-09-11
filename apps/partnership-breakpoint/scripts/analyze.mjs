@@ -3,7 +3,7 @@ import { assertValidConfiguration, calculatePartnership, evaluateStressGrid, str
 import { solveFeeForAllHold, solveMinimumShareToHold, solveMinimumVolumeToHold } from '../src/model.js';
 import { compareImportedCase, compareThreeSnapshots } from '../src/model.js';
 import { PARTNERSHIP_REVIEW_TOOLS, createPartnershipReviewPacket, replayPartnershipReviewPacket } from '../src/model.js';
-import { materializeStressCase } from '../src/model.js';
+import { materializeStressCase, applyStressProposal } from '../src/model.js';
 
 const HELP = `Offline Partnership Breakpoint analysis (Node.js 20+)
 Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
@@ -15,6 +15,7 @@ Usage: node scripts/analyze.mjs COMMAND INPUT [ARGUMENTS]
   review INPUT TOOL             Create a replayable constraint review packet
   replay INPUT                  Verify an existing review packet
   case INPUT CASE_ID            Export a compound case as new baseline inputs
+  proposal INPUT                Export a rechecked fixed-share scenario
 Review tools: ${PARTNERSHIP_REVIEW_TOOLS.map(tool => tool.id).join(', ')}
 INPUT is a JSON file or - for standard input. Output is JSON on stdout.
 Errors are JSON on stderr, exit 1. Success is exit 0.
@@ -82,6 +83,9 @@ function run(command, args) {
     case 'case':
       arity(args, 2);
       return materializeStressCase(readJSON(args[0]), args[1]);
+    case 'proposal':
+      arity(args, 1);
+      return applyStressProposal(readJSON(args[0]));
     default: throw new Error('Unknown command. Run with --help for usage.');
   }
 }

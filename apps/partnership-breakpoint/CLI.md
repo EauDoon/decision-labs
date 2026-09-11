@@ -59,3 +59,12 @@ node scripts/analyze.mjs summary stressed-scenario.json
 ```
 
 Choose an ID from this scenario's current stress output. Extraction writes importable scenario inputs with that case's effective volume, fee and variable costs. The baseline volume shock is reset to zero so it is not applied twice. Saved stress settings remain, so a later `stress` command tests additional shocks around this new baseline. Unknown case IDs fail without output. The original file is unchanged.
+
+## Export a tested revenue split
+
+```sh
+node scripts/analyze.mjs proposal scenario.json > proposed-scenario.json
+node scripts/analyze.mjs stress proposed-scenario.json
+```
+
+The explicit `proposal` command uses the model's revalidated fixed-share proposal and exports a new browser-importable scenario. Other economics stay fixed. Operational breaches, insufficient revenue and precision failures produce exit 1 with no scenario. To inspect those causes first, run `stress`. A successful proposal means all discrete tested cases hold under the model; it does not establish counterparty acceptance or protection in untested conditions. For a synthetic feasible example, start with Balanced and set volume drop to 5%, with growth, fee drop and variable-cost rise all zero.

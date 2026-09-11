@@ -166,3 +166,27 @@ test('case extraction reproduces selected stress economics without a second shoc
   assert.deepEqual(output(run(['summary', path])), original);
   assert.match(output(run(['case', path, 'case-999']), 1).error, /current compound case/);
 });
+
+test('proposal emits a verified holding split and refuses unfundable or operational cases', (t) => {
+  const config = clonePreset('balanced');
+  config.stress = { volumeDropPct: 5, volumeGrowthPct: 0, feeDropPct: 0, variableCostRisePct: 0 };
+  const [path] = files(t, [config]);
+  const candidate = output(run(['proposal', path]));
+  assert.deepEqual(candidate.deal, config.deal);
+  assert.deepEqual(candidate.stress, config.stress);
+  assert.notDeepEqual(candidate.participants.map(p => p.revenueShare), config.participants.map(p => p.revenueShare));
+  assert.ok(Math.abs(candidate.participants.reduce((sum, p) => sum + p.revenueShare, 0) - 1) < 1e-12);
+  const checked = output(run(['stress', '-'], candidate));
+  assert.equal(checked.passCount, checked.caseCount);
+  for (const volume of [95000, 100000]) for (const p of candidate.participants) {
+    const profit = volume * (candidate.deal.feePerTransaction * p.revenueShare - p.variableCostPerTransaction) - p.fixedMonthlyCost - p.riskCost;
+    assert.ok(profit >= p.minimumAcceptableProfit - 1e-9);
+    assert.ok(volume >= (p.minimumCommitment ?? 0) && volume <= (p.capacity ?? Infinity));
+  }
+  assert.deepEqual(output(run(['summary', path])), calculatePartnership(config));
+  for (const invalid of [clonePreset('balanced'), { ...config, deal: { ...config.deal, feePerTransaction: 0 } }]) {
+    const failed = run(['proposal', '-'], invalid);
+    assert.equal(failed.stdout, '');
+    assert.match(output(failed, 1).error, /No verified fixed-share proposal/);
+  }
+});
