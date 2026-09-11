@@ -43,6 +43,7 @@ test("1.5.20 keeps 1 2 3 last-closed-bank controls and Friday issuer presets", a
   assert.notDeepEqual(PRESETS.saturdayEarlyBankOpen, PRESETS.earlyMondayBankOpen);
   assert.equal(DEFAULT_SCENARIO.fridayEarlyIssuerOpen, false);
   assert.equal(DEFAULT_SCENARIO.saturdayEarlyBankOpen, false);
+  assert.equal(DEFAULT_SCENARIO.fridayEarlyBankOpen, false);
   const handler = app.slice(app.indexOf('document.addEventListener("keydown"'));
   assert.ok(handler.indexOf('event.key === "1"') !== handler.indexOf('event.key === "4"'));
   assert.ok(handler.indexOf('event.key === "2"') !== handler.indexOf('event.key === "Home"'));
