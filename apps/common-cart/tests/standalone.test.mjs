@@ -265,3 +265,24 @@ test("release 1.4.26 ships canoeing carnival lunch, leftover uncovered leftover-
   assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-uncovered-leftover-buyer/u);
 });
 
+test("release 1.4.27 ships kayaking carnival lunch, leftover uncovered leftover-only minimum copy and first uncovered leftover hide jump", async () => {
+  const html = await readFile(new URL("../standalone.html", import.meta.url), "utf8");
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-minimum"/u);
+  assert.match(html, /id="copy-leftover-uncovered-leftover-only-minimum"[^>]*aria-keyshortcuts="Shift\+F7"/u);
+  assert.match(html, /id="hide-first-uncovered-leftover-buyer"/u);
+  assert.match(html, /data-preset="kayakingCarnivalLunch"/u);
+  assert.match(html, /function copyLeftoverUncoveredLeftoverOnlyMinimum\(/u);
+  assert.match(html, /function focusLeftoverUncoveredLeftoverOnlyMinimumCopy\(/u);
+  assert.match(html, /function focusHideFirstUncoveredLeftoverBuyer\(/u);
+  assert.match(html, /createLeftoverUncoveredLeftoverOnlyMinimumMarkdown\(/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyMinimum\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F8"\) \{\s*event\.preventDefault\(\);\s*focusLeftoverUncoveredLeftoverOnlyMinimumCopy\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F9"\) \{\s*event\.preventDefault\(\);\s*focusHideFirstUncoveredLeftoverBuyer\(\);/u);
+  assert.match(html, /if \(key === "F7"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyCount\(\);/u);
+  assert.match(html, /if \(event\.shiftKey && key === "F10"\) \{\s*event\.preventDefault\(\);\s*copyLeftoverUncoveredLeftoverOnlyMaximum\(\);/u);
+  assert.match(html, /function handleShortcut\(event\) \{\s*if \(event\.defaultPrevented \|\| event\.metaKey \|\| event\.ctrlKey \|\| event\.altKey\) return;/u);
+  assert.match(html, /const key = event\.key\.length === 1 \? event\.key\.toLowerCase\(\) : event\.key;/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /copy-leftover-uncovered-leftover-only-minimum/u);
+  assert.doesNotMatch(html.slice(html.indexOf('id="merchant-panel"'), html.indexOf('id="method-panel"')), /hide-first-uncovered-leftover-buyer/u);
+});
+
