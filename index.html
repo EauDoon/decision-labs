@@ -1878,6 +1878,42 @@
           }
         }
       });
+      const lastSkipTextBtn = document.getElementById('copy-last-skip-text');
+      const lastSkipTextStatus = document.getElementById('copy-last-skip-text-status');
+      const lastSkipTextFallback = document.getElementById('copy-last-skip-text-fallback');
+      const lastSkipTextMarkdown = () => {
+        const skips = document.querySelectorAll('#skips a.skip');
+        const skip = skips[skips.length - 1];
+        const text = skip?.textContent.trim() ?? '';
+        if (!text) return '';
+        return `- ${text}`;
+      };
+      lastSkipTextBtn?.addEventListener('click', async () => {
+        const markdown = lastSkipTextMarkdown();
+        const empty = markdown === '';
+        try {
+          if (!navigator.clipboard?.writeText) throw new Error('clipboard unavailable');
+          await navigator.clipboard.writeText(markdown);
+          if (lastSkipTextFallback) lastSkipTextFallback.hidden = true;
+          if (lastSkipTextStatus) {
+            lastSkipTextStatus.textContent = empty
+              ? 'Last skip-link text was missing. Copied an empty string. This is catalog copy, not a live product feed.'
+              : 'Copied the last skip-link text from this catalog page as Markdown. Not a live product feed.';
+          }
+        } catch {
+          if (lastSkipTextFallback) {
+            lastSkipTextFallback.hidden = false;
+            lastSkipTextFallback.value = markdown;
+            lastSkipTextFallback.focus();
+            lastSkipTextFallback.select();
+          }
+          if (lastSkipTextStatus) {
+            lastSkipTextStatus.textContent = empty
+              ? 'Clipboard unavailable. Copy the empty string from the text box. Last skip-link text was missing. This is catalog copy, not a live product feed.'
+              : 'Clipboard unavailable. Copy the Markdown from the text box. This is the last skip-link text, not a live product feed.';
+          }
+        }
+      });
       const firstReviewBtn = document.getElementById('copy-first-review');
       const firstReviewStatus = document.getElementById('copy-first-review-status');
       const firstReviewFallback = document.getElementById('copy-first-review-fallback');
